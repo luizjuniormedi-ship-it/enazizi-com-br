@@ -207,6 +207,45 @@ const MobileNav = () => {
                   Admin
                 </Link>
               )}
+              {isAdmin && (
+                <Link
+                  to="/dashboard/mnemonico"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    location.pathname === "/dashboard/mnemonico" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  )}
+                >
+                  <Brain className="h-4 w-4" />
+                  Mnemônico (teste)
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/admin/ceo"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    location.pathname === "/admin/ceo" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  )}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Painel CEO
+                </Link>
+              )}
+              {isInstitutionalStaff && (
+                <Link
+                  to="/institucional"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    location.pathname === "/institucional" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  )}
+                >
+                  <Building2 className="h-4 w-4" />
+                  Painel Institucional
+                </Link>
+              )}
               <button
                 onClick={handleSignOut}
                 className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full"
