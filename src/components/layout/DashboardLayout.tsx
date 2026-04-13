@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useInstitution } from "@/hooks/useInstitution";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
