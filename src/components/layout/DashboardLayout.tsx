@@ -139,6 +139,7 @@ const MobileNav = () => {
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { isModuleEnabled } = useModuleAccess();
+  const { isStaff: isInstitutionalStaff } = useInstitution();
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
