@@ -502,18 +502,20 @@ const ProfessorDashboard = () => {
         </Button>
       </div>
 
-      <Tabs defaultValue="simulados">
-        <TabsList>
-          <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
-          <TabsTrigger value="plantao">🏥 Casos Plantão</TabsTrigger>
-          <TabsTrigger value="video" className="gap-1"><Video className="h-3.5 w-3.5" /> Sala de Aula</TabsTrigger>
-          <TabsTrigger value="temas">📖 Temas de Estudo</TabsTrigger>
-          <TabsTrigger value="alunos">👤 Aluno Individual</TabsTrigger>
-          <TabsTrigger value="analytics">📊 Análise da Turma</TabsTrigger>
-           <TabsTrigger value="bi">📈 BI</TabsTrigger>
-           <TabsTrigger value="mentoria">📋 Mentoria</TabsTrigger>
-           <TabsTrigger value="osce">🩺 Prova Prática</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue="simulados" className="w-full">
+        <div className="overflow-x-auto -mx-1 px-1 pb-1">
+          <TabsList className="inline-flex w-max min-w-full flex-nowrap">
+            <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
+            <TabsTrigger value="plantao">🏥 Casos Plantão</TabsTrigger>
+            <TabsTrigger value="video" className="gap-1"><Video className="h-3.5 w-3.5" /> Sala de Aula</TabsTrigger>
+            <TabsTrigger value="temas">📖 Temas</TabsTrigger>
+            <TabsTrigger value="alunos">👤 Aluno</TabsTrigger>
+            <TabsTrigger value="analytics">📊 Turma</TabsTrigger>
+            <TabsTrigger value="bi">📈 BI</TabsTrigger>
+            <TabsTrigger value="mentoria">📋 Mentoria</TabsTrigger>
+            <TabsTrigger value="osce">🩺 OSCE</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="simulados" className="space-y-4 mt-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
