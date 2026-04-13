@@ -359,24 +359,37 @@ function normalizeForComparison(value: string): string {
 }
 
 function deriveExpectedLetter(item: string): string {
+  return deriveAcceptableLetters(item)[0] || "X";
+}
+
+function deriveAcceptableLetters(item: string): string[] {
   const normalized = normalizeForComparison(item);
+  const letters: string[] = [];
 
-  if (/\bonda q\b|\bq patologic/.test(normalized)) return "Q";
-  if (/\bsupradesnivelamento\b|\bsupra\b/.test(normalized)) return "S";
-  if (/\binfradesnivelamento\b|\binfra\b/.test(normalized)) return "I";
-  if (/\bbloqueio\s+de?\s*ramo\s+esquerdo\b|\bbre\b/.test(normalized)) return "B";
-  if (/\bbav\b|\bbloqueio av\b/.test(normalized)) return "B";
-  if (/\bmobitz\b/.test(normalized)) return "M";
-  if (/\bkillip\b/.test(normalized)) return "K";
-  if (/\bstemi\b/.test(normalized)) return "S";
-  if (/\bnstemi\b/.test(normalized)) return "N";
+  // Special medical term overrides
+  if (/\bonda q\b|\bq patologic/.test(normalized)) letters.push("Q");
+  if (/\bsupradesnivelamento\b|\bsupra\b/.test(normalized)) letters.push("S");
+  if (/\binfradesnivelamento\b|\binfra\b/.test(normalized)) letters.push("I");
+  if (/\bbloqueio\s+de?\s*ramo\s+esquerdo\b|\bbre\b/.test(normalized)) letters.push("B");
+  if (/\bbav\b|\bbloqueio av\b/.test(normalized)) letters.push("B");
+  if (/\bmobitz\b/.test(normalized)) letters.push("M");
+  if (/\bkillip\b/.test(normalized)) letters.push("K");
+  if (/\bstemi\b/.test(normalized)) letters.push("S");
+  if (/\bnstemi\b/.test(normalized)) letters.push("N");
+  if (letters.length > 0) return [...new Set(letters)];
 
+  // Check for acronym/sigla
   const rawSigla = item.match(/\b[A-ZÁÀÃÂÉÈÊÍÌÎÓÒÕÔÚÙÛÇ][A-ZÁÀÃÂÉÈÊÍÌÎÓÒÕÔÚÙÛÇ0-9-]{1,}\b/u)?.[0];
-  if (rawSigla) return stripDiacritics(rawSigla).charAt(0).toUpperCase();
+  if (rawSigla) return [stripDiacritics(rawSigla).charAt(0).toUpperCase()];
 
+  // All significant words' first letters are acceptable
   const tokens = normalized.split(" ").filter(Boolean);
-  const preferred = tokens.find((token) => !GENERIC_LETTER_WORDS.has(token));
-  return (preferred || tokens[0] || item.trim().charAt(0) || "X").charAt(0).toUpperCase();
+  const significantTokens = tokens.filter((token) => !GENERIC_LETTER_WORDS.has(token));
+  if (significantTokens.length > 0) {
+    return [...new Set(significantTokens.map((t) => t.charAt(0).toUpperCase()))];
+  }
+
+  return [tokens[0]?.charAt(0)?.toUpperCase() || item.trim().charAt(0)?.toUpperCase() || "X"];
 }
 
 function deriveRequiredAnchors(item: string): string[] {
