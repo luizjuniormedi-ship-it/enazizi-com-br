@@ -255,16 +255,6 @@ const DashboardSidebar = () => {
                 <BarChart3 className="h-4 w-4" />
                 Painel CEO
               </Link>
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  location.pathname === "/admin/ceo"
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
-                <BarChart3 className="h-4 w-4" />
-                Painel CEO
-              </Link>
             </>
           )}
         </div>
