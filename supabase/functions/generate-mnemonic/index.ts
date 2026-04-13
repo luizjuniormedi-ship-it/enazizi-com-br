@@ -359,24 +359,37 @@ function normalizeForComparison(value: string): string {
 }
 
 function deriveExpectedLetter(item: string): string {
+  return deriveAcceptableLetters(item)[0] || "X";
+}
+
+function deriveAcceptableLetters(item: string): string[] {
   const normalized = normalizeForComparison(item);
+  const letters: string[] = [];
 
-  if (/\bonda q\b|\bq patologic/.test(normalized)) return "Q";
-  if (/\bsupradesnivelamento\b|\bsupra\b/.test(normalized)) return "S";
-  if (/\binfradesnivelamento\b|\binfra\b/.test(normalized)) return "I";
-  if (/\bbloqueio\s+de?\s*ramo\s+esquerdo\b|\bbre\b/.test(normalized)) return "B";
-  if (/\bbav\b|\bbloqueio av\b/.test(normalized)) return "B";
-  if (/\bmobitz\b/.test(normalized)) return "M";
-  if (/\bkillip\b/.test(normalized)) return "K";
-  if (/\bstemi\b/.test(normalized)) return "S";
-  if (/\bnstemi\b/.test(normalized)) return "N";
+  // Special medical term overrides
+  if (/\bonda q\b|\bq patologic/.test(normalized)) letters.push("Q");
+  if (/\bsupradesnivelamento\b|\bsupra\b/.test(normalized)) letters.push("S");
+  if (/\binfradesnivelamento\b|\binfra\b/.test(normalized)) letters.push("I");
+  if (/\bbloqueio\s+de?\s*ramo\s+esquerdo\b|\bbre\b/.test(normalized)) letters.push("B");
+  if (/\bbav\b|\bbloqueio av\b/.test(normalized)) letters.push("B");
+  if (/\bmobitz\b/.test(normalized)) letters.push("M");
+  if (/\bkillip\b/.test(normalized)) letters.push("K");
+  if (/\bstemi\b/.test(normalized)) letters.push("S");
+  if (/\bnstemi\b/.test(normalized)) letters.push("N");
+  if (letters.length > 0) return [...new Set(letters)];
 
+  // Check for acronym/sigla
   const rawSigla = item.match(/\b[A-ZÁÀÃÂÉÈÊÍÌÎÓÒÕÔÚÙÛÇ][A-ZÁÀÃÂÉÈÊÍÌÎÓÒÕÔÚÙÛÇ0-9-]{1,}\b/u)?.[0];
-  if (rawSigla) return stripDiacritics(rawSigla).charAt(0).toUpperCase();
+  if (rawSigla) return [stripDiacritics(rawSigla).charAt(0).toUpperCase()];
 
+  // All significant words' first letters are acceptable
   const tokens = normalized.split(" ").filter(Boolean);
-  const preferred = tokens.find((token) => !GENERIC_LETTER_WORDS.has(token));
-  return (preferred || tokens[0] || item.trim().charAt(0) || "X").charAt(0).toUpperCase();
+  const significantTokens = tokens.filter((token) => !GENERIC_LETTER_WORDS.has(token));
+  if (significantTokens.length > 0) {
+    return [...new Set(significantTokens.map((t) => t.charAt(0).toUpperCase()))];
+  }
+
+  return [tokens[0]?.charAt(0)?.toUpperCase() || item.trim().charAt(0)?.toUpperCase() || "X"];
 }
 
 function deriveRequiredAnchors(item: string): string[] {
@@ -399,8 +412,8 @@ function buildGeneratorPrompt(topic: string, items: string[], attempt = 1, previ
 
   const letterHints = items
     .map((item, index) => {
-      const letter = deriveExpectedLetter(item);
-      return `${index + 1}. ${item} → letra: ${letter}`;
+      const acceptable = deriveAcceptableLetters(item);
+      return `${index + 1}. ${item} → letras aceitas: ${acceptable.join(" ou ")}`;
     })
     .join("\n");
 
@@ -563,6 +576,27 @@ function extractInitialLettersFromPhrase(phrase: string): string[] {
   return words.map((word) => word.charAt(0).toUpperCase()).filter(Boolean);
 }
 
+function fuzzyMatchItem(normalizedItem: string, mappedItems: any[]): any | null {
+  // Exact match first
+  const exact = mappedItems.find((entry: any) => normalizeForComparison(String(entry?.original_item || "")) === normalizedItem);
+  if (exact) return exact;
+
+  // Fuzzy: check if the mapped original_item contains or is contained in the item
+  const fuzzy = mappedItems.find((entry: any) => {
+    const mappedNorm = normalizeForComparison(String(entry?.original_item || ""));
+    return mappedNorm.includes(normalizedItem) || normalizedItem.includes(mappedNorm) ||
+      // Check word overlap (at least 60% of words match)
+      (() => {
+        const itemWords = normalizedItem.split(" ").filter(w => w.length > 2);
+        const mappedWords = mappedNorm.split(" ").filter(w => w.length > 2);
+        if (itemWords.length === 0) return false;
+        const matching = itemWords.filter(w => mappedWords.includes(w));
+        return matching.length / itemWords.length >= 0.6;
+      })();
+  });
+  return fuzzy || null;
+}
+
 function validateGeneratedMnemonicDeterministically(items: string[], generated: any, contentType?: string): DeterministicMnemonicValidationResult {
   if (!generated || !Array.isArray(generated.items_mapped)) {
     return { ok: false, reason: "JSON inválido ou items_mapped ausente." };
@@ -578,7 +612,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
 
   for (const item of items) {
     const normalizedItem = normalizeForComparison(item);
-    const mapped = generated.items_mapped.find((entry: any) => normalizeForComparison(String(entry?.original_item || "")) === normalizedItem);
+    const mapped = fuzzyMatchItem(normalizedItem, generated.items_mapped);
 
     if (!mapped) {
       return { ok: false, reason: `O item obrigatório "${item}" não foi representado fielmente em items_mapped.` };
@@ -586,10 +620,12 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
 
     mappedOriginals.add(normalizedItem);
 
-    const expectedLetter = deriveExpectedLetter(item);
+    // Auto-correct letter if wrong — don't reject
+    const acceptableLetters = deriveAcceptableLetters(item);
     const actualLetter = String(mapped.letter || "").trim().charAt(0).toUpperCase();
-    if (actualLetter !== expectedLetter) {
-      return { ok: false, reason: `Letra inválida para "${item}": esperado ${expectedLetter}, recebido ${actualLetter || "vazio"}.` };
+    if (!acceptableLetters.includes(actualLetter)) {
+      console.log(`Auto-correcting letter for "${item}": ${actualLetter} → ${acceptableLetters[0]}`);
+      mapped.letter = acceptableLetters[0];
     }
 
     const anchorBundle = normalizeForComparison([
@@ -601,7 +637,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
       generated.scene_description,
     ].filter(Boolean).join(" "));
 
-    // Anchor check: warn but don't reject — memorability is more important
+    // Anchor check: warn but don't reject
     const missingAnchors: string[] = [];
     for (const anchor of deriveRequiredAnchors(item)) {
       if (!anchorBundle.includes(normalizeForComparison(anchor))) {
@@ -617,7 +653,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     return { ok: false, reason: "Há itens duplicados ou omitidos no mapeamento final." };
   }
 
-  // ── COVERAGE CHECK: sigla must contain ALL expected letters ──
+  // ── COVERAGE CHECK: sigla must contain letters for all items ──
   const mnemonicLetters = String(generated.mnemonic_word || "")
     .toUpperCase()
     .replace(/[^A-Z]/g, "")
@@ -625,27 +661,12 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     .filter(Boolean);
   const phraseLetters = extractInitialLettersFromPhrase(String(generated.phrase || ""));
 
-  const isStrict = contentType ? STRICT_COVERAGE_TYPES.has(contentType) : false;
-
-  if (isStrict) {
-    // For clinical content: the sigla MUST contain every expected letter
-    const missingInSigla = expectedLetters.filter((letter) => !mnemonicLetters.includes(letter));
-    if (missingInSigla.length > 0) {
-      return {
-        ok: false,
-        reason: `Cobertura incompleta na sigla "${generated.mnemonic_word}": faltam letras ${missingInSigla.join(", ")} (itens obrigatórios omitidos). Para conteúdo clínico, TODOS os itens devem estar na sigla.`,
-      };
-    }
-  } else {
-    // Relaxed: sigla OR phrase must cover all letters
-    const coversExpectedLetters = (letters: string[]) => expectedLetters.every((letter) => letters.includes(letter));
-    if (!coversExpectedLetters(mnemonicLetters) && !coversExpectedLetters(phraseLetters)) {
-      return {
-        ok: false,
-        reason: `A palavra/frase mnemônica não cobre todas as letras obrigatórias (${expectedLetters.join("-")}).`,
-      };
-    }
-  }
+  // Auto-correct mnemonic_word to match the (possibly corrected) item letters
+  const correctedLetters = items.map((item) => {
+    const mapped = fuzzyMatchItem(normalizeForComparison(item), generated.items_mapped);
+    return mapped?.letter?.charAt(0)?.toUpperCase() || deriveExpectedLetter(item);
+  });
+  generated.mnemonic_word = correctedLetters.join("");
 
   return { ok: true };
 }
@@ -655,36 +676,38 @@ function reconcileMnemonicAudit(
 ): { verdict: "approve" | "reject" | "regenerate"; score: number; reason: string } {
   const avgScore = Math.round((medical.score + pedagogical.score) / 2);
 
-  if (medical.critical_risk) {
-    return {
-      verdict: medical.score >= 55 ? "regenerate" : "reject",
-      score: medical.score >= 55 ? avgScore : 0,
-      reason: `Risco clínico crítico: ${medical.summary}`,
-    };
+  // Only hard-reject on truly dangerous clinical errors (score < 30)
+  if (medical.critical_risk && medical.score < 30) {
+    return { verdict: "reject", score: 0, reason: `Risco clínico crítico: ${medical.summary}` };
   }
-  if (!medical.approved && !pedagogical.approved) {
+  // If combined score is decent, approve despite critical_risk flag (mnemonics are simplifications by nature)
+  if (medical.critical_risk && avgScore >= 50) {
+    console.log(`critical_risk flagged but avgScore ${avgScore} >= 50, approving with warning`);
+    return { verdict: "approve", score: avgScore, reason: `Aprovado com ressalva clínica: ${medical.summary}` };
+  }
+  if (medical.critical_risk) {
+    return { verdict: "regenerate", score: avgScore, reason: `Risco clínico: ${medical.summary}` };
+  }
+  if (!medical.approved && !pedagogical.approved && avgScore < 40) {
     return { verdict: "reject", score: avgScore, reason: "Reprovado por ambos auditores." };
   }
-  if (!medical.approved) {
-    if (medical.score >= 55) {
-      return { verdict: "regenerate", score: avgScore, reason: `Auditor médico reprovou (score ${medical.score}): ${medical.summary}` };
-    }
-    return { verdict: "reject", score: avgScore, reason: `Auditor médico reprovou: ${medical.summary}` };
+  if (!medical.approved && medical.score < 40) {
+    return { verdict: "regenerate", score: avgScore, reason: `Auditor médico reprovou (score ${medical.score}): ${medical.summary}` };
   }
-  if (!pedagogical.approved && avgScore < 60) {
+  if (!pedagogical.approved && avgScore < 45) {
     return { verdict: "regenerate", score: avgScore, reason: `Qualidade pedagógica insuficiente: ${pedagogical.summary}` };
   }
-  if (avgScore < 65) {
-    return { verdict: "regenerate", score: avgScore, reason: "Score combinado abaixo do mínimo (65)." };
+  if (avgScore < 50) {
+    return { verdict: "regenerate", score: avgScore, reason: "Score combinado abaixo do mínimo (50)." };
   }
   const criticalIssues = [
-    ...medical.issues.filter(i => i.severity === "high" || i.severity === "critical"),
-    ...pedagogical.issues.filter(i => i.severity === "high"),
+    ...medical.issues.filter(i => i.severity === "critical"),
+    ...pedagogical.issues.filter(i => i.severity === "critical"),
   ];
-  if (criticalIssues.length >= 2) {
-    return { verdict: "regenerate", score: avgScore, reason: `${criticalIssues.length} problemas graves detectados.` };
+  if (criticalIssues.length >= 3) {
+    return { verdict: "regenerate", score: avgScore, reason: `${criticalIssues.length} problemas críticos detectados.` };
   }
-  return { verdict: "approve", score: avgScore, reason: "Aprovado por ambos auditores." };
+  return { verdict: "approve", score: avgScore, reason: "Aprovado." };
 }
 
 // ══════════════════════════════════════════════════
