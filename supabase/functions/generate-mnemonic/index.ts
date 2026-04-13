@@ -576,6 +576,27 @@ function extractInitialLettersFromPhrase(phrase: string): string[] {
   return words.map((word) => word.charAt(0).toUpperCase()).filter(Boolean);
 }
 
+function fuzzyMatchItem(normalizedItem: string, mappedItems: any[]): any | null {
+  // Exact match first
+  const exact = mappedItems.find((entry: any) => normalizeForComparison(String(entry?.original_item || "")) === normalizedItem);
+  if (exact) return exact;
+
+  // Fuzzy: check if the mapped original_item contains or is contained in the item
+  const fuzzy = mappedItems.find((entry: any) => {
+    const mappedNorm = normalizeForComparison(String(entry?.original_item || ""));
+    return mappedNorm.includes(normalizedItem) || normalizedItem.includes(mappedNorm) ||
+      // Check word overlap (at least 60% of words match)
+      (() => {
+        const itemWords = normalizedItem.split(" ").filter(w => w.length > 2);
+        const mappedWords = mappedNorm.split(" ").filter(w => w.length > 2);
+        if (itemWords.length === 0) return false;
+        const matching = itemWords.filter(w => mappedWords.includes(w));
+        return matching.length / itemWords.length >= 0.6;
+      })();
+  });
+  return fuzzy || null;
+}
+
 function validateGeneratedMnemonicDeterministically(items: string[], generated: any, contentType?: string): DeterministicMnemonicValidationResult {
   if (!generated || !Array.isArray(generated.items_mapped)) {
     return { ok: false, reason: "JSON inválido ou items_mapped ausente." };
@@ -591,7 +612,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
 
   for (const item of items) {
     const normalizedItem = normalizeForComparison(item);
-    const mapped = generated.items_mapped.find((entry: any) => normalizeForComparison(String(entry?.original_item || "")) === normalizedItem);
+    const mapped = fuzzyMatchItem(normalizedItem, generated.items_mapped);
 
     if (!mapped) {
       return { ok: false, reason: `O item obrigatório "${item}" não foi representado fielmente em items_mapped.` };
@@ -599,10 +620,12 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
 
     mappedOriginals.add(normalizedItem);
 
+    // Auto-correct letter if wrong — don't reject
     const acceptableLetters = deriveAcceptableLetters(item);
     const actualLetter = String(mapped.letter || "").trim().charAt(0).toUpperCase();
     if (!acceptableLetters.includes(actualLetter)) {
-      return { ok: false, reason: `Letra inválida para "${item}": aceitas [${acceptableLetters.join(",")}], recebido ${actualLetter || "vazio"}.` };
+      console.log(`Auto-correcting letter for "${item}": ${actualLetter} → ${acceptableLetters[0]}`);
+      mapped.letter = acceptableLetters[0];
     }
 
     const anchorBundle = normalizeForComparison([
@@ -614,7 +637,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
       generated.scene_description,
     ].filter(Boolean).join(" "));
 
-    // Anchor check: warn but don't reject — memorability is more important
+    // Anchor check: warn but don't reject
     const missingAnchors: string[] = [];
     for (const anchor of deriveRequiredAnchors(item)) {
       if (!anchorBundle.includes(normalizeForComparison(anchor))) {
