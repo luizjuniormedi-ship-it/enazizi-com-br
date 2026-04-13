@@ -68,7 +68,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/proficiencia", icon: GraduationCap, label: "Proficiência" },
       { to: "/dashboard/coach", icon: Heart, label: "Coach" },
       { to: "/dashboard/planner", icon: CalendarDays, label: "Plano Estratégico" },
-      { to: "/dashboard/mnemonico", icon: Brain, label: "Mnemônico" },
+      // Mnemônico movido para seção admin-only abaixo
     ],
   },
 ];
@@ -230,6 +230,18 @@ const DashboardSidebar = () => {
               >
                 <Shield className="h-4 w-4" />
                 Admin
+              </Link>
+              <Link
+                to="/dashboard/mnemonico"
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                  location.pathname === "/dashboard/mnemonico"
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                )}
+              >
+                <Brain className="h-4 w-4" />
+                Mnemônico (teste)
               </Link>
               <Link
                 to="/admin/ceo"
