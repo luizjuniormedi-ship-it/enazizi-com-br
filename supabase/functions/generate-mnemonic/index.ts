@@ -902,7 +902,7 @@ Deno.serve(async (req) => {
 
     if (verdict.verdict === "reject" || verdict.verdict === "regenerate") {
       // Save rejected to prevent retries
-      await supabase.from("mnemonic_assets").insert({
+      const { error: rejectedInsertError } = await supabase.from("mnemonic_assets").insert({
         hash,
         topic,
         content_type: contentType,
@@ -917,7 +917,11 @@ Deno.serve(async (req) => {
         verdict: "rejected",
         source_reference: source || "manual",
         review_question: `Quais são os ${cleanedItems.length} itens de "${topic}"?`,
-      }).then(() => {}).catch(e => console.warn("Failed to save rejected:", e));
+      });
+
+      if (rejectedInsertError) {
+        console.warn("Failed to save rejected:", rejectedInsertError);
+      }
 
       const errorMsg = verdict.verdict === "regenerate"
         ? `Qualidade insuficiente após ${MAX_ATTEMPTS} tentativas (${verdict.score}/100): ${verdict.reason}`
