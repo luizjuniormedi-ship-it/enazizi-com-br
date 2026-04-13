@@ -488,32 +488,32 @@ const ProfessorDashboard = () => {
   const totalCompleted = simulados.reduce((s, sim) => s + (sim.results_summary?.completed || 0), 0);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-primary" />
             Painel do Professor
           </h1>
           <p className="text-muted-foreground text-sm">Crie simulados, acompanhe alunos e gerencie turmas</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="gap-2">
+        <Button onClick={() => setShowCreate(true)} className="w-full sm:w-auto gap-2">
           <Plus className="h-4 w-4" /> Novo Simulado
         </Button>
       </div>
 
       <Tabs defaultValue="simulados" className="w-full">
-        <div className="overflow-x-auto -mx-1 px-1 pb-1">
-          <TabsList className="inline-flex w-max min-w-full flex-nowrap">
-            <TabsTrigger value="simulados">📝 Simulados</TabsTrigger>
-            <TabsTrigger value="plantao">🏥 Casos Plantão</TabsTrigger>
-            <TabsTrigger value="video" className="gap-1"><Video className="h-3.5 w-3.5" /> Sala de Aula</TabsTrigger>
-            <TabsTrigger value="temas">📖 Temas</TabsTrigger>
-            <TabsTrigger value="alunos">👤 Aluno</TabsTrigger>
-            <TabsTrigger value="analytics">📊 Turma</TabsTrigger>
-            <TabsTrigger value="bi">📈 BI</TabsTrigger>
-            <TabsTrigger value="mentoria">📋 Mentoria</TabsTrigger>
-            <TabsTrigger value="osce">🩺 OSCE</TabsTrigger>
+        <div className="rounded-2xl border border-border bg-card/40 p-2">
+          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+            <TabsTrigger value="simulados" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📝 Simulados</TabsTrigger>
+            <TabsTrigger value="plantao" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🏥 Casos Plantão</TabsTrigger>
+            <TabsTrigger value="video" className="h-10 min-w-[48%] flex-1 justify-start gap-1 rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm"><Video className="h-3.5 w-3.5" /> Sala de Aula</TabsTrigger>
+            <TabsTrigger value="temas" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📖 Temas</TabsTrigger>
+            <TabsTrigger value="alunos" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">👤 Aluno</TabsTrigger>
+            <TabsTrigger value="analytics" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📊 Turma</TabsTrigger>
+            <TabsTrigger value="bi" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📈 BI</TabsTrigger>
+            <TabsTrigger value="mentoria" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📋 Mentoria</TabsTrigger>
+            <TabsTrigger value="osce" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🩺 OSCE</TabsTrigger>
           </TabsList>
         </div>
 
