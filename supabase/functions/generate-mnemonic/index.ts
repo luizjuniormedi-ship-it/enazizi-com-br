@@ -412,8 +412,8 @@ function buildGeneratorPrompt(topic: string, items: string[], attempt = 1, previ
 
   const letterHints = items
     .map((item, index) => {
-      const letter = deriveExpectedLetter(item);
-      return `${index + 1}. ${item} → letra: ${letter}`;
+      const acceptable = deriveAcceptableLetters(item);
+      return `${index + 1}. ${item} → letras aceitas: ${acceptable.join(" ou ")}`;
     })
     .join("\n");
 
