@@ -1,11 +1,18 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.2";
+import { createClient } from "npm:@supabase/supabase-js@2.49.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function getRequiredEnv(name: string): string {
+  const value = Deno.env.get(name);
+  if (!value) {
+    throw new Error(`${name} not configured`);
+  }
+  return value;
+}
 
 const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v6-memorable";
 
@@ -715,7 +722,7 @@ function reconcileMnemonicAudit(
 // Supports both manual (source=manual) and adaptive (source=adaptive) flows.
 // ══════════════════════════════════════════════════
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -747,8 +754,7 @@ serve(async (req) => {
       });
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    const LOVABLE_API_KEY = getRequiredEnv("LOVABLE_API_KEY");
 
     // ── STEP 1.5: HYBRID CONCEPT NORMALIZATION ──
     const normResult = await normalizeMnemonicItemsHybrid(items, LOVABLE_API_KEY, topic);
@@ -766,9 +772,10 @@ serve(async (req) => {
     const cleanedItems = normResult.cleanedItems;
 
     // Init Supabase client for persistence
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, serviceKey);
+    const supabase = createClient(
+      getRequiredEnv("SUPABASE_URL"),
+      getRequiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
+    );
 
     // ── HASH & CACHE CHECK ──
     const hash = await generateHash(topic, cleanedItems, contentType);
