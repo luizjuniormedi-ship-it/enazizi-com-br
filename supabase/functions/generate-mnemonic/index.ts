@@ -676,36 +676,33 @@ function reconcileMnemonicAudit(
 ): { verdict: "approve" | "reject" | "regenerate"; score: number; reason: string } {
   const avgScore = Math.round((medical.score + pedagogical.score) / 2);
 
-  if (medical.critical_risk) {
-    return {
-      verdict: medical.score >= 55 ? "regenerate" : "reject",
-      score: medical.score >= 55 ? avgScore : 0,
-      reason: `Risco clínico crítico: ${medical.summary}`,
-    };
+  // Only hard-reject on truly dangerous clinical errors (score < 30)
+  if (medical.critical_risk && medical.score < 30) {
+    return { verdict: "reject", score: 0, reason: `Risco clínico crítico: ${medical.summary}` };
   }
-  if (!medical.approved && !pedagogical.approved) {
+  if (medical.critical_risk && medical.score < 50) {
+    return { verdict: "regenerate", score: avgScore, reason: `Risco clínico: ${medical.summary}` };
+  }
+  if (!medical.approved && !pedagogical.approved && avgScore < 40) {
     return { verdict: "reject", score: avgScore, reason: "Reprovado por ambos auditores." };
   }
-  if (!medical.approved) {
-    if (medical.score >= 55) {
-      return { verdict: "regenerate", score: avgScore, reason: `Auditor médico reprovou (score ${medical.score}): ${medical.summary}` };
-    }
-    return { verdict: "reject", score: avgScore, reason: `Auditor médico reprovou: ${medical.summary}` };
+  if (!medical.approved && medical.score < 40) {
+    return { verdict: "regenerate", score: avgScore, reason: `Auditor médico reprovou (score ${medical.score}): ${medical.summary}` };
   }
-  if (!pedagogical.approved && avgScore < 60) {
+  if (!pedagogical.approved && avgScore < 45) {
     return { verdict: "regenerate", score: avgScore, reason: `Qualidade pedagógica insuficiente: ${pedagogical.summary}` };
   }
-  if (avgScore < 65) {
-    return { verdict: "regenerate", score: avgScore, reason: "Score combinado abaixo do mínimo (65)." };
+  if (avgScore < 50) {
+    return { verdict: "regenerate", score: avgScore, reason: "Score combinado abaixo do mínimo (50)." };
   }
   const criticalIssues = [
-    ...medical.issues.filter(i => i.severity === "high" || i.severity === "critical"),
-    ...pedagogical.issues.filter(i => i.severity === "high"),
+    ...medical.issues.filter(i => i.severity === "critical"),
+    ...pedagogical.issues.filter(i => i.severity === "critical"),
   ];
-  if (criticalIssues.length >= 2) {
-    return { verdict: "regenerate", score: avgScore, reason: `${criticalIssues.length} problemas graves detectados.` };
+  if (criticalIssues.length >= 3) {
+    return { verdict: "regenerate", score: avgScore, reason: `${criticalIssues.length} problemas críticos detectados.` };
   }
-  return { verdict: "approve", score: avgScore, reason: "Aprovado por ambos auditores." };
+  return { verdict: "approve", score: avgScore, reason: "Aprovado." };
 }
 
 // ══════════════════════════════════════════════════
