@@ -6,7 +6,7 @@ import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
-import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon, ChevronDown } from "lucide-react";
+import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon, ChevronDown, Brain, BarChart3, Building2 } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import BottomTabBar from "./BottomTabBar";
 import enazizi from "@/assets/enazizi-mascot.png";
@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
+import { useInstitution } from "@/hooks/useInstitution";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
@@ -139,6 +140,7 @@ const MobileNav = () => {
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { isModuleEnabled } = useModuleAccess();
+  const { isStaff: isInstitutionalStaff } = useInstitution();
   const [open, setOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -203,6 +205,45 @@ const MobileNav = () => {
                 >
                   <Shield className="h-4 w-4" />
                   Admin
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/dashboard/mnemonico"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    location.pathname === "/dashboard/mnemonico" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  )}
+                >
+                  <Brain className="h-4 w-4" />
+                  Mnemônico (teste)
+                </Link>
+              )}
+              {isAdmin && (
+                <Link
+                  to="/admin/ceo"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    location.pathname === "/admin/ceo" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  )}
+                >
+                  <BarChart3 className="h-4 w-4" />
+                  Painel CEO
+                </Link>
+              )}
+              {isInstitutionalStaff && (
+                <Link
+                  to="/institucional"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                    location.pathname === "/institucional" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
+                  )}
+                >
+                  <Building2 className="h-4 w-4" />
+                  Painel Institucional
                 </Link>
               )}
               <button
