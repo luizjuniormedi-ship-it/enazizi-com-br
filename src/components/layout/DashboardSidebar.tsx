@@ -123,8 +123,8 @@ const DashboardSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { isAdmin } = useAdminCheck();
-  const { isProfessor } = useProfessorCheck();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
+  const { isProfessor, loading: professorLoading } = useProfessorCheck();
   const { isStaff: isInstitutionalStaff } = useInstitution();
   const { isModuleEnabled } = useModuleAccess();
 
@@ -161,6 +161,10 @@ const DashboardSidebar = () => {
           const filteredGroup = {
             ...group,
             items: group.items.filter((item) => {
+              if (item.to === "/dashboard/mnemonico") {
+                return !adminLoading && isAdmin;
+              }
+
               const moduleKey = item.to.replace("/dashboard/", "").replace("/dashboard", "dashboard");
               return isModuleEnabled(moduleKey === "" ? "dashboard" : moduleKey);
             }),

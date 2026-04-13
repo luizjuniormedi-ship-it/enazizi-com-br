@@ -80,14 +80,17 @@ const MobileNavGroupSection = ({
   location,
   setOpen,
   isModuleEnabled,
+  isAdmin,
 }: {
   group: MobileNavGroup;
   location: ReturnType<typeof useLocation>;
   setOpen: (v: boolean) => void;
   isModuleEnabled: (key: string) => boolean;
+  isAdmin: boolean;
 }) => {
-  // Filter items by module access
   const filteredItems = group.items.filter((item) => {
+    if (item.to === "/dashboard/mnemonico") return isAdmin;
+
     const moduleKey = item.to.replace("/dashboard/", "").replace("/dashboard", "dashboard");
     return isModuleEnabled(moduleKey || "dashboard");
   });
@@ -133,7 +136,7 @@ const MobileNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { isAdmin } = useAdminCheck();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { isModuleEnabled } = useModuleAccess();
   const [open, setOpen] = useState(false);
@@ -162,7 +165,7 @@ const MobileNav = () => {
         <ScrollArea className="flex-1 min-h-0">
           <nav className="px-3 py-2 space-y-2">
             {mobileNavGroups.map((group) => (
-              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
+              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} isAdmin={!adminLoading && isAdmin} />
             ))}
             <div className="pt-3 mt-3 border-t border-sidebar-border space-y-1">
               <Link
