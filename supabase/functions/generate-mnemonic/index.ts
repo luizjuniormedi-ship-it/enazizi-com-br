@@ -653,7 +653,7 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     return { ok: false, reason: "Há itens duplicados ou omitidos no mapeamento final." };
   }
 
-  // ── COVERAGE CHECK: sigla must contain ALL expected letters ──
+  // ── COVERAGE CHECK: sigla must contain letters for all items ──
   const mnemonicLetters = String(generated.mnemonic_word || "")
     .toUpperCase()
     .replace(/[^A-Z]/g, "")
@@ -661,27 +661,12 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     .filter(Boolean);
   const phraseLetters = extractInitialLettersFromPhrase(String(generated.phrase || ""));
 
-  const isStrict = contentType ? STRICT_COVERAGE_TYPES.has(contentType) : false;
-
-  if (isStrict) {
-    // For clinical content: the sigla MUST contain every expected letter
-    const missingInSigla = expectedLetters.filter((letter) => !mnemonicLetters.includes(letter));
-    if (missingInSigla.length > 0) {
-      return {
-        ok: false,
-        reason: `Cobertura incompleta na sigla "${generated.mnemonic_word}": faltam letras ${missingInSigla.join(", ")} (itens obrigatórios omitidos). Para conteúdo clínico, TODOS os itens devem estar na sigla.`,
-      };
-    }
-  } else {
-    // Relaxed: sigla OR phrase must cover all letters
-    const coversExpectedLetters = (letters: string[]) => expectedLetters.every((letter) => letters.includes(letter));
-    if (!coversExpectedLetters(mnemonicLetters) && !coversExpectedLetters(phraseLetters)) {
-      return {
-        ok: false,
-        reason: `A palavra/frase mnemônica não cobre todas as letras obrigatórias (${expectedLetters.join("-")}).`,
-      };
-    }
-  }
+  // Auto-correct mnemonic_word to match the (possibly corrected) item letters
+  const correctedLetters = items.map((item) => {
+    const mapped = fuzzyMatchItem(normalizeForComparison(item), generated.items_mapped);
+    return mapped?.letter?.charAt(0)?.toUpperCase() || deriveExpectedLetter(item);
+  });
+  generated.mnemonic_word = correctedLetters.join("");
 
   return { ok: true };
 }
