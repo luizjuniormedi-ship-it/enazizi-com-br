@@ -68,7 +68,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/proficiencia", icon: GraduationCap, label: "Proficiência" },
       { to: "/dashboard/coach", icon: Heart, label: "Coach" },
       { to: "/dashboard/planner", icon: CalendarDays, label: "Plano Estratégico" },
-      { to: "/dashboard/mnemonico", icon: Brain, label: "Mnemônico" },
+      // Mnemônico movido para seção admin-only abaixo
     ],
   },
 ];
