@@ -599,10 +599,10 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
 
     mappedOriginals.add(normalizedItem);
 
-    const expectedLetter = deriveExpectedLetter(item);
+    const acceptableLetters = deriveAcceptableLetters(item);
     const actualLetter = String(mapped.letter || "").trim().charAt(0).toUpperCase();
-    if (actualLetter !== expectedLetter) {
-      return { ok: false, reason: `Letra inválida para "${item}": esperado ${expectedLetter}, recebido ${actualLetter || "vazio"}.` };
+    if (!acceptableLetters.includes(actualLetter)) {
+      return { ok: false, reason: `Letra inválida para "${item}": aceitas [${acceptableLetters.join(",")}], recebido ${actualLetter || "vazio"}.` };
     }
 
     const anchorBundle = normalizeForComparison([
