@@ -64,6 +64,7 @@ const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartP
 const AdminMonitoring = lazyWithRetry(() => import("./pages/AdminMonitoring"), "AdminMonitoring");
 const AdminCEO = lazyWithRetry(() => import("./pages/AdminCEO"), "AdminCEO");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
+const MissionControlPage = lazyWithRetry(() => import("./pages/MissionControlPage"), "MissionControlPage");
 const MissionEntry = lazyWithRetry(() => import("./pages/MissionEntry"), "MissionEntry");
 const StudySession = lazyWithRetry(() => import("./pages/StudySession"), "StudySession");
 const Rankings = lazyWithRetry(() => import("./pages/Rankings"), "Rankings");
@@ -173,6 +174,9 @@ const App = () => (
               </Route>
               <Route path="/mission" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<MissionMode />} />
+              </Route>
+              <Route path="/mission-control" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                <Route index element={<MissionControlPage />} />
               </Route>
               {/* Study execution aliases */}
               <Route path="/study/tutor" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
