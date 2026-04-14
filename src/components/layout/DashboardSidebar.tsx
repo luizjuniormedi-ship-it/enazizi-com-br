@@ -264,6 +264,7 @@ const DashboardSidebar = () => {
   const hasAdminBlock = showProfessor || showAdmin || showInstitutional;
 
   return (
+    <TooltipProvider delayDuration={300}>
     <aside className={cn(
       "hidden landscape-tablet:flex lg:flex flex-col border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300",
       isStudyActive ? "w-14" : "w-52 md:w-56 lg:w-60"
@@ -285,39 +286,52 @@ const DashboardSidebar = () => {
               {filteredGroups[0]?.items.map((item) => {
                 const active = location.pathname === item.to;
                 return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    title={item.label}
-                    className={cn(
-                      "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
-                      active
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
-                    )}
-                  >
-                    {item.useAvatar ? (
-                      <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain" />
-                    ) : (
-                      <item.icon className="h-4 w-4" />
-                    )}
-                  </Link>
+                  <Tooltip key={item.to} delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.to}
+                        className={cn(
+                          "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
+                          active
+                            ? "bg-sidebar-accent text-sidebar-primary"
+                            : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                        )}
+                      >
+                        {item.useAvatar ? (
+                          <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain" />
+                        ) : (
+                          <item.icon className="h-4 w-4" />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[220px]">
+                      <p className="font-semibold text-xs">{item.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{item.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
               {/* Divider + system links */}
               <div className="border-t border-sidebar-border my-2" />
-              <Link
-                to="/dashboard/perfil"
-                title="Perfil"
-                className={cn(
-                  "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
-                  location.pathname === "/dashboard/perfil"
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"
-                )}
-              >
-                <User className="h-4 w-4" />
-              </Link>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/dashboard/perfil"
+                    className={cn(
+                      "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
+                      location.pathname === "/dashboard/perfil"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"
+                    )}
+                  >
+                    <User className="h-4 w-4" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[220px]">
+                  <p className="font-semibold text-xs">Perfil</p>
+                  <p className="text-[11px] text-muted-foreground">Gerencie seus dados, preferências e configurações</p>
+                </TooltipContent>
+              </Tooltip>
             </>
           ) : (
             /* Full expanded mode */
