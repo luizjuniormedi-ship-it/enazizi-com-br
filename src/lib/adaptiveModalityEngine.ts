@@ -150,8 +150,18 @@ function computeMetrics(rows: RawAnalyticsRow[]): Record<string, ModalityMetrics
 export async function generateAdaptiveBlueprint(userId: string): Promise<AdaptiveBlueprint> {
   const rows = await fetchUserRawAnalytics(userId);
 
-  // If no data, return neutral blueprint (no adaptation)
-  if (rows.length < 10) {
+  // Fetch visual_skill_snapshots for richer adaptation
+  let visualSnapshots: Array<{ image_type: string; accuracy: number; trend: string; attempts_count: number }> = [];
+  try {
+    const { data } = await supabase
+      .from("visual_skill_snapshots")
+      .select("image_type, accuracy, trend, attempts_count")
+      .eq("user_id", userId);
+    visualSnapshots = (data || []) as any[];
+  } catch { /* non-blocking */ }
+
+  // If no analytics data but we have visual snapshots, still adapt
+  if (rows.length < 10 && visualSnapshots.length === 0) {
     return buildNeutralBlueprint();
   }
 
@@ -248,6 +258,25 @@ export async function generateAdaptiveBlueprint(userId: string): Promise<Adaptiv
           ? `Bom domínio (${Math.round(100 - m.errorRate)}%) → manutenção`
           : `Desempenho médio → peso padrão`,
     };
+  }
+
+  // ── Boost from visual_skill_snapshots (persisted from Image Quiz) ──
+  for (const snap of visualSnapshots) {
+    const mod = snap.image_type?.toLowerCase();
+    if (!mod || !rawScores.hasOwnProperty(mod)) continue;
+    const label = MODALITY_LABELS[mod] || mod.toUpperCase();
+    // Weak snapshot → boost priority
+    if (snap.accuracy < 50) {
+      rawScores[mod] += 80;
+      insights.push({ type: "priority", modality: mod, message: `${label} está fraco no quiz visual (${snap.accuracy}%) → priorizado no simulado.` });
+    } else if (snap.accuracy < 70) {
+      rawScores[mod] += 40;
+    }
+    // Declining trend → extra boost
+    if (snap.trend === "declining") {
+      rawScores[mod] += 30;
+      insights.push({ type: "priority", modality: mod, message: `Seu desempenho em ${label} está piorando → reforço no simulado.` });
+    }
   }
 
   // Normalise scores to 0-1, respecting min/max share

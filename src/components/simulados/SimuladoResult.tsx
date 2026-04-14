@@ -353,6 +353,106 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
         </div>
       </div>
 
+      {/* ── Visual Performance Breakdown ── */}
+      {(() => {
+        const IMAGE_TYPE_LABELS: Record<string, string> = {
+          ecg: "❤️ ECG", xray: "🫁 RX Tórax", ct: "🧠 TC", us: "📡 US",
+          dermatology: "🩹 Dermato", pathology: "🔬 Patologia", ophthalmology: "👁️ Oftalmo",
+        };
+        const imgQs = questions.filter((q: any) => q._isImageQuestion && q.image_type);
+        if (imgQs.length === 0) return null;
+
+        const byType: Record<string, { correct: number; total: number }> = {};
+        imgQs.forEach((q: any) => {
+          const t = q.image_type?.toLowerCase() || "other";
+          if (!byType[t]) byType[t] = { correct: 0, total: 0 };
+          byType[t].total++;
+          const idx = questions.indexOf(q);
+          if (selectedAnswers[idx] === q.correct) byType[t].correct++;
+        });
+
+        const textQs = questions.filter((q: any) => !q._isImageQuestion);
+        const textCorrect = textQs.filter((q, i) => {
+          const idx = questions.indexOf(q);
+          return selectedAnswers[idx] === q.correct;
+        }).length;
+        const textAcc = textQs.length > 0 ? Math.round((textCorrect / textQs.length) * 100) : 0;
+        const imgCorrect = imgQs.filter((q) => {
+          const idx = questions.indexOf(q);
+          return selectedAnswers[idx] === q.correct;
+        }).length;
+        const imgAcc = imgQs.length > 0 ? Math.round((imgCorrect / imgQs.length) * 100) : 0;
+
+        const sorted = Object.entries(byType).sort((a, b) => {
+          const accA = a[1].total > 0 ? a[1].correct / a[1].total : 0;
+          const accB = b[1].total > 0 ? b[1].correct / b[1].total : 0;
+          return accA - accB;
+        });
+        const weakest = sorted[0];
+        const strongest = sorted[sorted.length - 1];
+
+        return (
+          <div className="glass-card p-6">
+            <h3 className="font-semibold mb-4 flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" /> Desempenho Visual
+            </h3>
+
+            {/* Summary badges */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+                🖼️ Imagem: {imgAcc}% ({imgCorrect}/{imgQs.length})
+              </span>
+              <span className="text-xs px-2 py-1 rounded-full bg-secondary text-secondary-foreground">
+                📝 Texto: {textAcc}% ({textCorrect}/{textQs.length})
+              </span>
+              {imgAcc < textAcc - 15 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-destructive/10 text-destructive">
+                  ⚠️ Você foi melhor em texto do que em imagem
+                </span>
+              )}
+              {imgAcc > textAcc + 15 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-600">
+                  ✨ Você foi melhor em imagem do que em texto
+                </span>
+              )}
+            </div>
+
+            {/* Per image type */}
+            <div className="space-y-3">
+              {sorted.map(([type, { correct: c, total: t }]) => {
+                const acc = Math.round((c / t) * 100);
+                const label = IMAGE_TYPE_LABELS[type] || type.toUpperCase();
+                return (
+                  <div key={type}>
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="font-medium">{label}</span>
+                      <span className="text-muted-foreground">{c}/{t} ({acc}%)</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-secondary">
+                      <div className={`h-full rounded-full transition-all ${acc >= 80 ? "bg-emerald-500" : acc >= 60 ? "bg-yellow-500" : "bg-destructive"}`} style={{ width: `${acc}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Insight messages */}
+            <div className="mt-4 space-y-1">
+              {weakest && weakest[1].total > 0 && (weakest[1].correct / weakest[1].total) < 0.6 && (
+                <p className="text-xs text-destructive">
+                  🎯 Seu ponto crítico visual: {IMAGE_TYPE_LABELS[weakest[0]] || weakest[0]} ({Math.round((weakest[1].correct / weakest[1].total) * 100)}%)
+                </p>
+              )}
+              {strongest && strongest[1].total > 0 && (strongest[1].correct / strongest[1].total) >= 0.75 && (
+                <p className="text-xs text-emerald-600">
+                  💪 Melhor desempenho: {IMAGE_TYPE_LABELS[strongest[0]] || strongest[0]} ({Math.round((strongest[1].correct / strongest[1].total) * 100)}%)
+                </p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Extreme Mode: Corrective Action Plan */}
       {(isExtremo || isProvaReal) && weakAreas.length > 0 && (
         <div className="glass-card p-6 border-destructive/20">
