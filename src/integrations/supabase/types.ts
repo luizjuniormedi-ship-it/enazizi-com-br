@@ -5833,6 +5833,48 @@ export type Database = {
         }
         Relationships: []
       }
+      study_loop_events: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          recommendation_type: string | null
+          session_id: string | null
+          subtopic: string | null
+          target_id: string | null
+          theme: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          recommendation_type?: string | null
+          session_id?: string | null
+          subtopic?: string | null
+          target_id?: string | null
+          theme?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          recommendation_type?: string | null
+          session_id?: string | null
+          subtopic?: string | null
+          target_id?: string | null
+          theme?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_performance: {
         Row: {
           created_at: string
@@ -6816,6 +6858,60 @@ export type Database = {
           event_data?: Json | null
           event_type?: string
           id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_engagement_daily: {
+        Row: {
+          elegant_exits: number | null
+          errors_encountered: number | null
+          id: string
+          loops_abandoned: number | null
+          loops_completed: number | null
+          loops_started: number | null
+          metric_date: string
+          questions_answered: number | null
+          questions_correct: number | null
+          quick_actions_used: number | null
+          reinforcements_triggered: number | null
+          sessions_count: number | null
+          total_study_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          elegant_exits?: number | null
+          errors_encountered?: number | null
+          id?: string
+          loops_abandoned?: number | null
+          loops_completed?: number | null
+          loops_started?: number | null
+          metric_date?: string
+          questions_answered?: number | null
+          questions_correct?: number | null
+          quick_actions_used?: number | null
+          reinforcements_triggered?: number | null
+          sessions_count?: number | null
+          total_study_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          elegant_exits?: number | null
+          errors_encountered?: number | null
+          id?: string
+          loops_abandoned?: number | null
+          loops_completed?: number | null
+          loops_started?: number | null
+          metric_date?: string
+          questions_answered?: number | null
+          questions_correct?: number | null
+          quick_actions_used?: number | null
+          reinforcements_triggered?: number | null
+          sessions_count?: number | null
+          total_study_seconds?: number | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
