@@ -761,6 +761,46 @@ const Simulados = () => {
         correct: answers[i] === q.correct,
       }));
       await updateDomainMap(user.id, domainEntries);
+
+      // ── Register medical_image_attempts for image questions → feeds visual_skill_snapshots ──
+      const imageQuestions = questions.filter((q: any) => q._isImageQuestion && q.image_type);
+      if (imageQuestions.length > 0) {
+        const imgAttempts = imageQuestions.map((q: any, _qi) => {
+          const origIdx = questions.indexOf(q);
+          const timePerQ = elapsedSecondsRef.current > 0 ? Math.round(elapsedSecondsRef.current / questions.length) : 30;
+          return {
+            user_id: user.id,
+            image_id: q._imageQuestionId || q.bankId || q.statement.slice(0, 36),
+            selected_index: answers[origIdx] ?? -1,
+            correct: answers[origIdx] === q.correct,
+            time_seconds: timePerQ,
+            image_type: q.image_type,
+            question_id: q._imageQuestionId || null,
+          };
+        });
+        await supabase.from("medical_image_attempts").insert(imgAttempts as any[]).then(({ error }) => {
+          if (error) console.warn("[Simulado] image_attempts insert:", error.message);
+        });
+
+        // Call study-complete for each image type to update visual_skill_snapshots
+        const imageTypes = [...new Set(imageQuestions.map((q: any) => q.image_type))];
+        for (const imgType of imageTypes) {
+          try {
+            await supabase.functions.invoke("study-complete", {
+              body: {
+                actionType: "image_quiz",
+                topicId: imgType,
+                themeId: imgType,
+                metadata: {
+                  originModule: "image_quiz",
+                  imageType: imgType,
+                  source: "simulado",
+                },
+              },
+            });
+          } catch { /* non-blocking */ }
+        }
+      }
     }
 
     await completeSession();
