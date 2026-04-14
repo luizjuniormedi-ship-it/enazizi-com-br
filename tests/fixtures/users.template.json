@@ -1,0 +1,39 @@
+{
+  "profiles": [
+    {
+      "role": "light",
+      "count": 20,
+      "behavior": "Faz 1-2 loops, usa study-next, sai"
+    },
+    {
+      "role": "moderate",
+      "count": 15,
+      "behavior": "Faz 3-5 loops, usa quick actions, completa missões"
+    },
+    {
+      "role": "intense",
+      "count": 10,
+      "behavior": "Faz 8+ loops, explora explain-deep, gera questões"
+    },
+    {
+      "role": "abandon",
+      "count": 7,
+      "behavior": "Inicia loop, abandona antes de completar"
+    },
+    {
+      "role": "error_prone",
+      "count": 5,
+      "behavior": "Erra repetidamente, aciona reinforcement e saída elegante"
+    },
+    {
+      "role": "quick_action_heavy",
+      "count": 2,
+      "behavior": "Usa todas as quick actions em sequência"
+    }
+  ],
+  "total": 59,
+  "testAccounts": {
+    "note": "Use email+alias pattern: testuser+001@enazizi.com ... testuser+059@enazizi.com",
+    "passwordPattern": "EnTest2026!{index}"
+  }
+}
