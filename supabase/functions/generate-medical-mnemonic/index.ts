@@ -197,15 +197,14 @@ function buildCtx(p: MnemonicRequest): string {
 async function getUserId(req: Request): Promise<string> {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader?.startsWith("Bearer ")) throw new Error("Authorization header ausente.");
-  const token = authHeader.replace("Bearer ", "").trim();
-  if (!token) throw new Error("Token inválido.");
 
   const sb = createClient(getEnv("SUPABASE_URL"), getEnv("SUPABASE_ANON_KEY"), {
     global: { headers: { Authorization: authHeader } },
+    auth: { persistSession: false, autoRefreshToken: false },
   });
-  const { data, error } = await sb.auth.getClaims(token);
-  if (error || !data?.claims?.sub) throw new Error("Não foi possível identificar o usuário.");
-  return data.claims.sub as string;
+  const { data, error } = await sb.auth.getUser();
+  if (error || !data?.user?.id) throw new Error("Não foi possível identificar o usuário.");
+  return data.user.id;
 }
 
 // ══════════════════════════════════════════════════
