@@ -10,6 +10,8 @@ export const BASE_SCORES = {
   fsrs: 82,
   error: 70,
   daily_task: 50,
+  image_quiz: 55,
+  mnemonic: 52,
   free_study: 10,
 } as const;
 
@@ -25,6 +27,39 @@ export const MULTIPLIERS = {
   missionActiveBoost: 1.12,
   shortSessionPenalty: 0.7,  // for tasks > available time
 } as const;
+
+// ─── Visual / mnemonic topic patterns ────────────────────────────────
+
+/** Topics that benefit from image-based training */
+export const VISUAL_TOPIC_PATTERNS = [
+  /ecg/i, /eletrocardiograma/i, /radiografia/i, /raio.?x/i, /rx\b/i,
+  /tomografia/i, /\btc\b/i, /ultrassonografia/i, /\bus\b/i, /ultrassom/i,
+  /dermatologia/i, /lesão de pele/i, /lesões cutâneas/i,
+  /oftalmologia/i, /fundo de olho/i, /retinografia/i,
+  /patologia/i, /lâmina/i, /histopatol/i, /anatomia patol/i,
+  /imagem/i, /ressonância/i, /\brm\b/i, /\brnm\b/i,
+];
+
+/** Topics that benefit from mnemonic reinforcement */
+export const MNEMONIC_TOPIC_PATTERNS = [
+  /critérios/i, /classificação/i, /estadiamento/i,
+  /farmacologia/i, /fármaco/i, /droga/i, /medicament/i,
+  /diagnóstico diferencial/i, /diferencial/i,
+  /síndrome/i, /sinais e sintomas/i, /semiologia/i,
+  /decoreba/i, /mnemônico/i,
+  /fases\b/i, /etapas\b/i, /tipos\b/i,
+  /insuficiência/i, /infecção/i, /intoxicação/i,
+];
+
+export function isVisualTopic(tema: string, subtema?: string): boolean {
+  const text = `${tema} ${subtema ?? ""}`;
+  return VISUAL_TOPIC_PATTERNS.some((p) => p.test(text));
+}
+
+export function isMnemonicTopic(tema: string, subtema?: string): boolean {
+  const text = `${tema} ${subtema ?? ""}`;
+  return MNEMONIC_TOPIC_PATTERNS.some((p) => p.test(text));
+}
 
 // ─── Approval-zone helper ────────────────────────────────────────────
 export type ApprovalZone = "critico" | "atencao" | "competitivo" | "pronto";
@@ -57,6 +92,8 @@ export interface ScoringContext {
   examProximityDays: number | null;
   now: string; // ISO
   today: string; // YYYY-MM-DD
+  /** Count of published image quiz questions available */
+  imageQuizAvailable: number;
 }
 
 // ─── Individual scorers ──────────────────────────────────────────────
@@ -196,6 +233,121 @@ export function scoreFreeStudy(ctx: ScoringContext): number {
   return Math.round(s);
 }
 
+// ─── NEW: Image Quiz scorer ─────────────────────────────────────────
+/**
+ * Scores an Image Quiz recommendation based on visual-topic errors.
+ * Only generates a candidate if the student has visual-related weaknesses
+ * AND there are published image questions available.
+ */
+export function scoreImageQuiz(
+  visualErrors: Array<{
+    tema: string;
+    subtema?: string;
+    vezes_errado: number;
+    updated_at?: string;
+  }>,
+  ctx: ScoringContext,
+): { score: number; bestTopic: typeof visualErrors[0] | null } {
+  if (ctx.imageQuizAvailable === 0 || visualErrors.length === 0) {
+    return { score: 0, bestTopic: null };
+  }
+
+  let s = BASE_SCORES.image_quiz;
+
+  // Pick the most problematic visual topic
+  const best = visualErrors.reduce((a, b) =>
+    b.vezes_errado > a.vezes_errado ? b : a
+  );
+
+  // Error frequency boost (+5 per error, max +20)
+  s += Math.min(20, best.vezes_errado * 5);
+
+  // Recency boost — recent visual errors are more urgent
+  if (best.updated_at) {
+    const daysSince = (Date.now() - new Date(best.updated_at).getTime()) / 86_400_000;
+    if (daysSince <= 3) s += 10;
+    else if (daysSince <= 7) s += 5;
+  }
+
+  // Multiple visual weaknesses compound the need
+  if (visualErrors.length >= 3) s += 8;
+  else if (visualErrors.length >= 2) s += 4;
+
+  // Approval zone: image quiz is remedial for visual gaps
+  s *= approvalMultiplier(ctx.approvalZone, true);
+
+  // Recovery mode: visual training can be a useful change of pace
+  if (ctx.recoveryActive) s *= 1.05;
+
+  // Exam proximity: visual questions are common in exams
+  if (ctx.examProximityDays !== null && ctx.examProximityDays <= 30) s += 8;
+
+  // Short sessions: image quiz is quick (5-10 min)
+  if (ctx.sessionMinutes && ctx.sessionMinutes < 15) s += 5;
+
+  return { score: Math.min(130, Math.round(s)), bestTopic: best };
+}
+
+// ─── NEW: Mnemonic scorer ───────────────────────────────────────────
+/**
+ * Scores a Mnemonic recommendation based on repeated errors
+ * on memorization-heavy topics.
+ */
+export function scoreMnemonic(
+  mnemonicCandidateErrors: Array<{
+    tema: string;
+    subtema?: string;
+    vezes_errado: number;
+    categoria_erro?: string;
+    updated_at?: string;
+  }>,
+  ctx: ScoringContext,
+): { score: number; bestTopic: typeof mnemonicCandidateErrors[0] | null } {
+  if (mnemonicCandidateErrors.length === 0) {
+    return { score: 0, bestTopic: null };
+  }
+
+  let s = BASE_SCORES.mnemonic;
+
+  // Pick most repeated error on a mnemonic-friendly topic
+  const best = mnemonicCandidateErrors.reduce((a, b) =>
+    b.vezes_errado > a.vezes_errado ? b : a
+  );
+
+  // Error frequency is THE key driver for mnemonic recommendation
+  // 2 errors = baseline, 3+ = increasingly beneficial
+  const errs = best.vezes_errado;
+  if (errs >= 4) s += 25;
+  else if (errs >= 3) s += 18;
+  else if (errs >= 2) s += 10;
+  else return { score: 0, bestTopic: null }; // don't recommend mnemonic for single errors
+
+  // Recency: recent errors make mnemonic more urgent
+  if (best.updated_at) {
+    const daysSince = (Date.now() - new Date(best.updated_at).getTime()) / 86_400_000;
+    if (daysSince <= 3) s += 8;
+    else if (daysSince <= 7) s += 4;
+  }
+
+  // Conceptual errors benefit most from mnemonics
+  if (best.categoria_erro === "conceitual") s += 6;
+  if (best.categoria_erro === "memorização") s += 10;
+
+  // Multiple mnemonic-worthy topics compound the need
+  if (mnemonicCandidateErrors.length >= 3) s += 6;
+
+  // Approval zone: mnemonic is remedial
+  s *= approvalMultiplier(ctx.approvalZone, true);
+
+  // Recovery mode: mnemonics are low-effort and helpful
+  if (ctx.recoveryActive) s *= 1.1;
+
+  // Short sessions: mnemonics are quick
+  if (ctx.sessionMinutes && ctx.sessionMinutes < 15) s += 5;
+
+  return { score: Math.min(130, Math.round(s)), bestTopic: best };
+}
+
 // ─── Justification builder ──────────────────────────────────────────
 
 export function buildJustification(
@@ -204,6 +356,8 @@ export function buildJustification(
     fsrs: number;
     errors: number;
     tasks: number;
+    visualErrors?: number;
+    mnemonicCandidates?: number;
   },
   ctx: ScoringContext,
   chosenType: string,
@@ -231,6 +385,16 @@ export function buildJustification(
   if (ctx.missionActive && chosenType === "daily_task")
     parts.push("missão ativa — seguindo plano do dia");
 
+  // NEW: Image quiz justification
+  if (chosenType === "image_quiz") {
+    parts.push("dificuldade recorrente em interpretação visual — treino com imagens tem mais impacto agora");
+  }
+
+  // NEW: Mnemonic justification
+  if (chosenType === "mnemonic") {
+    parts.push("erro repetido em conteúdo de memorização — mnemônico pode consolidar melhor a memória");
+  }
+
   if (parts.length === 0) return "Nenhuma pendência crítica. Estudo livre recomendado.";
   return parts.join(". ") + ".";
 }
@@ -245,6 +409,8 @@ export interface ScoredCandidate {
   targetType?: string;
   estimatedMinutes: number;
   priorityScore: number;
+  /** Optional context payload for the frontend to use when launching the module */
+  contextPayload?: Record<string, unknown>;
 }
 
 export function pickDiverseAlternatives(

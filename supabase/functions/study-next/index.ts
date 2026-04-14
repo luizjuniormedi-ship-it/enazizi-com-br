@@ -1,5 +1,5 @@
 /**
- * study-next — API Assistente Phase 1 (v2 — composite scoring)
+ * study-next — API Assistente Phase 1 (v3 — composite scoring + image_quiz + mnemonic)
  * Returns the next recommended study action with weighted justification.
  * Purely deterministic — no AI calls.
  */
@@ -11,6 +11,8 @@ import {
 import {
   ScoringContext, getApprovalZone,
   scoreReview, scoreFSRS, scoreError, scoreDailyTask, scoreFreeStudy,
+  scoreImageQuiz, scoreMnemonic,
+  isVisualTopic, isMnemonicTopic,
   buildJustification, pickDiverseAlternatives,
   type ScoredCandidate,
 } from "../_shared/study-next-scoring.ts";
@@ -27,10 +29,11 @@ serve(async (req) => {
     const now = new Date().toISOString();
     const today = now.slice(0, 10);
 
-    // ── Parallel data fetch ──
+    // ── Parallel data fetch (existing + new image quiz count) ──
     const [
       pendingReviews, errorBankItems, dailyPlanToday, dailyTasks,
       fsrsDue, approvalData, profile, gamification,
+      imageQuizCount,
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) =>
         c.from("revisoes")
@@ -80,6 +83,13 @@ serve(async (req) => {
           .select("current_streak")
           .eq("user_id", userId).maybeSingle(),
         "gamification"),
+      // NEW: check if published image quiz questions exist (lightweight)
+      safeQuery<any[]>(db, (c) =>
+        c.from("medical_image_questions")
+          .select("id")
+          .eq("status", "published")
+          .limit(1),
+        "image_quiz_check"),
     ]);
 
     const reviews = pendingReviews ?? [];
@@ -89,6 +99,9 @@ serve(async (req) => {
     const approvalScore = approvalData?.score ?? 0;
     const recoveryActive = dailyPlanToday?.recovery_mode ?? false;
     const contentLocked = dailyPlanToday?.content_lock ?? false;
+
+    // Image quiz availability — check if any published questions exist
+    const imgQuizAvailable = Array.isArray(imageQuizCount) ? imageQuizCount.length : 0;
 
     // ── Exam proximity ──
     let examProximityDays: number | null = null;
@@ -108,7 +121,14 @@ serve(async (req) => {
       examProximityDays,
       now,
       today,
+      imageQuizAvailable: imgQuizAvailable,
     };
+
+    // ── Classify errors by type for new scorers ──
+    const visualErrors = errors.filter((e: any) => isVisualTopic(e.tema, e.subtema));
+    const mnemonicErrors = errors.filter((e: any) =>
+      isMnemonicTopic(e.tema, e.subtema) && (e.vezes_errado ?? 0) >= 2
+    );
 
     // ── Score all candidates ──
     const candidates: ScoredCandidate[] = [];
@@ -163,6 +183,45 @@ serve(async (req) => {
       });
     }
 
+    // ── NEW: Image Quiz candidate ──
+    const imgResult = scoreImageQuiz(visualErrors, ctx);
+    if (imgResult.score > 0 && imgResult.bestTopic) {
+      const topic = imgResult.bestTopic;
+      candidates.push({
+        type: "image_quiz",
+        title: `Treino visual: ${topic.tema}`,
+        description: `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`,
+        targetType: "image_quiz",
+        estimatedMinutes: 8,
+        priorityScore: imgResult.score,
+        contextPayload: {
+          topic: topic.tema,
+          subtopic: topic.subtema,
+          errorCount: topic.vezes_errado,
+        },
+      });
+    }
+
+    // ── NEW: Mnemonic candidate ──
+    const mnemResult = scoreMnemonic(mnemonicErrors, ctx);
+    if (mnemResult.score > 0 && mnemResult.bestTopic) {
+      const topic = mnemResult.bestTopic;
+      candidates.push({
+        type: "mnemonic",
+        title: `Fixar com mnemônico: ${topic.tema}`,
+        description: `Você já errou "${topic.tema}" ${topic.vezes_errado}x. Um mnemônico pode ajudar a consolidar.`,
+        targetType: "mnemonic",
+        estimatedMinutes: 5,
+        priorityScore: mnemResult.score,
+        contextPayload: {
+          topic: topic.tema,
+          subtopic: topic.subtema,
+          errorCount: topic.vezes_errado,
+          errorCategory: topic.categoria_erro,
+        },
+      });
+    }
+
     // Free-study fallback candidate
     candidates.push({
       type: "free_study",
@@ -180,7 +239,12 @@ serve(async (req) => {
 
     // ── Justification ──
     const justification = buildJustification(
-      { reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length, tasks: tasks.length },
+      {
+        reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length,
+        tasks: tasks.length,
+        visualErrors: visualErrors.length,
+        mnemonicCandidates: mnemonicErrors.length,
+      },
       ctx,
       recommendation.type,
     );
@@ -193,6 +257,10 @@ serve(async (req) => {
       pendingReviews: reviews.length + fsrsCards.length,
       weakTopicsCount: new Set(errors.map((e: any) => e.tema)).size,
       examProximityDays,
+      // NEW: signal counts for frontend awareness
+      visualWeaknesses: visualErrors.length,
+      mnemonicCandidates: mnemonicErrors.length,
+      imageQuizAvailable: imgQuizAvailable,
     };
 
     // ── Log decision ──
@@ -205,6 +273,9 @@ serve(async (req) => {
         fsrs: fsrsCards.length, tasks: tasks.length,
         approvalScore, recoveryActive, contentLocked,
         examProximityDays, sessionMinutes: ctx.sessionMinutes,
+        visualErrors: visualErrors.length,
+        mnemonicCandidates: mnemonicErrors.length,
+        imageQuizAvailable: imgQuizAvailable,
       },
       decision_output: {
         recommendation: recommendation.type, title: recommendation.title,
