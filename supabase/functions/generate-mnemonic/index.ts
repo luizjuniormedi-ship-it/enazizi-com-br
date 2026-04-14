@@ -106,25 +106,31 @@ const SCORE_LINGUISTICO_MIN = 85;
 // PROMPTS
 // ══════════════════════════════════════════════════
 
-const PROMPT_GERADOR = `Você é um professor brasileiro de medicina e especialista em memorização clínica.
-Crie mnemônicos médicos em português do Brasil, naturais, claros e realmente utilizáveis em aula.
+const PROMPT_GERADOR = `Você é um professor brasileiro carismático de medicina, famoso por criar frases inesquecíveis para seus alunos.
 
-Regras obrigatórias:
-- incluir todos os termos sem omitir nenhum
-- não trocar o sentido clínico
-- não usar sinônimos que alterem precisão
-- escrever em português do Brasil natural
-- evitar frases artificiais, truncadas ou sem sentido
-- evitar siglas impronunciáveis
-- priorizar frases que soem bem ao falar em voz alta
-- priorizar memorização real
-- priorizar clareza e sonoridade
-- se a sigla ficar ruim, prefira uma frase mnemônica forte em vez de sigla forçada
+Sua missão: criar um mnemônico médico em português do Brasil que seja IMPOSSÍVEL de esquecer.
+
+PROCESSO MENTAL OBRIGATÓRIO:
+Antes de responder, simule como um estudante ouviria essa frase em voz alta.
+Se não for fácil de lembrar em 5 segundos, reescreva.
+
+Regras de ouro:
+- A frase deve soar como algo dito numa aula informal — natural, fluida, falada
+- Priorize humor, imagem mental forte ou ritmo de fala
+- NUNCA comece com "Paciente com...", "Lembre que...", "Para memorizar..."
+- Frases curtas vencem. Máximo 15 palavras na frase mnemônica
+- Cada palavra da frase deve começar com a letra do termo correspondente
+- Incluir TODOS os termos sem omitir nenhum
+- Não trocar o sentido clínico
+- Se a sigla ficar impronunciável, prefira uma frase forte sem sigla forçada
+- A frase deve ter RITMO — teste lendo em voz alta mentalmente
+- Prefira palavras do cotidiano brasileiro, não linguagem acadêmica na frase
+- Use criatividade: cenários absurdos, engraçados ou visuais memorizam melhor
 
 Retorne SOMENTE JSON válido com:
 {
-  "sigla": "string",
-  "frase_mnemonica": "string",
+  "sigla": "string (somente se pronunciável, senão vazio)",
+  "frase_mnemonica": "string (curta, impactante, falável)",
   "explicacao_tecnica": "string",
   "explicacao_didatica": "string",
   "associacoes": [
@@ -134,23 +140,25 @@ Retorne SOMENTE JSON válido com:
   "observacoes": ["string"]
 }`;
 
-const PROMPT_AUDITOR_LINGUISTICO = `Você é um especialista em língua portuguesa do Brasil aplicada ao ensino médico.
+const PROMPT_AUDITOR_LINGUISTICO = `Você é um linguista brasileiro especializado em didática médica e oralidade.
 
-Avalie se o mnemônico:
-- soa natural em português do Brasil
-- tem sentido claro
-- é pronunciável
-- é memorizável
-- parece algo que um professor brasileiro usaria em aula
-- evita construções artificiais
-- evita siglas ruins ou impronunciáveis
+Avalie o mnemônico com RIGOR nos seguintes critérios:
+1. FLUIDEZ ORAL — Leia em voz alta mentalmente. Flui naturalmente? Tem ritmo?
+2. NATURALIDADE — Parece algo que um professor brasileiro falaria em aula?
+3. SENTIDO — A frase faz sentido por si só (mesmo fora do contexto médico)?
+4. MEMORABILIDADE — Um estudante lembraria após ouvir 2x?
+5. PRONÚNCIA — A sigla é pronunciável? A frase é falável sem tropeçar?
+6. ARTIFICIALIDADE — Há palavras forçadas, traduções ruins ou construções robóticas?
 
-Dê nota de 0 a 100.
-Se houver falha, produza uma versão corrigida linguisticamente melhor.
+Dê nota de 0 a 100 para score_linguistico.
+Dê nota de 0 a 100 para fluidez_fala (quão bem a frase flui ao ser falada em voz alta).
+
+Se score_linguistico < 85 OU fluidez_fala < 80, OBRIGATORIAMENTE produza versao_corrigida.
 
 Retorne SOMENTE JSON válido com:
 {
   "score_linguistico": 0,
+  "fluidez_fala": 0,
   "soa_natural": true,
   "tem_sentido": true,
   "memoravel": true,
@@ -226,6 +234,10 @@ Regras:
 - descrever uma cena única, coesa, estilo infográfico médico/cartoon limpo
 - proibido incluir textos, letras ou rótulos na cena
 - usar alto contraste e cores saturadas sobre fundo branco
+
+REGRAS OBRIGATÓRIAS para prompt_imagem:
+O prompt DEVE começar com: "Clean medical infographic illustration, flat design, high contrast, saturated colors, pure white background, no text, no labels, no letters."
+Depois descreva a cena com objetos claros e distintos.
 
 Retorne SOMENTE JSON válido com:
 {
