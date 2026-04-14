@@ -67,6 +67,7 @@ const imageTypeLabels: Record<string, string> = {
 const SELECT_FIELDS = `
   id, statement, option_a, option_b, option_c, option_d, option_e,
   correct_index, explanation, difficulty, exam_style,
+  discussion, exam_tips, pitfalls,
   medical_image_assets!inner(
     image_url, image_type, diagnosis, is_active,
     review_status, clinical_confidence, integrity_status,
@@ -131,9 +132,12 @@ function mapRows(data: any[]): ImageQuestion[] {
           explanation: q.explanation,
           difficulty: q.difficulty,
           exam_style: q.exam_style,
-          image_url: null, // blocked
+          image_url: null,
           image_type: asset?.image_type || null,
           diagnosis: asset?.diagnosis || null,
+          discussion: q.discussion || null,
+          exam_tips: q.exam_tips || [],
+          pitfalls: q.pitfalls || [],
         } as ImageQuestion;
       }
       const imageUrl = asset?.image_url || null;
@@ -149,6 +153,9 @@ function mapRows(data: any[]): ImageQuestion[] {
         image_url: imageUrl,
         image_type: asset?.image_type || null,
         diagnosis: asset?.diagnosis || null,
+        discussion: q.discussion || null,
+        exam_tips: q.exam_tips || [],
+        pitfalls: q.pitfalls || [],
       } as ImageQuestion;
     })
     .filter(Boolean) as ImageQuestion[];
