@@ -154,7 +154,7 @@ async function fetchQuestionsWithFallback(
   return { questions: mapRows(d3 || []), tier: "tier3" };
 }
 
-
+const MedicalImageQuiz = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
