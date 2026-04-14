@@ -514,7 +514,7 @@ const MedicalImageQuiz = () => {
           {/* Quiz Card */}
           <Card className="overflow-hidden">
             {/* Image */}
-            {currentQuestion.image_url && isImageUrlClinical(currentQuestion.image_url) && (
+            {currentQuestion.image_url && isValidMedicalImageUrl(currentQuestion.image_url) && (
               <div
                 className="relative bg-black/90 flex items-center justify-center min-h-[250px] sm:min-h-[350px] cursor-zoom-in group"
                 onClick={() => setZoomImage(currentQuestion.image_url)}
@@ -550,7 +550,7 @@ const MedicalImageQuiz = () => {
             )}
 
             {/* No image fallback — required when the asset is invalid or unavailable */}
-            {(!currentQuestion.image_url || !isImageUrlClinical(currentQuestion.image_url)) && (
+            {(!currentQuestion.image_url || !isValidMedicalImageUrl(currentQuestion.image_url)) && (
               <div className="bg-muted/30 border-b border-border flex flex-col items-center justify-center min-h-[200px] gap-3 p-6">
                 <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground text-center">
@@ -648,7 +648,7 @@ const MedicalImageQuiz = () => {
               }}
             >
               <div className="relative bg-black/80 h-40 flex items-center justify-center">
-                {q.image_url && isImageUrlClinical(q.image_url) ? (
+                {q.image_url && isValidMedicalImageUrl(q.image_url) ? (
                   <img
                     src={q.image_url}
                     alt="Quiz"
