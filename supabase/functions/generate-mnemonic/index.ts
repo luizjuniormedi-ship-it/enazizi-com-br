@@ -659,8 +659,13 @@ async function runAgent<T>(
           ? outRecord.score_linguistico
           : undefined;
 
-    // Truncate output for logs to avoid huge payloads
-    const truncatedOutput = JSON.stringify(output).substring(0, 500);
+    // Truncate output for logs to keep DB lean
+    const safeOutput = (() => {
+      try {
+        const s = JSON.stringify(output);
+        return s.length > 1000 ? { _truncated: true, preview: s.substring(0, 500) } : output;
+      } catch { return { _error: "non-serializable" }; }
+    })();
 
     await insertAgentLog(db, {
       request_id: requestId,
@@ -669,10 +674,7 @@ async function runAgent<T>(
       execution_order: order,
       status: "completed",
       input_json: { userPrompt: userPrompt.substring(0, 500) },
-      output_json: JSON.parse(truncatedOutput + (JSON.stringify(output).length > 500 ? '"}' : '')),
-      score: score as number | undefined,
-      duration_ms: duration,
-    });
+      output_json: safeOutput,
       score: score as number | undefined,
       duration_ms: duration,
     });
