@@ -1,4 +1,36 @@
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
+import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
+import { useCoreData } from "@/hooks/useCoreData";
+import { useStudyLoop } from "@/hooks/useStudyLoop";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
+import { supabase } from "@/integrations/supabase/client";
+
+import MissionHeroCard from "@/components/mission-control/MissionHeroCard";
+import MissionJustification from "@/components/mission-control/MissionJustification";
+import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
+import MissionQuickActions from "@/components/mission-control/MissionQuickActions";
+import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
+import MissionControlError from "@/components/mission-control/MissionControlError";
+import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
+import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
+import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
+import SafeCard from "@/components/layout/SafeCard";
+import XpWidget from "@/components/gamification/XpWidget";
+import AchievementToast from "@/components/gamification/AchievementToast";
+
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Loader2, Flame, Target, RotateCcw, TrendingUp, CheckCircle2 } from "lucide-react";
+import { fireCelebration } from "@/lib/celebrations";
+
+const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
+const ExamSetupReminder = lazy(() => import("@/components/dashboard/ExamSetupReminder"));
 
 const EXAM_LABELS: Record<string, string> = {
   enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
@@ -8,420 +40,307 @@ const EXAM_LABELS: Record<string, string> = {
   "sirio-libanes": "Sírio-Libanês", outra: "Outra",
 };
 
-import { useEffect, useRef, lazy, Suspense, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import SafeCard from "@/components/layout/SafeCard";
-import { Loader2, Target, Calendar, Flame, ClipboardList } from "lucide-react";
-import XpWidget from "@/components/gamification/XpWidget";
-import AchievementToast from "@/components/gamification/AchievementToast";
+interface CompletionHandoff {
+  completedTitle: string;
+  badges?: string[];
+}
 
-// Dashboard 2.0 — Action-focused blocks
-import HeroStudyCard from "@/components/dashboard/HeroStudyCard";
-import ExamReadinessCard from "@/components/dashboard/ExamReadinessCard";
-import MentorshipBanner from "@/components/dashboard/MentorshipBanner";
-import SmartAlertCard from "@/components/dashboard/SmartAlertCard";
-import StreakBanner from "@/components/dashboard/StreakBanner";
-import WeeklyEvolutionBar from "@/components/dashboard/WeeklyEvolutionBar";
-import WeeklyGoalsCard from "@/components/dashboard/WeeklyGoalsCard";
-import FreeStudyCard from "@/components/dashboard/FreeStudyCard";
-import ActiveVideoRoomBanner from "@/components/dashboard/ActiveVideoRoomBanner";
-import ExamSetupReminder from "@/components/dashboard/ExamSetupReminder";
-import AdminMessagesBanner from "@/components/dashboard/AdminMessagesBanner";
-import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
-import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
+/* ─── Compact Stats Strip ─── */
+function StatsStrip({
+  approvalScore,
+  pendingReviews,
+  streak,
+  todayCompleted,
+  todayTotal,
+}: {
+  approvalScore: number;
+  pendingReviews: number;
+  streak: number;
+  todayCompleted: number;
+  todayTotal: number;
+}) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <MiniStat icon={<Target className="h-4 w-4 text-primary" />} label="Aprovação" value={`${approvalScore}%`} />
+      <MiniStat icon={<RotateCcw className="h-4 w-4 text-amber-500" />} label="Revisões" value={String(pendingReviews)} highlight={pendingReviews > 5} />
+      <MiniStat icon={<Flame className="h-4 w-4 text-orange-500" />} label="Streak" value={`${streak}d`} />
+      <MiniStat icon={<TrendingUp className="h-4 w-4 text-emerald-500" />} label="Hoje" value={`${todayCompleted}/${todayTotal}`} />
+    </div>
+  );
+}
 
-import ResumeMissionBanner from "@/components/dashboard/ResumeMissionBanner";
-import DashboardSummaryCard from "@/components/dashboard/DashboardSummaryCard";
-import PreparationIndexCard from "@/components/dashboard/PreparationIndexCard";
-import DashboardMetricsGrid from "@/components/dashboard/DashboardMetricsGrid";
-import DailyPlanWidget from "@/components/dashboard/DailyPlanWidget";
-import DailyGoalWidget from "@/components/dashboard/DailyGoalWidget";
-import AdaptiveProgressDashboard from "@/components/dashboard/AdaptiveProgressDashboard";
+function MiniStat({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
+  return (
+    <Card className={`border-border/50 ${highlight ? "border-destructive/30" : ""}`}>
+      <CardContent className="p-3 flex items-center gap-2.5">
+        <div className="shrink-0">{icon}</div>
+        <div className="min-w-0">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
+          <p className="text-lg font-bold tabular-nums leading-tight">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
-import { useMessageDelivery } from "@/hooks/useMessageDelivery";
-import { useDashboardData } from "@/hooks/useDashboardData";
-import { useCoreData } from "@/hooks/useCoreData";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
-import { fireCelebration } from "@/lib/celebrations";
-import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
-import { useIsMobile } from "@/hooks/use-mobile";
-
-// Lazy load popups — only 1 per session via queue
-const WhatsNewPopup = lazy(() => import("@/components/dashboard/WhatsNewPopup"));
-const SystemGuidePopup = lazy(() => import("@/components/dashboard/SystemGuidePopup"));
-const FeedbackSurveyPopup = lazy(() => import("@/components/dashboard/FeedbackSurveyPopup"));
-const OnboardingTour = lazy(() => import("@/components/dashboard/OnboardingTour"));
-const DashboardSmartPopups = lazy(() => import("@/components/onboarding/DashboardSmartPopups"));
-const EndOfDaySummary = lazy(() => import("@/components/dashboard/EndOfDaySummary"));
-
-// Lazy load drill-down content
-const DashboardCharts = lazy(() => import("@/components/dashboard/DashboardCharts"));
-const SpecialtyProgressCard = lazy(() => import("@/components/dashboard/SpecialtyProgressCard"));
-const TopicEvolution = lazy(() => import("@/components/dashboard/TopicEvolution"));
-const ApprovalTimeline = lazy(() => import("@/components/dashboard/ApprovalTimeline"));
-const StreakCalendar = lazy(() => import("@/components/dashboard/StreakCalendar"));
-const WeeklyProgressCard = lazy(() => import("@/components/dashboard/WeeklyProgressCard"));
-const MiniLeaderboard = lazy(() => import("@/components/dashboard/MiniLeaderboard"));
-const SpecialtyBenchmark = lazy(() => import("@/components/dashboard/SpecialtyBenchmark"));
-const CurriculumCoverageCard = lazy(() => import("@/components/dashboard/CurriculumCoverageCard"));
-const InstallAppBanner = lazy(() => import("@/components/dashboard/InstallAppBanner"));
-
-const ChartFallback = () => (
-  <Card>
-    <CardContent className="p-6">
-      <Skeleton className="h-6 w-40 mb-4" />
-      <Skeleton className="h-48 w-full rounded-lg" />
-    </CardContent>
-  </Card>
-);
-
-type SectionKey = "desempenho" | "cronograma" | "streak" | "simulados" | null;
-
+/* ═══════════════════════════════════════════════════
+   DASHBOARD — Unified Mission Hub
+   ═══════════════════════════════════════════════════ */
 const Dashboard = () => {
   useRevisionNotifier();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { evaluateAndDeliver } = useMessageDelivery();
   const { isEnabled, loading: flagsLoading } = useFeatureFlags();
-  useCoreData(); // preload shared data layer
-  const { data, isLoading } = useDashboardData();
-  const prevLevelRef = useRef<number | null>(null);
-  const prevStreakRef = useRef<number | null>(null);
+  const { data: coreData } = useCoreData();
+  const { data: dashData, isLoading: dashLoading } = useDashboardData();
 
-  // Redirect to MissionEntry on fresh login if flag enabled
+  // Mission engine
+  const { data, isLoading: missionLoading, isError, error, refresh, isFetching } = useStudyNext();
+  const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
+  const loop = useStudyLoop();
+
+  const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
+  const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
+  const [heroHighlight, setHeroHighlight] = useState(false);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const prevLevelRef = useRef<number | null>(null);
+
+  const activeRec = overrideRec ?? data?.recommendation;
+  const justification = data?.justification ?? "";
+  const alternatives = data?.alternativeActions ?? [];
+  const adaptiveState = data?.adaptiveState;
+
+  const streak = coreData?.gamification?.current_streak ?? snapshot?.streak ?? 0;
+  const loopActive = loop.phase !== "idle";
+
+  // Celebrations
+  useEffect(() => {
+    if (!dashData) return;
+    const { metrics } = dashData;
+    if (prevLevelRef.current !== null && metrics.gamificationLevel > prevLevelRef.current) {
+      fireCelebration("levelup");
+    }
+    prevLevelRef.current = metrics.gamificationLevel;
+  }, [dashData]);
+
+  // Redirect to MissionEntry on fresh login
   useEffect(() => {
     if (flagsLoading) return;
     if (!isEnabled("mission_entry_enabled")) return;
     const loginTs = localStorage.getItem("enazizi_last_login_ts");
     if (!loginTs) return;
     const elapsed = Date.now() - Number(loginTs);
-    // Only redirect if login happened < 15 seconds ago (fresh login)
     if (elapsed < 15_000) {
       localStorage.removeItem("enazizi_last_login_ts");
       navigate("/mission", { replace: true });
     }
   }, [flagsLoading, isEnabled, navigate]);
-  const [openSection, setOpenSection] = useState<SectionKey>(null);
-  const isMobile = useIsMobile();
 
-  // Realtime subscription with debounce for critical tables
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingKeysRef = useRef<Set<string>>(new Set());
-
+  // Realtime invalidation
   useEffect(() => {
     if (!user?.id) return;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    const pending = new Set<string>();
 
-    const debouncedInvalidate = (keys: string[][]) => {
-      keys.forEach(k => pendingKeysRef.current.add(JSON.stringify(k)));
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = setTimeout(() => {
-        pendingKeysRef.current.forEach(k =>
-          queryClient.invalidateQueries({ queryKey: JSON.parse(k) })
-        );
-        pendingKeysRef.current.clear();
+    const debounced = (keys: string[][]) => {
+      keys.forEach(k => pending.add(JSON.stringify(k)));
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        pending.forEach(k => queryClient.invalidateQueries({ queryKey: JSON.parse(k) }));
+        pending.clear();
       }, 1500);
     };
 
-    const onPractice = () => debouncedInvalidate([["core-data"], ["dashboard-data"], ["weekly-goals"]]);
-    const onRevisoes = () => debouncedInvalidate([["core-data"], ["dashboard-data"], ["weekly-goals"]]);
-    const onExam = () => debouncedInvalidate([["core-data"], ["dashboard-data"], ["exam-readiness"]]);
-    const onLight = () => debouncedInvalidate([["core-data"], ["dashboard-data"]]);
-
     const channel = supabase
       .channel('dashboard-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, onPractice)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'revisoes', filter: `user_id=eq.${user.id}` }, onRevisoes)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'fsrs_cards', filter: `user_id=eq.${user.id}` }, onLight)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, onLight)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, () => debounced([["core-data"], ["dashboard-data"], ["study-next"]]))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'revisoes', filter: `user_id=eq.${user.id}` }, () => debounced([["core-data"], ["dashboard-data"]]))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, () => debounced([["core-data"], ["dashboard-data"]]))
       .subscribe();
     return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [user?.id, queryClient]);
-  useEffect(() => {
-    if (!data) return;
-    const { metrics, stats } = data;
-    if (prevLevelRef.current !== null && metrics.gamificationLevel > prevLevelRef.current) {
-      fireCelebration("levelup");
+
+  /* ─── Handlers ─── */
+  const handleStart = useCallback(() => {
+    if (!activeRec) return;
+    loop.startMission(activeRec);
+  }, [activeRec, loop]);
+
+  const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
+    setOverrideRec(alt);
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    setOverrideRec(null);
+    refresh();
+  }, [refresh]);
+
+  const handleLoopClose = useCallback(() => {
+    const wasComplete = loop.phase === "complete";
+    const completedTitle = loop.context?.recommendation.title ?? "";
+    const badges = loop.result?.completionBadges;
+
+    loop.resetLoop();
+
+    if (wasComplete) {
+      setHandoff({ completedTitle, badges });
+      setOverrideRec(null);
+      setHeroHighlight(true);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => setHeroHighlight(false), 2000);
+      refresh();
     }
-    prevLevelRef.current = metrics.gamificationLevel;
-    if (prevStreakRef.current !== null && stats.streak > prevStreakRef.current && stats.streak % 7 === 0) {
-      fireCelebration("streak");
-    }
-    prevStreakRef.current = stats.streak;
-  }, [data]);
+  }, [loop, refresh]);
 
-  useEffect(() => {
-    if (data) evaluateAndDeliver();
-  }, [data, evaluateAndDeliver]);
+  const dismissBanner = useCallback(() => setHandoff(null), []);
 
-  if (isLoading || !data) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-      </div>
-    );
-  }
-
-  const { stats, metrics, displayName, hasCompletedDiagnostic, targetExams } = data;
-
-  if (!stats || !metrics) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
-      </div>
-    );
-  }
-
-  const taskPercent = stats.totalTasks > 0 ? Math.round((stats.completedTasks / stats.totalTasks) * 100) : 0;
-  const isNewUser = metrics.questionsAnswered === 0 && stats.flashcards === 0;
-  const sheetSide = isMobile ? "bottom" as const : "right" as const;
-
-  // Greeting — minimal, no card
-  const name = displayName?.split(" ")[0] || "Doutor(a)";
+  /* ─── Derived ─── */
+  const isNewUser = dashData
+    ? (dashData.metrics.questionsAnswered === 0 && dashData.stats.flashcards === 0)
+    : false;
+  const displayName = dashData?.displayName?.split(" ")[0] || "Doutor(a)";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const targetExams = dashData?.targetExams || [];
+
+  // First load
+  const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
+  if (initialLoading) return <MissionControlSkeleton />;
 
   return (
-    <div className="space-y-3 sm:space-y-4 animate-fade-in pb-20 lg:pb-0">
-
-      {/* Popup queue */}
-      <Suspense fallback={null}>
-        <OnboardingTour />
-        <WhatsNewPopup />
-        <FeedbackSurveyPopup />
-        <SystemGuidePopup />
-        <DashboardSmartPopups />
-        <EndOfDaySummary />
-      </Suspense>
-
-      {/* ══════════════════════════════════════════
-          GREETING — compact, inline, thumb-safe zone
-         ══════════════════════════════════════════ */}
-      <div className="flex items-center justify-between px-1 py-1">
-        <div>
-          <p className="text-base sm:text-sm text-muted-foreground">
-            {greeting}, <span className="text-foreground font-semibold">{name}</span>
-          </p>
-          {stats.streak > 0 && (
-            <p className="text-sm sm:text-xs text-muted-foreground mt-0.5">🔥 {stats.streak} dias seguidos</p>
-          )}
-          {targetExams && targetExams.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1">
-              {targetExams.map((e: string) => (
-                <Badge key={e} variant="outline" className="text-[10px] px-1.5 py-0">
-                  {EXAM_LABELS[e] || e}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <SafeCard name="XpWidget"><XpWidget /></SafeCard>
-        </div>
-      </div>
-
+    <div className="space-y-4 animate-fade-in max-w-5xl mx-auto pb-20 lg:pb-0">
+      {/* Popup queue — minimal */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
-      {/* Resume Mission — top priority CTA */}
-      <SafeCard name="ResumeMission">
-        <ResumeMissionBanner />
-      </SafeCard>
-
-      {/* ══════════════════════════════════════════
-          BLOCO PRINCIPAL — HERO (40-50% da tela)
-         ══════════════════════════════════════════ */}
-      <SafeCard name="HeroStudy">
-        <HeroStudyCard />
-      </SafeCard>
-
-      {/* Streak — inline, compact */}
-      <SafeCard name="StreakBanner">
-        <StreakBanner />
-      </SafeCard>
-
-      {/* ══════════════════════════════════════════
-          ÍNDICE DE PREPARAÇÃO — indicador central
-         ══════════════════════════════════════════ */}
-      {!isNewUser && (
-        <SafeCard name="PreparationIndex">
-          <PreparationIndexCard />
-        </SafeCard>
-      )}
-
-      {/* ══════════════════════════════════════════
-          ALERTA INTELIGENTE — máximo 1
-         ══════════════════════════════════════════ */}
-      <SafeCard name="RecoveryMode"><RecoveryModeBanner /></SafeCard>
-      <SafeCard name="SmartAlert"><SmartAlertCard /></SafeCard>
-
-      {/* ══════════════════════════════════════════
-          MENTORIA ATIVA (condicional)
-         ══════════════════════════════════════════ */}
-      <SafeCard name="MentorshipBanner"><MentorshipBanner /></SafeCard>
-
-      {/* Onboarding checklist — new users only */}
-      {isNewUser && (
-        <SafeCard name="OnboardingNew">
-          <OnboardingChecklist stats={stats} metrics={metrics} hasCompletedDiagnostic={hasCompletedDiagnostic} />
-        </SafeCard>
-      )}
-
-      {/* ══════════════════════════════════════════
-          PROGRESSO SEMANAL — visual simples
-         ══════════════════════════════════════════ */}
-      {!isNewUser && <SafeCard name="WeeklyEvolution"><WeeklyEvolutionBar /></SafeCard>}
-      {!isNewUser && <SafeCard name="WeeklyGoals"><WeeklyGoalsCard /></SafeCard>}
-
-      {/* ══════════════════════════════════════════
-          CHANCE POR PROVA — readiness per exam
-         ══════════════════════════════════════════ */}
-      {!isNewUser && (
-        <SafeCard name="ExamReadiness"><ExamReadinessCard /></SafeCard>
-      )}
-
-      {/* ══════════════════════════════════════════
-          MÉTRICAS DRILL-DOWN — grid compacto
-         ══════════════════════════════════════════ */}
-      {!isNewUser && (
-        <div className="grid grid-cols-2 gap-2.5">
-          <SafeCard name="SummaryDesempenho">
-            <DashboardSummaryCard
-              icon={Target}
-              title="Desempenho"
-              accentClass="text-primary bg-primary/10"
-              onClick={() => setOpenSection("desempenho")}
-              metrics={[
-                { label: "Acerto", value: `${metrics.accuracy}%` },
-                { label: "Questões", value: metrics.questionsAnswered },
-              ]}
-            />
-          </SafeCard>
-          <SafeCard name="SummaryCronograma">
-            <DashboardSummaryCard
-              icon={Calendar}
-              title="Plano"
-              accentClass="text-blue-500 bg-blue-500/10"
-              onClick={() => setOpenSection("cronograma")}
-              metrics={[
-                { label: "Tarefas", value: `${stats.completedTasks}/${stats.totalTasks}` },
-                { label: "Concluído", value: `${taskPercent}%` },
-              ]}
-            />
-          </SafeCard>
-          <SafeCard name="SummaryEvolucao">
-            <DashboardSummaryCard
-              icon={Target}
-              title="Evolução"
-              accentClass="text-emerald-500 bg-emerald-500/10"
-              onClick={() => setOpenSection("desempenho")}
-              metrics={[
-                { label: "Acerto", value: `${metrics.accuracy}%` },
-                { label: "Nível", value: metrics.gamificationLevel },
-              ]}
-            />
-          </SafeCard>
-          <SafeCard name="SummarySimulados">
-            <DashboardSummaryCard
-              icon={ClipboardList}
-              title="Simulados"
-              accentClass="text-emerald-500 bg-emerald-500/10"
-              onClick={() => setOpenSection("simulados")}
-              metrics={[
-                { label: "Feitos", value: metrics.simuladosCompleted },
-                { label: "Prova", value: stats.daysUntilExam ? `${stats.daysUntilExam}d` : "—" },
-              ]}
-            />
-          </SafeCard>
+      {/* Greeting — compact */}
+      {!loopActive && (
+        <div className="flex items-center justify-between px-1">
+          <div>
+            <p className="text-sm text-muted-foreground">
+              {greeting}, <span className="text-foreground font-semibold">{displayName}</span>
+            </p>
+            {targetExams.length > 0 && (
+              <div className="flex flex-wrap gap-1 mt-0.5">
+                {targetExams.map((e: string) => (
+                  <Badge key={e} variant="outline" className="text-[10px] px-1.5 py-0">
+                    {EXAM_LABELS[e] || e}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          <SafeCard name="XpWidget"><XpWidget /></SafeCard>
         </div>
       )}
 
-      {/* ══════════════════════════════════════════
-          ACESSO RÁPIDO — rodapé discreto
-         ══════════════════════════════════════════ */}
-      <SafeCard name="FreeStudy"><FreeStudyCard /></SafeCard>
+      {/* Completion banner */}
+      {handoff && (
+        <MissionCompletionBanner
+          completedTitle={handoff.completedTitle}
+          badges={handoff.badges}
+          onDismiss={dismissBanner}
+        />
+      )}
 
-      {/* Admin messages — secondary */}
-      <SafeCard name="AdminMessages"><AdminMessagesBanner /></SafeCard>
+      {/* ═══════════════════════════════════════════
+          INLINE STUDY LOOP — full focus when active
+         ═══════════════════════════════════════════ */}
+      {loopActive && (
+        <StudyLoopContainer
+          phase={loop.phase}
+          context={loop.context}
+          result={loop.result}
+          loading={loop.loading}
+          error={loop.error}
+          onBeginExecution={loop.beginExecution}
+          onSubmitAnswer={loop.submitAnswer}
+          onCompleteReview={loop.completeReview}
+          onContinue={loop.continueLoop}
+          onQuickAction={loop.runQuickAction}
+          onRetry={loop.retry}
+          onClose={handleLoopClose}
+        />
+      )}
 
-      {/* Install app — secondary */}
-      <Suspense fallback={null}>
-        <SafeCard name="InstallApp"><InstallAppBanner /></SafeCard>
-      </Suspense>
-
-      {/* ===== Drill-down Sheets ===== */}
-      <Sheet open={openSection === "desempenho"} onOpenChange={(o) => !o && setOpenSection(null)}>
-        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
-          <SheetHeader>
-            <SheetTitle>Desempenho Detalhado</SheetTitle>
-            <SheetDescription>Gráficos e evolução por especialidade</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-6 mt-4">
-            <Suspense fallback={<ChartFallback />}>
-              <SafeCard name="AdaptiveProgress"><AdaptiveProgressDashboard /></SafeCard>
-              <SafeCard name="SheetCharts"><DashboardCharts stats={stats} metrics={metrics} /></SafeCard>
-              <SafeCard name="SheetSpecialty"><SpecialtyProgressCard /></SafeCard>
-              <SafeCard name="SheetTopicEvo"><TopicEvolution /></SafeCard>
-              <SafeCard name="SheetTimeline"><ApprovalTimeline /></SafeCard>
+      {/* ═══════════════════════════════════════════
+          MISSION HUB — visible when NOT in loop
+         ═══════════════════════════════════════════ */}
+      {!loopActive && (
+        <>
+          {/* Onboarding for new users */}
+          {isNewUser && dashData && (
+            <Suspense fallback={null}>
+              <SafeCard name="OnboardingNew">
+                <OnboardingChecklist
+                  stats={dashData.stats}
+                  metrics={dashData.metrics}
+                  hasCompletedDiagnostic={dashData.hasCompletedDiagnostic}
+                />
+              </SafeCard>
             </Suspense>
-          </div>
-        </SheetContent>
-      </Sheet>
+          )}
 
-      <Sheet open={openSection === "cronograma"} onOpenChange={(o) => !o && setOpenSection(null)}>
-        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
-          <SheetHeader>
-            <SheetTitle>Plano Geral & Revisões</SheetTitle>
-            <SheetDescription>Visão geral do seu plano de estudo</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-6 mt-4">
-            <SafeCard name="SheetDailyPlan"><DailyPlanWidget /></SafeCard>
-            <SafeCard name="SheetDailyGoal"><DailyGoalWidget /></SafeCard>
-            <Suspense fallback={<ChartFallback />}>
-              <SafeCard name="SheetCurriculum"><CurriculumCoverageCard /></SafeCard>
-            </Suspense>
-          </div>
-        </SheetContent>
-      </Sheet>
+          {/* Error / Empty states */}
+          {isError && <MissionControlError error={error} onRetry={handleRefresh} />}
 
-      <Sheet open={openSection === "streak"} onOpenChange={(o) => !o && setOpenSection(null)}>
-        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
-          <SheetHeader>
-            <SheetTitle>Streak & Gamificação</SheetTitle>
-            <SheetDescription>Calendário de atividade e ranking</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-6 mt-4">
-            <Suspense fallback={<ChartFallback />}>
-              <SafeCard name="SheetStreak"><StreakCalendar /></SafeCard>
-              <SafeCard name="SheetWeekly"><WeeklyProgressCard /></SafeCard>
-              <SafeCard name="SheetLeaderboard"><MiniLeaderboard /></SafeCard>
-            </Suspense>
-          </div>
-        </SheetContent>
-      </Sheet>
+          {!isError && !activeRec && <MissionControlEmpty onGenerate={handleRefresh} />}
 
-      <Sheet open={openSection === "simulados"} onOpenChange={(o) => !o && setOpenSection(null)}>
-        <SheetContent side={sheetSide} className={isMobile ? "h-[85vh] overflow-y-auto" : "sm:max-w-lg overflow-y-auto"}>
-          <SheetHeader>
-            <SheetTitle>Simulados & Prática</SheetTitle>
-            <SheetDescription>Métricas detalhadas e benchmarks</SheetDescription>
-          </SheetHeader>
-          <div className="space-y-6 mt-4">
-            <Suspense fallback={<ChartFallback />}>
-              <SafeCard name="SheetMetrics"><DashboardMetricsGrid stats={stats} metrics={metrics} /></SafeCard>
-              <SafeCard name="SheetBenchmark"><SpecialtyBenchmark /></SafeCard>
-            </Suspense>
-          </div>
-        </SheetContent>
-      </Sheet>
+          {/* HERO — "Sua missão agora" */}
+          {activeRec && (
+            <>
+              <div
+                className={`transition-all duration-700 ${
+                  heroHighlight
+                    ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-xl"
+                    : "ring-0 ring-transparent"
+                }`}
+              >
+                <MissionHeroCard
+                  recommendation={activeRec}
+                  adaptiveState={adaptiveState}
+                  onStart={handleStart}
+                  onRefresh={handleRefresh}
+                  onShowAlternatives={() => {
+                    document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                />
+              </div>
+
+              {/* Justification — compact */}
+              <MissionJustification justification={justification} adaptiveState={adaptiveState} />
+            </>
+          )}
+
+          {/* Stats strip — compact secondary */}
+          {snapshot && (
+            <StatsStrip
+              approvalScore={snapshot.approvalScore}
+              pendingReviews={snapshot.pendingReviews}
+              streak={streak}
+              todayCompleted={snapshot.todayCompleted}
+              todayTotal={snapshot.todayTotal}
+            />
+          )}
+
+          {/* Quick contextual actions */}
+          {activeRec && <MissionQuickActions type={activeRec.type} />}
+
+          {/* Alternatives — max 3, compact */}
+          {alternatives.length > 0 && (
+            <div id="mc-alternatives">
+              <MissionAlternatives
+                alternatives={alternatives.slice(0, 3)}
+                onSelect={handleSelectAlternative}
+                activeType={activeRec?.type || "free_study"}
+              />
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };
