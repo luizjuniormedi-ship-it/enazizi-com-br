@@ -430,6 +430,7 @@ serve(async (req: Request) => {
     let order = 0;
 
     // ── 1. GERADOR CLÍNICO ──
+    currentStage = "agent_gerador";
     let gen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "gerador", ++order, PROMPT_GERADOR, ctx);
 
     // ── 2. GATE DE COBERTURA CLÍNICA ──
