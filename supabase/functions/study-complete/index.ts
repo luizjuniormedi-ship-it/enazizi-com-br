@@ -74,10 +74,10 @@ serve(async (req) => {
       task_type: actionType,
       topic: topicId || themeId || metadata?.topic || "",
       subtopic: subtopicId || metadata?.subtopic || "",
-      source: metadata?.source || "api",
+      source: "auto",
       origin_module: metadata?.originModule || "study-complete",
       payload_json: metadata ?? {},
-      status: "completed",
+      status: "success",
     }).then(({ error }) => {
       if (error) errors.push(`event: ${error.message}`);
     });
