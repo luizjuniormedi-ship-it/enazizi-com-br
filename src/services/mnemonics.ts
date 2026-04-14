@@ -58,6 +58,7 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
   if (agentes) {
     const agentEntries: Array<[string, string]> = [
       ["gerador", "Gerador"],
+      ["auditor_linguistico_ptbr", "Auditor Linguístico PT-BR"],
       ["auditor_medico", "Auditor Médico"],
       ["auditor_pedagogico", "Auditor Pedagógico"],
       ["visual", "Visual"],
@@ -70,7 +71,9 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
         ? agentData.score_medico
         : typeof agentData.score_pedagogico === "number"
           ? agentData.score_pedagogico
-          : null;
+          : typeof agentData.score_linguistico === "number"
+            ? agentData.score_linguistico
+            : null;
       agentLogs.push({
         agent: label,
         attempt: 1,
@@ -94,6 +97,7 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
     prompt_imagem: String(d.prompt_imagem ?? ""),
     score_medico: Number(d.score_medico ?? 0),
     score_pedagogico: Number(d.score_pedagogico ?? 0),
+    score_linguistico: Number(d.score_linguistico ?? 0),
     score_final: Number(d.score_final ?? 0),
     alertas: Array.isArray(d.alertas) ? d.alertas.map(String) : [],
     associacoes: Array.isArray(associacoes) ? associacoes.map((a: any) => ({
