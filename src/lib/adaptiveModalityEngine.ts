@@ -150,8 +150,18 @@ function computeMetrics(rows: RawAnalyticsRow[]): Record<string, ModalityMetrics
 export async function generateAdaptiveBlueprint(userId: string): Promise<AdaptiveBlueprint> {
   const rows = await fetchUserRawAnalytics(userId);
 
-  // If no data, return neutral blueprint (no adaptation)
-  if (rows.length < 10) {
+  // Fetch visual_skill_snapshots for richer adaptation
+  let visualSnapshots: Array<{ image_type: string; accuracy: number; trend: string; attempts_count: number }> = [];
+  try {
+    const { data } = await supabase
+      .from("visual_skill_snapshots")
+      .select("image_type, accuracy, trend, attempts_count")
+      .eq("user_id", userId);
+    visualSnapshots = (data || []) as any[];
+  } catch { /* non-blocking */ }
+
+  // If no analytics data but we have visual snapshots, still adapt
+  if (rows.length < 10 && visualSnapshots.length === 0) {
     return buildNeutralBlueprint();
   }
 
