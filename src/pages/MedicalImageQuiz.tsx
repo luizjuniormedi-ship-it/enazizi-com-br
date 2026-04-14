@@ -53,8 +53,108 @@ const imageTypeLabels: Record<string, string> = {
   ophthalmology: "👁️ Oftalmo",
   pathology: "🔬 Patologia",
 };
+// ─── Tiered fetcher ──────────────────────────────────────────────────
+const SELECT_FIELDS = `
+  id, statement, option_a, option_b, option_c, option_d, option_e,
+  correct_index, explanation, difficulty, exam_style,
+  medical_image_assets!inner(
+    image_url, image_type, diagnosis, is_active,
+    review_status, clinical_confidence, integrity_status,
+    validation_level, asset_origin
+  )
+`;
 
-const MedicalImageQuiz = () => {
+function mapRows(data: any[]): ImageQuestion[] {
+  return data
+    .map((q: any) => {
+      const asset = q.medical_image_assets;
+      const imageUrl = asset?.image_url || null;
+      if (!isImageUrlClinical(imageUrl)) return null;
+      const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
+      return {
+        id: q.id,
+        statement: q.statement,
+        options: opts,
+        correct_index: q.correct_index,
+        explanation: q.explanation,
+        difficulty: q.difficulty,
+        exam_style: q.exam_style,
+        image_url: imageUrl,
+        image_type: asset?.image_type || null,
+        diagnosis: asset?.diagnosis || null,
+      } as ImageQuestion;
+    })
+    .filter(Boolean) as ImageQuestion[];
+}
+
+async function fetchQuestionsWithFallback(
+  imageType: string,
+  difficulty: string,
+): Promise<{ questions: ImageQuestion[]; tier: QualityTier }> {
+  const applyFilters = (q: any, it: string, diff: string) => {
+    if (it !== "all") q = q.eq("medical_image_assets.image_type", it as any);
+    if (diff !== "all") q = q.eq("difficulty", diff as any);
+    return q;
+  };
+
+  // ── Tier 1: Gold/Silver, confidence >= 0.9 ──
+  const t1 = applyFilters(
+    supabase
+      .from("medical_image_questions")
+      .select(SELECT_FIELDS)
+      .eq("status", "published")
+      .eq("medical_image_assets.is_active", true)
+      .eq("medical_image_assets.review_status", "published")
+      .eq("medical_image_assets.integrity_status", "ok")
+      .gte("medical_image_assets.clinical_confidence", 0.9)
+      .in("medical_image_assets.validation_level", ["gold", "silver"])
+      .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
+      .neq("medical_image_assets.image_url", ""),
+    imageType,
+    difficulty,
+  );
+  const { data: d1, error: e1 } = await t1.order("created_at", { ascending: false }).limit(30);
+  if (e1) throw e1;
+  const q1 = mapRows(d1 || []);
+  if (q1.length >= 10) return { questions: q1, tier: "tier1" };
+
+  // ── Tier 2: Bronze+, confidence >= 0.7 ──
+  const t2 = applyFilters(
+    supabase
+      .from("medical_image_questions")
+      .select(SELECT_FIELDS)
+      .eq("status", "published")
+      .eq("medical_image_assets.is_active", true)
+      .eq("medical_image_assets.integrity_status", "ok")
+      .gte("medical_image_assets.clinical_confidence", 0.7)
+      .in("medical_image_assets.validation_level", ["gold", "silver", "bronze"])
+      .neq("medical_image_assets.image_url", ""),
+    imageType,
+    difficulty,
+  );
+  const { data: d2, error: e2 } = await t2.order("created_at", { ascending: false }).limit(30);
+  if (e2) throw e2;
+  const q2 = mapRows(d2 || []);
+  if (q2.length >= 5) return { questions: q2, tier: "tier2" };
+
+  // ── Tier 3: any active + integrity ok ──
+  const t3 = applyFilters(
+    supabase
+      .from("medical_image_questions")
+      .select(SELECT_FIELDS)
+      .eq("status", "published")
+      .eq("medical_image_assets.is_active", true)
+      .eq("medical_image_assets.integrity_status", "ok")
+      .neq("medical_image_assets.image_url", ""),
+    imageType,
+    difficulty,
+  );
+  const { data: d3, error: e3 } = await t3.order("created_at", { ascending: false }).limit(30);
+  if (e3) throw e3;
+  return { questions: mapRows(d3 || []), tier: "tier3" };
+}
+
+
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
