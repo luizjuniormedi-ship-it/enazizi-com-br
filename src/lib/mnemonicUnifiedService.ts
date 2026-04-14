@@ -278,6 +278,12 @@ function mapToMnemonicResult(
   const scoreMedico = Number(payload.score_medico ?? 0);
   const scorePedagogico = Number(payload.score_pedagogico ?? 0);
   const scoreFinal = Number(payload.score_final ?? Math.round((scoreMedico + scorePedagogico) / 2));
+  const resolvedImageUrl = typeof payload.image_url === "string" && payload.image_url.trim() && payload.image_url !== "null"
+    ? payload.image_url
+    : null;
+  const baseWarning = typeof payload.warning === "string" && payload.warning.trim()
+    ? payload.warning
+    : null;
 
   return {
     topic: String(payload.tema ?? fallbackTopic),
@@ -285,9 +291,9 @@ function mapToMnemonicResult(
     phrase: frase,
     items_map: itemsMap,
     scene_description: String(payload.cena_visual ?? visual?.cena_visual ?? ""),
-    image_url: null,
+    image_url: resolvedImageUrl,
     quality_score: scoreFinal,
-    warning: null,
+    warning: baseWarning ?? (!resolvedImageUrl ? "Imagem não disponível nesta geração. Use a descrição visual como apoio." : null),
     review_question: `Quais são os ${fallbackItems.length} itens do mnemônico "${sigla}"?`,
     audit: auditorMedico || auditorPedagogico ? {
       medical_score: scoreMedico,

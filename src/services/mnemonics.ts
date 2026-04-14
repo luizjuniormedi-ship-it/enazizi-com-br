@@ -94,6 +94,10 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
     return "medium" as const;
   })();
 
+  const imageUrl = typeof d.image_url === "string" && d.image_url.trim() && d.image_url !== "null"
+    ? d.image_url
+    : null;
+
   return {
     request_id: String(d.request_id ?? ""),
     result_id: String(d.result_id ?? ""),
@@ -116,7 +120,7 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
       representacao_no_mnemonico: String(a.representacao_no_mnemonico ?? ""),
     })) : [],
     associacoes_visuais: Array.isArray(associacoesVisuais) ? associacoesVisuais : [],
-    image_url: typeof d.image_url === "string" ? d.image_url : null,
+    image_url: imageUrl,
     items_map: itemsMap,
     agent_logs: agentLogs,
   };

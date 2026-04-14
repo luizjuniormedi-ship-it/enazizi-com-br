@@ -394,19 +394,32 @@ function MnemonicResultDisplay({
         </CardContent>
       </Card>
 
-      {result.image_url && (
+      {(result.image_url || result.scene_description) && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Eye className="h-4 w-4 text-primary" />
-              Cena Visual
+            <CardTitle className="text-base flex items-center justify-between gap-2">
+              <span className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-primary" />
+                Cena Visual
+              </span>
+              <Badge variant={result.image_url ? "default" : "secondary"} className="text-xs">
+                {result.image_url ? "Imagem gerada" : "Imagem indisponível"}
+              </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-3">{result.scene_description}</p>
-            <div className="rounded-lg overflow-hidden border">
-              <img src={result.image_url} alt={`Mnemônico visual: ${result.topic}`} className="w-full h-auto" loading="lazy" />
-            </div>
+          <CardContent className="space-y-3">
+            {result.scene_description && (
+              <p className="text-xs text-muted-foreground">{result.scene_description}</p>
+            )}
+            {result.image_url ? (
+              <div className="rounded-lg overflow-hidden border">
+                <img src={result.image_url} alt={`Mnemônico visual: ${result.topic}`} className="w-full h-auto" loading="lazy" />
+              </div>
+            ) : (
+              <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                A imagem não ficou disponível nesta geração. Use a descrição visual acima como fallback de estudo.
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
