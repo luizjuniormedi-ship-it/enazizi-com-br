@@ -383,6 +383,14 @@ function deriveCueLeadLetter(value: string): string {
   return extractSignificantWords(value)[0]?.charAt(0).toUpperCase() || "";
 }
 
+function roughStem(word: string): string {
+  // Strip common Portuguese suffixes for fuzzy matching
+  return word
+    .replace(/(oes|oes|ais|eis|ois|uis|ens|oes)$/, "")
+    .replace(/(mente|ando|endo|indo|acao|encia|ancia|amento|imento|avel|ivel|oso|osa|ado|ido|ica|ico)$/, "")
+    .replace(/(as|es|os|is|ns|s)$/, "");
+}
+
 function tokensLooselyMatch(left: string, right: string): boolean {
   const normalizedLeft = normalizeForComparison(left);
   const normalizedRight = normalizeForComparison(right);
@@ -392,7 +400,14 @@ function tokensLooselyMatch(left: string, right: string): boolean {
   if (normalizedLeft.includes(normalizedRight) || normalizedRight.includes(normalizedLeft)) return true;
 
   const minLength = Math.min(normalizedLeft.length, normalizedRight.length);
-  return minLength >= 4 && normalizedLeft.slice(0, 4) === normalizedRight.slice(0, 4);
+  if (minLength >= 4 && normalizedLeft.slice(0, 4) === normalizedRight.slice(0, 4)) return true;
+
+  // Stem-based matching for Portuguese singular/plural, verb forms etc.
+  const stemL = roughStem(normalizedLeft);
+  const stemR = roughStem(normalizedRight);
+  if (stemL.length >= 3 && stemR.length >= 3 && stemL === stemR) return true;
+
+  return false;
 }
 
 function cueWordMatchesOriginalItem(cueWord: string, item: string): boolean {
