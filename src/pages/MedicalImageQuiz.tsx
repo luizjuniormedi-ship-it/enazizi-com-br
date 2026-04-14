@@ -496,7 +496,9 @@ const MedicalImageQuiz = () => {
       {questions.length === 0 ? (
         <Card className="p-12 text-center">
           <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">Nenhuma questão encontrada com esses filtros.</p>
+          <h3 className="text-lg font-semibold mb-2">Banco sendo atualizado</h3>
+          <p className="text-muted-foreground">Estamos ampliando o acervo de imagens médicas. Novas questões serão disponibilizadas em breve.</p>
+          <p className="text-xs text-muted-foreground mt-2">Tente remover os filtros ou volte mais tarde.</p>
         </Card>
       ) : quizMode === "quiz" && currentQuestion ? (
         <>
