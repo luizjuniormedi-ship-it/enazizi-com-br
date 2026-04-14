@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef } from "react";
+import { Navigate } from "react-router-dom";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useCoreData } from "@/hooks/useCoreData";
@@ -21,17 +23,19 @@ interface CompletionHandoff {
 }
 
 export default function MissionControlPage() {
+  const { isEnabled } = useFeatureFlags();
   const { data, isLoading, isError, error, refresh, isFetching } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
   const { data: coreData } = useCoreData();
-
   const loop = useStudyLoop();
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
   const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
-  /** Tracks whether the hero just updated after a loop completion */
   const [heroHighlight, setHeroHighlight] = useState(false);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const missionControlEnabled = isEnabled("mission_control_enabled");
+  const studyLoopEnabled = isEnabled("study_loop_enabled");
 
   const activeRec = overrideRec ?? data?.recommendation;
   const justification = data?.justification ?? "";
@@ -77,6 +81,9 @@ export default function MissionControlPage() {
   }, [loop, refresh]);
 
   const dismissBanner = useCallback(() => setHandoff(null), []);
+
+  // Feature flag guard
+  if (!missionControlEnabled) return <Navigate to="/dashboard" replace />;
 
   // First load only — show skeleton
   if (isLoading && !data) return <MissionControlSkeleton />;
@@ -141,21 +148,23 @@ export default function MissionControlPage() {
         </div>
       )}
 
-      {/* Study Loop Panel (bottom sheet) */}
-      <StudyLoopPanel
-        phase={loop.phase}
-        context={loop.context}
-        result={loop.result}
-        loading={loop.loading}
-        error={loop.error}
-        onBeginExecution={loop.beginExecution}
-        onSubmitAnswer={loop.submitAnswer}
-        onCompleteReview={loop.completeReview}
-        onContinue={loop.continueLoop}
-        onQuickAction={loop.runQuickAction}
-        onRetry={loop.retry}
-        onClose={handleLoopClose}
-      />
+      {/* Study Loop Panel (bottom sheet) — gated by flag */}
+      {studyLoopEnabled && (
+        <StudyLoopPanel
+          phase={loop.phase}
+          context={loop.context}
+          result={loop.result}
+          loading={loop.loading}
+          error={loop.error}
+          onBeginExecution={loop.beginExecution}
+          onSubmitAnswer={loop.submitAnswer}
+          onCompleteReview={loop.completeReview}
+          onContinue={loop.continueLoop}
+          onQuickAction={loop.runQuickAction}
+          onRetry={loop.retry}
+          onClose={handleLoopClose}
+        />
+      )}
     </div>
   );
 }

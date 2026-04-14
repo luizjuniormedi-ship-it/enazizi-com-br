@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Navigate } from "react-router-dom";
 import { BarChart3 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { MetricsFiltersBar } from "@/components/product-metrics/MetricsFiltersBar";
 import { MetricsKpiCards } from "@/components/product-metrics/MetricsKpiCards";
 import { LoopFunnelSection } from "@/components/product-metrics/LoopFunnelSection";
@@ -15,6 +17,7 @@ import {
 } from "@/hooks/useProductMetrics";
 
 export default function ProductMetricsPage() {
+  const { isEnabled } = useFeatureFlags();
   const [days, setDays] = useState(30);
   const qc = useQueryClient();
 
@@ -33,6 +36,10 @@ export default function ProductMetricsPage() {
     qc.invalidateQueries({ queryKey: ["engagement-trend"] });
     qc.invalidateQueries({ queryKey: ["user-retention"] });
   }, [qc]);
+
+  if (!isEnabled("product_metrics_enabled")) {
+    return <Navigate to="/admin" replace />;
+  }
 
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-5 animate-fade-in max-w-7xl mx-auto">
