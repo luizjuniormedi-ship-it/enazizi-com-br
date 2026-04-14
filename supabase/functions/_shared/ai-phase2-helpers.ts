@@ -20,6 +20,8 @@ function getAdmin() {
   );
 }
 
+export { getAdmin };
+
 // ── Auth helper ──
 export async function extractUserId(req: Request): Promise<string | null> {
   const auth = req.headers.get("Authorization")?.replace("Bearer ", "");
@@ -94,8 +96,20 @@ const LIMITS: Record<string, number> = {
   enterprise: 2000,
 };
 
+// ── Cost weights per action type ──
+export const ACTION_COSTS: Record<string, number> = {
+  explain_simple: 1,
+  reinforce_error: 1,
+  summarize_topic: 1,
+  adaptive_question: 5,
+  adaptive_simulado: 10,
+  deep_explanation: 4,
+  answer_audit: 6,
+};
+
 export async function checkAndIncrementUsage(
   userId: string,
+  cost = 1,
 ): Promise<{ allowed: boolean; remaining: number }> {
   const sb = getAdmin();
   const period = new Date().toISOString().slice(0, 7) + "-01"; // YYYY-MM-01
@@ -125,18 +139,18 @@ export async function checkAndIncrementUsage(
   const limit = usage?.ai_calls_limit ?? LIMITS[usage?.plan_type ?? "free"] ?? 30;
   const used = usage?.ai_calls_used ?? 0;
 
-  if (used >= limit) {
-    return { allowed: false, remaining: 0 };
+  if (used + cost > limit) {
+    return { allowed: false, remaining: Math.max(0, limit - used) };
   }
 
-  // Increment
+  // Increment by cost weight
   await sb
     .from("ai_usage_control")
-    .update({ ai_calls_used: used + 1 })
+    .update({ ai_calls_used: used + cost })
     .eq("user_id", userId)
     .eq("period_start", period);
 
-  return { allowed: true, remaining: limit - used - 1 };
+  return { allowed: true, remaining: limit - used - cost };
 }
 
 // ── Light AI call ──
@@ -176,6 +190,56 @@ export async function callLightAI(
 
   const json = await res.json();
   return json.choices?.[0]?.message?.content || "";
+}
+
+// ── Heavy AI call (Phase 3) ──
+const HEAVY_MODEL = "google/gemini-2.5-flash";
+
+export async function callHeavyAI(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens = 4096,
+): Promise<string> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+
+  const res = await fetch(GATEWAY, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: HEAVY_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_tokens: maxTokens,
+    }),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    console.error(`Heavy AI call failed (${res.status}):`, t.slice(0, 200));
+    if (res.status === 429) throw new Error("AI_RATE_LIMITED");
+    if (res.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
+    throw new Error("AI_SERVICE_UNAVAILABLE");
+  }
+
+  const json = await res.json();
+  return json.choices?.[0]?.message?.content || "";
+}
+
+/** Parse JSON from AI response, handling markdown code blocks */
+export function parseAiJsonSafe(raw: string): any {
+  const codeBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const text = codeBlock ? codeBlock[1].trim() : raw;
+  const jsonMatch = text.match(/[\[{][\s\S]*[\]}]/);
+  if (!jsonMatch) throw new Error("No JSON found in AI response");
+  return JSON.parse(
+    jsonMatch[0].replace(/,\s*([}\]])/g, "$1"), // trailing commas
+  );
 }
 
 // ── JSON response helpers ──
