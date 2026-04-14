@@ -1,6 +1,6 @@
 /**
  * Mnemonic Module — Complete TypeScript contracts.
- * Compatible with generate-medical-mnemonic edge function and DB schema.
+ * Compatible with generate-mnemonic edge function and DB schema.
  */
 
 // ══════════════════════════════════════════════════
