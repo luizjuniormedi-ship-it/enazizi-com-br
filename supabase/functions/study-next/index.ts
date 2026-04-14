@@ -224,21 +224,33 @@ serve(async (req) => {
       });
     }
 
-    // ── NEW: Image Quiz candidate ──
+    // ── Image Quiz candidate (enhanced with real visual weakness) ──
     const imgResult = scoreImageQuiz(visualErrors, ctx);
-    if (imgResult.score > 0 && imgResult.bestTopic) {
+    if (imgResult.score > 0) {
       const topic = imgResult.bestTopic;
+      const targetType = imgResult.targetImageType;
+      const title = targetType
+        ? `Treino visual: ${targetType.toUpperCase()}`
+        : topic
+          ? `Treino visual: ${topic.tema}`
+          : "Treino de interpretação visual";
+      const description = targetType
+        ? `Seu desempenho em ${targetType.toUpperCase()} precisa de reforço. Vamos treinar com questões de imagem.`
+        : topic
+          ? `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`
+          : "Treino adaptativo de interpretação de imagens médicas.";
       candidates.push({
         type: "image_quiz",
-        title: `Treino visual: ${topic.tema}`,
-        description: `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`,
+        title,
+        description,
         targetType: "image_quiz",
         estimatedMinutes: 8,
         priorityScore: imgResult.score,
         contextPayload: {
-          topic: topic.tema,
-          subtopic: topic.subtema,
-          errorCount: topic.vezes_errado,
+          topic: topic?.tema,
+          subtopic: topic?.subtema,
+          errorCount: topic?.vezes_errado,
+          imageType: targetType,
         },
       });
     }
