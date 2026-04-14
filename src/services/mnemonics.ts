@@ -16,7 +16,7 @@ import type {
 // ══════════════════════════════════════════════════
 
 export async function generateMnemonic(input: MnemonicRequest): Promise<MnemonicApiResponse> {
-  const { data, error } = await supabase.functions.invoke("generate-medical-mnemonic", {
+  const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
     body: input,
   });
 

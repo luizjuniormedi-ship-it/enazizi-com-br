@@ -226,18 +226,23 @@ function requireEnv(name: string): string {
 function validatePayload(body: unknown): MnemonicRequest {
   if (!body || typeof body !== "object") throw new Error("Body inválido.");
   const b = body as Record<string, unknown>;
-  if (!b.tema || typeof b.tema !== "string" || !b.tema.trim())
+
+  // Accept both formats: tema/termos (new) and topic/items (legacy unified service)
+  const tema = (b.tema ?? b.topic) as string | undefined;
+  const termos = (b.termos ?? b.items) as string[] | undefined;
+
+  if (!tema || typeof tema !== "string" || !tema.trim())
     throw new Error("Campo 'tema' é obrigatório.");
-  if (!Array.isArray(b.termos) || b.termos.length === 0)
+  if (!Array.isArray(termos) || termos.length === 0)
     throw new Error("Campo 'termos' deve ser um array não vazio.");
-  for (const t of b.termos) {
+  for (const t of termos) {
     if (typeof t !== "string" || !t.trim())
       throw new Error("Cada termo deve ser uma string não vazia.");
   }
   return {
-    tema: b.tema as string,
-    termos: b.termos as string[],
-    estilo: typeof b.estilo === "string" ? b.estilo : undefined,
+    tema,
+    termos,
+    estilo: typeof b.estilo === "string" ? b.estilo : (typeof b.contentType === "string" ? b.contentType : undefined),
     publico: typeof b.publico === "string" ? b.publico : undefined,
   };
 }
