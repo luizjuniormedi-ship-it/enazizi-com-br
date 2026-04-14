@@ -500,6 +500,45 @@ export type Database = {
         }
         Relationships: []
       }
+      assistant_decisions: {
+        Row: {
+          confidence_score: number | null
+          created_at: string
+          decision_output: Json
+          decision_type: string
+          id: string
+          input_snapshot: Json
+          justification: string
+          source_module: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          created_at?: string
+          decision_output?: Json
+          decision_type: string
+          id?: string
+          input_snapshot?: Json
+          justification?: string
+          source_module: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number | null
+          created_at?: string
+          decision_output?: Json
+          decision_type?: string
+          id?: string
+          input_snapshot?: Json
+          justification?: string
+          source_module?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chance_by_exam: {
         Row: {
           banca: string
