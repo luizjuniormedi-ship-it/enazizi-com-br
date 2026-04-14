@@ -249,7 +249,6 @@ const DashboardSidebar = () => {
       .map((group) => ({
         ...group,
         items: group.items.filter((item) => {
-          if (item.moduleKey === "mnemonico") return isAdmin;
           if (item.moduleKey === "perfil") return true;
           return isModuleEnabled(item.moduleKey);
         }),
