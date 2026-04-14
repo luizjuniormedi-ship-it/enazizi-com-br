@@ -3374,6 +3374,76 @@ export type Database = {
         }
         Relationships: []
       }
+      mnemonic_agent_logs: {
+        Row: {
+          agent_name: string
+          created_at: string
+          duration_ms: number | null
+          error_message: string | null
+          execution_order: number
+          id: string
+          input_json: Json
+          output_json: Json
+          request_id: string
+          result_id: string | null
+          score: number | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          agent_name: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_order?: number
+          id?: string
+          input_json?: Json
+          output_json?: Json
+          request_id: string
+          result_id?: string | null
+          score?: number | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          agent_name?: string
+          created_at?: string
+          duration_ms?: number | null
+          error_message?: string | null
+          execution_order?: number
+          id?: string
+          input_json?: Json
+          output_json?: Json
+          request_id?: string
+          result_id?: string | null
+          score?: number | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mnemonic_agent_logs_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mnemonic_agent_logs_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mnemonic_agent_logs_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "v_mnemonic_latest_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mnemonic_assets: {
         Row: {
           content_type: string
@@ -3457,6 +3527,228 @@ export type Database = {
           visual_score?: number | null
         }
         Relationships: []
+      }
+      mnemonic_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          result_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          result_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          result_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mnemonic_favorites_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mnemonic_favorites_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "v_mnemonic_latest_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mnemonic_feedback: {
+        Row: {
+          comentario: string | null
+          created_at: string
+          id: string
+          rating_general: number | null
+          rating_medical: number | null
+          rating_pedagogical: number | null
+          request_id: string | null
+          result_id: string | null
+          user_id: string
+        }
+        Insert: {
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          rating_general?: number | null
+          rating_medical?: number | null
+          rating_pedagogical?: number | null
+          request_id?: string | null
+          result_id?: string | null
+          user_id: string
+        }
+        Update: {
+          comentario?: string | null
+          created_at?: string
+          id?: string
+          rating_general?: number | null
+          rating_medical?: number | null
+          rating_pedagogical?: number | null
+          request_id?: string | null
+          result_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mnemonic_feedback_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mnemonic_feedback_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mnemonic_feedback_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "v_mnemonic_latest_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mnemonic_requests: {
+        Row: {
+          created_at: string
+          estilo: string | null
+          id: string
+          idioma: string | null
+          publico: string | null
+          source: string | null
+          status: string
+          tema: string
+          termos_json: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          estilo?: string | null
+          id?: string
+          idioma?: string | null
+          publico?: string | null
+          source?: string | null
+          status?: string
+          tema: string
+          termos_json?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          estilo?: string | null
+          id?: string
+          idioma?: string | null
+          publico?: string | null
+          source?: string | null
+          status?: string
+          tema?: string
+          termos_json?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mnemonic_results: {
+        Row: {
+          alertas_json: Json
+          aprovado: boolean
+          aprovado_medico: boolean
+          aprovado_pedagogico: boolean
+          associacoes_json: Json
+          associacoes_visuais_json: Json
+          cena_visual: string | null
+          created_at: string
+          explicacao_didatica: string | null
+          explicacao_tecnica: string | null
+          frase_mnemonica: string
+          id: string
+          is_latest: boolean
+          prompt_imagem: string | null
+          request_id: string
+          score_final: number
+          score_medico: number
+          score_pedagogico: number
+          sigla: string
+          tema: string
+          updated_at: string
+          user_id: string
+          versao: number
+        }
+        Insert: {
+          alertas_json?: Json
+          aprovado?: boolean
+          aprovado_medico?: boolean
+          aprovado_pedagogico?: boolean
+          associacoes_json?: Json
+          associacoes_visuais_json?: Json
+          cena_visual?: string | null
+          created_at?: string
+          explicacao_didatica?: string | null
+          explicacao_tecnica?: string | null
+          frase_mnemonica: string
+          id?: string
+          is_latest?: boolean
+          prompt_imagem?: string | null
+          request_id: string
+          score_final?: number
+          score_medico?: number
+          score_pedagogico?: number
+          sigla: string
+          tema: string
+          updated_at?: string
+          user_id: string
+          versao?: number
+        }
+        Update: {
+          alertas_json?: Json
+          aprovado?: boolean
+          aprovado_medico?: boolean
+          aprovado_pedagogico?: boolean
+          associacoes_json?: Json
+          associacoes_visuais_json?: Json
+          cena_visual?: string | null
+          created_at?: string
+          explicacao_didatica?: string | null
+          explicacao_tecnica?: string | null
+          frase_mnemonica?: string
+          id?: string
+          is_latest?: boolean
+          prompt_imagem?: string | null
+          request_id?: string
+          score_final?: number
+          score_medico?: number
+          score_pedagogico?: number
+          sigla?: string
+          tema?: string
+          updated_at?: string
+          user_id?: string
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mnemonic_results_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       module_sessions: {
         Row: {
@@ -7049,7 +7341,68 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_mnemonic_latest_results: {
+        Row: {
+          aprovado: boolean | null
+          created_at: string | null
+          frase_mnemonica: string | null
+          id: string | null
+          request_id: string | null
+          score_final: number | null
+          score_medico: number | null
+          score_pedagogico: number | null
+          sigla: string | null
+          tema: string | null
+          user_id: string | null
+        }
+        Insert: {
+          aprovado?: boolean | null
+          created_at?: string | null
+          frase_mnemonica?: string | null
+          id?: string | null
+          request_id?: string | null
+          score_final?: number | null
+          score_medico?: number | null
+          score_pedagogico?: number | null
+          sigla?: string | null
+          tema?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          aprovado?: boolean | null
+          created_at?: string | null
+          frase_mnemonica?: string | null
+          id?: string | null
+          request_id?: string | null
+          score_final?: number | null
+          score_medico?: number | null
+          score_pedagogico?: number | null
+          sigla?: string | null
+          tema?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mnemonic_results_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_mnemonic_user_stats: {
+        Row: {
+          media_score_final: number | null
+          media_score_medico: number | null
+          media_score_pedagogico: number | null
+          total_aprovados: number | null
+          total_resultados: number | null
+          ultimo_resultado_em: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       delete_email: {
