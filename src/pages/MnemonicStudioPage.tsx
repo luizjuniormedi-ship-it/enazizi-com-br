@@ -179,7 +179,12 @@ export default function MnemonicGeneratorPage() {
       </Card>
 
       {/* Result */}
-      {result && (
+      {result && (() => {
+        const alertas = result.alertas ?? [];
+        const itemsMap = result.items_map ?? [];
+        const agentLogs = result.agent_logs ?? [];
+
+        return (
         <div className="space-y-4">
           {/* Scores */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -249,7 +254,7 @@ export default function MnemonicGeneratorPage() {
           )}
 
           {/* Alertas */}
-          {(result.alertas ?? []).length > 0 && (
+          {alertas.length > 0 && (
             <Card className="border-yellow-500/30">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2 text-yellow-500">
@@ -258,19 +263,19 @@ export default function MnemonicGeneratorPage() {
               </CardHeader>
               <CardContent>
                 <ul className="text-sm space-y-1">
-                  {(result.alertas ?? []).map((a, i) => <li key={i} className="text-muted-foreground">• {a}</li>)}
+                  {alertas.map((a, i) => <li key={i} className="text-muted-foreground">• {a}</li>)}
                 </ul>
               </CardContent>
             </Card>
           )}
 
           {/* Associações */}
-          {(result.items_map ?? []).length > 0 && (
+          {itemsMap.length > 0 && (
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Mapa de associações</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {(result.items_map ?? []).map((item, i) => (
+                  {itemsMap.map((item, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm">
                       <Badge variant="outline" className="font-mono text-lg w-8 h-8 flex items-center justify-center">{item.letter}</Badge>
                       <span className="font-medium">{item.word}</span>
@@ -283,17 +288,17 @@ export default function MnemonicGeneratorPage() {
           )}
 
           {/* Agent logs */}
-          {result.agent_logs?.length > 0 && (
+          {agentLogs.length > 0 && (
             <Collapsible open={showAgents} onOpenChange={setShowAgents}>
               <CollapsibleTrigger asChild>
                 <Button variant="ghost" className="w-full justify-between">
-                  <span className="text-sm">Detalhes dos agentes ({result.agent_logs.length})</span>
+                  <span className="text-sm">Detalhes dos agentes ({agentLogs.length})</span>
                   {showAgents ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <div className="space-y-2 mt-2">
-                  {result.agent_logs.map((log, i) => (
+                  {agentLogs.map((log, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm p-2 rounded bg-muted/50">
                       <Badge variant={log.status === "ok" || log.status === "approved" ? "default" : "destructive"} className="text-xs">
                         {log.agent}
