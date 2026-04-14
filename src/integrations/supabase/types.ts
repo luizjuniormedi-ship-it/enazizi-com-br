@@ -3025,6 +3025,7 @@ export type Database = {
           is_active: boolean
           license_type: string
           multimodal_ready: boolean | null
+          question_generated: boolean
           review_status: Database["public"]["Enums"]["image_review_status"]
           reviewed_at: string | null
           reviewed_by: string | null
@@ -3070,6 +3071,7 @@ export type Database = {
           is_active?: boolean
           license_type?: string
           multimodal_ready?: boolean | null
+          question_generated?: boolean
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -3115,6 +3117,7 @@ export type Database = {
           is_active?: boolean
           license_type?: string
           multimodal_ready?: boolean | null
+          question_generated?: boolean
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -4238,6 +4241,117 @@ export type Database = {
           message?: string
           run_id?: string | null
           severity?: string
+        }
+        Relationships: []
+      }
+      pipeline_lock: {
+        Row: {
+          dataset_type: string | null
+          id: number
+          is_running: boolean
+          started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          dataset_type?: string | null
+          id?: number
+          is_running?: boolean
+          started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          dataset_type?: string | null
+          id?: number
+          is_running?: boolean
+          started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      pipeline_logs: {
+        Row: {
+          assets_created: number
+          assets_validated: number
+          batch_size: number
+          created_at: string
+          dataset_type: string
+          error_details: Json | null
+          errors: number
+          execution_time_ms: number | null
+          id: string
+          items_processed: number
+          mode: string
+          questions_generated: number
+        }
+        Insert: {
+          assets_created?: number
+          assets_validated?: number
+          batch_size?: number
+          created_at?: string
+          dataset_type: string
+          error_details?: Json | null
+          errors?: number
+          execution_time_ms?: number | null
+          id?: string
+          items_processed?: number
+          mode?: string
+          questions_generated?: number
+        }
+        Update: {
+          assets_created?: number
+          assets_validated?: number
+          batch_size?: number
+          created_at?: string
+          dataset_type?: string
+          error_details?: Json | null
+          errors?: number
+          execution_time_ms?: number | null
+          id?: string
+          items_processed?: number
+          mode?: string
+          questions_generated?: number
+        }
+        Relationships: []
+      }
+      pipeline_progress: {
+        Row: {
+          created_at: string
+          dataset_type: string
+          id: string
+          last_processed_id: string | null
+          last_processed_index: number
+          last_run_at: string | null
+          status: string
+          total_generated: number
+          total_processed: number
+          total_validated: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          dataset_type: string
+          id?: string
+          last_processed_id?: string | null
+          last_processed_index?: number
+          last_run_at?: string | null
+          status?: string
+          total_generated?: number
+          total_processed?: number
+          total_validated?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          dataset_type?: string
+          id?: string
+          last_processed_id?: string | null
+          last_processed_index?: number
+          last_run_at?: string | null
+          status?: string
+          total_generated?: number
+          total_processed?: number
+          total_validated?: number
+          updated_at?: string
         }
         Relationships: []
       }
