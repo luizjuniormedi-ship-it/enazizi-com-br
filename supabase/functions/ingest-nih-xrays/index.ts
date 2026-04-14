@@ -1,5 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+import { crypto } from "https://deno.land/std@0.224.0/crypto/mod.ts";
 import { validateImageVision } from "../_shared/vision-gate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -9,21 +13,21 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // ── NIH pathologies mapped to exam-relevant diagnoses ──
-const PATHOLOGY_MAP: Record<string, { diagnosis_pt: string; topic: string; subtopic: string; difficulty: number }> = {
-  "Atelectasis":       { diagnosis_pt: "Atelectasia",              topic: "Pneumologia",    subtopic: "Atelectasia",              difficulty: 3 },
-  "Cardiomegaly":      { diagnosis_pt: "Cardiomegalia",            topic: "Cardiologia",    subtopic: "Insuficiência Cardíaca",   difficulty: 2 },
-  "Consolidation":     { diagnosis_pt: "Consolidação Pulmonar",    topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: 3 },
-  "Edema":             { diagnosis_pt: "Edema Pulmonar",           topic: "Pneumologia",    subtopic: "Edema Pulmonar",           difficulty: 3 },
-  "Effusion":          { diagnosis_pt: "Derrame Pleural",          topic: "Pneumologia",    subtopic: "Derrame Pleural",          difficulty: 2 },
-  "Emphysema":         { diagnosis_pt: "Enfisema Pulmonar",        topic: "Pneumologia",    subtopic: "DPOC",                     difficulty: 4 },
-  "Fibrosis":          { diagnosis_pt: "Fibrose Pulmonar",         topic: "Pneumologia",    subtopic: "Fibrose Pulmonar",         difficulty: 4 },
-  "Hernia":            { diagnosis_pt: "Hérnia Diafragmática",     topic: "Cirurgia",       subtopic: "Hérnia Diafragmática",     difficulty: 3 },
-  "Infiltration":      { diagnosis_pt: "Infiltrado Pulmonar",      topic: "Pneumologia",    subtopic: "Infecções Pulmonares",     difficulty: 3 },
-  "Mass":              { diagnosis_pt: "Massa Pulmonar",           topic: "Pneumologia",    subtopic: "Neoplasia Pulmonar",       difficulty: 4 },
-  "Nodule":            { diagnosis_pt: "Nódulo Pulmonar",          topic: "Pneumologia",    subtopic: "Nódulo Pulmonar",          difficulty: 3 },
-  "Pleural_Thickening":{ diagnosis_pt: "Espessamento Pleural",     topic: "Pneumologia",    subtopic: "Doenças Pleurais",         difficulty: 4 },
-  "Pneumonia":         { diagnosis_pt: "Pneumonia",                topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: 2 },
-  "Pneumothorax":      { diagnosis_pt: "Pneumotórax",              topic: "Cirurgia",       subtopic: "Pneumotórax",              difficulty: 3 },
+const PATHOLOGY_MAP: Record<string, { diagnosis_pt: string; topic: string; subtopic: string; difficulty: string }> = {
+  "Atelectasis":       { diagnosis_pt: "Atelectasia",              topic: "Pneumologia",    subtopic: "Atelectasia",              difficulty: "medium" },
+  "Cardiomegaly":      { diagnosis_pt: "Cardiomegalia",            topic: "Cardiologia",    subtopic: "Insuficiência Cardíaca",   difficulty: "easy" },
+  "Consolidation":     { diagnosis_pt: "Consolidação Pulmonar",    topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: "medium" },
+  "Edema":             { diagnosis_pt: "Edema Pulmonar",           topic: "Pneumologia",    subtopic: "Edema Pulmonar",           difficulty: "medium" },
+  "Effusion":          { diagnosis_pt: "Derrame Pleural",          topic: "Pneumologia",    subtopic: "Derrame Pleural",          difficulty: "easy" },
+  "Emphysema":         { diagnosis_pt: "Enfisema Pulmonar",        topic: "Pneumologia",    subtopic: "DPOC",                     difficulty: "hard" },
+  "Fibrosis":          { diagnosis_pt: "Fibrose Pulmonar",         topic: "Pneumologia",    subtopic: "Fibrose Pulmonar",         difficulty: "hard" },
+  "Hernia":            { diagnosis_pt: "Hérnia Diafragmática",     topic: "Cirurgia",       subtopic: "Hérnia Diafragmática",     difficulty: "medium" },
+  "Infiltration":      { diagnosis_pt: "Infiltrado Pulmonar",      topic: "Pneumologia",    subtopic: "Infecções Pulmonares",     difficulty: "medium" },
+  "Mass":              { diagnosis_pt: "Massa Pulmonar",           topic: "Pneumologia",    subtopic: "Neoplasia Pulmonar",       difficulty: "hard" },
+  "Nodule":            { diagnosis_pt: "Nódulo Pulmonar",          topic: "Pneumologia",    subtopic: "Nódulo Pulmonar",          difficulty: "medium" },
+  "Pleural_Thickening":{ diagnosis_pt: "Espessamento Pleural",     topic: "Pneumologia",    subtopic: "Doenças Pleurais",         difficulty: "hard" },
+  "Pneumonia":         { diagnosis_pt: "Pneumonia",                topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: "easy" },
+  "Pneumothorax":      { diagnosis_pt: "Pneumotórax",              topic: "Cirurgia",       subtopic: "Pneumotórax",              difficulty: "medium" },
 };
 
 // ── Download image → upload to Storage ──
@@ -44,7 +48,7 @@ async function downloadAndUpload(imageUrl: string, assetCode: string): Promise<s
 
 // ── Generate 3 exam questions for an asset ──
 async function generateQuestions(asset: {
-  id: string; diagnosis: string; topic: string; subtopic: string; difficulty: number;
+  id: string; diagnosis: string; topic: string; subtopic: string; difficulty: string;
 }): Promise<number> {
   if (!LOVABLE_API_KEY) return 0;
 
@@ -62,7 +66,7 @@ REGRAS:
 6. SEM markdown (**, ##)
 
 Retorne APENAS JSON:
-[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":3,"exam_style":"USP","topic":"...","subtopic":"..."}]`;
+[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":"easy|medium|hard","exam_style":"USP","topic":"...","subtopic":"..."}]`;
 
   try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -80,20 +84,29 @@ Retorne APENAS JSON:
     let inserted = 0;
     const clean = (t: string) => t.replace(/\*\*/g, "").replace(/##/g, "").replace(/\\n/g, " ").replace(/\s{2,}/g, " ").trim();
 
-    for (const q of questions) {
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
       if (!q.statement || q.statement.length < 200 || !q.options || q.options.length < 5) continue;
+      
+      const questionCode = `nih_${asset.id.slice(0, 8)}_q${i}_${Date.now()}`;
+      const validDiffs = ["easy", "medium", "hard"];
+      const diffVal = validDiffs.includes(q.difficulty) ? q.difficulty : asset.difficulty;
+
       const { error } = await supabase.from("medical_image_questions").insert({
         asset_id: asset.id,
+        question_code: questionCode,
         statement: clean(q.statement),
-        options: q.options.map((o: string) => clean(o)),
+        option_a: clean(q.options[0] || ""),
+        option_b: clean(q.options[1] || ""),
+        option_c: clean(q.options[2] || ""),
+        option_d: clean(q.options[3] || ""),
+        option_e: clean(q.options[4] || ""),
         correct_index: q.correct_index || 0,
         explanation: clean(q.explanation || ""),
-        difficulty: q.difficulty || asset.difficulty,
+        difficulty: diffVal,
         exam_style: q.exam_style || "USP",
-        topic: q.topic || asset.topic,
-        subtopic: q.subtopic || asset.subtopic,
         status: "needs_review",
-        question_origin: "nih_xray_pipeline_v1",
+        language_code: "pt-BR",
       });
       if (!error) inserted++;
       else console.error("[q-insert]", error.message);
@@ -114,7 +127,7 @@ Deno.serve(async (req) => {
     // Mode 2: Batch ingest
     // { batch: [{ image_url, filename, pathology }] }
 
-    const items: Array<{ image_url: string; filename: string; pathology: string; patient_id?: string }> =
+    const items: Array<{ image_url: string; filename: string; pathology: string; patient_id?: string; pre_uploaded_url?: string }> =
       body.batch || (body.image_url ? [body] : []);
 
     if (items.length === 0) {
@@ -146,19 +159,23 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Step 1: Download & upload
-      const publicUrl = await downloadAndUpload(item.image_url, assetCode);
+      // Step 1: Use pre-uploaded URL or download & upload
+      let publicUrl = item.pre_uploaded_url || null;
+      if (!publicUrl) {
+        publicUrl = await downloadAndUpload(item.image_url, assetCode);
+      }
       if (!publicUrl) {
         results.push({ filename: item.filename, status: "download_failed" });
         continue;
       }
 
-      // Step 2: AI vision validation
-      const vision = await validateImageVision(publicUrl, pathInfo.diagnosis_pt, "xray", LOVABLE_API_KEY);
-      if (!vision.valid) {
-        results.push({ filename: item.filename, status: "vision_rejected", reason: vision.reason });
-        // Clean up uploaded file
-        continue;
+      // Step 2: AI vision validation (skip if pre_uploaded and trusted)
+      if (!body.skip_vision) {
+        const vision = await validateImageVision(publicUrl, pathInfo.diagnosis_pt, "xray", LOVABLE_API_KEY);
+        if (!vision.valid) {
+          results.push({ filename: item.filename, status: "vision_rejected", reason: vision.reason });
+          continue;
+        }
       }
 
       // Step 3: Create asset
@@ -166,10 +183,12 @@ Deno.serve(async (req) => {
         asset_code: assetCode,
         diagnosis: pathInfo.diagnosis_pt,
         image_type: "xray",
+        specialty: pathInfo.topic,
+        subtopic: pathInfo.subtopic,
         image_url: publicUrl,
         thumbnail_url: publicUrl,
         asset_origin: "real_clinical",
-        source_url: "https://nihcc.app.box.com/v/ChestXray-NIHCC",
+        source_url: "https://data.lhncbc.nlm.nih.gov/public/Tuberculosis-Chest-X-ray-Datasets/",
         source_domain: "nih.gov",
         license_type: "cc0_public_domain",
         review_status: "needs_review",
@@ -180,7 +199,9 @@ Deno.serve(async (req) => {
         ai_confidence: 0.92,
         ai_type: "xray",
         clinical_findings: { nih_label: item.pathology, patient_id: item.patient_id || null },
-        clinical_validation_notes: `NIH Chest X-ray dataset. Label: ${item.pathology}. Vision validated.`,
+        clinical_validation_notes: `NIH dataset. Label: ${item.pathology}. Vision validated.`,
+        distractors: [pathInfo.diagnosis_pt],
+        difficulty: pathInfo.difficulty,
       }).select("id").single();
 
       if (assetErr || !asset) {
