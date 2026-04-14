@@ -66,7 +66,7 @@ REGRAS:
 6. SEM markdown (**, ##)
 
 Retorne APENAS JSON:
-[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":3,"exam_style":"USP","topic":"...","subtopic":"..."}]`;
+[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","difficulty":"easy|medium|hard","exam_style":"USP","topic":"...","subtopic":"..."}]`;
 
   try {
     const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
