@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.49.1/cors";
+import { crypto } from "https://deno.land/std@0.224.0/crypto/mod.ts";
 import { validateImageVision } from "../_shared/vision-gate.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
