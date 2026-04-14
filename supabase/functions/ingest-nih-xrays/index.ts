@@ -209,14 +209,17 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Step 4: Generate questions
-      const qCount = await generateQuestions({
-        id: asset.id,
-        diagnosis: pathInfo.diagnosis_pt,
-        topic: pathInfo.topic,
-        subtopic: pathInfo.subtopic,
-        difficulty: pathInfo.difficulty,
-      });
+      // Step 4: Generate questions (skip if assets_only mode)
+      let qCount = 0;
+      if (!body.assets_only) {
+        qCount = await generateQuestions({
+          id: asset.id,
+          diagnosis: pathInfo.diagnosis_pt,
+          topic: pathInfo.topic,
+          subtopic: pathInfo.subtopic,
+          difficulty: pathInfo.difficulty,
+        });
+      }
 
       // Step 5: Telemetry
       await supabase.from("automation_telemetry").insert({
