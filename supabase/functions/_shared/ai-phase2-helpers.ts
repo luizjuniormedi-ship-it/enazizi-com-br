@@ -20,6 +20,8 @@ function getAdmin() {
   );
 }
 
+export { getAdmin };
+
 // ── Auth helper ──
 export async function extractUserId(req: Request): Promise<string | null> {
   const auth = req.headers.get("Authorization")?.replace("Bearer ", "");
@@ -188,6 +190,56 @@ export async function callLightAI(
 
   const json = await res.json();
   return json.choices?.[0]?.message?.content || "";
+}
+
+// ── Heavy AI call (Phase 3) ──
+const HEAVY_MODEL = "google/gemini-2.5-flash";
+
+export async function callHeavyAI(
+  systemPrompt: string,
+  userPrompt: string,
+  maxTokens = 4096,
+): Promise<string> {
+  const apiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
+
+  const res = await fetch(GATEWAY, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: HEAVY_MODEL,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      max_tokens: maxTokens,
+    }),
+  });
+
+  if (!res.ok) {
+    const t = await res.text();
+    console.error(`Heavy AI call failed (${res.status}):`, t.slice(0, 200));
+    if (res.status === 429) throw new Error("AI_RATE_LIMITED");
+    if (res.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
+    throw new Error("AI_SERVICE_UNAVAILABLE");
+  }
+
+  const json = await res.json();
+  return json.choices?.[0]?.message?.content || "";
+}
+
+/** Parse JSON from AI response, handling markdown code blocks */
+export function parseAiJsonSafe(raw: string): any {
+  const codeBlock = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const text = codeBlock ? codeBlock[1].trim() : raw;
+  const jsonMatch = text.match(/[\[{][\s\S]*[\]}]/);
+  if (!jsonMatch) throw new Error("No JSON found in AI response");
+  return JSON.parse(
+    jsonMatch[0].replace(/,\s*([}\]])/g, "$1"), // trailing commas
+  );
 }
 
 // ── JSON response helpers ──
