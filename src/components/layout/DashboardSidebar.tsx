@@ -155,28 +155,35 @@ const SidebarGroup = ({
             const active = location.pathname === item.to;
             const highlighted = highlightedKeys.has(item.moduleKey);
             return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : highlighted && !isStudyActive
-                    ? "text-sidebar-primary/80 bg-sidebar-accent/30"
-                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
-                )}
-              >
-                {item.useAvatar ? (
-                  <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain flex-shrink-0" />
-                ) : (
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
-                )}
-                <span className="truncate text-[13px]">{item.label}</span>
-                {highlighted && !active && !isStudyActive && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary/60 flex-shrink-0" />
-                )}
-              </Link>
+              <Tooltip key={item.to} delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : highlighted && !isStudyActive
+                        ? "text-sidebar-primary/80 bg-sidebar-accent/30"
+                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    {item.useAvatar ? (
+                      <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain flex-shrink-0" />
+                    ) : (
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                    )}
+                    <span className="truncate text-[13px]">{item.label}</span>
+                    {highlighted && !active && !isStudyActive && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary/60 flex-shrink-0" />
+                    )}
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[220px]">
+                  <p className="font-semibold text-xs">{item.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{item.description}</p>
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
