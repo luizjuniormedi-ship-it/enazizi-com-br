@@ -624,9 +624,66 @@ const MedicalImageQuiz = () => {
 
               {/* Explanation */}
               {showExplanation && currentQuestion.explanation && (
-                <Card className="p-4 bg-primary/5 border-primary/20 animate-fade-in">
-                  <p className="text-sm font-semibold text-primary mb-2">💡 Explicação</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{currentQuestion.explanation}</p>
+                <Card className="p-4 bg-primary/5 border-primary/20 animate-fade-in space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-primary mb-2">💡 Explicação</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{currentQuestion.explanation}</p>
+                  </div>
+
+                  {/* Discussion */}
+                  {currentQuestion.discussion && Object.values(currentQuestion.discussion).some(Boolean) && (
+                    <div className="space-y-3 pt-2 border-t border-border/50">
+                      <p className="text-sm font-semibold text-primary">📚 Discussão Médica</p>
+                      {currentQuestion.discussion.definition && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Definição</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.definition}</p></div>
+                      )}
+                      {currentQuestion.discussion.physiopathology && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Fisiopatologia</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.physiopathology}</p></div>
+                      )}
+                      {currentQuestion.discussion.findings && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Achados Típicos</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.findings}</p></div>
+                      )}
+                      {currentQuestion.discussion.clinical_correlation && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Correlação Clínica</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.clinical_correlation}</p></div>
+                      )}
+                      {currentQuestion.discussion.differential && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Diagnóstico Diferencial</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.differential}</p></div>
+                      )}
+                      {currentQuestion.discussion.management && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Conduta</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.management}</p></div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Exam Tips */}
+                  {currentQuestion.exam_tips?.length > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-sm font-semibold text-primary mb-2">🎯 Pontos de Prova</p>
+                      <ul className="space-y-1">
+                        {currentQuestion.exam_tips.map((tip, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-primary mt-0.5">•</span>
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Pitfalls */}
+                  {currentQuestion.pitfalls?.length > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-sm font-semibold text-destructive mb-2">⚠️ Armadilhas Comuns</p>
+                      <ul className="space-y-1">
+                        {currentQuestion.pitfalls.map((pit, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-destructive mt-0.5">•</span>
+                            <span>{pit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </Card>
               )}
 
