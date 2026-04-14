@@ -171,6 +171,22 @@ serve(async (req) => {
       isMnemonicTopic(e.tema, e.subtema) && (e.vezes_errado ?? 0) >= 2
     );
 
+    // ── Consecutive error detection (2+ errors in a row → force review + quiz + mnemonic) ──
+    let consecutiveErrorBoost = false;
+    if (errors.length >= 2) {
+      const sorted = [...errors].sort((a: any, b: any) =>
+        new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime()
+      );
+      const top2 = sorted.slice(0, 2);
+      const recentEnough = top2.every((e: any) => {
+        const d = (Date.now() - new Date(e.updated_at || 0).getTime()) / 86_400_000;
+        return d <= 2;
+      });
+      if (recentEnough && top2.every((e: any) => (e.vezes_errado ?? 0) >= 2)) {
+        consecutiveErrorBoost = true;
+      }
+    }
+
     // ── Score all candidates ──
     const candidates: ScoredCandidate[] = [];
 

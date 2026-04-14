@@ -43,6 +43,7 @@ const AI_TEMP = 0.3;
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
 const SCORE_LINGUISTICO_MIN = 85;
+const GLOBAL_TIMEOUT_MS = 20000; // 20s global timeout
 
 // ═══ PROMPTS ═══
 
@@ -219,8 +220,7 @@ async function callAIJson<T>(apiKey: string, sys: string, user: string): Promise
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: AI_MODEL,
-        temperature: AI_TEMP,
+        model: AI_MODEL, temperature: AI_TEMP,
         messages: [{ role: "system", content: sys }, { role: "user", content: user }],
       }),
       signal: ctrl.signal,
@@ -232,7 +232,6 @@ async function callAIJson<T>(apiKey: string, sys: string, user: string): Promise
     const j = await r.json();
     const c = j?.choices?.[0]?.message?.content;
     if (!c) throw new Error("AI content vazio.");
-    // Extract JSON from possible markdown fences
     const cleaned = c.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const match = cleaned.match(/\{[\s\S]*\}/);
     if (!match) throw new Error(`JSON não encontrado: ${c.substring(0, 200)}`);
@@ -244,7 +243,6 @@ async function generateImage(prompt: string): Promise<{ url: string | null; fail
   const key = Deno.env.get("LOVABLE_API_KEY");
   if (!key) return { url: null, failed: true, error: "LOVABLE_API_KEY missing" };
   try {
-    console.log("[IMAGE] Calling Gemini image generation...");
     const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -254,87 +252,38 @@ async function generateImage(prompt: string): Promise<{ url: string | null; fail
         modalities: ["image", "text"],
       }),
     });
-    console.log(`[IMAGE] HTTP status: ${r.status}`);
     if (!r.ok) return { url: null, failed: true, error: `HTTP ${r.status}` };
-
     const j = await r.json();
-
-    // Detect image from multiple possible response shapes
     let imgData: string | null = null;
-
-    // Shape 1: images array (most common)
     const images = j?.choices?.[0]?.message?.images;
-    if (Array.isArray(images) && images.length > 0) {
-      imgData = images[0]?.image_url?.url ?? null;
-      console.log(`[IMAGE] Found in images array: ${imgData ? "yes" : "no"}`);
-    }
-
-    // Shape 2: content is data URL string
-    if (!imgData) {
-      const content = j?.choices?.[0]?.message?.content;
-      if (typeof content === "string" && content.startsWith("data:image")) {
-        imgData = content;
-        console.log("[IMAGE] Found as data URL in content");
-      }
-    }
-
-    // Shape 3: content is array with image parts
-    if (!imgData) {
-      const parts = j?.choices?.[0]?.message?.content;
-      if (Array.isArray(parts)) {
-        const imgPart = parts.find((x: any) => x.type === "image_url" || x.type === "image");
-        imgData = imgPart?.image_url?.url ?? imgPart?.url ?? imgPart?.data ?? null;
-        console.log(`[IMAGE] Found in content array: ${imgData ? "yes" : "no"}`);
-      }
-    }
-
-    if (!imgData) {
-      console.log("[IMAGE] No image data found in response");
-      return { url: null, failed: true, error: "No image in response" };
-    }
-
-    // If it's already a remote URL, use directly
-    if (imgData.startsWith("http") && !imgData.startsWith("data:")) {
-      console.log("[IMAGE] Using remote URL directly");
-      return { url: imgData, failed: false };
-    }
-
-    // Upload base64 to storage
+    if (Array.isArray(images) && images.length > 0) imgData = images[0]?.image_url?.url ?? null;
+    if (!imgData) { const content = j?.choices?.[0]?.message?.content; if (typeof content === "string" && content.startsWith("data:image")) imgData = content; }
+    if (!imgData) { const parts = j?.choices?.[0]?.message?.content; if (Array.isArray(parts)) { const imgPart = parts.find((x: any) => x.type === "image_url" || x.type === "image"); imgData = imgPart?.image_url?.url ?? imgPart?.url ?? imgPart?.data ?? null; } }
+    if (!imgData) return { url: null, failed: true, error: "No image in response" };
+    if (imgData.startsWith("http") && !imgData.startsWith("data:")) return { url: imgData, failed: false };
     const uploaded = await uploadImage(imgData);
-    console.log(`[IMAGE] Upload result: ${uploaded ? "success" : "failed"}`);
     return { url: uploaded, failed: !uploaded, error: uploaded ? undefined : "Upload failed" };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error(`[IMAGE] Error: ${msg}`);
-    return { url: null, failed: true, error: msg };
+    return { url: null, failed: true, error: e instanceof Error ? e.message : String(e) };
   }
 }
 
 async function uploadImage(b64: string): Promise<string | null> {
   try {
     const db = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
-
-    // Detect MIME type
     const mimeMatch = b64.match(/^data:(image\/\w+);base64,/);
     const mime = mimeMatch?.[1] ?? "image/png";
     const ext = mime === "image/jpeg" ? "jpg" : mime === "image/webp" ? "webp" : "png";
-
     const data = b64.replace(/^data:image\/\w+;base64,/, "");
     const bin = atob(data);
     const bytes = new Uint8Array(bin.length);
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-
     const name = `mnemonics/${crypto.randomUUID()}.${ext}`;
     const { error } = await db.storage.from("question-images").upload(name, bytes, { contentType: mime, upsert: false });
-    if (error) { console.error(`[IMAGE] Storage upload error: ${error.message}`); return null; }
-
+    if (error) return null;
     const { data: u } = db.storage.from("question-images").getPublicUrl(name);
-    console.log(`[IMAGE] Public URL: ${u?.publicUrl}`);
     return u?.publicUrl ?? null;
-  } catch (e) {
-    console.error(`[IMAGE] Upload exception: ${e instanceof Error ? e.message : e}`);
-    return null;
-  }
+  } catch { return null; }
 }
 
 function getServiceClient(): SupabaseClient {
@@ -393,6 +342,35 @@ async function runAgent<T>(apiKey: string, db: SupabaseClient, reqId: string, us
   }
 }
 
+async function logTelemetry(db: SupabaseClient, eventType: string, userId: string, details: Record<string, unknown>) {
+  try {
+    await db.from("automation_telemetry").insert({ event_type: eventType, module: "generate-mnemonic", details, user_id: userId });
+  } catch { /* non-critical */ }
+}
+
+// ═══ SIMPLE FALLBACK GENERATOR (no pipeline, no agents) ═══
+function generateSimpleFallback(payload: MnemonicRequest): {
+  sigla: string; frase_mnemonica: string; explicacao_tecnica: string; explicacao_didatica: string;
+  items_map: Array<{ letter: string; word: string; original_item: string; symbol: null; symbol_reason: null }>;
+} {
+  const letters = payload.termos.map(t => t.charAt(0).toUpperCase());
+  const sigla = letters.join("");
+  const frase = `Lembre: ${payload.termos.join(", ")}`;
+  return {
+    sigla,
+    frase_mnemonica: frase,
+    explicacao_tecnica: `Mnemônico simples para ${payload.tema} com ${payload.termos.length} termos.`,
+    explicacao_didatica: `Use a sigla "${sigla}" para lembrar dos termos: ${payload.termos.join(", ")}.`,
+    items_map: payload.termos.map((t, i) => ({
+      letter: letters[i],
+      word: t,
+      original_item: t,
+      symbol: null,
+      symbol_reason: null,
+    })),
+  };
+}
+
 // ═══ MAIN ═══
 
 serve(async (req: Request) => {
@@ -403,166 +381,222 @@ serve(async (req: Request) => {
   let db: SupabaseClient | null = null;
   let currentStage = "init";
 
-  try {
-    currentStage = "env_check";
-    const aiKey = requireEnv("LOVABLE_API_KEY");
-    requireEnv("SUPABASE_URL"); requireEnv("SUPABASE_ANON_KEY"); requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  // Global timeout wrapper
+  const globalTimeout = new Promise<Response>((resolve) => {
+    setTimeout(async () => {
+      console.warn("[MNEMONIC] GLOBAL TIMEOUT (20s) — generating simple fallback");
+      
+      // Try to parse payload for fallback
+      try {
+        if (requestId && db) {
+          await updateRequestStatus(db, requestId, "timeout_fallback");
+          await logTelemetry(db, "mnemonic_timeout_fallback", "", { request_id: requestId, stage: currentStage });
+        }
+      } catch { /* ignore */ }
+      
+      resolve(jsonResponse({
+        success: true,
+        data: {
+          timeout_fallback: true,
+          warning: "Geração simplificada por timeout. Tente novamente para resultado completo.",
+          sigla: "",
+          frase_mnemonica: "",
+          score_final: 0,
+          image_url: null,
+          image_failed: true,
+        },
+      }));
+    }, GLOBAL_TIMEOUT_MS);
+  });
 
-    currentStage = "parse_body";
-    const rawBody = await req.json().catch(() => null);
-    if (!rawBody) throw new Error("Body vazio ou JSON inválido.");
-    console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema}, termos=${(rawBody as any)?.termos?.length}`);
-
-    currentStage = "validate_input";
-    const payload = validatePayload(rawBody);
-    const norm = normalizeTerms(payload.tema, payload.termos);
-    payload.tema = norm.tema; payload.termos = norm.termos;
-
-    currentStage = "auth";
-    const userId = await getUserIdFromRequest(req);
-    console.log(`[MNEMONIC] User: ${userId.substring(0, 8)}...`);
-
-    currentStage = "db_init";
-    db = getServiceClient();
-    requestId = await insertRequest(db, userId, payload);
-    console.log(`[MNEMONIC] Request: ${requestId}`);
-    const ctx = buildContext(payload);
-    let order = 0;
-
-    // ── 1. GERADOR CLÍNICO ──
-    currentStage = "agent_gerador";
-    let gen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "gerador", ++order, PROMPT_GERADOR, ctx);
-
-    currentStage = "clinical_gate";
-    // ── 2. GATE DE COBERTURA CLÍNICA ──
-    let coverageOk = true;
-    const gate = runClinicalGate(payload.termos, gen.frase_mnemonica, gen.mapa_completo);
-    if (!gate.passed) {
-      coverageOk = false;
-      console.log(`[GATE] FAILED. Missing: ${gate.missing.join(", ")}`);
-      const gatePrompt = `${ctx}\n\nVersão anterior FALHOU no gate clínico.\nTermos faltantes: ${gate.missing.join(", ")}\nINCLUA TODOS os termos originais com seus qualificadores completos.`;
-      gen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, gatePrompt);
-      const gate2 = runClinicalGate(payload.termos, gen.frase_mnemonica, gen.mapa_completo);
-      coverageOk = gate2.passed;
-    }
-
-    currentStage = "agent_linguistico";
-    // ── 3. AUDITOR LINGUÍSTICO ──
-    const lingP = `${ctx}\n\nMnemônico:\nFrase: ${gen.frase_mnemonica}\nDidática: ${gen.explicacao_didatica}`;
-    let ling = await runAgent<LinguisticAuditOutput>(aiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, lingP);
-    const flu = typeof ling.fluidez_fala === "number" ? ling.fluidez_fala : 100;
-    const nat = typeof ling.naturalidade === "number" ? ling.naturalidade : 100;
-
-    // ── 4. RETRY LINGUÍSTICO ──
-    if (ling.score_linguistico < SCORE_LINGUISTICO_MIN || flu < 80 || nat < 80 || !ling.soa_natural) {
-      if (ling.versao_corrigida?.frase_mnemonica) { gen.frase_mnemonica = ling.versao_corrigida.frase_mnemonica; if (ling.versao_corrigida.explicacao_didatica) gen.explicacao_didatica = ling.versao_corrigida.explicacao_didatica; }
-      const rP = `${ctx}\n\nAuditoria linguística falhou (score=${ling.score_linguistico}, fluidez=${flu}, nat=${nat}).\nProblemas: ${(ling.problemas||[]).join("; ")}\nAtual: ${gen.frase_mnemonica}\nReescreva NATURAL, preservando TODOS os termos.`;
-      const rGen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "retry_linguistico", ++order, PROMPT_GERADOR, rP);
-      const rLing = await runAgent<LinguisticAuditOutput>(aiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, `${ctx}\n\nRetry:\nFrase: ${rGen.frase_mnemonica}`);
-      if (rLing.score_linguistico >= ling.score_linguistico) { ling = rLing; gen = rGen; }
-    } else if (ling.versao_corrigida?.frase_mnemonica) { gen.frase_mnemonica = ling.versao_corrigida.frase_mnemonica; }
-
-    currentStage = "agent_medico";
-    // ── 5. AUDITOR MÉDICO ──
-    const medP = `${ctx}\n\nMnemônico:\n${JSON.stringify({ sigla: gen.sigla, frase_mnemonica: gen.frase_mnemonica, mapa_completo: gen.mapa_completo }, null, 2)}`;
-    let med = await runAgent<MedicalAuditOutput>(aiKey, db, requestId, userId, "auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, medP);
-    let approved = gen;
-
-    // ── 6. RETRY MÉDICO ──
-    if (med.perda_clinica || med.score_medico < SCORE_MEDICO_MIN) {
-      if (med.versao_corrigida) approved = med.versao_corrigida;
-      const rP = `${ctx}\n\nAuditoria médica FALHOU (score=${med.score_medico}).\nFaltantes: ${(med.termos_faltantes||[]).join(", ")}\nQualif. perdidos: ${(med.qualificadores_perdidos||[]).join(", ")}\nCrie versão com TODOS termos e qualificadores.`;
-      const rGen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, rP);
-      const rMed = await runAgent<MedicalAuditOutput>(aiKey, db, requestId, userId, "retry_auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, `${ctx}\n\nRetry médico:\n${JSON.stringify({ sigla: rGen.sigla, frase_mnemonica: rGen.frase_mnemonica, mapa_completo: rGen.mapa_completo }, null, 2)}`);
-      if (rMed.score_medico >= med.score_medico) { med = rMed; approved = rMed.versao_corrigida ?? rGen; }
-    }
-
-    currentStage = "agent_pedagogico";
-    // ── 7. AUDITOR PEDAGÓGICO (resilient) ──
-    let ped: PedagogicalAuditOutput = { score_pedagogico: 75, facilidade_memorizacao: 75, clareza: 75, associacao_mental: 75, aplicabilidade_em_aula: 75, aplicabilidade_em_prova: 75, pontos_fortes: [], pontos_fracos: [] };
+  const mainPipeline = async (): Promise<Response> => {
     try {
-      ped = await runAgent<PedagogicalAuditOutput>(aiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, `${ctx}\n\nFrase: ${approved.frase_mnemonica}\nDidática: ${approved.explicacao_didatica}`);
-      // ── 8. RETRY PEDAGÓGICO ──
-      if (ped.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
-        const rPed = await runAgent<PedagogicalAuditOutput>(aiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, `${ctx}\n\nFrase: ${approved.frase_mnemonica}\nScore: ${ped.score_pedagogico}. Fracos: ${(ped.pontos_fracos||[]).join("; ")}. Otimize.`);
-        if (rPed.score_pedagogico >= ped.score_pedagogico) ped = rPed;
+      currentStage = "env_check";
+      const aiKey = requireEnv("LOVABLE_API_KEY");
+      requireEnv("SUPABASE_URL"); requireEnv("SUPABASE_ANON_KEY"); requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+      currentStage = "parse_body";
+      const rawBody = await req.json().catch(() => null);
+      if (!rawBody) throw new Error("Body vazio ou JSON inválido.");
+      console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema}, termos=${(rawBody as any)?.termos?.length}`);
+
+      currentStage = "validate_input";
+      const payload = validatePayload(rawBody);
+      const norm = normalizeTerms(payload.tema, payload.termos);
+      payload.tema = norm.tema; payload.termos = norm.termos;
+
+      currentStage = "auth";
+      const userId = await getUserIdFromRequest(req);
+
+      currentStage = "db_init";
+      db = getServiceClient();
+      requestId = await insertRequest(db, userId, payload);
+      const ctx = buildContext(payload);
+      let order = 0;
+
+      // ── 1. GERADOR CLÍNICO ──
+      currentStage = "agent_gerador";
+      let gen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "gerador", ++order, PROMPT_GERADOR, ctx);
+
+      currentStage = "clinical_gate";
+      let coverageOk = true;
+      const gate = runClinicalGate(payload.termos, gen.frase_mnemonica, gen.mapa_completo);
+      if (!gate.passed) {
+        coverageOk = false;
+        const gatePrompt = `${ctx}\n\nVersão anterior FALHOU no gate clínico.\nTermos faltantes: ${gate.missing.join(", ")}\nINCLUA TODOS os termos originais com seus qualificadores completos.`;
+        gen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, gatePrompt);
+        const gate2 = runClinicalGate(payload.termos, gen.frase_mnemonica, gen.mapa_completo);
+        coverageOk = gate2.passed;
       }
-    } catch { /* use defaults */ }
-    if (ped.versao_otimizada?.frase_mnemonica) approved.frase_mnemonica = ped.versao_otimizada.frase_mnemonica;
-    if (ped.versao_otimizada?.explicacao_didatica) approved.explicacao_didatica = ped.versao_otimizada.explicacao_didatica;
 
-    currentStage = "agent_visual";
-    // ── 9. GERADOR VISUAL (resilient) ──
-    let vis: VisualOutput = { cena_visual: approved.frase_mnemonica, associacoes_visuais: [], prompt_imagem: `Clean medical infographic of ${approved.sigla || payload.tema}, flat design, white bg, no text` };
-    try { vis = await runAgent<VisualOutput>(aiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, `${ctx}\n\nSigla: ${approved.sigla}\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
+      currentStage = "agent_linguistico";
+      const lingP = `${ctx}\n\nMnemônico:\nFrase: ${gen.frase_mnemonica}\nDidática: ${gen.explicacao_didatica}`;
+      let ling = await runAgent<LinguisticAuditOutput>(aiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, lingP);
+      const flu = typeof ling.fluidez_fala === "number" ? ling.fluidez_fala : 100;
+      const nat = typeof ling.naturalidade === "number" ? ling.naturalidade : 100;
 
-    currentStage = "image_generation";
-    // ── 10. GERADOR DE IMAGEM (resilient, with diagnostics) ──
-    let imageUrl: string | null = null;
-    let imageFailed = false;
-    const imgS = Date.now();
-    try {
-      const imgResult = await generateImage(vis.prompt_imagem);
-      imageUrl = imgResult.url;
-      imageFailed = imgResult.failed;
-      await insertAgentLog(db, {
-        request_id: requestId, user_id: userId, agent_name: "gerador_imagem", execution_order: ++order,
-        status: imageUrl ? "completed" : "failed",
-        input_json: { prompt: vis.prompt_imagem.substring(0, 500) },
-        output_json: { image_url: imageUrl, image_failed: imageFailed, error: imgResult.error ?? null },
-        duration_ms: Date.now() - imgS,
-        error_message: imgResult.error,
+      if (ling.score_linguistico < SCORE_LINGUISTICO_MIN || flu < 80 || nat < 80 || !ling.soa_natural) {
+        if (ling.versao_corrigida?.frase_mnemonica) { gen.frase_mnemonica = ling.versao_corrigida.frase_mnemonica; if (ling.versao_corrigida.explicacao_didatica) gen.explicacao_didatica = ling.versao_corrigida.explicacao_didatica; }
+        const rP = `${ctx}\n\nAuditoria linguística falhou (score=${ling.score_linguistico}, fluidez=${flu}, nat=${nat}).\nProblemas: ${(ling.problemas||[]).join("; ")}\nAtual: ${gen.frase_mnemonica}\nReescreva NATURAL, preservando TODOS os termos.`;
+        const rGen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "retry_linguistico", ++order, PROMPT_GERADOR, rP);
+        const rLing = await runAgent<LinguisticAuditOutput>(aiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, `${ctx}\n\nRetry:\nFrase: ${rGen.frase_mnemonica}`);
+        if (rLing.score_linguistico >= ling.score_linguistico) { ling = rLing; gen = rGen; }
+      } else if (ling.versao_corrigida?.frase_mnemonica) { gen.frase_mnemonica = ling.versao_corrigida.frase_mnemonica; }
+
+      currentStage = "agent_medico";
+      const medP = `${ctx}\n\nMnemônico:\n${JSON.stringify({ sigla: gen.sigla, frase_mnemonica: gen.frase_mnemonica, mapa_completo: gen.mapa_completo }, null, 2)}`;
+      let med = await runAgent<MedicalAuditOutput>(aiKey, db, requestId, userId, "auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, medP);
+      let approved = gen;
+
+      if (med.perda_clinica || med.score_medico < SCORE_MEDICO_MIN) {
+        if (med.versao_corrigida) approved = med.versao_corrigida;
+        const rP = `${ctx}\n\nAuditoria médica FALHOU (score=${med.score_medico}).\nFaltantes: ${(med.termos_faltantes||[]).join(", ")}\nQualif. perdidos: ${(med.qualificadores_perdidos||[]).join(", ")}\nCrie versão com TODOS termos e qualificadores.`;
+        const rGen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, rP);
+        const rMed = await runAgent<MedicalAuditOutput>(aiKey, db, requestId, userId, "retry_auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, `${ctx}\n\nRetry médico:\n${JSON.stringify({ sigla: rGen.sigla, frase_mnemonica: rGen.frase_mnemonica, mapa_completo: rGen.mapa_completo }, null, 2)}`);
+        if (rMed.score_medico >= med.score_medico) { med = rMed; approved = rMed.versao_corrigida ?? rGen; }
+      }
+
+      currentStage = "agent_pedagogico";
+      let ped: PedagogicalAuditOutput = { score_pedagogico: 75, facilidade_memorizacao: 75, clareza: 75, associacao_mental: 75, aplicabilidade_em_aula: 75, aplicabilidade_em_prova: 75, pontos_fortes: [], pontos_fracos: [] };
+      try {
+        ped = await runAgent<PedagogicalAuditOutput>(aiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, `${ctx}\n\nFrase: ${approved.frase_mnemonica}\nDidática: ${approved.explicacao_didatica}`);
+        if (ped.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
+          const rPed = await runAgent<PedagogicalAuditOutput>(aiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, `${ctx}\n\nFrase: ${approved.frase_mnemonica}\nScore: ${ped.score_pedagogico}. Fracos: ${(ped.pontos_fracos||[]).join("; ")}. Otimize.`);
+          if (rPed.score_pedagogico >= ped.score_pedagogico) ped = rPed;
+        }
+      } catch { /* use defaults */ }
+      if (ped.versao_otimizada?.frase_mnemonica) approved.frase_mnemonica = ped.versao_otimizada.frase_mnemonica;
+      if (ped.versao_otimizada?.explicacao_didatica) approved.explicacao_didatica = ped.versao_otimizada.explicacao_didatica;
+
+      currentStage = "agent_visual";
+      let vis: VisualOutput = { cena_visual: approved.frase_mnemonica, associacoes_visuais: [], prompt_imagem: `Clean medical infographic of ${approved.sigla || payload.tema}, flat design, white bg, no text` };
+      try { vis = await runAgent<VisualOutput>(aiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, `${ctx}\n\nSigla: ${approved.sigla}\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
+
+      currentStage = "image_generation";
+      let imageUrl: string | null = null;
+      let imageFailed = false;
+      const imgS = Date.now();
+      try {
+        const imgResult = await generateImage(vis.prompt_imagem);
+        imageUrl = imgResult.url;
+        imageFailed = imgResult.failed;
+        await insertAgentLog(db, {
+          request_id: requestId, user_id: userId, agent_name: "gerador_imagem", execution_order: ++order,
+          status: imageUrl ? "completed" : "failed",
+          input_json: { prompt: vis.prompt_imagem.substring(0, 500) },
+          output_json: { image_url: imageUrl, image_failed: imageFailed, error: imgResult.error ?? null },
+          duration_ms: Date.now() - imgS,
+          error_message: imgResult.error,
+        });
+      } catch (e) {
+        imageFailed = true;
+        await insertAgentLog(db, { request_id: requestId, user_id: userId, agent_name: "gerador_imagem", execution_order: ++order, status: "failed", input_json: { prompt: vis.prompt_imagem.substring(0, 500) }, output_json: null, duration_ms: Date.now() - imgS, error_message: e instanceof Error ? e.message : String(e) });
+      }
+
+      let exam: ExamStructureOutput = { estrutura_prova: { topico: payload.tema, itens_organizados: [] }, diferencial_prova: { diagnostico_comparado: "", diferencas_chave: [], pegadinhas: [] }, memorizacao_ativa: { pergunta_rapida: "", resposta_esperada: "", gatilho_mental: "" } };
+      try { exam = await runAgent<ExamStructureOutput>(aiKey, db, requestId, userId, "consolidador", ++order, PROMPT_ESTRUTURA_PROVA, `${ctx}\n\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
+
+      currentStage = "consolidador";
+      const consP = `${ctx}\n\nMnemônico:\n${JSON.stringify(approved, null, 2)}\n\nLing: ${ling.score_linguistico} | Méd: ${med.score_medico} | Ped: ${ped.score_pedagogico}\nCena: ${vis.cena_visual}\nPrompt img: ${vis.prompt_imagem}`;
+      const cons = await runAgent<ConsolidatedOutput>(aiKey, db, requestId, userId, "consolidador", ++order, PROMPT_CONSOLIDADOR, consP);
+
+      const sL = Math.max(0, Math.min(100, Math.round(ling.score_linguistico)));
+      const sM = Math.max(0, Math.min(100, Math.round(med.score_medico)));
+      const sP = Math.max(0, Math.min(100, Math.round(ped.score_pedagogico)));
+      const sF = Math.round((sM + sP + sL) / 3);
+      const aM = sM >= SCORE_MEDICO_MIN; const aP = sP >= SCORE_PEDAGOGICO_MIN; const ap = aM && aP;
+      const qf = (sM >= 90 && sL >= 85 && sP >= 85) ? "high" : (sL < 80 || sM < 85) ? "low" : "medium";
+
+      currentStage = "db_persist";
+      const resultId = await insertResult(db, { request_id: requestId, user_id: userId, tema: payload.tema, consolidated: cons, visual: vis, score_medico: sM, score_pedagogico: sP, score_linguistico: sL, score_final: sF, aprovado: ap, aprovado_medico: aM, aprovado_pedagogico: aP, image_url: imageUrl });
+      await updateRequestStatus(db, requestId, "completed");
+
+      const itemsMap = (approved.mapa_completo ?? []).map(m => ({ letter: m.representacao_no_mnemonico.charAt(0).toUpperCase(), word: m.representacao_no_mnemonico, original_item: m.termo_original, symbol: null, symbol_reason: m.explicacao || null }));
+
+      return jsonResponse({
+        success: true,
+        data: {
+          request_id: requestId, result_id: resultId, tema: payload.tema,
+          sigla: cons.sigla, frase_mnemonica: cons.frase_mnemonica,
+          explicacao_tecnica: cons.explicacao_tecnica, explicacao_didatica: cons.explicacao_didatica,
+          cena_visual: cons.cena_visual, prompt_imagem: cons.prompt_imagem, image_url: imageUrl,
+          score_medico: sM, score_pedagogico: sP, score_linguistico: sL, score_final: sF,
+          quality_flag: qf, coverage_ok: coverageOk, image_failed: imageFailed,
+          alertas: cons.alertas ?? [], items_map: itemsMap,
+          associacoes: (approved.mapa_completo ?? []).map(m => ({ letra: m.representacao_no_mnemonico.charAt(0).toUpperCase(), termo_original: m.termo_original, representacao_no_mnemonico: m.representacao_no_mnemonico })),
+          associacoes_visuais: vis.associacoes_visuais ?? [],
+          mapa_clinico_completo: approved.mapa_completo ?? [],
+          estrutura_prova: exam.estrutura_prova,
+          diferencial_prova: exam.diferencial_prova,
+          memorizacao_ativa: exam.memorizacao_ativa,
+        },
       });
-    } catch (e) {
-      imageFailed = true;
-      await insertAgentLog(db, { request_id: requestId, user_id: userId, agent_name: "gerador_imagem", execution_order: ++order, status: "failed", input_json: { prompt: vis.prompt_imagem.substring(0, 500) }, output_json: null, duration_ms: Date.now() - imgS, error_message: e instanceof Error ? e.message : String(e) });
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : "Erro interno.";
+      console.error(`[MNEMONIC] FAILED at stage=${currentStage}:`, msg);
+      if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
+
+      // ── FAILSAFE: generate simple text mnemonic on any pipeline failure ──
+      try {
+        const rawBody = await req.clone().json().catch(() => null);
+        if (rawBody) {
+          const payload = validatePayload(rawBody);
+          const fallback = generateSimpleFallback(payload);
+          console.warn("[MNEMONIC] Using simple fallback after pipeline failure");
+          
+          if (db) {
+            await logTelemetry(db, "mnemonic_pipeline_fallback", "", {
+              request_id: requestId, stage: currentStage, error: msg,
+            });
+          }
+          
+          return jsonResponse({
+            success: true,
+            data: {
+              ...fallback,
+              tema: payload.tema,
+              cena_visual: "",
+              prompt_imagem: "",
+              image_url: null,
+              score_medico: 0, score_pedagogico: 0, score_linguistico: 0, score_final: 0,
+              quality_flag: "fallback",
+              coverage_ok: true,
+              image_failed: true,
+              pipeline_fallback: true,
+              warning: `Pipeline falhou em "${currentStage}". Mnemônico simplificado gerado. Tente novamente para resultado completo.`,
+              alertas: [`Fallback: ${msg}`],
+              associacoes: [],
+              associacoes_visuais: [],
+              mapa_clinico_completo: [],
+            },
+          });
+        }
+      } catch { /* can't even parse body for fallback */ }
+
+      return jsonResponse({ success: false, error: msg, stage: currentStage }, 500);
     }
+  };
 
-    // ── ESTRUTURA DE PROVA (resilient, parallel with consolidator context) ──
-    let exam: ExamStructureOutput = { estrutura_prova: { topico: payload.tema, itens_organizados: [] }, diferencial_prova: { diagnostico_comparado: "", diferencas_chave: [], pegadinhas: [] }, memorizacao_ativa: { pergunta_rapida: "", resposta_esperada: "", gatilho_mental: "" } };
-    try { exam = await runAgent<ExamStructureOutput>(aiKey, db, requestId, userId, "consolidador", ++order, PROMPT_ESTRUTURA_PROVA, `${ctx}\n\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
-
-    currentStage = "consolidador";
-    // ── 11. CONSOLIDADOR FINAL ──
-    const consP = `${ctx}\n\nMnemônico:\n${JSON.stringify(approved, null, 2)}\n\nLing: ${ling.score_linguistico} | Méd: ${med.score_medico} | Ped: ${ped.score_pedagogico}\nCena: ${vis.cena_visual}\nPrompt img: ${vis.prompt_imagem}`;
-    const cons = await runAgent<ConsolidatedOutput>(aiKey, db, requestId, userId, "consolidador", ++order, PROMPT_CONSOLIDADOR, consP);
-
-    // ── SCORES & QUALITY FLAG ──
-    const sL = Math.max(0, Math.min(100, Math.round(ling.score_linguistico)));
-    const sM = Math.max(0, Math.min(100, Math.round(med.score_medico)));
-    const sP = Math.max(0, Math.min(100, Math.round(ped.score_pedagogico)));
-    const sF = Math.round((sM + sP + sL) / 3);
-    const aM = sM >= SCORE_MEDICO_MIN; const aP = sP >= SCORE_PEDAGOGICO_MIN; const ap = aM && aP;
-    const qf = (sM >= 90 && sL >= 85 && sP >= 85) ? "high" : (sL < 80 || sM < 85) ? "low" : "medium";
-
-    currentStage = "db_persist";
-    const resultId = await insertResult(db, { request_id: requestId, user_id: userId, tema: payload.tema, consolidated: cons, visual: vis, score_medico: sM, score_pedagogico: sP, score_linguistico: sL, score_final: sF, aprovado: ap, aprovado_medico: aM, aprovado_pedagogico: aP, image_url: imageUrl });
-    await updateRequestStatus(db, requestId, "completed");
-
-    const itemsMap = (approved.mapa_completo ?? []).map(m => ({ letter: m.representacao_no_mnemonico.charAt(0).toUpperCase(), word: m.representacao_no_mnemonico, original_item: m.termo_original, symbol: null, symbol_reason: m.explicacao || null }));
-
-    return jsonResponse({
-      success: true,
-      data: {
-        request_id: requestId, result_id: resultId, tema: payload.tema,
-        sigla: cons.sigla, frase_mnemonica: cons.frase_mnemonica,
-        explicacao_tecnica: cons.explicacao_tecnica, explicacao_didatica: cons.explicacao_didatica,
-        cena_visual: cons.cena_visual, prompt_imagem: cons.prompt_imagem, image_url: imageUrl,
-        score_medico: sM, score_pedagogico: sP, score_linguistico: sL, score_final: sF,
-        quality_flag: qf, coverage_ok: coverageOk, image_failed: imageFailed,
-        alertas: cons.alertas ?? [], items_map: itemsMap,
-        associacoes: (approved.mapa_completo ?? []).map(m => ({ letra: m.representacao_no_mnemonico.charAt(0).toUpperCase(), termo_original: m.termo_original, representacao_no_mnemonico: m.representacao_no_mnemonico })),
-        associacoes_visuais: vis.associacoes_visuais ?? [],
-        mapa_clinico_completo: approved.mapa_completo ?? [],
-        estrutura_prova: exam.estrutura_prova,
-        diferencial_prova: exam.diferencial_prova,
-        memorizacao_ativa: exam.memorizacao_ativa,
-      },
-    });
-  } catch (error) {
-    const msg = error instanceof Error ? error.message : "Erro interno.";
-    console.error(`[MNEMONIC] FAILED at stage=${currentStage}:`, msg);
-    if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-    return jsonResponse({ success: false, error: msg, stage: currentStage }, 500);
-  }
+  // Race the main pipeline against the global timeout
+  return Promise.race([mainPipeline(), globalTimeout]);
 });
