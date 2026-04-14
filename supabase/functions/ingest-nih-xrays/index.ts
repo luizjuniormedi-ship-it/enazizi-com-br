@@ -222,11 +222,13 @@ Deno.serve(async (req) => {
       }
 
       // Step 5: Telemetry
-      await supabase.from("automation_telemetry").insert({
-        module: "ingest-nih-xrays",
-        event_type: "asset_ingested",
-        details: { asset_id: asset.id, pathology: item.pathology, questions: qCount, filename: item.filename },
-      }).catch(() => {});
+      try {
+        await supabase.from("automation_telemetry").insert({
+          module: "ingest-nih-xrays",
+          event_type: "asset_ingested",
+          details: { asset_id: asset.id, pathology: item.pathology, questions: qCount, filename: item.filename },
+        });
+      } catch { /* ignore telemetry errors */ }
 
       results.push({ filename: item.filename, status: "ingested", asset_id: asset.id, questions: qCount });
 
