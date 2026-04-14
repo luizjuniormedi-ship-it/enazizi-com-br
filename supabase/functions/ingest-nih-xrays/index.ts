@@ -168,12 +168,13 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Step 2: AI vision validation
-      const vision = await validateImageVision(publicUrl, pathInfo.diagnosis_pt, "xray", LOVABLE_API_KEY);
-      if (!vision.valid) {
-        results.push({ filename: item.filename, status: "vision_rejected", reason: vision.reason });
-        // Clean up uploaded file
-        continue;
+      // Step 2: AI vision validation (skip if pre_uploaded and trusted)
+      if (!body.skip_vision) {
+        const vision = await validateImageVision(publicUrl, pathInfo.diagnosis_pt, "xray", LOVABLE_API_KEY);
+        if (!vision.valid) {
+          results.push({ filename: item.filename, status: "vision_rejected", reason: vision.reason });
+          continue;
+        }
       }
 
       // Step 3: Create asset
