@@ -1,1028 +1,448 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// ══════════════════════════════════════════════════
-// CORS
-// ══════════════════════════════════════════════════
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// ══════════════════════════════════════════════════
-// TYPES
-// ══════════════════════════════════════════════════
-
-interface MnemonicRequest {
-  tema: string;
-  termos: string[];
-  estilo?: string;
-  publico?: string;
-}
-
-interface Associacao {
-  letra: string;
-  termo_original: string;
-  representacao_no_mnemonico: string;
-}
-
+interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; }
+interface MapaClinico { termo_original: string; qualificadores: string[]; representacao_no_mnemonico: string; explicacao: string; }
 interface GeneratorOutput {
-  sigla: string;
-  frase_mnemonica: string;
-  explicacao_tecnica: string;
-  explicacao_didatica: string;
-  associacoes?: Associacao[];
-  justificativa_linguistica?: string;
-  observacoes?: string[];
+  tipo: string; sigla: string; frase_mnemonica: string; explicacao_tecnica: string;
+  explicacao_didatica: string; mapa_completo: MapaClinico[];
+  justificativa_clinica: string; justificativa_linguistica: string;
+  associacoes?: Array<{ letra: string; termo_original: string; representacao_no_mnemonico: string }>;
 }
-
 interface LinguisticAuditOutput {
-  score_linguistico: number;
-  fluidez_fala: number;
-  soa_natural: boolean;
-  tem_sentido: boolean;
-  memoravel: boolean;
-  pronunciavel: boolean;
-  adequado_para_aula: boolean;
-  problemas_linguisticos: string[];
-  versao_corrigida?: GeneratorOutput;
+  score_linguistico: number; fluidez_fala: number; naturalidade: number; soa_natural: boolean;
+  problemas: string[]; versao_corrigida?: { frase_mnemonica: string; explicacao_didatica: string; };
 }
-
 interface MedicalAuditOutput {
-  score_medico: number;
-  todos_os_termos_presentes: boolean;
-  houve_omissao: boolean;
-  houve_distorcao_semantica: boolean;
-  ha_risco_clinico: boolean;
-  letras_associadas_corretamente: boolean;
-  erros_encontrados: string[];
+  score_medico: number; todos_os_termos_presentes: boolean; perda_clinica: boolean;
+  termos_faltantes: string[]; qualificadores_perdidos: string[]; erros_encontrados: string[];
   versao_corrigida?: GeneratorOutput;
 }
-
 interface PedagogicalAuditOutput {
-  score_pedagogico: number;
-  facilidade_memorizacao: number;
-  clareza: number;
-  associacao_mental: number;
-  aplicabilidade_em_aula: number;
-  aplicabilidade_em_prova: number;
-  pontos_fortes: string[];
-  pontos_fracos: string[];
-  versao_otimizada?: {
-    frase_mnemonica?: string;
-    explicacao_didatica?: string;
-    cena_sugerida?: string;
-  };
+  score_pedagogico: number; facilidade_memorizacao: number; clareza: number;
+  associacao_mental: number; aplicabilidade_em_aula: number; aplicabilidade_em_prova: number;
+  pontos_fortes: string[]; pontos_fracos: string[];
+  versao_otimizada?: { frase_mnemonica?: string; explicacao_didatica?: string; cena_sugerida?: string; };
 }
-
-interface VisualOutput {
-  cena_visual: string;
-  associacoes_visuais: Array<{ termo: string; elemento_visual: string }>;
-  prompt_imagem: string;
+interface VisualOutput { cena_visual: string; associacoes_visuais: Array<{ termo: string; elemento_visual: string }>; prompt_imagem: string; }
+interface ExamStructureOutput {
+  estrutura_prova: { topico: string; itens_organizados: Array<{ item: string; ponto_chave_prova: string; armadilha_comum: string }>; };
+  diferencial_prova: { diagnostico_comparado: string; diferencas_chave: string[]; pegadinhas: string[]; };
+  memorizacao_ativa: { pergunta_rapida: string; resposta_esperada: string; gatilho_mental: string; };
 }
-
-interface ConsolidatedOutput {
-  sigla: string;
-  frase_mnemonica: string;
-  explicacao_tecnica: string;
-  explicacao_didatica: string;
-  cena_visual: string;
-  prompt_imagem: string;
-  alertas: string[];
-}
-
-// ══════════════════════════════════════════════════
-// CONSTANTS
-// ══════════════════════════════════════════════════
+interface ConsolidatedOutput { sigla: string; frase_mnemonica: string; explicacao_tecnica: string; explicacao_didatica: string; cena_visual: string; prompt_imagem: string; alertas: string[]; }
 
 const OPENAI_MODEL = "gpt-4.1-mini";
-const OPENAI_TEMP = 0.2;
+const OPENAI_TEMP = 0.3;
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
 const SCORE_LINGUISTICO_MIN = 85;
 
-// ══════════════════════════════════════════════════
-// PROMPTS
-// ══════════════════════════════════════════════════
+// ═══ PROMPTS ═══
 
-const PROMPT_GERADOR = `Você é um professor brasileiro carismático de medicina, famoso por criar frases inesquecíveis para seus alunos.
+const PROMPT_GERADOR = `Você é um professor brasileiro de medicina com 20 anos de experiência em ensino clínico.
 
-Sua missão: criar um mnemônico médico em português do Brasil que seja IMPOSSÍVEL de esquecer.
+Crie um mnemônico médico em português do Brasil que seja NATURAL, COMPLETO e MEMORÁVEL.
 
-PROCESSO MENTAL OBRIGATÓRIO:
-Antes de responder, simule como um estudante ouviria essa frase em voz alta.
-Se não for fácil de lembrar em 5 segundos, reescreva.
+REGRAS DE FIDELIDADE CLÍNICA:
+1. PRESERVAR 100% DOS TERMOS — não omitir nenhum
+2. PRESERVAR QUALIFICADORES — "bordas elevadas e nítidas" NÃO vira "bordas nítidas"
+3. "dor intensa/queimação" NÃO vira "dor queima"
+4. "fatores de risco" NÃO vira "fatores"
+5. NUNCA truncar ou simplificar termos perdendo precisão
 
-Regras de ouro:
-- A frase deve soar como algo dito numa aula informal — natural, fluida, falada
-- Priorize humor, imagem mental forte ou ritmo de fala
-- NUNCA comece com "Paciente com...", "Lembre que...", "Para memorizar..."
-- Frases curtas vencem. Máximo 15 palavras na frase mnemônica
-- Cada palavra da frase deve começar com a letra do termo correspondente
-- Incluir TODOS os termos sem omitir nenhum
-- Não trocar o sentido clínico
-- Se a sigla ficar impronunciável, prefira uma frase forte sem sigla forçada
-- A frase deve ter RITMO — teste lendo em voz alta mentalmente
-- Prefira palavras do cotidiano brasileiro, não linguagem acadêmica na frase
-- Use criatividade: cenários absurdos, engraçados ou visuais memorizam melhor
+REGRAS DE NATURALIDADE:
+6. Deve soar como fala de professor em aula
+7. Fácil de repetir em voz alta
+8. NUNCA palavras truncadas ou artificiais
+9. NUNCA sigla forçada que piore clareza
+10. NUNCA "Paciente com...", "Lembre que..."
+11. Linguagem oral brasileira natural
 
-Retorne SOMENTE JSON válido com:
+FORMATO — ordem de preferência:
+1. FRASE natural (primeira escolha)
+2. IMAGEM MENTAL forte
+3. MINI-HISTÓRIA
+4. SIGLA (somente se excelente e pronunciável)
+
+TESTE: Leia em voz alta mentalmente. Se não soar natural em 5s → reescreva.
+
+Retorne SOMENTE JSON:
 {
-  "sigla": "string (somente se pronunciável, senão vazio)",
-  "frase_mnemonica": "string (curta, impactante, falável)",
-  "explicacao_tecnica": "string",
-  "explicacao_didatica": "string",
-  "associacoes": [
-    { "letra": "string", "termo_original": "string", "representacao_no_mnemonico": "string" }
-  ],
-  "justificativa_linguistica": "string",
-  "observacoes": ["string"]
-}`;
-
-const PROMPT_AUDITOR_LINGUISTICO = `Você é um linguista brasileiro especializado em didática médica e oralidade.
-
-Avalie o mnemônico com RIGOR nos seguintes critérios:
-1. FLUIDEZ ORAL — Leia em voz alta mentalmente. Flui naturalmente? Tem ritmo?
-2. NATURALIDADE — Parece algo que um professor brasileiro falaria em aula?
-3. SENTIDO — A frase faz sentido por si só (mesmo fora do contexto médico)?
-4. MEMORABILIDADE — Um estudante lembraria após ouvir 2x?
-5. PRONÚNCIA — A sigla é pronunciável? A frase é falável sem tropeçar?
-6. ARTIFICIALIDADE — Há palavras forçadas, traduções ruins ou construções robóticas?
-
-Dê nota de 0 a 100 para score_linguistico.
-Dê nota de 0 a 100 para fluidez_fala (quão bem a frase flui ao ser falada em voz alta).
-
-Se score_linguistico < 85 OU fluidez_fala < 80, OBRIGATORIAMENTE produza versao_corrigida.
-
-Retorne SOMENTE JSON válido com:
-{
-  "score_linguistico": 0,
-  "fluidez_fala": 0,
-  "soa_natural": true,
-  "tem_sentido": true,
-  "memoravel": true,
-  "pronunciavel": true,
-  "adequado_para_aula": true,
-  "problemas_linguisticos": ["string"],
-  "versao_corrigida": null
-}
-Se precisar corrigir, inclua versao_corrigida com sigla, frase_mnemonica, explicacao_tecnica, explicacao_didatica, associacoes e justificativa_linguistica.`;
-
-const PROMPT_AUDITOR_MEDICO = `Você é um auditor médico extremamente rigoroso.
-
-Sua missão:
-- detectar omissões
-- detectar distorções semânticas
-- detectar erro de associação letra-termo
-- detectar risco clínico
-
-Dê nota de 0 a 100.
-Se houver falha relevante, produza uma versão corrigida.
-
-Retorne SOMENTE JSON válido com:
-{
-  "score_medico": 0,
-  "todos_os_termos_presentes": true,
-  "houve_omissao": false,
-  "houve_distorcao_semantica": false,
-  "ha_risco_clinico": false,
-  "letras_associadas_corretamente": true,
-  "erros_encontrados": ["string"],
-  "versao_corrigida": null
-}
-Se precisar corrigir, inclua versao_corrigida com o mesmo formato do gerador.`;
-
-const PROMPT_AUDITOR_PEDAGOGICO = `Você é especialista em educação médica e neuroaprendizado.
-
-Avalie:
-- facilidade de memorização
-- clareza
-- associação mental
-- aplicabilidade em aula
-- aplicabilidade em prova
-
-Dê nota de 0 a 100.
-Se necessário, proponha uma versão otimizada.
-
-Retorne SOMENTE JSON válido com:
-{
-  "score_pedagogico": 0,
-  "facilidade_memorizacao": 0,
-  "clareza": 0,
-  "associacao_mental": 0,
-  "aplicabilidade_em_aula": 0,
-  "aplicabilidade_em_prova": 0,
-  "pontos_fortes": ["string"],
-  "pontos_fracos": ["string"],
-  "versao_otimizada": null
-}
-Se precisar otimizar, inclua versao_otimizada com frase_mnemonica, explicacao_didatica e cena_sugerida.`;
-
-const PROMPT_VISUAL = `Você é especialista em memória visual aplicada à medicina.
-
-Crie:
-- uma cena visual forte e memorável
-- associação visual item por item
-- prompt de imagem didática
-
-Regras:
-- representar todos os termos
-- manter fidelidade médica
-- ser útil para aula e revisão
-- o prompt_imagem deve ser em INGLÊS para o gerador de imagem
-- descrever uma cena única, coesa, estilo infográfico médico/cartoon limpo
-- proibido incluir textos, letras ou rótulos na cena
-- usar alto contraste e cores saturadas sobre fundo branco
-
-REGRAS OBRIGATÓRIAS para prompt_imagem:
-O prompt DEVE começar com: "Clean medical infographic illustration, flat design, high contrast, saturated colors, pure white background, no text, no labels, no letters."
-Depois descreva a cena com objetos claros e distintos.
-
-Retorne SOMENTE JSON válido com:
-{
-  "cena_visual": "string",
-  "associacoes_visuais": [
-    { "termo": "string", "elemento_visual": "string" }
-  ],
-  "prompt_imagem": "string"
-}`;
-
-const PROMPT_CONSOLIDADOR = `Você é o consolidador final do sistema de mnemônicos médicos.
-
-Monte a melhor versão final possível.
-Priorize:
-- fidelidade clínica absoluta
-- clareza didática
-- valor de memorização
-- utilidade em aula
-- naturalidade em português do Brasil
-
-Retorne SOMENTE JSON válido com:
-{
-  "sigla": "string",
+  "tipo": "frase" ou "sigla",
+  "sigla": "string (vazia se tipo=frase)",
   "frase_mnemonica": "string",
   "explicacao_tecnica": "string",
   "explicacao_didatica": "string",
-  "cena_visual": "string",
-  "prompt_imagem": "string",
-  "alertas": ["string"]
+  "mapa_completo": [{"termo_original":"string","qualificadores":["string"],"representacao_no_mnemonico":"string","explicacao":"string"}],
+  "justificativa_clinica": "string",
+  "justificativa_linguistica": "string"
 }`;
 
-// ══════════════════════════════════════════════════
-// HELPERS
-// ══════════════════════════════════════════════════
+const PROMPT_AUDITOR_MEDICO = `Você é auditor médico EXTREMAMENTE rigoroso em fidelidade clínica de mnemônicos.
+
+Para CADA termo original:
+1. Está presente no mnemônico? (completo, não parcial)
+2. Qualificadores preservados? ("elevadas","intensa","de risco" etc)
+3. Significado clínico intacto?
+4. Ambiguidade diagnóstica?
+
+REPROVAR (perda_clinica=true) se:
+- Qualquer termo ausente
+- Qualquer qualificador importante removido
+- Simplificação que reduza precisão
+- Ambiguidade clínica
+
+Retorne SOMENTE JSON:
+{
+  "score_medico":0,"todos_os_termos_presentes":true,"perda_clinica":false,
+  "termos_faltantes":[],"qualificadores_perdidos":[],"erros_encontrados":[],
+  "versao_corrigida":null
+}
+Se perda_clinica=true, inclua versao_corrigida com formato completo do gerador.`;
+
+const PROMPT_AUDITOR_LINGUISTICO = `Você é linguista brasileiro especializado em didática médica.
+
+Avalie com RIGOR:
+1. FLUIDEZ ORAL — Flui ao ler em voz alta?
+2. NATURALIDADE — Parece fala de professor brasileiro?
+3. PALAVRAS REAIS — Todas existem no português?
+4. FACILIDADE — Aluno lembraria após ouvir 2x?
+5. ARTIFICIALIDADE — Palavras truncadas ou robóticas?
+
+Reprovar se fluidez_fala<80 ou naturalidade<80.
+
+Retorne SOMENTE JSON:
+{
+  "score_linguistico":0,"fluidez_fala":0,"naturalidade":0,"soa_natural":true,
+  "problemas":[],"versao_corrigida":null
+}
+Se reprovar, versao_corrigida com {"frase_mnemonica":"...","explicacao_didatica":"..."}.`;
+
+const PROMPT_AUDITOR_PEDAGOGICO = `Você é especialista em educação médica e neuroaprendizado.
+Avalie: facilidade de memorização, clareza, associação mental, aplicabilidade em aula e prova.
+Dê nota 0-100. Se necessário, proponha versão otimizada.
+Retorne SOMENTE JSON:
+{"score_pedagogico":0,"facilidade_memorizacao":0,"clareza":0,"associacao_mental":0,"aplicabilidade_em_aula":0,"aplicabilidade_em_prova":0,"pontos_fortes":[],"pontos_fracos":[],"versao_otimizada":null}`;
+
+const PROMPT_VISUAL = `Você é especialista em memória visual aplicada à medicina.
+Crie cena visual forte, associação visual item por item, prompt de imagem em INGLÊS.
+O prompt_imagem DEVE começar com: "Clean medical infographic illustration, flat design, high contrast, saturated colors, pure white background, no text, no labels, no letters."
+Retorne SOMENTE JSON:
+{"cena_visual":"string","associacoes_visuais":[{"termo":"string","elemento_visual":"string"}],"prompt_imagem":"string"}`;
+
+const PROMPT_ESTRUTURA_PROVA = `Você é especialista em provas de residência médica no Brasil.
+Para o tema e termos, crie estrutura de prova com pontos-chave, armadilhas, diferencial diagnóstico e pergunta de memorização ativa.
+Retorne SOMENTE JSON:
+{
+  "estrutura_prova":{"topico":"string","itens_organizados":[{"item":"string","ponto_chave_prova":"string","armadilha_comum":"string"}]},
+  "diferencial_prova":{"diagnostico_comparado":"string","diferencas_chave":[],"pegadinhas":[]},
+  "memorizacao_ativa":{"pergunta_rapida":"string","resposta_esperada":"string","gatilho_mental":"string"}
+}`;
+
+const PROMPT_CONSOLIDADOR = `Você é o consolidador final do sistema de mnemônicos médicos.
+Monte a melhor versão final. REGRA CRÍTICA: Não remover qualificadores clínicos.
+Retorne SOMENTE JSON:
+{"sigla":"string","frase_mnemonica":"string","explicacao_tecnica":"string","explicacao_didatica":"string","cena_visual":"string","prompt_imagem":"string","alertas":[]}`;
+
+// ═══ HELPERS ═══
 
 function jsonResponse(body: unknown, status = 200): Response {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 }
-
-function requireEnv(name: string): string {
-  const val = Deno.env.get(name);
-  if (!val) throw new Error(`Env var ${name} is missing`);
-  return val;
-}
+function requireEnv(name: string): string { const v = Deno.env.get(name); if (!v) throw new Error(`Env ${name} missing`); return v; }
 
 function validatePayload(body: unknown): MnemonicRequest {
   if (!body || typeof body !== "object") throw new Error("Body inválido.");
   const b = body as Record<string, unknown>;
-
   const tema = (b.tema ?? b.topic) as string | undefined;
   const termos = (b.termos ?? b.items) as string[] | undefined;
-
-  if (!tema || typeof tema !== "string" || !tema.trim())
-    throw new Error("Campo 'tema' é obrigatório.");
-  if (!Array.isArray(termos) || termos.length === 0)
-    throw new Error("Campo 'termos' deve ser um array não vazio.");
-  for (const t of termos) {
-    if (typeof t !== "string" || !t.trim())
-      throw new Error("Cada termo deve ser uma string não vazia.");
-  }
-  return {
-    tema,
-    termos,
-    estilo: typeof b.estilo === "string" ? b.estilo : (typeof b.contentType === "string" ? b.contentType : undefined),
-    publico: typeof b.publico === "string" ? b.publico : undefined,
-  };
+  if (!tema?.trim()) throw new Error("Campo 'tema' é obrigatório.");
+  if (!Array.isArray(termos) || termos.length === 0) throw new Error("Campo 'termos' deve ser array não vazio.");
+  for (const t of termos) { if (typeof t !== "string" || !t.trim()) throw new Error("Cada termo deve ser string não vazia."); }
+  return { tema, termos, estilo: typeof b.estilo === "string" ? b.estilo : undefined, publico: typeof b.publico === "string" ? b.publico : undefined };
 }
 
 function normalizeTerms(tema: string, termos: string[]): { tema: string; termos: string[] } {
-  const trimmedTema = tema.trim();
-  const seen = new Set<string>();
-  const unique: string[] = [];
-  for (const t of termos) {
-    const trimmed = t.trim();
-    const key = trimmed.toLowerCase();
-    if (trimmed && !seen.has(key)) {
-      seen.add(key);
-      unique.push(trimmed);
-    }
-  }
-  return { tema: trimmedTema, termos: unique };
+  const seen = new Set<string>(); const unique: string[] = [];
+  for (const t of termos) { const tr = t.trim(); const k = tr.toLowerCase(); if (tr && !seen.has(k)) { seen.add(k); unique.push(tr); } }
+  return { tema: tema.trim(), termos: unique };
 }
 
 function buildContext(req: MnemonicRequest): string {
-  let ctx = `Tema: ${req.tema}\nTermos: ${req.termos.join(", ")}`;
-  if (req.estilo) ctx += `\nEstilo desejado: ${req.estilo}`;
-  if (req.publico) ctx += `\nPúblico-alvo: ${req.publico}`;
+  let ctx = `Tema: ${req.tema}\nTermos clínicos (TODOS devem ser preservados integralmente, com qualificadores):\n`;
+  req.termos.forEach((t, i) => { ctx += `${i + 1}. ${t}\n`; });
+  if (req.estilo) ctx += `\nEstilo: ${req.estilo}`;
+  if (req.publico) ctx += `\nPúblico: ${req.publico}`;
   return ctx;
 }
 
+function runClinicalGate(originalTermos: string[], frase: string, mapa?: MapaClinico[]): { passed: boolean; missing: string[] } {
+  const fLower = frase.toLowerCase();
+  const mapped = new Set((mapa ?? []).map(m => m.termo_original.toLowerCase()));
+  const missing: string[] = [];
+  for (const t of originalTermos) {
+    const tLower = t.toLowerCase().trim();
+    const inMap = [...mapped].some(m => m.includes(tLower) || tLower.includes(m));
+    if (!inMap) {
+      const kws = tLower.split(/\s+/).filter(w => w.length > 3);
+      if (!kws.some(kw => fLower.includes(kw))) missing.push(t);
+    }
+  }
+  return { passed: missing.length === 0, missing };
+}
+
 async function getUserIdFromRequest(req: Request): Promise<string> {
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer "))
-    throw new Error("Token de autenticação ausente.");
-
-  const supabaseUrl = requireEnv("SUPABASE_URL");
-  const supabaseAnonKey = requireEnv("SUPABASE_ANON_KEY");
-
-  const sb = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } },
-    auth: { persistSession: false, autoRefreshToken: false },
+  const auth = req.headers.get("Authorization");
+  if (!auth?.startsWith("Bearer ")) throw new Error("Token ausente.");
+  const sb = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_ANON_KEY"), {
+    global: { headers: { Authorization: auth } }, auth: { persistSession: false, autoRefreshToken: false },
   });
-
   const { data, error } = await sb.auth.getUser();
-  if (error || !data?.user?.id)
-    throw new Error("Não foi possível autenticar o usuário.");
+  if (error || !data?.user?.id) throw new Error("Autenticação falhou.");
   return data.user.id;
 }
 
-// ══════════════════════════════════════════════════
-// OPENAI CALL
-// ══════════════════════════════════════════════════
+const AGENT_TIMEOUT_MS = 20000;
 
-const AGENT_TIMEOUT_MS = 15000;
-
-async function callOpenAIJson<T>(
-  apiKey: string,
-  systemPrompt: string,
-  userPrompt: string,
-): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
-
+async function callOpenAIJson<T>(apiKey: string, sys: string, user: string): Promise<T> {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), AGENT_TIMEOUT_MS);
   try {
-    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        temperature: OPENAI_TEMP,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-      }),
-      signal: controller.signal,
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: OPENAI_MODEL, temperature: OPENAI_TEMP, messages: [{ role: "system", content: sys }, { role: "user", content: user }], response_format: { type: "json_object" } }),
+      signal: ctrl.signal,
     });
-
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "unknown");
-      throw new Error(`OpenAI HTTP ${resp.status}: ${errText.substring(0, 300)}`);
-    }
-
-    const json = await resp.json();
-    const content = json?.choices?.[0]?.message?.content;
-    if (!content) throw new Error("OpenAI retornou content vazio.");
-
-    try {
-      return JSON.parse(content) as T;
-    } catch {
-      throw new Error(`OpenAI retornou JSON inválido: ${content.substring(0, 200)}`);
-    }
-  } finally {
-    clearTimeout(timer);
-  }
+    if (!r.ok) { const e = await r.text().catch(() => "?"); throw new Error(`OpenAI ${r.status}: ${e.substring(0, 300)}`); }
+    const j = await r.json(); const c = j?.choices?.[0]?.message?.content;
+    if (!c) throw new Error("OpenAI content vazio.");
+    try { return JSON.parse(c) as T; } catch { throw new Error(`JSON inválido: ${c.substring(0, 200)}`); }
+  } finally { clearTimeout(timer); }
 }
-
-// ══════════════════════════════════════════════════
-// IMAGE GENERATION VIA LOVABLE AI GATEWAY
-// ══════════════════════════════════════════════════
 
 async function generateImage(prompt: string): Promise<string | null> {
-  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!lovableApiKey) {
-    console.warn("LOVABLE_API_KEY not set, skipping image generation");
-    return null;
-  }
-
+  const key = Deno.env.get("LOVABLE_API_KEY");
+  if (!key) return null;
   try {
-    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3.1-flash-image-preview",
-        messages: [
-          {
-            role: "user",
-            content: `Generate a clean medical infographic illustration: ${prompt}. Style: clean cartoon medical illustration, high contrast, saturated colors on white background. NO text, NO labels, NO letters in the image.`,
-          },
-        ],
-        modalities: ["image", "text"],
-      }),
+    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "google/gemini-3.1-flash-image-preview", messages: [{ role: "user", content: `Generate: ${prompt}. NO text/labels/letters.` }], modalities: ["image", "text"] }),
     });
-
-    if (!resp.ok) {
-      const errText = await resp.text().catch(() => "unknown");
-      console.error(`Image generation failed: HTTP ${resp.status}: ${errText}`);
-      return null;
-    }
-
-    const json = await resp.json();
-    const imageUrl = json?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-
-    if (!imageUrl) {
-      console.warn("Image generation returned no image");
-      return null;
-    }
-
-    // Upload to Supabase Storage
-    return await uploadImageToStorage(imageUrl);
-  } catch (err) {
-    console.error("Image generation error:", err);
-    return null;
-  }
+    if (!r.ok) return null;
+    const j = await r.json();
+    let img: string | null = null;
+    const parts = j?.choices?.[0]?.message?.content;
+    if (typeof parts === "string" && parts.startsWith("data:image")) img = parts;
+    else if (Array.isArray(parts)) { const p = parts.find((x: any) => x.type === "image_url" || x.type === "image"); img = p?.image_url?.url ?? p?.url ?? p?.data ?? null; }
+    if (!img) img = j?.choices?.[0]?.message?.images?.[0]?.image_url?.url ?? null;
+    if (!img) return null;
+    if (img.startsWith("http")) return img;
+    return await uploadImage(img);
+  } catch { return null; }
 }
 
-async function uploadImageToStorage(base64DataUrl: string): Promise<string | null> {
+async function uploadImage(b64: string): Promise<string | null> {
   try {
-    const supabaseUrl = requireEnv("SUPABASE_URL");
-    const serviceKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
-    const db = createClient(supabaseUrl, serviceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
-
-    // Extract base64 data
-    const base64Data = base64DataUrl.replace(/^data:image\/\w+;base64,/, "");
-    const binaryStr = atob(base64Data);
-    const bytes = new Uint8Array(binaryStr.length);
-    for (let i = 0; i < binaryStr.length; i++) {
-      bytes[i] = binaryStr.charCodeAt(i);
-    }
-
-    const fileName = `mnemonics/${crypto.randomUUID()}.png`;
-
-    const { error } = await db.storage
-      .from("question-images")
-      .upload(fileName, bytes, {
-        contentType: "image/png",
-        upsert: false,
-      });
-
-    if (error) {
-      console.error("Storage upload error:", error.message);
-      return null;
-    }
-
-    const { data: publicUrl } = db.storage.from("question-images").getPublicUrl(fileName);
-    return publicUrl?.publicUrl ?? null;
-  } catch (err) {
-    console.error("Upload to storage failed:", err);
-    return null;
-  }
+    const db = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
+    const data = b64.replace(/^data:image\/\w+;base64,/, "");
+    const bin = atob(data); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const name = `mnemonics/${crypto.randomUUID()}.png`;
+    const { error } = await db.storage.from("question-images").upload(name, bytes, { contentType: "image/png", upsert: false });
+    if (error) return null;
+    const { data: u } = db.storage.from("question-images").getPublicUrl(name);
+    return u?.publicUrl ?? null;
+  } catch { return null; }
 }
-
-// ══════════════════════════════════════════════════
-// DATABASE HELPERS
-// ══════════════════════════════════════════════════
 
 function getServiceClient(): SupabaseClient {
-  return createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
+  return createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-async function insertRequest(
-  db: SupabaseClient,
-  userId: string,
-  payload: MnemonicRequest,
-): Promise<string> {
-  const { data, error } = await db
-    .from("mnemonic_requests")
-    .insert({
-      user_id: userId,
-      tema: payload.tema,
-      termos_json: payload.termos,
-      estilo: payload.estilo ?? "acronimo",
-      publico: payload.publico ?? "residencia",
-      status: "processing",
-      source: "lovable-ui",
-    })
-    .select("id")
-    .single();
-
-  if (error || !data?.id) throw new Error(`Falha ao criar request: ${error?.message}`);
+async function insertRequest(db: SupabaseClient, userId: string, p: MnemonicRequest): Promise<string> {
+  const { data, error } = await db.from("mnemonic_requests").insert({ user_id: userId, tema: p.tema, termos_json: p.termos, estilo: p.estilo ?? "frase + imagem mental", publico: p.publico ?? "residencia", status: "processing", source: "lovable-ui" }).select("id").single();
+  if (error || !data?.id) throw new Error(`Request failed: ${error?.message}`);
   return data.id as string;
 }
 
-async function updateRequestStatus(
-  db: SupabaseClient,
-  requestId: string,
-  status: "completed" | "failed",
-): Promise<void> {
-  const { error } = await db
-    .from("mnemonic_requests")
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq("id", requestId);
-  if (error) console.error(`Falha ao atualizar request status: ${error.message}`);
+async function updateRequestStatus(db: SupabaseClient, id: string, status: string): Promise<void> {
+  await db.from("mnemonic_requests").update({ status, updated_at: new Date().toISOString() }).eq("id", id);
 }
 
-async function insertAgentLog(
-  db: SupabaseClient,
-  params: {
-    request_id: string;
-    result_id?: string;
-    user_id: string;
-    agent_name: string;
-    execution_order: number;
-    status: "completed" | "failed";
-    input_json: unknown;
-    output_json: unknown;
-    score?: number;
-    duration_ms: number;
-    error_message?: string;
-  },
-): Promise<void> {
-  const { error } = await db.from("mnemonic_agent_logs").insert({
-    request_id: params.request_id,
-    result_id: params.result_id ?? null,
-    user_id: params.user_id,
-    agent_name: params.agent_name,
-    execution_order: params.execution_order,
-    status: params.status,
-    input_json: params.input_json,
-    output_json: params.output_json,
-    score: params.score ?? null,
-    duration_ms: params.duration_ms,
-    error_message: params.error_message ?? null,
-  });
-  if (error) console.error(`Log insert failed for ${params.agent_name}: ${error.message}`);
+async function insertAgentLog(db: SupabaseClient, p: { request_id: string; user_id: string; agent_name: string; execution_order: number; status: string; input_json: unknown; output_json: unknown; score?: number; duration_ms: number; error_message?: string; }): Promise<void> {
+  const out = (() => { try { const s = JSON.stringify(p.output_json); return s.length > 1000 ? { _truncated: true, preview: s.substring(0, 500) } : p.output_json; } catch { return null; } })();
+  await db.from("mnemonic_agent_logs").insert({ ...p, output_json: out, score: p.score ?? null, error_message: p.error_message ?? null, result_id: null }).catch(e => console.error(`Log failed: ${e.message}`));
 }
 
-async function insertResult(
-  db: SupabaseClient,
-  params: {
-    request_id: string;
-    user_id: string;
-    tema: string;
-    consolidated: ConsolidatedOutput;
-    visual: VisualOutput;
-    score_medico: number;
-    score_pedagogico: number;
-    score_linguistico: number;
-    score_final: number;
-    aprovado: boolean;
-    aprovado_medico: boolean;
-    aprovado_pedagogico: boolean;
-    image_url: string | null;
-  },
-): Promise<string> {
-  const { data: existing } = await db
-    .from("mnemonic_results")
-    .select("versao")
-    .eq("request_id", params.request_id)
-    .eq("is_latest", true)
-    .order("versao", { ascending: false })
-    .limit(1);
-
-  const versao = existing && existing.length > 0 ? (existing[0].versao as number) + 1 : 1;
-
-  const { data, error } = await db
-    .from("mnemonic_results")
-    .insert({
-      request_id: params.request_id,
-      user_id: params.user_id,
-      tema: params.tema,
-      sigla: params.consolidated.sigla,
-      frase_mnemonica: params.consolidated.frase_mnemonica,
-      explicacao_tecnica: params.consolidated.explicacao_tecnica,
-      explicacao_didatica: params.consolidated.explicacao_didatica,
-      cena_visual: params.consolidated.cena_visual,
-      prompt_imagem: params.consolidated.prompt_imagem,
-      associacoes_json: params.visual.associacoes_visuais ?? [],
-      associacoes_visuais_json: params.visual.associacoes_visuais ?? [],
-      alertas_json: params.consolidated.alertas ?? [],
-      score_medico: params.score_medico,
-      score_pedagogico: params.score_pedagogico,
-      score_linguistico: params.score_linguistico,
-      score_final: params.score_final,
-      aprovado: params.aprovado,
-      aprovado_medico: params.aprovado_medico,
-      aprovado_pedagogico: params.aprovado_pedagogico,
-      image_url: params.image_url,
-      versao,
-      is_latest: true,
-    })
-    .select("id")
-    .single();
-
-  if (error || !data?.id) throw new Error(`Falha ao salvar resultado: ${error?.message}`);
+async function insertResult(db: SupabaseClient, p: { request_id: string; user_id: string; tema: string; consolidated: ConsolidatedOutput; visual: VisualOutput; score_medico: number; score_pedagogico: number; score_linguistico: number; score_final: number; aprovado: boolean; aprovado_medico: boolean; aprovado_pedagogico: boolean; image_url: string | null; }): Promise<string> {
+  const { data: ex } = await db.from("mnemonic_results").select("versao").eq("request_id", p.request_id).eq("is_latest", true).order("versao", { ascending: false }).limit(1);
+  const v = ex?.length ? (ex[0].versao as number) + 1 : 1;
+  const { data, error } = await db.from("mnemonic_results").insert({
+    request_id: p.request_id, user_id: p.user_id, tema: p.tema, sigla: p.consolidated.sigla,
+    frase_mnemonica: p.consolidated.frase_mnemonica, explicacao_tecnica: p.consolidated.explicacao_tecnica,
+    explicacao_didatica: p.consolidated.explicacao_didatica, cena_visual: p.consolidated.cena_visual,
+    prompt_imagem: p.consolidated.prompt_imagem, associacoes_json: p.visual.associacoes_visuais ?? [],
+    associacoes_visuais_json: p.visual.associacoes_visuais ?? [], alertas_json: p.consolidated.alertas ?? [],
+    score_medico: p.score_medico, score_pedagogico: p.score_pedagogico, score_linguistico: p.score_linguistico,
+    score_final: p.score_final, aprovado: p.aprovado, aprovado_medico: p.aprovado_medico,
+    aprovado_pedagogico: p.aprovado_pedagogico, image_url: p.image_url, versao: v, is_latest: true,
+  }).select("id").single();
+  if (error || !data?.id) throw new Error(`Result save failed: ${error?.message}`);
   return data.id as string;
 }
 
-// ══════════════════════════════════════════════════
-// AGENT RUNNER
-// ══════════════════════════════════════════════════
-
-async function runAgent<T>(
-  apiKey: string,
-  db: SupabaseClient,
-  requestId: string,
-  userId: string,
-  agentName: string,
-  order: number,
-  systemPrompt: string,
-  userPrompt: string,
-): Promise<T> {
+async function runAgent<T>(apiKey: string, db: SupabaseClient, reqId: string, userId: string, name: string, order: number, sys: string, user: string): Promise<T> {
   const start = Date.now();
   try {
-    const output = await callOpenAIJson<T>(apiKey, systemPrompt, userPrompt);
-    const duration = Date.now() - start;
-
-    const outRecord = output as Record<string, unknown>;
-    const score = typeof outRecord.score_medico === "number"
-      ? outRecord.score_medico
-      : typeof outRecord.score_pedagogico === "number"
-        ? outRecord.score_pedagogico
-        : typeof outRecord.score_linguistico === "number"
-          ? outRecord.score_linguistico
-          : undefined;
-
-    // Truncate output for logs to keep DB lean
-    const safeOutput = (() => {
-      try {
-        const s = JSON.stringify(output);
-        return s.length > 1000 ? { _truncated: true, preview: s.substring(0, 500) } : output;
-      } catch { return { _error: "non-serializable" }; }
-    })();
-
-    await insertAgentLog(db, {
-      request_id: requestId,
-      user_id: userId,
-      agent_name: agentName,
-      execution_order: order,
-      status: "completed",
-      input_json: { userPrompt: userPrompt.substring(0, 500) },
-      output_json: safeOutput,
-      score: score as number | undefined,
-      duration_ms: duration,
-    });
-
-    return output;
+    const out = await callOpenAIJson<T>(apiKey, sys, user);
+    const d = Date.now() - start;
+    const r = out as Record<string, unknown>;
+    const sc = typeof r.score_medico === "number" ? r.score_medico : typeof r.score_pedagogico === "number" ? r.score_pedagogico : typeof r.score_linguistico === "number" ? r.score_linguistico : undefined;
+    await insertAgentLog(db, { request_id: reqId, user_id: userId, agent_name: name, execution_order: order, status: "completed", input_json: { prompt: user.substring(0, 500) }, output_json: out, score: sc as number | undefined, duration_ms: d });
+    return out;
   } catch (err) {
-    const duration = Date.now() - start;
-    const msg = err instanceof Error ? err.message : String(err);
-
-    await insertAgentLog(db, {
-      request_id: requestId,
-      user_id: userId,
-      agent_name: agentName,
-      execution_order: order,
-      status: "failed",
-      input_json: { userPrompt: userPrompt.substring(0, 500) },
-      output_json: null,
-      duration_ms: duration,
-      error_message: msg,
-    });
-
-    throw new Error(`Agente ${agentName} falhou: ${msg}`);
+    const d = Date.now() - start; const msg = err instanceof Error ? err.message : String(err);
+    await insertAgentLog(db, { request_id: reqId, user_id: userId, agent_name: name, execution_order: order, status: "failed", input_json: { prompt: user.substring(0, 500) }, output_json: null, duration_ms: d, error_message: msg });
+    throw new Error(`${name} falhou: ${msg}`);
   }
 }
 
-// ══════════════════════════════════════════════════
-// MAIN HANDLER
-// ══════════════════════════════════════════════════
+// ═══ MAIN ═══
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
-  if (req.method !== "POST") {
-    return jsonResponse({ success: false, error: "Método não permitido." }, 405);
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  if (req.method !== "POST") return jsonResponse({ success: false, error: "Método não permitido." }, 405);
 
   let requestId: string | null = null;
   let db: SupabaseClient | null = null;
 
   try {
-    // 1. Validate env vars
     const openaiKey = requireEnv("OPENAI_API_KEY");
-    requireEnv("SUPABASE_URL");
-    requireEnv("SUPABASE_ANON_KEY");
-    requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    requireEnv("SUPABASE_URL"); requireEnv("SUPABASE_ANON_KEY"); requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 
-    // 2. Parse & validate body
     const rawBody = await req.json().catch(() => null);
     const payload = validatePayload(rawBody);
+    const norm = normalizeTerms(payload.tema, payload.termos);
+    payload.tema = norm.tema; payload.termos = norm.termos;
 
-    // 3. Normalize
-    const normalized = normalizeTerms(payload.tema, payload.termos);
-    payload.tema = normalized.tema;
-    payload.termos = normalized.termos;
-
-    // 4. Authenticate user
     const userId = await getUserIdFromRequest(req);
-
-    // 5. Init DB client (service role)
     db = getServiceClient();
-
-    // 6. Insert request
     requestId = await insertRequest(db, userId, payload);
-
-    // 7. Build context
-    const context = buildContext(payload);
+    const ctx = buildContext(payload);
     let order = 0;
 
-    // ──────────────────────────────────────────────
-    // AGENT 1: GERADOR
-    // ──────────────────────────────────────────────
-    let generated = await runAgent<GeneratorOutput>(
-      openaiKey, db, requestId, userId, "gerador", ++order, PROMPT_GERADOR, context,
-    );
+    // ── GERADOR ──
+    let gen = await runAgent<GeneratorOutput>(openaiKey, db, requestId, userId, "gerador", ++order, PROMPT_GERADOR, ctx);
 
-    // ──────────────────────────────────────────────
-    // AGENT 2: AUDITOR LINGUÍSTICO PT-BR
-    // ──────────────────────────────────────────────
-    const lingPrompt = `${context}\n\nMnemônico gerado:\n${JSON.stringify(generated, null, 2)}`;
-    let lingAudit = await runAgent<LinguisticAuditOutput>(
-      openaiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, lingPrompt,
-    );
-
-    // ──────────────────────────────────────────────
-    // RETRY LINGUÍSTICO (se score < 85 ou não soa natural)
-    // ──────────────────────────────────────────────
-    const fluidezFala = typeof lingAudit.fluidez_fala === "number" ? lingAudit.fluidez_fala : 100;
-    if (lingAudit.score_linguistico < SCORE_LINGUISTICO_MIN || fluidezFala < 80 || !lingAudit.soa_natural || !lingAudit.tem_sentido) {
-      console.log(`Score linguístico ${lingAudit.score_linguistico} < ${SCORE_LINGUISTICO_MIN} ou não natural. Retry...`);
-
-      if (lingAudit.versao_corrigida) {
-        generated = lingAudit.versao_corrigida;
-      }
-
-      const retryLingPrompt = `${context}\n\nA versão anterior falhou na auditoria linguística (score: ${lingAudit.score_linguistico}/100).\nProblemas: ${(lingAudit.problemas_linguisticos || []).join("; ")}\n\nCrie uma nova versão que soe NATURAL em português do Brasil. A frase deve parecer algo que um professor brasileiro realmente falaria em aula. Evite construções artificiais.`;
-
-      const retryGen = await runAgent<GeneratorOutput>(
-        openaiKey, db, requestId, userId, "retry_linguistico", ++order, PROMPT_GERADOR, retryLingPrompt,
-      );
-
-      // Re-audit linguistically
-      const retryLingAuditPrompt = `${context}\n\nMnemônico gerado (retry linguístico):\n${JSON.stringify(retryGen, null, 2)}`;
-      const retryLingAudit = await runAgent<LinguisticAuditOutput>(
-        openaiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, retryLingAuditPrompt,
-      );
-
-      if (retryLingAudit.score_linguistico >= lingAudit.score_linguistico) {
-        lingAudit = retryLingAudit;
-        generated = retryLingAudit.versao_corrigida ?? retryGen;
-      }
-    } else if (lingAudit.versao_corrigida) {
-      generated = lingAudit.versao_corrigida;
+    // ── CLINICAL GATE ──
+    const gate = runClinicalGate(payload.termos, gen.frase_mnemonica, gen.mapa_completo);
+    if (!gate.passed) {
+      console.log(`Clinical gate FAILED. Missing: ${gate.missing.join(", ")}`);
+      const gatePrompt = `${ctx}\n\nVersão anterior FALHOU no gate clínico.\nTermos faltantes: ${gate.missing.join(", ")}\nINCLUA TODOS os termos originais.`;
+      gen = await runAgent<GeneratorOutput>(openaiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, gatePrompt);
     }
 
-    // ──────────────────────────────────────────────
-    // AGENT 3: AUDITOR MÉDICO
-    // ──────────────────────────────────────────────
-    const auditMedPrompt = `${context}\n\nMnemônico gerado:\n${JSON.stringify(generated, null, 2)}`;
-    let medAudit = await runAgent<MedicalAuditOutput>(
-      openaiKey, db, requestId, userId, "auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, auditMedPrompt,
-    );
+    // ── AUDITOR LINGUÍSTICO ──
+    const lingP = `${ctx}\n\nMnemônico:\nFrase: ${gen.frase_mnemonica}\nDidática: ${gen.explicacao_didatica}`;
+    let ling = await runAgent<LinguisticAuditOutput>(openaiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, lingP);
+    const flu = typeof ling.fluidez_fala === "number" ? ling.fluidez_fala : 100;
+    const nat = typeof ling.naturalidade === "number" ? ling.naturalidade : 100;
 
-    // ──────────────────────────────────────────────
-    // RETRY MÉDICO (se score < 90)
-    // ──────────────────────────────────────────────
-    let approvedVersion: GeneratorOutput = medAudit.versao_corrigida ?? generated;
+    if (ling.score_linguistico < SCORE_LINGUISTICO_MIN || flu < 80 || nat < 80 || !ling.soa_natural) {
+      if (ling.versao_corrigida?.frase_mnemonica) { gen.frase_mnemonica = ling.versao_corrigida.frase_mnemonica; if (ling.versao_corrigida.explicacao_didatica) gen.explicacao_didatica = ling.versao_corrigida.explicacao_didatica; }
+      const rP = `${ctx}\n\nAuditoria linguística falhou (score=${ling.score_linguistico}, fluidez=${flu}, nat=${nat}).\nProblemas: ${(ling.problemas||[]).join("; ")}\nAtual: ${gen.frase_mnemonica}\nReescreva NATURAL.`;
+      const rGen = await runAgent<GeneratorOutput>(openaiKey, db, requestId, userId, "retry_linguistico", ++order, PROMPT_GERADOR, rP);
+      const rLing = await runAgent<LinguisticAuditOutput>(openaiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, `${ctx}\n\nRetry:\nFrase: ${rGen.frase_mnemonica}`);
+      if (rLing.score_linguistico >= ling.score_linguistico) { ling = rLing; gen = rGen; }
+    } else if (ling.versao_corrigida?.frase_mnemonica) { gen.frase_mnemonica = ling.versao_corrigida.frase_mnemonica; }
 
-    if (medAudit.score_medico < SCORE_MEDICO_MIN) {
-      console.log(`Score médico ${medAudit.score_medico} < ${SCORE_MEDICO_MIN}. Retry...`);
+    // ── AUDITOR MÉDICO ──
+    const medP = `${ctx}\n\nMnemônico:\n${JSON.stringify({ sigla: gen.sigla, frase_mnemonica: gen.frase_mnemonica, mapa_completo: gen.mapa_completo }, null, 2)}`;
+    let med = await runAgent<MedicalAuditOutput>(openaiKey, db, requestId, userId, "auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, medP);
+    let approved = gen;
 
-      const retryPrompt = `${context}\n\nA versão anterior falhou na auditoria médica (score: ${medAudit.score_medico}/100).\nErros detectados: ${(medAudit.erros_encontrados || []).join("; ")}\n\nCrie uma versão melhorada corrigindo todos os erros apontados. Mantenha a naturalidade em português do Brasil.`;
-
-      const retryGen = await runAgent<GeneratorOutput>(
-        openaiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, retryPrompt,
-      );
-
-      const retryAuditPrompt = `${context}\n\nMnemônico gerado (retry):\n${JSON.stringify(retryGen, null, 2)}`;
-      const retryMed = await runAgent<MedicalAuditOutput>(
-        openaiKey, db, requestId, userId, "retry_auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, retryAuditPrompt,
-      );
-
-      if (retryMed.score_medico >= medAudit.score_medico) {
-        medAudit = retryMed;
-        approvedVersion = retryMed.versao_corrigida ?? retryGen;
-      }
+    if (med.perda_clinica || med.score_medico < SCORE_MEDICO_MIN) {
+      if (med.versao_corrigida) approved = med.versao_corrigida;
+      const rP = `${ctx}\n\nAuditoria médica FALHOU (score=${med.score_medico}).\nFaltantes: ${(med.termos_faltantes||[]).join(", ")}\nQualif. perdidos: ${(med.qualificadores_perdidos||[]).join(", ")}\nCrie versão com TODOS termos e qualificadores.`;
+      const rGen = await runAgent<GeneratorOutput>(openaiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, rP);
+      const rMed = await runAgent<MedicalAuditOutput>(openaiKey, db, requestId, userId, "retry_auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, `${ctx}\n\nRetry médico:\n${JSON.stringify({ sigla: rGen.sigla, frase_mnemonica: rGen.frase_mnemonica, mapa_completo: rGen.mapa_completo }, null, 2)}`);
+      if (rMed.score_medico >= med.score_medico) { med = rMed; approved = rMed.versao_corrigida ?? rGen; }
     }
 
-    // ──────────────────────────────────────────────
-    // AGENT 4: AUDITOR PEDAGÓGICO (resiliente)
-    // ──────────────────────────────────────────────
-    let pedAudit: PedagogicalAuditOutput = {
-      score_pedagogico: 75, facilidade_memorizacao: 75, clareza: 75,
-      associacao_mental: 75, aplicabilidade_em_aula: 75, aplicabilidade_em_prova: 75,
-      pontos_fortes: [], pontos_fracos: [],
-    };
+    // ── AUDITOR PEDAGÓGICO (resilient) ──
+    let ped: PedagogicalAuditOutput = { score_pedagogico: 75, facilidade_memorizacao: 75, clareza: 75, associacao_mental: 75, aplicabilidade_em_aula: 75, aplicabilidade_em_prova: 75, pontos_fortes: [], pontos_fracos: [] };
     try {
-      const pedPrompt = `${context}\n\nMnemônico aprovado médicamente:\n${JSON.stringify(approvedVersion, null, 2)}`;
-      pedAudit = await runAgent<PedagogicalAuditOutput>(
-        openaiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, pedPrompt,
-      );
-
-      // RETRY PEDAGÓGICO (se score < 85)
-      if (pedAudit.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
-        console.log(`Score pedagógico ${pedAudit.score_pedagogico} < ${SCORE_PEDAGOGICO_MIN}. Retry...`);
-        const retryPedPrompt = `${context}\n\nMnemônico:\n${JSON.stringify(approvedVersion, null, 2)}\n\nA versão anterior teve baixa performance pedagógica (score: ${pedAudit.score_pedagogico}/100).\nPontos fracos: ${(pedAudit.pontos_fracos || []).join("; ")}\n\nReavalie e produza uma versão otimizada.`;
-        const retryPed = await runAgent<PedagogicalAuditOutput>(
-          openaiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, retryPedPrompt,
-        );
-        if (retryPed.score_pedagogico >= pedAudit.score_pedagogico) pedAudit = retryPed;
+      ped = await runAgent<PedagogicalAuditOutput>(openaiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, `${ctx}\n\nFrase: ${approved.frase_mnemonica}\nDidática: ${approved.explicacao_didatica}`);
+      if (ped.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
+        const rPed = await runAgent<PedagogicalAuditOutput>(openaiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, `${ctx}\n\nFrase: ${approved.frase_mnemonica}\nScore: ${ped.score_pedagogico}. Fracos: ${(ped.pontos_fracos||[]).join("; ")}. Otimize.`);
+        if (rPed.score_pedagogico >= ped.score_pedagogico) ped = rPed;
       }
-    } catch (pedErr) {
-      console.error("Pedagogical audit failed, using defaults:", pedErr);
-    }
+    } catch { /* use defaults */ }
+    if (ped.versao_otimizada?.frase_mnemonica) approved.frase_mnemonica = ped.versao_otimizada.frase_mnemonica;
+    if (ped.versao_otimizada?.explicacao_didatica) approved.explicacao_didatica = ped.versao_otimizada.explicacao_didatica;
 
-    // Apply pedagogical optimizations
-    if (pedAudit.versao_otimizada) {
-      if (pedAudit.versao_otimizada.frase_mnemonica) {
-        approvedVersion.frase_mnemonica = pedAudit.versao_otimizada.frase_mnemonica;
-      }
-      if (pedAudit.versao_otimizada.explicacao_didatica) {
-        approvedVersion.explicacao_didatica = pedAudit.versao_otimizada.explicacao_didatica;
-      }
-    }
+    // ── VISUAL (resilient) ──
+    let vis: VisualOutput = { cena_visual: approved.frase_mnemonica, associacoes_visuais: [], prompt_imagem: `Clean medical infographic of ${approved.sigla || payload.tema}, flat design, white bg, no text` };
+    try { vis = await runAgent<VisualOutput>(openaiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, `${ctx}\n\nSigla: ${approved.sigla}\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
 
-    // ──────────────────────────────────────────────
-    // AGENT 5: VISUAL (resiliente)
-    // ──────────────────────────────────────────────
-    let visual: VisualOutput = {
-      cena_visual: approvedVersion.frase_mnemonica,
-      associacoes_visuais: [],
-      prompt_imagem: `Clean medical infographic illustration of ${approvedVersion.sigla}, flat design, white background, no text`,
-    };
-    try {
-      const visualPrompt = `${context}\n\nMnemônico final:\nSigla: ${approvedVersion.sigla}\nFrase: ${approvedVersion.frase_mnemonica}`;
-      visual = await runAgent<VisualOutput>(
-        openaiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, visualPrompt,
-      );
-    } catch (visErr) {
-      console.error("Visual agent failed, using fallback:", visErr);
-    }
+    // ── ESTRUTURA DE PROVA (resilient) ──
+    let exam: ExamStructureOutput = { estrutura_prova: { topico: payload.tema, itens_organizados: [] }, diferencial_prova: { diagnostico_comparado: "", diferencas_chave: [], pegadinhas: [] }, memorizacao_ativa: { pergunta_rapida: "", resposta_esperada: "", gatilho_mental: "" } };
+    try { exam = await runAgent<ExamStructureOutput>(openaiKey, db, requestId, userId, "consolidador", ++order, PROMPT_ESTRUTURA_PROVA, `${ctx}\n\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
 
-    // ──────────────────────────────────────────────
-    // AGENT 6: GERADOR DE IMAGEM
-    // ──────────────────────────────────────────────
+    // ── IMAGE (resilient) ──
     let imageUrl: string | null = null;
-    const imgStart = Date.now();
+    const imgS = Date.now();
     try {
-      imageUrl = await generateImage(visual.prompt_imagem);
-      await insertAgentLog(db, {
-        request_id: requestId,
-        user_id: userId,
-        agent_name: "gerador_imagem",
-        execution_order: ++order,
-        status: imageUrl ? "completed" : "failed",
-        input_json: { prompt: visual.prompt_imagem.substring(0, 500) },
-        output_json: { image_url: imageUrl },
-        duration_ms: Date.now() - imgStart,
-        error_message: imageUrl ? undefined : "Image generation returned null",
-      });
-    } catch (imgErr) {
-      console.error("Image generation agent error:", imgErr);
-      await insertAgentLog(db, {
-        request_id: requestId,
-        user_id: userId,
-        agent_name: "gerador_imagem",
-        execution_order: ++order,
-        status: "failed",
-        input_json: { prompt: visual.prompt_imagem.substring(0, 500) },
-        output_json: null,
-        duration_ms: Date.now() - imgStart,
-        error_message: imgErr instanceof Error ? imgErr.message : String(imgErr),
-      });
+      imageUrl = await generateImage(vis.prompt_imagem);
+      await insertAgentLog(db, { request_id: requestId, user_id: userId, agent_name: "gerador_imagem", execution_order: ++order, status: imageUrl ? "completed" : "failed", input_json: { prompt: vis.prompt_imagem.substring(0, 500) }, output_json: { image_url: imageUrl }, duration_ms: Date.now() - imgS, error_message: imageUrl ? undefined : "null" });
+    } catch (e) {
+      await insertAgentLog(db, { request_id: requestId, user_id: userId, agent_name: "gerador_imagem", execution_order: ++order, status: "failed", input_json: { prompt: vis.prompt_imagem.substring(0, 500) }, output_json: null, duration_ms: Date.now() - imgS, error_message: e instanceof Error ? e.message : String(e) });
     }
 
-    // ──────────────────────────────────────────────
-    // AGENT 7: CONSOLIDADOR
-    // ──────────────────────────────────────────────
-    const consolidatorPrompt = `${context}
+    // ── CONSOLIDADOR ──
+    const consP = `${ctx}\n\nMnemônico:\n${JSON.stringify(approved, null, 2)}\n\nLing: ${ling.score_linguistico} | Méd: ${med.score_medico} | Ped: ${ped.score_pedagogico}\nCena: ${vis.cena_visual}\nPrompt img: ${vis.prompt_imagem}`;
+    const cons = await runAgent<ConsolidatedOutput>(openaiKey, db, requestId, userId, "consolidador", ++order, PROMPT_CONSOLIDADOR, consP);
 
-Mnemônico aprovado:
-${JSON.stringify(approvedVersion, null, 2)}
+    // ── SCORES ──
+    const sL = Math.max(0, Math.min(100, Math.round(ling.score_linguistico)));
+    const sM = Math.max(0, Math.min(100, Math.round(med.score_medico)));
+    const sP = Math.max(0, Math.min(100, Math.round(ped.score_pedagogico)));
+    const sF = Math.round((sM + sP + sL) / 3);
+    const aM = sM >= SCORE_MEDICO_MIN; const aP = sP >= SCORE_PEDAGOGICO_MIN; const ap = aM && aP;
+    const qf = (sL < 80 || sM < 85) ? "low" : sF >= 90 ? "high" : "medium";
 
-Auditoria linguística:
-Score: ${lingAudit.score_linguistico}
-
-Auditoria médica:
-Score: ${medAudit.score_medico}
-Erros: ${(medAudit.erros_encontrados || []).join("; ") || "Nenhum"}
-
-Auditoria pedagógica:
-Score: ${pedAudit.score_pedagogico}
-Pontos fortes: ${(pedAudit.pontos_fortes || []).join("; ")}
-Pontos fracos: ${(pedAudit.pontos_fracos || []).join("; ") || "Nenhum"}
-
-Cena visual: ${visual.cena_visual}
-Prompt imagem: ${visual.prompt_imagem}`;
-
-    const consolidated = await runAgent<ConsolidatedOutput>(
-      openaiKey, db, requestId, userId, "consolidador", ++order, PROMPT_CONSOLIDADOR, consolidatorPrompt,
-    );
-
-    // ──────────────────────────────────────────────
-    // SCORES & PERSIST
-    // ──────────────────────────────────────────────
-    const scoreLinguistico = Math.max(0, Math.min(100, Math.round(lingAudit.score_linguistico)));
-    const scoreMedico = Math.max(0, Math.min(100, Math.round(medAudit.score_medico)));
-    const scorePedagogico = Math.max(0, Math.min(100, Math.round(pedAudit.score_pedagogico)));
-    const scoreFinal = Math.round((scoreMedico + scorePedagogico + scoreLinguistico) / 3);
-    const aprovadoMedico = scoreMedico >= SCORE_MEDICO_MIN;
-    const aprovadoPedagogico = scorePedagogico >= SCORE_PEDAGOGICO_MIN;
-    const aprovado = aprovadoMedico && aprovadoPedagogico;
-
-    // Quality flag
-    const qualityFlag = (scoreLinguistico < 80 || scoreMedico < 85)
-      ? "low"
-      : scoreFinal >= 90
-        ? "high"
-        : "medium";
-
-    const resultId = await insertResult(db, {
-      request_id: requestId,
-      user_id: userId,
-      tema: payload.tema,
-      consolidated,
-      visual,
-      score_medico: scoreMedico,
-      score_pedagogico: scorePedagogico,
-      score_linguistico: scoreLinguistico,
-      score_final: scoreFinal,
-      aprovado,
-      aprovado_medico: aprovadoMedico,
-      aprovado_pedagogico: aprovadoPedagogico,
-      image_url: imageUrl,
-    });
-
+    const resultId = await insertResult(db, { request_id: requestId, user_id: userId, tema: payload.tema, consolidated: cons, visual: vis, score_medico: sM, score_pedagogico: sP, score_linguistico: sL, score_final: sF, aprovado: ap, aprovado_medico: aM, aprovado_pedagogico: aP, image_url: imageUrl });
     await updateRequestStatus(db, requestId, "completed");
 
-    // ──────────────────────────────────────────────
-    // RESPONSE
-    // ──────────────────────────────────────────────
+    const itemsMap = (approved.mapa_completo ?? []).map(m => ({ letter: m.representacao_no_mnemonico.charAt(0).toUpperCase(), word: m.representacao_no_mnemonico, original_item: m.termo_original, symbol: null, symbol_reason: m.explicacao || null }));
+
     return jsonResponse({
       success: true,
       data: {
-        request_id: requestId,
-        result_id: resultId,
-        tema: payload.tema,
-        sigla: consolidated.sigla,
-        frase_mnemonica: consolidated.frase_mnemonica,
-        explicacao_tecnica: consolidated.explicacao_tecnica,
-        explicacao_didatica: consolidated.explicacao_didatica,
-        cena_visual: consolidated.cena_visual,
-        prompt_imagem: consolidated.prompt_imagem,
-        image_url: imageUrl,
-        score_medico: scoreMedico,
-        score_pedagogico: scorePedagogico,
-        score_linguistico: scoreLinguistico,
-        score_final: scoreFinal,
-        quality_flag: qualityFlag,
-        alertas: consolidated.alertas ?? [],
-        agentes: {
-          gerador: generated,
-          auditor_linguistico_ptbr: lingAudit,
-          auditor_medico: medAudit,
-          auditor_pedagogico: pedAudit,
-          visual,
-          consolidador: consolidated,
-        },
+        request_id: requestId, result_id: resultId, tema: payload.tema,
+        sigla: cons.sigla, frase_mnemonica: cons.frase_mnemonica,
+        explicacao_tecnica: cons.explicacao_tecnica, explicacao_didatica: cons.explicacao_didatica,
+        cena_visual: cons.cena_visual, prompt_imagem: cons.prompt_imagem, image_url: imageUrl,
+        score_medico: sM, score_pedagogico: sP, score_linguistico: sL, score_final: sF,
+        quality_flag: qf, alertas: cons.alertas ?? [], items_map: itemsMap,
+        associacoes: (approved.mapa_completo ?? []).map(m => ({ letra: m.representacao_no_mnemonico.charAt(0).toUpperCase(), termo_original: m.termo_original, representacao_no_mnemonico: m.representacao_no_mnemonico })),
+        associacoes_visuais: vis.associacoes_visuais ?? [],
+        mapa_clinico_completo: approved.mapa_completo ?? [],
+        estrutura_prova: exam.estrutura_prova,
+        diferencial_prova: exam.diferencial_prova,
+        memorizacao_ativa: exam.memorizacao_ativa,
       },
     });
   } catch (error) {
     console.error("generate-mnemonic error:", error);
-
-    if (requestId && db) {
-      try {
-        await updateRequestStatus(db, requestId, "failed");
-      } catch (updateErr) {
-        console.error("Failed to update request status to failed:", updateErr);
-      }
-    }
-
-    return jsonResponse(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : "Erro interno na Edge Function.",
-      },
-      500,
-    );
+    if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
+    return jsonResponse({ success: false, error: error instanceof Error ? error.message : "Erro interno." }, 500);
   }
 });
