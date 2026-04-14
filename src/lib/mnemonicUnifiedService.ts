@@ -199,14 +199,14 @@ export async function generateOrReuseMnemonicForUser(
     return { success: false, error: message };
   }
 
-  const payload = data as (Partial<MnemonicResult> & { rejected?: boolean; error?: string; audit?: any }) | null;
+  const payload = data as Record<string, unknown> | null;
 
   if (payload?.rejected) {
     return {
       success: false,
       rejected: true,
-      error: payload.error || "Rejeitado pelos auditores.",
-      audit: payload.audit,
+      error: typeof payload.error === "string" ? payload.error : "Rejeitado pelos auditores.",
+      audit: payload.audit as any,
     };
   }
 
@@ -214,13 +214,95 @@ export async function generateOrReuseMnemonicForUser(
     return { success: false, error: "Resposta inválida ao gerar mnemônico." };
   }
 
-  const result = payload as MnemonicResult;
+  // Handle response from the multi-agent Edge Function (generate-mnemonic)
+  // which returns { success, data: { sigla, frase_mnemonica, ... } }
+  const inner = (payload.success && payload.data && typeof payload.data === "object")
+    ? payload.data as Record<string, unknown>
+    : payload;
+
+  const result = mapToMnemonicResult(inner, topic, items);
 
   if (result.assetId && userId) {
     await linkMnemonicToUser(userId, result.assetId, topic, source);
   }
 
   return { success: true, result };
+}
+
+// ══════════════════════════════════════════════════
+// RESPONSE MAPPING
+// ══════════════════════════════════════════════════
+
+function mapToMnemonicResult(
+  payload: Record<string, unknown>,
+  fallbackTopic: string,
+  fallbackItems: string[],
+): MnemonicResult {
+  // If already in the expected shape (has items_map), return directly
+  if (Array.isArray(payload.items_map)) {
+    return payload as unknown as MnemonicResult;
+  }
+
+  // Map from Edge Function shape (sigla, frase_mnemonica, agentes, etc.)
+  const sigla = String(payload.sigla ?? payload.mnemonic ?? "");
+  const frase = String(payload.frase_mnemonica ?? payload.phrase ?? "");
+  const agentes = payload.agentes as Record<string, unknown> | undefined;
+  const gerador = agentes?.gerador as Record<string, unknown> | undefined;
+  const visual = agentes?.visual as Record<string, unknown> | undefined;
+  const auditorMedico = agentes?.auditor_medico as Record<string, unknown> | undefined;
+  const auditorPedagogico = agentes?.auditor_pedagogico as Record<string, unknown> | undefined;
+
+  // Build items_map from generator associations or fallback
+  let itemsMap: MnemonicResult["items_map"] = [];
+  const associacoes = (gerador?.associacoes ?? payload.associacoes_json) as Array<Record<string, string>> | undefined;
+  if (Array.isArray(associacoes) && associacoes.length > 0) {
+    itemsMap = associacoes.map((a) => ({
+      letter: String(a.letra ?? a.letter ?? ""),
+      word: String(a.representacao_no_mnemonico ?? a.word ?? ""),
+      original_item: String(a.termo_original ?? a.original_item ?? ""),
+      symbol: null,
+      symbol_reason: null,
+    }));
+  } else {
+    // Fallback: build from sigla letters + items
+    const letters = sigla.split("");
+    itemsMap = fallbackItems.map((item, i) => ({
+      letter: letters[i] ?? "",
+      word: item,
+      original_item: item,
+      symbol: null,
+      symbol_reason: null,
+    }));
+  }
+
+  const scoreMedico = Number(payload.score_medico ?? 0);
+  const scorePedagogico = Number(payload.score_pedagogico ?? 0);
+  const scoreFinal = Number(payload.score_final ?? Math.round((scoreMedico + scorePedagogico) / 2));
+
+  return {
+    topic: String(payload.tema ?? fallbackTopic),
+    mnemonic: sigla,
+    phrase: frase,
+    items_map: itemsMap,
+    scene_description: String(payload.cena_visual ?? visual?.cena_visual ?? ""),
+    image_url: null,
+    quality_score: scoreFinal,
+    warning: null,
+    review_question: `Quais são os ${fallbackItems.length} itens do mnemônico "${sigla}"?`,
+    audit: auditorMedico || auditorPedagogico ? {
+      medical_score: scoreMedico,
+      pedagogical_score: scorePedagogico,
+      medical_summary: Array.isArray((auditorMedico as any)?.erros_encontrados)
+        ? (auditorMedico as any).erros_encontrados.join("; ") || "Sem erros"
+        : "Avaliado",
+      pedagogical_summary: Array.isArray((auditorPedagogico as any)?.pontos_fortes)
+        ? (auditorPedagogico as any).pontos_fortes.join("; ") || "Avaliado"
+        : "Avaliado",
+      verdict: scoreMedico >= 90 && scorePedagogico >= 85 ? "approve" : "reject",
+    } : undefined,
+    assetId: payload.result_id ? String(payload.result_id) : null,
+    cached: false,
+  };
 }
 
 // ══════════════════════════════════════════════════
