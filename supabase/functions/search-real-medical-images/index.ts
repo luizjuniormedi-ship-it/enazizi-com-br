@@ -164,8 +164,13 @@ Deno.serve(async (req) => {
   try {
     if (!FIRECRAWL_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "Firecrawl connector not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          ok: false, 
+          error: "O conector Firecrawl não está configurado. Configure a chave FIRECRAWL_API_KEY para habilitar a busca de imagens reais.",
+          results: [],
+          has_more: false 
+        }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
