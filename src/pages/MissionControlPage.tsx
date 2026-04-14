@@ -1,8 +1,8 @@
 import { useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useCoreData } from "@/hooks/useCoreData";
+import { useStudyLoop } from "@/hooks/useStudyLoop";
 import MissionHeroCard from "@/components/mission-control/MissionHeroCard";
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionStudentState from "@/components/mission-control/MissionStudentState";
@@ -12,12 +12,14 @@ import MissionDayProgress from "@/components/mission-control/MissionDayProgress"
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
+import StudyLoopPanel from "@/components/study-loop/StudyLoopPanel";
 
 export default function MissionControlPage() {
   const { data, isLoading, isError, error, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
   const { data: coreData } = useCoreData();
-  const navigate = useNavigate();
+
+  const loop = useStudyLoop();
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
 
@@ -28,19 +30,11 @@ export default function MissionControlPage() {
 
   const streak = coreData?.gamification?.current_streak ?? snapshot?.streak ?? 0;
 
+  // Open loop instead of navigating away
   const handleStart = useCallback(() => {
     if (!activeRec) return;
-    const typeRoutes: Record<string, string> = {
-      review: "/study/tutor",
-      error_review: "/dashboard/banco-erros",
-      daily_task: "/mission",
-      free_study: "/dashboard/questoes",
-    };
-    const base = typeRoutes[activeRec.type] || "/dashboard";
-    const params = new URLSearchParams({ sc_origin: "mission_control" });
-    if (activeRec.targetId) params.set("sc_target_id", activeRec.targetId);
-    navigate(`${base}?${params.toString()}`);
-  }, [activeRec, navigate]);
+    loop.startMission(activeRec);
+  }, [activeRec, loop]);
 
   const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
     setOverrideRec(alt);
@@ -50,6 +44,14 @@ export default function MissionControlPage() {
     setOverrideRec(null);
     refresh();
   }, [refresh]);
+
+  const handleLoopClose = useCallback(() => {
+    loop.resetLoop();
+    // If loop completed, refresh mission data
+    if (loop.phase === "complete") {
+      handleRefresh();
+    }
+  }, [loop, handleRefresh]);
 
   if (isLoading || snapLoading) return <MissionControlSkeleton />;
   if (isError) return <MissionControlError error={error} onRetry={handleRefresh} />;
@@ -94,6 +96,21 @@ export default function MissionControlPage() {
           />
         </div>
       )}
+
+      {/* Study Loop Panel (bottom sheet) */}
+      <StudyLoopPanel
+        phase={loop.phase}
+        context={loop.context}
+        result={loop.result}
+        loading={loop.loading}
+        error={loop.error}
+        onBeginExecution={loop.beginExecution}
+        onSubmitAnswer={loop.submitAnswer}
+        onCompleteReview={loop.completeReview}
+        onContinue={loop.continueLoop}
+        onQuickAction={loop.runQuickAction}
+        onClose={handleLoopClose}
+      />
     </div>
   );
 }
