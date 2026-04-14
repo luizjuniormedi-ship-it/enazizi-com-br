@@ -9,6 +9,8 @@ const TYPE_LABELS: Record<string, string> = {
   error_review: "Correção",
   daily_task: "Missão",
   free_study: "Livre",
+  image_quiz: "Quiz Visual",
+  mnemonic: "Mnemônico",
 };
 
 interface Props {

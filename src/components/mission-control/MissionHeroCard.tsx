@@ -4,11 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Rocket, RefreshCw, ChevronDown, Clock, Zap, Shield, AlertTriangle } from "lucide-react";
 import type { StudyNextRecommendation, AdaptiveState } from "@/hooks/useStudyNext";
 
-const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string }> = {
+const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; cta?: string }> = {
   review: { label: "Revisão", icon: "🔄", color: "bg-primary/20 text-primary" },
   error_review: { label: "Correção de Erro", icon: "🔴", color: "bg-destructive/20 text-destructive" },
   daily_task: { label: "Missão do Dia", icon: "📋", color: "bg-accent/20 text-accent-foreground" },
   free_study: { label: "Estudo Livre", icon: "📚", color: "bg-muted text-muted-foreground" },
+  image_quiz: { label: "Quiz de Imagem", icon: "🖼️", color: "bg-primary/20 text-primary", cta: "Treinar com imagens" },
+  mnemonic: { label: "Mnemônico", icon: "🧠", color: "bg-accent/20 text-accent-foreground", cta: "Fixar com mnemônico" },
 };
 
 interface Props {
@@ -87,7 +89,7 @@ export default function MissionHeroCard({ recommendation, adaptiveState, onStart
             onClick={onStart}
           >
             <Rocket className="h-5 w-5" />
-            Começar agora
+            {cfg.cta || "Começar agora"}
           </Button>
           <Button variant="outline" size="icon" className="h-12 w-12 shrink-0" onClick={onRefresh} title="Atualizar missão">
             <RefreshCw className="h-4 w-4" />

@@ -3,13 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
 export interface StudyNextRecommendation {
-  type: "review" | "error_review" | "daily_task" | "free_study";
+  type: "review" | "error_review" | "daily_task" | "free_study" | "image_quiz" | "mnemonic";
   title: string;
   description: string;
   targetId?: string;
   targetType?: string;
   estimatedMinutes: number;
   priorityScore: number;
+  /** Optional context from the engine for module-specific params */
+  contextPayload?: Record<string, string>;
 }
 
 export interface AdaptiveState {
