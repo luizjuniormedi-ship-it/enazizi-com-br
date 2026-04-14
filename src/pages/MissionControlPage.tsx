@@ -24,24 +24,22 @@ interface CompletionHandoff {
 
 export default function MissionControlPage() {
   const { isEnabled } = useFeatureFlags();
+  const { data, isLoading, isError, error, refresh, isFetching } = useStudyNext();
+  const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
+  const { data: coreData } = useCoreData();
+  const loop = useStudyLoop();
+
+  const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
+  const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
+  const [heroHighlight, setHeroHighlight] = useState(false);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Feature flag guard — redirect to dashboard if disabled
   if (!isEnabled("mission_control_enabled")) {
     return <Navigate to="/dashboard" replace />;
   }
 
-  const { data, isLoading, isError, error, refresh, isFetching } = useStudyNext();
-  const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
-  const { data: coreData } = useCoreData();
-
   const studyLoopEnabled = isEnabled("study_loop_enabled");
-  const loop = useStudyLoop();
-
-  const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
-  const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
-  /** Tracks whether the hero just updated after a loop completion */
-  const [heroHighlight, setHeroHighlight] = useState(false);
-  const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const activeRec = overrideRec ?? data?.recommendation;
   const justification = data?.justification ?? "";
