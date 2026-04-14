@@ -81,6 +81,14 @@ function approvalMultiplier(zone: ApprovalZone, isRemedial: boolean): number {
   }
 }
 
+// ─── Visual weakness data from attempts ─────────────────────────────
+export interface VisualWeaknessEntry {
+  imageType: string;
+  accuracy: number;       // 0-100
+  attemptsCount: number;
+  trend: "improving" | "declining" | "stable";
+}
+
 // ─── Context type ────────────────────────────────────────────────────
 export interface ScoringContext {
   approvalScore: number;
@@ -94,6 +102,8 @@ export interface ScoringContext {
   today: string; // YYYY-MM-DD
   /** Count of published image quiz questions available */
   imageQuizAvailable: number;
+  /** Real visual weakness data from medical_image_attempts */
+  visualWeaknesses?: VisualWeaknessEntry[];
 }
 
 // ─── Individual scorers ──────────────────────────────────────────────
