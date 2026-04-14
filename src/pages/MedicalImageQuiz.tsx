@@ -416,6 +416,9 @@ const MedicalImageQuiz = () => {
         <Badge variant="secondary" className="self-center">
           {questions.length} questões
         </Badge>
+        <Badge className={`self-center ${TIER_LABELS[activeTier].color}`}>
+          {TIER_LABELS[activeTier].label}
+        </Badge>
         {quizMode === "browse" && questions.length > 0 && (
           <Button onClick={shuffleAndStart} className="ml-auto">
             <Activity className="h-4 w-4 mr-2" /> Iniciar Quiz
