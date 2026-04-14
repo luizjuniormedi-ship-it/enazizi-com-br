@@ -64,12 +64,29 @@ const SELECT_FIELDS = `
   )
 `;
 
+/** Additional frontend blocklist for URLs that slip through DB filters */
+const BLOCKED_URL_TERMS = [
+  "logo", "stock", "laptop", "banner", "algoscope", "placeholder",
+  "mock", "demo", "avatar", "portrait", "screenshot", "dashboard",
+];
+
+function isValidMedicalImage(url: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  if (!isImageUrlClinical(url)) return false;
+  const lower = url.toLowerCase();
+  return !BLOCKED_URL_TERMS.some((term) => lower.includes(term));
+}
+
 function mapRows(data: any[]): ImageQuestion[] {
-  return data
+  let blocked = 0;
+  const result = data
     .map((q: any) => {
       const asset = q.medical_image_assets;
       const imageUrl = asset?.image_url || null;
-      if (!isImageUrlClinical(imageUrl)) return null;
+      if (!isValidMedicalImage(imageUrl)) {
+        blocked++;
+        return null;
+      }
       const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
       return {
         id: q.id,
@@ -85,6 +102,8 @@ function mapRows(data: any[]): ImageQuestion[] {
       } as ImageQuestion;
     })
     .filter(Boolean) as ImageQuestion[];
+  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked: ${blocked}`);
+  return result;
 }
 
 async function fetchQuestionsWithFallback(

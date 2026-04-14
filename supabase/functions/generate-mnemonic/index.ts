@@ -353,7 +353,11 @@ async function updateRequestStatus(db: SupabaseClient, id: string, status: strin
 
 async function insertAgentLog(db: SupabaseClient, p: { request_id: string; user_id: string; agent_name: string; execution_order: number; status: string; input_json: unknown; output_json: unknown; score?: number; duration_ms: number; error_message?: string; }): Promise<void> {
   const out = (() => { try { const s = JSON.stringify(p.output_json); return s.length > 1000 ? { _truncated: true, preview: s.substring(0, 500) } : p.output_json; } catch { return null; } })();
-  await db.from("mnemonic_agent_logs").insert({ ...p, output_json: out, score: p.score ?? null, error_message: p.error_message ?? null, result_id: null }).catch(e => console.error(`Log failed: ${e.message}`));
+  try {
+    await db.from("mnemonic_agent_logs").insert({ ...p, output_json: out, score: p.score ?? null, error_message: p.error_message ?? null, result_id: null });
+  } catch (e) {
+    console.error(`Log failed: ${e instanceof Error ? e.message : String(e)}`);
+  }
 }
 
 async function insertResult(db: SupabaseClient, p: { request_id: string; user_id: string; tema: string; consolidated: ConsolidatedOutput; visual: VisualOutput; score_medico: number; score_pedagogico: number; score_linguistico: number; score_final: number; aprovado: boolean; aprovado_medico: boolean; aprovado_pedagogico: boolean; image_url: string | null; }): Promise<string> {
