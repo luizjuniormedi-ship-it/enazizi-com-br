@@ -203,10 +203,20 @@ export function useStudyLoop() {
     try {
       await callStudyComplete(buildCompletePayload(context, correct));
 
+      // Track answer event
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: correct ? "answer_correct" : "answer_wrong", recommendationType: context.recommendation.type, theme: context.theme, subtopic: context.subtopic });
+        incrementDailyEngagement(uid, { questions_answered: 1, ...(correct ? { questions_correct: 1 } : {}) });
+      }
+
       if (!correct && reinforceCountRef.current < 2) {
         reinforceCountRef.current += 1;
         const reinforcement = await callReinforceError(context.theme, "", userAnswer);
         const newQuestion = await callGenerateQuestion(context.theme, context.subtopic, "easy", { fromError: true });
+        if (uid) {
+          trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "reinforcement", theme: context.theme, metadata: { cycle: reinforceCountRef.current } });
+          incrementDailyEngagement(uid, { reinforcements_triggered: 1 });
+        }
         setResult((prev) => ({
           ...prev,
           correct: false,
@@ -218,6 +228,10 @@ export function useStudyLoop() {
         setPhase("feedback");
       } else if (!correct) {
         // Max reinforcements reached — elegant exit
+        if (uid) {
+          trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "elegant_exit", theme: context.theme, metadata: { reinforcements: reinforceCountRef.current } });
+          incrementDailyEngagement(uid, { elegant_exits: 1 });
+        }
         setResult((prev) => ({
           ...prev,
           correct: false,
@@ -243,10 +257,14 @@ export function useStudyLoop() {
       }
     } catch (e: any) {
       setError(e.message || "Erro ao processar resposta");
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "error", theme: context.theme, metadata: { step: "submitAnswer", error: e.message } });
+        incrementDailyEngagement(uid, { errors_encountered: 1 });
+      }
     } finally {
       setLoading(false);
     }
-  }, [context, result]);
+  }, [context, result, uid]);
 
   /* ─── Complete review step ─── */
   const completeReview = useCallback(async () => {
