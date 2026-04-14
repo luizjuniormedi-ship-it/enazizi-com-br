@@ -72,10 +72,10 @@ const MedicalImageQuiz = () => {
         .eq("status", "published");
 
       if (imageType !== "all") {
-        query = query.eq("medical_image_assets.image_type", imageType);
+        query = query.eq("medical_image_assets.image_type", imageType as any);
       }
       if (difficulty !== "all") {
-        query = query.eq("difficulty", difficulty);
+        query = query.eq("difficulty", difficulty as any);
       }
 
       const { data, error } = await query.order("created_at", { ascending: false });
