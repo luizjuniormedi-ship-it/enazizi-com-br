@@ -91,6 +91,31 @@ export interface AgentLog {
 // API RESPONSE
 // ══════════════════════════════════════════════════
 
+export interface MapaClinicoItem {
+  termo_original: string;
+  qualificadores: string[];
+  representacao_no_mnemonico: string;
+  explicacao: string;
+}
+
+export interface EstruturaProvaItem {
+  item: string;
+  ponto_chave_prova: string;
+  armadilha_comum: string;
+}
+
+export interface DiferencialProva {
+  diagnostico_comparado: string;
+  diferencas_chave: string[];
+  pegadinhas: string[];
+}
+
+export interface MemorizacaoAtiva {
+  pergunta_rapida: string;
+  resposta_esperada: string;
+  gatilho_mental: string;
+}
+
 export interface MnemonicResultData {
   request_id: string;
   result_id: string;
@@ -118,6 +143,10 @@ export interface MnemonicResultData {
     symbol_reason: string | null;
   }>;
   agent_logs: AgentLog[];
+  mapa_clinico_completo?: MapaClinicoItem[];
+  estrutura_prova?: { topico: string; itens_organizados: EstruturaProvaItem[] };
+  diferencial_prova?: DiferencialProva;
+  memorizacao_ativa?: MemorizacaoAtiva;
 }
 
 export interface MnemonicApiResponse {
