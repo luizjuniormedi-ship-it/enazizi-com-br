@@ -1,0 +1,226 @@
+/**
+ * Mnemonic Module — Complete TypeScript contracts.
+ * Compatible with generate-medical-mnemonic edge function and DB schema.
+ */
+
+// ══════════════════════════════════════════════════
+// EDGE FUNCTION INPUT
+// ══════════════════════════════════════════════════
+
+export interface MnemonicRequest {
+  tema: string;
+  termos: string[];
+  estilo: string;
+  publico: string;
+}
+
+// ══════════════════════════════════════════════════
+// AGENT OUTPUTS
+// ══════════════════════════════════════════════════
+
+export interface Associacao {
+  letra: string;
+  termo_original: string;
+  representacao_no_mnemonico: string;
+}
+
+export interface GeneratorOutput {
+  sigla: string;
+  frase_mnemonica: string;
+  explicacao_tecnica: string;
+  explicacao_didatica: string;
+  associacoes: Associacao[];
+  observacoes?: string[];
+}
+
+export interface MedicalAuditOutput {
+  score_medico: number;
+  todos_os_termos_presentes: boolean;
+  houve_omissao: boolean;
+  houve_distorcao_semantica: boolean;
+  ha_risco_clinico: boolean;
+  letras_associadas_corretamente: boolean;
+  erros_encontrados: string[];
+  versao_corrigida?: GeneratorOutput;
+}
+
+export interface PedagogicalAuditOutput {
+  score_pedagogico: number;
+  facilidade_memorizacao: number;
+  clareza: number;
+  associacao_mental: number;
+  aplicabilidade_em_aula: number;
+  aplicabilidade_em_prova: number;
+  pontos_fortes: string[];
+  pontos_fracos: string[];
+  versao_otimizada?: {
+    frase_mnemonica?: string;
+    explicacao_didatica?: string;
+    cena_sugerida?: string;
+  };
+}
+
+export interface VisualOutput {
+  cena_visual: string;
+  associacoes_visuais: Array<{ termo: string; elemento_visual: string }>;
+  prompt_imagem: string;
+}
+
+export interface ConsolidatedOutput {
+  sigla: string;
+  frase_mnemonica: string;
+  explicacao_tecnica: string;
+  explicacao_didatica: string;
+  cena_visual: string;
+  prompt_imagem: string;
+  alertas: string[];
+}
+
+// ══════════════════════════════════════════════════
+// AGENT LOG
+// ══════════════════════════════════════════════════
+
+export interface AgentLog {
+  agent: string;
+  attempt: number;
+  status: string;
+  details: string;
+}
+
+// ══════════════════════════════════════════════════
+// API RESPONSE
+// ══════════════════════════════════════════════════
+
+export interface MnemonicResultData {
+  request_id: string;
+  result_id: string;
+  tema: string;
+  sigla: string;
+  frase_mnemonica: string;
+  explicacao_tecnica: string;
+  explicacao_didatica: string;
+  cena_visual: string;
+  prompt_imagem: string;
+  score_medico: number;
+  score_pedagogico: number;
+  score_final: number;
+  alertas: string[];
+  associacoes: Associacao[];
+  associacoes_visuais: Array<{ termo: string; elemento_visual: string }>;
+  image_url: string | null;
+  items_map: Array<{
+    letter: string;
+    word: string;
+    original_item: string;
+    symbol: string | null;
+    symbol_reason: string | null;
+  }>;
+  agent_logs: AgentLog[];
+}
+
+export interface MnemonicApiResponse {
+  success: boolean;
+  data?: MnemonicResultData;
+  error?: string;
+  details?: string;
+}
+
+// ══════════════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════════════
+
+export interface MnemonicHistoryItem {
+  id: string;
+  request_id: string;
+  user_id: string;
+  tema: string;
+  sigla: string;
+  frase_mnemonica: string;
+  explicacao_tecnica: string | null;
+  explicacao_didatica: string | null;
+  cena_visual: string | null;
+  prompt_imagem: string | null;
+  associacoes_json: Associacao[];
+  associacoes_visuais_json: Array<{ termo: string; elemento_visual: string }>;
+  alertas_json: string[];
+  score_medico: number;
+  score_pedagogico: number;
+  score_final: number;
+  aprovado: boolean;
+  aprovado_medico: boolean;
+  aprovado_pedagogico: boolean;
+  versao: number;
+  is_latest: boolean;
+  created_at: string;
+  updated_at: string;
+  is_favorite?: boolean;
+}
+
+// ══════════════════════════════════════════════════
+// FAVORITES
+// ══════════════════════════════════════════════════
+
+export interface FavoriteItem {
+  id: string;
+  user_id: string;
+  result_id: string;
+  created_at: string;
+}
+
+// ══════════════════════════════════════════════════
+// FEEDBACK
+// ══════════════════════════════════════════════════
+
+export interface FeedbackPayload {
+  result_id: string;
+  request_id?: string;
+  rating_general: number;
+  rating_medical: number;
+  rating_pedagogical: number;
+  comentario?: string;
+}
+
+// ══════════════════════════════════════════════════
+// REGENERATION
+// ══════════════════════════════════════════════════
+
+export type RegenerateStyle = "mais_facil" | "mais_tecnico" | "mais_visual" | "mais_curto";
+
+export interface RegeneratePayload {
+  tema: string;
+  termos: string[];
+  estilo: string;
+  publico: string;
+  style_hint: RegenerateStyle;
+  original_result_id: string;
+}
+
+// ══════════════════════════════════════════════════
+// UI STATE
+// ══════════════════════════════════════════════════
+
+export type MnemonicStatus = "idle" | "loading" | "success" | "error";
+
+export const ESTILOS = [
+  { value: "engraçado", label: "Engraçado / Humor" },
+  { value: "visual", label: "Visual / Cênico" },
+  { value: "acronimo", label: "Acrônimo / Sigla" },
+  { value: "historia", label: "Mini-história" },
+  { value: "musical", label: "Musical / Rítmico" },
+  { value: "frase + imagem mental", label: "Frase + Imagem Mental" },
+] as const;
+
+export const PUBLICOS = [
+  { value: "residencia", label: "Residência Médica" },
+  { value: "graduacao", label: "Graduação em Medicina" },
+  { value: "enfermagem", label: "Enfermagem" },
+  { value: "farmacia", label: "Farmácia" },
+  { value: "geral", label: "Saúde em Geral" },
+] as const;
+
+export const REGENERATE_OPTIONS: Array<{ value: RegenerateStyle; label: string; description: string }> = [
+  { value: "mais_facil", label: "Mais fácil", description: "Simplifica linguagem e associações" },
+  { value: "mais_tecnico", label: "Mais técnico", description: "Maior precisão clínica e terminologia" },
+  { value: "mais_visual", label: "Mais visual", description: "Foco em cena visual e imagem mental" },
+  { value: "mais_curto", label: "Mais curto", description: "Sigla e frase mais compactas" },
+];

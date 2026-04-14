@@ -70,6 +70,8 @@ const Rankings = lazyWithRetry(() => import("./pages/Rankings"), "Rankings");
 const MedicalImageQuiz = lazyWithRetry(() => import("./pages/MedicalImageQuiz"), "MedicalImageQuiz");
 const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "PracticalExam");
 const MnemonicStudio = lazyWithRetry(() => import("./pages/MnemonicStudio"), "MnemonicStudio");
+const MnemonicStudioPage = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
+const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryPage"), "MnemonicHistoryPage");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
@@ -155,6 +157,8 @@ const App = () => (
                 <Route path="prova-pratica" element={<PracticalExam />} />
                 <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
                 <Route path="mnemonic-studio" element={<MnemonicStudio />} />
+                <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
+                <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
