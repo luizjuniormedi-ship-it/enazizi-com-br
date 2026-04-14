@@ -404,17 +404,23 @@ const MedicalImageQuiz = () => {
               </div>
             )}
 
-            {/* No image fallback */}
+            {/* No image fallback — should rarely happen with asset filters */}
             {!currentQuestion.image_url && (
-              <div className="p-4 flex gap-2">
-                <Badge className={difficultyLabels[currentQuestion.difficulty]?.color || ""}>
-                  {difficultyLabels[currentQuestion.difficulty]?.label}
-                </Badge>
-                {currentQuestion.image_type && (
-                  <Badge variant="secondary">
-                    {imageTypeLabels[currentQuestion.image_type] || currentQuestion.image_type}
+              <div className="bg-muted/30 border-b border-border flex flex-col items-center justify-center min-h-[200px] gap-3 p-6">
+                <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground text-center">
+                  Imagem indisponível para esta questão
+                </p>
+                <div className="flex gap-2">
+                  <Badge className={difficultyLabels[currentQuestion.difficulty]?.color || ""}>
+                    {difficultyLabels[currentQuestion.difficulty]?.label}
                   </Badge>
-                )}
+                  {currentQuestion.image_type && (
+                    <Badge variant="secondary">
+                      {imageTypeLabels[currentQuestion.image_type] || currentQuestion.image_type}
+                    </Badge>
+                  )}
+                </div>
               </div>
             )}
 
