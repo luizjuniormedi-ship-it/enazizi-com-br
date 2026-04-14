@@ -302,6 +302,9 @@ serve(async (req) => {
 
       let imgScore = imgResult.score;
       if (consecutiveErrorBoost) imgScore = Math.min(150, imgScore + 20);
+      const snapForPayload = Array.isArray(visualSnapshots)
+        ? visualSnapshots.find((s: any) => s.image_type === targetType)
+        : null;
       candidates.push({
         type: "image_quiz",
         title,
@@ -315,6 +318,13 @@ serve(async (req) => {
           errorCount: topic?.vezes_errado,
           imageType: targetType,
           consecutiveErrorBoost,
+          accuracy: snapForPayload?.accuracy,
+          trend: snapForPayload?.trend,
+          adaptiveDifficulty: snapForPayload?.trend === "declining" || (snapForPayload?.accuracy ?? 100) < 50
+            ? "easy"
+            : (snapForPayload?.accuracy ?? 0) > 75 && snapForPayload?.trend === "improving"
+              ? "hard"
+              : undefined,
         },
       });
     }
