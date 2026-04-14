@@ -48,7 +48,7 @@ async function downloadAndUpload(imageUrl: string, assetCode: string): Promise<s
 
 // ── Generate 3 exam questions for an asset ──
 async function generateQuestions(asset: {
-  id: string; diagnosis: string; topic: string; subtopic: string; difficulty: number;
+  id: string; diagnosis: string; topic: string; subtopic: string; difficulty: string;
 }): Promise<number> {
   if (!LOVABLE_API_KEY) return 0;
 
