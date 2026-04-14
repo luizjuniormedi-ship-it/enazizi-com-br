@@ -119,6 +119,37 @@ serve(async (req) => {
       if (diff > 0) examProximityDays = Math.round(diff);
     }
 
+    // ── Compute visual weakness from real attempts ──
+    const visualWeaknesses: VisualWeaknessEntry[] = [];
+    if (Array.isArray(visualAttempts) && visualAttempts.length > 0) {
+      const byType = new Map<string, { total: number; correct: number; dates: number[] }>();
+      for (const a of visualAttempts) {
+        const t = (a.image_type || "").toLowerCase();
+        if (!t) continue;
+        if (!byType.has(t)) byType.set(t, { total: 0, correct: 0, dates: [] });
+        const entry = byType.get(t)!;
+        entry.total++;
+        if (a.correct) entry.correct++;
+        entry.dates.push(new Date(a.created_at).getTime());
+      }
+      for (const [imageType, data] of byType) {
+        const accuracy = Math.round((data.correct / data.total) * 100);
+        // Simple trend: compare first half vs second half
+        let trend: "improving" | "declining" | "stable" = "stable";
+        if (data.total >= 10) {
+          const mid = Math.floor(data.total / 2);
+          const sorted = [...visualAttempts.filter((a: any) => (a.image_type || "").toLowerCase() === imageType)];
+          const recentCorrect = sorted.slice(0, mid).filter((a: any) => a.correct).length;
+          const olderCorrect = sorted.slice(mid).filter((a: any) => a.correct).length;
+          const recentAcc = recentCorrect / mid;
+          const olderAcc = olderCorrect / (data.total - mid);
+          if (recentAcc - olderAcc > 0.1) trend = "improving";
+          else if (recentAcc - olderAcc < -0.1) trend = "declining";
+        }
+        visualWeaknesses.push({ imageType, accuracy, attemptsCount: data.total, trend });
+      }
+    }
+
     // ── Build scoring context ──
     const ctx: ScoringContext = {
       approvalScore,
@@ -131,6 +162,7 @@ serve(async (req) => {
       now,
       today,
       imageQuizAvailable: imgQuizAvailable,
+      visualWeaknesses,
     };
 
     // ── Classify errors by type for new scorers ──
