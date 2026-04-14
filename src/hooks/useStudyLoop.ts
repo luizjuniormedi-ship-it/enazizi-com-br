@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
 import type { StudyNextRecommendation } from "./useStudyNext";
+import { trackLoopEvent, incrementDailyEngagement } from "@/lib/studyLoopTracking";
 
 /* ─── Loop states ─── */
 export type LoopPhase = "idle" | "intro" | "running" | "feedback" | "next" | "complete";
