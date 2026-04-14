@@ -17,6 +17,7 @@ interface Props {
   onCompleteReview: () => void;
   onContinue: () => void;
   onQuickAction: (endpoint: string) => void;
+  onRetry: () => void;
   onClose: () => void;
 }
 
@@ -32,7 +33,7 @@ const PHASE_TITLES: Record<LoopPhase, string> = {
 export default function StudyLoopPanel({
   phase, context, result, loading, error,
   onBeginExecution, onSubmitAnswer, onCompleteReview,
-  onContinue, onQuickAction, onClose,
+  onContinue, onQuickAction, onRetry, onClose,
 }: Props) {
   const open = phase !== "idle";
 
@@ -46,18 +47,17 @@ export default function StudyLoopPanel({
           <SheetTitle className="text-base">{PHASE_TITLES[phase]}</SheetTitle>
         </SheetHeader>
 
-        {/* Error banner */}
+        {/* Error banner with contextual retry */}
         {error && (
           <div className="flex items-center gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-sm text-destructive mb-4">
             <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
-            <Button variant="outline" size="sm" className="ml-auto" onClick={onBeginExecution}>
+            <span className="flex-1">{error}</span>
+            <Button variant="outline" size="sm" className="ml-auto shrink-0" onClick={onRetry}>
               Tentar novamente
             </Button>
           </div>
         )}
 
-        {/* Phase content */}
         {phase === "intro" && context && (
           <StudyLoopIntro context={context} onStart={onBeginExecution} onCancel={onClose} />
         )}
@@ -76,9 +76,10 @@ export default function StudyLoopPanel({
         {phase === "feedback" && result && (
           <StudyLoopFeedback
             result={result}
-            hasNextQuestion={!result.correct && !!result.generatedQuestion}
+            hasNextQuestion={!result.correct && !!result.generatedQuestion && !result.maxReinforcementsReached}
             loading={loading}
             onContinue={onContinue}
+            onQuickAction={onQuickAction}
           />
         )}
 
