@@ -85,6 +85,15 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
 
   const associacoesVisuais = (visual?.associacoes_visuais ?? d.associacoes_visuais ?? []) as Array<{ termo: string; elemento_visual: string }>;
 
+  const qualityFlag = (() => {
+    const sl = Number(d.score_linguistico ?? 0);
+    const sm = Number(d.score_medico ?? 0);
+    const sf = Number(d.score_final ?? 0);
+    if (sl < 80 || sm < 85) return "low" as const;
+    if (sf >= 90) return "high" as const;
+    return "medium" as const;
+  })();
+
   return {
     request_id: String(d.request_id ?? ""),
     result_id: String(d.result_id ?? ""),
@@ -99,6 +108,7 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
     score_pedagogico: Number(d.score_pedagogico ?? 0),
     score_linguistico: Number(d.score_linguistico ?? 0),
     score_final: Number(d.score_final ?? 0),
+    quality_flag: typeof d.quality_flag === "string" ? d.quality_flag as MnemonicResultData["quality_flag"] : qualityFlag,
     alertas: Array.isArray(d.alertas) ? d.alertas.map(String) : [],
     associacoes: Array.isArray(associacoes) ? associacoes.map((a: any) => ({
       letra: String(a.letra ?? ""),
