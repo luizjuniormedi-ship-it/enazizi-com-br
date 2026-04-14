@@ -3,6 +3,7 @@ import {
   Brain, Sparkles, AlertTriangle, Loader2,
   Copy, Heart, MessageSquare, RefreshCw,
   ChevronDown, ChevronUp, Wand2, BookOpen, Eye, CheckCircle, XCircle, MinusCircle,
+  Target, HelpCircle, Lightbulb,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,21 +36,9 @@ function ScoreBadge({ label, score }: { label: string; score: number }) {
 }
 
 function QualityBadge({ flag }: { flag: string }) {
-  if (flag === "high") return (
-    <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 gap-1">
-      <CheckCircle className="h-3 w-3" /> Alta qualidade
-    </Badge>
-  );
-  if (flag === "low") return (
-    <Badge className="bg-red-500/15 text-red-600 border-red-500/30 gap-1">
-      <XCircle className="h-3 w-3" /> Baixa qualidade
-    </Badge>
-  );
-  return (
-    <Badge className="bg-yellow-500/15 text-yellow-600 border-yellow-500/30 gap-1">
-      <MinusCircle className="h-3 w-3" /> Qualidade média
-    </Badge>
-  );
+  if (flag === "high") return <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 gap-1"><CheckCircle className="h-3 w-3" /> Alta qualidade</Badge>;
+  if (flag === "low") return <Badge className="bg-red-500/15 text-red-600 border-red-500/30 gap-1"><XCircle className="h-3 w-3" /> Baixa qualidade</Badge>;
+  return <Badge className="bg-yellow-500/15 text-yellow-600 border-yellow-500/30 gap-1"><MinusCircle className="h-3 w-3" /> Qualidade média</Badge>;
 }
 
 export default function MnemonicGeneratorPage() {
@@ -59,6 +48,8 @@ export default function MnemonicGeneratorPage() {
   const [publico, setPublico] = useState("graduacao");
   const [result, setResult] = useState<MnemonicResultData | null>(null);
   const [showAgents, setShowAgents] = useState(false);
+  const [showExam, setShowExam] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -70,90 +61,50 @@ export default function MnemonicGeneratorPage() {
 
   const handleGenerate = useCallback(() => {
     const validation = validateMnemonicForm({ tema, termos, estilo, publico });
-    if (!validation.valid) {
-      setFormErrors(validation.errors);
-      return;
-    }
+    if (!validation.valid) { setFormErrors(validation.errors); return; }
     setFormErrors({});
     setResult(null);
-
     generateMutation.mutate(
       { tema: tema.trim(), termos, estilo, publico },
       {
-        onSuccess: (res) => {
-          if (res.success && res.data) {
-            setResult(res.data);
-            toast.success("Mnemônico gerado com sucesso!");
-          } else {
-            toast.error(res.error || "Erro ao gerar mnemônico.");
-          }
-        },
+        onSuccess: (res) => { if (res.success && res.data) { setResult(res.data); toast.success("Mnemônico gerado!"); } else { toast.error(res.error || "Erro ao gerar."); } },
         onError: (err) => toast.error(err.message),
       }
     );
   }, [tema, termos, estilo, publico, generateMutation]);
 
-  const handleCopyPhrase = useCallback(() => {
-    if (!result) return;
-    navigator.clipboard.writeText(result.frase_mnemonica);
-    toast.success("Frase copiada!");
-  }, [result]);
-
+  const handleCopyPhrase = useCallback(() => { if (!result) return; navigator.clipboard.writeText(result.frase_mnemonica); toast.success("Frase copiada!"); }, [result]);
   const handleCopyAll = useCallback(() => {
     if (!result) return;
-    const parts = [
-      `📝 ${result.sigla}`,
-      `💡 ${result.frase_mnemonica}`,
-      "",
-      `🔬 ${result.explicacao_tecnica}`,
-      "",
-      `📚 ${result.explicacao_didatica}`,
-    ];
+    const parts = [`📝 ${result.sigla}`, `💡 ${result.frase_mnemonica}`, "", `🔬 ${result.explicacao_tecnica}`, "", `📚 ${result.explicacao_didatica}`];
     if (result.cena_visual) parts.push("", `🎨 ${result.cena_visual}`);
+    if (result.memorizacao_ativa?.pergunta_rapida) parts.push("", `❓ ${result.memorizacao_ativa.pergunta_rapida}`, `✅ ${result.memorizacao_ativa.resposta_esperada}`);
     navigator.clipboard.writeText(parts.join("\n"));
     toast.success("Tudo copiado!");
   }, [result]);
 
   const handleFavorite = useCallback(() => {
     if (!result) return;
-    favoriteMutation.mutate(result.result_id, {
-      onSuccess: (isFav) => toast.success(isFav ? "Favoritado!" : "Removido dos favoritos."),
-      onError: (err) => toast.error(err.message),
-    });
+    favoriteMutation.mutate(result.result_id, { onSuccess: (isFav) => toast.success(isFav ? "Favoritado!" : "Removido."), onError: (err) => toast.error(err.message) });
   }, [result, favoriteMutation]);
 
   const handleRegenerate = useCallback((style: RegenerateStyle) => {
     if (!result) return;
-    regenerateMutation.mutate(
-      {
-        tema, termos, estilo, publico,
-        style_hint: style,
-        original_result_id: result.result_id,
-      },
-      {
-        onSuccess: (res) => {
-          if (res.success && res.data) {
-            setResult(res.data);
-            toast.success("Nova versão gerada!");
-          } else {
-            toast.error(res.error || "Erro ao regenerar.");
-          }
-        },
-        onError: (err) => toast.error(err.message),
-      }
-    );
+    regenerateMutation.mutate({ tema, termos, estilo, publico, style_hint: style, original_result_id: result.result_id }, {
+      onSuccess: (res) => { if (res.success && res.data) { setResult(res.data); toast.success("Nova versão!"); } else { toast.error(res.error || "Erro."); } },
+      onError: (err) => toast.error(err.message),
+    });
   }, [result, tema, termos, estilo, publico, regenerateMutation]);
 
   const isLoading = generateMutation.isPending || regenerateMutation.isPending;
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-5xl space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <Brain className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl font-bold">Gerador de Mnemônicos Médicos</h1>
-          <p className="text-muted-foreground text-sm">Pipeline multi-agente com auditoria médica e pedagógica</p>
+          <p className="text-muted-foreground text-sm">Pipeline multi-agente com gate clínico e modo prova</p>
         </div>
       </div>
 
@@ -162,49 +113,31 @@ export default function MnemonicGeneratorPage() {
         <CardContent className="pt-6 space-y-4">
           <div className="space-y-1">
             <label className="text-sm font-medium">Tema</label>
-            <Input
-              value={tema}
-              onChange={(e) => setTema(e.target.value)}
-              placeholder="Ex: Critérios de Light para derrame pleural"
-            />
+            <Input value={tema} onChange={(e) => setTema(e.target.value)} placeholder="Ex: Critérios de Light para derrame pleural" />
             {formErrors.tema && <p className="text-xs text-destructive">{formErrors.tema}</p>}
           </div>
-
           <div className="space-y-1">
             <label className="text-sm font-medium">Termos (um por linha, 3–7)</label>
-            <Textarea
-              value={termosText}
-              onChange={(e) => setTermosText(e.target.value)}
-              placeholder={"Proteína > 3g/dL\nLDH > 200 UI/L\nRelação proteína líquido/sérica > 0,5"}
-              rows={5}
-            />
+            <Textarea value={termosText} onChange={(e) => setTermosText(e.target.value)} placeholder={"Bordas elevadas e nítidas\nDor intensa/queimação\nPlaca eritematosa bem delimitada"} rows={5} />
             <p className="text-xs text-muted-foreground">{termos.length} termo(s)</p>
             {formErrors.termos && <p className="text-xs text-destructive">{formErrors.termos}</p>}
           </div>
-
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-sm font-medium">Estilo</label>
               <Select value={estilo} onValueChange={setEstilo}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {ESTILOS.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{ESTILOS.map(e => <SelectItem key={e.value} value={e.value}>{e.label}</SelectItem>)}</SelectContent>
               </Select>
-              {formErrors.estilo && <p className="text-xs text-destructive">{formErrors.estilo}</p>}
             </div>
             <div className="space-y-1">
               <label className="text-sm font-medium">Público-alvo</label>
               <Select value={publico} onValueChange={setPublico}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {PUBLICOS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                </SelectContent>
+                <SelectContent>{PUBLICOS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
               </Select>
-              {formErrors.publico && <p className="text-xs text-destructive">{formErrors.publico}</p>}
             </div>
           </div>
-
           <Button onClick={handleGenerate} disabled={isLoading} className="w-full">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
             {isLoading ? "Gerando mnemônico..." : "Gerar mnemônico"}
@@ -217,10 +150,13 @@ export default function MnemonicGeneratorPage() {
         const alertas = safeArray(result.alertas);
         const itemsMap = safeArray(result.items_map);
         const agentLogs = safeArray(result.agent_logs);
+        const mapaClinico = safeArray(result.mapa_clinico_completo);
+        const itensProva = safeArray(result.estrutura_prova?.itens_organizados);
+        const difChave = safeArray(result.diferencial_prova?.diferencas_chave);
+        const pegadinhas = safeArray(result.diferencial_prova?.pegadinhas);
 
         return (
         <div className="space-y-4">
-          {/* Quality + Scores */}
           <div className="flex items-center justify-between">
             <QualityBadge flag={result.quality_flag ?? "medium"} />
           </div>
@@ -232,31 +168,16 @@ export default function MnemonicGeneratorPage() {
             <ScoreBadge label="Final" score={result.score_final} />
           </div>
 
-          {/* Sigla */}
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Wand2 className="h-5 w-5 text-primary" /> Sigla
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold tracking-widest text-primary">{result.sigla}</p>
-            </CardContent>
-          </Card>
-
-          {/* Frase — destaque visual */}
+          {/* Frase — destaque */}
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="h-5 w-5 text-primary" /> Frase mnemônica
-                </CardTitle>
-                <Button variant="ghost" size="sm" onClick={handleCopyPhrase} className="h-8 px-2">
-                  <Copy className="h-3.5 w-3.5 mr-1" /> Copiar frase
-                </Button>
+                <CardTitle className="text-lg flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> Frase mnemônica</CardTitle>
+                <Button variant="ghost" size="sm" onClick={handleCopyPhrase} className="h-8 px-2"><Copy className="h-3.5 w-3.5 mr-1" /> Copiar</Button>
               </div>
             </CardHeader>
             <CardContent>
+              {result.sigla && <p className="text-lg font-bold tracking-widest text-primary mb-2">{result.sigla}</p>}
               <p className="text-xl font-semibold leading-relaxed">{result.frase_mnemonica}</p>
             </CardContent>
           </Card>
@@ -273,35 +194,125 @@ export default function MnemonicGeneratorPage() {
             </Card>
           </div>
 
+          {/* Memorização Ativa */}
+          {result.memorizacao_ativa?.pergunta_rapida && (
+            <Card className="border-amber-500/30 bg-amber-500/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2 text-amber-600">
+                  <Lightbulb className="h-4 w-4" /> Memorização ativa
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">Pergunta rápida:</span>
+                  <p className="text-sm font-semibold">{result.memorizacao_ativa.pergunta_rapida}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-medium text-muted-foreground">Resposta:</span>
+                  <p className="text-sm">{result.memorizacao_ativa.resposta_esperada}</p>
+                </div>
+                {result.memorizacao_ativa.gatilho_mental && (
+                  <div>
+                    <span className="text-xs font-medium text-muted-foreground">Gatilho mental:</span>
+                    <p className="text-sm italic">{result.memorizacao_ativa.gatilho_mental}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Diferencial diagnóstico */}
+          {result.diferencial_prova?.diagnostico_comparado && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Target className="h-4 w-4 text-primary" /> Diferencial: {result.diferencial_prova.diagnostico_comparado}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {difChave.length > 0 && (
+                  <div>
+                    <span className="text-xs font-medium text-muted-foreground">Diferenças-chave:</span>
+                    <ul className="text-sm space-y-1 mt-1">{difChave.map((d, i) => <li key={i}>• {d}</li>)}</ul>
+                  </div>
+                )}
+                {pegadinhas.length > 0 && (
+                  <div>
+                    <span className="text-xs font-medium text-muted-foreground">Pegadinhas de prova:</span>
+                    <ul className="text-sm space-y-1 mt-1">{pegadinhas.map((p, i) => <li key={i} className="text-destructive">⚠ {p}</li>)}</ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Estrutura de prova */}
+          {itensProva.length > 0 && (
+            <Collapsible open={showExam} onOpenChange={setShowExam}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between">
+                  <span className="text-sm flex items-center gap-2"><HelpCircle className="h-4 w-4" /> Estrutura de prova ({itensProva.length} itens)</span>
+                  {showExam ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-3 mt-2">
+                  {itensProva.map((it, i) => (
+                    <div key={i} className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                      <p className="text-sm font-medium">{it.item}</p>
+                      <p className="text-xs text-muted-foreground">📌 Ponto-chave: {it.ponto_chave_prova}</p>
+                      <p className="text-xs text-destructive">⚠ Armadilha: {it.armadilha_comum}</p>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
+          {/* Mapa clínico completo */}
+          {mapaClinico.length > 0 && (
+            <Collapsible open={showMap} onOpenChange={setShowMap}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between">
+                  <span className="text-sm">Mapa clínico completo ({mapaClinico.length} termos)</span>
+                  {showMap ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <div className="space-y-2 mt-2">
+                  {mapaClinico.map((m, i) => (
+                    <div key={i} className="p-3 rounded-lg border space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">{m.representacao_no_mnemonico}</Badge>
+                        <span className="text-sm font-medium">→ {m.termo_original}</span>
+                      </div>
+                      {safeArray(m.qualificadores).length > 0 && (
+                        <p className="text-xs text-muted-foreground">Qualificadores: {m.qualificadores.join(", ")}</p>
+                      )}
+                      {m.explicacao && <p className="text-xs text-muted-foreground italic">{m.explicacao}</p>}
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          )}
+
           {/* Cena visual + Imagem */}
           {(result.cena_visual || result.image_url) && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2">
-                    <Eye className="h-5 w-5 text-primary" /> Cena visual
-                  </span>
-                  <Badge variant={result.image_url ? "default" : "secondary"} className="text-xs">
-                    {result.image_url ? "Imagem gerada" : "Imagem indisponível"}
-                  </Badge>
+                  <span className="flex items-center gap-2"><Eye className="h-5 w-5 text-primary" /> Cena visual</span>
+                  <Badge variant={result.image_url ? "default" : "secondary"} className="text-xs">{result.image_url ? "Imagem gerada" : "Imagem indisponível"}</Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {result.image_url ? (
-                  <img
-                    src={result.image_url}
-                    alt={`Mnemônico visual: ${result.sigla}`}
-                    className="rounded-lg max-h-96 w-full object-contain mx-auto border"
-                    loading="lazy"
-                  />
+                  <img src={result.image_url} alt={`Mnemônico: ${result.sigla}`} className="rounded-lg max-h-96 w-full object-contain mx-auto border" loading="lazy" />
                 ) : (
-                  <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
-                    A imagem não ficou disponível nesta geração. Use a cena visual como fallback de estudo.
-                  </div>
+                  <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">Use a cena visual como apoio de estudo.</div>
                 )}
-                {result.cena_visual && (
-                  <p className="text-sm text-muted-foreground">{result.cena_visual}</p>
-                )}
+                {result.cena_visual && <p className="text-sm text-muted-foreground">{result.cena_visual}</p>}
               </CardContent>
             </Card>
           )}
@@ -309,16 +320,8 @@ export default function MnemonicGeneratorPage() {
           {/* Alertas */}
           {alertas.length > 0 && (
             <Card className="border-yellow-500/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2 text-yellow-500">
-                  <AlertTriangle className="h-4 w-4" /> Alertas
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm space-y-1">
-                  {alertas.map((a, i) => <li key={i} className="text-muted-foreground">• {a}</li>)}
-                </ul>
-              </CardContent>
+              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2 text-yellow-500"><AlertTriangle className="h-4 w-4" /> Alertas</CardTitle></CardHeader>
+              <CardContent><ul className="text-sm space-y-1">{alertas.map((a, i) => <li key={i} className="text-muted-foreground">• {a}</li>)}</ul></CardContent>
             </Card>
           )}
 
@@ -353,9 +356,7 @@ export default function MnemonicGeneratorPage() {
                 <div className="space-y-2 mt-2">
                   {agentLogs.map((log, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm p-2 rounded bg-muted/50">
-                      <Badge variant={log.status === "ok" || log.status === "approved" ? "default" : "destructive"} className="text-xs">
-                        {log.agent}
-                      </Badge>
+                      <Badge variant={log.status === "ok" || log.status === "approved" ? "default" : "destructive"} className="text-xs">{log.agent}</Badge>
                       <span className="text-muted-foreground">{log.details}</span>
                       {log.attempt > 1 && <Badge variant="outline" className="text-xs">Retry #{log.attempt}</Badge>}
                     </div>
@@ -368,37 +369,20 @@ export default function MnemonicGeneratorPage() {
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={handleCopyAll}><Copy className="h-4 w-4 mr-1" /> Copiar tudo</Button>
-            <Button variant="outline" size="sm" onClick={handleFavorite} disabled={favoriteMutation.isPending}>
-              <Heart className="h-4 w-4 mr-1" /> Favoritar
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setFeedbackOpen(true)}>
-              <MessageSquare className="h-4 w-4 mr-1" /> Feedback
-            </Button>
+            <Button variant="outline" size="sm" onClick={handleFavorite} disabled={favoriteMutation.isPending}><Heart className="h-4 w-4 mr-1" /> Favoritar</Button>
+            <Button variant="outline" size="sm" onClick={() => setFeedbackOpen(true)}><MessageSquare className="h-4 w-4 mr-1" /> Feedback</Button>
           </div>
 
-          {/* Regeneration options */}
           <div className="flex flex-wrap gap-2">
             <span className="text-xs text-muted-foreground self-center mr-1">Regenerar:</span>
             {REGENERATE_OPTIONS.map(opt => (
-              <Button
-                key={opt.value}
-                variant="outline"
-                size="sm"
-                onClick={() => handleRegenerate(opt.value)}
-                disabled={isLoading}
-                title={opt.description}
-              >
+              <Button key={opt.value} variant="outline" size="sm" onClick={() => handleRegenerate(opt.value)} disabled={isLoading} title={opt.description}>
                 <RefreshCw className="h-3 w-3 mr-1" /> {opt.label}
               </Button>
             ))}
           </div>
 
-          <MnemonicFeedbackModal
-            open={feedbackOpen}
-            onOpenChange={setFeedbackOpen}
-            resultId={result.result_id}
-            requestId={result.request_id}
-          />
+          <MnemonicFeedbackModal open={feedbackOpen} onOpenChange={setFeedbackOpen} resultId={result.result_id} requestId={result.request_id} />
         </div>
         );
       })()}
