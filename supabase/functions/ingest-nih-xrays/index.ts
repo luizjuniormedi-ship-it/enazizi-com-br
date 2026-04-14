@@ -89,7 +89,8 @@ Retorne APENAS JSON:
       if (!q.statement || q.statement.length < 200 || !q.options || q.options.length < 5) continue;
       
       const questionCode = `nih_${asset.id.slice(0, 8)}_q${i}_${Date.now()}`;
-      const diffVal = Math.min(5, Math.max(1, q.difficulty || asset.difficulty));
+      const validDiffs = ["easy", "medium", "hard"];
+      const diffVal = validDiffs.includes(q.difficulty) ? q.difficulty : asset.difficulty;
 
       const { error } = await supabase.from("medical_image_questions").insert({
         asset_id: asset.id,
