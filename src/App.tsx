@@ -63,6 +63,7 @@ const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
 const AdminMonitoring = lazyWithRetry(() => import("./pages/AdminMonitoring"), "AdminMonitoring");
 const AdminCEO = lazyWithRetry(() => import("./pages/AdminCEO"), "AdminCEO");
+const ProductMetricsPage = lazyWithRetry(() => import("./pages/ProductMetricsPage"), "ProductMetricsPage");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
 const MissionControlPage = lazyWithRetry(() => import("./pages/MissionControlPage"), "MissionControlPage");
 const MissionEntry = lazyWithRetry(() => import("./pages/MissionEntry"), "MissionEntry");
@@ -165,6 +166,7 @@ const App = () => (
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
+                <Route path="metrics" element={<ProductMetricsPage />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
