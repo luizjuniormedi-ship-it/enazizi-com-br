@@ -69,3 +69,5 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.validate-medical-image-ai]
     verify_jwt = false
+  [functions.ingest-nih-xrays]
+    verify_jwt = false
