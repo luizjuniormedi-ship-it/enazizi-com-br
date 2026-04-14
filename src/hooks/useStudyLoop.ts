@@ -126,6 +126,8 @@ async function callExplainDeep(theme: string, subtopic?: string) {
 /* ─── Hook ─── */
 export function useStudyLoop() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const uid = user?.id || "";
   const [phase, setPhase] = useState<LoopPhase>("idle");
   const [context, setContext] = useState<LoopContext | null>(null);
   const [result, setResult] = useState<StepResult | null>(null);
@@ -133,6 +135,8 @@ export function useStudyLoop() {
   const [error, setError] = useState<string | null>(null);
   const reinforceCountRef = useRef(0);
   const lastActionRef = useRef<LastAction | null>(null);
+  const sessionStartRef = useRef<number>(0);
+  const loopSessionIdRef = useRef<string>(crypto.randomUUID());
 
   /* ─── Start mission ─── */
   const startMission = useCallback((rec: StudyNextRecommendation) => {
@@ -142,8 +146,16 @@ export function useStudyLoop() {
     setError(null);
     reinforceCountRef.current = 0;
     lastActionRef.current = null;
+    sessionStartRef.current = Date.now();
+    loopSessionIdRef.current = crypto.randomUUID();
     setPhase("intro");
-  }, []);
+
+    // Track loop start
+    if (uid) {
+      trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_start", recommendationType: rec.type, theme, targetId: rec.targetId });
+      incrementDailyEngagement(uid, { loops_started: 1 });
+    }
+  }, [uid]);
 
   /* ─── Begin execution after intro ─── */
   const beginExecution = useCallback(async () => {
