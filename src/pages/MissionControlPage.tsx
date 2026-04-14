@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useCoreData } from "@/hooks/useCoreData";
@@ -12,16 +12,26 @@ import MissionDayProgress from "@/components/mission-control/MissionDayProgress"
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
+import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
 import StudyLoopPanel from "@/components/study-loop/StudyLoopPanel";
 
+interface CompletionHandoff {
+  completedTitle: string;
+  badges?: string[];
+}
+
 export default function MissionControlPage() {
-  const { data, isLoading, isError, error, refresh } = useStudyNext();
+  const { data, isLoading, isError, error, refresh, isFetching } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
   const { data: coreData } = useCoreData();
 
   const loop = useStudyLoop();
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
+  const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
+  /** Tracks whether the hero just updated after a loop completion */
+  const [heroHighlight, setHeroHighlight] = useState(false);
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const activeRec = overrideRec ?? data?.recommendation;
   const justification = data?.justification ?? "";
@@ -30,7 +40,6 @@ export default function MissionControlPage() {
 
   const streak = coreData?.gamification?.current_streak ?? snapshot?.streak ?? 0;
 
-  // Open loop instead of navigating away
   const handleStart = useCallback(() => {
     if (!activeRec) return;
     loop.startMission(activeRec);
@@ -46,29 +55,64 @@ export default function MissionControlPage() {
   }, [refresh]);
 
   const handleLoopClose = useCallback(() => {
-    loop.resetLoop();
-    // If loop completed, refresh mission data
-    if (loop.phase === "complete") {
-      handleRefresh();
-    }
-  }, [loop, handleRefresh]);
+    const wasComplete = loop.phase === "complete";
+    const completedTitle = loop.context?.recommendation.title ?? "";
+    const badges = loop.result?.completionBadges;
 
-  if (isLoading || snapLoading) return <MissionControlSkeleton />;
+    loop.resetLoop();
+
+    if (wasComplete) {
+      // Show completion banner
+      setHandoff({ completedTitle, badges });
+      setOverrideRec(null);
+
+      // Highlight hero card briefly
+      setHeroHighlight(true);
+      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
+      highlightTimerRef.current = setTimeout(() => setHeroHighlight(false), 2000);
+
+      // Refresh data (will use placeholderData to avoid flicker)
+      refresh();
+    }
+  }, [loop, refresh]);
+
+  const dismissBanner = useCallback(() => setHandoff(null), []);
+
+  // First load only — show skeleton
+  if (isLoading && !data) return <MissionControlSkeleton />;
+  if (snapLoading && !snapshot) return <MissionControlSkeleton />;
   if (isError) return <MissionControlError error={error} onRetry={handleRefresh} />;
   if (!activeRec) return <MissionControlEmpty onGenerate={handleRefresh} />;
 
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-5 animate-fade-in">
-      {/* Hero — main mission */}
-      <MissionHeroCard
-        recommendation={activeRec}
-        adaptiveState={adaptiveState}
-        onStart={handleStart}
-        onRefresh={handleRefresh}
-        onShowAlternatives={() => {
-          document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
-        }}
-      />
+      {/* Completion banner — appears after loop close */}
+      {handoff && (
+        <MissionCompletionBanner
+          completedTitle={handoff.completedTitle}
+          badges={handoff.badges}
+          onDismiss={dismissBanner}
+        />
+      )}
+
+      {/* Hero — main mission with highlight transition */}
+      <div
+        className={`transition-all duration-700 ${
+          heroHighlight
+            ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-xl"
+            : "ring-0 ring-transparent"
+        }`}
+      >
+        <MissionHeroCard
+          recommendation={activeRec}
+          adaptiveState={adaptiveState}
+          onStart={handleStart}
+          onRefresh={handleRefresh}
+          onShowAlternatives={() => {
+            document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
+          }}
+        />
+      </div>
 
       {/* Why this now? */}
       <MissionJustification justification={justification} adaptiveState={adaptiveState} />

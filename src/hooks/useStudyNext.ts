@@ -54,6 +54,8 @@ export function useStudyNext() {
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: true,
     retry: 2,
+    // Keep previous data while refetching — prevents flicker on mission transition
+    placeholderData: (prev) => prev,
   });
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["study-next"] });

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,6 +37,17 @@ export default function StudyLoopPanel({
   onContinue, onQuickAction, onRetry, onClose,
 }: Props) {
   const open = phase !== "idle";
+  const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Auto-close after reaching "complete" with a brief delay for visual confirmation
+  useEffect(() => {
+    if (phase === "complete") {
+      autoCloseTimerRef.current = setTimeout(onClose, 2500);
+    }
+    return () => {
+      if (autoCloseTimerRef.current) clearTimeout(autoCloseTimerRef.current);
+    };
+  }, [phase, onClose]);
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -91,12 +103,15 @@ export default function StudyLoopPanel({
         )}
 
         {phase === "complete" && (
-          <div className="flex flex-col items-center text-center py-12 gap-4">
+          <div className="flex flex-col items-center text-center py-12 gap-4 animate-fade-in">
             <div className="text-5xl">🎯</div>
             <h3 className="text-lg font-bold text-foreground">Etapa concluída!</h3>
-            <p className="text-sm text-muted-foreground">Sua missão foi atualizada.</p>
-            <Button size="lg" className="mt-2" onClick={onClose}>
-              Ver nova missão
+            <p className="text-sm text-muted-foreground">Preparando sua próxima missão...</p>
+            <div className="h-1.5 w-32 rounded-full bg-muted overflow-hidden mt-2">
+              <div className="h-full bg-primary rounded-full animate-[progress_2.5s_ease-in-out_forwards]" />
+            </div>
+            <Button variant="ghost" size="sm" className="mt-2 text-muted-foreground" onClick={onClose}>
+              Ver agora
             </Button>
           </div>
         )}

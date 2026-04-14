@@ -252,6 +252,11 @@
   50% { opacity: 1; }
 }
 
+@keyframes progress {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+
 .gradient-border {
   position: relative;
 }
