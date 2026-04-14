@@ -74,8 +74,12 @@ export function scoreReview(
   // priority boost (0-100 mapped to 0-15)
   s += Math.min(15, ((rev.prioridade ?? 50) / 100) * 15);
 
-  // forgetting-risk boost (0-1 → 0-20)
-  s += Math.min(20, (rev.risco_esquecimento ?? 0) * 20);
+  // forgetting-risk boost (text field: baixo/medio/alto → numeric)
+  const riskMap: Record<string, number> = { baixo: 0.2, medio: 0.5, alto: 1.0 };
+  const riskVal = typeof rev.risco_esquecimento === "number"
+    ? rev.risco_esquecimento
+    : riskMap[rev.risco_esquecimento ?? ""] ?? 0.2;
+  s += Math.min(20, riskVal * 20);
 
   // overdue days boost (each day overdue +2, max +16)
   if (rev.data_revisao && rev.data_revisao < ctx.today) {
