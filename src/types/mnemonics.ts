@@ -103,6 +103,7 @@ export interface MnemonicResultData {
   prompt_imagem: string;
   score_medico: number;
   score_pedagogico: number;
+  score_linguistico: number;
   score_final: number;
   alertas: string[];
   associacoes: Associacao[];
@@ -145,10 +146,12 @@ export interface MnemonicHistoryItem {
   alertas_json: string[];
   score_medico: number;
   score_pedagogico: number;
+  score_linguistico: number | null;
   score_final: number;
   aprovado: boolean;
   aprovado_medico: boolean;
   aprovado_pedagogico: boolean;
+  image_url: string | null;
   versao: number;
   is_latest: boolean;
   created_at: string;

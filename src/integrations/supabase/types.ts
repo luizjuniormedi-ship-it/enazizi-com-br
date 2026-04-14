@@ -3678,10 +3678,12 @@ export type Database = {
           explicacao_tecnica: string | null
           frase_mnemonica: string
           id: string
+          image_url: string | null
           is_latest: boolean
           prompt_imagem: string | null
           request_id: string
           score_final: number
+          score_linguistico: number | null
           score_medico: number
           score_pedagogico: number
           sigla: string
@@ -3703,10 +3705,12 @@ export type Database = {
           explicacao_tecnica?: string | null
           frase_mnemonica: string
           id?: string
+          image_url?: string | null
           is_latest?: boolean
           prompt_imagem?: string | null
           request_id: string
           score_final?: number
+          score_linguistico?: number | null
           score_medico?: number
           score_pedagogico?: number
           sigla: string
@@ -3728,10 +3732,12 @@ export type Database = {
           explicacao_tecnica?: string | null
           frase_mnemonica?: string
           id?: string
+          image_url?: string | null
           is_latest?: boolean
           prompt_imagem?: string | null
           request_id?: string
           score_final?: number
+          score_linguistico?: number | null
           score_medico?: number
           score_pedagogico?: number
           sigla?: string

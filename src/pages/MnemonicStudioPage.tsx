@@ -182,7 +182,8 @@ export default function MnemonicGeneratorPage() {
       {result && (
         <div className="space-y-4">
           {/* Scores */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <ScoreBadge label="Linguístico" score={result.score_linguistico ?? 0} />
             <ScoreBadge label="Médico" score={result.score_medico} />
             <ScoreBadge label="Pedagógico" score={result.score_pedagogico} />
             <ScoreBadge label="Final" score={result.score_final} />
@@ -224,18 +225,24 @@ export default function MnemonicGeneratorPage() {
             </Card>
           </div>
 
-          {/* Cena visual */}
-          {result.cena_visual && (
+          {/* Cena visual + Imagem */}
+          {(result.cena_visual || result.image_url) && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Eye className="h-5 w-5 text-primary" /> Cena visual
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <p className="text-sm text-muted-foreground">{result.cena_visual}</p>
+              <CardContent className="space-y-4">
                 {result.image_url && (
-                  <img src={result.image_url} alt="Mnemônico visual" className="rounded-lg max-h-80 mx-auto" />
+                  <img
+                    src={result.image_url}
+                    alt={`Mnemônico visual: ${result.sigla}`}
+                    className="rounded-lg max-h-96 w-full object-contain mx-auto border"
+                  />
+                )}
+                {result.cena_visual && (
+                  <p className="text-sm text-muted-foreground">{result.cena_visual}</p>
                 )}
               </CardContent>
             </Card>
