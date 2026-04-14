@@ -100,10 +100,8 @@ serve(async (req) => {
     const recoveryActive = dailyPlanToday?.recovery_mode ?? false;
     const contentLocked = dailyPlanToday?.content_lock ?? false;
 
-    // Image quiz availability — extract count from head query
-    const imgQuizAvailable = typeof imageQuizCount === "number"
-      ? imageQuizCount
-      : (imageQuizCount as any)?.count ?? 0;
+    // Image quiz availability — check if any published questions exist
+    const imgQuizAvailable = Array.isArray(imageQuizCount) ? imageQuizCount.length : 0;
 
     // ── Exam proximity ──
     let examProximityDays: number | null = null;
