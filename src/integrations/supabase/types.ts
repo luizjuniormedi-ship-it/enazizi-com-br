@@ -2337,6 +2337,54 @@ export type Database = {
           },
         ]
       }
+      generated_content_log: {
+        Row: {
+          cache_hit: boolean
+          content_hash: string
+          content_type: string
+          cost_units: number
+          created_at: string
+          id: string
+          model_used: string | null
+          request_payload: Json | null
+          response_payload: Json | null
+          source_endpoint: string
+          subtopic: string | null
+          theme: string
+          user_id: string
+        }
+        Insert: {
+          cache_hit?: boolean
+          content_hash: string
+          content_type: string
+          cost_units?: number
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          source_endpoint: string
+          subtopic?: string | null
+          theme: string
+          user_id: string
+        }
+        Update: {
+          cache_hit?: boolean
+          content_hash?: string
+          content_type?: string
+          cost_units?: number
+          created_at?: string
+          id?: string
+          model_used?: string | null
+          request_payload?: Json | null
+          response_payload?: Json | null
+          source_endpoint?: string
+          subtopic?: string | null
+          theme?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       generation_jobs: {
         Row: {
           created_at: string
