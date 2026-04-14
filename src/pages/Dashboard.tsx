@@ -409,6 +409,9 @@ const Dashboard = () => {
             />
           )}
 
+          {/* Visual Skill */}
+          <VisualSkillCard />
+
           {/* Quick contextual actions */}
           {activeRec && <MissionQuickActions type={activeRec.type} />}
 
