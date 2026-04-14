@@ -5,11 +5,108 @@ import { supabase } from "@/integrations/supabase/client";
 import type {
   MnemonicRequest,
   MnemonicApiResponse,
+  MnemonicResultData,
   MnemonicHistoryItem,
   FeedbackPayload,
   RegeneratePayload,
   RegenerateStyle,
+  AgentLog,
 } from "@/types/mnemonics";
+
+// ══════════════════════════════════════════════════
+// RESPONSE MAPPING
+// ══════════════════════════════════════════════════
+
+function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: string[]): MnemonicResultData {
+  // The Edge Function returns { success, data: { ... } }
+  const d = (raw.success && raw.data && typeof raw.data === "object")
+    ? raw.data as Record<string, unknown>
+    : raw;
+
+  const agentes = d.agentes as Record<string, unknown> | undefined;
+  const gerador = agentes?.gerador as Record<string, unknown> | undefined;
+  const visual = agentes?.visual as Record<string, unknown> | undefined;
+  const auditorMedico = agentes?.auditor_medico as Record<string, unknown> | undefined;
+  const auditorPedagogico = agentes?.auditor_pedagogico as Record<string, unknown> | undefined;
+
+  // Build items_map from generator associations
+  const sigla = String(d.sigla ?? "");
+  const associacoes = (gerador?.associacoes ?? d.associacoes) as Array<Record<string, string>> | undefined;
+  let itemsMap: MnemonicResultData["items_map"] = [];
+
+  if (Array.isArray(associacoes) && associacoes.length > 0) {
+    itemsMap = associacoes.map((a) => ({
+      letter: String(a.letra ?? a.letter ?? ""),
+      word: String(a.representacao_no_mnemonico ?? a.word ?? ""),
+      original_item: String(a.termo_original ?? a.original_item ?? ""),
+      symbol: null,
+      symbol_reason: null,
+    }));
+  } else if (inputTermos) {
+    const letters = sigla.split("");
+    itemsMap = inputTermos.map((item, i) => ({
+      letter: letters[i] ?? "",
+      word: item,
+      original_item: item,
+      symbol: null,
+      symbol_reason: null,
+    }));
+  }
+
+  // Build agent_logs from agentes object
+  const agentLogs: AgentLog[] = [];
+  if (agentes) {
+    const agentEntries: Array<[string, string]> = [
+      ["gerador", "Gerador"],
+      ["auditor_medico", "Auditor Médico"],
+      ["auditor_pedagogico", "Auditor Pedagógico"],
+      ["visual", "Visual"],
+      ["consolidador", "Consolidador"],
+    ];
+    for (const [key, label] of agentEntries) {
+      const agentData = agentes[key] as Record<string, unknown> | undefined;
+      if (!agentData) continue;
+      const score = typeof agentData.score_medico === "number"
+        ? agentData.score_medico
+        : typeof agentData.score_pedagogico === "number"
+          ? agentData.score_pedagogico
+          : null;
+      agentLogs.push({
+        agent: label,
+        attempt: 1,
+        status: "ok",
+        details: score != null ? `Score: ${score}` : "Concluído",
+      });
+    }
+  }
+
+  const associacoesVisuais = (visual?.associacoes_visuais ?? d.associacoes_visuais ?? []) as Array<{ termo: string; elemento_visual: string }>;
+
+  return {
+    request_id: String(d.request_id ?? ""),
+    result_id: String(d.result_id ?? ""),
+    tema: String(d.tema ?? ""),
+    sigla,
+    frase_mnemonica: String(d.frase_mnemonica ?? ""),
+    explicacao_tecnica: String(d.explicacao_tecnica ?? ""),
+    explicacao_didatica: String(d.explicacao_didatica ?? ""),
+    cena_visual: String(d.cena_visual ?? ""),
+    prompt_imagem: String(d.prompt_imagem ?? ""),
+    score_medico: Number(d.score_medico ?? 0),
+    score_pedagogico: Number(d.score_pedagogico ?? 0),
+    score_final: Number(d.score_final ?? 0),
+    alertas: Array.isArray(d.alertas) ? d.alertas.map(String) : [],
+    associacoes: Array.isArray(associacoes) ? associacoes.map((a: any) => ({
+      letra: String(a.letra ?? ""),
+      termo_original: String(a.termo_original ?? ""),
+      representacao_no_mnemonico: String(a.representacao_no_mnemonico ?? ""),
+    })) : [],
+    associacoes_visuais: Array.isArray(associacoesVisuais) ? associacoesVisuais : [],
+    image_url: typeof d.image_url === "string" ? d.image_url : null,
+    items_map: itemsMap,
+    agent_logs: agentLogs,
+  };
+}
 
 // ══════════════════════════════════════════════════
 // GENERATE (calls edge function)
@@ -35,7 +132,20 @@ export async function generateMnemonic(input: MnemonicRequest): Promise<Mnemonic
     return { success: false, error: "Resposta inválida do servidor." };
   }
 
-  return data as MnemonicApiResponse;
+  const raw = data as Record<string, unknown>;
+
+  // Check for explicit error response from edge function
+  if (raw.success === false) {
+    return { success: false, error: String(raw.error ?? "Erro ao gerar mnemônico.") };
+  }
+
+  try {
+    const mapped = mapEdgeFunctionResponse(raw, input.termos);
+    return { success: true, data: mapped };
+  } catch (e) {
+    console.error("[mnemonics] Failed to map response:", e);
+    return { success: false, error: "Erro ao processar resposta do servidor." };
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -66,20 +176,11 @@ export async function fetchMnemonicHistory(filters: HistoryFilters = {}): Promis
   if (!user) throw new Error("Usuário não autenticado.");
 
   // Get favorites set for this user
-  let favoriteResultIds = new Set<string>();
-  if (favoritesOnly) {
-    const { data: favs } = await supabase
-      .from("mnemonic_favorites")
-      .select("result_id")
-      .eq("user_id", user.id);
-    favoriteResultIds = new Set((favs || []).map(f => f.result_id));
-  } else {
-    const { data: favs } = await supabase
-      .from("mnemonic_favorites")
-      .select("result_id")
-      .eq("user_id", user.id);
-    favoriteResultIds = new Set((favs || []).map(f => f.result_id));
-  }
+  const { data: favs } = await supabase
+    .from("mnemonic_favorites")
+    .select("result_id")
+    .eq("user_id", user.id);
+  const favoriteResultIds = new Set((favs || []).map(f => f.result_id));
 
   let query = supabase
     .from("mnemonic_results")
