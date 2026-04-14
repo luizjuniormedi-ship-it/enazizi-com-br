@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
     // Mode 2: Batch ingest
     // { batch: [{ image_url, filename, pathology }] }
 
-    const items: Array<{ image_url: string; filename: string; pathology: string; patient_id?: string }> =
+    const items: Array<{ image_url: string; filename: string; pathology: string; patient_id?: string; pre_uploaded_url?: string }> =
       body.batch || (body.image_url ? [body] : []);
 
     if (items.length === 0) {
