@@ -399,14 +399,19 @@ const MedicalImageQuiz = () => {
       <Dialog open={!!zoomImage} onOpenChange={() => setZoomImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 sm:p-4 bg-black/95 border-border/30">
           <div className="relative flex items-center justify-center min-h-[50vh]">
-            {zoomImage && isImageUrlClinical(zoomImage) && (
+            {zoomImage && isValidMedicalImageUrl(zoomImage) ? (
               <img
                 src={zoomImage}
                 alt="Imagem ampliada"
                 className="max-w-full max-h-[85vh] object-contain"
                 referrerPolicy="no-referrer"
               />
-            )}
+            ) : zoomImage ? (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <ImageIcon className="h-16 w-16 text-muted-foreground/30" />
+                <p className="text-muted-foreground">Imagem indisponível para ampliação</p>
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
