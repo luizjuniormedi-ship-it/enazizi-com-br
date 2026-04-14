@@ -157,6 +157,8 @@ const App = () => (
                 <Route path="prova-pratica" element={<PracticalExam />} />
                 <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
                 <Route path="mnemonic-studio" element={<MnemonicStudio />} />
+                <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
+                <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
