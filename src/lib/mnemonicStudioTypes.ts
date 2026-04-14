@@ -24,7 +24,20 @@ export interface AgentLogEntry {
   details: string;
 }
 
+export interface MnemonicAssociacao {
+  letra: string;
+  termo_original: string;
+  representacao_no_mnemonico: string;
+}
+
+export interface MnemonicAssociacaoVisual {
+  termo: string;
+  elemento_visual: string;
+}
+
 export interface MnemonicStudioData {
+  request_id?: string;
+  result_id?: string;
   tema: string;
   sigla: string;
   frase_mnemonica: string;
@@ -44,13 +57,17 @@ export interface MnemonicStudioData {
     symbol: string | null;
     symbol_reason: string | null;
   }>;
+  associacoes?: MnemonicAssociacao[];
+  associacoes_visuais?: MnemonicAssociacaoVisual[];
   agent_logs?: AgentLogEntry[];
+  agentes?: Record<string, unknown>;
 }
 
 export interface MnemonicStudioResponse {
   success: boolean;
   data?: MnemonicStudioData;
   error?: string;
+  details?: string;
   agent_logs?: AgentLogEntry[];
 }
 
@@ -66,6 +83,7 @@ export const ESTILOS = [
   { value: "acronimo", label: "Acrônimo / Sigla" },
   { value: "historia", label: "Mini-história" },
   { value: "musical", label: "Musical / Rítmico" },
+  { value: "frase + imagem mental", label: "Frase + Imagem Mental" },
 ] as const;
 
 export const PUBLICOS = [
