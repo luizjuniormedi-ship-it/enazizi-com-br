@@ -40,6 +40,7 @@ interface GeneratorOutput {
 
 interface LinguisticAuditOutput {
   score_linguistico: number;
+  fluidez_fala: number;
   soa_natural: boolean;
   tem_sentido: boolean;
   memoravel: boolean;
@@ -354,41 +355,51 @@ async function getUserIdFromRequest(req: Request): Promise<string> {
 // OPENAI CALL
 // ══════════════════════════════════════════════════
 
+const AGENT_TIMEOUT_MS = 15000;
+
 async function callOpenAIJson<T>(
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
 ): Promise<T> {
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      temperature: OPENAI_TEMP,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text().catch(() => "unknown");
-    throw new Error(`OpenAI HTTP ${resp.status}: ${errText}`);
-  }
-
-  const json = await resp.json();
-  const content = json?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("OpenAI retornou content vazio.");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
 
   try {
-    return JSON.parse(content) as T;
-  } catch {
-    throw new Error(`OpenAI retornou JSON inválido: ${content.substring(0, 200)}`);
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: OPENAI_TEMP,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
+      signal: controller.signal,
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "unknown");
+      throw new Error(`OpenAI HTTP ${resp.status}: ${errText.substring(0, 300)}`);
+    }
+
+    const json = await resp.json();
+    const content = json?.choices?.[0]?.message?.content;
+    if (!content) throw new Error("OpenAI retornou content vazio.");
+
+    try {
+      return JSON.parse(content) as T;
+    } catch {
+      throw new Error(`OpenAI retornou JSON inválido: ${content.substring(0, 200)}`);
+    }
+  } finally {
+    clearTimeout(timer);
   }
 }
 
