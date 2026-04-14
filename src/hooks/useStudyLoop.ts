@@ -286,7 +286,7 @@ export function useStudyLoop() {
     } finally {
       setLoading(false);
     }
-  }, [context]);
+  }, [context, uid]);
 
   /* ─── Load next recommendation ─── */
   const loadNext = useCallback(async () => {
@@ -297,13 +297,21 @@ export function useStudyLoop() {
     try {
       await queryClient.invalidateQueries({ queryKey: ["study-next"] });
       await queryClient.invalidateQueries({ queryKey: ["analytics-snapshot"] });
+
+      // Track loop completion
+      const durationSeconds = sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : undefined;
+      if (uid && context) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_complete", recommendationType: context.recommendation.type, theme: context.theme, durationSeconds });
+        incrementDailyEngagement(uid, { loops_completed: 1, total_study_seconds: durationSeconds || 0 });
+      }
+
       setPhase("complete");
     } catch (e: any) {
       setError(e.message || "Erro ao carregar próxima missão");
     } finally {
       setLoading(false);
     }
-  }, [queryClient]);
+  }, [queryClient, uid, context]);
 
   /* ─── Continue after feedback ─── */
   const continueLoop = useCallback(async () => {
@@ -377,22 +385,33 @@ export function useStudyLoop() {
         const question = await callGenerateQuestion(context.theme, context.subtopic);
         setResult((prev) => ({ ...prev, generatedQuestion: question, helperContent: null }));
       }
+      // Track quick action
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "quick_action", theme: context.theme, metadata: { endpoint } });
+        incrementDailyEngagement(uid, { quick_actions_used: 1 });
+      }
     } catch (e: any) {
       setError(e.message || "Erro na ação rápida");
     } finally {
       setLoading(false);
     }
-  }, [context]);
+  }, [context, uid]);
 
-  /* ─── Reset ─── */
+  /* ─── Reset (also tracks abandon if loop was active) ─── */
   const resetLoop = useCallback(() => {
+    // Track abandon if loop was in progress (not complete)
+    if (uid && context && phase !== "idle" && phase !== "complete") {
+      const durationSeconds = sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : undefined;
+      trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_abandon", recommendationType: context.recommendation.type, theme: context.theme, durationSeconds, metadata: { abandonedPhase: phase } });
+      incrementDailyEngagement(uid, { loops_abandoned: 1, total_study_seconds: durationSeconds || 0 });
+    }
     setPhase("idle");
     setContext(null);
     setResult(null);
     setError(null);
     reinforceCountRef.current = 0;
     lastActionRef.current = null;
-  }, []);
+  }, [uid, context, phase]);
 
   return {
     phase,
