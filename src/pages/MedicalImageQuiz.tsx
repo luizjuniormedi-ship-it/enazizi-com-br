@@ -69,66 +69,15 @@ const MedicalImageQuiz = () => {
   const [quizMode, setQuizMode] = useState<"browse" | "quiz">("browse");
   const [zoomImage, setZoomImage] = useState<string | null>(null);
 
-  // Fetch from medical_image_questions + medical_image_assets
+  const [activeTier, setActiveTier] = useState<QualityTier>("tier1");
+
+  // Fetch with tiered fallback
   const { data: questions = [], isLoading } = useQuery({
     queryKey: ["image-quiz-questions", imageType, difficulty],
     queryFn: async () => {
-      let query = supabase
-        .from("medical_image_questions")
-        .select(`
-          id, statement, option_a, option_b, option_c, option_d, option_e,
-          correct_index, explanation, difficulty, exam_style,
-          medical_image_assets!inner(
-            image_url,
-            image_type,
-            diagnosis,
-            is_active,
-            review_status,
-            clinical_confidence,
-            integrity_status,
-            validation_level,
-            asset_origin
-          )
-        `)
-        .eq("status", "published")
-        .eq("medical_image_assets.is_active", true)
-        .eq("medical_image_assets.review_status", "published")
-        .eq("medical_image_assets.integrity_status", "ok")
-        .gte("medical_image_assets.clinical_confidence", 0.9)
-        .in("medical_image_assets.validation_level", ["gold", "silver"])
-        .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
-        .neq("medical_image_assets.image_url", "");
-
-      if (imageType !== "all") {
-        query = query.eq("medical_image_assets.image_type", imageType as any);
-      }
-      if (difficulty !== "all") {
-        query = query.eq("difficulty", difficulty as any);
-      }
-
-      const { data, error } = await query.order("created_at", { ascending: false });
-      if (error) throw error;
-
-      return (data || [])
-        .map((q: any) => {
-          const asset = q.medical_image_assets;
-          const imageUrl = asset?.image_url || null;
-          if (!isImageUrlClinical(imageUrl)) return null;
-          const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
-          return {
-            id: q.id,
-            statement: q.statement,
-            options: opts,
-            correct_index: q.correct_index,
-            explanation: q.explanation,
-            difficulty: q.difficulty,
-            exam_style: q.exam_style,
-            image_url: imageUrl,
-            image_type: asset?.image_type || null,
-            diagnosis: asset?.diagnosis || null,
-          } as ImageQuestion;
-        })
-        .filter(Boolean) as ImageQuestion[];
+      const result = await fetchQuestionsWithFallback(imageType, difficulty);
+      setActiveTier(result.tier);
+      return result.questions;
     },
   });
 
