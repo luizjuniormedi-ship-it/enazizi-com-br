@@ -550,6 +550,28 @@ const SmartPlanner = () => {
                   flashcardsCriados = syncResult.flashcardsCriados;
                   questoesVinculadas = syncResult.questoesVinculadas;
                 } catch (err) { console.error("Sync error:", err); }
+
+                // Create baseline approval score if none exists
+                const { data: existingScore } = await supabase
+                  .from("approval_scores")
+                  .select("id")
+                  .eq("user_id", user.id)
+                  .limit(1)
+                  .maybeSingle();
+                if (!existingScore) {
+                  await supabase.from("approval_scores").insert({
+                    user_id: user.id,
+                    score: 0,
+                    accuracy: 0,
+                    review_score: 0,
+                    consistency_score: 0,
+                    domain_score: 0,
+                    error_penalty: 0,
+                    simulation_score: 0,
+                    phase: "base",
+                  } as any);
+                }
+
                 await loadData();
               }
               return { temasRegistrados: registeredTemas.length, flashcardsCriados, questoesVinculadas, revisoesAgendadas: totalReviews };
