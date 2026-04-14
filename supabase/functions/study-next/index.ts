@@ -83,12 +83,13 @@ serve(async (req) => {
           .select("current_streak")
           .eq("user_id", userId).maybeSingle(),
         "gamification"),
-      // NEW: count of published image quiz questions
-      safeQuery<any>(db, (c) =>
+      // NEW: check if published image quiz questions exist (lightweight)
+      safeQuery<any[]>(db, (c) =>
         c.from("medical_image_questions")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "published"),
-        "image_quiz_count"),
+          .select("id")
+          .eq("status", "published")
+          .limit(1),
+        "image_quiz_check"),
     ]);
 
     const reviews = pendingReviews ?? [];
