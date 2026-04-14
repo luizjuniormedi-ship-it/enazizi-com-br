@@ -949,6 +949,13 @@ Prompt imagem: ${visual.prompt_imagem}`;
     const aprovadoPedagogico = scorePedagogico >= SCORE_PEDAGOGICO_MIN;
     const aprovado = aprovadoMedico && aprovadoPedagogico;
 
+    // Quality flag
+    const qualityFlag = (scoreLinguistico < 80 || scoreMedico < 85)
+      ? "low"
+      : scoreFinal >= 90
+        ? "high"
+        : "medium";
+
     const resultId = await insertResult(db, {
       request_id: requestId,
       user_id: userId,
@@ -987,6 +994,7 @@ Prompt imagem: ${visual.prompt_imagem}`;
         score_pedagogico: scorePedagogico,
         score_linguistico: scoreLinguistico,
         score_final: scoreFinal,
+        quality_flag: qualityFlag,
         alertas: consolidated.alertas ?? [],
         agentes: {
           gerador: generated,
