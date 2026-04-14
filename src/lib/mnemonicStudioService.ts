@@ -1,6 +1,6 @@
 /**
  * Mnemonic Studio — API service layer.
- * Calls the generate-medical-mnemonic edge function.
+ * Calls the generate-mnemonic edge function.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type {
@@ -28,7 +28,7 @@ export async function generateMnemonicStudio(
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke("generate-medical-mnemonic", {
+    const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
       body: input,
     });
 
