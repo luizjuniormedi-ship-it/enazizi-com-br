@@ -522,7 +522,7 @@ async function searchAndCollect(
 ): Promise<CandidateBlock[]> {
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
   if (!FIRECRAWL_API_KEY) {
-    log.errors.push("FIRECRAWL_API_KEY não configurado — busca web desabilitada");
+    console.warn("FIRECRAWL_API_KEY não configurado — busca web desabilitada");
     return [];
   }
 
