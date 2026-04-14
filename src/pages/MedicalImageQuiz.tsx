@@ -49,8 +49,9 @@ const imageTypeLabels: Record<string, string> = {
 const MedicalImageQuiz = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "image-quiz" });
-  const [imageType, setImageType] = useState<string>("all");
+  const [imageType, setImageType] = useState<string>(searchParams.get("type") || "all");
   const [difficulty, setDifficulty] = useState<string>("all");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
