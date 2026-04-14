@@ -401,19 +401,31 @@ serve(async (req: Request) => {
 
   let requestId: string | null = null;
   let db: SupabaseClient | null = null;
+  let currentStage = "init";
 
   try {
+    currentStage = "env_check";
     const aiKey = requireEnv("LOVABLE_API_KEY");
     requireEnv("SUPABASE_URL"); requireEnv("SUPABASE_ANON_KEY"); requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 
+    currentStage = "parse_body";
     const rawBody = await req.json().catch(() => null);
+    if (!rawBody) throw new Error("Body vazio ou JSON inválido.");
+    console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema}, termos=${(rawBody as any)?.termos?.length}`);
+
+    currentStage = "validate_input";
     const payload = validatePayload(rawBody);
     const norm = normalizeTerms(payload.tema, payload.termos);
     payload.tema = norm.tema; payload.termos = norm.termos;
 
+    currentStage = "auth";
     const userId = await getUserIdFromRequest(req);
+    console.log(`[MNEMONIC] User: ${userId.substring(0, 8)}...`);
+
+    currentStage = "db_init";
     db = getServiceClient();
     requestId = await insertRequest(db, userId, payload);
+    console.log(`[MNEMONIC] Request: ${requestId}`);
     const ctx = buildContext(payload);
     let order = 0;
 
