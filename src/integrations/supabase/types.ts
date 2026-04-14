@@ -3245,9 +3245,11 @@ export type Database = {
           correct_index: number
           created_at: string
           difficulty: Database["public"]["Enums"]["difficulty_level"]
+          discussion: Json | null
           editorial_grade: string | null
           editorial_score: number | null
           exam_style: string
+          exam_tips: string[] | null
           explanation: string
           hard_validation_reasons: string[] | null
           hard_validation_score: number | null
@@ -3259,6 +3261,7 @@ export type Database = {
           option_c: string
           option_d: string
           option_e: string | null
+          pitfalls: string[] | null
           question_code: string
           question_mode: string | null
           rationale_map: Json | null
@@ -3278,9 +3281,11 @@ export type Database = {
           correct_index: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          discussion?: Json | null
           editorial_grade?: string | null
           editorial_score?: number | null
           exam_style?: string
+          exam_tips?: string[] | null
           explanation: string
           hard_validation_reasons?: string[] | null
           hard_validation_score?: number | null
@@ -3292,6 +3297,7 @@ export type Database = {
           option_c: string
           option_d: string
           option_e?: string | null
+          pitfalls?: string[] | null
           question_code: string
           question_mode?: string | null
           rationale_map?: Json | null
@@ -3311,9 +3317,11 @@ export type Database = {
           correct_index?: number
           created_at?: string
           difficulty?: Database["public"]["Enums"]["difficulty_level"]
+          discussion?: Json | null
           editorial_grade?: string | null
           editorial_score?: number | null
           exam_style?: string
+          exam_tips?: string[] | null
           explanation?: string
           hard_validation_reasons?: string[] | null
           hard_validation_score?: number | null
@@ -3325,6 +3333,7 @@ export type Database = {
           option_c?: string
           option_d?: string
           option_e?: string | null
+          pitfalls?: string[] | null
           question_code?: string
           question_mode?: string | null
           rationale_map?: Json | null
