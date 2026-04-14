@@ -128,17 +128,39 @@ const AdminQuestionReviewPanel = () => {
 
   const handleBulkApprove = async () => {
     setActionLoading("bulk");
-    const ids = questions.map(q => q.id);
-    const { error } = await supabase.from("questions_bank")
-      .update({ review_status: "approved" })
-      .in("id", ids);
-    if (error) {
-      toast({ title: "Erro", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: `${ids.length} questões aprovadas` });
-      fetchQuestions();
-      fetchCounts();
+    // Only approve questions that are NOT already approved
+    const pendingQuestions = questions.filter(q => q.review_status !== "approved");
+    if (pendingQuestions.length === 0) {
+      toast({ title: "Nenhuma questão pendente para aprovar nesta página" });
+      setActionLoading(null);
+      return;
     }
+    const ids = pendingQuestions.map(q => q.id);
+    
+    // Process in chunks of 50 to avoid URL length limits
+    let approved = 0;
+    let lastError: any = null;
+    for (let i = 0; i < ids.length; i += 50) {
+      const chunk = ids.slice(i, i + 50);
+      const { error, count } = await supabase.from("questions_bank")
+        .update({ review_status: "approved" })
+        .in("id", chunk)
+        .select("id", { count: "exact", head: true });
+      if (error) {
+        lastError = error;
+        console.error("Bulk approve error:", error);
+      } else {
+        approved += count || chunk.length;
+      }
+    }
+    
+    if (lastError) {
+      toast({ title: "Erro parcial", description: lastError.message, variant: "destructive" });
+    } else {
+      toast({ title: `${approved} questões aprovadas com sucesso` });
+    }
+    fetchQuestions();
+    fetchCounts();
     setActionLoading(null);
   };
 
