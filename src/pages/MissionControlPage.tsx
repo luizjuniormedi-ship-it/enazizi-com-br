@@ -15,7 +15,7 @@ import MissionControlSkeleton from "@/components/mission-control/MissionControlS
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
 import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
-import StudyLoopPanel from "@/components/study-loop/StudyLoopPanel";
+import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
 
 interface CompletionHandoff {
   completedTitle: string;
@@ -44,6 +44,8 @@ export default function MissionControlPage() {
 
   const streak = coreData?.gamification?.current_streak ?? snapshot?.streak ?? 0;
 
+  const loopActive = loop.phase !== "idle";
+
   const handleStart = useCallback(() => {
     if (!activeRec) return;
     loop.startMission(activeRec);
@@ -66,16 +68,13 @@ export default function MissionControlPage() {
     loop.resetLoop();
 
     if (wasComplete) {
-      // Show completion banner
       setHandoff({ completedTitle, badges });
       setOverrideRec(null);
 
-      // Highlight hero card briefly
       setHeroHighlight(true);
       if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
       highlightTimerRef.current = setTimeout(() => setHeroHighlight(false), 2000);
 
-      // Refresh data (will use placeholderData to avoid flicker)
       refresh();
     }
   }, [loop, refresh]);
@@ -102,55 +101,9 @@ export default function MissionControlPage() {
         />
       )}
 
-      {/* Hero — main mission with highlight transition */}
-      <div
-        className={`transition-all duration-700 ${
-          heroHighlight
-            ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-xl"
-            : "ring-0 ring-transparent"
-        }`}
-      >
-        <MissionHeroCard
-          recommendation={activeRec}
-          adaptiveState={adaptiveState}
-          onStart={handleStart}
-          onRefresh={handleRefresh}
-          onShowAlternatives={() => {
-            document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
-          }}
-        />
-      </div>
-
-      {/* Why this now? */}
-      <MissionJustification justification={justification} adaptiveState={adaptiveState} />
-
-      {/* Student state + Day progress side by side */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <MissionStudentState snapshot={snapshot} adaptiveState={adaptiveState} streak={streak} />
-        <MissionDayProgress
-          completed={snapshot?.todayCompleted ?? 0}
-          total={snapshot?.todayTotal ?? 0}
-          streak={streak}
-        />
-      </div>
-
-      {/* Quick contextual actions */}
-      <MissionQuickActions type={activeRec.type} />
-
-      {/* Alternatives */}
-      {alternatives.length > 0 && (
-        <div id="mc-alternatives">
-          <MissionAlternatives
-            alternatives={alternatives}
-            onSelect={handleSelectAlternative}
-            activeType={activeRec.type}
-          />
-        </div>
-      )}
-
-      {/* Study Loop Panel (bottom sheet) — gated by flag */}
-      {studyLoopEnabled && (
-        <StudyLoopPanel
+      {/* Inline Study Loop — replaces dashboard content when active */}
+      {studyLoopEnabled && loopActive && (
+        <StudyLoopContainer
           phase={loop.phase}
           context={loop.context}
           result={loop.result}
@@ -164,6 +117,56 @@ export default function MissionControlPage() {
           onRetry={loop.retry}
           onClose={handleLoopClose}
         />
+      )}
+
+      {/* Hero — main mission (hidden when loop is active to keep focus) */}
+      {!loopActive && (
+        <>
+          <div
+            className={`transition-all duration-700 ${
+              heroHighlight
+                ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-xl"
+                : "ring-0 ring-transparent"
+            }`}
+          >
+            <MissionHeroCard
+              recommendation={activeRec}
+              adaptiveState={adaptiveState}
+              onStart={handleStart}
+              onRefresh={handleRefresh}
+              onShowAlternatives={() => {
+                document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
+              }}
+            />
+          </div>
+
+          {/* Why this now? */}
+          <MissionJustification justification={justification} adaptiveState={adaptiveState} />
+
+          {/* Student state + Day progress */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <MissionStudentState snapshot={snapshot} adaptiveState={adaptiveState} streak={streak} />
+            <MissionDayProgress
+              completed={snapshot?.todayCompleted ?? 0}
+              total={snapshot?.todayTotal ?? 0}
+              streak={streak}
+            />
+          </div>
+
+          {/* Quick contextual actions */}
+          <MissionQuickActions type={activeRec.type} />
+
+          {/* Alternatives */}
+          {alternatives.length > 0 && (
+            <div id="mc-alternatives">
+              <MissionAlternatives
+                alternatives={alternatives}
+                onSelect={handleSelectAlternative}
+                activeType={activeRec.type}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
