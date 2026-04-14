@@ -177,13 +177,23 @@ export default function MnemonicHistoryPage() {
                   <p className="text-3xl font-bold tracking-widest text-primary">{selectedItem.sigla}</p>
                   <p className="text-lg font-medium mt-2">{selectedItem.frase_mnemonica}</p>
                 </div>
-                {selectedItem.image_url && (
-                  <img
-                    src={selectedItem.image_url}
-                    alt={`Mnemônico: ${selectedItem.sigla}`}
-                    className="rounded-lg max-h-64 w-full object-contain border"
-                  />
-                )}
+                <div className="space-y-3">
+                  <Badge variant={selectedItem.image_url ? "default" : "secondary"} className="text-xs">
+                    {selectedItem.image_url ? "Imagem gerada" : "Imagem indisponível"}
+                  </Badge>
+                  {selectedItem.image_url ? (
+                    <img
+                      src={selectedItem.image_url}
+                      alt={`Mnemônico: ${selectedItem.sigla}`}
+                      className="rounded-lg max-h-64 w-full object-contain border"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                      A imagem não ficou disponível para este mnemônico. A cena visual textual segue disponível abaixo.
+                    </div>
+                  )}
+                </div>
                 {selectedItem.explicacao_tecnica && (
                   <div><p className="text-sm font-medium">Explicação técnica</p><p className="text-sm text-muted-foreground">{selectedItem.explicacao_tecnica}</p></div>
                 )}

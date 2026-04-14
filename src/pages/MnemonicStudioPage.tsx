@@ -277,17 +277,27 @@ export default function MnemonicGeneratorPage() {
           {(result.cena_visual || result.image_url) && (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-primary" /> Cena visual
+                <CardTitle className="text-lg flex items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-primary" /> Cena visual
+                  </span>
+                  <Badge variant={result.image_url ? "default" : "secondary"} className="text-xs">
+                    {result.image_url ? "Imagem gerada" : "Imagem indisponível"}
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {result.image_url && (
+                {result.image_url ? (
                   <img
                     src={result.image_url}
                     alt={`Mnemônico visual: ${result.sigla}`}
                     className="rounded-lg max-h-96 w-full object-contain mx-auto border"
+                    loading="lazy"
                   />
+                ) : (
+                  <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">
+                    A imagem não ficou disponível nesta geração. Use a cena visual como fallback de estudo.
+                  </div>
                 )}
                 {result.cena_visual && (
                   <p className="text-sm text-muted-foreground">{result.cena_visual}</p>
