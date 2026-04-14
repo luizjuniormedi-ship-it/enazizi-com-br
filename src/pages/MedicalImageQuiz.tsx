@@ -14,6 +14,7 @@ import { Activity, CheckCircle, XCircle, SkipForward, RotateCcw, Trophy, ImageIc
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { logErrorToBank } from "@/lib/errorBankLogger";
+import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
 
 type ImageQuestion = {
   id: string;
@@ -67,12 +68,25 @@ const MedicalImageQuiz = () => {
         .select(`
           id, statement, option_a, option_b, option_c, option_d, option_e,
           correct_index, explanation, difficulty, exam_style,
-          medical_image_assets!inner(image_url, image_type, diagnosis, is_active, review_status, clinical_confidence, integrity_status)
+          medical_image_assets!inner(
+            image_url,
+            image_type,
+            diagnosis,
+            is_active,
+            review_status,
+            clinical_confidence,
+            integrity_status,
+            validation_level,
+            asset_origin
+          )
         `)
         .eq("status", "published")
-        // Asset safety filters — only serve validated, active, published assets
         .eq("medical_image_assets.is_active", true)
         .eq("medical_image_assets.review_status", "published")
+        .eq("medical_image_assets.integrity_status", "ok")
+        .gte("medical_image_assets.clinical_confidence", 0.9)
+        .in("medical_image_assets.validation_level", ["gold", "silver"])
+        .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
         .neq("medical_image_assets.image_url", "");
 
       if (imageType !== "all") {
@@ -85,13 +99,11 @@ const MedicalImageQuiz = () => {
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
 
-      // Filter out any questions where the asset image_url is empty/null after join
       return (data || [])
         .map((q: any) => {
           const asset = q.medical_image_assets;
           const imageUrl = asset?.image_url || null;
-          // Skip questions with no valid image URL
-          if (!imageUrl) return null;
+          if (!isImageUrlClinical(imageUrl)) return null;
           const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
           return {
             id: q.id,
@@ -257,7 +269,7 @@ const MedicalImageQuiz = () => {
       <Dialog open={!!zoomImage} onOpenChange={() => setZoomImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 sm:p-4 bg-black/95 border-border/30">
           <div className="relative flex items-center justify-center min-h-[50vh]">
-            {zoomImage && (
+            {zoomImage && isImageUrlClinical(zoomImage) && (
               <img
                 src={zoomImage}
                 alt="Imagem ampliada"
@@ -364,7 +376,7 @@ const MedicalImageQuiz = () => {
           {/* Quiz Card */}
           <Card className="overflow-hidden">
             {/* Image */}
-            {currentQuestion.image_url && (
+            {currentQuestion.image_url && isImageUrlClinical(currentQuestion.image_url) && (
               <div
                 className="relative bg-black/90 flex items-center justify-center min-h-[250px] sm:min-h-[350px] cursor-zoom-in group"
                 onClick={() => setZoomImage(currentQuestion.image_url)}
@@ -377,12 +389,7 @@ const MedicalImageQuiz = () => {
                   referrerPolicy="no-referrer"
                   onError={(e) => {
                     const target = e.currentTarget;
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = "1";
-                      setTimeout(() => { target.src = currentQuestion.image_url!; }, 1000);
-                    } else {
-                      target.style.display = "none";
-                    }
+                    target.style.display = "none";
                   }}
                 />
                 <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -404,8 +411,8 @@ const MedicalImageQuiz = () => {
               </div>
             )}
 
-            {/* No image fallback — should rarely happen with asset filters */}
-            {!currentQuestion.image_url && (
+            {/* No image fallback — required when the asset is invalid or unavailable */}
+            {(!currentQuestion.image_url || !isImageUrlClinical(currentQuestion.image_url)) && (
               <div className="bg-muted/30 border-b border-border flex flex-col items-center justify-center min-h-[200px] gap-3 p-6">
                 <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground text-center">
@@ -503,7 +510,7 @@ const MedicalImageQuiz = () => {
               }}
             >
               <div className="relative bg-black/80 h-40 flex items-center justify-center">
-                {q.image_url ? (
+                {q.image_url && isImageUrlClinical(q.image_url) ? (
                   <img
                     src={q.image_url}
                     alt="Quiz"
@@ -512,16 +519,14 @@ const MedicalImageQuiz = () => {
                     referrerPolicy="no-referrer"
                     onError={(e) => {
                       const target = e.currentTarget;
-                      if (!target.dataset.retried) {
-                        target.dataset.retried = "1";
-                        setTimeout(() => { target.src = q.image_url!; }, 1000);
-                      } else {
-                        target.style.display = "none";
-                      }
+                      target.style.display = "none";
                     }}
                   />
                 ) : (
-                  <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+                  <div className="flex flex-col items-center gap-2 text-center px-4">
+                    <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+                    <p className="text-xs text-muted-foreground">Imagem indisponível para esta questão</p>
+                  </div>
                 )}
                 <Badge className={cn("absolute top-2 left-2", difficultyLabels[q.difficulty]?.color)}>
                   {difficultyLabels[q.difficulty]?.label}
