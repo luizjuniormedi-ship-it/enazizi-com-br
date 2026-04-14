@@ -1,0 +1,85 @@
+/**
+ * Shared helpers for API Assistente edge functions.
+ * All functions use service_role for DB access.
+ */
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+export const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+export function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+export function errorResponse(msg: string, status = 400): Response {
+  return jsonResponse({ success: false, error: msg }, status);
+}
+
+export function getServiceClient(): SupabaseClient {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+}
+
+export async function getUserIdFromRequest(req: Request): Promise<string> {
+  const auth = req.headers.get("Authorization");
+  if (!auth?.startsWith("Bearer ")) throw new Error("Token ausente.");
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
+  const sb = createClient(url, anon, {
+    global: { headers: { Authorization: auth } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await sb.auth.getUser();
+  if (error || !data?.user?.id) throw new Error("Autenticação falhou.");
+  return data.user.id;
+}
+
+/** Safe query helper — never throws, returns null on error */
+export async function safeQuery<T>(
+  db: SupabaseClient,
+  fn: (client: SupabaseClient) => PromiseLike<{ data: T | null; error: any }>,
+  label: string
+): Promise<T | null> {
+  try {
+    const { data, error } = await fn(db);
+    if (error) console.warn(`[Assistant] ${label}:`, error.message);
+    return data;
+  } catch (e) {
+    console.warn(`[Assistant] ${label} exception:`, e);
+    return null;
+  }
+}
+
+/** Log a decision to assistant_decisions */
+export async function logDecision(
+  db: SupabaseClient,
+  params: {
+    user_id: string;
+    decision_type: string;
+    source_module: string;
+    input_snapshot: Record<string, unknown>;
+    decision_output: Record<string, unknown>;
+    justification: string;
+    confidence_score?: number;
+  }
+): Promise<void> {
+  await db.from("assistant_decisions").insert({
+    user_id: params.user_id,
+    decision_type: params.decision_type,
+    source_module: params.source_module,
+    input_snapshot: params.input_snapshot,
+    decision_output: params.decision_output,
+    justification: params.justification,
+    confidence_score: params.confidence_score ?? null,
+  }).then(({ error }) => {
+    if (error) console.error("[Assistant] logDecision failed:", error.message);
+  });
+}
