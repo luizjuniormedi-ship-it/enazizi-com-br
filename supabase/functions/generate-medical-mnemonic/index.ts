@@ -1,12 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// ══════════════════════════════════════════════════
+// CORS & CONFIG
+// ══════════════════════════════════════════════════
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const AI_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_MODEL = "google/gemini-2.5-flash";
+const IMAGE_MODEL = "google/gemini-3.1-flash-image-preview";
+const SCORE_MEDICO_MIN = 90;
+const SCORE_PEDAGOGICO_MIN = 85;
 
 // ══════════════════════════════════════════════════
 // TYPES
@@ -19,16 +29,18 @@ interface MnemonicRequest {
   publico?: string;
 }
 
+interface Associacao {
+  letra: string;
+  termo_original: string;
+  representacao_no_mnemonico: string;
+}
+
 interface GeneratorOutput {
   sigla: string;
   frase_mnemonica: string;
   explicacao_tecnica: string;
   explicacao_didatica: string;
-  associacoes: Array<{
-    letra: string;
-    termo_original: string;
-    representacao_no_mnemonico: string;
-  }>;
+  associacoes: Associacao[];
   observacoes?: string[];
 }
 
@@ -61,10 +73,7 @@ interface PedagogicalAuditOutput {
 
 interface VisualOutput {
   cena_visual: string;
-  associacoes_visuais: Array<{
-    termo: string;
-    elemento_visual: string;
-  }>;
+  associacoes_visuais: Array<{ termo: string; elemento_visual: string }>;
   prompt_imagem: string;
 }
 
@@ -78,13 +87,11 @@ interface ConsolidatedOutput {
   alertas: string[];
 }
 
-interface AgentResult {
-  gerador?: unknown;
-  auditor_medico?: unknown;
-  auditor_pedagogico?: unknown;
-  visual?: unknown;
-  consolidador?: unknown;
-  image_generator?: unknown;
+interface AgentLogEntry {
+  agent: string;
+  attempt: number;
+  status: string;
+  details: string;
 }
 
 // ══════════════════════════════════════════════════
@@ -100,18 +107,22 @@ function json(body: unknown, status = 200) {
 
 function getEnv(name: string): string {
   const v = Deno.env.get(name);
-  if (!v) throw new Error(`${name} not configured`);
+  if (!v) throw new Error(`Env ausente: ${name}`);
   return v;
 }
 
-function extractJSON(raw: string): any | null {
+function extractJSON(raw: string): unknown | null {
   const m = raw.match(/\{[\s\S]*\}/);
   if (!m) return null;
   try {
     return JSON.parse(m[0]);
   } catch {
     const cleaned = m[0].replace(/,\s*}/g, "}").replace(/,\s*]/g, "]");
-    try { return JSON.parse(cleaned); } catch { return null; }
+    try {
+      return JSON.parse(cleaned);
+    } catch {
+      return null;
+    }
   }
 }
 
@@ -119,16 +130,16 @@ async function callAI<T>(
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
-  temperature = 0.2
+  temperature = 0.2,
 ): Promise<T> {
-  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const resp = await fetch(AI_GATEWAY, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-2.5-flash",
+      model: AI_MODEL,
       temperature,
       messages: [
         { role: "system", content: systemPrompt },
@@ -142,7 +153,7 @@ async function callAI<T>(
     if (status === 429) throw new Error("RATE_LIMIT");
     if (status === 402) throw new Error("CREDITS_EXHAUSTED");
     const errText = await resp.text();
-    throw new Error(`AI error: ${status} - ${errText}`);
+    throw new Error(`AI error ${status}: ${errText.slice(0, 200)}`);
   }
 
   const data = await resp.json();
@@ -152,13 +163,13 @@ async function callAI<T>(
   return parsed as T;
 }
 
-function validatePayload(payload: MnemonicRequest): string | null {
-  if (!payload) return "Body ausente.";
-  if (!payload.tema || typeof payload.tema !== "string" || payload.tema.trim().length < 2)
-    return "Campo 'tema' é obrigatório (mínimo 2 caracteres).";
-  if (!Array.isArray(payload.termos) || payload.termos.length === 0)
+function validatePayload(p: MnemonicRequest): string | null {
+  if (!p) return "Body ausente.";
+  if (!p.tema || typeof p.tema !== "string" || p.tema.trim().length < 2)
+    return "Campo 'tema' é obrigatório (mín. 2 caracteres).";
+  if (!Array.isArray(p.termos) || p.termos.length === 0)
     return "Campo 'termos' deve ser um array com pelo menos 1 item.";
-  if (payload.termos.some((t) => typeof t !== "string" || !t.trim()))
+  if (p.termos.some((t) => typeof t !== "string" || !t.trim()))
     return "Todos os termos devem ser strings não vazias.";
   return null;
 }
@@ -175,22 +186,13 @@ function normalizeTerms(termos: string[]): string[] {
     });
 }
 
-function buildCommonContext(payload: MnemonicRequest): string {
-  return `Tema: ${payload.tema}
-Termos: ${JSON.stringify(payload.termos)}
-Estilo: ${payload.estilo ?? "frase + imagem mental"}
-Público: ${payload.publico ?? "graduação médica"}`;
+function buildCtx(p: MnemonicRequest): string {
+  return `Tema: ${p.tema}\nTermos: ${JSON.stringify(p.termos)}\nEstilo: ${p.estilo ?? "frase + imagem mental"}\nPúblico: ${p.publico ?? "graduação médica"}`;
 }
 
 // ══════════════════════════════════════════════════
-// SUPABASE + AUTH
+// AUTH
 // ══════════════════════════════════════════════════
-
-function getServiceClient() {
-  return createClient(getEnv("SUPABASE_URL"), getEnv("SUPABASE_SERVICE_ROLE_KEY"), {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
 
 async function getUserId(req: Request): Promise<string> {
   const authHeader = req.headers.get("Authorization");
@@ -210,29 +212,35 @@ async function getUserId(req: Request): Promise<string> {
 // DB OPERATIONS
 // ══════════════════════════════════════════════════
 
-async function createRequest(sb: any, userId: string, payload: MnemonicRequest): Promise<string> {
-  const { data, error } = await sb
+function getDB() {
+  return createClient(getEnv("SUPABASE_URL"), getEnv("SUPABASE_SERVICE_ROLE_KEY"), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
+
+async function createRequest(db: ReturnType<typeof createClient>, userId: string, p: MnemonicRequest): Promise<string> {
+  const { data, error } = await db
     .from("mnemonic_requests")
     .insert({
       user_id: userId,
-      tema: payload.tema,
-      termos_json: payload.termos,
-      estilo: payload.estilo ?? "frase + imagem mental",
-      publico: payload.publico ?? "graduação médica",
+      tema: p.tema,
+      termos_json: p.termos,
+      estilo: p.estilo ?? "frase + imagem mental",
+      publico: p.publico ?? "graduação médica",
       status: "processing",
       source: "lovable-ui",
     })
     .select("id")
     .single();
-  if (error) throw new Error(`Erro ao criar request: ${error.message}`);
+  if (error) throw new Error(`DB mnemonic_requests: ${error.message}`);
   return data.id;
 }
 
-async function updateRequestStatus(sb: any, requestId: string, status: string) {
-  await sb.from("mnemonic_requests").update({ status }).eq("id", requestId);
+async function updateStatus(db: ReturnType<typeof createClient>, id: string, status: string) {
+  await db.from("mnemonic_requests").update({ status }).eq("id", id);
 }
 
-async function insertAgentLog(sb: any, params: {
+async function logAgent(db: ReturnType<typeof createClient>, params: {
   requestId: string;
   resultId?: string | null;
   userId: string;
@@ -245,7 +253,7 @@ async function insertAgentLog(sb: any, params: {
   durationMs?: number | null;
   errorMessage?: string | null;
 }) {
-  await sb.from("mnemonic_agent_logs").insert({
+  await db.from("mnemonic_agent_logs").insert({
     request_id: params.requestId,
     result_id: params.resultId ?? null,
     user_id: params.userId,
@@ -260,31 +268,31 @@ async function insertAgentLog(sb: any, params: {
   });
 }
 
-async function insertResult(sb: any, params: {
+async function saveResult(db: ReturnType<typeof createClient>, params: {
   requestId: string;
   userId: string;
   payload: MnemonicRequest;
   consolidated: ConsolidatedOutput;
-  approvedVersion: GeneratorOutput;
-  medicalAudit: MedicalAuditOutput;
-  pedagogicalAudit: PedagogicalAuditOutput;
-  visualOutput: VisualOutput;
+  approved: GeneratorOutput;
+  med: MedicalAuditOutput;
+  ped: PedagogicalAuditOutput;
+  vis: VisualOutput;
   scoreFinal: number;
+  imageUrl: string | null;
 }): Promise<string> {
-  const aprovadoMedico = (params.medicalAudit.score_medico ?? 0) >= 90;
-  const aprovadoPedagogico = (params.pedagogicalAudit.score_pedagogico ?? 0) >= 85;
+  const medOk = (params.med.score_medico ?? 0) >= SCORE_MEDICO_MIN;
+  const pedOk = (params.ped.score_pedagogico ?? 0) >= SCORE_PEDAGOGICO_MIN;
 
-  const { data: existing } = await sb
+  const { data: existing } = await db
     .from("mnemonic_results")
     .select("versao")
     .eq("request_id", params.requestId)
     .eq("is_latest", true)
     .order("versao", { ascending: false })
     .limit(1);
+  const nextVer = existing?.length ? Number(existing[0].versao || 1) + 1 : 1;
 
-  const nextVersion = existing?.length ? Number(existing[0].versao || 1) + 1 : 1;
-
-  const { data, error } = await sb
+  const { data, error } = await db
     .from("mnemonic_results")
     .insert({
       request_id: params.requestId,
@@ -296,22 +304,21 @@ async function insertResult(sb: any, params: {
       explicacao_didatica: params.consolidated.explicacao_didatica,
       cena_visual: params.consolidated.cena_visual,
       prompt_imagem: params.consolidated.prompt_imagem,
-      associacoes_json: params.approvedVersion.associacoes ?? [],
-      associacoes_visuais_json: params.visualOutput.associacoes_visuais ?? [],
+      associacoes_json: params.approved.associacoes ?? [],
+      associacoes_visuais_json: params.vis.associacoes_visuais ?? [],
       alertas_json: params.consolidated.alertas ?? [],
-      score_medico: params.medicalAudit.score_medico ?? 0,
-      score_pedagogico: params.pedagogicalAudit.score_pedagogico ?? 0,
+      score_medico: params.med.score_medico ?? 0,
+      score_pedagogico: params.ped.score_pedagogico ?? 0,
       score_final: params.scoreFinal,
-      aprovado: aprovadoMedico && aprovadoPedagogico,
-      aprovado_medico: aprovadoMedico,
-      aprovado_pedagogico: aprovadoPedagogico,
-      versao: nextVersion,
+      aprovado: medOk && pedOk,
+      aprovado_medico: medOk,
+      aprovado_pedagogico: pedOk,
+      versao: nextVer,
       is_latest: true,
     })
     .select("id")
     .single();
-
-  if (error) throw new Error(`Erro ao inserir resultado: ${error.message}`);
+  if (error) throw new Error(`DB mnemonic_results: ${error.message}`);
   return data.id;
 }
 
@@ -319,7 +326,7 @@ async function insertResult(sb: any, params: {
 // AGENT PROMPTS
 // ══════════════════════════════════════════════════
 
-const GENERATOR_SYSTEM = `Você é um professor de medicina e especialista em memorização clínica.
+const PROMPT_GERADOR = `Você é um professor de medicina e especialista em memorização clínica.
 Crie mnemônicos médicos com altíssima fidelidade.
 
 REGRAS:
@@ -339,7 +346,7 @@ Retorne JSON com:
   "observacoes": ["string"]
 }`;
 
-const MEDICAL_AUDITOR_SYSTEM = `Você é um auditor médico extremamente rigoroso.
+const PROMPT_AUDITOR_MEDICO = `Você é um auditor médico extremamente rigoroso.
 Sua missão: detectar omissões, distorções semânticas, erro de associação letra-termo, risco clínico.
 Dê nota de 0 a 100. Se houver falha relevante, produza uma versão corrigida.
 
@@ -356,7 +363,7 @@ Retorne JSON com:
 }
 Se precisar corrigir, "versao_corrigida" deve ter o mesmo schema do gerador.`;
 
-const PEDAGOGICAL_AUDITOR_SYSTEM = `Você é especialista em educação médica e neuroaprendizado.
+const PROMPT_AUDITOR_PEDAGOGICO = `Você é especialista em educação médica e neuroaprendizado.
 Avalie: facilidade de memorização, clareza, associação mental, aplicabilidade em aula e prova.
 Dê nota de 0 a 100.
 
@@ -373,7 +380,7 @@ Retorne JSON com:
   "versao_otimizada": null
 }`;
 
-const VISUAL_SYSTEM = `Você é especialista em memória visual aplicada à medicina.
+const PROMPT_VISUAL = `Você é especialista em memória visual aplicada à medicina.
 Crie: cena visual forte e memorável, associação visual item por item, prompt de imagem didática.
 Regras: representar todos os termos, manter fidelidade médica.
 
@@ -384,7 +391,7 @@ Retorne JSON com:
   "prompt_imagem": "string"
 }`;
 
-const CONSOLIDATOR_SYSTEM = `Você é o consolidador final do sistema de mnemônicos médicos.
+const PROMPT_CONSOLIDADOR = `Você é o consolidador final do sistema de mnemônicos médicos.
 Monte a melhor versão final. Priorize fidelidade clínica, clareza didática, memorização.
 
 Retorne JSON com:
@@ -399,6 +406,110 @@ Retorne JSON com:
 }`;
 
 // ══════════════════════════════════════════════════
+// IMAGE GENERATION
+// ══════════════════════════════════════════════════
+
+async function generateImage(
+  apiKey: string,
+  prompt: string,
+  db: ReturnType<typeof createClient>,
+  requestId: string,
+  sigla: string,
+): Promise<string | null> {
+  try {
+    const resp = await fetch(AI_GATEWAY, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: IMAGE_MODEL,
+        messages: [{
+          role: "user",
+          content: `Create a single cohesive medical mnemonic illustration. Style: clean medical infographic/cartoon, high contrast, saturated colors, white background. NO text, letters, labels or words in the image. Each element must be a distinct visual symbol.\n\n${prompt}`,
+        }],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!resp.ok) {
+      console.error("Image gen error:", resp.status);
+      return null;
+    }
+
+    const data = await resp.json();
+    const base64Url = data?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    if (!base64Url) return null;
+
+    // Upload to storage
+    const base64Clean = base64Url.replace(/^data:image\/\w+;base64,/, "");
+    const bytes = Uint8Array.from(atob(base64Clean), (c) => c.charCodeAt(0));
+    const safeSigla = sigla
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9_-]/g, "_")
+      .replace(/_+/g, "_")
+      .substring(0, 40);
+    const filePath = `mnemonics/${requestId}_${safeSigla}.png`;
+
+    const { error } = await db.storage
+      .from("question-images")
+      .upload(filePath, bytes, { contentType: "image/png", upsert: true });
+
+    if (error) {
+      console.error("Image upload error:", error);
+      return null;
+    }
+
+    const { data: urlData } = db.storage.from("question-images").getPublicUrl(filePath);
+    return urlData.publicUrl;
+  } catch (err) {
+    console.error("Image generation failed:", err);
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════════
+// AGENT RUNNER (with timing & logging)
+// ══════════════════════════════════════════════════
+
+async function runAgent<T>(
+  apiKey: string,
+  db: ReturnType<typeof createClient>,
+  requestId: string,
+  userId: string,
+  agentName: string,
+  order: number,
+  systemPrompt: string,
+  userPrompt: string,
+  scoreExtractor?: (result: T) => number | null,
+): Promise<T> {
+  const start = Date.now();
+  try {
+    const result = await callAI<T>(apiKey, systemPrompt, userPrompt);
+    await logAgent(db, {
+      requestId, userId, agentName, executionOrder: order,
+      status: "completed",
+      inputJson: { prompt_preview: userPrompt.slice(0, 200) },
+      outputJson: result,
+      score: scoreExtractor ? scoreExtractor(result) : null,
+      durationMs: Date.now() - start,
+    });
+    return result;
+  } catch (err) {
+    await logAgent(db, {
+      requestId, userId, agentName, executionOrder: order,
+      status: "failed",
+      inputJson: { prompt_preview: userPrompt.slice(0, 200) },
+      outputJson: {},
+      durationMs: Date.now() - start,
+      errorMessage: String(err),
+    });
+    throw err;
+  }
+}
+
+// ══════════════════════════════════════════════════
 // MAIN HANDLER
 // ══════════════════════════════════════════════════
 
@@ -407,169 +518,140 @@ serve(async (req: Request) => {
   if (req.method !== "POST") return json({ success: false, error: "Método não permitido." }, 405);
 
   let requestId: string | null = null;
-  const sb = getServiceClient();
+  const db = getDB();
 
   try {
     const apiKey = getEnv("LOVABLE_API_KEY");
     const payload = (await req.json()) as MnemonicRequest;
-    const validationError = validatePayload(payload);
-    if (validationError) return json({ success: false, error: validationError }, 400);
+    const valErr = validatePayload(payload);
+    if (valErr) return json({ success: false, error: valErr }, 400);
 
     payload.tema = payload.tema.trim();
     payload.termos = normalizeTerms(payload.termos);
+    const ctx = buildCtx(payload);
 
     const userId = await getUserId(req);
-    requestId = await createRequest(sb, userId, payload);
-    const ctx = buildCommonContext(payload);
-    const agents: AgentResult = {};
+    requestId = await createRequest(db, userId, payload);
+
+    const agentLogs: AgentLogEntry[] = [];
+    let order = 0;
 
     // ── 1) GERADOR ──
-    const genStart = Date.now();
-    let generated: GeneratorOutput;
-    try {
-      generated = await callAI<GeneratorOutput>(apiKey, GENERATOR_SYSTEM,
-        `Gere o mnemônico médico inicial:\n\n${ctx}`);
-      agents.gerador = generated;
-      await insertAgentLog(sb, { requestId, userId, agentName: "gerador", executionOrder: 1, status: "completed", inputJson: payload, outputJson: generated, durationMs: Date.now() - genStart });
-    } catch (err) {
-      await insertAgentLog(sb, { requestId, userId, agentName: "gerador", executionOrder: 1, status: "failed", inputJson: payload, outputJson: {}, durationMs: Date.now() - genStart, errorMessage: String(err) });
-      if ((err as Error).message === "RATE_LIMIT") return json({ success: false, error: "Limite de requisições atingido. Tente novamente em instantes." }, 429);
-      if ((err as Error).message === "CREDITS_EXHAUSTED") return json({ success: false, error: "Créditos de IA esgotados." }, 402);
-      throw err;
-    }
+    order++;
+    const generated = await runAgent<GeneratorOutput>(
+      apiKey, db, requestId, userId, "gerador", order,
+      PROMPT_GERADOR,
+      `Gere o mnemônico médico inicial:\n\n${ctx}`,
+    );
+    agentLogs.push({ agent: "gerador", attempt: 1, status: "ok", details: `Sigla: ${generated.sigla}` });
 
     // ── 2) AUDITOR MÉDICO ──
-    const medStart = Date.now();
-    let medicalAudit: MedicalAuditOutput;
-    try {
-      medicalAudit = await callAI<MedicalAuditOutput>(apiKey, MEDICAL_AUDITOR_SYSTEM,
-        `Audite clinicamente:\n\nCONTEXTO:\n${ctx}\n\nMNEMÔNICO:\n${JSON.stringify(generated, null, 2)}`);
-      agents.auditor_medico = medicalAudit;
-      await insertAgentLog(sb, { requestId, userId, agentName: "auditor_medico", executionOrder: 2, status: "completed", inputJson: { payload, generated }, outputJson: medicalAudit, score: medicalAudit.score_medico, durationMs: Date.now() - medStart });
-    } catch (err) {
-      await insertAgentLog(sb, { requestId, userId, agentName: "auditor_medico", executionOrder: 2, status: "failed", inputJson: { payload, generated }, outputJson: {}, durationMs: Date.now() - medStart, errorMessage: String(err) });
-      throw err;
+    order++;
+    let medAudit = await runAgent<MedicalAuditOutput>(
+      apiKey, db, requestId, userId, "auditor_medico", order,
+      PROMPT_AUDITOR_MEDICO,
+      `Audite clinicamente:\n\nCONTEXTO:\n${ctx}\n\nMNEMÔNICO:\n${JSON.stringify(generated, null, 2)}`,
+      (r) => r.score_medico,
+    );
+    agentLogs.push({ agent: "auditor_medico", attempt: 1, status: medAudit.score_medico >= SCORE_MEDICO_MIN ? "approved" : "rejected", details: `Score: ${medAudit.score_medico}` });
+
+    let approved = generated;
+    if (medAudit.versao_corrigida && medAudit.score_medico < SCORE_MEDICO_MIN) {
+      approved = medAudit.versao_corrigida;
     }
 
-    let approvedVersion = generated;
-    if (medicalAudit.versao_corrigida && medicalAudit.score_medico < 90) {
-      approvedVersion = medicalAudit.versao_corrigida;
+    // ── RETRY MÉDICO (if score < 90) ──
+    if (medAudit.score_medico < SCORE_MEDICO_MIN) {
+      order++;
+      const retryGen = await runAgent<GeneratorOutput>(
+        apiKey, db, requestId, userId, "retry_gerador", order,
+        PROMPT_GERADOR,
+        `O mnemônico anterior teve score médico ${medAudit.score_medico}/100.\nErros: ${medAudit.erros_encontrados.join(", ")}\n\nGere uma versão melhor:\n\n${ctx}`,
+      );
+      agentLogs.push({ agent: "retry_gerador", attempt: 2, status: "ok", details: `Retry sigla: ${retryGen.sigla}` });
+
+      order++;
+      const retryMed = await runAgent<MedicalAuditOutput>(
+        apiKey, db, requestId, userId, "retry_auditor_medico", order,
+        PROMPT_AUDITOR_MEDICO,
+        `Audite clinicamente a versão corrigida:\n\nCONTEXTO:\n${ctx}\n\nMNEMÔNICO:\n${JSON.stringify(retryGen, null, 2)}`,
+        (r) => r.score_medico,
+      );
+      agentLogs.push({ agent: "retry_auditor_medico", attempt: 2, status: retryMed.score_medico >= SCORE_MEDICO_MIN ? "approved" : "rejected", details: `Score: ${retryMed.score_medico}` });
+
+      // Use the better version
+      if (retryMed.score_medico > medAudit.score_medico) {
+        medAudit = retryMed;
+        approved = retryMed.versao_corrigida ?? retryGen;
+      }
     }
 
     // ── 3) AUDITOR PEDAGÓGICO ──
-    const pedStart = Date.now();
-    let pedagogicalAudit: PedagogicalAuditOutput;
-    try {
-      pedagogicalAudit = await callAI<PedagogicalAuditOutput>(apiKey, PEDAGOGICAL_AUDITOR_SYSTEM,
-        `Avalie pedagogicamente:\n\nCONTEXTO:\n${ctx}\n\nVERSÃO:\n${JSON.stringify(approvedVersion, null, 2)}`);
-      agents.auditor_pedagogico = pedagogicalAudit;
-      await insertAgentLog(sb, { requestId, userId, agentName: "auditor_pedagogico", executionOrder: 3, status: "completed", inputJson: { payload, approvedVersion }, outputJson: pedagogicalAudit, score: pedagogicalAudit.score_pedagogico, durationMs: Date.now() - pedStart });
-    } catch (err) {
-      await insertAgentLog(sb, { requestId, userId, agentName: "auditor_pedagogico", executionOrder: 3, status: "failed", inputJson: { payload, approvedVersion }, outputJson: {}, durationMs: Date.now() - pedStart, errorMessage: String(err) });
-      throw err;
+    order++;
+    let pedAudit = await runAgent<PedagogicalAuditOutput>(
+      apiKey, db, requestId, userId, "auditor_pedagogico", order,
+      PROMPT_AUDITOR_PEDAGOGICO,
+      `Avalie pedagogicamente:\n\nCONTEXTO:\n${ctx}\n\nVERSÃO:\n${JSON.stringify(approved, null, 2)}`,
+      (r) => r.score_pedagogico,
+    );
+    agentLogs.push({ agent: "auditor_pedagogico", attempt: 1, status: pedAudit.score_pedagogico >= SCORE_PEDAGOGICO_MIN ? "approved" : "rejected", details: `Score: ${pedAudit.score_pedagogico}` });
+
+    // ── RETRY PEDAGÓGICO (if score < 85) ──
+    if (pedAudit.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
+      order++;
+      const retryPed = await runAgent<PedagogicalAuditOutput>(
+        apiKey, db, requestId, userId, "retry_auditor_pedagogico", order,
+        PROMPT_AUDITOR_PEDAGOGICO,
+        `A versão anterior teve score pedagógico ${pedAudit.score_pedagogico}/100.\nPontos fracos: ${pedAudit.pontos_fracos.join(", ")}\n\nReavalie com foco em melhoria:\n\nCONTEXTO:\n${ctx}\n\nVERSÃO:\n${JSON.stringify(approved, null, 2)}`,
+        (r) => r.score_pedagogico,
+      );
+      agentLogs.push({ agent: "retry_auditor_pedagogico", attempt: 2, status: retryPed.score_pedagogico >= SCORE_PEDAGOGICO_MIN ? "approved" : "rejected", details: `Score: ${retryPed.score_pedagogico}` });
+
+      if (retryPed.score_pedagogico > pedAudit.score_pedagogico) {
+        pedAudit = retryPed;
+      }
     }
 
     // ── 4) VISUAL ──
-    const visStart = Date.now();
-    let visualOutput: VisualOutput;
-    try {
-      visualOutput = await callAI<VisualOutput>(apiKey, VISUAL_SYSTEM,
-        `Crie a parte visual:\n\nCONTEXTO:\n${ctx}\n\nVERSÃO APROVADA:\n${JSON.stringify(approvedVersion, null, 2)}\n\nSUGESTÕES:\n${JSON.stringify(pedagogicalAudit, null, 2)}`);
-      agents.visual = visualOutput;
-      await insertAgentLog(sb, { requestId, userId, agentName: "visual", executionOrder: 4, status: "completed", inputJson: { payload, approvedVersion }, outputJson: visualOutput, durationMs: Date.now() - visStart });
-    } catch (err) {
-      await insertAgentLog(sb, { requestId, userId, agentName: "visual", executionOrder: 4, status: "failed", inputJson: { payload, approvedVersion }, outputJson: {}, durationMs: Date.now() - visStart, errorMessage: String(err) });
-      throw err;
-    }
+    order++;
+    const visual = await runAgent<VisualOutput>(
+      apiKey, db, requestId, userId, "visual", order,
+      PROMPT_VISUAL,
+      `Crie a parte visual:\n\nCONTEXTO:\n${ctx}\n\nVERSÃO:\n${JSON.stringify(approved, null, 2)}\n\nSUGESTÕES:\n${JSON.stringify(pedAudit, null, 2)}`,
+    );
+    agentLogs.push({ agent: "visual", attempt: 1, status: "ok", details: "Cena visual gerada" });
 
     // ── 5) CONSOLIDADOR ──
-    const consStart = Date.now();
-    let consolidated: ConsolidatedOutput;
-    try {
-      consolidated = await callAI<ConsolidatedOutput>(apiKey, CONSOLIDATOR_SYSTEM,
-        `Consolide:\n\nCONTEXTO:\n${ctx}\n\nVERSÃO:\n${JSON.stringify(approvedVersion, null, 2)}\n\nMÉDICO:\n${JSON.stringify(medicalAudit, null, 2)}\n\nPEDAGÓGICO:\n${JSON.stringify(pedagogicalAudit, null, 2)}\n\nVISUAL:\n${JSON.stringify(visualOutput, null, 2)}`);
-      agents.consolidador = consolidated;
-      await insertAgentLog(sb, { requestId, userId, agentName: "consolidador", executionOrder: 5, status: "completed", inputJson: { approvedVersion, medicalAudit, pedagogicalAudit, visualOutput }, outputJson: consolidated, durationMs: Date.now() - consStart });
-    } catch (err) {
-      await insertAgentLog(sb, { requestId, userId, agentName: "consolidador", executionOrder: 5, status: "failed", inputJson: { approvedVersion, medicalAudit, pedagogicalAudit, visualOutput }, outputJson: {}, durationMs: Date.now() - consStart, errorMessage: String(err) });
-      throw err;
-    }
+    order++;
+    const consolidated = await runAgent<ConsolidatedOutput>(
+      apiKey, db, requestId, userId, "consolidador", order,
+      PROMPT_CONSOLIDADOR,
+      `Consolide:\n\nCONTEXTO:\n${ctx}\n\nVERSÃO:\n${JSON.stringify(approved, null, 2)}\n\nMÉDICO:\n${JSON.stringify(medAudit, null, 2)}\n\nPEDAGÓGICO:\n${JSON.stringify(pedAudit, null, 2)}\n\nVISUAL:\n${JSON.stringify(visual, null, 2)}`,
+    );
+    agentLogs.push({ agent: "consolidador", attempt: 1, status: "ok", details: "Consolidação final" });
 
-    const scoreFinal = Math.round(((medicalAudit.score_medico ?? 0) + (pedagogicalAudit.score_pedagogico ?? 0)) / 2);
+    const scoreFinal = Math.round(((medAudit.score_medico ?? 0) + (pedAudit.score_pedagogico ?? 0)) / 2);
 
-    // ── 6) GERAÇÃO DE IMAGEM (Gemini) ──
+    // ── 6) GERAÇÃO DE IMAGEM ──
+    const imagePrompt = consolidated.prompt_imagem || visual.prompt_imagem;
     let imageUrl: string | null = null;
-    const imgStart = Date.now();
-    try {
-      const imagePrompt = consolidated.prompt_imagem || visualOutput.prompt_imagem;
-      if (imagePrompt) {
-        console.log("Generating mnemonic image with Gemini...");
-        const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-3.1-flash-image-preview",
-            messages: [{
-              role: "user",
-              content: `Create a single cohesive medical mnemonic illustration. Style: clean medical infographic/cartoon, high contrast, saturated colors, white background. NO text, letters, labels or words in the image. Each element must be a distinct visual symbol.\n\n${imagePrompt}`,
-            }],
-            modalities: ["image", "text"],
-          }),
-        });
-
-        if (imgResp.ok) {
-          const imgData = await imgResp.json();
-          const base64Url = imgData?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-          if (base64Url) {
-            // Upload to Supabase Storage
-            const base64Clean = base64Url.replace(/^data:image\/\w+;base64,/, "");
-            const bytes = Uint8Array.from(atob(base64Clean), (c) => c.charCodeAt(0));
-            const safeSigla = consolidated.sigla
-              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-              .replace(/[^a-zA-Z0-9_-]/g, "_")
-              .replace(/_+/g, "_")
-              .substring(0, 40);
-            const filePath = `mnemonics/${requestId}_${safeSigla}.png`;
-
-            const { error: uploadErr } = await sb.storage
-              .from("question-images")
-              .upload(filePath, bytes, { contentType: "image/png", upsert: true });
-
-            if (!uploadErr) {
-              const { data: urlData } = sb.storage.from("question-images").getPublicUrl(filePath);
-              imageUrl = urlData.publicUrl;
-            } else {
-              console.error("Image upload error:", uploadErr);
-            }
-          }
-        } else {
-          console.error("Image generation error:", imgResp.status);
-        }
-
-        agents.image_generator = { image_url: imageUrl, prompt: imagePrompt };
-        await insertAgentLog(sb, {
-          requestId, userId, agentName: "visual", executionOrder: 6,
-          status: imageUrl ? "completed" : "failed",
-          inputJson: { prompt: imagePrompt },
-          outputJson: { image_url: imageUrl },
-          durationMs: Date.now() - imgStart,
-          errorMessage: imageUrl ? null : "Image generation or upload failed",
-        });
-      }
-    } catch (imgErr) {
-      console.error("Image generation error:", imgErr);
-      agents.image_generator = { error: String(imgErr) };
+    if (imagePrompt) {
+      console.log("Generating mnemonic image...");
+      imageUrl = await generateImage(apiKey, imagePrompt, db, requestId, consolidated.sigla);
+      agentLogs.push({
+        agent: "image_generator", attempt: 1,
+        status: imageUrl ? "ok" : "failed",
+        details: imageUrl ? "Imagem gerada" : "Falha na geração (text-only fallback)",
+      });
     }
 
-    const resultId = await insertResult(sb, {
-      requestId, userId, payload, consolidated, approvedVersion,
-      medicalAudit, pedagogicalAudit, visualOutput, scoreFinal,
+    // ── PERSIST ──
+    const resultId = await saveResult(db, {
+      requestId, userId, payload, consolidated, approved,
+      med: medAudit, ped: pedAudit, vis: visual, scoreFinal, imageUrl,
     });
 
-    await updateRequestStatus(sb, requestId, "completed");
+    await updateStatus(db, requestId, "completed");
 
     return json({
       success: true,
@@ -583,41 +665,41 @@ serve(async (req: Request) => {
         explicacao_didatica: consolidated.explicacao_didatica,
         cena_visual: consolidated.cena_visual,
         prompt_imagem: consolidated.prompt_imagem,
-        score_medico: medicalAudit.score_medico,
-        score_pedagogico: pedagogicalAudit.score_pedagogico,
+        score_medico: medAudit.score_medico,
+        score_pedagogico: pedAudit.score_pedagogico,
         score_final: scoreFinal,
         alertas: consolidated.alertas ?? [],
-        associacoes: approvedVersion.associacoes ?? [],
-        associacoes_visuais: visualOutput.associacoes_visuais ?? [],
+        associacoes: approved.associacoes ?? [],
+        associacoes_visuais: visual.associacoes_visuais ?? [],
         image_url: imageUrl,
-        items_map: (approvedVersion.associacoes ?? []).map(a => ({
+        items_map: (approved.associacoes ?? []).map((a) => ({
           letter: a.letra,
           word: a.representacao_no_mnemonico,
           original_item: a.termo_original,
           symbol: null,
           symbol_reason: null,
         })),
-        agent_logs: [
-          { agent: "gerador", attempt: 1, status: "ok", details: `Sigla: ${generated.sigla}` },
-          { agent: "auditor_medico", attempt: 1, status: medicalAudit.score_medico >= 90 ? "approved" : "rejected", details: `Score: ${medicalAudit.score_medico}` },
-          { agent: "auditor_pedagogico", attempt: 1, status: pedagogicalAudit.score_pedagogico >= 85 ? "approved" : "rejected", details: `Score: ${pedagogicalAudit.score_pedagogico}` },
-          { agent: "visual", attempt: 1, status: "ok", details: "Cena visual gerada" },
-          { agent: "consolidador", attempt: 1, status: "ok", details: `Score final: ${scoreFinal}` },
-          { agent: "image_generator", attempt: 1, status: imageUrl ? "ok" : "failed", details: imageUrl ? "Imagem gerada com sucesso" : "Falha na geração (text-only fallback)" },
-        ],
-        agentes: agents,
+        agent_logs: agentLogs,
       },
     });
   } catch (error) {
     console.error("generate-medical-mnemonic error:", error);
     try {
-      if (requestId) await updateRequestStatus(sb, requestId, "failed");
-    } catch { /* don't mask original error */ }
+      if (requestId) await updateStatus(db, requestId, "failed");
+    } catch { /* don't mask */ }
+
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg === "RATE_LIMIT") {
+      return json({ success: false, error: "Limite de requisições atingido. Tente novamente em instantes." }, 429);
+    }
+    if (msg === "CREDITS_EXHAUSTED") {
+      return json({ success: false, error: "Créditos de IA esgotados." }, 402);
+    }
 
     return json({
       success: false,
       error: "Erro ao gerar mnemônico médico.",
-      details: error instanceof Error ? error.message : String(error),
+      details: msg,
     }, 500);
   }
 });
