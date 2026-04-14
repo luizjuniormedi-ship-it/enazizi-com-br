@@ -15,7 +15,10 @@ export type FlagKey =
   | "new_fsrs_flow_enabled"
   | "new_chance_by_exam_enabled"
   | "mission_entry_enabled"
-  | "image_questions_enabled";
+  | "image_questions_enabled"
+  | "mission_control_enabled"
+  | "study_loop_enabled"
+  | "product_metrics_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -37,6 +40,9 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   new_chance_by_exam_enabled: true,
   mission_entry_enabled: false,
   image_questions_enabled: false,
+  mission_control_enabled: false,
+  study_loop_enabled: false,
+  product_metrics_enabled: true,
 };
 
 export const useFeatureFlags = () => {
