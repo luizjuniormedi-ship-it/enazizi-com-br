@@ -286,10 +286,10 @@ export function scoreImageQuiz(
   let weakestType: string | undefined;
 
   if (ctx.visualWeaknesses && ctx.visualWeaknesses.length > 0) {
-    // Find weakest category with enough data
-    const significant = ctx.visualWeaknesses.filter(w => w.attemptsCount >= 5);
-    if (significant.length > 0) {
-      const weakest = significant.reduce((a, b) => a.accuracy < b.accuracy ? a : b);
+    // Find weakest category — use >= 1 attempt to react from the start
+    const candidates = ctx.visualWeaknesses.filter(w => w.attemptsCount >= 1);
+    if (candidates.length > 0) {
+      const weakest = candidates.reduce((a, b) => a.accuracy < b.accuracy ? a : b);
       weakestType = weakest.imageType;
 
       if (weakest.accuracy < 50) {
@@ -298,16 +298,21 @@ export function scoreImageQuiz(
         weaknessScore = BASE_SCORES.image_quiz + 15;
       } else if (weakest.accuracy < 75) {
         weaknessScore = BASE_SCORES.image_quiz + 5;
+      } else {
+        // Even with good accuracy, if declining, still recommend
+        weaknessScore = BASE_SCORES.image_quiz;
       }
 
-      // Declining trend amplifies urgency
-      if (weakest.trend === "declining") weaknessScore += 10;
+      // Declining trend amplifies urgency significantly
+      if (weakest.trend === "declining") weaknessScore += 15;
+      // Low confidence (few attempts) — still generate but softer
+      if (weakest.attemptsCount < 5) weaknessScore = Math.max(weaknessScore - 5, BASE_SCORES.image_quiz);
     }
   }
 
-  // Take the stronger signal
+  // Take the stronger signal — but also allow snapshot-only recommendations
   let s = Math.max(errorScore, weaknessScore);
-  if (s === 0 && visualErrors.length === 0) {
+  if (s === 0 && visualErrors.length === 0 && (!ctx.visualWeaknesses || ctx.visualWeaknesses.length === 0)) {
     return { score: 0, bestTopic: null };
   }
   if (s === 0) s = BASE_SCORES.image_quiz;

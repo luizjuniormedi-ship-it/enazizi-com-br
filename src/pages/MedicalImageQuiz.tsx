@@ -334,7 +334,10 @@ const MedicalImageQuiz = () => {
       } as any);
       if (error) throw error;
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["image-quiz-stats"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["image-quiz-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["visual-skill-snapshot"] });
+    },
   });
 
   const currentQuestion = questions[currentIndex];
@@ -547,6 +550,12 @@ const MedicalImageQuiz = () => {
         <Badge className={`self-center ${TIER_LABELS[activeTier].color}`}>
           {TIER_LABELS[activeTier].label}
         </Badge>
+        {adaptiveImageType && adaptiveImageType !== "all" && (
+          <Badge className="self-center bg-primary/20 text-primary border border-primary/30">
+            🎯 {visualSkill?.trend === "declining" ? "Reforço" : "Treino focado"}: {imageTypeLabels[adaptiveImageType] || adaptiveImageType.toUpperCase()}
+            {visualSkill?.accuracy !== undefined && ` (${visualSkill.accuracy}%)`}
+          </Badge>
+        )}
         {quizMode === "browse" && questions.length > 0 && (
           <Button onClick={shuffleAndStart} className="ml-auto">
             <Activity className="h-4 w-4 mr-2" /> Iniciar Quiz

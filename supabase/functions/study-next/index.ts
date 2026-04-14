@@ -255,9 +255,9 @@ serve(async (req) => {
       const topic = imgResult.bestTopic;
       let targetType = imgResult.targetImageType;
 
-      // Enhance with persisted snapshots
+      // Enhance with persisted snapshots — use >= 1 attempt to react early
       if (!targetType && Array.isArray(visualSnapshots) && visualSnapshots.length > 0) {
-        const weakSnap = visualSnapshots.find((s: any) => s.accuracy < 60 && s.attempts_count >= 5);
+        const weakSnap = visualSnapshots.find((s: any) => s.accuracy < 70 && s.attempts_count >= 1);
         if (weakSnap) targetType = weakSnap.image_type;
       }
 
@@ -273,17 +273,27 @@ serve(async (req) => {
           ? `Treino visual: ${topic.tema}`
           : "Treino de interpretação visual";
 
-      // Build specific adaptive message
+      // Build specific adaptive message with trend-aware language
       let description: string;
       if (targetType && typeName) {
         const snap = Array.isArray(visualSnapshots)
           ? visualSnapshots.find((s: any) => s.image_type === targetType)
           : null;
         const acc = snap?.accuracy;
-        const trendText = snap?.trend === "declining" ? " e piorando" : snap?.trend === "improving" ? ", mas melhorando" : "";
-        description = acc !== undefined
-          ? `Você está fraco em ${typeName} (${acc}% de acerto${trendText}) → vamos treinar com questões de imagem.`
-          : `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
+        const trend = snap?.trend;
+        if (acc !== undefined) {
+          if (trend === "declining") {
+            description = `Seu desempenho em ${typeName} está piorando (${acc}% de acerto) → hora de reforçar.`;
+          } else if (trend === "improving" && acc > 70) {
+            description = `Você melhorou em ${typeName} (${acc}%), então vamos subir o nível.`;
+          } else if (acc < 50) {
+            description = `Você está fraco em ${typeName} (${acc}% de acerto) → vamos treinar agora.`;
+          } else {
+            description = `Seu desempenho em ${typeName} (${acc}%) pode melhorar → vamos praticar.`;
+          }
+        } else {
+          description = `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
+        }
       } else if (topic) {
         description = `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`;
       } else {
@@ -292,6 +302,9 @@ serve(async (req) => {
 
       let imgScore = imgResult.score;
       if (consecutiveErrorBoost) imgScore = Math.min(150, imgScore + 20);
+      const snapForPayload = Array.isArray(visualSnapshots)
+        ? visualSnapshots.find((s: any) => s.image_type === targetType)
+        : null;
       candidates.push({
         type: "image_quiz",
         title,
@@ -305,6 +318,13 @@ serve(async (req) => {
           errorCount: topic?.vezes_errado,
           imageType: targetType,
           consecutiveErrorBoost,
+          accuracy: snapForPayload?.accuracy,
+          trend: snapForPayload?.trend,
+          adaptiveDifficulty: snapForPayload?.trend === "declining" || (snapForPayload?.accuracy ?? 100) < 50
+            ? "easy"
+            : (snapForPayload?.accuracy ?? 0) > 75 && snapForPayload?.trend === "improving"
+              ? "hard"
+              : undefined,
         },
       });
     }

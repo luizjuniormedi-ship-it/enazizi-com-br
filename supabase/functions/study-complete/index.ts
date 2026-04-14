@@ -83,7 +83,7 @@ serve(async (req) => {
     });
 
     // ── 5b. Update visual_skill_snapshots for image quiz completions ──
-    if (metadata?.originModule === "image_quiz" && metadata?.imageType) {
+    if ((metadata?.originModule === "image_quiz" || actionType === "image_quiz") && metadata?.imageType) {
       try {
         const imgType = (metadata.imageType as string).toLowerCase();
         // Fetch recent attempts for this image type
