@@ -13,21 +13,21 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 // ── NIH pathologies mapped to exam-relevant diagnoses ──
-const PATHOLOGY_MAP: Record<string, { diagnosis_pt: string; topic: string; subtopic: string; difficulty: number }> = {
-  "Atelectasis":       { diagnosis_pt: "Atelectasia",              topic: "Pneumologia",    subtopic: "Atelectasia",              difficulty: 3 },
-  "Cardiomegaly":      { diagnosis_pt: "Cardiomegalia",            topic: "Cardiologia",    subtopic: "Insuficiência Cardíaca",   difficulty: 2 },
-  "Consolidation":     { diagnosis_pt: "Consolidação Pulmonar",    topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: 3 },
-  "Edema":             { diagnosis_pt: "Edema Pulmonar",           topic: "Pneumologia",    subtopic: "Edema Pulmonar",           difficulty: 3 },
-  "Effusion":          { diagnosis_pt: "Derrame Pleural",          topic: "Pneumologia",    subtopic: "Derrame Pleural",          difficulty: 2 },
-  "Emphysema":         { diagnosis_pt: "Enfisema Pulmonar",        topic: "Pneumologia",    subtopic: "DPOC",                     difficulty: 4 },
-  "Fibrosis":          { diagnosis_pt: "Fibrose Pulmonar",         topic: "Pneumologia",    subtopic: "Fibrose Pulmonar",         difficulty: 4 },
-  "Hernia":            { diagnosis_pt: "Hérnia Diafragmática",     topic: "Cirurgia",       subtopic: "Hérnia Diafragmática",     difficulty: 3 },
-  "Infiltration":      { diagnosis_pt: "Infiltrado Pulmonar",      topic: "Pneumologia",    subtopic: "Infecções Pulmonares",     difficulty: 3 },
-  "Mass":              { diagnosis_pt: "Massa Pulmonar",           topic: "Pneumologia",    subtopic: "Neoplasia Pulmonar",       difficulty: 4 },
-  "Nodule":            { diagnosis_pt: "Nódulo Pulmonar",          topic: "Pneumologia",    subtopic: "Nódulo Pulmonar",          difficulty: 3 },
-  "Pleural_Thickening":{ diagnosis_pt: "Espessamento Pleural",     topic: "Pneumologia",    subtopic: "Doenças Pleurais",         difficulty: 4 },
-  "Pneumonia":         { diagnosis_pt: "Pneumonia",                topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: 2 },
-  "Pneumothorax":      { diagnosis_pt: "Pneumotórax",              topic: "Cirurgia",       subtopic: "Pneumotórax",              difficulty: 3 },
+const PATHOLOGY_MAP: Record<string, { diagnosis_pt: string; topic: string; subtopic: string; difficulty: string }> = {
+  "Atelectasis":       { diagnosis_pt: "Atelectasia",              topic: "Pneumologia",    subtopic: "Atelectasia",              difficulty: "medium" },
+  "Cardiomegaly":      { diagnosis_pt: "Cardiomegalia",            topic: "Cardiologia",    subtopic: "Insuficiência Cardíaca",   difficulty: "easy" },
+  "Consolidation":     { diagnosis_pt: "Consolidação Pulmonar",    topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: "medium" },
+  "Edema":             { diagnosis_pt: "Edema Pulmonar",           topic: "Pneumologia",    subtopic: "Edema Pulmonar",           difficulty: "medium" },
+  "Effusion":          { diagnosis_pt: "Derrame Pleural",          topic: "Pneumologia",    subtopic: "Derrame Pleural",          difficulty: "easy" },
+  "Emphysema":         { diagnosis_pt: "Enfisema Pulmonar",        topic: "Pneumologia",    subtopic: "DPOC",                     difficulty: "hard" },
+  "Fibrosis":          { diagnosis_pt: "Fibrose Pulmonar",         topic: "Pneumologia",    subtopic: "Fibrose Pulmonar",         difficulty: "hard" },
+  "Hernia":            { diagnosis_pt: "Hérnia Diafragmática",     topic: "Cirurgia",       subtopic: "Hérnia Diafragmática",     difficulty: "medium" },
+  "Infiltration":      { diagnosis_pt: "Infiltrado Pulmonar",      topic: "Pneumologia",    subtopic: "Infecções Pulmonares",     difficulty: "medium" },
+  "Mass":              { diagnosis_pt: "Massa Pulmonar",           topic: "Pneumologia",    subtopic: "Neoplasia Pulmonar",       difficulty: "hard" },
+  "Nodule":            { diagnosis_pt: "Nódulo Pulmonar",          topic: "Pneumologia",    subtopic: "Nódulo Pulmonar",          difficulty: "medium" },
+  "Pleural_Thickening":{ diagnosis_pt: "Espessamento Pleural",     topic: "Pneumologia",    subtopic: "Doenças Pleurais",         difficulty: "hard" },
+  "Pneumonia":         { diagnosis_pt: "Pneumonia",                topic: "Pneumologia",    subtopic: "Pneumonia",                difficulty: "easy" },
+  "Pneumothorax":      { diagnosis_pt: "Pneumotórax",              topic: "Cirurgia",       subtopic: "Pneumotórax",              difficulty: "medium" },
 };
 
 // ── Download image → upload to Storage ──
