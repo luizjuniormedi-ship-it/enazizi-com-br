@@ -1,23 +1,35 @@
 
 
-## Problemas Identificados
+## Tooltips descritivos na Sidebar
 
-1. **Menu móvel incompleto para admins**: O menu móvel (`MobileNav` em `DashboardLayout.tsx`) não mostra os links "Mnemônico (teste)" e "Painel CEO" na seção admin do rodapé (linhas 195-207). O sidebar desktop tem esses links, mas o mobile não.
+### O que será feito
+Adicionar um tooltip (hover card) em cada item do menu lateral. Ao passar o mouse sobre qualquer módulo, aparece uma breve descrição explicando o que aquele módulo faz.
 
-2. **Menu móvel sem link institucional**: O link "Painel Institucional" também está ausente no menu móvel, ao contrário do sidebar desktop.
+### Implementação
 
-## Alterações Necessárias
+**1. Adicionar campo `description` ao tipo `NavItem` e a cada item nos `navGroups`**
 
-### Arquivo: `src/components/layout/DashboardLayout.tsx`
+Cada módulo recebe uma descrição curta, por exemplo:
+- Missão do Dia: "Sua tarefa prioritária de estudo baseada no seu desempenho"
+- Questões: "Gere e pratique questões adaptativas por tema"
+- Flashcards: "Revise conteúdos com repetição espaçada"
+- Tutor IA: "Converse com seu professor virtual para tirar dúvidas"
+- etc.
 
-1. **Importar `useInstitution` e ícones faltantes** (`Building2`, `Brain`, `BarChart3`, `Crown`)
+**2. Envolver cada link do menu com `Tooltip` do Radix (já existe em `@/components/ui/tooltip`)**
 
-2. **Adicionar `useInstitution` no componente `MobileNav`** para verificar `isInstitutionalStaff`
+- Usar `TooltipProvider` no nível da sidebar
+- Cada `<Link>` fica dentro de `<Tooltip>` + `<TooltipTrigger>` + `<TooltipContent side="right">`
+- O tooltip aparece à direita da sidebar com a descrição do módulo
 
-3. **Adicionar links admin faltantes** na seção do rodapé do menu móvel (após o link "Admin"):
-   - "Mnemônico (teste)" → `/dashboard/mnemonico` (apenas admin)
-   - "Painel CEO" → `/admin/ceo` (apenas admin)
-   - "Painel Institucional" → `/institucional` (apenas staff institucional)
+**3. Funciona nos dois modos**
+- **Modo expandido**: tooltip com descrição aparece ao lado direito
+- **Modo compacto (estudo ativo)**: tooltip mostra nome + descrição (já que o label fica oculto)
 
-Isso espelha exatamente o que o sidebar desktop (`DashboardSidebar.tsx`) já mostra nas linhas 220-250.
+### Arquivos modificados
+- `src/components/layout/DashboardSidebar.tsx` — adicionar descriptions, envolver itens com Tooltip
+
+### Escopo
+- Apenas visual/UX, sem mudança de lógica ou navegação
+- Usa componente Tooltip já existente no projeto
 
