@@ -137,18 +137,18 @@ export async function checkAndIncrementUsage(
   const limit = usage?.ai_calls_limit ?? LIMITS[usage?.plan_type ?? "free"] ?? 30;
   const used = usage?.ai_calls_used ?? 0;
 
-  if (used >= limit) {
-    return { allowed: false, remaining: 0 };
+  if (used + cost > limit) {
+    return { allowed: false, remaining: Math.max(0, limit - used) };
   }
 
-  // Increment
+  // Increment by cost weight
   await sb
     .from("ai_usage_control")
-    .update({ ai_calls_used: used + 1 })
+    .update({ ai_calls_used: used + cost })
     .eq("user_id", userId)
     .eq("period_start", period);
 
-  return { allowed: true, remaining: limit - used - 1 };
+  return { allowed: true, remaining: limit - used - cost };
 }
 
 // ── Light AI call ──
