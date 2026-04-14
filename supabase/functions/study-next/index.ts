@@ -33,7 +33,7 @@ serve(async (req) => {
     const [
       pendingReviews, errorBankItems, dailyPlanToday, dailyTasks,
       fsrsDue, approvalData, profile, gamification,
-      imageQuizCount,
+      imageQuizCount, visualAttempts,
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) =>
         c.from("revisoes")
