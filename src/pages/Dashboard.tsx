@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
@@ -7,6 +7,7 @@ import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useStudyLoop } from "@/hooks/useStudyLoop";
+import { useStudySession } from "@/hooks/useStudySession";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { supabase } from "@/integrations/supabase/client";
@@ -20,17 +21,18 @@ import MissionControlError from "@/components/mission-control/MissionControlErro
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
 import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
 import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
+import SessionBar from "@/components/study-session/SessionBar";
+import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Loader2, Flame, Target, RotateCcw, TrendingUp, CheckCircle2 } from "lucide-react";
+import { Flame, Target, RotateCcw, TrendingUp } from "lucide-react";
 import { fireCelebration } from "@/lib/celebrations";
 
 const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
-const ExamSetupReminder = lazy(() => import("@/components/dashboard/ExamSetupReminder"));
 
 const EXAM_LABELS: Record<string, string> = {
   enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
@@ -46,18 +48,8 @@ interface CompletionHandoff {
 }
 
 /* ─── Compact Stats Strip ─── */
-function StatsStrip({
-  approvalScore,
-  pendingReviews,
-  streak,
-  todayCompleted,
-  todayTotal,
-}: {
-  approvalScore: number;
-  pendingReviews: number;
-  streak: number;
-  todayCompleted: number;
-  todayTotal: number;
+function StatsStrip({ approvalScore, pendingReviews, streak, todayCompleted, todayTotal }: {
+  approvalScore: number; pendingReviews: number; streak: number; todayCompleted: number; todayTotal: number;
 }) {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -89,6 +81,7 @@ function MiniStat({ icon, label, value, highlight }: { icon: React.ReactNode; la
 const Dashboard = () => {
   useRevisionNotifier();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { isEnabled, loading: flagsLoading } = useFeatureFlags();
@@ -96,15 +89,17 @@ const Dashboard = () => {
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
 
   // Mission engine
-  const { data, isLoading: missionLoading, isError, error, refresh, isFetching } = useStudyNext();
+  const { data, isLoading: missionLoading, isError, error, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
   const loop = useStudyLoop();
+  const session = useStudySession();
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
   const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
   const [heroHighlight, setHeroHighlight] = useState(false);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const prevLevelRef = useRef<number | null>(null);
+  const autostartConsumedRef = useRef(false);
 
   const activeRec = overrideRec ?? data?.recommendation;
   const justification = data?.justification ?? "";
@@ -113,6 +108,42 @@ const Dashboard = () => {
 
   const streak = coreData?.gamification?.current_streak ?? snapshot?.streak ?? 0;
   const loopActive = loop.phase !== "idle";
+
+  // ─── AUTOSTART ───
+  useEffect(() => {
+    if (autostartConsumedRef.current) return;
+    if (missionLoading || !data) return;
+    const autostart = searchParams.get("autostart");
+    if (autostart !== "true") return;
+    if (!activeRec) return;
+
+    autostartConsumedRef.current = true;
+    const source = searchParams.get("source") || "manual";
+
+    // Clean URL without triggering navigation
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete("autostart");
+    newParams.delete("source");
+    setSearchParams(newParams, { replace: true });
+
+    // Start session + loop
+    if (!session.metrics.active) {
+      session.startSession(source);
+    }
+    loop.startMission(activeRec);
+  }, [missionLoading, data, activeRec, searchParams, setSearchParams, session, loop]);
+
+  // ─── Track loop results into session ───
+  const prevPhaseRef = useRef(loop.phase);
+  useEffect(() => {
+    if (prevPhaseRef.current === "feedback" && loop.phase !== "feedback" && loop.result && session.metrics.active) {
+      // Feedback phase just ended → record action
+      const correct = loop.result.correct ?? false;
+      const theme = loop.context?.theme;
+      session.recordAction(correct, theme);
+    }
+    prevPhaseRef.current = loop.phase;
+  }, [loop.phase, loop.result, loop.context, session]);
 
   // Celebrations
   useEffect(() => {
@@ -167,8 +198,11 @@ const Dashboard = () => {
   /* ─── Handlers ─── */
   const handleStart = useCallback(() => {
     if (!activeRec) return;
+    if (!session.metrics.active) {
+      session.startSession("manual");
+    }
     loop.startMission(activeRec);
-  }, [activeRec, loop]);
+  }, [activeRec, loop, session]);
 
   const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
     setOverrideRec(alt);
@@ -196,6 +230,26 @@ const Dashboard = () => {
     }
   }, [loop, refresh]);
 
+  const handleEndSession = useCallback(() => {
+    // If loop is active, close it first
+    if (loopActive) {
+      loop.resetLoop();
+    }
+    session.endSession();
+  }, [loopActive, loop, session]);
+
+  const handleContinueAfterSummary = useCallback(() => {
+    session.dismissSummary();
+    session.startSession("continue");
+    if (activeRec) {
+      loop.startMission(activeRec);
+    }
+  }, [session, activeRec, loop]);
+
+  const handleDismissSummary = useCallback(() => {
+    session.dismissSummary();
+  }, [session]);
+
   const dismissBanner = useCallback(() => setHandoff(null), []);
 
   /* ─── Derived ─── */
@@ -211,12 +265,28 @@ const Dashboard = () => {
   const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
   if (initialLoading) return <MissionControlSkeleton />;
 
+  // ─── Session Summary ───
+  if (session.summary) {
+    return (
+      <div className="max-w-2xl mx-auto pt-8 px-3 animate-fade-in">
+        <SessionSummary
+          summary={session.summary}
+          onContinue={handleContinueAfterSummary}
+          onDismiss={handleDismissSummary}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 animate-fade-in max-w-5xl mx-auto pb-20 lg:pb-0">
-      {/* Popup queue — minimal */}
+      {/* Session Bar — sticky top when session active */}
+      <SessionBar metrics={session.metrics} onEnd={handleEndSession} />
+
+      {/* Achievement toasts */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
-      {/* Greeting — compact */}
+      {/* Greeting — compact, hidden during loop */}
       {!loopActive && (
         <div className="flex items-center justify-between px-1">
           <div>
@@ -286,7 +356,6 @@ const Dashboard = () => {
 
           {/* Error / Empty states */}
           {isError && <MissionControlError error={error} onRetry={handleRefresh} />}
-
           {!isError && !activeRec && <MissionControlEmpty onGenerate={handleRefresh} />}
 
           {/* HERO — "Sua missão agora" */}
@@ -315,7 +384,7 @@ const Dashboard = () => {
             </>
           )}
 
-          {/* Stats strip — compact secondary */}
+          {/* Stats strip */}
           {snapshot && (
             <StatsStrip
               approvalScore={snapshot.approvalScore}
@@ -329,7 +398,7 @@ const Dashboard = () => {
           {/* Quick contextual actions */}
           {activeRec && <MissionQuickActions type={activeRec.type} />}
 
-          {/* Alternatives — max 3, compact */}
+          {/* Alternatives — max 3 */}
           {alternatives.length > 0 && (
             <div id="mc-alternatives">
               <MissionAlternatives
