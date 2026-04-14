@@ -23,10 +23,18 @@ interface CompletionHandoff {
 }
 
 export default function MissionControlPage() {
+  const { isEnabled } = useFeatureFlags();
+
+  // Feature flag guard — redirect to dashboard if disabled
+  if (!isEnabled("mission_control_enabled")) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   const { data, isLoading, isError, error, refresh, isFetching } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
   const { data: coreData } = useCoreData();
 
+  const studyLoopEnabled = isEnabled("study_loop_enabled");
   const loop = useStudyLoop();
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
