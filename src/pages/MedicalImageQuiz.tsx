@@ -68,13 +68,35 @@ const SELECT_FIELDS = `
 const BLOCKED_URL_TERMS = [
   "logo", "stock", "laptop", "banner", "algoscope", "placeholder",
   "mock", "demo", "avatar", "portrait", "screenshot", "dashboard",
+  "icon", "favicon", "thumbnail", "profile", "headshot", "staff",
+  "bio-photo", "doctor-photo", "team", "about-us", "generic",
 ];
 
-function isValidMedicalImage(url: string | null): boolean {
+/** Validate a URL is a real medical image, not a logo/placeholder/etc */
+function isValidMedicalImageUrl(url: string | null): boolean {
   if (!url || typeof url !== "string") return false;
+  // Must pass the safety gate
   if (!isImageUrlClinical(url)) return false;
   const lower = url.toLowerCase();
-  return !BLOCKED_URL_TERMS.some((term) => lower.includes(term));
+  // Block suspicious terms
+  if (BLOCKED_URL_TERMS.some((term) => lower.includes(term))) return false;
+  // Must look like an actual image URL
+  const hasImageExt = /\.(jpg|jpeg|png|webp|gif|bmp|tiff|svg)(\?|$)/i.test(url);
+  const isDataUrl = url.startsWith("data:image/");
+  const isStorageUrl = url.includes("supabase.co/storage");
+  if (!hasImageExt && !isDataUrl && !isStorageUrl) return false;
+  return true;
+}
+
+/** Validate a full asset object is renderable */
+function isRenderableMedicalImage(asset: any): boolean {
+  if (!asset) return false;
+  const url = asset?.image_url;
+  if (!isValidMedicalImageUrl(url)) return false;
+  // Block assets explicitly marked as AI-rejected
+  if (asset.ai_validated === false) return false;
+  if (typeof asset.ai_confidence === "number" && asset.ai_confidence < 0.7) return false;
+  return true;
 }
 
 function mapRows(data: any[]): ImageQuestion[] {
