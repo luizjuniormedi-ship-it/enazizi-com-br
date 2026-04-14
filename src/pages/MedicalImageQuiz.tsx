@@ -67,9 +67,13 @@ const MedicalImageQuiz = () => {
         .select(`
           id, statement, option_a, option_b, option_c, option_d, option_e,
           correct_index, explanation, difficulty, exam_style,
-          medical_image_assets!inner(image_url, image_type, diagnosis)
+          medical_image_assets!inner(image_url, image_type, diagnosis, is_active, review_status, clinical_confidence, integrity_status)
         `)
-        .eq("status", "published");
+        .eq("status", "published")
+        // Asset safety filters — only serve validated, active, published assets
+        .eq("medical_image_assets.is_active", true)
+        .eq("medical_image_assets.review_status", "published")
+        .neq("medical_image_assets.image_url", "");
 
       if (imageType !== "all") {
         query = query.eq("medical_image_assets.image_type", imageType as any);
@@ -81,21 +85,28 @@ const MedicalImageQuiz = () => {
       const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
 
-      return (data || []).map((q: any) => {
-        const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
-        return {
-          id: q.id,
-          statement: q.statement,
-          options: opts,
-          correct_index: q.correct_index,
-          explanation: q.explanation,
-          difficulty: q.difficulty,
-          exam_style: q.exam_style,
-          image_url: q.medical_image_assets?.image_url || null,
-          image_type: q.medical_image_assets?.image_type || null,
-          diagnosis: q.medical_image_assets?.diagnosis || null,
-        } as ImageQuestion;
-      });
+      // Filter out any questions where the asset image_url is empty/null after join
+      return (data || [])
+        .map((q: any) => {
+          const asset = q.medical_image_assets;
+          const imageUrl = asset?.image_url || null;
+          // Skip questions with no valid image URL
+          if (!imageUrl) return null;
+          const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
+          return {
+            id: q.id,
+            statement: q.statement,
+            options: opts,
+            correct_index: q.correct_index,
+            explanation: q.explanation,
+            difficulty: q.difficulty,
+            exam_style: q.exam_style,
+            image_url: imageUrl,
+            image_type: asset?.image_type || null,
+            diagnosis: asset?.diagnosis || null,
+          } as ImageQuestion;
+        })
+        .filter(Boolean) as ImageQuestion[];
     },
   });
 
@@ -393,17 +404,23 @@ const MedicalImageQuiz = () => {
               </div>
             )}
 
-            {/* No image fallback */}
+            {/* No image fallback — should rarely happen with asset filters */}
             {!currentQuestion.image_url && (
-              <div className="p-4 flex gap-2">
-                <Badge className={difficultyLabels[currentQuestion.difficulty]?.color || ""}>
-                  {difficultyLabels[currentQuestion.difficulty]?.label}
-                </Badge>
-                {currentQuestion.image_type && (
-                  <Badge variant="secondary">
-                    {imageTypeLabels[currentQuestion.image_type] || currentQuestion.image_type}
+              <div className="bg-muted/30 border-b border-border flex flex-col items-center justify-center min-h-[200px] gap-3 p-6">
+                <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
+                <p className="text-sm text-muted-foreground text-center">
+                  Imagem indisponível para esta questão
+                </p>
+                <div className="flex gap-2">
+                  <Badge className={difficultyLabels[currentQuestion.difficulty]?.color || ""}>
+                    {difficultyLabels[currentQuestion.difficulty]?.label}
                   </Badge>
-                )}
+                  {currentQuestion.image_type && (
+                    <Badge variant="secondary">
+                      {imageTypeLabels[currentQuestion.image_type] || currentQuestion.image_type}
+                    </Badge>
+                  )}
+                </div>
               </div>
             )}
 
