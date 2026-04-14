@@ -182,6 +182,10 @@ export function useStudyLoop() {
       }
     } catch (e: any) {
       setError(e.message || "Erro ao executar missão");
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "error", recommendationType: context.recommendation.type, theme: context.theme, metadata: { step: "beginExecution", error: e.message } });
+        incrementDailyEngagement(uid, { errors_encountered: 1 });
+      }
     } finally {
       setLoading(false);
     }
