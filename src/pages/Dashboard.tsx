@@ -23,6 +23,7 @@ import MissionControlEmpty from "@/components/mission-control/MissionControlEmpt
 import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
 import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
 import SessionBar from "@/components/study-session/SessionBar";
+import VisualSkillCard from "@/components/mission-control/VisualSkillCard";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import XpWidget from "@/components/gamification/XpWidget";
