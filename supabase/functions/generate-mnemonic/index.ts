@@ -551,8 +551,9 @@ serve(async (req: Request) => {
       },
     });
   } catch (error) {
-    console.error("generate-mnemonic error:", error);
+    const msg = error instanceof Error ? error.message : "Erro interno.";
+    console.error(`[MNEMONIC] FAILED at stage=${currentStage}:`, msg);
     if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-    return jsonResponse({ success: false, error: error instanceof Error ? error.message : "Erro interno." }, 500);
+    return jsonResponse({ success: false, error: msg, stage: currentStage }, 500);
   }
 });
