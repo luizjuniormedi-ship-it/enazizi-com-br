@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
