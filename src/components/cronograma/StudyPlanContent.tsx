@@ -551,7 +551,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
             </div>
           </div>
           <div className="flex flex-col sm:flex-row gap-2">
-            <Button size="lg" className="flex-1 h-12 text-base font-semibold gap-2" onClick={() => navigate("/mission-control")}>
+            <Button size="lg" className="flex-1 h-12 text-base font-semibold gap-2" onClick={() => navigate("/dashboard?autostart=true&source=planner")}>
               <Sparkles className="h-5 w-5" /> Começar a estudar agora
             </Button>
             <Button size="sm" variant="outline" onClick={() => onSyncComplete?.()}>
