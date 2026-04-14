@@ -240,21 +240,56 @@ serve(async (req) => {
       });
     }
 
-    // ── Image Quiz candidate (enhanced with real visual weakness) ──
+    // ── Image Quiz candidate (enhanced with real visual weakness + snapshots) ──
+    // Also fetch persisted visual skill snapshots for richer recommendations
+    const visualSnapshots = await safeQuery<any[]>(db, (c) =>
+      c.from("visual_skill_snapshots")
+        .select("image_type, accuracy, score, trend, weakest_area, attempts_count")
+        .eq("user_id", userId)
+        .order("accuracy", { ascending: true })
+        .limit(10),
+      "visual_snapshots");
+
     const imgResult = scoreImageQuiz(visualErrors, ctx);
     if (imgResult.score > 0) {
       const topic = imgResult.bestTopic;
-      const targetType = imgResult.targetImageType;
-      const title = targetType
-        ? `Treino visual: ${targetType.toUpperCase()}`
+      let targetType = imgResult.targetImageType;
+
+      // Enhance with persisted snapshots
+      if (!targetType && Array.isArray(visualSnapshots) && visualSnapshots.length > 0) {
+        const weakSnap = visualSnapshots.find((s: any) => s.accuracy < 60 && s.attempts_count >= 5);
+        if (weakSnap) targetType = weakSnap.image_type;
+      }
+
+      const IMAGE_TYPE_NAMES: Record<string, string> = {
+        ecg: "ECG", xray: "RX de Tórax", ct: "Tomografia", us: "Ultrassom",
+        dermatology: "Dermatologia", pathology: "Patologia", ophthalmology: "Oftalmologia",
+      };
+      const typeName = targetType ? (IMAGE_TYPE_NAMES[targetType] || targetType.toUpperCase()) : null;
+
+      const title = typeName
+        ? `Treino visual: ${typeName}`
         : topic
           ? `Treino visual: ${topic.tema}`
           : "Treino de interpretação visual";
-      const description = targetType
-        ? `Seu desempenho em ${targetType.toUpperCase()} precisa de reforço. Vamos treinar com questões de imagem.`
-        : topic
-          ? `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`
-          : "Treino adaptativo de interpretação de imagens médicas.";
+
+      // Build specific adaptive message
+      let description: string;
+      if (targetType && typeName) {
+        const snap = Array.isArray(visualSnapshots)
+          ? visualSnapshots.find((s: any) => s.image_type === targetType)
+          : null;
+        const acc = snap?.accuracy;
+        const trendText = snap?.trend === "declining" ? " e piorando" : snap?.trend === "improving" ? ", mas melhorando" : "";
+        description = acc !== undefined
+          ? `Você está fraco em ${typeName} (${acc}% de acerto${trendText}) → vamos treinar com questões de imagem.`
+          : `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
+      } else if (topic) {
+        description = `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`;
+      } else {
+        description = "Treino adaptativo de interpretação de imagens médicas.";
+      }
+
       let imgScore = imgResult.score;
       if (consecutiveErrorBoost) imgScore = Math.min(150, imgScore + 20);
       candidates.push({
