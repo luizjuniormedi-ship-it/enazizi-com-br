@@ -34,7 +34,19 @@ interface GeneratorOutput {
   explicacao_tecnica: string;
   explicacao_didatica: string;
   associacoes?: Associacao[];
+  justificativa_linguistica?: string;
   observacoes?: string[];
+}
+
+interface LinguisticAuditOutput {
+  score_linguistico: number;
+  soa_natural: boolean;
+  tem_sentido: boolean;
+  memoravel: boolean;
+  pronunciavel: boolean;
+  adequado_para_aula: boolean;
+  problemas_linguisticos: string[];
+  versao_corrigida?: GeneratorOutput;
 }
 
 interface MedicalAuditOutput {
@@ -88,20 +100,26 @@ const OPENAI_MODEL = "gpt-4.1-mini";
 const OPENAI_TEMP = 0.2;
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
+const SCORE_LINGUISTICO_MIN = 85;
 
 // ══════════════════════════════════════════════════
 // PROMPTS
 // ══════════════════════════════════════════════════
 
-const PROMPT_GERADOR = `Você é um professor de medicina e especialista em memorização clínica.
-Crie mnemônicos médicos com altíssima fidelidade.
+const PROMPT_GERADOR = `Você é um professor brasileiro de medicina e especialista em memorização clínica.
+Crie mnemônicos médicos em português do Brasil, naturais, claros e realmente utilizáveis em aula.
 
-Regras:
+Regras obrigatórias:
 - incluir todos os termos sem omitir nenhum
-- não trocar sentido clínico
+- não trocar o sentido clínico
 - não usar sinônimos que alterem precisão
-- a sigla deve respeitar os termos
-- a frase deve ser útil em aula médica
+- escrever em português do Brasil natural
+- evitar frases artificiais, truncadas ou sem sentido
+- evitar siglas impronunciáveis
+- priorizar frases que soem bem ao falar em voz alta
+- priorizar memorização real
+- priorizar clareza e sonoridade
+- se a sigla ficar ruim, prefira uma frase mnemônica forte em vez de sigla forçada
 
 Retorne SOMENTE JSON válido com:
 {
@@ -112,8 +130,36 @@ Retorne SOMENTE JSON válido com:
   "associacoes": [
     { "letra": "string", "termo_original": "string", "representacao_no_mnemonico": "string" }
   ],
+  "justificativa_linguistica": "string",
   "observacoes": ["string"]
 }`;
+
+const PROMPT_AUDITOR_LINGUISTICO = `Você é um especialista em língua portuguesa do Brasil aplicada ao ensino médico.
+
+Avalie se o mnemônico:
+- soa natural em português do Brasil
+- tem sentido claro
+- é pronunciável
+- é memorizável
+- parece algo que um professor brasileiro usaria em aula
+- evita construções artificiais
+- evita siglas ruins ou impronunciáveis
+
+Dê nota de 0 a 100.
+Se houver falha, produza uma versão corrigida linguisticamente melhor.
+
+Retorne SOMENTE JSON válido com:
+{
+  "score_linguistico": 0,
+  "soa_natural": true,
+  "tem_sentido": true,
+  "memoravel": true,
+  "pronunciavel": true,
+  "adequado_para_aula": true,
+  "problemas_linguisticos": ["string"],
+  "versao_corrigida": null
+}
+Se precisar corrigir, inclua versao_corrigida com sigla, frase_mnemonica, explicacao_tecnica, explicacao_didatica, associacoes e justificativa_linguistica.`;
 
 const PROMPT_AUDITOR_MEDICO = `Você é um auditor médico extremamente rigoroso.
 
@@ -176,6 +222,10 @@ Regras:
 - representar todos os termos
 - manter fidelidade médica
 - ser útil para aula e revisão
+- o prompt_imagem deve ser em INGLÊS para o gerador de imagem
+- descrever uma cena única, coesa, estilo infográfico médico/cartoon limpo
+- proibido incluir textos, letras ou rótulos na cena
+- usar alto contraste e cores saturadas sobre fundo branco
 
 Retorne SOMENTE JSON válido com:
 {
@@ -194,6 +244,7 @@ Priorize:
 - clareza didática
 - valor de memorização
 - utilidade em aula
+- naturalidade em português do Brasil
 
 Retorne SOMENTE JSON válido com:
 {
@@ -227,7 +278,6 @@ function validatePayload(body: unknown): MnemonicRequest {
   if (!body || typeof body !== "object") throw new Error("Body inválido.");
   const b = body as Record<string, unknown>;
 
-  // Accept both formats: tema/termos (new) and topic/items (legacy unified service)
   const tema = (b.tema ?? b.topic) as string | undefined;
   const termos = (b.termos ?? b.items) as string[] | undefined;
 
@@ -331,6 +381,96 @@ async function callOpenAIJson<T>(
 }
 
 // ══════════════════════════════════════════════════
+// IMAGE GENERATION VIA LOVABLE AI GATEWAY
+// ══════════════════════════════════════════════════
+
+async function generateImage(prompt: string): Promise<string | null> {
+  const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+  if (!lovableApiKey) {
+    console.warn("LOVABLE_API_KEY not set, skipping image generation");
+    return null;
+  }
+
+  try {
+    const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${lovableApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3.1-flash-image-preview",
+        messages: [
+          {
+            role: "user",
+            content: `Generate a clean medical infographic illustration: ${prompt}. Style: clean cartoon medical illustration, high contrast, saturated colors on white background. NO text, NO labels, NO letters in the image.`,
+          },
+        ],
+        modalities: ["image", "text"],
+      }),
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "unknown");
+      console.error(`Image generation failed: HTTP ${resp.status}: ${errText}`);
+      return null;
+    }
+
+    const json = await resp.json();
+    const imageUrl = json?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+
+    if (!imageUrl) {
+      console.warn("Image generation returned no image");
+      return null;
+    }
+
+    // Upload to Supabase Storage
+    return await uploadImageToStorage(imageUrl);
+  } catch (err) {
+    console.error("Image generation error:", err);
+    return null;
+  }
+}
+
+async function uploadImageToStorage(base64DataUrl: string): Promise<string | null> {
+  try {
+    const supabaseUrl = requireEnv("SUPABASE_URL");
+    const serviceKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+    const db = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    // Extract base64 data
+    const base64Data = base64DataUrl.replace(/^data:image\/\w+;base64,/, "");
+    const binaryStr = atob(base64Data);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) {
+      bytes[i] = binaryStr.charCodeAt(i);
+    }
+
+    const fileName = `mnemonics/${crypto.randomUUID()}.png`;
+
+    const { error } = await db.storage
+      .from("question-images")
+      .upload(fileName, bytes, {
+        contentType: "image/png",
+        upsert: false,
+      });
+
+    if (error) {
+      console.error("Storage upload error:", error.message);
+      return null;
+    }
+
+    const { data: publicUrl } = db.storage.from("question-images").getPublicUrl(fileName);
+    return publicUrl?.publicUrl ?? null;
+  } catch (err) {
+    console.error("Upload to storage failed:", err);
+    return null;
+  }
+}
+
+// ══════════════════════════════════════════════════
 // DATABASE HELPERS
 // ══════════════════════════════════════════════════
 
@@ -417,13 +557,14 @@ async function insertResult(
     visual: VisualOutput;
     score_medico: number;
     score_pedagogico: number;
+    score_linguistico: number;
     score_final: number;
     aprovado: boolean;
     aprovado_medico: boolean;
     aprovado_pedagogico: boolean;
+    image_url: string | null;
   },
 ): Promise<string> {
-  // Calculate version
   const { data: existing } = await db
     .from("mnemonic_results")
     .select("versao")
@@ -451,10 +592,12 @@ async function insertResult(
       alertas_json: params.consolidated.alertas ?? [],
       score_medico: params.score_medico,
       score_pedagogico: params.score_pedagogico,
+      score_linguistico: params.score_linguistico,
       score_final: params.score_final,
       aprovado: params.aprovado,
       aprovado_medico: params.aprovado_medico,
       aprovado_pedagogico: params.aprovado_pedagogico,
+      image_url: params.image_url,
       versao,
       is_latest: true,
     })
@@ -466,7 +609,7 @@ async function insertResult(
 }
 
 // ══════════════════════════════════════════════════
-// AGENT RUNNERS
+// AGENT RUNNER
 // ══════════════════════════════════════════════════
 
 async function runAgent<T>(
@@ -489,7 +632,9 @@ async function runAgent<T>(
       ? outRecord.score_medico
       : typeof outRecord.score_pedagogico === "number"
         ? outRecord.score_pedagogico
-        : undefined;
+        : typeof outRecord.score_linguistico === "number"
+          ? outRecord.score_linguistico
+          : undefined;
 
     await insertAgentLog(db, {
       request_id: requestId,
@@ -522,26 +667,6 @@ async function runAgent<T>(
 
     throw new Error(`Agente ${agentName} falhou: ${msg}`);
   }
-}
-
-function runGenerator(apiKey: string, db: SupabaseClient, requestId: string, userId: string, order: number, userPrompt: string) {
-  return runAgent<GeneratorOutput>(apiKey, db, requestId, userId, "gerador", order, PROMPT_GERADOR, userPrompt);
-}
-
-function runMedicalAudit(apiKey: string, db: SupabaseClient, requestId: string, userId: string, order: number, userPrompt: string) {
-  return runAgent<MedicalAuditOutput>(apiKey, db, requestId, userId, "auditor_medico", order, PROMPT_AUDITOR_MEDICO, userPrompt);
-}
-
-function runPedagogicalAudit(apiKey: string, db: SupabaseClient, requestId: string, userId: string, order: number, userPrompt: string) {
-  return runAgent<PedagogicalAuditOutput>(apiKey, db, requestId, userId, "auditor_pedagogico", order, PROMPT_AUDITOR_PEDAGOGICO, userPrompt);
-}
-
-function runVisualAgent(apiKey: string, db: SupabaseClient, requestId: string, userId: string, order: number, userPrompt: string) {
-  return runAgent<VisualOutput>(apiKey, db, requestId, userId, "visual", order, PROMPT_VISUAL, userPrompt);
-}
-
-function runConsolidator(apiKey: string, db: SupabaseClient, requestId: string, userId: string, order: number, userPrompt: string) {
-  return runAgent<ConsolidatedOutput>(apiKey, db, requestId, userId, "consolidador", order, PROMPT_CONSOLIDADOR, userPrompt);
 }
 
 // ══════════════════════════════════════════════════
@@ -592,13 +717,55 @@ serve(async (req: Request) => {
     // ──────────────────────────────────────────────
     // AGENT 1: GERADOR
     // ──────────────────────────────────────────────
-    const generated = await runGenerator(openaiKey, db, requestId, userId, ++order, context);
+    let generated = await runAgent<GeneratorOutput>(
+      openaiKey, db, requestId, userId, "gerador", ++order, PROMPT_GERADOR, context,
+    );
 
     // ──────────────────────────────────────────────
-    // AGENT 2: AUDITOR MÉDICO
+    // AGENT 2: AUDITOR LINGUÍSTICO PT-BR
+    // ──────────────────────────────────────────────
+    const lingPrompt = `${context}\n\nMnemônico gerado:\n${JSON.stringify(generated, null, 2)}`;
+    let lingAudit = await runAgent<LinguisticAuditOutput>(
+      openaiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, lingPrompt,
+    );
+
+    // ──────────────────────────────────────────────
+    // RETRY LINGUÍSTICO (se score < 85 ou não soa natural)
+    // ──────────────────────────────────────────────
+    if (lingAudit.score_linguistico < SCORE_LINGUISTICO_MIN || !lingAudit.soa_natural || !lingAudit.tem_sentido) {
+      console.log(`Score linguístico ${lingAudit.score_linguistico} < ${SCORE_LINGUISTICO_MIN} ou não natural. Retry...`);
+
+      if (lingAudit.versao_corrigida) {
+        generated = lingAudit.versao_corrigida;
+      }
+
+      const retryLingPrompt = `${context}\n\nA versão anterior falhou na auditoria linguística (score: ${lingAudit.score_linguistico}/100).\nProblemas: ${(lingAudit.problemas_linguisticos || []).join("; ")}\n\nCrie uma nova versão que soe NATURAL em português do Brasil. A frase deve parecer algo que um professor brasileiro realmente falaria em aula. Evite construções artificiais.`;
+
+      const retryGen = await runAgent<GeneratorOutput>(
+        openaiKey, db, requestId, userId, "retry_linguistico", ++order, PROMPT_GERADOR, retryLingPrompt,
+      );
+
+      // Re-audit linguistically
+      const retryLingAuditPrompt = `${context}\n\nMnemônico gerado (retry linguístico):\n${JSON.stringify(retryGen, null, 2)}`;
+      const retryLingAudit = await runAgent<LinguisticAuditOutput>(
+        openaiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, retryLingAuditPrompt,
+      );
+
+      if (retryLingAudit.score_linguistico >= lingAudit.score_linguistico) {
+        lingAudit = retryLingAudit;
+        generated = retryLingAudit.versao_corrigida ?? retryGen;
+      }
+    } else if (lingAudit.versao_corrigida) {
+      generated = lingAudit.versao_corrigida;
+    }
+
+    // ──────────────────────────────────────────────
+    // AGENT 3: AUDITOR MÉDICO
     // ──────────────────────────────────────────────
     const auditMedPrompt = `${context}\n\nMnemônico gerado:\n${JSON.stringify(generated, null, 2)}`;
-    let medAudit = await runMedicalAudit(openaiKey, db, requestId, userId, ++order, auditMedPrompt);
+    let medAudit = await runAgent<MedicalAuditOutput>(
+      openaiKey, db, requestId, userId, "auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, auditMedPrompt,
+    );
 
     // ──────────────────────────────────────────────
     // RETRY MÉDICO (se score < 90)
@@ -606,9 +773,9 @@ serve(async (req: Request) => {
     let approvedVersion: GeneratorOutput = medAudit.versao_corrigida ?? generated;
 
     if (medAudit.score_medico < SCORE_MEDICO_MIN) {
-      console.log(`Score médico ${medAudit.score_medico} < ${SCORE_MEDICO_MIN}. Iniciando retry...`);
+      console.log(`Score médico ${medAudit.score_medico} < ${SCORE_MEDICO_MIN}. Retry...`);
 
-      const retryPrompt = `${context}\n\nA versão anterior falhou na auditoria médica (score: ${medAudit.score_medico}/100).\nErros detectados: ${(medAudit.erros_encontrados || []).join("; ")}\n\nCrie uma versão melhorada corrigindo todos os erros apontados.`;
+      const retryPrompt = `${context}\n\nA versão anterior falhou na auditoria médica (score: ${medAudit.score_medico}/100).\nErros detectados: ${(medAudit.erros_encontrados || []).join("; ")}\n\nCrie uma versão melhorada corrigindo todos os erros apontados. Mantenha a naturalidade em português do Brasil.`;
 
       const retryGen = await runAgent<GeneratorOutput>(
         openaiKey, db, requestId, userId, "retry_gerador", ++order, PROMPT_GERADOR, retryPrompt,
@@ -626,16 +793,18 @@ serve(async (req: Request) => {
     }
 
     // ──────────────────────────────────────────────
-    // AGENT 3: AUDITOR PEDAGÓGICO
+    // AGENT 4: AUDITOR PEDAGÓGICO
     // ──────────────────────────────────────────────
     const pedPrompt = `${context}\n\nMnemônico aprovado médicamente:\n${JSON.stringify(approvedVersion, null, 2)}`;
-    let pedAudit = await runPedagogicalAudit(openaiKey, db, requestId, userId, ++order, pedPrompt);
+    let pedAudit = await runAgent<PedagogicalAuditOutput>(
+      openaiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, pedPrompt,
+    );
 
     // ──────────────────────────────────────────────
     // RETRY PEDAGÓGICO (se score < 85)
     // ──────────────────────────────────────────────
     if (pedAudit.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
-      console.log(`Score pedagógico ${pedAudit.score_pedagogico} < ${SCORE_PEDAGOGICO_MIN}. Iniciando retry...`);
+      console.log(`Score pedagógico ${pedAudit.score_pedagogico} < ${SCORE_PEDAGOGICO_MIN}. Retry...`);
 
       const retryPedPrompt = `${context}\n\nMnemônico:\n${JSON.stringify(approvedVersion, null, 2)}\n\nA versão anterior teve baixa performance pedagógica (score: ${pedAudit.score_pedagogico}/100).\nPontos fracos: ${(pedAudit.pontos_fracos || []).join("; ")}\n\nReavalie e produza uma versão otimizada.`;
 
@@ -659,18 +828,56 @@ serve(async (req: Request) => {
     }
 
     // ──────────────────────────────────────────────
-    // AGENT 4: VISUAL
+    // AGENT 5: VISUAL
     // ──────────────────────────────────────────────
     const visualPrompt = `${context}\n\nMnemônico final:\nSigla: ${approvedVersion.sigla}\nFrase: ${approvedVersion.frase_mnemonica}`;
-    const visual = await runVisualAgent(openaiKey, db, requestId, userId, ++order, visualPrompt);
+    const visual = await runAgent<VisualOutput>(
+      openaiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, visualPrompt,
+    );
 
     // ──────────────────────────────────────────────
-    // AGENT 5: CONSOLIDADOR
+    // AGENT 6: GERADOR DE IMAGEM
+    // ──────────────────────────────────────────────
+    let imageUrl: string | null = null;
+    const imgStart = Date.now();
+    try {
+      imageUrl = await generateImage(visual.prompt_imagem);
+      await insertAgentLog(db, {
+        request_id: requestId,
+        user_id: userId,
+        agent_name: "gerador_imagem",
+        execution_order: ++order,
+        status: imageUrl ? "completed" : "failed",
+        input_json: { prompt: visual.prompt_imagem.substring(0, 500) },
+        output_json: { image_url: imageUrl },
+        duration_ms: Date.now() - imgStart,
+        error_message: imageUrl ? undefined : "Image generation returned null",
+      });
+    } catch (imgErr) {
+      console.error("Image generation agent error:", imgErr);
+      await insertAgentLog(db, {
+        request_id: requestId,
+        user_id: userId,
+        agent_name: "gerador_imagem",
+        execution_order: ++order,
+        status: "failed",
+        input_json: { prompt: visual.prompt_imagem.substring(0, 500) },
+        output_json: null,
+        duration_ms: Date.now() - imgStart,
+        error_message: imgErr instanceof Error ? imgErr.message : String(imgErr),
+      });
+    }
+
+    // ──────────────────────────────────────────────
+    // AGENT 7: CONSOLIDADOR
     // ──────────────────────────────────────────────
     const consolidatorPrompt = `${context}
 
 Mnemônico aprovado:
 ${JSON.stringify(approvedVersion, null, 2)}
+
+Auditoria linguística:
+Score: ${lingAudit.score_linguistico}
 
 Auditoria médica:
 Score: ${medAudit.score_medico}
@@ -684,14 +891,17 @@ Pontos fracos: ${(pedAudit.pontos_fracos || []).join("; ") || "Nenhum"}
 Cena visual: ${visual.cena_visual}
 Prompt imagem: ${visual.prompt_imagem}`;
 
-    const consolidated = await runConsolidator(openaiKey, db, requestId, userId, ++order, consolidatorPrompt);
+    const consolidated = await runAgent<ConsolidatedOutput>(
+      openaiKey, db, requestId, userId, "consolidador", ++order, PROMPT_CONSOLIDADOR, consolidatorPrompt,
+    );
 
     // ──────────────────────────────────────────────
     // SCORES & PERSIST
     // ──────────────────────────────────────────────
+    const scoreLinguistico = Math.max(0, Math.min(100, Math.round(lingAudit.score_linguistico)));
     const scoreMedico = Math.max(0, Math.min(100, Math.round(medAudit.score_medico)));
     const scorePedagogico = Math.max(0, Math.min(100, Math.round(pedAudit.score_pedagogico)));
-    const scoreFinal = Math.round((scoreMedico + scorePedagogico) / 2);
+    const scoreFinal = Math.round((scoreMedico + scorePedagogico + scoreLinguistico) / 3);
     const aprovadoMedico = scoreMedico >= SCORE_MEDICO_MIN;
     const aprovadoPedagogico = scorePedagogico >= SCORE_PEDAGOGICO_MIN;
     const aprovado = aprovadoMedico && aprovadoPedagogico;
@@ -704,10 +914,12 @@ Prompt imagem: ${visual.prompt_imagem}`;
       visual,
       score_medico: scoreMedico,
       score_pedagogico: scorePedagogico,
+      score_linguistico: scoreLinguistico,
       score_final: scoreFinal,
       aprovado,
       aprovado_medico: aprovadoMedico,
       aprovado_pedagogico: aprovadoPedagogico,
+      image_url: imageUrl,
     });
 
     await updateRequestStatus(db, requestId, "completed");
@@ -727,12 +939,15 @@ Prompt imagem: ${visual.prompt_imagem}`;
         explicacao_didatica: consolidated.explicacao_didatica,
         cena_visual: consolidated.cena_visual,
         prompt_imagem: consolidated.prompt_imagem,
+        image_url: imageUrl,
         score_medico: scoreMedico,
         score_pedagogico: scorePedagogico,
+        score_linguistico: scoreLinguistico,
         score_final: scoreFinal,
         alertas: consolidated.alertas ?? [],
         agentes: {
           gerador: generated,
+          auditor_linguistico_ptbr: lingAudit,
           auditor_medico: medAudit,
           auditor_pedagogico: pedAudit,
           visual,
