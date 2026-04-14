@@ -37,6 +37,10 @@ export default function ProductMetricsPage() {
     qc.invalidateQueries({ queryKey: ["user-retention"] });
   }, [qc]);
 
+  if (!isEnabled("product_metrics_enabled")) {
+    return <Navigate to="/admin" replace />;
+  }
+
   return (
     <div className="p-3 sm:p-4 md:p-6 space-y-5 animate-fade-in max-w-7xl mx-auto">
       {/* Header */}
