@@ -21,6 +21,7 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStudyContext } from "@/lib/studyContext";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 /* ── Types ── */
 interface NavItem {
@@ -28,6 +29,7 @@ interface NavItem {
   moduleKey: string;
   icon: React.ElementType;
   label: string;
+  description: string;
   useAvatar?: boolean;
 }
 
