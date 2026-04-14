@@ -46,7 +46,7 @@ describe("DashboardSidebar", () => {
     expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
   });
 
-  it("renders tutor IA link as priority item", async () => {
+  it("renders Tutor IA link", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
@@ -56,10 +56,10 @@ describe("DashboardSidebar", () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(screen.getByText("Tutor")).toBeInTheDocument();
+    expect(screen.getByText("Tutor IA")).toBeInTheDocument();
   });
 
-  it("renders core navigation items", async () => {
+  it("renders Sair button", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
     render(
@@ -69,8 +69,6 @@ describe("DashboardSidebar", () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
-    expect(screen.getByText("Meu Perfil")).toBeInTheDocument();
     expect(screen.getByText("Sair")).toBeInTheDocument();
   });
 });

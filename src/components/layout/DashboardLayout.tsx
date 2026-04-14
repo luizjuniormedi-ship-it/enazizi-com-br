@@ -6,10 +6,14 @@ import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
-import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon, ChevronDown, Brain, BarChart3, Building2 } from "lucide-react";
+import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon, ChevronDown, Brain, BarChart3, Building2,
+  Rocket, Lightbulb, FlipVertical, BookOpen, FileText, CalendarDays, Stethoscope, Siren, PenTool, Image,
+  Trophy, Crown, Bot, TrendingUp, Map, AlertTriangle, Sparkles, BookMarked, Clock, Briefcase, Target, Zap
+} from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import BottomTabBar from "./BottomTabBar";
 import enazizi from "@/assets/enazizi-mascot.png";
+import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -31,37 +35,67 @@ import { useStudyContext } from "@/lib/studyContext";
 
 interface MobileNavGroup {
   title: string;
-  items: { to: string; label: string }[];
+  items: { to: string; label: string; moduleKey: string }[];
 }
 
 const mobileNavGroups: MobileNavGroup[] = [
   {
-    title: "Estudar",
+    title: "Principal",
     items: [
-      { to: "/dashboard", label: "🚀 Missão" },
-      { to: "/dashboard/chatgpt", label: "✨ Tutor IA" },
-      { to: "/dashboard/gerador-questoes", label: "💡 Questões" },
-      { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
-      { to: "/dashboard/simulados", label: "📝 Simulados" },
-      { to: "/dashboard/resumos", label: "📖 Resumos" },
+      { to: "/dashboard", label: "🚀 Missão do Dia", moduleKey: "dashboard" },
+      { to: "/dashboard/gerador-questoes", label: "💡 Questões", moduleKey: "questoes" },
+      { to: "/dashboard/flashcards", label: "🃏 Flashcards", moduleKey: "flashcards" },
+      { to: "/dashboard/chatgpt", label: "✨ Tutor IA", moduleKey: "chatgpt" },
+      { to: "/dashboard/analytics", label: "📊 Progresso", moduleKey: "analytics" },
     ],
   },
   {
-    title: "Progresso",
+    title: "Treino Avançado",
     items: [
-      { to: "/dashboard/analytics", label: "📊 Analytics" },
-      { to: "/dashboard/planner", label: "📅 Plano Estratégico" },
+      { to: "/dashboard/simulados", label: "📝 Simulados", moduleKey: "simulados" },
+      { to: "/dashboard/proficiencia", label: "🎓 Proficiência", moduleKey: "proficiencia" },
+      { to: "/dashboard/image-quiz", label: "🖼️ Quiz Imagens", moduleKey: "image-quiz" },
+      { to: "/dashboard/anamnese", label: "🩺 Anamnese", moduleKey: "anamnese" },
+      { to: "/dashboard/plantao", label: "🚨 Plantão", moduleKey: "plantao" },
+      { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática", moduleKey: "prova-pratica" },
+      { to: "/dashboard/discursivas", label: "✍️ Discursivas", moduleKey: "discursivas" },
+      { to: "/dashboard/simulacao-clinica", label: "🚨 Simulação Clínica", moduleKey: "simulacao-clinica" },
+      { to: "/dashboard/entrevista", label: "🎤 Entrevista", moduleKey: "entrevista" },
     ],
   },
   {
-    title: "Ferramentas",
+    title: "Apoio ao Estudo",
     items: [
-      { to: "/dashboard/anamnese", label: "💬 Anamnese" },
-      { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática" },
-      { to: "/dashboard/diagnostico", label: "🩺 Nivelamento" },
-      { to: "/dashboard/gerar-flashcards", label: "⚡ Gerador Flashcards" },
-      { to: "/dashboard/discursivas", label: "✍️ Discursivas" },
-      { to: "/dashboard/cronicas", label: "📖 Crônicas Médicas" },
+      { to: "/dashboard/resumos", label: "📖 Resumos", moduleKey: "resumos" },
+      { to: "/dashboard/mnemonico", label: "🧠 Mnemônicos", moduleKey: "mnemonico" },
+      { to: "/dashboard/apostilas", label: "📚 Apostilas", moduleKey: "apostilas" },
+      { to: "/dashboard/cronicas", label: "📖 Crônicas", moduleKey: "cronicas" },
+      { to: "/dashboard/planner", label: "📅 Plano Estratégico", moduleKey: "planner" },
+      { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia", moduleKey: "plano-dia" },
+      { to: "/dashboard/sessao-estudo", label: "📖 Sessão Estudo", moduleKey: "sessao-estudo" },
+      { to: "/dashboard/gerar-flashcards", label: "⚡ Gerador Flashcards", moduleKey: "gerar-flashcards" },
+      { to: "/dashboard/revisor", label: "📋 Revisor", moduleKey: "revisor" },
+      { to: "/dashboard/diagnostico", label: "🩺 Nivelamento", moduleKey: "diagnostico" },
+    ],
+  },
+  {
+    title: "Inteligência IA",
+    items: [
+      { to: "/dashboard/mentor", label: "🤖 Mentor IA", moduleKey: "mentor" },
+      { to: "/dashboard/coach", label: "💪 Coach IA", moduleKey: "coach" },
+      { to: "/dashboard/predictor", label: "📈 Previsão", moduleKey: "predictor" },
+      { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa Evolução", moduleKey: "mapa-dominio" },
+      { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros", moduleKey: "banco-erros" },
+      { to: "/dashboard/banco-questoes", label: "🗃️ Banco Questões", moduleKey: "banco-questoes" },
+      { to: "/dashboard/missao", label: "🎯 Modo Missão", moduleKey: "missao" },
+    ],
+  },
+  {
+    title: "Conta",
+    items: [
+      { to: "/dashboard/perfil", label: "👤 Perfil", moduleKey: "perfil" },
+      { to: "/dashboard/conquistas", label: "🏆 Conquistas", moduleKey: "conquistas" },
+      { to: "/dashboard/rankings", label: "👑 Rankings", moduleKey: "rankings" },
     ],
   },
 ];
@@ -80,10 +114,9 @@ const MobileNavGroupSection = ({
   isAdmin: boolean;
 }) => {
   const filteredItems = group.items.filter((item) => {
-    if (item.to === "/dashboard/mnemonico") return isAdmin;
-
-    const moduleKey = item.to.replace("/dashboard/", "").replace("/dashboard", "dashboard");
-    return isModuleEnabled(moduleKey || "dashboard");
+    if (item.moduleKey === "mnemonico") return isAdmin;
+    if (item.moduleKey === "perfil") return true;
+    return isModuleEnabled(item.moduleKey);
   });
 
   const hasActive = filteredItems.some((item) => location.pathname === item.to);
@@ -160,88 +193,28 @@ const MobileNav = () => {
               <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} isAdmin={!adminLoading && isAdmin} />
             ))}
             <div className="pt-3 mt-3 border-t border-sidebar-border space-y-1">
-              <Link
-                to="/dashboard/perfil"
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                  location.pathname === "/dashboard/perfil" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                )}
-              >
-                <User className="h-4 w-4" />
-                Meu Perfil
-              </Link>
               {(isProfessor || isAdmin) && (
-                <Link
-                  to="/professor"
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    location.pathname === "/professor" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                  )}
-                >
-                  <GraduationCap className="h-4 w-4" />
-                  Painel Professor
+                <Link to="/professor" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/professor" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
+                  <GraduationCap className="h-4 w-4" /> Painel Professor
                 </Link>
               )}
               {isAdmin && (
-                <Link
-                  to="/admin"
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    location.pathname === "/admin" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                  )}
-                >
-                  <Shield className="h-4 w-4" />
-                  Admin
-                </Link>
-              )}
-              {isAdmin && (
-                <Link
-                  to="/dashboard/mnemonico"
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    location.pathname === "/dashboard/mnemonico" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                  )}
-                >
-                  <Brain className="h-4 w-4" />
-                  Mnemônico (teste)
-                </Link>
-              )}
-              {isAdmin && (
-                <Link
-                  to="/admin/ceo"
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    location.pathname === "/admin/ceo" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                  )}
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  Painel CEO
-                </Link>
+                <>
+                  <Link to="/admin" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/admin" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
+                    <Shield className="h-4 w-4" /> Admin
+                  </Link>
+                  <Link to="/admin/ceo" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/admin/ceo" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
+                    <BarChart3 className="h-4 w-4" /> Painel CEO
+                  </Link>
+                </>
               )}
               {isInstitutionalStaff && (
-                <Link
-                  to="/institucional"
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    location.pathname === "/institucional" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70"
-                  )}
-                >
-                  <Building2 className="h-4 w-4" />
-                  Painel Institucional
+                <Link to="/institucional" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/institucional" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
+                  <Building2 className="h-4 w-4" /> Painel Institucional
                 </Link>
               )}
-              <button
-                onClick={handleSignOut}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full"
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
+              <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full">
+                <LogOut className="h-4 w-4" /> Sair
               </button>
             </div>
           </nav>
@@ -266,7 +239,6 @@ const DashboardLayout = () => {
     enabled: true,
   });
 
-  // Hide all navigation chrome when mission is actively executing
   const isMissionLocked = (() => {
     const isMissionRoute = location.pathname === "/dashboard/missao" || location.pathname === "/mission" || location.pathname.startsWith("/study/");
     const params = new URLSearchParams(location.search);
@@ -287,11 +259,7 @@ const DashboardLayout = () => {
           <div className="ml-auto flex items-center gap-1 flex-shrink-0">
             <GlobalSearch />
             <NotificationBell />
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Alternar tema"
-            >
+            <button onClick={toggleTheme} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" aria-label="Alternar tema">
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
@@ -301,11 +269,7 @@ const DashboardLayout = () => {
         <div className="hidden landscape-tablet:flex lg:flex h-12 border-b border-border items-center justify-end px-4 gap-2 flex-shrink-0">
           <GlobalSearch />
           <NotificationBell />
-          <button
-            onClick={toggleTheme}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm"
-            aria-label="Alternar tema"
-          >
+          <button onClick={toggleTheme} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm" aria-label="Alternar tema">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
           </button>
@@ -324,11 +288,7 @@ const DashboardLayout = () => {
           <Outlet />
         </div>
         {invisibleMnemonic && (
-          <InvisibleMnemonicOverlay
-            mnemonic={invisibleMnemonic}
-            onDismiss={dismissMnemonic}
-            onShown={markShown}
-          />
+          <InvisibleMnemonicOverlay mnemonic={invisibleMnemonic} onDismiss={dismissMnemonic} onShown={markShown} />
         )}
       </main>
       {!isMissionLocked && <BottomTabBar />}
