@@ -84,6 +84,7 @@ interface AgentResult {
   auditor_pedagogico?: unknown;
   visual?: unknown;
   consolidador?: unknown;
+  image_generator?: unknown;
 }
 
 // ══════════════════════════════════════════════════
@@ -496,6 +497,73 @@ serve(async (req: Request) => {
 
     const scoreFinal = Math.round(((medicalAudit.score_medico ?? 0) + (pedagogicalAudit.score_pedagogico ?? 0)) / 2);
 
+    // ── 6) GERAÇÃO DE IMAGEM (Gemini) ──
+    let imageUrl: string | null = null;
+    const imgStart = Date.now();
+    try {
+      const imagePrompt = consolidated.prompt_imagem || visualOutput.prompt_imagem;
+      if (imagePrompt) {
+        console.log("Generating mnemonic image with Gemini...");
+        const imgResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-3.1-flash-image-preview",
+            messages: [{
+              role: "user",
+              content: `Create a single cohesive medical mnemonic illustration. Style: clean medical infographic/cartoon, high contrast, saturated colors, white background. NO text, letters, labels or words in the image. Each element must be a distinct visual symbol.\n\n${imagePrompt}`,
+            }],
+            modalities: ["image", "text"],
+          }),
+        });
+
+        if (imgResp.ok) {
+          const imgData = await imgResp.json();
+          const base64Url = imgData?.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          if (base64Url) {
+            // Upload to Supabase Storage
+            const base64Clean = base64Url.replace(/^data:image\/\w+;base64,/, "");
+            const bytes = Uint8Array.from(atob(base64Clean), (c) => c.charCodeAt(0));
+            const safeSigla = consolidated.sigla
+              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+              .replace(/[^a-zA-Z0-9_-]/g, "_")
+              .replace(/_+/g, "_")
+              .substring(0, 40);
+            const filePath = `mnemonics/${requestId}_${safeSigla}.png`;
+
+            const { error: uploadErr } = await sb.storage
+              .from("question-images")
+              .upload(filePath, bytes, { contentType: "image/png", upsert: true });
+
+            if (!uploadErr) {
+              const { data: urlData } = sb.storage.from("question-images").getPublicUrl(filePath);
+              imageUrl = urlData.publicUrl;
+            } else {
+              console.error("Image upload error:", uploadErr);
+            }
+          }
+        } else {
+          console.error("Image generation error:", imgResp.status);
+        }
+
+        agents.image_generator = { image_url: imageUrl, prompt: imagePrompt };
+        await insertAgentLog(sb, {
+          requestId, userId, agentName: "visual", executionOrder: 6,
+          status: imageUrl ? "completed" : "failed",
+          inputJson: { prompt: imagePrompt },
+          outputJson: { image_url: imageUrl },
+          durationMs: Date.now() - imgStart,
+          errorMessage: imageUrl ? null : "Image generation or upload failed",
+        });
+      }
+    } catch (imgErr) {
+      console.error("Image generation error:", imgErr);
+      agents.image_generator = { error: String(imgErr) };
+    }
+
     const resultId = await insertResult(sb, {
       requestId, userId, payload, consolidated, approvedVersion,
       medicalAudit, pedagogicalAudit, visualOutput, scoreFinal,
@@ -521,7 +589,7 @@ serve(async (req: Request) => {
         alertas: consolidated.alertas ?? [],
         associacoes: approvedVersion.associacoes ?? [],
         associacoes_visuais: visualOutput.associacoes_visuais ?? [],
-        image_url: null,
+        image_url: imageUrl,
         items_map: (approvedVersion.associacoes ?? []).map(a => ({
           letter: a.letra,
           word: a.representacao_no_mnemonico,
@@ -535,6 +603,7 @@ serve(async (req: Request) => {
           { agent: "auditor_pedagogico", attempt: 1, status: pedagogicalAudit.score_pedagogico >= 85 ? "approved" : "rejected", details: `Score: ${pedagogicalAudit.score_pedagogico}` },
           { agent: "visual", attempt: 1, status: "ok", details: "Cena visual gerada" },
           { agent: "consolidador", attempt: 1, status: "ok", details: `Score final: ${scoreFinal}` },
+          { agent: "image_generator", attempt: 1, status: imageUrl ? "ok" : "failed", details: imageUrl ? "Imagem gerada com sucesso" : "Falha na geração (text-only fallback)" },
         ],
         agentes: agents,
       },
