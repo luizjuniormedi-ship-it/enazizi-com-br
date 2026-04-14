@@ -14,7 +14,7 @@ function getRequiredEnv(name: string): string {
   return value;
 }
 
-const MNEMONIC_PIPELINE_VERSION = "2026-04-11-v6-memorable";
+const MNEMONIC_PIPELINE_VERSION = "2026-04-14-v7-strict-coverage";
 
 const STRICT_COVERAGE_TYPES = new Set([
   "criterios", "classificacao", "sinais_classicos",
@@ -365,6 +365,56 @@ function normalizeForComparison(value: string): string {
     .trim();
 }
 
+function extractSignificantWords(value: string): string[] {
+  return normalizeForComparison(value)
+    .split(" ")
+    .filter((word) => word && !GENERIC_LETTER_WORDS.has(word));
+}
+
+function extractMnemonicLetters(value: string): string[] {
+  return stripDiacritics(String(value || ""))
+    .toUpperCase()
+    .replace(/[^A-Z]/g, "")
+    .split("")
+    .filter(Boolean);
+}
+
+function deriveCueLeadLetter(value: string): string {
+  return extractSignificantWords(value)[0]?.charAt(0).toUpperCase() || "";
+}
+
+function tokensLooselyMatch(left: string, right: string): boolean {
+  const normalizedLeft = normalizeForComparison(left);
+  const normalizedRight = normalizeForComparison(right);
+
+  if (!normalizedLeft || !normalizedRight) return false;
+  if (normalizedLeft === normalizedRight) return true;
+  if (normalizedLeft.includes(normalizedRight) || normalizedRight.includes(normalizedLeft)) return true;
+
+  const minLength = Math.min(normalizedLeft.length, normalizedRight.length);
+  return minLength >= 4 && normalizedLeft.slice(0, 4) === normalizedRight.slice(0, 4);
+}
+
+function cueWordMatchesOriginalItem(cueWord: string, item: string): boolean {
+  const cueTokens = extractSignificantWords(cueWord);
+  const itemTokens = extractSignificantWords(item);
+
+  if (cueTokens.length === 0 || itemTokens.length === 0) return false;
+
+  return cueTokens.some((cueToken) =>
+    itemTokens.some((itemToken) => tokensLooselyMatch(cueToken, itemToken))
+  );
+}
+
+function phraseContainsCueWord(phraseWords: string[], cueWord: string): boolean {
+  const cueTokens = extractSignificantWords(cueWord);
+  if (cueTokens.length === 0) return false;
+
+  return cueTokens.some((cueToken) =>
+    phraseWords.some((phraseWord) => tokensLooselyMatch(phraseWord, cueToken))
+  );
+}
+
 function deriveExpectedLetter(item: string): string {
   return deriveAcceptableLetters(item)[0] || "X";
 }
@@ -412,10 +462,27 @@ function deriveRequiredAnchors(item: string): string[] {
   return anchors;
 }
 
-function buildGeneratorPrompt(topic: string, items: string[], attempt = 1, previousFeedback?: string): string {
+function buildGeneratorPrompt(topic: string, items: string[], contentType: string, attempt = 1, previousFeedback?: string): string {
   const retryBlock = attempt > 1 && previousFeedback
     ? `\n⚠️ TENTATIVA ${attempt} — O mnemônico anterior foi REJEITADO:\n"${previousFeedback}"\nVocê DEVE corrigir os problemas apontados. Gere um mnemônico COMPLETAMENTE DIFERENTE.\n`
     : "";
+  const strictCoverage = STRICT_COVERAGE_TYPES.has(contentType);
+  const coverageBlock = strictCoverage
+    ? `
+
+═══ COBERTURA ESTRUTURAL OBRIGATÓRIA ═══
+
+- A phrase DEVE ter EXATAMENTE ${items.length} palavras-chave significativas (uma por item)
+- Cada palavra-chave da phrase deve usar o MESMO termo do campo items_mapped.word
+- Cada items_mapped.word deve reaproveitar o termo nuclear do item original (ex.: "bordas", "febre", "linfangite") — NÃO use palavras decorativas ou vagas
+- A ordem da phrase deve seguir a mesma ordem do items_mapped e da sigla
+- Se um item não couber fielmente na sigla + phrase, regenere até caber — não force uma associação frouxa`
+    : `
+
+═══ COBERTURA ═══
+
+- A phrase deve reforçar claramente a sigla com palavras-chave distintas
+- Evite palavras decorativas que não apontem para o item médico real`;
 
   const letterHints = items
     .map((item, index) => {
@@ -454,13 +521,16 @@ EXEMPLOS DE MNEMÔNICOS BOM vs RUIM:
 - Criar uma FRASE CURTA memorável (máx 6-8 palavras) onde as iniciais das palavras-chave correspondem aos itens
 - Usar humor leve ou imagens absurdas (técnica de memória comprovada)
 - Inverter a ordem dos itens se isso criar uma palavra melhor (indique a ordem no mapeamento)
+${coverageBlock}
 
 ═══ REGRAS DE QUALIDADE ═══
 
 - A sigla DEVE ter EXATAMENTE ${items.length} letras (uma por item)
 - Cada letter em items_mapped deve corresponder à letra indicada acima
+- A sigla final DEVE ser idêntica à sequência das letras em items_mapped (sem autoajustes implícitos)
 - Cada item original deve aparecer fielmente no mapeamento
 - NÃO invente itens que não estão na lista
+- Cada items_mapped.word deve ser curto (1-2 palavras) e semanticamente colado ao item original
 - Os símbolos visuais devem ser concretos e distintos entre si
 - A cena visual deve ser uma imagem mental única e vívida
 
@@ -475,7 +545,7 @@ Responda APENAS em JSON válido:
   "mnemonic_word": "PALAVRA/SIGLA memorável com ${items.length} letras",
   "phrase": "Frase curta e memorável que ajuda a lembrar a sigla",
   "items_mapped": [
-    {"letter": "X", "word": "palavra associada ao item", "original_item": "item original completo", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo representa o conceito"}
+    {"letter": "X", "word": "palavra-chave curta usada literalmente na phrase e colada ao item original", "original_item": "item original completo", "symbol": "objeto visual concreto", "symbol_reason": "por que esse símbolo representa o conceito"}
   ],
   "scene_description": "Cena visual única e vívida (1-2 frases)"
 }`;
@@ -485,7 +555,14 @@ Responda APENAS em JSON válido:
 // STEP 3 — MEDICAL AUDITOR PROMPT
 // ══════════════════════════════════════════════════
 
-function buildMedicalAuditorPrompt(topic: string, items: string[], generated: any): string {
+function buildMedicalAuditorPrompt(topic: string, items: string[], generated: any, contentType: string): string {
+  const strictCoverage = STRICT_COVERAGE_TYPES.has(contentType);
+  const strictCoverageBlock = strictCoverage
+    ? `
+
+TIPO SENSÍVEL: para este tipo de conteúdo, cada palavra-chave da phrase deve permanecer semanticamente colada ao item original. Não aceite palavras vagas ou ornamentais (ex.: "aguda", "forte", "bonita") se elas não forem o núcleo do item médico.`
+    : "";
+
   return `Você é um auditor médico sênior. Avalie o mnemônico gerado com RIGOR CLÍNICO.
 
 TEMA: "${topic}"
@@ -496,10 +573,11 @@ MNEMÔNICO GERADO:
 - Sigla: ${generated.mnemonic_word}
 - Frase: ${generated.phrase}
 - Mapeamento: ${JSON.stringify(generated.items_mapped)}
+${strictCoverageBlock}
 
 VERIFIQUE COM RIGOR:
 1. COBERTURA OBRIGATÓRIA: Cada item da lista original DEVE estar representado na sigla (mnemonic_word). Se algum item não tem sua letra correspondente na sigla, é OMISSÃO CRÍTICA — reprove imediatamente.
-2. OMISSÃO: Algum item da lista original foi omitido ou mal representado? Não basta aparecer apenas no items_map — o item deve estar no NÚCLEO do mnemônico (sigla + frase).
+2. OMISSÃO: Algum item da lista original foi omitido ou mal representado? Não basta aparecer apenas no items_map — o item deve estar no NÚCLEO do mnemônico (sigla + frase), com uma pista específica e fiel.
 3. DISTORÇÃO: Algum conceito médico foi simplificado de forma que mude seu significado clínico?
 4. ASSOCIAÇÃO FALSA: Algum símbolo visual pode induzir associação médica incorreta?
 5. RISCO CLÍNICO: O mnemônico pode levar alguém a memorizar algo errado que cause erro clínico?
@@ -524,7 +602,14 @@ Responda APENAS em JSON válido:
 // STEP 4 — PEDAGOGICAL AUDITOR PROMPT
 // ══════════════════════════════════════════════════
 
-function buildPedagogicalAuditorPrompt(topic: string, items: string[], generated: any): string {
+function buildPedagogicalAuditorPrompt(topic: string, items: string[], generated: any, contentType: string): string {
+  const strictCoverage = STRICT_COVERAGE_TYPES.has(contentType);
+  const strictCoverageBlock = strictCoverage
+    ? `
+
+TIPO SENSÍVEL: para este conteúdo, a phrase deve fornecer uma pista explícita e separada para CADA item. Se a phrase usar palavras decorativas ou deixar itens implícitos, considere cobertura insuficiente.`
+    : "";
+
   return `Você é um auditor pedagógico especializado em técnicas de memorização visual para provas médicas.
 
 TEMA: "${topic}"
@@ -536,6 +621,7 @@ MNEMÔNICO GERADO:
 - Frase: ${generated.phrase}
 - Cena: ${generated.scene_description}
 - Símbolos: ${JSON.stringify(generated.items_mapped?.map((m: any) => ({ item: m.original_item, symbol: m.symbol })))}
+${strictCoverageBlock}
 
 AVALIE:
 1. COBERTURA NA SIGLA: A sigla "${generated.mnemonic_word}" tem ${String(generated.mnemonic_word || "").replace(/[^A-Za-z]/g, "").length} letras para ${items.length} itens. Se a sigla tem MENOS letras do que itens, reprove — o aluno não conseguirá lembrar todos os itens pela sigla.
@@ -576,11 +662,9 @@ interface DeterministicMnemonicValidationResult {
 }
 
 function extractInitialLettersFromPhrase(phrase: string): string[] {
-  const words = normalizeForComparison(phrase)
-    .split(" ")
-    .filter((word) => word && !GENERIC_LETTER_WORDS.has(word));
-
-  return words.map((word) => word.charAt(0).toUpperCase()).filter(Boolean);
+  return extractSignificantWords(phrase)
+    .map((word) => word.charAt(0).toUpperCase())
+    .filter(Boolean);
 }
 
 function fuzzyMatchItem(normalizedItem: string, mappedItems: any[]): any | null {
@@ -613,9 +697,10 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
     return { ok: false, reason: `Número de itens incorreto: gerou ${generated.items_mapped.length}, esperado ${items.length}.` };
   }
 
+  const strictCoverage = !!contentType && STRICT_COVERAGE_TYPES.has(contentType);
   const normalizedOriginals = new Set(items.map((item) => normalizeForComparison(item)));
   const mappedOriginals = new Set<string>();
-  const expectedLetters = items.map((item) => deriveExpectedLetter(item));
+  const validatedMappings: Array<{ item: string; mapped: any; letter: string; cueWord: string }> = [];
 
   for (const item of items) {
     const normalizedItem = normalizeForComparison(item);
@@ -627,13 +712,39 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
 
     mappedOriginals.add(normalizedItem);
 
-    // Auto-correct letter if wrong — don't reject
     const acceptableLetters = deriveAcceptableLetters(item);
-    const actualLetter = String(mapped.letter || "").trim().charAt(0).toUpperCase();
-    if (!acceptableLetters.includes(actualLetter)) {
-      console.log(`Auto-correcting letter for "${item}": ${actualLetter} → ${acceptableLetters[0]}`);
-      mapped.letter = acceptableLetters[0];
+    const cueWord = String(mapped.word || "").trim();
+    if (!cueWord) {
+      return { ok: false, reason: `O item "${item}" veio sem palavra-chave em items_mapped.word.` };
     }
+
+    const cueLeadLetter = deriveCueLeadLetter(cueWord);
+    if (!cueLeadLetter) {
+      return { ok: false, reason: `Não foi possível extrair uma letra válida da palavra-chave "${cueWord}".` };
+    }
+
+    let actualLetter = String(mapped.letter || "").trim().charAt(0).toUpperCase();
+    if (!actualLetter || actualLetter !== cueLeadLetter) {
+      if (acceptableLetters.includes(cueLeadLetter)) {
+        console.log(`Aligning letter with cue word for "${item}": ${actualLetter || "(empty)"} → ${cueLeadLetter}`);
+        mapped.letter = cueLeadLetter;
+        actualLetter = cueLeadLetter;
+      }
+    }
+
+    if (!acceptableLetters.includes(actualLetter)) {
+      return { ok: false, reason: `A letra "${actualLetter || "?"}" não cobre fielmente o item "${item}".` };
+    }
+
+    if (cueLeadLetter !== actualLetter) {
+      return { ok: false, reason: `A palavra-chave "${cueWord}" não corresponde à letra "${actualLetter}" no item "${item}".` };
+    }
+
+    if (strictCoverage && !cueWordMatchesOriginalItem(cueWord, item)) {
+      return { ok: false, reason: `A palavra-chave "${cueWord}" ficou solta demais em relação ao item clínico "${item}".` };
+    }
+
+    validatedMappings.push({ item, mapped, letter: actualLetter, cueWord });
 
     const anchorBundle = normalizeForComparison([
       mapped.word,
@@ -661,39 +772,90 @@ function validateGeneratedMnemonicDeterministically(items: string[], generated: 
   }
 
   // ── COVERAGE CHECK: sigla must contain letters for all items ──
-  const mnemonicLetters = String(generated.mnemonic_word || "")
-    .toUpperCase()
-    .replace(/[^A-Z]/g, "")
-    .split("")
-    .filter(Boolean);
-  const phraseLetters = extractInitialLettersFromPhrase(String(generated.phrase || ""));
+  const mappedLetters = validatedMappings.map(({ letter }) => letter);
+  const mnemonicLetters = extractMnemonicLetters(generated.mnemonic_word);
 
-  // Auto-correct mnemonic_word to match the (possibly corrected) item letters
-  const correctedLetters = items.map((item) => {
-    const mapped = fuzzyMatchItem(normalizeForComparison(item), generated.items_mapped);
-    return mapped?.letter?.charAt(0)?.toUpperCase() || deriveExpectedLetter(item);
-  });
-  generated.mnemonic_word = correctedLetters.join("");
+  if (mnemonicLetters.length !== items.length) {
+    return { ok: false, reason: `A sigla precisa ter ${items.length} letras reais; vieram ${mnemonicLetters.length}.` };
+  }
+
+  if (mnemonicLetters.join("") !== mappedLetters.join("")) {
+    return {
+      ok: false,
+      reason: `A sigla "${generated.mnemonic_word}" não bate com o mapeamento validado (${mappedLetters.join("")}).`,
+    };
+  }
+
+  if (strictCoverage) {
+    const phraseWords = extractSignificantWords(String(generated.phrase || ""));
+    const phraseLetters = extractInitialLettersFromPhrase(String(generated.phrase || ""));
+
+    if (phraseWords.length !== items.length) {
+      return {
+        ok: false,
+        reason: `Para este tipo de conteúdo, a phrase deve ter exatamente ${items.length} palavras-chave significativas; vieram ${phraseWords.length}.`,
+      };
+    }
+
+    if (phraseLetters.join("") !== mappedLetters.join("")) {
+      return {
+        ok: false,
+        reason: `A phrase não segue a mesma sequência de letras da sigla (${mappedLetters.join("")}).`,
+      };
+    }
+
+    const missingCueWords = validatedMappings
+      .filter(({ cueWord }) => !phraseContainsCueWord(phraseWords, cueWord))
+      .map(({ cueWord, item }) => `"${cueWord}" para "${item}"`);
+
+    if (missingCueWords.length > 0) {
+      return {
+        ok: false,
+        reason: `A phrase não reutilizou claramente as palavras-chave obrigatórias: ${missingCueWords.join(", ")}.`,
+      };
+    }
+  }
 
   return { ok: true };
+}
+
+function hasBlockingCoverageIssue(result: AuditResult): boolean {
+  return result.issues.some((issue) => {
+    if (["omission", "coverage_gap", "fidelity", "clinical_risk"].includes(issue.type)) {
+      return issue.severity === "high" || issue.severity === "critical";
+    }
+
+    if (issue.type === "incomplete_coverage") {
+      return issue.severity !== "low";
+    }
+
+    return false;
+  });
 }
 
 function reconcileMnemonicAudit(
   medical: AuditResult, pedagogical: AuditResult
 ): { verdict: "approve" | "reject" | "regenerate"; score: number; reason: string } {
   const avgScore = Math.round((medical.score + pedagogical.score) / 2);
+  const blockingCoverageIssue = hasBlockingCoverageIssue(medical) || hasBlockingCoverageIssue(pedagogical);
+  const coverageReason = [
+    hasBlockingCoverageIssue(medical) ? medical.summary : null,
+    hasBlockingCoverageIssue(pedagogical) ? pedagogical.summary : null,
+  ].filter(Boolean).join(" | ");
 
   // Only hard-reject on truly dangerous clinical errors (score < 30)
   if (medical.critical_risk && medical.score < 30) {
     return { verdict: "reject", score: 0, reason: `Risco clínico crítico: ${medical.summary}` };
   }
-  // If combined score is decent, approve despite critical_risk flag (mnemonics are simplifications by nature)
-  if (medical.critical_risk && avgScore >= 50) {
-    console.log(`critical_risk flagged but avgScore ${avgScore} >= 50, approving with warning`);
-    return { verdict: "approve", score: avgScore, reason: `Aprovado com ressalva clínica: ${medical.summary}` };
-  }
   if (medical.critical_risk) {
     return { verdict: "regenerate", score: avgScore, reason: `Risco clínico: ${medical.summary}` };
+  }
+  if (blockingCoverageIssue) {
+    return {
+      verdict: avgScore < 40 ? "reject" : "regenerate",
+      score: avgScore,
+      reason: `Cobertura/fidelidade insuficiente: ${coverageReason || "os auditores detectaram omissões relevantes."}`,
+    };
   }
   if (!medical.approved && !pedagogical.approved && avgScore < 40) {
     return { verdict: "reject", score: avgScore, reason: "Reprovado por ambos auditores." };
@@ -816,7 +978,7 @@ Deno.serve(async (req) => {
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       // ── STEP 2: GENERATE MNEMONIC ──
-      const genResult = await callAI(LOVABLE_API_KEY, buildGeneratorPrompt(topic, cleanedItems, attempt, previousFeedback));
+      const genResult = await callAI(LOVABLE_API_KEY, buildGeneratorPrompt(topic, cleanedItems, contentType, attempt, previousFeedback));
       if (!genResult.ok) {
         if (genResult.status === 429) return new Response(JSON.stringify({ error: "Limite de requisições atingido. Tente novamente em alguns segundos.", rejected: true }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         if (genResult.status === 402) return new Response(JSON.stringify({ error: "Créditos de IA esgotados.", rejected: true }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -839,8 +1001,8 @@ Deno.serve(async (req) => {
 
       // ── STEPS 3+4: DUAL AUDIT (parallel) ──
       const [medicalResult, pedagogicalResult] = await Promise.all([
-        callAI(LOVABLE_API_KEY, buildMedicalAuditorPrompt(topic, cleanedItems, generated)),
-        callAI(LOVABLE_API_KEY, buildPedagogicalAuditorPrompt(topic, cleanedItems, generated)),
+        callAI(LOVABLE_API_KEY, buildMedicalAuditorPrompt(topic, cleanedItems, generated, contentType)),
+        callAI(LOVABLE_API_KEY, buildPedagogicalAuditorPrompt(topic, cleanedItems, generated, contentType)),
       ]);
 
       if (!medicalResult.ok || !pedagogicalResult.ok) {
