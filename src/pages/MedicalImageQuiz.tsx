@@ -8,37 +8,47 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Heart, Activity, CheckCircle, XCircle, SkipForward, RotateCcw, Trophy, Clock, Filter, ImageIcon } from "lucide-react";
+import { Activity, CheckCircle, XCircle, SkipForward, RotateCcw, Trophy, ImageIcon, ZoomIn, X } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { logErrorToBank } from "@/lib/errorBankLogger";
 
-type MedicalImage = {
+type ImageQuestion = {
   id: string;
-  category: string;
-  subcategory: string | null;
-  diagnosis: string;
-  difficulty: number;
-  image_url: string;
-  image_source: string | null;
-  explanation: string | null;
+  statement: string;
   options: string[];
   correct_index: number;
-  tags: string[] | null;
+  explanation: string | null;
+  difficulty: string;
+  exam_style: string | null;
+  image_url: string | null;
+  image_type: string | null;
+  diagnosis: string | null;
 };
 
-const difficultyLabels: Record<number, { label: string; color: string }> = {
-  1: { label: "Fácil", color: "bg-green-500/20 text-green-400" },
-  2: { label: "Médio", color: "bg-yellow-500/20 text-yellow-400" },
-  3: { label: "Difícil", color: "bg-red-500/20 text-red-400" },
+const difficultyLabels: Record<string, { label: string; color: string }> = {
+  easy: { label: "Fácil", color: "bg-green-500/20 text-green-400" },
+  medium: { label: "Médio", color: "bg-yellow-500/20 text-yellow-400" },
+  hard: { label: "Difícil", color: "bg-red-500/20 text-red-400" },
+};
+
+const imageTypeLabels: Record<string, string> = {
+  ecg: "❤️ ECG",
+  xray: "🫁 RX Tórax",
+  ct: "🧠 TC",
+  us: "📡 US",
+  dermatology: "🩹 Dermato",
+  ophthalmology: "👁️ Oftalmo",
+  pathology: "🔬 Patologia",
 };
 
 const MedicalImageQuiz = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "image-quiz" });
-  const [category, setCategory] = useState<string>("all");
+  const [imageType, setImageType] = useState<string>("all");
   const [difficulty, setDifficulty] = useState<string>("all");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
@@ -46,22 +56,50 @@ const MedicalImageQuiz = () => {
   const [score, setScore] = useState({ correct: 0, total: 0 });
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [quizMode, setQuizMode] = useState<"browse" | "quiz">("browse");
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
 
-  const { data: images = [], isLoading } = useQuery({
-    queryKey: ["medical-images", category, difficulty],
+  // Fetch from medical_image_questions + medical_image_assets
+  const { data: questions = [], isLoading } = useQuery({
+    queryKey: ["image-quiz-questions", imageType, difficulty],
     queryFn: async () => {
-      let query = supabase.from("medical_images").select("*").eq("is_active", true);
-      if (category !== "all") query = query.eq("category", category);
-      if (difficulty !== "all") query = query.eq("difficulty", parseInt(difficulty));
-      const { data, error } = await query.order("difficulty").order("created_at");
+      let query = supabase
+        .from("medical_image_questions")
+        .select(`
+          id, statement, option_a, option_b, option_c, option_d, option_e,
+          correct_index, explanation, difficulty, exam_style,
+          medical_image_assets!inner(image_url, image_type, diagnosis)
+        `)
+        .eq("status", "published");
+
+      if (imageType !== "all") {
+        query = query.eq("medical_image_assets.image_type", imageType);
+      }
+      if (difficulty !== "all") {
+        query = query.eq("difficulty", difficulty);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
-      return (data || []).map((img: any) => ({
-        ...img,
-        options: Array.isArray(img.options) ? img.options : JSON.parse(img.options as string),
-      })) as MedicalImage[];
+
+      return (data || []).map((q: any) => {
+        const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
+        return {
+          id: q.id,
+          statement: q.statement,
+          options: opts,
+          correct_index: q.correct_index,
+          explanation: q.explanation,
+          difficulty: q.difficulty,
+          exam_style: q.exam_style,
+          image_url: q.medical_image_assets?.image_url || null,
+          image_type: q.medical_image_assets?.image_type || null,
+          diagnosis: q.medical_image_assets?.diagnosis || null,
+        } as ImageQuestion;
+      });
     },
   });
 
+  // Stats
   const { data: stats } = useQuery({
     queryKey: ["image-quiz-stats", user?.id],
     enabled: !!user,
@@ -92,20 +130,20 @@ const MedicalImageQuiz = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["image-quiz-stats"] }),
   });
 
-  const currentImage = images[currentIndex];
+  const currentQuestion = questions[currentIndex];
 
   // Auto-save session
   useEffect(() => {
     registerAutoSave(() => {
       if (quizMode !== "quiz" || score.total === 0) return {};
-      return { category, difficulty, currentIndex, score, quizMode };
+      return { imageType, difficulty, currentIndex, score, quizMode };
     });
-  }, [category, difficulty, currentIndex, score, quizMode, registerAutoSave]);
+  }, [imageType, difficulty, currentIndex, score, quizMode, registerAutoSave]);
 
   const handleResumeSession = () => {
     if (!pendingSession) return;
     const d = pendingSession.session_data as any;
-    if (d.category) setCategory(d.category);
+    if (d.imageType) setImageType(d.imageType);
     if (d.difficulty) setDifficulty(d.difficulty);
     if (typeof d.currentIndex === "number") setCurrentIndex(d.currentIndex);
     if (d.score) setScore(d.score);
@@ -116,22 +154,59 @@ const MedicalImageQuiz = () => {
     clearPending();
   };
 
-  const handleAnswer = (index: number) => {
-    if (selectedAnswer !== null) return;
+  const handleAnswer = async (index: number) => {
+    if (selectedAnswer !== null || !currentQuestion) return;
     setSelectedAnswer(index);
     setShowExplanation(true);
-    const correct = index === currentImage.correct_index;
+    const correct = index === currentQuestion.correct_index;
     setScore((s) => ({ correct: s.correct + (correct ? 1 : 0), total: s.total + 1 }));
     const timeSeconds = Math.round((Date.now() - startTime) / 1000);
+
     if (user) {
-      saveAttempt.mutate({ imageId: currentImage.id, selectedIndex: index, correct, timeSeconds });
+      saveAttempt.mutate({ imageId: currentQuestion.id, selectedIndex: index, correct, timeSeconds });
+
+      // Log to error_bank on wrong answer
+      if (!correct) {
+        logErrorToBank({
+          userId: user.id,
+          tema: currentQuestion.diagnosis || currentQuestion.image_type || "Imagem Médica",
+          subtema: currentQuestion.image_type || undefined,
+          tipoQuestao: "objetiva",
+          conteudo: currentQuestion.statement.slice(0, 300),
+          categoriaErro: "conceito",
+          dificuldade: currentQuestion.difficulty === "hard" ? 3 : currentQuestion.difficulty === "medium" ? 2 : 1,
+        });
+      }
+
+      // Call study-complete
+      try {
+        await supabase.functions.invoke("study-complete", {
+          body: {
+            actionType: "free_study",
+            themeId: currentQuestion.diagnosis || currentQuestion.image_type || "image-quiz",
+            topicId: currentQuestion.image_type || "image-quiz",
+            wasCorrect: correct,
+            taskId: currentQuestion.id,
+            metadata: {
+              source: "image_quiz",
+              originModule: "image_quiz",
+              imageType: currentQuestion.image_type,
+              difficulty: currentQuestion.difficulty,
+              timeSeconds,
+            },
+          },
+        });
+      } catch {
+        // Non-blocking: don't break quiz flow
+      }
     }
+
     if (correct) toast.success("Correto! 🎉");
-    else toast.error(`Incorreto. Resposta: ${currentImage.options[currentImage.correct_index]}`);
+    else toast.error(`Incorreto. Resposta: ${currentQuestion.options[currentQuestion.correct_index]}`);
   };
 
   const handleNext = () => {
-    if (currentIndex < images.length - 1) {
+    if (currentIndex < questions.length - 1) {
       setCurrentIndex((i) => i + 1);
       setSelectedAnswer(null);
       setShowExplanation(false);
@@ -167,6 +242,22 @@ const MedicalImageQuiz = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Image Zoom Dialog */}
+      <Dialog open={!!zoomImage} onOpenChange={() => setZoomImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 sm:p-4 bg-black/95 border-border/30">
+          <div className="relative flex items-center justify-center min-h-[50vh]">
+            {zoomImage && (
+              <img
+                src={zoomImage}
+                alt="Imagem ampliada"
+                className="max-w-full max-h-[85vh] object-contain"
+                referrerPolicy="no-referrer"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Resume banner */}
       {quizMode === "browse" && pendingSession && (
         <ResumeSessionBanner
@@ -175,6 +266,7 @@ const MedicalImageQuiz = () => {
           onDiscard={abandonSession}
         />
       )}
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -182,7 +274,7 @@ const MedicalImageQuiz = () => {
             <ImageIcon className="h-7 w-7 text-primary" />
             Quiz de Imagens Médicas
           </h1>
-          <p className="text-muted-foreground">ECG e RX de Tórax com gabarito comentado — interprete e aprenda.</p>
+          <p className="text-muted-foreground">ECG, RX, TC, US e mais — interprete imagens clínicas com gabarito comentado.</p>
         </div>
         {stats && (
           <div className="flex gap-3">
@@ -204,14 +296,19 @@ const MedicalImageQuiz = () => {
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
-        <Select value={category} onValueChange={setCategory}>
+        <Select value={imageType} onValueChange={setImageType}>
           <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Categoria" />
+            <SelectValue placeholder="Tipo de imagem" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
             <SelectItem value="ecg">❤️ ECG</SelectItem>
-            <SelectItem value="rx_torax">🫁 RX de Tórax</SelectItem>
+            <SelectItem value="xray">🫁 RX Tórax</SelectItem>
+            <SelectItem value="ct">🧠 TC</SelectItem>
+            <SelectItem value="us">📡 US</SelectItem>
+            <SelectItem value="dermatology">🩹 Dermato</SelectItem>
+            <SelectItem value="ophthalmology">👁️ Oftalmo</SelectItem>
+            <SelectItem value="pathology">🔬 Patologia</SelectItem>
           </SelectContent>
         </Select>
         <Select value={difficulty} onValueChange={setDifficulty}>
@@ -220,34 +317,34 @@ const MedicalImageQuiz = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas</SelectItem>
-            <SelectItem value="1">🟢 Fácil</SelectItem>
-            <SelectItem value="2">🟡 Médio</SelectItem>
-            <SelectItem value="3">🔴 Difícil</SelectItem>
+            <SelectItem value="easy">🟢 Fácil</SelectItem>
+            <SelectItem value="medium">🟡 Médio</SelectItem>
+            <SelectItem value="hard">🔴 Difícil</SelectItem>
           </SelectContent>
         </Select>
         <Badge variant="secondary" className="self-center">
-          {images.length} imagens
+          {questions.length} questões
         </Badge>
-        {quizMode === "browse" && images.length > 0 && (
+        {quizMode === "browse" && questions.length > 0 && (
           <Button onClick={shuffleAndStart} className="ml-auto">
             <Activity className="h-4 w-4 mr-2" /> Iniciar Quiz
           </Button>
         )}
       </div>
 
-      {images.length === 0 ? (
+      {questions.length === 0 ? (
         <Card className="p-12 text-center">
           <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">Nenhuma imagem encontrada com esses filtros.</p>
+          <p className="text-muted-foreground">Nenhuma questão encontrada com esses filtros.</p>
         </Card>
-      ) : quizMode === "quiz" && currentImage ? (
+      ) : quizMode === "quiz" && currentQuestion ? (
         <>
           {/* Progress */}
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground font-medium">
-              {currentIndex + 1}/{images.length}
+              {currentIndex + 1}/{questions.length}
             </span>
-            <Progress value={((currentIndex + 1) / images.length) * 100} className="flex-1" />
+            <Progress value={((currentIndex + 1) / questions.length) * 100} className="flex-1" />
             <Badge variant="outline" className="gap-1">
               <Trophy className="h-3 w-3" /> {score.correct}/{score.total}
             </Badge>
@@ -256,41 +353,67 @@ const MedicalImageQuiz = () => {
           {/* Quiz Card */}
           <Card className="overflow-hidden">
             {/* Image */}
-            <div className="relative bg-black/90 flex items-center justify-center min-h-[250px] sm:min-h-[350px]">
-              <img
-                src={currentImage.image_url}
-                alt={`${currentImage.category} - Quiz`}
-                className="max-w-full max-h-[400px] object-contain"
-                loading="eager"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                  const target = e.currentTarget;
-                  if (!target.dataset.retried) {
-                    target.dataset.retried = "1";
-                    setTimeout(() => { target.src = currentImage.image_url; }, 1000);
-                  }
-                }}
-              />
-              <div className="absolute top-3 left-3 flex gap-2">
-                <Badge className={difficultyLabels[currentImage.difficulty]?.color || ""}>
-                  {difficultyLabels[currentImage.difficulty]?.label}
+            {currentQuestion.image_url && (
+              <div
+                className="relative bg-black/90 flex items-center justify-center min-h-[250px] sm:min-h-[350px] cursor-zoom-in group"
+                onClick={() => setZoomImage(currentQuestion.image_url)}
+              >
+                <img
+                  src={currentQuestion.image_url}
+                  alt={`${currentQuestion.image_type || "Imagem"} - Quiz`}
+                  className="max-w-full max-h-[400px] object-contain"
+                  loading="eager"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    if (!target.dataset.retried) {
+                      target.dataset.retried = "1";
+                      setTimeout(() => { target.src = currentQuestion.image_url!; }, 1000);
+                    } else {
+                      target.style.display = "none";
+                    }
+                  }}
+                />
+                <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Badge variant="secondary" className="gap-1 bg-background/80">
+                    <ZoomIn className="h-3 w-3" /> Ampliar
+                  </Badge>
+                </div>
+                <div className="absolute top-3 left-3 flex gap-2">
+                  <Badge className={difficultyLabels[currentQuestion.difficulty]?.color || ""}>
+                    {difficultyLabels[currentQuestion.difficulty]?.label}
+                  </Badge>
+                  <Badge variant="secondary">
+                    {imageTypeLabels[currentQuestion.image_type || ""] || currentQuestion.image_type}
+                  </Badge>
+                  {currentQuestion.exam_style && (
+                    <Badge variant="outline" className="bg-background/80">{currentQuestion.exam_style}</Badge>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* No image fallback */}
+            {!currentQuestion.image_url && (
+              <div className="p-4 flex gap-2">
+                <Badge className={difficultyLabels[currentQuestion.difficulty]?.color || ""}>
+                  {difficultyLabels[currentQuestion.difficulty]?.label}
                 </Badge>
-                <Badge variant="secondary">
-                  {currentImage.category === "ecg" ? "❤️ ECG" : "🫁 RX Tórax"}
-                </Badge>
-                {currentImage.subcategory && (
-                  <Badge variant="outline" className="bg-background/80">{currentImage.subcategory}</Badge>
+                {currentQuestion.image_type && (
+                  <Badge variant="secondary">
+                    {imageTypeLabels[currentQuestion.image_type] || currentQuestion.image_type}
+                  </Badge>
                 )}
               </div>
-            </div>
+            )}
 
             {/* Question & Options */}
             <div className="p-5 space-y-4">
-              <p className="font-semibold text-lg">Qual é o diagnóstico?</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {currentImage.options.map((option, i) => {
+              <p className="font-semibold text-base sm:text-lg leading-relaxed">{currentQuestion.statement}</p>
+              <div className="grid grid-cols-1 gap-3">
+                {currentQuestion.options.map((option, i) => {
                   const isSelected = selectedAnswer === i;
-                  const isCorrect = i === currentImage.correct_index;
+                  const isCorrect = i === currentQuestion.correct_index;
                   const showResult = selectedAnswer !== null;
 
                   return (
@@ -307,11 +430,11 @@ const MedicalImageQuiz = () => {
                         !showResult && "border-border"
                       )}
                     >
-                      <span className="flex items-center gap-2">
-                        {showResult && isCorrect && <CheckCircle className="h-5 w-5 text-green-500 shrink-0" />}
-                        {showResult && isSelected && !isCorrect && <XCircle className="h-5 w-5 text-red-500 shrink-0" />}
+                      <span className="flex items-start gap-2">
+                        {showResult && isCorrect && <CheckCircle className="h-5 w-5 text-green-500 shrink-0 mt-0.5" />}
+                        {showResult && isSelected && !isCorrect && <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />}
                         <span className="text-muted-foreground mr-1">{String.fromCharCode(65 + i)}.</span>
-                        {option}
+                        <span className="flex-1">{option}</span>
                       </span>
                     </button>
                   );
@@ -319,13 +442,10 @@ const MedicalImageQuiz = () => {
               </div>
 
               {/* Explanation */}
-              {showExplanation && currentImage.explanation && (
+              {showExplanation && currentQuestion.explanation && (
                 <Card className="p-4 bg-primary/5 border-primary/20 animate-fade-in">
                   <p className="text-sm font-semibold text-primary mb-2">💡 Explicação</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{currentImage.explanation}</p>
-                  {currentImage.image_source && (
-                    <p className="text-xs text-muted-foreground/60 mt-2">Fonte: {currentImage.image_source}</p>
-                  )}
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{currentQuestion.explanation}</p>
                 </Card>
               )}
 
@@ -334,12 +454,12 @@ const MedicalImageQuiz = () => {
                 <Button variant="outline" onClick={handleRestart} size="sm">
                   <RotateCcw className="h-4 w-4 mr-1" /> Recomeçar
                 </Button>
-                {selectedAnswer !== null && currentIndex < images.length - 1 && (
+                {selectedAnswer !== null && currentIndex < questions.length - 1 && (
                   <Button onClick={handleNext}>
                     Próxima <SkipForward className="h-4 w-4 ml-1" />
                   </Button>
                 )}
-                {selectedAnswer !== null && currentIndex === images.length - 1 && (
+                {selectedAnswer !== null && currentIndex === questions.length - 1 && (
                   <Card className="p-3 bg-primary/10 border-primary/20">
                     <p className="font-semibold">
                       🏆 Resultado: {score.correct}/{score.total} ({Math.round((score.correct / score.total) * 100)}%)
@@ -351,11 +471,11 @@ const MedicalImageQuiz = () => {
           </Card>
         </>
       ) : (
-        /* Browse Mode - Grid of images */
+        /* Browse Mode */
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {images.map((img, i) => (
+          {questions.map((q, i) => (
             <Card
-              key={img.id}
+              key={q.id}
               className="overflow-hidden cursor-pointer hover:border-primary/30 transition-all group"
               onClick={() => {
                 setCurrentIndex(i);
@@ -366,35 +486,41 @@ const MedicalImageQuiz = () => {
               }}
             >
               <div className="relative bg-black/80 h-40 flex items-center justify-center">
-                <img
-                  src={img.image_url}
-                  alt="Quiz"
-                  className="max-h-full max-w-full object-contain"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    if (!target.dataset.retried) {
-                      target.dataset.retried = "1";
-                      setTimeout(() => { target.src = img.image_url; }, 1000);
-                    }
-                  }}
-                />
-                <Badge className={cn("absolute top-2 left-2", difficultyLabels[img.difficulty]?.color)}>
-                  {difficultyLabels[img.difficulty]?.label}
+                {q.image_url ? (
+                  <img
+                    src={q.image_url}
+                    alt="Quiz"
+                    className="max-h-full max-w-full object-contain"
+                    loading="lazy"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      if (!target.dataset.retried) {
+                        target.dataset.retried = "1";
+                        setTimeout(() => { target.src = q.image_url!; }, 1000);
+                      } else {
+                        target.style.display = "none";
+                      }
+                    }}
+                  />
+                ) : (
+                  <ImageIcon className="h-12 w-12 text-muted-foreground/30" />
+                )}
+                <Badge className={cn("absolute top-2 left-2", difficultyLabels[q.difficulty]?.color)}>
+                  {difficultyLabels[q.difficulty]?.label}
                 </Badge>
               </div>
               <div className="p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Badge variant="secondary" className="text-[10px]">
-                    {img.category === "ecg" ? "ECG" : "RX"}
+                    {imageTypeLabels[q.image_type || ""] || q.image_type || "IMG"}
                   </Badge>
-                  {img.subcategory && (
-                    <span className="text-[10px] text-muted-foreground">{img.subcategory}</span>
+                  {q.exam_style && (
+                    <span className="text-[10px] text-muted-foreground">{q.exam_style}</span>
                   )}
                 </div>
-                <p className="text-sm font-medium group-hover:text-primary transition-colors">
-                  Toque para responder
+                <p className="text-sm font-medium group-hover:text-primary transition-colors line-clamp-2">
+                  {q.statement.length > 80 ? q.statement.slice(0, 80) + "…" : q.statement}
                 </p>
               </div>
             </Card>

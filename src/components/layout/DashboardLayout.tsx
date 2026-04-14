@@ -114,7 +114,6 @@ const MobileNavGroupSection = ({
   isAdmin: boolean;
 }) => {
   const filteredItems = group.items.filter((item) => {
-    if (item.moduleKey === "mnemonico") return isAdmin;
     if (item.moduleKey === "perfil") return true;
     return isModuleEnabled(item.moduleKey);
   });
