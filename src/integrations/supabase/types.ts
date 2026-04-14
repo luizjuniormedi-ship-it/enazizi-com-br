@@ -253,6 +253,39 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_control: {
+        Row: {
+          ai_calls_limit: number
+          ai_calls_used: number
+          created_at: string
+          id: string
+          period_start: string
+          plan_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ai_calls_limit?: number
+          ai_calls_used?: number
+          created_at?: string
+          id?: string
+          period_start?: string
+          plan_type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ai_calls_limit?: number
+          ai_calls_used?: number
+          created_at?: string
+          id?: string
+          period_start?: string
+          plan_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_usage_logs: {
         Row: {
           actor_key: string | null
