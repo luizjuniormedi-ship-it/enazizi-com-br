@@ -1,13 +1,19 @@
 /**
- * study-next — API Assistente Phase 1
- * Returns the next recommended study action with justification.
- * Mirrors studyEngine.ts logic server-side.
+ * study-next — API Assistente Phase 1 (v2 — composite scoring)
+ * Returns the next recommended study action with weighted justification.
+ * Purely deterministic — no AI calls.
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
   corsHeaders, jsonResponse, errorResponse,
   getServiceClient, getUserIdFromRequest, safeQuery, logDecision,
 } from "../_shared/assistant-helpers.ts";
+import {
+  ScoringContext, getApprovalZone,
+  scoreReview, scoreFSRS, scoreError, scoreDailyTask, scoreFreeStudy,
+  buildJustification, pickDiverseAlternatives,
+  type ScoredCandidate,
+} from "../_shared/study-next-scoring.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -23,14 +29,8 @@ serve(async (req) => {
 
     // ── Parallel data fetch ──
     const [
-      pendingReviews,
-      errorBankItems,
-      dailyPlanToday,
-      dailyTasks,
-      fsrsDue,
-      approvalData,
-      profile,
-      gamification,
+      pendingReviews, errorBankItems, dailyPlanToday, dailyTasks,
+      fsrsDue, approvalData, profile, gamification,
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) =>
         c.from("revisoes")
@@ -41,7 +41,7 @@ serve(async (req) => {
         "revisoes"),
       safeQuery<any[]>(db, (c) =>
         c.from("error_bank")
-          .select("id, tema, subtema, vezes_errado, categoria_erro")
+          .select("id, tema, subtema, vezes_errado, categoria_erro, updated_at")
           .eq("user_id", userId).eq("dominado", false)
           .order("vezes_errado", { ascending: false }).limit(15),
         "error_bank"),
@@ -89,90 +89,110 @@ serve(async (req) => {
     const approvalScore = approvalData?.score ?? 0;
     const recoveryActive = dailyPlanToday?.recovery_mode ?? false;
     const contentLocked = dailyPlanToday?.content_lock ?? false;
-    const pendingCount = reviews.length + fsrsCards.length;
 
-    // ── Weak topics from error bank ──
-    const weakTopics = new Set(errors.map((e: any) => e.tema));
+    // ── Exam proximity ──
+    let examProximityDays: number | null = null;
+    if (profile?.exam_date) {
+      const diff = (new Date(profile.exam_date).getTime() - Date.now()) / 86_400_000;
+      if (diff > 0) examProximityDays = Math.round(diff);
+    }
 
-    // ── Priority logic (mirrors studyEngine.ts) ──
-    type Recommendation = {
-      type: string; title: string; description: string;
-      targetId?: string; targetType?: string;
-      estimatedMinutes: number; priorityScore: number;
+    // ── Build scoring context ──
+    const ctx: ScoringContext = {
+      approvalScore,
+      approvalZone: getApprovalZone(approvalScore),
+      recoveryActive,
+      contentLocked,
+      missionActive: context.missionActive ?? false,
+      sessionMinutes: context.sessionDurationMinutes ?? null,
+      examProximityDays,
+      now,
+      today,
     };
-    const candidates: Recommendation[] = [];
 
-    // 1. Pending reviews (highest priority)
-    for (const rev of reviews.slice(0, 5)) {
+    // ── Score all candidates ──
+    const candidates: ScoredCandidate[] = [];
+
+    for (const rev of reviews.slice(0, 8)) {
       const tema = rev.temas_estudados?.tema ?? "Revisão";
       const spec = rev.temas_estudados?.especialidade ?? "";
-      const priority = Math.min(100, (rev.prioridade ?? 50) + (rev.risco_esquecimento ?? 0) * 10);
       candidates.push({
-        type: "review", title: `Revisar: ${tema}`,
+        type: "review",
+        title: `Revisar: ${tema}`,
         description: `Revisão pendente${spec ? ` — ${spec}` : ""}. Prioridade ${rev.prioridade ?? "normal"}.`,
-        targetId: rev.id, targetType: "revisao",
-        estimatedMinutes: 10, priorityScore: priority,
+        targetId: rev.id,
+        targetType: "revisao",
+        estimatedMinutes: 10,
+        priorityScore: scoreReview(rev, ctx),
       });
     }
 
-    // 2. FSRS due cards
-    for (const card of fsrsCards.slice(0, 3)) {
+    for (const card of fsrsCards.slice(0, 5)) {
       candidates.push({
-        type: "review", title: `FSRS: ${card.card_type} (lapsos: ${card.lapses})`,
+        type: "review",
+        title: `FSRS: ${card.card_type} (lapsos: ${card.lapses})`,
         description: `Card de repetição espaçada vencido. Estabilidade: ${card.stability?.toFixed(1)}.`,
-        targetId: card.id, targetType: "fsrs_card",
-        estimatedMinutes: 5, priorityScore: 85 + Math.min(card.lapses * 2, 10),
+        targetId: card.id,
+        targetType: "fsrs_card",
+        estimatedMinutes: 5,
+        priorityScore: scoreFSRS(card, ctx),
       });
     }
 
-    // 3. Recurring errors
-    for (const err of errors.slice(0, 3)) {
-      const priority = 70 + Math.min(err.vezes_errado * 5, 25);
+    for (const err of errors.slice(0, 5)) {
       candidates.push({
-        type: "error_review", title: `Corrigir erro: ${err.tema}`,
+        type: "error_review",
+        title: `Corrigir erro: ${err.tema}`,
         description: `Errado ${err.vezes_errado}x${err.subtema ? ` — ${err.subtema}` : ""}. ${err.categoria_erro ?? ""}`,
-        targetId: err.id, targetType: "error_bank",
-        estimatedMinutes: 15, priorityScore: priority,
+        targetId: err.id,
+        targetType: "error_bank",
+        estimatedMinutes: 15,
+        priorityScore: scoreError(err, ctx),
       });
     }
 
-    // 4. Daily plan tasks
-    for (const task of tasks.slice(0, 5)) {
-      const priority = task.priority === "high" ? 65 : task.priority === "medium" ? 55 : 45;
+    for (const task of tasks.slice(0, 8)) {
       candidates.push({
-        type: "daily_task", title: task.title,
+        type: "daily_task",
+        title: task.title,
         description: `Tarefa do plano diário${task.specialty ? ` — ${task.specialty}` : ""}.`,
-        targetId: task.id, targetType: "daily_plan_task",
-        estimatedMinutes: task.estimated_minutes ?? 15, priorityScore: priority,
+        targetId: task.id,
+        targetType: "daily_plan_task",
+        estimatedMinutes: task.estimated_minutes ?? 15,
+        priorityScore: scoreDailyTask(task, ctx),
       });
     }
 
-    // Sort by priority
+    // Free-study fallback candidate
+    candidates.push({
+      type: "free_study",
+      title: "Estudo livre",
+      description: "Sem tarefas pendentes. Explore novos temas ou pratique questões.",
+      estimatedMinutes: 20,
+      priorityScore: scoreFreeStudy(ctx),
+    });
+
+    // ── Sort and pick ──
     candidates.sort((a, b) => b.priorityScore - a.priorityScore);
 
-    const recommendation = candidates[0] ?? {
-      type: "free_study", title: "Estudo livre",
-      description: "Sem tarefas pendentes. Explore novos temas ou pratique questões.",
-      estimatedMinutes: 20, priorityScore: 0,
-    };
+    const recommendation = candidates[0];
+    const alternativeActions = pickDiverseAlternatives(candidates, recommendation.type);
 
-    const alternativeActions = candidates.slice(1, 4);
-
-    // ── Build justification ──
-    let justification = "";
-    if (reviews.length > 0) justification = `Você tem ${reviews.length} revisão(ões) pendente(s). `;
-    if (fsrsCards.length > 0) justification += `${fsrsCards.length} card(s) FSRS vencido(s). `;
-    if (errors.length > 0) justification += `${errors.length} erro(s) recorrente(s) no banco. `;
-    if (recoveryActive) justification += "Modo recuperação ativo — carga reduzida. ";
-    if (contentLocked) justification += "Conteúdo novo bloqueado até limpar revisões. ";
-    if (!justification) justification = "Nenhuma pendência crítica. Estudo livre recomendado.";
+    // ── Justification ──
+    const justification = buildJustification(
+      { reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length, tasks: tasks.length },
+      ctx,
+      recommendation.type,
+    );
 
     const adaptiveState = {
       approvalScore,
+      approvalZone: ctx.approvalZone,
       recoveryActive,
       contentLocked,
-      pendingReviews: pendingCount,
-      weakTopicsCount: weakTopics.size,
+      pendingReviews: reviews.length + fsrsCards.length,
+      weakTopicsCount: new Set(errors.map((e: any) => e.tema)).size,
+      examProximityDays,
     };
 
     // ── Log decision ──
@@ -180,8 +200,18 @@ serve(async (req) => {
       user_id: userId,
       decision_type: "study_next",
       source_module: context.currentModule ?? "api",
-      input_snapshot: { pendingReviews: reviews.length, errors: errors.length, fsrs: fsrsCards.length, tasks: tasks.length, approvalScore },
-      decision_output: { recommendation: recommendation.type, title: recommendation.title, priorityScore: recommendation.priorityScore, alternatives: alternativeActions.length },
+      input_snapshot: {
+        pendingReviews: reviews.length, errors: errors.length,
+        fsrs: fsrsCards.length, tasks: tasks.length,
+        approvalScore, recoveryActive, contentLocked,
+        examProximityDays, sessionMinutes: ctx.sessionMinutes,
+      },
+      decision_output: {
+        recommendation: recommendation.type, title: recommendation.title,
+        priorityScore: recommendation.priorityScore,
+        alternatives: alternativeActions.length,
+        approvalZone: ctx.approvalZone,
+      },
       justification,
       confidence_score: recommendation.priorityScore,
     });
