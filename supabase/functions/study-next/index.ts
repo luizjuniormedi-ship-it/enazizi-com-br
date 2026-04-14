@@ -14,7 +14,7 @@ import {
   scoreImageQuiz, scoreMnemonic,
   isVisualTopic, isMnemonicTopic,
   buildJustification, pickDiverseAlternatives,
-  type ScoredCandidate,
+  type ScoredCandidate, type VisualWeaknessEntry,
 } from "../_shared/study-next-scoring.ts";
 
 serve(async (req) => {
