@@ -60,7 +60,7 @@ function buildCompletePayload(
 ) {
   const rec = ctx.recommendation;
   return {
-    actionType: rec.type,            // "review" | "error_review" | "daily_task" | "free_study"
+    actionType: rec.type,            // "review" | "error_review" | "daily_task" | "free_study" | "image_quiz" | "mnemonic"
     actionId: rec.targetId || undefined,
     taskId: rec.type === "daily_task" ? rec.targetId : undefined,
     themeId: ctx.theme,
@@ -439,6 +439,8 @@ function buildCompletionBadges(ctx: LoopContext, correct: boolean): string[] {
   if (type === "review") badges.push("🔄 Revisão concluída");
   if (type === "error_review") badges.push("🔴 Erro corrigido");
   if (type === "daily_task") badges.push("📋 Tarefa do dia concluída");
+  if (type === "image_quiz") badges.push("🖼️ Quiz visual concluído");
+  if (type === "mnemonic") badges.push("🧠 Mnemônico praticado");
   badges.push("📊 Progresso atualizado");
   return badges;
 }

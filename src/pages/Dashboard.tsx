@@ -127,12 +127,18 @@ const Dashboard = () => {
     newParams.delete("source");
     setSearchParams(newParams, { replace: true });
 
-    // Start session + loop
+    // Start session + route recommendation
     if (!session.metrics.active) {
       session.startSession(source);
     }
-    loop.startMission(activeRec);
-  }, [missionLoading, data, activeRec, searchParams, setSearchParams, session, loop]);
+
+    const action = resolveRecommendationAction(activeRec);
+    if (action.mode === "navigate") {
+      navigate(action.path);
+    } else {
+      loop.startMission(activeRec);
+    }
+  }, [missionLoading, data, activeRec, searchParams, setSearchParams, session, loop, navigate]);
 
   // ─── Track loop results into session ───
   const prevPhaseRef = useRef(loop.phase);
@@ -202,8 +208,14 @@ const Dashboard = () => {
     if (!session.metrics.active) {
       session.startSession("manual");
     }
-    loop.startMission(activeRec);
-  }, [activeRec, loop, session]);
+
+    const action = resolveRecommendationAction(activeRec);
+    if (action.mode === "navigate") {
+      navigate(action.path);
+    } else {
+      loop.startMission(activeRec);
+    }
+  }, [activeRec, loop, session, navigate]);
 
   const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
     setOverrideRec(alt);
