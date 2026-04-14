@@ -142,10 +142,9 @@ const AdminQuestionReviewPanel = () => {
     let lastError: any = null;
     for (let i = 0; i < ids.length; i += 50) {
       const chunk = ids.slice(i, i + 50);
-      const { error, count } = await supabase.from("questions_bank")
+      const { error } = await supabase.from("questions_bank")
         .update({ review_status: "approved" })
-        .in("id", chunk)
-        .select("id", { count: "exact", head: true });
+        .in("id", chunk);
       if (error) {
         lastError = error;
         console.error("Bulk approve error:", error);
