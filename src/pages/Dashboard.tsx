@@ -62,9 +62,9 @@ function StatsStrip({
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
       <MiniStat icon={<Target className="h-4 w-4 text-primary" />} label="Aprovação" value={`${approvalScore}%`} />
-      <MiniStat icon={<RotateCcw className="h-4 w-4 text-amber-500" />} label="Revisões" value={String(pendingReviews)} highlight={pendingReviews > 5} />
-      <MiniStat icon={<Flame className="h-4 w-4 text-orange-500" />} label="Streak" value={`${streak}d`} />
-      <MiniStat icon={<TrendingUp className="h-4 w-4 text-emerald-500" />} label="Hoje" value={`${todayCompleted}/${todayTotal}`} />
+      <MiniStat icon={<RotateCcw className="h-4 w-4 text-primary" />} label="Revisões" value={String(pendingReviews)} highlight={pendingReviews > 5} />
+      <MiniStat icon={<Flame className="h-4 w-4 text-primary" />} label="Streak" value={`${streak}d`} />
+      <MiniStat icon={<TrendingUp className="h-4 w-4 text-primary" />} label="Hoje" value={`${todayCompleted}/${todayTotal}`} />
     </div>
   );
 }
