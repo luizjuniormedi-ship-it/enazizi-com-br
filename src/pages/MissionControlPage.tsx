@@ -1,4 +1,6 @@
 import { useState, useCallback, useRef } from "react";
+import { Navigate } from "react-router-dom";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useCoreData } from "@/hooks/useCoreData";
