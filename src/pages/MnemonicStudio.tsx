@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import {
   Brain, Sparkles, AlertTriangle, CheckCircle2, Loader2,
   Eye, ShieldCheck, GraduationCap, Image, FileText, Lightbulb, Zap,
+  Copy, RefreshCw, ChevronDown, ChevronUp, ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +12,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { generateMnemonicStudio } from "@/lib/mnemonicStudioService";
 import type {
   MnemonicStudioData,
   MnemonicStudioStatus,
+  AgentLogEntry,
 } from "@/lib/mnemonicStudioTypes";
 import { ESTILOS, PUBLICOS } from "@/lib/mnemonicStudioTypes";
 
@@ -80,12 +83,145 @@ function ItemsMapCard({ items_map }: { items_map: MnemonicStudioData["items_map"
 }
 
 // ══════════════════════════════════════════════════
+// AGENT LOGS
+// ══════════════════════════════════════════════════
+
+const agentLabels: Record<string, string> = {
+  generator: "🧠 Gerador",
+  medical_auditor: "🏥 Auditor Médico",
+  pedagogical_auditor: "📚 Auditor Pedagógico",
+  auditors: "🔍 Auditores",
+  image_generator: "🎨 Gerador Visual",
+  consolidator: "📦 Consolidador",
+};
+
+function AgentLogsPanel({ logs }: { logs: AgentLogEntry[] }) {
+  const [open, setOpen] = useState(false);
+
+  if (!logs.length) return null;
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <Card className="border-border/50">
+        <CollapsibleTrigger asChild>
+          <CardHeader className="pb-3 cursor-pointer hover:bg-muted/20 transition-colors">
+            <CardTitle className="text-base flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Lightbulb className="h-4 w-4 text-primary" />
+                Detalhes dos Agentes ({logs.length} eventos)
+              </span>
+              {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </CardTitle>
+          </CardHeader>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              {logs.map((log, i) => {
+                const statusColor =
+                  log.status === "ok" || log.status === "approved" ? "text-green-400" :
+                  log.status === "rejected" ? "text-yellow-400" :
+                  "text-red-400";
+                const statusBg =
+                  log.status === "ok" || log.status === "approved" ? "bg-green-500/10" :
+                  log.status === "rejected" ? "bg-yellow-500/10" :
+                  "bg-red-500/10";
+
+                return (
+                  <div key={i} className={`p-3 rounded-md ${statusBg} border border-border/30`}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">
+                        {agentLabels[log.agent] || log.agent}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          Tentativa {log.attempt}
+                        </Badge>
+                        <span className={`text-xs font-medium ${statusColor}`}>
+                          {log.status}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{log.details}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </CollapsibleContent>
+      </Card>
+    </Collapsible>
+  );
+}
+
+// ══════════════════════════════════════════════════
+// COPY HELPER
+// ══════════════════════════════════════════════════
+
+function buildCopyText(data: MnemonicStudioData): string {
+  const lines = [
+    `📋 MNEMÔNICO: ${data.tema}`,
+    ``,
+    `🔤 Sigla: ${data.sigla}`,
+    `💬 Frase: ${data.frase_mnemonica}`,
+    ``,
+    `📊 Scores: Médico ${data.score_medico} | Pedagógico ${data.score_pedagogico} | Final ${data.score_final}`,
+    ``,
+    `🗺️ Mapeamento:`,
+    ...data.items_map.map(m => `  ${m.letter} → ${m.word} (${m.original_item})`),
+    ``,
+    `🔬 Explicação Técnica:`,
+    data.explicacao_tecnica,
+    ``,
+    `📖 Explicação Didática:`,
+    data.explicacao_didatica,
+    ``,
+    `🎬 Cena Visual:`,
+    data.cena_visual,
+  ];
+  if (data.alertas.length > 0) {
+    lines.push(``, `⚠️ Alertas:`, ...data.alertas.map(a => `  ${a}`));
+  }
+  return lines.join("\n");
+}
+
+// ══════════════════════════════════════════════════
 // RESULT DISPLAY
 // ══════════════════════════════════════════════════
 
-function ResultDisplay({ data }: { data: MnemonicStudioData }) {
+function ResultDisplay({ data, onCopy, onRegenerate }: {
+  data: MnemonicStudioData;
+  onCopy: () => void;
+  onRegenerate: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(buildCopyText(data));
+      setCopied(true);
+      toast.success("Resultado copiado!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Falha ao copiar.");
+    }
+    onCopy();
+  };
+
   return (
     <div className="space-y-4 animate-fade-in">
+      {/* Action buttons */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" size="sm" onClick={handleCopy}>
+          {copied ? <ClipboardCheck className="h-4 w-4 mr-1.5" /> : <Copy className="h-4 w-4 mr-1.5" />}
+          {copied ? "Copiado!" : "Copiar resultado"}
+        </Button>
+        <Button variant="outline" size="sm" onClick={onRegenerate}>
+          <RefreshCw className="h-4 w-4 mr-1.5" />
+          Gerar novamente
+        </Button>
+      </div>
+
       {/* Scores */}
       <Card className="border-border/50">
         <CardContent className="pt-6">
@@ -143,6 +279,7 @@ function ResultDisplay({ data }: { data: MnemonicStudioData }) {
               src={data.image_url}
               alt={`Mnemônico visual: ${data.sigla}`}
               className="w-full rounded-lg border border-border/30"
+              loading="lazy"
             />
           </CardContent>
         </Card>
@@ -208,6 +345,11 @@ function ResultDisplay({ data }: { data: MnemonicStudioData }) {
           </code>
         </CardContent>
       </Card>
+
+      {/* Agent Logs */}
+      {data.agent_logs && data.agent_logs.length > 0 && (
+        <AgentLogsPanel logs={data.agent_logs} />
+      )}
     </div>
   );
 }
@@ -224,6 +366,7 @@ const MnemonicStudio = () => {
   const [status, setStatus] = useState<MnemonicStudioStatus>("idle");
   const [result, setResult] = useState<MnemonicStudioData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorAgentLogs, setErrorAgentLogs] = useState<AgentLogEntry[]>([]);
 
   const termos = termosText
     .split("\n")
@@ -234,6 +377,7 @@ const MnemonicStudio = () => {
     setStatus("loading");
     setError(null);
     setResult(null);
+    setErrorAgentLogs([]);
 
     const response = await generateMnemonicStudio({
       tema: tema.trim(),
@@ -248,6 +392,7 @@ const MnemonicStudio = () => {
       toast.success("Mnemônico gerado com sucesso!");
     } else {
       setError(response.error || "Erro desconhecido.");
+      setErrorAgentLogs(response.agent_logs || []);
       setStatus("error");
       toast.error(response.error || "Falha ao gerar mnemônico.");
     }
@@ -279,7 +424,6 @@ const MnemonicStudio = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Tema */}
           <div className="space-y-1.5">
             <label className="text-sm font-medium">Tema médico</label>
             <Input
@@ -290,7 +434,6 @@ const MnemonicStudio = () => {
             />
           </div>
 
-          {/* Termos */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Termos (um por linha)</label>
@@ -314,7 +457,6 @@ const MnemonicStudio = () => {
             )}
           </div>
 
-          {/* Estilo + Público */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Estilo do mnemônico</label>
@@ -351,7 +493,6 @@ const MnemonicStudio = () => {
 
           <Separator />
 
-          {/* Submit */}
           <Button
             onClick={handleGenerate}
             disabled={!canSubmit || status === "loading"}
@@ -392,26 +533,30 @@ const MnemonicStudio = () => {
 
       {/* Error */}
       {status === "error" && error && (
-        <Card className="border-destructive/30 bg-destructive/5">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium text-destructive">Falha na geração</p>
-                <p className="text-sm text-muted-foreground mt-1">{error}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-3"
-                  onClick={handleGenerate}
-                  disabled={!canSubmit}
-                >
-                  Tentar novamente
-                </Button>
+        <>
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-destructive">Falha na geração</p>
+                  <p className="text-sm text-muted-foreground mt-1">{error}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={handleGenerate}
+                    disabled={!canSubmit}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1.5" />
+                    Tentar novamente
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+          {errorAgentLogs.length > 0 && <AgentLogsPanel logs={errorAgentLogs} />}
+        </>
       )}
 
       {/* Success */}
@@ -423,7 +568,7 @@ const MnemonicStudio = () => {
               Mnemônico consolidado com sucesso
             </span>
           </div>
-          <ResultDisplay data={result} />
+          <ResultDisplay data={result} onCopy={() => {}} onRegenerate={handleGenerate} />
         </>
       )}
     </div>
