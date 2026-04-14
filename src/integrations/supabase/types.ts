@@ -622,6 +622,33 @@ export type Database = {
         }
         Relationships: []
       }
+      automation_telemetry: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          module: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          module: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          module?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       chance_by_exam: {
         Row: {
           banca: string

@@ -171,6 +171,22 @@ serve(async (req) => {
       isMnemonicTopic(e.tema, e.subtema) && (e.vezes_errado ?? 0) >= 2
     );
 
+    // ── Consecutive error detection (2+ errors in a row → force review + quiz + mnemonic) ──
+    let consecutiveErrorBoost = false;
+    if (errors.length >= 2) {
+      const sorted = [...errors].sort((a: any, b: any) =>
+        new Date(b.updated_at || 0).getTime() - new Date(a.updated_at || 0).getTime()
+      );
+      const top2 = sorted.slice(0, 2);
+      const recentEnough = top2.every((e: any) => {
+        const d = (Date.now() - new Date(e.updated_at || 0).getTime()) / 86_400_000;
+        return d <= 2;
+      });
+      if (recentEnough && top2.every((e: any) => (e.vezes_errado ?? 0) >= 2)) {
+        consecutiveErrorBoost = true;
+      }
+    }
+
     // ── Score all candidates ──
     const candidates: ScoredCandidate[] = [];
 
@@ -239,38 +255,44 @@ serve(async (req) => {
         : topic
           ? `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`
           : "Treino adaptativo de interpretação de imagens médicas.";
+      let imgScore = imgResult.score;
+      if (consecutiveErrorBoost) imgScore = Math.min(150, imgScore + 20);
       candidates.push({
         type: "image_quiz",
         title,
         description,
         targetType: "image_quiz",
         estimatedMinutes: 8,
-        priorityScore: imgResult.score,
+        priorityScore: imgScore,
         contextPayload: {
           topic: topic?.tema,
           subtopic: topic?.subtema,
           errorCount: topic?.vezes_errado,
           imageType: targetType,
+          consecutiveErrorBoost,
         },
       });
     }
 
-    // ── NEW: Mnemonic candidate ──
+    // ── Mnemonic candidate ──
     const mnemResult = scoreMnemonic(mnemonicErrors, ctx);
     if (mnemResult.score > 0 && mnemResult.bestTopic) {
       const topic = mnemResult.bestTopic;
+      let mnemScore = mnemResult.score;
+      if (consecutiveErrorBoost) mnemScore = Math.min(150, mnemScore + 20);
       candidates.push({
         type: "mnemonic",
         title: `Fixar com mnemônico: ${topic.tema}`,
         description: `Você já errou "${topic.tema}" ${topic.vezes_errado}x. Um mnemônico pode ajudar a consolidar.`,
         targetType: "mnemonic",
         estimatedMinutes: 5,
-        priorityScore: mnemResult.score,
+        priorityScore: mnemScore,
         contextPayload: {
           topic: topic.tema,
           subtopic: topic.subtema,
           errorCount: topic.vezes_errado,
           errorCategory: topic.categoria_erro,
+          consecutiveErrorBoost,
         },
       });
     }
@@ -310,11 +332,29 @@ serve(async (req) => {
       pendingReviews: reviews.length + fsrsCards.length,
       weakTopicsCount: new Set(errors.map((e: any) => e.tema)).size,
       examProximityDays,
-      // NEW: signal counts for frontend awareness
       visualWeaknesses: visualErrors.length,
       mnemonicCandidates: mnemonicErrors.length,
       imageQuizAvailable: imgQuizAvailable,
+      consecutiveErrorBoost,
     };
+
+    // ── Telemetry: log visual recommendations and consecutive error triggers ──
+    if (recommendation.type === "image_quiz" || recommendation.type === "mnemonic" || consecutiveErrorBoost) {
+      try {
+        await db.from("automation_telemetry").insert({
+          event_type: consecutiveErrorBoost ? "consecutive_error_boost" : `recommendation_${recommendation.type}`,
+          module: "study-next",
+          details: {
+            recommendation_type: recommendation.type,
+            priority_score: recommendation.priorityScore,
+            visual_errors: visualErrors.length,
+            mnemonic_candidates: mnemonicErrors.length,
+            consecutive_boost: consecutiveErrorBoost,
+          },
+          user_id: userId,
+        });
+      } catch { /* non-critical */ }
+    }
 
     // ── Log decision ──
     await logDecision(db, {
