@@ -34,11 +34,7 @@ export default function MissionControlPage() {
   const [heroHighlight, setHeroHighlight] = useState(false);
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Feature flag guard — redirect to dashboard if disabled
-  if (!isEnabled("mission_control_enabled")) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  const missionControlEnabled = isEnabled("mission_control_enabled");
   const studyLoopEnabled = isEnabled("study_loop_enabled");
 
   const activeRec = overrideRec ?? data?.recommendation;
@@ -85,6 +81,9 @@ export default function MissionControlPage() {
   }, [loop, refresh]);
 
   const dismissBanner = useCallback(() => setHandoff(null), []);
+
+  // Feature flag guard
+  if (!missionControlEnabled) return <Navigate to="/dashboard" replace />;
 
   // First load only — show skeleton
   if (isLoading && !data) return <MissionControlSkeleton />;
