@@ -238,8 +238,13 @@ const MedicalImageQuiz = () => {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "image-quiz" });
-  const [imageType, setImageType] = useState<string>(searchParams.get("type") || "all");
-  const [difficulty, setDifficulty] = useState<string>("all");
+
+  // ── Adaptive params from study-next ──
+  const adaptiveImageType = searchParams.get("imageType") || searchParams.get("type") || null;
+  const adaptiveDifficulty = searchParams.get("difficulty") || null;
+
+  const [imageType, setImageType] = useState<string>(adaptiveImageType || "all");
+  const [difficulty, setDifficulty] = useState<string>(adaptiveDifficulty || "all");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -250,11 +255,50 @@ const MedicalImageQuiz = () => {
 
   const [activeTier, setActiveTier] = useState<QualityTier>("tier1");
 
-  // Fetch with tiered fallback
-  const { data: questions = [], isLoading } = useQuery({
-    queryKey: ["image-quiz-questions", imageType, difficulty],
+  // ── Adaptive pressure: fetch visual_skill_snapshots for current type ──
+  const { data: visualSkill } = useQuery({
+    queryKey: ["visual-skill-snapshot", user?.id, imageType],
+    enabled: !!user && imageType !== "all",
     queryFn: async () => {
-      const result = await fetchQuestionsWithFallback(imageType, difficulty);
+      const { data } = await supabase
+        .from("visual_skill_snapshots")
+        .select("accuracy, score, trend, attempts_count, weakest_area")
+        .eq("user_id", user!.id)
+        .eq("image_type", imageType)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  // Compute adaptive difficulty based on visual skill
+  const getAdaptiveDifficulty = useCallback((): string | null => {
+    if (!visualSkill || difficulty !== "all") return null;
+    const acc = visualSkill.accuracy ?? 100;
+    const trend = visualSkill.trend;
+    if (trend === "declining") return "easy"; // repeat weak topics
+    if (acc < 50) return "easy";
+    if (acc > 75) return "hard";
+    return null; // keep default
+  }, [visualSkill, difficulty]);
+
+  // Log adaptive filter
+  useEffect(() => {
+    if (adaptiveImageType) {
+      console.log("QUIZ FILTER:", adaptiveImageType, "adaptive difficulty:", getAdaptiveDifficulty());
+    }
+  }, [adaptiveImageType, getAdaptiveDifficulty]);
+
+  // Fetch with tiered fallback + adaptive difficulty
+  const { data: questions = [], isLoading } = useQuery({
+    queryKey: ["image-quiz-questions", imageType, difficulty, visualSkill?.accuracy],
+    queryFn: async () => {
+      const effectiveDifficulty = getAdaptiveDifficulty() || difficulty;
+      let result = await fetchQuestionsWithFallback(imageType, effectiveDifficulty);
+      // Fallback: if adaptive filter returns no results, try without type filter
+      if (result.questions.length === 0 && imageType !== "all") {
+        console.log("[ImageQuiz] No results for", imageType, "— falling back to all");
+        result = await fetchQuestionsWithFallback("all", difficulty);
+      }
       setActiveTier(result.tier);
       return result.questions;
     },

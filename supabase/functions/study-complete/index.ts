@@ -94,17 +94,22 @@ serve(async (req) => {
           .order("created_at", { ascending: false })
           .limit(100);
 
-        if (attempts && attempts.length >= 3) {
+        if (attempts && attempts.length >= 1) {
           const total = attempts.length;
           const correctCount = attempts.filter((a: any) => a.correct).length;
           const accuracy = Math.round((correctCount / total) * 100);
           const avgTime = Math.round(
             attempts.reduce((s: number, a: any) => s + (a.time_seconds || 0), 0) / total
           );
-          // Score: weighted 60% accuracy + 20% volume + 20% speed
-          const volumeScore = Math.min(100, total * 2);
-          const speedScore = avgTime <= 30 ? 100 : avgTime <= 60 ? 80 : avgTime <= 120 ? 50 : 20;
-          const score = Math.round(accuracy * 0.6 + volumeScore * 0.2 + speedScore * 0.2);
+          // Score: for < 5 attempts use only accuracy; otherwise weighted composite
+          let score: number;
+          if (total < 5) {
+            score = accuracy;
+          } else {
+            const volumeScore = Math.min(100, total * 2);
+            const speedScore = avgTime <= 30 ? 100 : avgTime <= 60 ? 80 : avgTime <= 120 ? 50 : 20;
+            score = Math.round(accuracy * 0.6 + volumeScore * 0.2 + speedScore * 0.2);
+          }
 
           // Trend: compare recent 5 vs older
           let trend = "stable";
@@ -124,7 +129,7 @@ serve(async (req) => {
           );
 
           // Confidence level
-          const confidence = total >= 20 ? "high" : total >= 10 ? "medium" : "low";
+          const confidence = total > 15 ? "high" : total >= 6 ? "medium" : "low";
 
           // Find all types to determine strongest/weakest
           const { data: allTypes } = await db.from("medical_image_attempts")
@@ -146,7 +151,7 @@ serve(async (req) => {
             }
             let bestAcc = -1, worstAcc = 101;
             for (const [t, d] of byType) {
-              if (d.total < 3) continue;
+              if (d.total < 1) continue;
               const acc = d.correct / d.total;
               if (acc > bestAcc) { bestAcc = acc; strongestArea = t; }
               if (acc < worstAcc) { worstAcc = acc; weakestArea = t; }
