@@ -37,7 +37,7 @@ function HistoryCard({ item, onFavorite, onView, onCopy }: {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <div className={`flex-1 text-center p-1.5 rounded text-xs ${getScoreBg(item.score_medico)}`}>
             <span className={`font-bold ${getScoreColor(item.score_medico)}`}>{item.score_medico}</span>
             <span className="text-muted-foreground ml-1">Médico</span>
@@ -46,6 +46,12 @@ function HistoryCard({ item, onFavorite, onView, onCopy }: {
             <span className={`font-bold ${getScoreColor(item.score_pedagogico)}`}>{item.score_pedagogico}</span>
             <span className="text-muted-foreground ml-1">Pedagógico</span>
           </div>
+          {item.score_linguistico != null && (
+            <div className={`flex-1 text-center p-1.5 rounded text-xs ${getScoreBg(item.score_linguistico)}`}>
+              <span className={`font-bold ${getScoreColor(item.score_linguistico)}`}>{item.score_linguistico}</span>
+              <span className="text-muted-foreground ml-1">Ling.</span>
+            </div>
+          )}
           <div className={`flex-1 text-center p-1.5 rounded text-xs ${getScoreBg(item.score_final)}`}>
             <span className={`font-bold ${getScoreColor(item.score_final)}`}>{item.score_final}</span>
             <span className="text-muted-foreground ml-1">Final</span>
@@ -171,6 +177,13 @@ export default function MnemonicHistoryPage() {
                   <p className="text-3xl font-bold tracking-widest text-primary">{selectedItem.sigla}</p>
                   <p className="text-lg font-medium mt-2">{selectedItem.frase_mnemonica}</p>
                 </div>
+                {selectedItem.image_url && (
+                  <img
+                    src={selectedItem.image_url}
+                    alt={`Mnemônico: ${selectedItem.sigla}`}
+                    className="rounded-lg max-h-64 w-full object-contain border"
+                  />
+                )}
                 {selectedItem.explicacao_tecnica && (
                   <div><p className="text-sm font-medium">Explicação técnica</p><p className="text-sm text-muted-foreground">{selectedItem.explicacao_tecnica}</p></div>
                 )}
@@ -179,6 +192,14 @@ export default function MnemonicHistoryPage() {
                 )}
                 {selectedItem.cena_visual && (
                   <div><p className="text-sm font-medium">Cena visual</p><p className="text-sm text-muted-foreground">{selectedItem.cena_visual}</p></div>
+                )}
+                {(selectedItem.alertas_json ?? []).length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium">Alertas</p>
+                    <ul className="text-sm text-muted-foreground">
+                      {(selectedItem.alertas_json ?? []).map((a, i) => <li key={i}>• {a}</li>)}
+                    </ul>
+                  </div>
                 )}
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={() => handleCopy(selectedItem)}><Copy className="h-4 w-4 mr-1" /> Copiar</Button>
