@@ -71,13 +71,13 @@ serve(async (req) => {
     // ── 5. Record study action event ──
     await db.from("study_action_events").insert({
       user_id: userId,
-      action_type: actionType,
+      task_type: actionType,
       topic: topicId || themeId || metadata?.topic || "",
       subtopic: subtopicId || metadata?.subtopic || "",
-      specialty: metadata?.specialty || "",
       source: metadata?.source || "api",
       origin_module: metadata?.originModule || "study-complete",
-      metadata: metadata ?? {},
+      payload_json: metadata ?? {},
+      status: "completed",
     }).then(({ error }) => {
       if (error) errors.push(`event: ${error.message}`);
     });
