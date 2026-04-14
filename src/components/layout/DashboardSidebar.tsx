@@ -434,6 +434,7 @@ const DashboardSidebar = () => {
         </div>
       </div>
     </aside>
+    </TooltipProvider>
   );
 };
 
