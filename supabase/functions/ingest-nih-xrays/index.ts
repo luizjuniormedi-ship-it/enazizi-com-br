@@ -181,10 +181,12 @@ Deno.serve(async (req) => {
         asset_code: assetCode,
         diagnosis: pathInfo.diagnosis_pt,
         image_type: "xray",
+        specialty: pathInfo.topic,
+        subtopic: pathInfo.subtopic,
         image_url: publicUrl,
         thumbnail_url: publicUrl,
         asset_origin: "real_clinical",
-        source_url: "https://nihcc.app.box.com/v/ChestXray-NIHCC",
+        source_url: "https://data.lhncbc.nlm.nih.gov/public/Tuberculosis-Chest-X-ray-Datasets/",
         source_domain: "nih.gov",
         license_type: "cc0_public_domain",
         review_status: "needs_review",
@@ -195,7 +197,9 @@ Deno.serve(async (req) => {
         ai_confidence: 0.92,
         ai_type: "xray",
         clinical_findings: { nih_label: item.pathology, patient_id: item.patient_id || null },
-        clinical_validation_notes: `NIH Chest X-ray dataset. Label: ${item.pathology}. Vision validated.`,
+        clinical_validation_notes: `NIH dataset. Label: ${item.pathology}. Vision validated.`,
+        distractors: [pathInfo.diagnosis_pt],
+        difficulty: pathInfo.difficulty,
       }).select("id").single();
 
       if (assetErr || !asset) {
