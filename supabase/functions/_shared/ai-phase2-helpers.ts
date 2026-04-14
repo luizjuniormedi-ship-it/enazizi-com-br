@@ -338,6 +338,8 @@ export const STUDY_NEXT_ACTION_MAP: Record<string, string[]> = {
   fsrs_review: ["summarize-topic", "explain-simple"],
   daily_task: ["generate-adaptive-question"],
   free_study: ["explain-deep", "generate-adaptive-question"],
+  image_quiz: ["generate-image-questions", "reinforce-error"],
+  mnemonic: ["generate-mnemonic", "reinforce-error"],
 };
 
 /** Handle common AI errors and return appropriate Response */
