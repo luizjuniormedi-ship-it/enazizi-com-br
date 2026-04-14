@@ -229,6 +229,21 @@ Para CADA questão, verificar internamente:
 - valor pedagógico: 0-10
 Se score < 75 → NÃO retornar essa questão. Reescrever.
 
+== CONTEÚDO PEDAGÓGICO OBRIGATÓRIO ==
+Para CADA questão, gerar TAMBÉM:
+
+8. discussion (objeto JSON):
+   - definition: breve definição da condição (2-3 linhas)
+   - physiopathology: mecanismo principal (2-3 linhas)
+   - findings: achados típicos na imagem (2-3 linhas)
+   - clinical_correlation: quando suspeitar clinicamente (2-3 linhas)
+   - differential: principais diagnósticos diferenciais (2-3 linhas)
+   - management: conduta inicial se aplicável (2-3 linhas)
+
+9. exam_tips (array de strings): 3-5 pontos de prova — achados clássicos, padrões que caem em prova, dicas de memorização
+
+10. pitfalls (array de strings): 2-3 armadilhas comuns — erros frequentes, diagnósticos que confundem, pegadinhas
+
 == SAÍDA ==
 Retorne APENAS JSON array válido (sem markdown, sem comentários):
 [
@@ -239,6 +254,16 @@ Retorne APENAS JSON array válido (sem markdown, sem comentários):
     "correct_index": 0,
     "explanation": "...",
     "rationale_map": {"A":"...","B":"...","C":"...","D":"...","E":"..."},
+    "discussion": {
+      "definition": "...",
+      "physiopathology": "...",
+      "findings": "...",
+      "clinical_correlation": "...",
+      "differential": "...",
+      "management": "..."
+    },
+    "exam_tips": ["...", "...", "..."],
+    "pitfalls": ["...", "..."],
     "difficulty": "medium",
     "exam_style": "${examStyle}",
     "internal_score": 90,
@@ -498,6 +523,9 @@ serve(async (req) => {
             correct_index: q.correct_index,
             explanation: q.explanation,
             rationale_map: q.rationale_map,
+            discussion: q.discussion || null,
+            exam_tips: Array.isArray(q.exam_tips) ? q.exam_tips : [],
+            pitfalls: Array.isArray(q.pitfalls) ? q.pitfalls : [],
             difficulty: q.difficulty,
             exam_style: q.exam_style,
             editorial_grade: q.editorial_grade,

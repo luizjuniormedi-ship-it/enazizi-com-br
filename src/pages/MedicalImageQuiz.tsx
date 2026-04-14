@@ -28,6 +28,16 @@ type ImageQuestion = {
   image_url: string | null;
   image_type: string | null;
   diagnosis: string | null;
+  discussion: {
+    definition?: string;
+    physiopathology?: string;
+    findings?: string;
+    clinical_correlation?: string;
+    differential?: string;
+    management?: string;
+  } | null;
+  exam_tips: string[];
+  pitfalls: string[];
 };
 
 type QualityTier = "tier1" | "tier2" | "tier3";
@@ -57,6 +67,7 @@ const imageTypeLabels: Record<string, string> = {
 const SELECT_FIELDS = `
   id, statement, option_a, option_b, option_c, option_d, option_e,
   correct_index, explanation, difficulty, exam_style,
+  discussion, exam_tips, pitfalls,
   medical_image_assets!inner(
     image_url, image_type, diagnosis, is_active,
     review_status, clinical_confidence, integrity_status,
@@ -121,9 +132,12 @@ function mapRows(data: any[]): ImageQuestion[] {
           explanation: q.explanation,
           difficulty: q.difficulty,
           exam_style: q.exam_style,
-          image_url: null, // blocked
+          image_url: null,
           image_type: asset?.image_type || null,
           diagnosis: asset?.diagnosis || null,
+          discussion: q.discussion || null,
+          exam_tips: q.exam_tips || [],
+          pitfalls: q.pitfalls || [],
         } as ImageQuestion;
       }
       const imageUrl = asset?.image_url || null;
@@ -139,6 +153,9 @@ function mapRows(data: any[]): ImageQuestion[] {
         image_url: imageUrl,
         image_type: asset?.image_type || null,
         diagnosis: asset?.diagnosis || null,
+        discussion: q.discussion || null,
+        exam_tips: q.exam_tips || [],
+        pitfalls: q.pitfalls || [],
       } as ImageQuestion;
     })
     .filter(Boolean) as ImageQuestion[];
@@ -496,7 +513,9 @@ const MedicalImageQuiz = () => {
       {questions.length === 0 ? (
         <Card className="p-12 text-center">
           <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-          <p className="text-muted-foreground">Nenhuma questão encontrada com esses filtros.</p>
+          <h3 className="text-lg font-semibold mb-2">Banco sendo atualizado</h3>
+          <p className="text-muted-foreground">Estamos ampliando o acervo de imagens médicas. Novas questões serão disponibilizadas em breve.</p>
+          <p className="text-xs text-muted-foreground mt-2">Tente remover os filtros ou volte mais tarde.</p>
         </Card>
       ) : quizMode === "quiz" && currentQuestion ? (
         <>
@@ -605,9 +624,66 @@ const MedicalImageQuiz = () => {
 
               {/* Explanation */}
               {showExplanation && currentQuestion.explanation && (
-                <Card className="p-4 bg-primary/5 border-primary/20 animate-fade-in">
-                  <p className="text-sm font-semibold text-primary mb-2">💡 Explicação</p>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{currentQuestion.explanation}</p>
+                <Card className="p-4 bg-primary/5 border-primary/20 animate-fade-in space-y-4">
+                  <div>
+                    <p className="text-sm font-semibold text-primary mb-2">💡 Explicação</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{currentQuestion.explanation}</p>
+                  </div>
+
+                  {/* Discussion */}
+                  {currentQuestion.discussion && Object.values(currentQuestion.discussion).some(Boolean) && (
+                    <div className="space-y-3 pt-2 border-t border-border/50">
+                      <p className="text-sm font-semibold text-primary">📚 Discussão Médica</p>
+                      {currentQuestion.discussion.definition && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Definição</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.definition}</p></div>
+                      )}
+                      {currentQuestion.discussion.physiopathology && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Fisiopatologia</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.physiopathology}</p></div>
+                      )}
+                      {currentQuestion.discussion.findings && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Achados Típicos</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.findings}</p></div>
+                      )}
+                      {currentQuestion.discussion.clinical_correlation && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Correlação Clínica</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.clinical_correlation}</p></div>
+                      )}
+                      {currentQuestion.discussion.differential && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Diagnóstico Diferencial</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.differential}</p></div>
+                      )}
+                      {currentQuestion.discussion.management && (
+                        <div><p className="text-xs font-semibold text-muted-foreground uppercase">Conduta</p><p className="text-sm text-muted-foreground">{currentQuestion.discussion.management}</p></div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Exam Tips */}
+                  {currentQuestion.exam_tips?.length > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-sm font-semibold text-primary mb-2">🎯 Pontos de Prova</p>
+                      <ul className="space-y-1">
+                        {currentQuestion.exam_tips.map((tip, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-primary mt-0.5">•</span>
+                            <span>{tip}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Pitfalls */}
+                  {currentQuestion.pitfalls?.length > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <p className="text-sm font-semibold text-destructive mb-2">⚠️ Armadilhas Comuns</p>
+                      <ul className="space-y-1">
+                        {currentQuestion.pitfalls.map((pit, i) => (
+                          <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <span className="text-destructive mt-0.5">•</span>
+                            <span>{pit}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </Card>
               )}
 
