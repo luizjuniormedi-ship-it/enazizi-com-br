@@ -23,6 +23,14 @@ const ACTIONS_MAP: Record<string, { label: string; icon: React.ReactNode; endpoi
     { label: "Explicação rápida", icon: <Sparkles className="h-4 w-4" />, endpoint: "explain-simple" },
     { label: "Resumo do tema", icon: <BookOpen className="h-4 w-4" />, endpoint: "summarize-topic" },
   ],
+  image_quiz: [
+    { label: "Resumo do tema", icon: <BookOpen className="h-4 w-4" />, endpoint: "summarize-topic" },
+    { label: "Explicação rápida", icon: <Sparkles className="h-4 w-4" />, endpoint: "explain-simple" },
+  ],
+  mnemonic: [
+    { label: "Reforço de erro", icon: <Brain className="h-4 w-4" />, endpoint: "reinforce-error" },
+    { label: "Explicação rápida", icon: <Sparkles className="h-4 w-4" />, endpoint: "explain-simple" },
+  ],
 };
 
 interface Props {

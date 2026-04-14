@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
+import { resolveRecommendationAction } from "@/lib/recommendationRouter";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useStudyLoop } from "@/hooks/useStudyLoop";
