@@ -374,7 +374,7 @@ function MnemonicResultDisplay({
           </div>
 
           <div className="space-y-2">
-            {result.items_map.map((item, i) => (
+            {(result.items_map ?? []).map((item, i) => (
               <div key={i} className="flex items-start gap-3 p-2 rounded-lg bg-secondary/50">
                 <span className="font-bold text-primary text-lg w-6 text-center shrink-0">{item.letter}</span>
                 <div className="flex-1 min-w-0">
