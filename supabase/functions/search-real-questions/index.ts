@@ -521,7 +521,10 @@ async function searchAndCollect(
   log: RunLog,
 ): Promise<CandidateBlock[]> {
   const FIRECRAWL_API_KEY = Deno.env.get("FIRECRAWL_API_KEY");
-  if (!FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY not configured");
+  if (!FIRECRAWL_API_KEY) {
+    log.errors.push("FIRECRAWL_API_KEY não configurado — busca web desabilitada");
+    return [];
+  }
 
   const queries = buildQueryPool(specialty, banca);
   // Shuffle for variety
