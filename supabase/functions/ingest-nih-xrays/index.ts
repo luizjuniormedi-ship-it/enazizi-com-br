@@ -209,21 +209,26 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Step 4: Generate questions
-      const qCount = await generateQuestions({
-        id: asset.id,
-        diagnosis: pathInfo.diagnosis_pt,
-        topic: pathInfo.topic,
-        subtopic: pathInfo.subtopic,
-        difficulty: pathInfo.difficulty,
-      });
+      // Step 4: Generate questions (skip if assets_only mode)
+      let qCount = 0;
+      if (!body.assets_only) {
+        qCount = await generateQuestions({
+          id: asset.id,
+          diagnosis: pathInfo.diagnosis_pt,
+          topic: pathInfo.topic,
+          subtopic: pathInfo.subtopic,
+          difficulty: pathInfo.difficulty,
+        });
+      }
 
       // Step 5: Telemetry
-      await supabase.from("automation_telemetry").insert({
-        module: "ingest-nih-xrays",
-        event_type: "asset_ingested",
-        details: { asset_id: asset.id, pathology: item.pathology, questions: qCount, filename: item.filename },
-      }).catch(() => {});
+      try {
+        await supabase.from("automation_telemetry").insert({
+          module: "ingest-nih-xrays",
+          event_type: "asset_ingested",
+          details: { asset_id: asset.id, pathology: item.pathology, questions: qCount, filename: item.filename },
+        });
+      } catch { /* ignore telemetry errors */ }
 
       results.push({ filename: item.filename, status: "ingested", asset_id: asset.id, questions: qCount });
 
