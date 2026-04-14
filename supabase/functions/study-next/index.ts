@@ -90,6 +90,15 @@ serve(async (req) => {
           .eq("status", "published")
           .limit(1),
         "image_quiz_check"),
+      // NEW: visual weakness data from real attempts
+      safeQuery<any[]>(db, (c) =>
+        c.from("medical_image_attempts")
+          .select("correct, image_type, created_at")
+          .eq("user_id", userId)
+          .not("image_type", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(200),
+        "visual_attempts"),
     ]);
 
     const reviews = pendingReviews ?? [];
