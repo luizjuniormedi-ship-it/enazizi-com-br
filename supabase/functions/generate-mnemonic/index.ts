@@ -825,28 +825,30 @@ serve(async (req: Request) => {
     }
 
     // ──────────────────────────────────────────────
-    // AGENT 4: AUDITOR PEDAGÓGICO
+    // AGENT 4: AUDITOR PEDAGÓGICO (resiliente)
     // ──────────────────────────────────────────────
-    const pedPrompt = `${context}\n\nMnemônico aprovado médicamente:\n${JSON.stringify(approvedVersion, null, 2)}`;
-    let pedAudit = await runAgent<PedagogicalAuditOutput>(
-      openaiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, pedPrompt,
-    );
-
-    // ──────────────────────────────────────────────
-    // RETRY PEDAGÓGICO (se score < 85)
-    // ──────────────────────────────────────────────
-    if (pedAudit.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
-      console.log(`Score pedagógico ${pedAudit.score_pedagogico} < ${SCORE_PEDAGOGICO_MIN}. Retry...`);
-
-      const retryPedPrompt = `${context}\n\nMnemônico:\n${JSON.stringify(approvedVersion, null, 2)}\n\nA versão anterior teve baixa performance pedagógica (score: ${pedAudit.score_pedagogico}/100).\nPontos fracos: ${(pedAudit.pontos_fracos || []).join("; ")}\n\nReavalie e produza uma versão otimizada.`;
-
-      const retryPed = await runAgent<PedagogicalAuditOutput>(
-        openaiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, retryPedPrompt,
+    let pedAudit: PedagogicalAuditOutput = {
+      score_pedagogico: 75, facilidade_memorizacao: 75, clareza: 75,
+      associacao_mental: 75, aplicabilidade_em_aula: 75, aplicabilidade_em_prova: 75,
+      pontos_fortes: [], pontos_fracos: [],
+    };
+    try {
+      const pedPrompt = `${context}\n\nMnemônico aprovado médicamente:\n${JSON.stringify(approvedVersion, null, 2)}`;
+      pedAudit = await runAgent<PedagogicalAuditOutput>(
+        openaiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, pedPrompt,
       );
 
-      if (retryPed.score_pedagogico >= pedAudit.score_pedagogico) {
-        pedAudit = retryPed;
+      // RETRY PEDAGÓGICO (se score < 85)
+      if (pedAudit.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
+        console.log(`Score pedagógico ${pedAudit.score_pedagogico} < ${SCORE_PEDAGOGICO_MIN}. Retry...`);
+        const retryPedPrompt = `${context}\n\nMnemônico:\n${JSON.stringify(approvedVersion, null, 2)}\n\nA versão anterior teve baixa performance pedagógica (score: ${pedAudit.score_pedagogico}/100).\nPontos fracos: ${(pedAudit.pontos_fracos || []).join("; ")}\n\nReavalie e produza uma versão otimizada.`;
+        const retryPed = await runAgent<PedagogicalAuditOutput>(
+          openaiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, retryPedPrompt,
+        );
+        if (retryPed.score_pedagogico >= pedAudit.score_pedagogico) pedAudit = retryPed;
       }
+    } catch (pedErr) {
+      console.error("Pedagogical audit failed, using defaults:", pedErr);
     }
 
     // Apply pedagogical optimizations
@@ -860,12 +862,21 @@ serve(async (req: Request) => {
     }
 
     // ──────────────────────────────────────────────
-    // AGENT 5: VISUAL
+    // AGENT 5: VISUAL (resiliente)
     // ──────────────────────────────────────────────
-    const visualPrompt = `${context}\n\nMnemônico final:\nSigla: ${approvedVersion.sigla}\nFrase: ${approvedVersion.frase_mnemonica}`;
-    const visual = await runAgent<VisualOutput>(
-      openaiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, visualPrompt,
-    );
+    let visual: VisualOutput = {
+      cena_visual: approvedVersion.frase_mnemonica,
+      associacoes_visuais: [],
+      prompt_imagem: `Clean medical infographic illustration of ${approvedVersion.sigla}, flat design, white background, no text`,
+    };
+    try {
+      const visualPrompt = `${context}\n\nMnemônico final:\nSigla: ${approvedVersion.sigla}\nFrase: ${approvedVersion.frase_mnemonica}`;
+      visual = await runAgent<VisualOutput>(
+        openaiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, visualPrompt,
+      );
+    } catch (visErr) {
+      console.error("Visual agent failed, using fallback:", visErr);
+    }
 
     // ──────────────────────────────────────────────
     // AGENT 6: GERADOR DE IMAGEM
