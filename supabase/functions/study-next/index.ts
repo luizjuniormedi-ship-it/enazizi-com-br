@@ -14,7 +14,7 @@ import {
   scoreImageQuiz, scoreMnemonic,
   isVisualTopic, isMnemonicTopic,
   buildJustification, pickDiverseAlternatives,
-  type ScoredCandidate,
+  type ScoredCandidate, type VisualWeaknessEntry,
 } from "../_shared/study-next-scoring.ts";
 
 serve(async (req) => {
@@ -33,7 +33,7 @@ serve(async (req) => {
     const [
       pendingReviews, errorBankItems, dailyPlanToday, dailyTasks,
       fsrsDue, approvalData, profile, gamification,
-      imageQuizCount,
+      imageQuizCount, visualAttempts,
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) =>
         c.from("revisoes")
@@ -90,6 +90,15 @@ serve(async (req) => {
           .eq("status", "published")
           .limit(1),
         "image_quiz_check"),
+      // NEW: visual weakness data from real attempts
+      safeQuery<any[]>(db, (c) =>
+        c.from("medical_image_attempts")
+          .select("correct, image_type, created_at")
+          .eq("user_id", userId)
+          .not("image_type", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(200),
+        "visual_attempts"),
     ]);
 
     const reviews = pendingReviews ?? [];
@@ -110,6 +119,37 @@ serve(async (req) => {
       if (diff > 0) examProximityDays = Math.round(diff);
     }
 
+    // ── Compute visual weakness from real attempts ──
+    const visualWeaknesses: VisualWeaknessEntry[] = [];
+    if (Array.isArray(visualAttempts) && visualAttempts.length > 0) {
+      const byType = new Map<string, { total: number; correct: number; dates: number[] }>();
+      for (const a of visualAttempts) {
+        const t = (a.image_type || "").toLowerCase();
+        if (!t) continue;
+        if (!byType.has(t)) byType.set(t, { total: 0, correct: 0, dates: [] });
+        const entry = byType.get(t)!;
+        entry.total++;
+        if (a.correct) entry.correct++;
+        entry.dates.push(new Date(a.created_at).getTime());
+      }
+      for (const [imageType, data] of byType) {
+        const accuracy = Math.round((data.correct / data.total) * 100);
+        // Simple trend: compare first half vs second half
+        let trend: "improving" | "declining" | "stable" = "stable";
+        if (data.total >= 10) {
+          const mid = Math.floor(data.total / 2);
+          const sorted = [...visualAttempts.filter((a: any) => (a.image_type || "").toLowerCase() === imageType)];
+          const recentCorrect = sorted.slice(0, mid).filter((a: any) => a.correct).length;
+          const olderCorrect = sorted.slice(mid).filter((a: any) => a.correct).length;
+          const recentAcc = recentCorrect / mid;
+          const olderAcc = olderCorrect / (data.total - mid);
+          if (recentAcc - olderAcc > 0.1) trend = "improving";
+          else if (recentAcc - olderAcc < -0.1) trend = "declining";
+        }
+        visualWeaknesses.push({ imageType, accuracy, attemptsCount: data.total, trend });
+      }
+    }
+
     // ── Build scoring context ──
     const ctx: ScoringContext = {
       approvalScore,
@@ -122,6 +162,7 @@ serve(async (req) => {
       now,
       today,
       imageQuizAvailable: imgQuizAvailable,
+      visualWeaknesses,
     };
 
     // ── Classify errors by type for new scorers ──
@@ -183,21 +224,33 @@ serve(async (req) => {
       });
     }
 
-    // ── NEW: Image Quiz candidate ──
+    // ── Image Quiz candidate (enhanced with real visual weakness) ──
     const imgResult = scoreImageQuiz(visualErrors, ctx);
-    if (imgResult.score > 0 && imgResult.bestTopic) {
+    if (imgResult.score > 0) {
       const topic = imgResult.bestTopic;
+      const targetType = imgResult.targetImageType;
+      const title = targetType
+        ? `Treino visual: ${targetType.toUpperCase()}`
+        : topic
+          ? `Treino visual: ${topic.tema}`
+          : "Treino de interpretação visual";
+      const description = targetType
+        ? `Seu desempenho em ${targetType.toUpperCase()} precisa de reforço. Vamos treinar com questões de imagem.`
+        : topic
+          ? `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`
+          : "Treino adaptativo de interpretação de imagens médicas.";
       candidates.push({
         type: "image_quiz",
-        title: `Treino visual: ${topic.tema}`,
-        description: `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`,
+        title,
+        description,
         targetType: "image_quiz",
         estimatedMinutes: 8,
         priorityScore: imgResult.score,
         contextPayload: {
-          topic: topic.tema,
-          subtopic: topic.subtema,
-          errorCount: topic.vezes_errado,
+          topic: topic?.tema,
+          subtopic: topic?.subtema,
+          errorCount: topic?.vezes_errado,
+          imageType: targetType,
         },
       });
     }

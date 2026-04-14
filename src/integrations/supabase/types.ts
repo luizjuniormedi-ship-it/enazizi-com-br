@@ -533,6 +533,56 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_validation_results: {
+        Row: {
+          asset_id: string
+          clinical_match_score: number | null
+          created_at: string
+          detected_image_type: string | null
+          id: string
+          is_medical_image: boolean
+          model_used: string | null
+          quality_score: number | null
+          validated_at: string
+          validation_reason: string | null
+          validation_status: string
+        }
+        Insert: {
+          asset_id: string
+          clinical_match_score?: number | null
+          created_at?: string
+          detected_image_type?: string | null
+          id?: string
+          is_medical_image?: boolean
+          model_used?: string | null
+          quality_score?: number | null
+          validated_at?: string
+          validation_reason?: string | null
+          validation_status?: string
+        }
+        Update: {
+          asset_id?: string
+          clinical_match_score?: number | null
+          created_at?: string
+          detected_image_type?: string | null
+          id?: string
+          is_medical_image?: boolean
+          model_used?: string | null
+          quality_score?: number | null
+          validated_at?: string
+          validation_reason?: string | null
+          validation_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_validation_results_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assistant_decisions: {
         Row: {
           confidence_score: number | null
@@ -3056,6 +3106,8 @@ export type Database = {
           created_at: string
           id: string
           image_id: string
+          image_type: string | null
+          question_id: string | null
           selected_index: number
           time_seconds: number | null
           user_id: string
@@ -3065,6 +3117,8 @@ export type Database = {
           created_at?: string
           id?: string
           image_id: string
+          image_type?: string | null
+          question_id?: string | null
           selected_index: number
           time_seconds?: number | null
           user_id: string
@@ -3074,6 +3128,8 @@ export type Database = {
           created_at?: string
           id?: string
           image_id?: string
+          image_type?: string | null
+          question_id?: string | null
           selected_index?: number
           time_seconds?: number | null
           user_id?: string
@@ -3084,6 +3140,13 @@ export type Database = {
             columns: ["image_id"]
             isOneToOne: false
             referencedRelation: "medical_images"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_image_attempts_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_questions"
             referencedColumns: ["id"]
           },
         ]
@@ -7329,6 +7392,63 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_group_link?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      visual_skill_snapshots: {
+        Row: {
+          accuracy: number
+          attempts_count: number
+          avg_time_seconds: number | null
+          computed_at: string
+          confidence_level: string
+          correct_count: number
+          created_at: string
+          id: string
+          image_type: string
+          recent_window_accuracy: number | null
+          score: number
+          strongest_area: boolean
+          trend: string
+          updated_at: string
+          user_id: string
+          weakest_area: boolean
+        }
+        Insert: {
+          accuracy?: number
+          attempts_count?: number
+          avg_time_seconds?: number | null
+          computed_at?: string
+          confidence_level?: string
+          correct_count?: number
+          created_at?: string
+          id?: string
+          image_type: string
+          recent_window_accuracy?: number | null
+          score?: number
+          strongest_area?: boolean
+          trend?: string
+          updated_at?: string
+          user_id: string
+          weakest_area?: boolean
+        }
+        Update: {
+          accuracy?: number
+          attempts_count?: number
+          avg_time_seconds?: number | null
+          computed_at?: string
+          confidence_level?: string
+          correct_count?: number
+          created_at?: string
+          id?: string
+          image_type?: string
+          recent_window_accuracy?: number | null
+          score?: number
+          strongest_area?: boolean
+          trend?: string
+          updated_at?: string
+          user_id?: string
+          weakest_area?: boolean
         }
         Relationships: []
       }

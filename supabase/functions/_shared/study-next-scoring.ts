@@ -81,6 +81,14 @@ function approvalMultiplier(zone: ApprovalZone, isRemedial: boolean): number {
   }
 }
 
+// ─── Visual weakness data from attempts ─────────────────────────────
+export interface VisualWeaknessEntry {
+  imageType: string;
+  accuracy: number;       // 0-100
+  attemptsCount: number;
+  trend: "improving" | "declining" | "stable";
+}
+
 // ─── Context type ────────────────────────────────────────────────────
 export interface ScoringContext {
   approvalScore: number;
@@ -94,6 +102,8 @@ export interface ScoringContext {
   today: string; // YYYY-MM-DD
   /** Count of published image quiz questions available */
   imageQuizAvailable: number;
+  /** Real visual weakness data from medical_image_attempts */
+  visualWeaknesses?: VisualWeaknessEntry[];
 }
 
 // ─── Individual scorers ──────────────────────────────────────────────
@@ -247,45 +257,72 @@ export function scoreImageQuiz(
     updated_at?: string;
   }>,
   ctx: ScoringContext,
-): { score: number; bestTopic: typeof visualErrors[0] | null } {
-  if (ctx.imageQuizAvailable === 0 || visualErrors.length === 0) {
+): { score: number; bestTopic: typeof visualErrors[0] | null; targetImageType?: string } {
+  if (ctx.imageQuizAvailable === 0) {
     return { score: 0, bestTopic: null };
   }
 
-  let s = BASE_SCORES.image_quiz;
+  // --- Signal 1: error_bank visual errors (original logic) ---
+  let errorScore = 0;
+  let bestErrorTopic: typeof visualErrors[0] | null = null;
 
-  // Pick the most problematic visual topic
-  const best = visualErrors.reduce((a, b) =>
-    b.vezes_errado > a.vezes_errado ? b : a
-  );
-
-  // Error frequency boost (+5 per error, max +20)
-  s += Math.min(20, best.vezes_errado * 5);
-
-  // Recency boost — recent visual errors are more urgent
-  if (best.updated_at) {
-    const daysSince = (Date.now() - new Date(best.updated_at).getTime()) / 86_400_000;
-    if (daysSince <= 3) s += 10;
-    else if (daysSince <= 7) s += 5;
+  if (visualErrors.length > 0) {
+    bestErrorTopic = visualErrors.reduce((a, b) =>
+      b.vezes_errado > a.vezes_errado ? b : a
+    );
+    errorScore = BASE_SCORES.image_quiz;
+    errorScore += Math.min(20, bestErrorTopic.vezes_errado * 5);
+    if (bestErrorTopic.updated_at) {
+      const daysSince = (Date.now() - new Date(bestErrorTopic.updated_at).getTime()) / 86_400_000;
+      if (daysSince <= 3) errorScore += 10;
+      else if (daysSince <= 7) errorScore += 5;
+    }
+    if (visualErrors.length >= 3) errorScore += 8;
+    else if (visualErrors.length >= 2) errorScore += 4;
   }
 
-  // Multiple visual weaknesses compound the need
-  if (visualErrors.length >= 3) s += 8;
-  else if (visualErrors.length >= 2) s += 4;
+  // --- Signal 2: real visual weakness data from attempts ---
+  let weaknessScore = 0;
+  let weakestType: string | undefined;
 
-  // Approval zone: image quiz is remedial for visual gaps
+  if (ctx.visualWeaknesses && ctx.visualWeaknesses.length > 0) {
+    // Find weakest category with enough data
+    const significant = ctx.visualWeaknesses.filter(w => w.attemptsCount >= 5);
+    if (significant.length > 0) {
+      const weakest = significant.reduce((a, b) => a.accuracy < b.accuracy ? a : b);
+      weakestType = weakest.imageType;
+
+      if (weakest.accuracy < 50) {
+        weaknessScore = BASE_SCORES.image_quiz + 25; // strong signal
+      } else if (weakest.accuracy < 65) {
+        weaknessScore = BASE_SCORES.image_quiz + 15;
+      } else if (weakest.accuracy < 75) {
+        weaknessScore = BASE_SCORES.image_quiz + 5;
+      }
+
+      // Declining trend amplifies urgency
+      if (weakest.trend === "declining") weaknessScore += 10;
+    }
+  }
+
+  // Take the stronger signal
+  let s = Math.max(errorScore, weaknessScore);
+  if (s === 0 && visualErrors.length === 0) {
+    return { score: 0, bestTopic: null };
+  }
+  if (s === 0) s = BASE_SCORES.image_quiz;
+
+  // Apply contextual multipliers
   s *= approvalMultiplier(ctx.approvalZone, true);
-
-  // Recovery mode: visual training can be a useful change of pace
   if (ctx.recoveryActive) s *= 1.05;
-
-  // Exam proximity: visual questions are common in exams
   if (ctx.examProximityDays !== null && ctx.examProximityDays <= 30) s += 8;
-
-  // Short sessions: image quiz is quick (5-10 min)
   if (ctx.sessionMinutes && ctx.sessionMinutes < 15) s += 5;
 
-  return { score: Math.min(130, Math.round(s)), bestTopic: best };
+  return {
+    score: Math.min(130, Math.round(s)),
+    bestTopic: bestErrorTopic,
+    targetImageType: weakestType,
+  };
 }
 
 // ─── NEW: Mnemonic scorer ───────────────────────────────────────────

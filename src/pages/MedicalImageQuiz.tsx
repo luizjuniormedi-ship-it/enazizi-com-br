@@ -140,14 +140,16 @@ const MedicalImageQuiz = () => {
   });
 
   const saveAttempt = useMutation({
-    mutationFn: async (params: { imageId: string; selectedIndex: number; correct: boolean; timeSeconds: number }) => {
+    mutationFn: async (params: { imageId: string; selectedIndex: number; correct: boolean; timeSeconds: number; imageType?: string; questionId?: string }) => {
       const { error } = await supabase.from("medical_image_attempts").insert({
         user_id: user!.id,
         image_id: params.imageId,
         selected_index: params.selectedIndex,
         correct: params.correct,
         time_seconds: params.timeSeconds,
-      });
+        image_type: params.imageType || null,
+        question_id: params.questionId || null,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["image-quiz-stats"] }),
@@ -186,7 +188,14 @@ const MedicalImageQuiz = () => {
     const timeSeconds = Math.round((Date.now() - startTime) / 1000);
 
     if (user) {
-      saveAttempt.mutate({ imageId: currentQuestion.id, selectedIndex: index, correct, timeSeconds });
+      saveAttempt.mutate({
+        imageId: currentQuestion.id,
+        selectedIndex: index,
+        correct,
+        timeSeconds,
+        imageType: currentQuestion.image_type || undefined,
+        questionId: currentQuestion.id || undefined,
+      });
 
       // Log to error_bank on wrong answer
       if (!correct) {
