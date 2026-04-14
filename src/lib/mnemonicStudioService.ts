@@ -1,18 +1,16 @@
 /**
  * Mnemonic Studio — API service layer.
- * Sends to the mnemonic-studio edge function and parses response.
+ * Calls the generate-medical-mnemonic edge function.
  */
 import { supabase } from "@/integrations/supabase/client";
 import type {
   MnemonicStudioInput,
   MnemonicStudioResponse,
-  MnemonicStudioData,
 } from "./mnemonicStudioTypes";
 
 export async function generateMnemonicStudio(
   input: MnemonicStudioInput
 ): Promise<MnemonicStudioResponse> {
-  // Client-side validation
   if (!input.tema.trim()) {
     return { success: false, error: "Informe o tema." };
   }
@@ -30,12 +28,11 @@ export async function generateMnemonicStudio(
   }
 
   try {
-    const { data, error } = await supabase.functions.invoke("mnemonic-studio", {
+    const { data, error } = await supabase.functions.invoke("generate-medical-mnemonic", {
       body: input,
     });
 
     if (error) {
-      // Try to extract error from response context
       const ctx = (error as any)?.context;
       if (ctx && typeof ctx.json === "function") {
         try {
@@ -43,6 +40,7 @@ export async function generateMnemonicStudio(
           return {
             success: false,
             error: payload?.error || "Erro ao gerar mnemônico.",
+            agent_logs: payload?.agent_logs,
           };
         } catch {
           // fall through
@@ -55,9 +53,7 @@ export async function generateMnemonicStudio(
       return { success: false, error: "Resposta inválida do servidor." };
     }
 
-    // The edge function returns the full contract
-    const response = data as MnemonicStudioResponse;
-    return response;
+    return data as MnemonicStudioResponse;
   } catch (err) {
     console.error("[MnemonicStudio] Service error:", err);
     return {

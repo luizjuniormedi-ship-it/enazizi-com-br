@@ -17,6 +17,13 @@ export interface MnemonicStudioInput {
 // OUTPUT CONTRACT
 // ══════════════════════════════════════════════════
 
+export interface AgentLogEntry {
+  agent: string;
+  attempt: number;
+  status: string;
+  details: string;
+}
+
 export interface MnemonicStudioData {
   tema: string;
   sigla: string;
@@ -37,12 +44,14 @@ export interface MnemonicStudioData {
     symbol: string | null;
     symbol_reason: string | null;
   }>;
+  agent_logs?: AgentLogEntry[];
 }
 
 export interface MnemonicStudioResponse {
   success: boolean;
   data?: MnemonicStudioData;
   error?: string;
+  agent_logs?: AgentLogEntry[];
 }
 
 // ══════════════════════════════════════════════════
