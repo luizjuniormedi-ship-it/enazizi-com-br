@@ -38,24 +38,19 @@ const mobileNavGroups: MobileNavGroup[] = [
   {
     title: "Estudar",
     items: [
-      { to: "/dashboard", label: "📊 Dashboard" },
+      { to: "/dashboard", label: "🚀 Missão" },
       { to: "/dashboard/chatgpt", label: "✨ Tutor IA" },
-      { to: "/dashboard/simulados", label: "📝 Simulados" },
-      { to: "/dashboard/gerador-questoes", label: "💡 Gerador de Questões" },
+      { to: "/dashboard/gerador-questoes", label: "💡 Questões" },
       { to: "/dashboard/flashcards", label: "🃏 Flashcards" },
-      { to: "/dashboard/gerar-flashcards", label: "⚡ Gerador de Flashcards" },
+      { to: "/dashboard/simulados", label: "📝 Simulados" },
       { to: "/dashboard/resumos", label: "📖 Resumos" },
-      { to: "/dashboard/diagnostico", label: "🩺 Nivelamento" },
     ],
   },
   {
     title: "Progresso",
     items: [
       { to: "/dashboard/analytics", label: "📊 Analytics" },
-      { to: "/dashboard/banco-erros", label: "⚠️ Banco de Erros" },
-      { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Evolução" },
-      { to: "/dashboard/rankings", label: "👑 Rankings" },
-      { to: "/dashboard/conquistas", label: "🏆 Conquistas" },
+      { to: "/dashboard/planner", label: "📅 Plano Estratégico" },
     ],
   },
   {
@@ -63,15 +58,10 @@ const mobileNavGroups: MobileNavGroup[] = [
     items: [
       { to: "/dashboard/anamnese", label: "💬 Anamnese" },
       { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática" },
-      { to: "/dashboard/plantao", label: "🚨 Plantão" },
-      { to: "/dashboard/apostilas", label: "📚 Apostilas" },
-      { to: "/dashboard/cronicas", label: "📖 Crônicas Médicas" },
+      { to: "/dashboard/diagnostico", label: "🩺 Nivelamento" },
+      { to: "/dashboard/gerar-flashcards", label: "⚡ Gerador Flashcards" },
       { to: "/dashboard/discursivas", label: "✍️ Discursivas" },
-      { to: "/dashboard/predictor", label: "📈 Previsão" },
-      { to: "/dashboard/proficiencia", label: "🎓 Proficiência" },
-      { to: "/dashboard/coach", label: "💪 Coach" },
-      { to: "/dashboard/planner", label: "📅 Plano Estratégico" },
-      { to: "/dashboard/mnemonico", label: "🧠 Mnemônico" },
+      { to: "/dashboard/cronicas", label: "📖 Crônicas Médicas" },
     ],
   },
 ];
