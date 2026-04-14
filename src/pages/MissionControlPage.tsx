@@ -148,21 +148,23 @@ export default function MissionControlPage() {
         </div>
       )}
 
-      {/* Study Loop Panel (bottom sheet) */}
-      <StudyLoopPanel
-        phase={loop.phase}
-        context={loop.context}
-        result={loop.result}
-        loading={loop.loading}
-        error={loop.error}
-        onBeginExecution={loop.beginExecution}
-        onSubmitAnswer={loop.submitAnswer}
-        onCompleteReview={loop.completeReview}
-        onContinue={loop.continueLoop}
-        onQuickAction={loop.runQuickAction}
-        onRetry={loop.retry}
-        onClose={handleLoopClose}
-      />
+      {/* Study Loop Panel (bottom sheet) — gated by flag */}
+      {studyLoopEnabled && (
+        <StudyLoopPanel
+          phase={loop.phase}
+          context={loop.context}
+          result={loop.result}
+          loading={loop.loading}
+          error={loop.error}
+          onBeginExecution={loop.beginExecution}
+          onSubmitAnswer={loop.submitAnswer}
+          onCompleteReview={loop.completeReview}
+          onContinue={loop.continueLoop}
+          onQuickAction={loop.runQuickAction}
+          onRetry={loop.retry}
+          onClose={handleLoopClose}
+        />
+      )}
     </div>
   );
 }
