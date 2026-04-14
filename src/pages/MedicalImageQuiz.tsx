@@ -68,25 +68,65 @@ const SELECT_FIELDS = `
 const BLOCKED_URL_TERMS = [
   "logo", "stock", "laptop", "banner", "algoscope", "placeholder",
   "mock", "demo", "avatar", "portrait", "screenshot", "dashboard",
+  "icon", "favicon", "thumbnail", "profile", "headshot", "staff",
+  "bio-photo", "doctor-photo", "team", "about-us", "generic",
 ];
 
-function isValidMedicalImage(url: string | null): boolean {
+/** Validate a URL is a real medical image, not a logo/placeholder/etc */
+function isValidMedicalImageUrl(url: string | null): boolean {
   if (!url || typeof url !== "string") return false;
+  // Must pass the safety gate
   if (!isImageUrlClinical(url)) return false;
   const lower = url.toLowerCase();
-  return !BLOCKED_URL_TERMS.some((term) => lower.includes(term));
+  // Block suspicious terms
+  if (BLOCKED_URL_TERMS.some((term) => lower.includes(term))) return false;
+  // Must look like an actual image URL
+  const hasImageExt = /\.(jpg|jpeg|png|webp|gif|bmp|tiff|svg)(\?|$)/i.test(url);
+  const isDataUrl = url.startsWith("data:image/");
+  const isStorageUrl = url.includes("supabase.co/storage");
+  if (!hasImageExt && !isDataUrl && !isStorageUrl) return false;
+  return true;
+}
+
+/** Validate a full asset object is renderable */
+function isRenderableMedicalImage(asset: any): boolean {
+  if (!asset) return false;
+  const url = asset?.image_url;
+  if (!isValidMedicalImageUrl(url)) return false;
+  // Block assets explicitly marked as AI-rejected
+  if (asset.ai_validated === false) return false;
+  if (typeof asset.ai_confidence === "number" && asset.ai_confidence < 0.7) return false;
+  return true;
 }
 
 function mapRows(data: any[]): ImageQuestion[] {
   let blocked = 0;
+  const blockedPatterns: Record<string, number> = {};
   const result = data
     .map((q: any) => {
       const asset = q.medical_image_assets;
-      const imageUrl = asset?.image_url || null;
-      if (!isValidMedicalImage(imageUrl)) {
+      // Use full asset validation (URL + AI fields)
+      if (!isRenderableMedicalImage(asset)) {
         blocked++;
-        return null;
+        const url = (asset?.image_url || "").toLowerCase();
+        const matched = BLOCKED_URL_TERMS.find((t) => url.includes(t));
+        if (matched) blockedPatterns[matched] = (blockedPatterns[matched] || 0) + 1;
+        // Still include the question but without image
+        const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
+        return {
+          id: q.id,
+          statement: q.statement,
+          options: opts,
+          correct_index: q.correct_index,
+          explanation: q.explanation,
+          difficulty: q.difficulty,
+          exam_style: q.exam_style,
+          image_url: null, // blocked
+          image_type: asset?.image_type || null,
+          diagnosis: asset?.diagnosis || null,
+        } as ImageQuestion;
       }
+      const imageUrl = asset?.image_url || null;
       const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
       return {
         id: q.id,
@@ -102,7 +142,7 @@ function mapRows(data: any[]): ImageQuestion[] {
       } as ImageQuestion;
     })
     .filter(Boolean) as ImageQuestion[];
-  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked: ${blocked}`);
+  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked images: ${blocked}`, blocked > 0 ? blockedPatterns : "");
   return result;
 }
 
@@ -156,7 +196,7 @@ async function fetchQuestionsWithFallback(
   const q2 = mapRows(d2 || []);
   if (q2.length >= 5) return { questions: q2, tier: "tier2" };
 
-  // ── Tier 3: any active + integrity ok ──
+  // ── Tier 3: active + integrity ok + minimum confidence ──
   const t3 = applyFilters(
     supabase
       .from("medical_image_questions")
@@ -164,13 +204,16 @@ async function fetchQuestionsWithFallback(
       .eq("status", "published")
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.integrity_status", "ok")
+      .gte("medical_image_assets.clinical_confidence", 0.6)
       .neq("medical_image_assets.image_url", ""),
     imageType,
     difficulty,
   );
   const { data: d3, error: e3 } = await t3.order("created_at", { ascending: false }).limit(30);
   if (e3) throw e3;
-  return { questions: mapRows(d3 || []), tier: "tier3" };
+  const q3 = mapRows(d3 || []);
+  console.log(`[ImageQuiz] Tier stats — T1: ${q1.length} | T2: ${q2.length} | T3: ${q3.length}`);
+  return { questions: q3, tier: "tier3" };
 }
 
 const MedicalImageQuiz = () => {
@@ -356,14 +399,19 @@ const MedicalImageQuiz = () => {
       <Dialog open={!!zoomImage} onOpenChange={() => setZoomImage(null)}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 sm:p-4 bg-black/95 border-border/30">
           <div className="relative flex items-center justify-center min-h-[50vh]">
-            {zoomImage && isImageUrlClinical(zoomImage) && (
+            {zoomImage && isValidMedicalImageUrl(zoomImage) ? (
               <img
                 src={zoomImage}
                 alt="Imagem ampliada"
                 className="max-w-full max-h-[85vh] object-contain"
                 referrerPolicy="no-referrer"
               />
-            )}
+            ) : zoomImage ? (
+              <div className="flex flex-col items-center gap-3 text-center">
+                <ImageIcon className="h-16 w-16 text-muted-foreground/30" />
+                <p className="text-muted-foreground">Imagem indisponível para ampliação</p>
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
@@ -466,7 +514,7 @@ const MedicalImageQuiz = () => {
           {/* Quiz Card */}
           <Card className="overflow-hidden">
             {/* Image */}
-            {currentQuestion.image_url && isImageUrlClinical(currentQuestion.image_url) && (
+            {currentQuestion.image_url && isValidMedicalImageUrl(currentQuestion.image_url) && (
               <div
                 className="relative bg-black/90 flex items-center justify-center min-h-[250px] sm:min-h-[350px] cursor-zoom-in group"
                 onClick={() => setZoomImage(currentQuestion.image_url)}
@@ -502,7 +550,7 @@ const MedicalImageQuiz = () => {
             )}
 
             {/* No image fallback — required when the asset is invalid or unavailable */}
-            {(!currentQuestion.image_url || !isImageUrlClinical(currentQuestion.image_url)) && (
+            {(!currentQuestion.image_url || !isValidMedicalImageUrl(currentQuestion.image_url)) && (
               <div className="bg-muted/30 border-b border-border flex flex-col items-center justify-center min-h-[200px] gap-3 p-6">
                 <ImageIcon className="h-12 w-12 text-muted-foreground/40" />
                 <p className="text-sm text-muted-foreground text-center">
@@ -600,7 +648,7 @@ const MedicalImageQuiz = () => {
               }}
             >
               <div className="relative bg-black/80 h-40 flex items-center justify-center">
-                {q.image_url && isImageUrlClinical(q.image_url) ? (
+                {q.image_url && isValidMedicalImageUrl(q.image_url) ? (
                   <img
                     src={q.image_url}
                     alt="Quiz"

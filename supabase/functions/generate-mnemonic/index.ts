@@ -401,25 +401,39 @@ serve(async (req: Request) => {
 
   let requestId: string | null = null;
   let db: SupabaseClient | null = null;
+  let currentStage = "init";
 
   try {
+    currentStage = "env_check";
     const aiKey = requireEnv("LOVABLE_API_KEY");
     requireEnv("SUPABASE_URL"); requireEnv("SUPABASE_ANON_KEY"); requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 
+    currentStage = "parse_body";
     const rawBody = await req.json().catch(() => null);
+    if (!rawBody) throw new Error("Body vazio ou JSON inválido.");
+    console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema}, termos=${(rawBody as any)?.termos?.length}`);
+
+    currentStage = "validate_input";
     const payload = validatePayload(rawBody);
     const norm = normalizeTerms(payload.tema, payload.termos);
     payload.tema = norm.tema; payload.termos = norm.termos;
 
+    currentStage = "auth";
     const userId = await getUserIdFromRequest(req);
+    console.log(`[MNEMONIC] User: ${userId.substring(0, 8)}...`);
+
+    currentStage = "db_init";
     db = getServiceClient();
     requestId = await insertRequest(db, userId, payload);
+    console.log(`[MNEMONIC] Request: ${requestId}`);
     const ctx = buildContext(payload);
     let order = 0;
 
     // ── 1. GERADOR CLÍNICO ──
+    currentStage = "agent_gerador";
     let gen = await runAgent<GeneratorOutput>(aiKey, db, requestId, userId, "gerador", ++order, PROMPT_GERADOR, ctx);
 
+    currentStage = "clinical_gate";
     // ── 2. GATE DE COBERTURA CLÍNICA ──
     let coverageOk = true;
     const gate = runClinicalGate(payload.termos, gen.frase_mnemonica, gen.mapa_completo);
@@ -432,6 +446,7 @@ serve(async (req: Request) => {
       coverageOk = gate2.passed;
     }
 
+    currentStage = "agent_linguistico";
     // ── 3. AUDITOR LINGUÍSTICO ──
     const lingP = `${ctx}\n\nMnemônico:\nFrase: ${gen.frase_mnemonica}\nDidática: ${gen.explicacao_didatica}`;
     let ling = await runAgent<LinguisticAuditOutput>(aiKey, db, requestId, userId, "auditor_linguistico_ptbr", ++order, PROMPT_AUDITOR_LINGUISTICO, lingP);
@@ -447,6 +462,7 @@ serve(async (req: Request) => {
       if (rLing.score_linguistico >= ling.score_linguistico) { ling = rLing; gen = rGen; }
     } else if (ling.versao_corrigida?.frase_mnemonica) { gen.frase_mnemonica = ling.versao_corrigida.frase_mnemonica; }
 
+    currentStage = "agent_medico";
     // ── 5. AUDITOR MÉDICO ──
     const medP = `${ctx}\n\nMnemônico:\n${JSON.stringify({ sigla: gen.sigla, frase_mnemonica: gen.frase_mnemonica, mapa_completo: gen.mapa_completo }, null, 2)}`;
     let med = await runAgent<MedicalAuditOutput>(aiKey, db, requestId, userId, "auditor_medico", ++order, PROMPT_AUDITOR_MEDICO, medP);
@@ -461,6 +477,7 @@ serve(async (req: Request) => {
       if (rMed.score_medico >= med.score_medico) { med = rMed; approved = rMed.versao_corrigida ?? rGen; }
     }
 
+    currentStage = "agent_pedagogico";
     // ── 7. AUDITOR PEDAGÓGICO (resilient) ──
     let ped: PedagogicalAuditOutput = { score_pedagogico: 75, facilidade_memorizacao: 75, clareza: 75, associacao_mental: 75, aplicabilidade_em_aula: 75, aplicabilidade_em_prova: 75, pontos_fortes: [], pontos_fracos: [] };
     try {
@@ -474,10 +491,12 @@ serve(async (req: Request) => {
     if (ped.versao_otimizada?.frase_mnemonica) approved.frase_mnemonica = ped.versao_otimizada.frase_mnemonica;
     if (ped.versao_otimizada?.explicacao_didatica) approved.explicacao_didatica = ped.versao_otimizada.explicacao_didatica;
 
+    currentStage = "agent_visual";
     // ── 9. GERADOR VISUAL (resilient) ──
     let vis: VisualOutput = { cena_visual: approved.frase_mnemonica, associacoes_visuais: [], prompt_imagem: `Clean medical infographic of ${approved.sigla || payload.tema}, flat design, white bg, no text` };
     try { vis = await runAgent<VisualOutput>(aiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, `${ctx}\n\nSigla: ${approved.sigla}\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
 
+    currentStage = "image_generation";
     // ── 10. GERADOR DE IMAGEM (resilient, with diagnostics) ──
     let imageUrl: string | null = null;
     let imageFailed = false;
@@ -503,6 +522,7 @@ serve(async (req: Request) => {
     let exam: ExamStructureOutput = { estrutura_prova: { topico: payload.tema, itens_organizados: [] }, diferencial_prova: { diagnostico_comparado: "", diferencas_chave: [], pegadinhas: [] }, memorizacao_ativa: { pergunta_rapida: "", resposta_esperada: "", gatilho_mental: "" } };
     try { exam = await runAgent<ExamStructureOutput>(aiKey, db, requestId, userId, "consolidador", ++order, PROMPT_ESTRUTURA_PROVA, `${ctx}\n\nFrase: ${approved.frase_mnemonica}`); } catch { /* fallback */ }
 
+    currentStage = "consolidador";
     // ── 11. CONSOLIDADOR FINAL ──
     const consP = `${ctx}\n\nMnemônico:\n${JSON.stringify(approved, null, 2)}\n\nLing: ${ling.score_linguistico} | Méd: ${med.score_medico} | Ped: ${ped.score_pedagogico}\nCena: ${vis.cena_visual}\nPrompt img: ${vis.prompt_imagem}`;
     const cons = await runAgent<ConsolidatedOutput>(aiKey, db, requestId, userId, "consolidador", ++order, PROMPT_CONSOLIDADOR, consP);
@@ -515,6 +535,7 @@ serve(async (req: Request) => {
     const aM = sM >= SCORE_MEDICO_MIN; const aP = sP >= SCORE_PEDAGOGICO_MIN; const ap = aM && aP;
     const qf = (sM >= 90 && sL >= 85 && sP >= 85) ? "high" : (sL < 80 || sM < 85) ? "low" : "medium";
 
+    currentStage = "db_persist";
     const resultId = await insertResult(db, { request_id: requestId, user_id: userId, tema: payload.tema, consolidated: cons, visual: vis, score_medico: sM, score_pedagogico: sP, score_linguistico: sL, score_final: sF, aprovado: ap, aprovado_medico: aM, aprovado_pedagogico: aP, image_url: imageUrl });
     await updateRequestStatus(db, requestId, "completed");
 
@@ -539,8 +560,9 @@ serve(async (req: Request) => {
       },
     });
   } catch (error) {
-    console.error("generate-mnemonic error:", error);
+    const msg = error instanceof Error ? error.message : "Erro interno.";
+    console.error(`[MNEMONIC] FAILED at stage=${currentStage}:`, msg);
     if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-    return jsonResponse({ success: false, error: error instanceof Error ? error.message : "Erro interno." }, 500);
+    return jsonResponse({ success: false, error: msg, stage: currentStage }, 500);
   }
 });

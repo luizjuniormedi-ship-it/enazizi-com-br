@@ -67,3 +67,5 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.repopulate-image-assets]
     verify_jwt = false
+  [functions.validate-medical-image-ai]
+    verify_jwt = false
