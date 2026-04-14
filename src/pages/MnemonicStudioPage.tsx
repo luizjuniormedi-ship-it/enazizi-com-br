@@ -242,7 +242,7 @@ export default function MnemonicGeneratorPage() {
           )}
 
           {/* Alertas */}
-          {result.alertas.length > 0 && (
+          {(result.alertas ?? []).length > 0 && (
             <Card className="border-yellow-500/30">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2 text-yellow-500">
@@ -251,19 +251,19 @@ export default function MnemonicGeneratorPage() {
               </CardHeader>
               <CardContent>
                 <ul className="text-sm space-y-1">
-                  {result.alertas.map((a, i) => <li key={i} className="text-muted-foreground">• {a}</li>)}
+                  {(result.alertas ?? []).map((a, i) => <li key={i} className="text-muted-foreground">• {a}</li>)}
                 </ul>
               </CardContent>
             </Card>
           )}
 
           {/* Associações */}
-          {result.items_map.length > 0 && (
+          {(result.items_map ?? []).length > 0 && (
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Mapa de associações</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {result.items_map.map((item, i) => (
+                  {(result.items_map ?? []).map((item, i) => (
                     <div key={i} className="flex items-center gap-3 text-sm">
                       <Badge variant="outline" className="font-mono text-lg w-8 h-8 flex items-center justify-center">{item.letter}</Badge>
                       <span className="font-medium">{item.word}</span>
