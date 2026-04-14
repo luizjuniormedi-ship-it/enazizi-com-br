@@ -101,14 +101,32 @@ function isRenderableMedicalImage(asset: any): boolean {
 
 function mapRows(data: any[]): ImageQuestion[] {
   let blocked = 0;
+  const blockedPatterns: Record<string, number> = {};
   const result = data
     .map((q: any) => {
       const asset = q.medical_image_assets;
-      const imageUrl = asset?.image_url || null;
-      if (!isValidMedicalImage(imageUrl)) {
+      // Use full asset validation (URL + AI fields)
+      if (!isRenderableMedicalImage(asset)) {
         blocked++;
-        return null;
+        const url = (asset?.image_url || "").toLowerCase();
+        const matched = BLOCKED_URL_TERMS.find((t) => url.includes(t));
+        if (matched) blockedPatterns[matched] = (blockedPatterns[matched] || 0) + 1;
+        // Still include the question but without image
+        const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
+        return {
+          id: q.id,
+          statement: q.statement,
+          options: opts,
+          correct_index: q.correct_index,
+          explanation: q.explanation,
+          difficulty: q.difficulty,
+          exam_style: q.exam_style,
+          image_url: null, // blocked
+          image_type: asset?.image_type || null,
+          diagnosis: asset?.diagnosis || null,
+        } as ImageQuestion;
       }
+      const imageUrl = asset?.image_url || null;
       const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
       return {
         id: q.id,
@@ -124,7 +142,7 @@ function mapRows(data: any[]): ImageQuestion[] {
       } as ImageQuestion;
     })
     .filter(Boolean) as ImageQuestion[];
-  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked: ${blocked}`);
+  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked images: ${blocked}`, blocked > 0 ? blockedPatterns : "");
   return result;
 }
 
