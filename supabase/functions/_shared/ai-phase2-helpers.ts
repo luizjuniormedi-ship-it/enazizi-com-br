@@ -1,6 +1,6 @@
 /**
- * Phase 2 AI helpers: cache, usage control, and light AI calls.
- * Reuses existing ai_content_cache table for caching.
+ * Phase 2/3/3.5 AI helpers: cache, usage control, anti-repetition,
+ * content logging, and study-next integration conventions.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -34,30 +34,61 @@ export async function extractUserId(req: Request): Promise<string | null> {
   return data?.user?.id || null;
 }
 
-// ── Cache (reuses ai_content_cache) ──
-function hashInput(type: string, params: Record<string, unknown>): string {
-  const sorted = Object.keys(params)
-    .sort()
-    .map((k) => `${k}=${String(params[k] ?? "").toLowerCase().trim()}`)
-    .join("::");
-  return `phase2::${type}::${sorted}`;
+// ── Robust hash ──
+async function sha256(text: string): Promise<string> {
+  const data = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
 
+/** Deterministic hash from type + sorted payload */
+export async function buildCacheKey(
+  type: string,
+  params: Record<string, unknown>,
+): Promise<string> {
+  const canonical = JSON.stringify(
+    Object.keys(params)
+      .sort()
+      .reduce((o, k) => {
+        o[k] = String(params[k] ?? "").toLowerCase().trim();
+        return o;
+      }, {} as Record<string, string>),
+  );
+  const hash = await sha256(canonical);
+  return `p3::${type}::${hash.slice(0, 24)}`;
+}
+
+/** Quick hash for content dedup (anti-repetition) */
+export async function contentHash(text: string): Promise<string> {
+  const normalized = text.toLowerCase().replace(/\s+/g, " ").trim().slice(0, 500);
+  return (await sha256(normalized)).slice(0, 16);
+}
+
+// ── Cache (reuses ai_content_cache) ──
 export async function getCache(
   type: string,
   params: Record<string, unknown>,
-): Promise<{ hit: true; data: any } | { hit: false; key: string }> {
-  const key = hashInput(type, params);
+): Promise<{ hit: true; data: any; key: string } | { hit: false; key: string }> {
+  const key = await buildCacheKey(type, params);
   try {
     const sb = getAdmin();
     const { data } = await sb
       .from("ai_content_cache")
-      .select("content_json")
+      .select("id, content_json, hit_count")
       .eq("cache_key", key)
       .eq("content_type", type)
       .gt("expires_at", new Date().toISOString())
       .maybeSingle();
-    if (data) return { hit: true, data: data.content_json };
+    if (data) {
+      // Increment hit_count (fire-and-forget)
+      sb.from("ai_content_cache")
+        .update({ hit_count: (data.hit_count || 0) + 1 })
+        .eq("id", data.id)
+        .then(() => {});
+      return { hit: true, data: data.content_json, key };
+    }
   } catch {
     /* miss */
   }
@@ -69,6 +100,7 @@ export async function setCache(
   type: string,
   json: any,
   ttlDays = 30,
+  modelUsed?: string,
 ) {
   try {
     const sb = getAdmin();
@@ -77,7 +109,7 @@ export async function setCache(
         cache_key: key,
         content_type: type,
         content_json: json,
-        model_used: "gemini-2.5-flash-lite",
+        model_used: modelUsed || "gemini-2.5-flash",
         expires_at: new Date(Date.now() + ttlDays * 86_400_000).toISOString(),
         hit_count: 0,
       },
@@ -85,6 +117,62 @@ export async function setCache(
     );
   } catch {
     /* non-critical */
+  }
+}
+
+// ── Anti-repetition ──
+/** Check if content with same hash was generated for this user recently */
+export async function wasRecentlyGenerated(
+  userId: string,
+  hash: string,
+  windowHours = 24,
+): Promise<boolean> {
+  try {
+    const sb = getAdmin();
+    const since = new Date(Date.now() - windowHours * 3_600_000).toISOString();
+    const { count } = await sb
+      .from("generated_content_log")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("content_hash", hash)
+      .gt("created_at", since);
+    return (count || 0) > 0;
+  } catch {
+    return false;
+  }
+}
+
+// ── Content logging ──
+export async function logGeneratedContent(params: {
+  userId: string;
+  contentType: string;
+  theme: string;
+  subtopic?: string;
+  contentHash: string;
+  requestPayload?: unknown;
+  responsePayload?: unknown;
+  sourceEndpoint: string;
+  modelUsed?: string;
+  cacheHit: boolean;
+  costUnits: number;
+}): Promise<void> {
+  try {
+    const sb = getAdmin();
+    await sb.from("generated_content_log").insert({
+      user_id: params.userId,
+      content_type: params.contentType,
+      theme: params.theme,
+      subtopic: params.subtopic || null,
+      content_hash: params.contentHash,
+      request_payload: params.requestPayload as any,
+      response_payload: params.responsePayload as any,
+      source_endpoint: params.sourceEndpoint,
+      model_used: params.modelUsed || "gemini-2.5-flash",
+      cache_hit: params.cacheHit,
+      cost_units: params.costUnits,
+    });
+  } catch (e) {
+    console.warn("[logGeneratedContent] failed:", e);
   }
 }
 
@@ -96,7 +184,6 @@ const LIMITS: Record<string, number> = {
   enterprise: 2000,
 };
 
-// ── Cost weights per action type ──
 export const ACTION_COSTS: Record<string, number> = {
   explain_simple: 1,
   reinforce_error: 1,
@@ -112,9 +199,8 @@ export async function checkAndIncrementUsage(
   cost = 1,
 ): Promise<{ allowed: boolean; remaining: number }> {
   const sb = getAdmin();
-  const period = new Date().toISOString().slice(0, 7) + "-01"; // YYYY-MM-01
+  const period = new Date().toISOString().slice(0, 7) + "-01";
 
-  // Upsert to ensure row exists
   const { data: row } = await sb
     .from("ai_usage_control")
     .upsert(
@@ -124,7 +210,6 @@ export async function checkAndIncrementUsage(
     .select("ai_calls_used, ai_calls_limit, plan_type")
     .maybeSingle();
 
-  // If upsert didn't return, fetch
   let usage = row;
   if (!usage) {
     const { data } = await sb
@@ -143,7 +228,6 @@ export async function checkAndIncrementUsage(
     return { allowed: false, remaining: Math.max(0, limit - used) };
   }
 
-  // Increment by cost weight
   await sb
     .from("ai_usage_control")
     .update({ ai_calls_used: used + cost })
@@ -153,36 +237,24 @@ export async function checkAndIncrementUsage(
   return { allowed: true, remaining: limit - used - cost };
 }
 
-// ── Light AI call ──
+// ── AI calls ──
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-2.5-flash-lite";
+const LIGHT_MODEL = "google/gemini-2.5-flash-lite";
+const HEAVY_MODEL = "google/gemini-2.5-flash";
 
-export async function callLightAI(
-  systemPrompt: string,
-  userPrompt: string,
-): Promise<string> {
+async function callAI(model: string, system: string, user: string, maxTokens: number): Promise<string> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
 
   const res = await fetch(GATEWAY, {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_tokens: 1024,
-    }),
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: maxTokens }),
   });
 
   if (!res.ok) {
     const t = await res.text();
-    console.error(`AI call failed (${res.status}):`, t.slice(0, 200));
+    console.error(`AI (${model}) failed (${res.status}):`, t.slice(0, 200));
     if (res.status === 429) throw new Error("AI_RATE_LIMITED");
     if (res.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
     throw new Error("AI_SERVICE_UNAVAILABLE");
@@ -192,43 +264,12 @@ export async function callLightAI(
   return json.choices?.[0]?.message?.content || "";
 }
 
-// ── Heavy AI call (Phase 3) ──
-const HEAVY_MODEL = "google/gemini-2.5-flash";
+export function callLightAI(system: string, user: string): Promise<string> {
+  return callAI(LIGHT_MODEL, system, user, 1024);
+}
 
-export async function callHeavyAI(
-  systemPrompt: string,
-  userPrompt: string,
-  maxTokens = 4096,
-): Promise<string> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) throw new Error("LOVABLE_API_KEY not configured");
-
-  const res = await fetch(GATEWAY, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: HEAVY_MODEL,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_tokens: maxTokens,
-    }),
-  });
-
-  if (!res.ok) {
-    const t = await res.text();
-    console.error(`Heavy AI call failed (${res.status}):`, t.slice(0, 200));
-    if (res.status === 429) throw new Error("AI_RATE_LIMITED");
-    if (res.status === 402) throw new Error("AI_CREDITS_EXHAUSTED");
-    throw new Error("AI_SERVICE_UNAVAILABLE");
-  }
-
-  const json = await res.json();
-  return json.choices?.[0]?.message?.content || "";
+export function callHeavyAI(system: string, user: string, maxTokens = 4096): Promise<string> {
+  return callAI(HEAVY_MODEL, system, user, maxTokens);
 }
 
 /** Parse JSON from AI response, handling markdown code blocks */
@@ -237,9 +278,7 @@ export function parseAiJsonSafe(raw: string): any {
   const text = codeBlock ? codeBlock[1].trim() : raw;
   const jsonMatch = text.match(/[\[{][\s\S]*[\]}]/);
   if (!jsonMatch) throw new Error("No JSON found in AI response");
-  return JSON.parse(
-    jsonMatch[0].replace(/,\s*([}\]])/g, "$1"), // trailing commas
-  );
+  return JSON.parse(jsonMatch[0].replace(/,\s*([}\]])/g, "$1"));
 }
 
 // ── JSON response helpers ──
@@ -256,7 +295,56 @@ export function jsonError(msg: string, status = 400) {
   });
 }
 
-// ── Fallback message ──
+// ── Fallback helpers ──
 export function fallbackMessage(theme: string): string {
   return `Revise o tema "${theme}" com base no seu material de estudo. Você pode tentar novamente mais tarde quando seu limite for renovado.`;
+}
+
+/** Contextual fallback with cheaper endpoint suggestions */
+export function smartFallback(endpoint: string, theme: string): {
+  message: string;
+  suggestedEndpoints: string[];
+} {
+  const map: Record<string, { msg: string; alt: string[] }> = {
+    "generate-adaptive-question": {
+      msg: `Limite atingido para geração de questões. Use "explain-simple" ou "summarize-topic" para revisar "${theme}" com custo menor.`,
+      alt: ["explain-simple", "summarize-topic"],
+    },
+    "explain-deep": {
+      msg: `Limite atingido para explicação profunda. Use "explain-simple" para uma revisão rápida de "${theme}".`,
+      alt: ["explain-simple"],
+    },
+    "audit-answer": {
+      msg: `Limite atingido para auditoria. Revise o gabarito e as referências do tema "${theme}" manualmente.`,
+      alt: ["reinforce-error", "explain-simple"],
+    },
+    "simulado-assistant": {
+      msg: `Limite atingido para simulados. Use "generate-adaptive-question" para questões individuais de "${theme}".`,
+      alt: ["generate-adaptive-question", "summarize-topic"],
+    },
+  };
+  const entry = map[endpoint] || { msg: fallbackMessage(theme), alt: [] };
+  return { message: entry.msg, suggestedEndpoints: entry.alt };
+}
+
+// ── Study-next integration conventions ──
+/**
+ * Maps study-next recommendation types to suggested content endpoints.
+ * This is a reference convention — study-next itself is not modified.
+ */
+export const STUDY_NEXT_ACTION_MAP: Record<string, string[]> = {
+  error_review: ["reinforce-error", "generate-adaptive-question"],
+  review: ["summarize-topic", "explain-deep"],
+  fsrs_review: ["summarize-topic", "explain-simple"],
+  daily_task: ["generate-adaptive-question"],
+  free_study: ["explain-deep", "generate-adaptive-question"],
+};
+
+/** Handle common AI errors and return appropriate Response */
+export function handleAiError(e: unknown, context: string): Response {
+  console.error(`${context} error:`, e);
+  const msg = e instanceof Error ? e.message : "";
+  if (msg === "AI_RATE_LIMITED") return jsonError("Muitas requisições. Aguarde.", 429);
+  if (msg === "AI_CREDITS_EXHAUSTED") return jsonError("Créditos esgotados.", 402);
+  return jsonError(`Erro: ${context}`, 500);
 }
