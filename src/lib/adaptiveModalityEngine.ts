@@ -260,6 +260,25 @@ export async function generateAdaptiveBlueprint(userId: string): Promise<Adaptiv
     };
   }
 
+  // ── Boost from visual_skill_snapshots (persisted from Image Quiz) ──
+  for (const snap of visualSnapshots) {
+    const mod = snap.image_type?.toLowerCase();
+    if (!mod || !rawScores.hasOwnProperty(mod)) continue;
+    const label = MODALITY_LABELS[mod] || mod.toUpperCase();
+    // Weak snapshot → boost priority
+    if (snap.accuracy < 50) {
+      rawScores[mod] += 80;
+      insights.push({ type: "priority", modality: mod, message: `${label} está fraco no quiz visual (${snap.accuracy}%) → priorizado no simulado.` });
+    } else if (snap.accuracy < 70) {
+      rawScores[mod] += 40;
+    }
+    // Declining trend → extra boost
+    if (snap.trend === "declining") {
+      rawScores[mod] += 30;
+      insights.push({ type: "priority", modality: mod, message: `Seu desempenho em ${label} está piorando → reforço no simulado.` });
+    }
+  }
+
   // Normalise scores to 0-1, respecting min/max share
   const totalRaw = Object.values(rawScores).reduce((a, b) => a + b, 0) || 1;
   const imageTypeDist: Record<string, number> = {};
