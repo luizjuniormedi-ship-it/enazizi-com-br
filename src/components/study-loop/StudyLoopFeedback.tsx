@@ -17,8 +17,8 @@ export default function StudyLoopFeedback({ result, hasNextQuestion, loading, on
     <div className="flex flex-col items-center text-center space-y-5 py-6 px-4">
       {/* Icon */}
       {correct ? (
-        <div className="rounded-full bg-emerald-500/10 p-4">
-          <CheckCircle2 className="h-12 w-12 text-emerald-500" />
+        <div className="rounded-full bg-primary/10 p-4">
+          <CheckCircle2 className="h-12 w-12 text-primary" />
         </div>
       ) : (
         <div className="rounded-full bg-destructive/10 p-4">
