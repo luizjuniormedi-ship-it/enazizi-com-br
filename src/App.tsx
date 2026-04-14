@@ -166,6 +166,7 @@ const App = () => (
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
+                <Route path="metrics" element={<ProductMetricsPage />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
