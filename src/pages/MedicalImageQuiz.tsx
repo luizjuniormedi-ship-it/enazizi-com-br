@@ -28,6 +28,16 @@ type ImageQuestion = {
   image_url: string | null;
   image_type: string | null;
   diagnosis: string | null;
+  discussion: {
+    definition?: string;
+    physiopathology?: string;
+    findings?: string;
+    clinical_correlation?: string;
+    differential?: string;
+    management?: string;
+  } | null;
+  exam_tips: string[];
+  pitfalls: string[];
 };
 
 type QualityTier = "tier1" | "tier2" | "tier3";
