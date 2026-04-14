@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import type { StudyNextRecommendation } from "./useStudyNext";
+import { trackLoopEvent, incrementDailyEngagement } from "@/lib/studyLoopTracking";
 
 /* ─── Loop states ─── */
 export type LoopPhase = "idle" | "intro" | "running" | "feedback" | "next" | "complete";
@@ -124,6 +126,8 @@ async function callExplainDeep(theme: string, subtopic?: string) {
 /* ─── Hook ─── */
 export function useStudyLoop() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const uid = user?.id || "";
   const [phase, setPhase] = useState<LoopPhase>("idle");
   const [context, setContext] = useState<LoopContext | null>(null);
   const [result, setResult] = useState<StepResult | null>(null);
@@ -131,6 +135,8 @@ export function useStudyLoop() {
   const [error, setError] = useState<string | null>(null);
   const reinforceCountRef = useRef(0);
   const lastActionRef = useRef<LastAction | null>(null);
+  const sessionStartRef = useRef<number>(0);
+  const loopSessionIdRef = useRef<string>(crypto.randomUUID());
 
   /* ─── Start mission ─── */
   const startMission = useCallback((rec: StudyNextRecommendation) => {
@@ -140,8 +146,16 @@ export function useStudyLoop() {
     setError(null);
     reinforceCountRef.current = 0;
     lastActionRef.current = null;
+    sessionStartRef.current = Date.now();
+    loopSessionIdRef.current = crypto.randomUUID();
     setPhase("intro");
-  }, []);
+
+    // Track loop start
+    if (uid) {
+      trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_start", recommendationType: rec.type, theme, targetId: rec.targetId });
+      incrementDailyEngagement(uid, { loops_started: 1 });
+    }
+  }, [uid]);
 
   /* ─── Begin execution after intro ─── */
   const beginExecution = useCallback(async () => {
@@ -168,6 +182,10 @@ export function useStudyLoop() {
       }
     } catch (e: any) {
       setError(e.message || "Erro ao executar missão");
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "error", recommendationType: context.recommendation.type, theme: context.theme, metadata: { step: "beginExecution", error: e.message } });
+        incrementDailyEngagement(uid, { errors_encountered: 1 });
+      }
     } finally {
       setLoading(false);
     }
@@ -185,10 +203,20 @@ export function useStudyLoop() {
     try {
       await callStudyComplete(buildCompletePayload(context, correct));
 
+      // Track answer event
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: correct ? "answer_correct" : "answer_wrong", recommendationType: context.recommendation.type, theme: context.theme, subtopic: context.subtopic });
+        incrementDailyEngagement(uid, { questions_answered: 1, ...(correct ? { questions_correct: 1 } : {}) });
+      }
+
       if (!correct && reinforceCountRef.current < 2) {
         reinforceCountRef.current += 1;
         const reinforcement = await callReinforceError(context.theme, "", userAnswer);
         const newQuestion = await callGenerateQuestion(context.theme, context.subtopic, "easy", { fromError: true });
+        if (uid) {
+          trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "reinforcement", theme: context.theme, metadata: { cycle: reinforceCountRef.current } });
+          incrementDailyEngagement(uid, { reinforcements_triggered: 1 });
+        }
         setResult((prev) => ({
           ...prev,
           correct: false,
@@ -200,6 +228,10 @@ export function useStudyLoop() {
         setPhase("feedback");
       } else if (!correct) {
         // Max reinforcements reached — elegant exit
+        if (uid) {
+          trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "elegant_exit", theme: context.theme, metadata: { reinforcements: reinforceCountRef.current } });
+          incrementDailyEngagement(uid, { elegant_exits: 1 });
+        }
         setResult((prev) => ({
           ...prev,
           correct: false,
@@ -225,10 +257,14 @@ export function useStudyLoop() {
       }
     } catch (e: any) {
       setError(e.message || "Erro ao processar resposta");
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "error", theme: context.theme, metadata: { step: "submitAnswer", error: e.message } });
+        incrementDailyEngagement(uid, { errors_encountered: 1 });
+      }
     } finally {
       setLoading(false);
     }
-  }, [context, result]);
+  }, [context, result, uid]);
 
   /* ─── Complete review step ─── */
   const completeReview = useCallback(async () => {
@@ -250,7 +286,7 @@ export function useStudyLoop() {
     } finally {
       setLoading(false);
     }
-  }, [context]);
+  }, [context, uid]);
 
   /* ─── Load next recommendation ─── */
   const loadNext = useCallback(async () => {
@@ -261,13 +297,21 @@ export function useStudyLoop() {
     try {
       await queryClient.invalidateQueries({ queryKey: ["study-next"] });
       await queryClient.invalidateQueries({ queryKey: ["analytics-snapshot"] });
+
+      // Track loop completion
+      const durationSeconds = sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : undefined;
+      if (uid && context) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_complete", recommendationType: context.recommendation.type, theme: context.theme, durationSeconds });
+        incrementDailyEngagement(uid, { loops_completed: 1, total_study_seconds: durationSeconds || 0 });
+      }
+
       setPhase("complete");
     } catch (e: any) {
       setError(e.message || "Erro ao carregar próxima missão");
     } finally {
       setLoading(false);
     }
-  }, [queryClient]);
+  }, [queryClient, uid, context]);
 
   /* ─── Continue after feedback ─── */
   const continueLoop = useCallback(async () => {
@@ -341,22 +385,33 @@ export function useStudyLoop() {
         const question = await callGenerateQuestion(context.theme, context.subtopic);
         setResult((prev) => ({ ...prev, generatedQuestion: question, helperContent: null }));
       }
+      // Track quick action
+      if (uid) {
+        trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "quick_action", theme: context.theme, metadata: { endpoint } });
+        incrementDailyEngagement(uid, { quick_actions_used: 1 });
+      }
     } catch (e: any) {
       setError(e.message || "Erro na ação rápida");
     } finally {
       setLoading(false);
     }
-  }, [context]);
+  }, [context, uid]);
 
-  /* ─── Reset ─── */
+  /* ─── Reset (also tracks abandon if loop was active) ─── */
   const resetLoop = useCallback(() => {
+    // Track abandon if loop was in progress (not complete)
+    if (uid && context && phase !== "idle" && phase !== "complete") {
+      const durationSeconds = sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : undefined;
+      trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_abandon", recommendationType: context.recommendation.type, theme: context.theme, durationSeconds, metadata: { abandonedPhase: phase } });
+      incrementDailyEngagement(uid, { loops_abandoned: 1, total_study_seconds: durationSeconds || 0 });
+    }
     setPhase("idle");
     setContext(null);
     setResult(null);
     setError(null);
     reinforceCountRef.current = 0;
     lastActionRef.current = null;
-  }, []);
+  }, [uid, context, phase]);
 
   return {
     phase,
