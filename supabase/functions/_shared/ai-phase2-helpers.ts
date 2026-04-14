@@ -94,8 +94,20 @@ const LIMITS: Record<string, number> = {
   enterprise: 2000,
 };
 
+// ── Cost weights per action type ──
+export const ACTION_COSTS: Record<string, number> = {
+  explain_simple: 1,
+  reinforce_error: 1,
+  summarize_topic: 1,
+  adaptive_question: 5,
+  adaptive_simulado: 10,
+  deep_explanation: 4,
+  answer_audit: 6,
+};
+
 export async function checkAndIncrementUsage(
   userId: string,
+  cost = 1,
 ): Promise<{ allowed: boolean; remaining: number }> {
   const sb = getAdmin();
   const period = new Date().toISOString().slice(0, 7) + "-01"; // YYYY-MM-01
