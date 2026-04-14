@@ -342,7 +342,8 @@ export default function MnemonicGeneratorPage() {
             requestId={result.request_id}
           />
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
