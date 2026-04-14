@@ -196,7 +196,7 @@ async function fetchQuestionsWithFallback(
   const q2 = mapRows(d2 || []);
   if (q2.length >= 5) return { questions: q2, tier: "tier2" };
 
-  // ── Tier 3: any active + integrity ok ──
+  // ── Tier 3: active + integrity ok + minimum confidence ──
   const t3 = applyFilters(
     supabase
       .from("medical_image_questions")
@@ -204,13 +204,16 @@ async function fetchQuestionsWithFallback(
       .eq("status", "published")
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.integrity_status", "ok")
+      .gte("medical_image_assets.clinical_confidence", 0.6)
       .neq("medical_image_assets.image_url", ""),
     imageType,
     difficulty,
   );
   const { data: d3, error: e3 } = await t3.order("created_at", { ascending: false }).limit(30);
   if (e3) throw e3;
-  return { questions: mapRows(d3 || []), tier: "tier3" };
+  const q3 = mapRows(d3 || []);
+  console.log(`[ImageQuiz] Tier stats — T1: ${q1.length} | T2: ${q2.length} | T3: ${q3.length}`);
+  return { questions: q3, tier: "tier3" };
 }
 
 const MedicalImageQuiz = () => {
