@@ -21,6 +21,7 @@ import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStudyContext } from "@/lib/studyContext";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 /* ── Types ── */
 interface NavItem {
@@ -28,6 +29,7 @@ interface NavItem {
   moduleKey: string;
   icon: React.ElementType;
   label: string;
+  description: string;
   useAvatar?: boolean;
 }
 
@@ -46,64 +48,64 @@ const navGroups: NavGroup[] = [
     title: "Principal",
     defaultOpen: true,
     items: [
-      { to: "/dashboard", moduleKey: "dashboard", icon: Rocket, label: "Missão do Dia" },
-      { to: "/dashboard/gerador-questoes", moduleKey: "questoes", icon: Lightbulb, label: "Questões" },
-      { to: "/dashboard/flashcards", moduleKey: "flashcards", icon: FlipVertical, label: "Flashcards" },
-      { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true },
-      { to: "/dashboard/analytics", moduleKey: "analytics", icon: BarChart3, label: "Progresso" },
+      { to: "/dashboard", moduleKey: "dashboard", icon: Rocket, label: "Missão do Dia", description: "Sua tarefa prioritária de estudo baseada no seu desempenho" },
+      { to: "/dashboard/gerador-questoes", moduleKey: "questoes", icon: Lightbulb, label: "Questões", description: "Gere e pratique questões adaptativas por tema e banca" },
+      { to: "/dashboard/flashcards", moduleKey: "flashcards", icon: FlipVertical, label: "Flashcards", description: "Revise conteúdos com repetição espaçada inteligente" },
+      { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true, description: "Converse com seu professor virtual para aprender e tirar dúvidas" },
+      { to: "/dashboard/analytics", moduleKey: "analytics", icon: BarChart3, label: "Progresso", description: "Acompanhe seu desempenho, evolução e metas de estudo" },
     ],
   },
   {
     id: "treino",
     title: "Treino Avançado",
     items: [
-      { to: "/dashboard/simulados", moduleKey: "simulados", icon: FileText, label: "Simulados" },
-      { to: "/dashboard/proficiencia", moduleKey: "proficiencia", icon: GraduationCap, label: "Proficiência" },
-      { to: "/dashboard/image-quiz", moduleKey: "image-quiz", icon: Image, label: "Quiz de Imagens" },
-      { to: "/dashboard/anamnese", moduleKey: "anamnese", icon: Stethoscope, label: "Anamnese" },
-      { to: "/dashboard/plantao", moduleKey: "plantao", icon: Siren, label: "Modo Plantão" },
-      { to: "/dashboard/prova-pratica", moduleKey: "prova-pratica", icon: Briefcase, label: "Prova Prática" },
-      { to: "/dashboard/discursivas", moduleKey: "discursivas", icon: PenTool, label: "Discursivas" },
-      { to: "/dashboard/simulacao-clinica", moduleKey: "simulacao-clinica", icon: Siren, label: "Simulação Clínica" },
-      { to: "/dashboard/entrevista", moduleKey: "entrevista", icon: Target, label: "Entrevista" },
+      { to: "/dashboard/simulados", moduleKey: "simulados", icon: FileText, label: "Simulados", description: "Simulados completos no formato das principais bancas" },
+      { to: "/dashboard/proficiencia", moduleKey: "proficiencia", icon: GraduationCap, label: "Proficiência", description: "Avalie seu nível de domínio por especialidade" },
+      { to: "/dashboard/image-quiz", moduleKey: "image-quiz", icon: Image, label: "Quiz de Imagens", description: "Pratique diagnóstico por imagens médicas reais" },
+      { to: "/dashboard/anamnese", moduleKey: "anamnese", icon: Stethoscope, label: "Anamnese", description: "Treine coleta de história clínica com pacientes simulados" },
+      { to: "/dashboard/plantao", moduleKey: "plantao", icon: Siren, label: "Modo Plantão", description: "Resolva casos urgentes em tempo real como num plantão" },
+      { to: "/dashboard/prova-pratica", moduleKey: "prova-pratica", icon: Briefcase, label: "Prova Prática", description: "Prepare-se para provas práticas de residência" },
+      { to: "/dashboard/discursivas", moduleKey: "discursivas", icon: PenTool, label: "Discursivas", description: "Pratique e receba correção de questões discursivas" },
+      { to: "/dashboard/simulacao-clinica", moduleKey: "simulacao-clinica", icon: Siren, label: "Simulação Clínica", description: "Simulações OSCE com cenários clínicos interativos" },
+      { to: "/dashboard/entrevista", moduleKey: "entrevista", icon: Target, label: "Entrevista", description: "Treine para entrevistas de seleção de residência" },
     ],
   },
   {
     id: "apoio",
     title: "Apoio ao Estudo",
     items: [
-      { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos" },
-      { to: "/dashboard/mnemonico", moduleKey: "mnemonico", icon: Brain, label: "Mnemônicos" },
-      { to: "/dashboard/apostilas", moduleKey: "apostilas", icon: BookMarked, label: "Apostilas" },
-      { to: "/dashboard/cronicas", moduleKey: "cronicas", icon: BookOpen, label: "Crônicas Médicas" },
-      { to: "/dashboard/planner", moduleKey: "planner", icon: CalendarDays, label: "Plano Estratégico" },
-      { to: "/dashboard/plano-dia", moduleKey: "plano-dia", icon: Zap, label: "Plano do Dia" },
-      { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo" },
-      { to: "/dashboard/gerar-flashcards", moduleKey: "gerar-flashcards", icon: Sparkles, label: "Gerador Flashcards" },
-      { to: "/dashboard/revisor", moduleKey: "revisor", icon: FileText, label: "Revisor Médico" },
-      { to: "/dashboard/diagnostico", moduleKey: "diagnostico", icon: Stethoscope, label: "Nivelamento" },
+      { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos", description: "Resumos inteligentes gerados por IA sobre qualquer tema" },
+      { to: "/dashboard/mnemonico", moduleKey: "mnemonico", icon: Brain, label: "Mnemônicos", description: "Crie mnemônicos para memorizar conteúdos difíceis" },
+      { to: "/dashboard/apostilas", moduleKey: "apostilas", icon: BookMarked, label: "Apostilas", description: "Apostilas completas organizadas por especialidade" },
+      { to: "/dashboard/cronicas", moduleKey: "cronicas", icon: BookOpen, label: "Crônicas Médicas", description: "Aprenda medicina através de narrativas clínicas envolventes" },
+      { to: "/dashboard/planner", moduleKey: "planner", icon: CalendarDays, label: "Plano Estratégico", description: "Monte seu cronograma de estudo personalizado" },
+      { to: "/dashboard/plano-dia", moduleKey: "plano-dia", icon: Zap, label: "Plano do Dia", description: "Veja e execute suas tarefas de estudo do dia" },
+      { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo", description: "Inicie uma sessão focada com timer e metas" },
+      { to: "/dashboard/gerar-flashcards", moduleKey: "gerar-flashcards", icon: Sparkles, label: "Gerador Flashcards", description: "Gere flashcards automaticamente a partir de qualquer tema" },
+      { to: "/dashboard/revisor", moduleKey: "revisor", icon: FileText, label: "Revisor Médico", description: "Revise textos e respostas com correção médica por IA" },
+      { to: "/dashboard/diagnostico", moduleKey: "diagnostico", icon: Stethoscope, label: "Nivelamento", description: "Faça um teste diagnóstico para mapear seus pontos fracos" },
     ],
   },
   {
     id: "inteligencia",
     title: "Inteligência IA",
     items: [
-      { to: "/dashboard/mentor", moduleKey: "mentor", icon: Bot, label: "Mentor IA" },
-      { to: "/dashboard/coach", moduleKey: "coach", icon: TrendingUp, label: "Coach IA" },
-      { to: "/dashboard/predictor", moduleKey: "predictor", icon: Target, label: "Previsão" },
-      { to: "/dashboard/mapa-dominio", moduleKey: "mapa-dominio", icon: Map, label: "Mapa Evolução" },
-      { to: "/dashboard/banco-erros", moduleKey: "banco-erros", icon: AlertTriangle, label: "Banco de Erros" },
-      { to: "/dashboard/banco-questoes", moduleKey: "banco-questoes", icon: Lightbulb, label: "Banco Questões" },
-      { to: "/dashboard/missao", moduleKey: "missao", icon: Target, label: "Modo Missão" },
+      { to: "/dashboard/mentor", moduleKey: "mentor", icon: Bot, label: "Mentor IA", description: "Consultor médico para dúvidas rápidas e referências" },
+      { to: "/dashboard/coach", moduleKey: "coach", icon: TrendingUp, label: "Coach IA", description: "Orientação estratégica para otimizar seus estudos" },
+      { to: "/dashboard/predictor", moduleKey: "predictor", icon: Target, label: "Previsão", description: "Veja sua chance estimada de aprovação por banca" },
+      { to: "/dashboard/mapa-dominio", moduleKey: "mapa-dominio", icon: Map, label: "Mapa Evolução", description: "Visualize seu domínio por tema e especialidade" },
+      { to: "/dashboard/banco-erros", moduleKey: "banco-erros", icon: AlertTriangle, label: "Banco de Erros", description: "Revise e domine os temas onde mais erra" },
+      { to: "/dashboard/banco-questoes", moduleKey: "banco-questoes", icon: Lightbulb, label: "Banco Questões", description: "Acesse o banco completo de questões do sistema" },
+      { to: "/dashboard/missao", moduleKey: "missao", icon: Target, label: "Modo Missão", description: "Missões temáticas com objetivos e recompensas" },
     ],
   },
   {
     id: "sistema",
     title: "Conta",
     items: [
-      { to: "/dashboard/perfil", moduleKey: "perfil", icon: User, label: "Perfil" },
-      { to: "/dashboard/conquistas", moduleKey: "conquistas", icon: Trophy, label: "Conquistas" },
-      { to: "/dashboard/rankings", moduleKey: "rankings", icon: Crown, label: "Rankings" },
+      { to: "/dashboard/perfil", moduleKey: "perfil", icon: User, label: "Perfil", description: "Gerencie seus dados, preferências e configurações" },
+      { to: "/dashboard/conquistas", moduleKey: "conquistas", icon: Trophy, label: "Conquistas", description: "Veja suas medalhas e conquistas desbloqueadas" },
+      { to: "/dashboard/rankings", moduleKey: "rankings", icon: Crown, label: "Rankings", description: "Compare seu desempenho com outros estudantes" },
     ],
   },
 ];
@@ -153,28 +155,35 @@ const SidebarGroup = ({
             const active = location.pathname === item.to;
             const highlighted = highlightedKeys.has(item.moduleKey);
             return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : highlighted && !isStudyActive
-                    ? "text-sidebar-primary/80 bg-sidebar-accent/30"
-                    : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
-                )}
-              >
-                {item.useAvatar ? (
-                  <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain flex-shrink-0" />
-                ) : (
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
-                )}
-                <span className="truncate text-[13px]">{item.label}</span>
-                {highlighted && !active && !isStudyActive && (
-                  <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary/60 flex-shrink-0" />
-                )}
-              </Link>
+              <Tooltip key={item.to} delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to={item.to}
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                      active
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : highlighted && !isStudyActive
+                        ? "text-sidebar-primary/80 bg-sidebar-accent/30"
+                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                    )}
+                  >
+                    {item.useAvatar ? (
+                      <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain flex-shrink-0" />
+                    ) : (
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                    )}
+                    <span className="truncate text-[13px]">{item.label}</span>
+                    {highlighted && !active && !isStudyActive && (
+                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary/60 flex-shrink-0" />
+                    )}
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[220px]">
+                  <p className="font-semibold text-xs">{item.label}</p>
+                  <p className="text-[11px] text-muted-foreground">{item.description}</p>
+                </TooltipContent>
+              </Tooltip>
             );
           })}
         </div>
@@ -255,6 +264,7 @@ const DashboardSidebar = () => {
   const hasAdminBlock = showProfessor || showAdmin || showInstitutional;
 
   return (
+    <TooltipProvider delayDuration={300}>
     <aside className={cn(
       "hidden landscape-tablet:flex lg:flex flex-col border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300",
       isStudyActive ? "w-14" : "w-52 md:w-56 lg:w-60"
@@ -276,39 +286,52 @@ const DashboardSidebar = () => {
               {filteredGroups[0]?.items.map((item) => {
                 const active = location.pathname === item.to;
                 return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    title={item.label}
-                    className={cn(
-                      "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
-                      active
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
-                    )}
-                  >
-                    {item.useAvatar ? (
-                      <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain" />
-                    ) : (
-                      <item.icon className="h-4 w-4" />
-                    )}
-                  </Link>
+                  <Tooltip key={item.to} delayDuration={200}>
+                    <TooltipTrigger asChild>
+                      <Link
+                        to={item.to}
+                        className={cn(
+                          "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
+                          active
+                            ? "bg-sidebar-accent text-sidebar-primary"
+                            : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                        )}
+                      >
+                        {item.useAvatar ? (
+                          <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain" />
+                        ) : (
+                          <item.icon className="h-4 w-4" />
+                        )}
+                      </Link>
+                    </TooltipTrigger>
+                    <TooltipContent side="right" className="max-w-[220px]">
+                      <p className="font-semibold text-xs">{item.label}</p>
+                      <p className="text-[11px] text-muted-foreground">{item.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
               {/* Divider + system links */}
               <div className="border-t border-sidebar-border my-2" />
-              <Link
-                to="/dashboard/perfil"
-                title="Perfil"
-                className={cn(
-                  "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
-                  location.pathname === "/dashboard/perfil"
-                    ? "bg-sidebar-accent text-sidebar-primary"
-                    : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"
-                )}
-              >
-                <User className="h-4 w-4" />
-              </Link>
+              <Tooltip delayDuration={200}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/dashboard/perfil"
+                    className={cn(
+                      "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
+                      location.pathname === "/dashboard/perfil"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"
+                    )}
+                  >
+                    <User className="h-4 w-4" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-[220px]">
+                  <p className="font-semibold text-xs">Perfil</p>
+                  <p className="text-[11px] text-muted-foreground">Gerencie seus dados, preferências e configurações</p>
+                </TooltipContent>
+              </Tooltip>
             </>
           ) : (
             /* Full expanded mode */
@@ -411,6 +434,7 @@ const DashboardSidebar = () => {
         </div>
       </div>
     </aside>
+    </TooltipProvider>
   );
 };
 
