@@ -165,7 +165,7 @@ const SmartPlanner = () => {
         estimatedMinutes: 15,
         priority: 95 - i,
         errorCount: e.vezes_errado,
-        targetPath: "/dashboard/banco-erros",
+        targetPath: "/mission-control",
       });
     });
 
@@ -182,7 +182,7 @@ const SmartPlanner = () => {
         estimatedMinutes: 12,
         priority: 92 - i,
         overdue: true,
-        targetPath: "/dashboard/plano-dia",
+        targetPath: "/mission-control",
       });
     });
 
@@ -229,7 +229,7 @@ const SmartPlanner = () => {
         estimatedMinutes: 15,
         priority: 88 - i,
         overdue: true,
-        targetPath: "/dashboard/plano-dia",
+        targetPath: "/mission-control",
       });
     });
 
