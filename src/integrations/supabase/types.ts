@@ -2974,6 +2974,9 @@ export type Database = {
       medical_image_assets: {
         Row: {
           access_type: string | null
+          ai_confidence: number | null
+          ai_type: string | null
+          ai_validated: boolean | null
           asset_code: string
           asset_origin: string
           clinical_confidence: number
@@ -3016,6 +3019,9 @@ export type Database = {
         }
         Insert: {
           access_type?: string | null
+          ai_confidence?: number | null
+          ai_type?: string | null
+          ai_validated?: boolean | null
           asset_code: string
           asset_origin?: string
           clinical_confidence?: number
@@ -3058,6 +3064,9 @@ export type Database = {
         }
         Update: {
           access_type?: string | null
+          ai_confidence?: number | null
+          ai_type?: string | null
+          ai_validated?: boolean | null
           asset_code?: string
           asset_origin?: string
           clinical_confidence?: number
