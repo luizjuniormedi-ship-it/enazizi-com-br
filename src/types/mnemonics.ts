@@ -105,6 +105,7 @@ export interface MnemonicResultData {
   score_pedagogico: number;
   score_linguistico: number;
   score_final: number;
+  quality_flag: "high" | "medium" | "low";
   alertas: string[];
   associacoes: Associacao[];
   associacoes_visuais: Array<{ termo: string; elemento_visual: string }>;

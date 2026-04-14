@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import {
   Brain, Sparkles, AlertTriangle, Loader2,
   Copy, Heart, MessageSquare, RefreshCw,
-  ChevronDown, ChevronUp, Wand2, BookOpen, Eye, Zap,
+  ChevronDown, ChevronUp, Wand2, BookOpen, Eye, CheckCircle, XCircle, MinusCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,8 @@ import { getScoreColor, getScoreBg, formatScore } from "@/utils/mnemonicStatus";
 import type { MnemonicResultData, RegenerateStyle } from "@/types/mnemonics";
 import { ESTILOS, PUBLICOS, REGENERATE_OPTIONS } from "@/types/mnemonics";
 
+const safeArray = <T,>(arr: T[] | undefined | null): T[] => Array.isArray(arr) ? arr : [];
+
 function ScoreBadge({ label, score }: { label: string; score: number }) {
   return (
     <div className={`flex flex-col items-center gap-1 p-3 rounded-lg border ${getScoreBg(score)}`}>
@@ -29,6 +31,24 @@ function ScoreBadge({ label, score }: { label: string; score: number }) {
       <span className={`text-2xl font-bold ${getScoreColor(score)}`}>{score}</span>
       <Progress value={score} className="h-1.5 w-16" />
     </div>
+  );
+}
+
+function QualityBadge({ flag }: { flag: string }) {
+  if (flag === "high") return (
+    <Badge className="bg-emerald-500/15 text-emerald-600 border-emerald-500/30 gap-1">
+      <CheckCircle className="h-3 w-3" /> Alta qualidade
+    </Badge>
+  );
+  if (flag === "low") return (
+    <Badge className="bg-red-500/15 text-red-600 border-red-500/30 gap-1">
+      <XCircle className="h-3 w-3" /> Baixa qualidade
+    </Badge>
+  );
+  return (
+    <Badge className="bg-yellow-500/15 text-yellow-600 border-yellow-500/30 gap-1">
+      <MinusCircle className="h-3 w-3" /> Qualidade média
+    </Badge>
   );
 }
 
@@ -73,11 +93,25 @@ export default function MnemonicGeneratorPage() {
     );
   }, [tema, termos, estilo, publico, generateMutation]);
 
-  const handleCopy = useCallback(() => {
+  const handleCopyPhrase = useCallback(() => {
     if (!result) return;
-    const text = `${result.sigla}\n${result.frase_mnemonica}\n\n${result.explicacao_tecnica}\n\n${result.explicacao_didatica}`;
-    navigator.clipboard.writeText(text);
-    toast.success("Copiado!");
+    navigator.clipboard.writeText(result.frase_mnemonica);
+    toast.success("Frase copiada!");
+  }, [result]);
+
+  const handleCopyAll = useCallback(() => {
+    if (!result) return;
+    const parts = [
+      `📝 ${result.sigla}`,
+      `💡 ${result.frase_mnemonica}`,
+      "",
+      `🔬 ${result.explicacao_tecnica}`,
+      "",
+      `📚 ${result.explicacao_didatica}`,
+    ];
+    if (result.cena_visual) parts.push("", `🎨 ${result.cena_visual}`);
+    navigator.clipboard.writeText(parts.join("\n"));
+    toast.success("Tudo copiado!");
   }, [result]);
 
   const handleFavorite = useCallback(() => {
@@ -180,13 +214,17 @@ export default function MnemonicGeneratorPage() {
 
       {/* Result */}
       {result && (() => {
-        const alertas = result.alertas ?? [];
-        const itemsMap = result.items_map ?? [];
-        const agentLogs = result.agent_logs ?? [];
+        const alertas = safeArray(result.alertas);
+        const itemsMap = safeArray(result.items_map);
+        const agentLogs = safeArray(result.agent_logs);
 
         return (
         <div className="space-y-4">
-          {/* Scores */}
+          {/* Quality + Scores */}
+          <div className="flex items-center justify-between">
+            <QualityBadge flag={result.quality_flag ?? "medium"} />
+          </div>
+
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <ScoreBadge label="Linguístico" score={result.score_linguistico ?? 0} />
             <ScoreBadge label="Médico" score={result.score_medico} />
@@ -206,15 +244,20 @@ export default function MnemonicGeneratorPage() {
             </CardContent>
           </Card>
 
-          {/* Frase */}
-          <Card>
+          {/* Frase — destaque visual */}
+          <Card className="border-primary/30 bg-primary/5">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <BookOpen className="h-5 w-5 text-primary" /> Frase mnemônica
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BookOpen className="h-5 w-5 text-primary" /> Frase mnemônica
+                </CardTitle>
+                <Button variant="ghost" size="sm" onClick={handleCopyPhrase} className="h-8 px-2">
+                  <Copy className="h-3.5 w-3.5 mr-1" /> Copiar frase
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <p className="text-lg font-medium">{result.frase_mnemonica}</p>
+              <p className="text-xl font-semibold leading-relaxed">{result.frase_mnemonica}</p>
             </CardContent>
           </Card>
 
@@ -314,13 +357,18 @@ export default function MnemonicGeneratorPage() {
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={handleCopy}><Copy className="h-4 w-4 mr-1" /> Copiar</Button>
+            <Button variant="outline" size="sm" onClick={handleCopyAll}><Copy className="h-4 w-4 mr-1" /> Copiar tudo</Button>
             <Button variant="outline" size="sm" onClick={handleFavorite} disabled={favoriteMutation.isPending}>
               <Heart className="h-4 w-4 mr-1" /> Favoritar
             </Button>
             <Button variant="outline" size="sm" onClick={() => setFeedbackOpen(true)}>
               <MessageSquare className="h-4 w-4 mr-1" /> Feedback
             </Button>
+          </div>
+
+          {/* Regeneration options */}
+          <div className="flex flex-wrap gap-2">
+            <span className="text-xs text-muted-foreground self-center mr-1">Regenerar:</span>
             {REGENERATE_OPTIONS.map(opt => (
               <Button
                 key={opt.value}

@@ -40,6 +40,7 @@ interface GeneratorOutput {
 
 interface LinguisticAuditOutput {
   score_linguistico: number;
+  fluidez_fala: number;
   soa_natural: boolean;
   tem_sentido: boolean;
   memoravel: boolean;
@@ -106,25 +107,31 @@ const SCORE_LINGUISTICO_MIN = 85;
 // PROMPTS
 // ══════════════════════════════════════════════════
 
-const PROMPT_GERADOR = `Você é um professor brasileiro de medicina e especialista em memorização clínica.
-Crie mnemônicos médicos em português do Brasil, naturais, claros e realmente utilizáveis em aula.
+const PROMPT_GERADOR = `Você é um professor brasileiro carismático de medicina, famoso por criar frases inesquecíveis para seus alunos.
 
-Regras obrigatórias:
-- incluir todos os termos sem omitir nenhum
-- não trocar o sentido clínico
-- não usar sinônimos que alterem precisão
-- escrever em português do Brasil natural
-- evitar frases artificiais, truncadas ou sem sentido
-- evitar siglas impronunciáveis
-- priorizar frases que soem bem ao falar em voz alta
-- priorizar memorização real
-- priorizar clareza e sonoridade
-- se a sigla ficar ruim, prefira uma frase mnemônica forte em vez de sigla forçada
+Sua missão: criar um mnemônico médico em português do Brasil que seja IMPOSSÍVEL de esquecer.
+
+PROCESSO MENTAL OBRIGATÓRIO:
+Antes de responder, simule como um estudante ouviria essa frase em voz alta.
+Se não for fácil de lembrar em 5 segundos, reescreva.
+
+Regras de ouro:
+- A frase deve soar como algo dito numa aula informal — natural, fluida, falada
+- Priorize humor, imagem mental forte ou ritmo de fala
+- NUNCA comece com "Paciente com...", "Lembre que...", "Para memorizar..."
+- Frases curtas vencem. Máximo 15 palavras na frase mnemônica
+- Cada palavra da frase deve começar com a letra do termo correspondente
+- Incluir TODOS os termos sem omitir nenhum
+- Não trocar o sentido clínico
+- Se a sigla ficar impronunciável, prefira uma frase forte sem sigla forçada
+- A frase deve ter RITMO — teste lendo em voz alta mentalmente
+- Prefira palavras do cotidiano brasileiro, não linguagem acadêmica na frase
+- Use criatividade: cenários absurdos, engraçados ou visuais memorizam melhor
 
 Retorne SOMENTE JSON válido com:
 {
-  "sigla": "string",
-  "frase_mnemonica": "string",
+  "sigla": "string (somente se pronunciável, senão vazio)",
+  "frase_mnemonica": "string (curta, impactante, falável)",
   "explicacao_tecnica": "string",
   "explicacao_didatica": "string",
   "associacoes": [
@@ -134,23 +141,25 @@ Retorne SOMENTE JSON válido com:
   "observacoes": ["string"]
 }`;
 
-const PROMPT_AUDITOR_LINGUISTICO = `Você é um especialista em língua portuguesa do Brasil aplicada ao ensino médico.
+const PROMPT_AUDITOR_LINGUISTICO = `Você é um linguista brasileiro especializado em didática médica e oralidade.
 
-Avalie se o mnemônico:
-- soa natural em português do Brasil
-- tem sentido claro
-- é pronunciável
-- é memorizável
-- parece algo que um professor brasileiro usaria em aula
-- evita construções artificiais
-- evita siglas ruins ou impronunciáveis
+Avalie o mnemônico com RIGOR nos seguintes critérios:
+1. FLUIDEZ ORAL — Leia em voz alta mentalmente. Flui naturalmente? Tem ritmo?
+2. NATURALIDADE — Parece algo que um professor brasileiro falaria em aula?
+3. SENTIDO — A frase faz sentido por si só (mesmo fora do contexto médico)?
+4. MEMORABILIDADE — Um estudante lembraria após ouvir 2x?
+5. PRONÚNCIA — A sigla é pronunciável? A frase é falável sem tropeçar?
+6. ARTIFICIALIDADE — Há palavras forçadas, traduções ruins ou construções robóticas?
 
-Dê nota de 0 a 100.
-Se houver falha, produza uma versão corrigida linguisticamente melhor.
+Dê nota de 0 a 100 para score_linguistico.
+Dê nota de 0 a 100 para fluidez_fala (quão bem a frase flui ao ser falada em voz alta).
+
+Se score_linguistico < 85 OU fluidez_fala < 80, OBRIGATORIAMENTE produza versao_corrigida.
 
 Retorne SOMENTE JSON válido com:
 {
   "score_linguistico": 0,
+  "fluidez_fala": 0,
   "soa_natural": true,
   "tem_sentido": true,
   "memoravel": true,
@@ -226,6 +235,10 @@ Regras:
 - descrever uma cena única, coesa, estilo infográfico médico/cartoon limpo
 - proibido incluir textos, letras ou rótulos na cena
 - usar alto contraste e cores saturadas sobre fundo branco
+
+REGRAS OBRIGATÓRIAS para prompt_imagem:
+O prompt DEVE começar com: "Clean medical infographic illustration, flat design, high contrast, saturated colors, pure white background, no text, no labels, no letters."
+Depois descreva a cena com objetos claros e distintos.
 
 Retorne SOMENTE JSON válido com:
 {
@@ -342,41 +355,51 @@ async function getUserIdFromRequest(req: Request): Promise<string> {
 // OPENAI CALL
 // ══════════════════════════════════════════════════
 
+const AGENT_TIMEOUT_MS = 15000;
+
 async function callOpenAIJson<T>(
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
 ): Promise<T> {
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      temperature: OPENAI_TEMP,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text().catch(() => "unknown");
-    throw new Error(`OpenAI HTTP ${resp.status}: ${errText}`);
-  }
-
-  const json = await resp.json();
-  const content = json?.choices?.[0]?.message?.content;
-  if (!content) throw new Error("OpenAI retornou content vazio.");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
 
   try {
-    return JSON.parse(content) as T;
-  } catch {
-    throw new Error(`OpenAI retornou JSON inválido: ${content.substring(0, 200)}`);
+    const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_MODEL,
+        temperature: OPENAI_TEMP,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: { type: "json_object" },
+      }),
+      signal: controller.signal,
+    });
+
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "unknown");
+      throw new Error(`OpenAI HTTP ${resp.status}: ${errText.substring(0, 300)}`);
+    }
+
+    const json = await resp.json();
+    const content = json?.choices?.[0]?.message?.content;
+    if (!content) throw new Error("OpenAI retornou content vazio.");
+
+    try {
+      return JSON.parse(content) as T;
+    } catch {
+      throw new Error(`OpenAI retornou JSON inválido: ${content.substring(0, 200)}`);
+    }
+  } finally {
+    clearTimeout(timer);
   }
 }
 
@@ -636,6 +659,14 @@ async function runAgent<T>(
           ? outRecord.score_linguistico
           : undefined;
 
+    // Truncate output for logs to keep DB lean
+    const safeOutput = (() => {
+      try {
+        const s = JSON.stringify(output);
+        return s.length > 1000 ? { _truncated: true, preview: s.substring(0, 500) } : output;
+      } catch { return { _error: "non-serializable" }; }
+    })();
+
     await insertAgentLog(db, {
       request_id: requestId,
       user_id: userId,
@@ -643,7 +674,7 @@ async function runAgent<T>(
       execution_order: order,
       status: "completed",
       input_json: { userPrompt: userPrompt.substring(0, 500) },
-      output_json: output,
+      output_json: safeOutput,
       score: score as number | undefined,
       duration_ms: duration,
     });
@@ -732,7 +763,8 @@ serve(async (req: Request) => {
     // ──────────────────────────────────────────────
     // RETRY LINGUÍSTICO (se score < 85 ou não soa natural)
     // ──────────────────────────────────────────────
-    if (lingAudit.score_linguistico < SCORE_LINGUISTICO_MIN || !lingAudit.soa_natural || !lingAudit.tem_sentido) {
+    const fluidezFala = typeof lingAudit.fluidez_fala === "number" ? lingAudit.fluidez_fala : 100;
+    if (lingAudit.score_linguistico < SCORE_LINGUISTICO_MIN || fluidezFala < 80 || !lingAudit.soa_natural || !lingAudit.tem_sentido) {
       console.log(`Score linguístico ${lingAudit.score_linguistico} < ${SCORE_LINGUISTICO_MIN} ou não natural. Retry...`);
 
       if (lingAudit.versao_corrigida) {
@@ -793,28 +825,30 @@ serve(async (req: Request) => {
     }
 
     // ──────────────────────────────────────────────
-    // AGENT 4: AUDITOR PEDAGÓGICO
+    // AGENT 4: AUDITOR PEDAGÓGICO (resiliente)
     // ──────────────────────────────────────────────
-    const pedPrompt = `${context}\n\nMnemônico aprovado médicamente:\n${JSON.stringify(approvedVersion, null, 2)}`;
-    let pedAudit = await runAgent<PedagogicalAuditOutput>(
-      openaiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, pedPrompt,
-    );
-
-    // ──────────────────────────────────────────────
-    // RETRY PEDAGÓGICO (se score < 85)
-    // ──────────────────────────────────────────────
-    if (pedAudit.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
-      console.log(`Score pedagógico ${pedAudit.score_pedagogico} < ${SCORE_PEDAGOGICO_MIN}. Retry...`);
-
-      const retryPedPrompt = `${context}\n\nMnemônico:\n${JSON.stringify(approvedVersion, null, 2)}\n\nA versão anterior teve baixa performance pedagógica (score: ${pedAudit.score_pedagogico}/100).\nPontos fracos: ${(pedAudit.pontos_fracos || []).join("; ")}\n\nReavalie e produza uma versão otimizada.`;
-
-      const retryPed = await runAgent<PedagogicalAuditOutput>(
-        openaiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, retryPedPrompt,
+    let pedAudit: PedagogicalAuditOutput = {
+      score_pedagogico: 75, facilidade_memorizacao: 75, clareza: 75,
+      associacao_mental: 75, aplicabilidade_em_aula: 75, aplicabilidade_em_prova: 75,
+      pontos_fortes: [], pontos_fracos: [],
+    };
+    try {
+      const pedPrompt = `${context}\n\nMnemônico aprovado médicamente:\n${JSON.stringify(approvedVersion, null, 2)}`;
+      pedAudit = await runAgent<PedagogicalAuditOutput>(
+        openaiKey, db, requestId, userId, "auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, pedPrompt,
       );
 
-      if (retryPed.score_pedagogico >= pedAudit.score_pedagogico) {
-        pedAudit = retryPed;
+      // RETRY PEDAGÓGICO (se score < 85)
+      if (pedAudit.score_pedagogico < SCORE_PEDAGOGICO_MIN) {
+        console.log(`Score pedagógico ${pedAudit.score_pedagogico} < ${SCORE_PEDAGOGICO_MIN}. Retry...`);
+        const retryPedPrompt = `${context}\n\nMnemônico:\n${JSON.stringify(approvedVersion, null, 2)}\n\nA versão anterior teve baixa performance pedagógica (score: ${pedAudit.score_pedagogico}/100).\nPontos fracos: ${(pedAudit.pontos_fracos || []).join("; ")}\n\nReavalie e produza uma versão otimizada.`;
+        const retryPed = await runAgent<PedagogicalAuditOutput>(
+          openaiKey, db, requestId, userId, "retry_auditor_pedagogico", ++order, PROMPT_AUDITOR_PEDAGOGICO, retryPedPrompt,
+        );
+        if (retryPed.score_pedagogico >= pedAudit.score_pedagogico) pedAudit = retryPed;
       }
+    } catch (pedErr) {
+      console.error("Pedagogical audit failed, using defaults:", pedErr);
     }
 
     // Apply pedagogical optimizations
@@ -828,12 +862,21 @@ serve(async (req: Request) => {
     }
 
     // ──────────────────────────────────────────────
-    // AGENT 5: VISUAL
+    // AGENT 5: VISUAL (resiliente)
     // ──────────────────────────────────────────────
-    const visualPrompt = `${context}\n\nMnemônico final:\nSigla: ${approvedVersion.sigla}\nFrase: ${approvedVersion.frase_mnemonica}`;
-    const visual = await runAgent<VisualOutput>(
-      openaiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, visualPrompt,
-    );
+    let visual: VisualOutput = {
+      cena_visual: approvedVersion.frase_mnemonica,
+      associacoes_visuais: [],
+      prompt_imagem: `Clean medical infographic illustration of ${approvedVersion.sigla}, flat design, white background, no text`,
+    };
+    try {
+      const visualPrompt = `${context}\n\nMnemônico final:\nSigla: ${approvedVersion.sigla}\nFrase: ${approvedVersion.frase_mnemonica}`;
+      visual = await runAgent<VisualOutput>(
+        openaiKey, db, requestId, userId, "visual", ++order, PROMPT_VISUAL, visualPrompt,
+      );
+    } catch (visErr) {
+      console.error("Visual agent failed, using fallback:", visErr);
+    }
 
     // ──────────────────────────────────────────────
     // AGENT 6: GERADOR DE IMAGEM
@@ -906,6 +949,13 @@ Prompt imagem: ${visual.prompt_imagem}`;
     const aprovadoPedagogico = scorePedagogico >= SCORE_PEDAGOGICO_MIN;
     const aprovado = aprovadoMedico && aprovadoPedagogico;
 
+    // Quality flag
+    const qualityFlag = (scoreLinguistico < 80 || scoreMedico < 85)
+      ? "low"
+      : scoreFinal >= 90
+        ? "high"
+        : "medium";
+
     const resultId = await insertResult(db, {
       request_id: requestId,
       user_id: userId,
@@ -944,6 +994,7 @@ Prompt imagem: ${visual.prompt_imagem}`;
         score_pedagogico: scorePedagogico,
         score_linguistico: scoreLinguistico,
         score_final: scoreFinal,
+        quality_flag: qualityFlag,
         alertas: consolidated.alertas ?? [],
         agentes: {
           gerador: generated,
