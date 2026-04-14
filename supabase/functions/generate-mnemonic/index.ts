@@ -763,7 +763,8 @@ serve(async (req: Request) => {
     // ──────────────────────────────────────────────
     // RETRY LINGUÍSTICO (se score < 85 ou não soa natural)
     // ──────────────────────────────────────────────
-    if (lingAudit.score_linguistico < SCORE_LINGUISTICO_MIN || !lingAudit.soa_natural || !lingAudit.tem_sentido) {
+    const fluidezFala = typeof lingAudit.fluidez_fala === "number" ? lingAudit.fluidez_fala : 100;
+    if (lingAudit.score_linguistico < SCORE_LINGUISTICO_MIN || fluidezFala < 80 || !lingAudit.soa_natural || !lingAudit.tem_sentido) {
       console.log(`Score linguístico ${lingAudit.score_linguistico} < ${SCORE_LINGUISTICO_MIN} ou não natural. Retry...`);
 
       if (lingAudit.versao_corrigida) {
