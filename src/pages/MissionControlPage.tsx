@@ -109,6 +109,7 @@ export default function MissionControlPage() {
         onCompleteReview={loop.completeReview}
         onContinue={loop.continueLoop}
         onQuickAction={loop.runQuickAction}
+        onRetry={loop.retry}
         onClose={handleLoopClose}
       />
     </div>

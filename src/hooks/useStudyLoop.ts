@@ -8,6 +8,7 @@ export type LoopPhase = "idle" | "intro" | "running" | "feedback" | "next" | "co
 
 export interface LoopContext {
   recommendation: StudyNextRecommendation;
+  /** Resolved theme — prefers targetId > targetType > title */
   theme: string;
   subtopic?: string;
 }
@@ -20,6 +21,10 @@ export interface StepResult {
   generatedQuestion?: GeneratedQuestion | null;
   helperContent?: string | null;
   summaryContent?: string | null;
+  /** True when max reinforcement cycles were exhausted */
+  maxReinforcementsReached?: boolean;
+  /** Completion chips for visual feedback */
+  completionBadges?: string[];
 }
 
 export interface GeneratedQuestion {
@@ -28,6 +33,49 @@ export interface GeneratedQuestion {
   correctAnswer: string;
   explanation: string;
   difficulty: string;
+}
+
+/** Tracks what failed so retry can re-invoke correctly */
+type LastAction =
+  | { kind: "beginExecution" }
+  | { kind: "submitAnswer"; answer: string }
+  | { kind: "completeReview" }
+  | { kind: "quickAction"; endpoint: string };
+
+/* ─── Helpers ─── */
+
+/** Resolve the best theme identifier from a recommendation */
+function resolveTheme(rec: StudyNextRecommendation): string {
+  // Prefer explicit IDs over display title
+  return rec.targetId || rec.targetType || rec.title || "unknown";
+}
+
+/** Build a study-complete payload aligned with the edge function contract */
+function buildCompletePayload(
+  ctx: LoopContext,
+  wasCorrect: boolean,
+  extra?: { questionId?: string; durationSeconds?: number },
+) {
+  const rec = ctx.recommendation;
+  return {
+    actionType: rec.type,            // "review" | "error_review" | "daily_task" | "free_study"
+    actionId: rec.targetId || undefined,
+    taskId: rec.type === "daily_task" ? rec.targetId : undefined,
+    themeId: ctx.theme,
+    topicId: ctx.theme,
+    subtopicId: ctx.subtopic || undefined,
+    questionId: extra?.questionId || undefined,
+    wasCorrect,
+    durationSeconds: extra?.durationSeconds || undefined,
+    metadata: {
+      source: "mission_control",
+      originModule: "study_loop",
+      recommendationType: rec.type,
+      theme: ctx.theme,
+      subtopic: ctx.subtopic || "",
+      title: rec.title,
+    },
+  };
 }
 
 /* ─── Edge-function callers ─── */
@@ -82,14 +130,16 @@ export function useStudyLoop() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const reinforceCountRef = useRef(0);
+  const lastActionRef = useRef<LastAction | null>(null);
 
   /* ─── Start mission ─── */
   const startMission = useCallback((rec: StudyNextRecommendation) => {
-    const theme = rec.title || "";
-    setContext({ recommendation: rec, theme, subtopic: rec.targetType });
+    const theme = resolveTheme(rec);
+    setContext({ recommendation: rec, theme, subtopic: rec.targetType !== theme ? rec.targetType : undefined });
     setResult(null);
     setError(null);
     reinforceCountRef.current = 0;
+    lastActionRef.current = null;
     setPhase("intro");
   }, []);
 
@@ -99,6 +149,7 @@ export function useStudyLoop() {
     setPhase("running");
     setLoading(true);
     setError(null);
+    lastActionRef.current = { kind: "beginExecution" };
 
     try {
       const rec = context.recommendation;
@@ -110,11 +161,8 @@ export function useStudyLoop() {
       } else if (rec.type === "review") {
         const summary = await callSummarizeTopic(context.theme);
         setResult({ summaryContent: summary.summary, helperContent: null });
-      } else if (rec.type === "daily_task") {
-        const question = await callGenerateQuestion(context.theme, context.subtopic);
-        setResult({ generatedQuestion: question });
       } else {
-        // free_study
+        // daily_task + free_study
         const question = await callGenerateQuestion(context.theme, context.subtopic);
         setResult({ generatedQuestion: question });
       }
@@ -130,26 +178,14 @@ export function useStudyLoop() {
     if (!context || !result?.generatedQuestion) return;
     setLoading(true);
     setError(null);
+    lastActionRef.current = { kind: "submitAnswer", answer: userAnswer };
 
     const correct = userAnswer.trim().toUpperCase() === result.generatedQuestion.correctAnswer.trim().toUpperCase();
 
     try {
-      // Always call study-complete
-      await callStudyComplete({
-        type: context.recommendation.type,
-        theme: context.theme,
-        subtopic: context.subtopic || "",
-        correct,
-        metadata: {
-          source: "mission_control",
-          originModule: "study_loop",
-          recommendationType: context.recommendation.type,
-          theme: context.theme,
-        },
-      });
+      await callStudyComplete(buildCompletePayload(context, correct));
 
       if (!correct && reinforceCountRef.current < 2) {
-        // Error flow: reinforce then generate new question
         reinforceCountRef.current += 1;
         const reinforcement = await callReinforceError(context.theme, "", userAnswer);
         const newQuestion = await callGenerateQuestion(context.theme, context.subtopic, "easy", { fromError: true });
@@ -159,16 +195,31 @@ export function useStudyLoop() {
           reinforcement,
           generatedQuestion: newQuestion,
           explanation: result.generatedQuestion!.explanation,
+          maxReinforcementsReached: false,
         }));
         setPhase("feedback");
-      } else {
-        // Correct or max reinforcements reached
+      } else if (!correct) {
+        // Max reinforcements reached — elegant exit
         setResult((prev) => ({
           ...prev,
-          correct,
+          correct: false,
           explanation: result.generatedQuestion!.explanation,
           reinforcement: undefined,
           generatedQuestion: null,
+          maxReinforcementsReached: true,
+          completionBadges: ["Tema revisado", "Reforço aplicado"],
+        }));
+        setPhase("feedback");
+      } else {
+        // Correct
+        setResult((prev) => ({
+          ...prev,
+          correct: true,
+          explanation: result.generatedQuestion!.explanation,
+          reinforcement: undefined,
+          generatedQuestion: null,
+          maxReinforcementsReached: false,
+          completionBadges: buildCompletionBadges(context, true),
         }));
         setPhase("feedback");
       }
@@ -179,25 +230,20 @@ export function useStudyLoop() {
     }
   }, [context, result]);
 
-  /* ─── Complete review step (non-question) ─── */
+  /* ─── Complete review step ─── */
   const completeReview = useCallback(async () => {
     if (!context) return;
     setLoading(true);
     setError(null);
+    lastActionRef.current = { kind: "completeReview" };
 
     try {
-      await callStudyComplete({
-        type: context.recommendation.type,
-        theme: context.theme,
-        subtopic: context.subtopic || "",
+      await callStudyComplete(buildCompletePayload(context, true));
+      setResult((prev) => ({
+        ...prev,
         correct: true,
-        metadata: {
-          source: "mission_control",
-          originModule: "study_loop",
-          recommendationType: context.recommendation.type,
-        },
-      });
-      setResult((prev) => ({ ...prev, correct: true }));
+        completionBadges: buildCompletionBadges(context, true),
+      }));
       setPhase("feedback");
     } catch (e: any) {
       setError(e.message || "Erro ao concluir revisão");
@@ -213,7 +259,6 @@ export function useStudyLoop() {
     setError(null);
 
     try {
-      // Invalidate queries so MissionControlPage refreshes
       await queryClient.invalidateQueries({ queryKey: ["study-next"] });
       await queryClient.invalidateQueries({ queryKey: ["analytics-snapshot"] });
       setPhase("complete");
@@ -224,7 +269,7 @@ export function useStudyLoop() {
     }
   }, [queryClient]);
 
-  /* ─── Continue after feedback (handles branching) ─── */
+  /* ─── Continue after feedback ─── */
   const continueLoop = useCallback(async () => {
     if (!result) {
       await loadNext();
@@ -232,7 +277,7 @@ export function useStudyLoop() {
     }
 
     // If there's a new question from the error flow, go back to running
-    if (!result.correct && result.generatedQuestion) {
+    if (!result.correct && result.generatedQuestion && !result.maxReinforcementsReached) {
       setPhase("running");
       return;
     }
@@ -241,11 +286,37 @@ export function useStudyLoop() {
     await loadNext();
   }, [result, loadNext]);
 
+  /* ─── Contextual retry ─── */
+  const retry = useCallback(async () => {
+    const last = lastActionRef.current;
+    if (!last) {
+      // Fallback: re-begin
+      await beginExecution();
+      return;
+    }
+    setError(null);
+    switch (last.kind) {
+      case "beginExecution":
+        await beginExecution();
+        break;
+      case "submitAnswer":
+        await submitAnswer(last.answer);
+        break;
+      case "completeReview":
+        await completeReview();
+        break;
+      case "quickAction":
+        await runQuickAction(last.endpoint);
+        break;
+    }
+  }, [/* deps added below via the actual refs */]);
+
   /* ─── Quick action helpers ─── */
   const runQuickAction = useCallback(async (endpoint: string) => {
     if (!context) return;
     setLoading(true);
     setError(null);
+    lastActionRef.current = { kind: "quickAction", endpoint };
 
     try {
       if (endpoint === "explain-simple") {
@@ -253,10 +324,22 @@ export function useStudyLoop() {
         setResult((prev) => ({ ...prev, helperContent: res.explanation }));
       } else if (endpoint === "explain-deep") {
         const res = await callExplainDeep(context.theme, context.subtopic);
-        setResult((prev) => ({ ...prev, helperContent: `${res.explanation}\n\n**Raciocínio clínico:** ${res.clinicalReasoning}\n\n**Armadilhas:** ${res.pitfalls?.join(", ")}` }));
+        setResult((prev) => ({
+          ...prev,
+          helperContent: `${res.explanation}\n\n**Raciocínio clínico:** ${res.clinicalReasoning}\n\n**Armadilhas:** ${res.pitfalls?.join(", ")}`,
+        }));
       } else if (endpoint === "summarize-topic") {
         const res = await callSummarizeTopic(context.theme);
         setResult((prev) => ({ ...prev, helperContent: res.summary }));
+      } else if (endpoint === "reinforce-error") {
+        const res = await callReinforceError(context.theme);
+        setResult((prev) => ({
+          ...prev,
+          helperContent: `**Explicação:** ${res.explanation}\n\n**Correção:** ${res.correction}\n\n💡 ${res.tip}`,
+        }));
+      } else if (endpoint === "generate-adaptive-question") {
+        const question = await callGenerateQuestion(context.theme, context.subtopic);
+        setResult((prev) => ({ ...prev, generatedQuestion: question, helperContent: null }));
       }
     } catch (e: any) {
       setError(e.message || "Erro na ação rápida");
@@ -272,6 +355,7 @@ export function useStudyLoop() {
     setResult(null);
     setError(null);
     reinforceCountRef.current = 0;
+    lastActionRef.current = null;
   }, []);
 
   return {
@@ -287,6 +371,19 @@ export function useStudyLoop() {
     continueLoop,
     loadNext,
     runQuickAction,
+    retry,
     resetLoop,
   };
+}
+
+/* ─── Helpers ─── */
+function buildCompletionBadges(ctx: LoopContext, correct: boolean): string[] {
+  const badges: string[] = [];
+  const type = ctx.recommendation.type;
+  if (correct) badges.push("✅ Acerto registrado");
+  if (type === "review") badges.push("🔄 Revisão concluída");
+  if (type === "error_review") badges.push("🔴 Erro corrigido");
+  if (type === "daily_task") badges.push("📋 Tarefa do dia concluída");
+  badges.push("📊 Progresso atualizado");
+  return badges;
 }

@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, XCircle, ArrowRight, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { CheckCircle2, XCircle, ArrowRight, Loader2, BookOpen, Brain, Sparkles } from "lucide-react";
 import type { StepResult } from "@/hooks/useStudyLoop";
 
 interface Props {
@@ -8,10 +9,12 @@ interface Props {
   hasNextQuestion: boolean;
   loading: boolean;
   onContinue: () => void;
+  onQuickAction: (endpoint: string) => void;
 }
 
-export default function StudyLoopFeedback({ result, hasNextQuestion, loading, onContinue }: Props) {
+export default function StudyLoopFeedback({ result, hasNextQuestion, loading, onContinue, onQuickAction }: Props) {
   const correct = result.correct;
+  const maxReached = result.maxReinforcementsReached;
 
   return (
     <div className="flex flex-col items-center text-center space-y-5 py-6 px-4">
@@ -28,8 +31,19 @@ export default function StudyLoopFeedback({ result, hasNextQuestion, loading, on
 
       {/* Title */}
       <h3 className="text-lg font-bold text-foreground">
-        {correct ? "Muito bem! 🎉" : "Não foi dessa vez"}
+        {correct ? "Muito bem! 🎉" : maxReached ? "Vamos revisar esse tema" : "Não foi dessa vez"}
       </h3>
+
+      {/* Completion badges */}
+      {result.completionBadges && result.completionBadges.length > 0 && (
+        <div className="flex flex-wrap justify-center gap-2">
+          {result.completionBadges.map((badge, i) => (
+            <Badge key={i} variant="secondary" className="text-xs">
+              {badge}
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {/* Explanation */}
       {result.explanation && (
@@ -47,6 +61,28 @@ export default function StudyLoopFeedback({ result, hasNextQuestion, loading, on
             <p className="text-sm text-foreground">{result.reinforcement.explanation}</p>
             <p className="text-xs text-muted-foreground"><strong>Correção:</strong> {result.reinforcement.correction}</p>
             <p className="text-xs text-muted-foreground italic">💡 {result.reinforcement.tip}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Elegant exit — max reinforcements reached */}
+      {maxReached && (
+        <Card className="w-full border-primary/20 bg-primary/5">
+          <CardContent className="p-4 space-y-3 text-left">
+            <p className="text-sm text-foreground font-medium">
+              Parece que esse tema precisa de mais atenção. Que tal uma abordagem diferente?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => onQuickAction("summarize-topic")}>
+                <BookOpen className="h-3.5 w-3.5" /> Resumo do tema
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => onQuickAction("explain-deep")}>
+                <Brain className="h-3.5 w-3.5" /> Explicação profunda
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => onQuickAction("explain-simple")}>
+                <Sparkles className="h-3.5 w-3.5" /> Explicação simples
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
