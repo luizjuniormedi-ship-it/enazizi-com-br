@@ -529,6 +529,9 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
             <Sparkles className="h-5 w-5 text-primary" />
             <h3 className="font-semibold">Plano Gerado com Sucesso!</h3>
           </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Seu cronograma foi criado. Agora vamos transformar planejamento em ação.
+          </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div className="text-center p-3 rounded-lg bg-primary/10">
               <p className="text-2xl font-bold text-primary">{syncSummary.temasRegistrados}</p>
@@ -547,15 +550,12 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               <p className="text-xs text-muted-foreground">Revisões agendadas</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => onSyncComplete?.()}>
-              <ArrowRight className="h-4 w-4 mr-1" /> Ver Agenda de Hoje
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button size="lg" className="flex-1 h-12 text-base font-semibold gap-2" onClick={() => navigate("/mission-control")}>
+              <Sparkles className="h-5 w-5" /> Começar a estudar agora
             </Button>
-            <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/flashcards")}>
-              <Layers className="h-4 w-4 mr-1" /> Flashcards
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => navigate("/dashboard/chatgpt")}>
-              <MessageSquare className="h-4 w-4 mr-1" /> Tutor IA
+            <Button size="sm" variant="outline" onClick={() => onSyncComplete?.()}>
+              <ArrowRight className="h-4 w-4 mr-1" /> Ver agenda
             </Button>
           </div>
         </div>
