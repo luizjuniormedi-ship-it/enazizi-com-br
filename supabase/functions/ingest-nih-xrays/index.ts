@@ -81,20 +81,28 @@ Retorne APENAS JSON:
     let inserted = 0;
     const clean = (t: string) => t.replace(/\*\*/g, "").replace(/##/g, "").replace(/\\n/g, " ").replace(/\s{2,}/g, " ").trim();
 
-    for (const q of questions) {
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
       if (!q.statement || q.statement.length < 200 || !q.options || q.options.length < 5) continue;
+      
+      const questionCode = `nih_${asset.id.slice(0, 8)}_q${i}_${Date.now()}`;
+      const diffVal = Math.min(5, Math.max(1, q.difficulty || asset.difficulty));
+
       const { error } = await supabase.from("medical_image_questions").insert({
         asset_id: asset.id,
+        question_code: questionCode,
         statement: clean(q.statement),
-        options: q.options.map((o: string) => clean(o)),
+        option_a: clean(q.options[0] || ""),
+        option_b: clean(q.options[1] || ""),
+        option_c: clean(q.options[2] || ""),
+        option_d: clean(q.options[3] || ""),
+        option_e: clean(q.options[4] || ""),
         correct_index: q.correct_index || 0,
         explanation: clean(q.explanation || ""),
-        difficulty: q.difficulty || asset.difficulty,
+        difficulty: diffVal,
         exam_style: q.exam_style || "USP",
-        topic: q.topic || asset.topic,
-        subtopic: q.subtopic || asset.subtopic,
         status: "needs_review",
-        question_origin: "nih_xray_pipeline_v1",
+        language_code: "pt-BR",
       });
       if (!error) inserted++;
       else console.error("[q-insert]", error.message);
