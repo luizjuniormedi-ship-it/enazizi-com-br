@@ -30,6 +30,14 @@ type ImageQuestion = {
   diagnosis: string | null;
 };
 
+type QualityTier = "tier1" | "tier2" | "tier3";
+
+const TIER_LABELS: Record<QualityTier, { label: string; color: string }> = {
+  tier1: { label: "Alta qualidade", color: "bg-emerald-500/20 text-emerald-400" },
+  tier2: { label: "Qualidade moderada", color: "bg-yellow-500/20 text-yellow-400" },
+  tier3: { label: "Conteúdo em expansão", color: "bg-orange-500/20 text-orange-400" },
+};
+
 const difficultyLabels: Record<string, { label: string; color: string }> = {
   easy: { label: "Fácil", color: "bg-green-500/20 text-green-400" },
   medium: { label: "Médio", color: "bg-yellow-500/20 text-yellow-400" },
