@@ -149,7 +149,7 @@ const AdminQuestionReviewPanel = () => {
         lastError = error;
         console.error("Bulk approve error:", error);
       } else {
-        approved += count || chunk.length;
+        approved += chunk.length;
       }
     }
     
