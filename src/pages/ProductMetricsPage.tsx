@@ -1,8 +1,10 @@
 import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Navigate } from "react-router-dom";
 import { BarChart3 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { MetricsFiltersBar } from "@/components/product-metrics/MetricsFiltersBar";
 import { MetricsKpiCards } from "@/components/product-metrics/MetricsKpiCards";
 import { LoopFunnelSection } from "@/components/product-metrics/LoopFunnelSection";
@@ -15,6 +17,7 @@ import {
 } from "@/hooks/useProductMetrics";
 
 export default function ProductMetricsPage() {
+  const { isEnabled } = useFeatureFlags();
   const [days, setDays] = useState(30);
   const qc = useQueryClient();
 
