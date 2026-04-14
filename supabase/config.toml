@@ -63,3 +63,7 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.telegram-classroom]
     verify_jwt = false
+  [functions.validate-image-assets]
+    verify_jwt = false
+  [functions.repopulate-image-assets]
+    verify_jwt = false

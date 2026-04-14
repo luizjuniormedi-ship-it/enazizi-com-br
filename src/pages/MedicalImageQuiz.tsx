@@ -188,7 +188,14 @@ const MedicalImageQuiz = () => {
     const timeSeconds = Math.round((Date.now() - startTime) / 1000);
 
     if (user) {
-      saveAttempt.mutate({ imageId: currentQuestion.id, selectedIndex: index, correct, timeSeconds });
+      saveAttempt.mutate({
+        imageId: currentQuestion.id,
+        selectedIndex: index,
+        correct,
+        timeSeconds,
+        imageType: currentQuestion.image_type || undefined,
+        questionId: currentQuestion.id || undefined,
+      });
 
       // Log to error_bank on wrong answer
       if (!correct) {
