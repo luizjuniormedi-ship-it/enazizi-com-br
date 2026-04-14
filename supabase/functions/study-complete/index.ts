@@ -71,17 +71,111 @@ serve(async (req) => {
     // ── 5. Record study action event ──
     await db.from("study_action_events").insert({
       user_id: userId,
-      action_type: actionType,
+      task_type: actionType,
       topic: topicId || themeId || metadata?.topic || "",
       subtopic: subtopicId || metadata?.subtopic || "",
-      specialty: metadata?.specialty || "",
-      source: metadata?.source || "api",
+      source: "auto",
       origin_module: metadata?.originModule || "study-complete",
-      metadata: metadata ?? {},
+      payload_json: metadata ?? {},
+      status: "success",
     }).then(({ error }) => {
       if (error) errors.push(`event: ${error.message}`);
     });
 
+    // ── 5b. Update visual_skill_snapshots for image quiz completions ──
+    if (metadata?.originModule === "image_quiz" && metadata?.imageType) {
+      try {
+        const imgType = (metadata.imageType as string).toLowerCase();
+        // Fetch recent attempts for this image type
+        const { data: attempts } = await db.from("medical_image_attempts")
+          .select("correct, time_seconds, created_at")
+          .eq("user_id", userId)
+          .eq("image_type", imgType)
+          .order("created_at", { ascending: false })
+          .limit(100);
+
+        if (attempts && attempts.length >= 3) {
+          const total = attempts.length;
+          const correctCount = attempts.filter((a: any) => a.correct).length;
+          const accuracy = Math.round((correctCount / total) * 100);
+          const avgTime = Math.round(
+            attempts.reduce((s: number, a: any) => s + (a.time_seconds || 0), 0) / total
+          );
+          // Score: weighted 60% accuracy + 20% volume + 20% speed
+          const volumeScore = Math.min(100, total * 2);
+          const speedScore = avgTime <= 30 ? 100 : avgTime <= 60 ? 80 : avgTime <= 120 ? 50 : 20;
+          const score = Math.round(accuracy * 0.6 + volumeScore * 0.2 + speedScore * 0.2);
+
+          // Trend: compare recent 5 vs older
+          let trend = "stable";
+          if (total >= 10) {
+            const recent5 = attempts.slice(0, 5);
+            const older5 = attempts.slice(5, 10);
+            const recentAcc = recent5.filter((a: any) => a.correct).length / 5;
+            const olderAcc = older5.filter((a: any) => a.correct).length / 5;
+            if (recentAcc - olderAcc > 0.15) trend = "improving";
+            else if (recentAcc - olderAcc < -0.15) trend = "declining";
+          }
+
+          // Recent window (last 10)
+          const recentWindow = attempts.slice(0, Math.min(10, total));
+          const recentWindowAcc = Math.round(
+            (recentWindow.filter((a: any) => a.correct).length / recentWindow.length) * 100
+          );
+
+          // Confidence level
+          const confidence = total >= 20 ? "high" : total >= 10 ? "medium" : "low";
+
+          // Find all types to determine strongest/weakest
+          const { data: allTypes } = await db.from("medical_image_attempts")
+            .select("image_type, correct")
+            .eq("user_id", userId)
+            .not("image_type", "is", null);
+
+          let strongestArea = imgType;
+          let weakestArea = imgType;
+          if (allTypes && allTypes.length > 0) {
+            const byType = new Map<string, { total: number; correct: number }>();
+            for (const a of allTypes) {
+              const t = (a.image_type || "").toLowerCase();
+              if (!t) continue;
+              if (!byType.has(t)) byType.set(t, { total: 0, correct: 0 });
+              const e = byType.get(t)!;
+              e.total++;
+              if (a.correct) e.correct++;
+            }
+            let bestAcc = -1, worstAcc = 101;
+            for (const [t, d] of byType) {
+              if (d.total < 3) continue;
+              const acc = d.correct / d.total;
+              if (acc > bestAcc) { bestAcc = acc; strongestArea = t; }
+              if (acc < worstAcc) { worstAcc = acc; weakestArea = t; }
+            }
+          }
+
+          await db.from("visual_skill_snapshots").upsert({
+            user_id: userId,
+            image_type: imgType,
+            attempts_count: total,
+            correct_count: correctCount,
+            accuracy,
+            avg_time_seconds: avgTime,
+            score,
+            trend,
+            confidence_level: confidence,
+            recent_window_accuracy: recentWindowAcc,
+            strongest_area: strongestArea,
+            weakest_area: weakestArea,
+            computed_at: now,
+            updated_at: now,
+          }, { onConflict: "user_id,image_type" });
+
+          effects.visualSkillUpdated = true;
+        }
+      } catch (e) {
+        errors.push(`visual_skill: ${(e as Error).message}`);
+      }
+    }
     // ── 6. Update daily plan completed count ──
     if (effects.taskCompleted) {
       const { data: plan } = await db.from("daily_plans")
