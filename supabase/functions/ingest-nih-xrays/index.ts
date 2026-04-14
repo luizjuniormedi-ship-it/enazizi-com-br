@@ -158,8 +158,11 @@ Deno.serve(async (req) => {
         continue;
       }
 
-      // Step 1: Download & upload
-      const publicUrl = await downloadAndUpload(item.image_url, assetCode);
+      // Step 1: Use pre-uploaded URL or download & upload
+      let publicUrl = item.pre_uploaded_url || null;
+      if (!publicUrl) {
+        publicUrl = await downloadAndUpload(item.image_url, assetCode);
+      }
       if (!publicUrl) {
         results.push({ filename: item.filename, status: "download_failed" });
         continue;
