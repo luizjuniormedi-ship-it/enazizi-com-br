@@ -68,7 +68,6 @@ Deno.serve(async (req) => {
             question_generated: false,
             review_status: "approved",
             clinical_confidence: 0.95,
-            metadata: asset.metadata || {},
           });
 
         if (insertError) {
