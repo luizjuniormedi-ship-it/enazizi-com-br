@@ -260,6 +260,8 @@ const MedicalImageQuiz = () => {
 
   const [imageType, setImageType] = useState<string>(adaptiveImageType || "all");
   const [difficulty, setDifficulty] = useState<string>(adaptiveDifficulty || "all");
+  const [quizSize, setQuizSize] = useState<number>(10);
+  const [diagnosisFilter, setDiagnosisFilter] = useState<string>("all");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
