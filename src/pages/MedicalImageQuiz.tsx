@@ -47,6 +47,13 @@ const difficultyLabels: Record<string, { label: string; color: string }> = {
 };
 
 const imageTypeLabels: Record<string, string> = {
+  dermatology: "🩹 Dermato",
+  xray: "🫁 Raio-X",
+  ecg: "❤️ ECG",
+};
+
+// All known labels for display purposes (badges, etc.)
+const allImageTypeLabels: Record<string, string> = {
   ecg: "❤️ ECG",
   xray: "🫁 Raio-X",
   ct: "🧠 TC",
