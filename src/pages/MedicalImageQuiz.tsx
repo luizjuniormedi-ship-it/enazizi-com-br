@@ -596,6 +596,9 @@ const MedicalImageQuiz = () => {
         </Button>
       </div>
 
+      {/* Pipeline Optimization Panel */}
+      {quizMode === "browse" && <PipelineOptimizationPanel />}
+
       {questions.length === 0 ? (
         <Card className="p-12 text-center">
           <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
