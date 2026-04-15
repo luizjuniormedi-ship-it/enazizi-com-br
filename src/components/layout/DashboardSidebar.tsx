@@ -77,7 +77,7 @@ const navGroups: NavGroup[] = [
   {
     id: "ferramentas",
     title: "Ferramentas",
-    collapsed: true,
+    defaultOpen: true,
     items: [
       { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true, description: "Converse com seu professor virtual" },
       { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos", description: "Resumos inteligentes gerados por IA" },

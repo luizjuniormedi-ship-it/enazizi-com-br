@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,12 +20,12 @@ interface Props {
   activeType: string;
 }
 
-export default function MissionAlternatives({ alternatives, onSelect, activeType }: Props) {
+const MissionAlternatives = forwardRef<HTMLDivElement, Props>(({ alternatives, onSelect, activeType }, ref) => {
   const safeAlts = Array.isArray(alternatives) ? alternatives.slice(0, 3) : [];
   if (safeAlts.length === 0) return null;
 
   return (
-    <Card className="border-border/50">
+    <Card ref={ref} className="border-border/50">
       <CardContent className="p-4 sm:p-5 space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Alternativas inteligentes</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -51,4 +52,7 @@ export default function MissionAlternatives({ alternatives, onSelect, activeType
       </CardContent>
     </Card>
   );
-}
+});
+
+MissionAlternatives.displayName = "MissionAlternatives";
+export default MissionAlternatives;

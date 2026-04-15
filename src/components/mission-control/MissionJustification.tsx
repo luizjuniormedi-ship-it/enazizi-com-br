@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Lightbulb, Target, BookOpen, AlertTriangle } from "lucide-react";
@@ -15,14 +16,14 @@ const ZONE_CONFIG: Record<string, { label: string; color: string; icon: React.Re
   ready: { label: "Pronto", color: "text-success", icon: <Lightbulb className="h-3.5 w-3.5" /> },
 };
 
-export default function MissionJustification({ justification, adaptiveState }: Props) {
+const MissionJustification = forwardRef<HTMLDivElement, Props>(({ justification, adaptiveState }, ref) => {
   if (!justification) return null;
 
   const zone = adaptiveState?.approvalZone ?? "";
   const zoneCfg = ZONE_CONFIG[zone];
 
   return (
-    <Card className="border-border/50">
+    <Card ref={ref} className="border-border/50">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <div className="rounded-full bg-primary/10 p-2 shrink-0 mt-0.5">
@@ -44,4 +45,7 @@ export default function MissionJustification({ justification, adaptiveState }: P
       </CardContent>
     </Card>
   );
-}
+});
+
+MissionJustification.displayName = "MissionJustification";
+export default MissionJustification;
