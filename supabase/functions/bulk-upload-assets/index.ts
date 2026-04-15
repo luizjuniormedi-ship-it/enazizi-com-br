@@ -17,7 +17,6 @@ Deno.serve(async (req) => {
     );
 
     const { assets } = await req.json();
-    // assets: Array<{ filename, base64, image_type, diagnosis, difficulty, source, metadata }>
 
     if (!assets || !Array.isArray(assets)) {
       return new Response(JSON.stringify({ error: "assets array required" }), {
@@ -29,7 +28,6 @@ Deno.serve(async (req) => {
     const results = [];
     for (const asset of assets) {
       try {
-        // Decode base64
         const binaryStr = atob(asset.base64);
         const bytes = new Uint8Array(binaryStr.length);
         for (let i = 0; i < binaryStr.length; i++) {
@@ -38,7 +36,6 @@ Deno.serve(async (req) => {
 
         const storagePath = `${asset.image_type}/${asset.filename}`;
 
-        // Upload to storage
         const { error: uploadError } = await supabase.storage
           .from("question-images")
           .upload(storagePath, bytes, {
@@ -55,19 +52,29 @@ Deno.serve(async (req) => {
           .from("question-images")
           .getPublicUrl(storagePath);
 
-        // Insert into medical_image_assets
         const { error: insertError } = await supabase
           .from("medical_image_assets")
           .insert({
             image_type: asset.image_type,
             diagnosis: asset.diagnosis,
-            difficulty: asset.difficulty,
-            source: asset.source,
+            difficulty: asset.difficulty || "medium",
             image_url: urlData.publicUrl,
             is_active: true,
             question_generated: false,
             review_status: "approved",
             clinical_confidence: 0.95,
+            specialty: asset.specialty || "Pneumologia",
+            subtopic: asset.subtopic || asset.diagnosis,
+            asset_code: `${asset.image_type}_${asset.filename.replace(/\.[^.]+$/, "")}`,
+            asset_origin: asset.asset_origin || "kaggle_chest_xray_pneumonia",
+            license_type: asset.license_type || "CC BY 4.0",
+            incidence_weight: 1.0,
+            clinical_findings: asset.clinical_findings || {},
+            distractors: asset.distractors || [],
+            tri_a: 1.0,
+            tri_b: 0.0,
+            tri_c: 0.25,
+            version: 1,
           });
 
         if (insertError) {
@@ -84,7 +91,7 @@ Deno.serve(async (req) => {
     const failed = results.filter((r) => !r.ok).length;
 
     return new Response(
-      JSON.stringify({ ok, failed, total: assets.length, details: results.filter((r) => !r.ok) }),
+      JSON.stringify({ ok, failed, total: assets.length, details: results.filter((r) => !r.ok).slice(0, 5) }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
