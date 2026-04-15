@@ -263,6 +263,51 @@ export default function AdminPipelineMonitor() {
         </CardContent>
       </Card>
 
+      {/* Auto-Curation */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Search className="h-4 w-4 text-primary" />
+            Curadoria Automática (Open-i / NIH)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Select value={selectedCurationType} onValueChange={setSelectedCurationType}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ecg">❤️ ECG</SelectItem>
+                <SelectItem value="xray">🫁 Raio-X</SelectItem>
+                <SelectItem value="dermatology">🩹 Dermato</SelectItem>
+                <SelectItem value="ct">🧠 TC</SelectItem>
+                <SelectItem value="ophthalmology">👁️ Oftalmo</SelectItem>
+                <SelectItem value="us">📡 US</SelectItem>
+                <SelectItem value="pathology">🔬 Patologia</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              variant="outline"
+              onClick={() => curateMutation.mutate(selectedCurationType)}
+              disabled={curateMutation.isPending}
+            >
+              {curateMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Search className="h-3 w-3" />
+              )}
+              {curateMutation.isPending ? "Buscando..." : "Buscar Imagens"}
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            Busca imagens open-access no Open-i (NIH) e registra como assets pendentes. Após registrar, execute o Pipeline para gerar questões.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Runs History */}
       <Card>
         <CardHeader className="pb-2">
