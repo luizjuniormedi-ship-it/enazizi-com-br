@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, CheckCircle2, XCircle, Clock, Zap, Activity, Eye, EyeOff } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertTriangle, CheckCircle2, XCircle, Clock, Zap, Activity, Eye, EyeOff, Play, Loader2 } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -58,6 +59,25 @@ const alertTypeLabels: Record<string, string> = {
 export default function AdminPipelineMonitor() {
   const queryClient = useQueryClient();
   const [showAcknowledged, setShowAcknowledged] = useState(false);
+  const [selectedType, setSelectedType] = useState("ecg");
+
+  const runPipelineMutation = useMutation({
+    mutationFn: async (datasetType: string) => {
+      const { data, error } = await supabase.functions.invoke("run-pipeline", {
+        body: { dataset_type: datasetType, mode: "questions_only", batch_size: 10 },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["pipeline-runs"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline-alerts"] });
+      toast.success(`Pipeline concluído: ${data?.questions_generated || 0} questões geradas, ${data?.items_processed || 0} assets processados`);
+    },
+    onError: (err: any) => {
+      toast.error(`Erro no pipeline: ${err.message || "Erro desconhecido"}`);
+    },
+  });
 
   const { data: runs } = useQuery<PipelineRun[]>({
     queryKey: ["pipeline-runs"],
@@ -183,6 +203,47 @@ export default function AdminPipelineMonitor() {
           )}
         </Card>
       )}
+
+      {/* Pipeline Trigger */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Play className="h-4 w-4 text-emerald-600" />
+            Disparar Pipeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ecg">❤️ ECG</SelectItem>
+                <SelectItem value="xray">🫁 Raio-X</SelectItem>
+                <SelectItem value="dermatology">🩹 Dermato</SelectItem>
+                <SelectItem value="ct">🧠 TC</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => runPipelineMutation.mutate(selectedType)}
+              disabled={runPipelineMutation.isPending}
+            >
+              {runPipelineMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Play className="h-3 w-3" />
+              )}
+              {runPipelineMutation.isPending ? "Executando..." : "Executar Pipeline"}
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            Gera questões para assets pendentes (batch de 10). Modo: questions_only.
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Runs History */}
       <Card>
