@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
+import PipelineOptimizationPanel from "@/components/quiz/PipelineOptimizationPanel";
 
 type ImageQuestion = {
   id: string;
