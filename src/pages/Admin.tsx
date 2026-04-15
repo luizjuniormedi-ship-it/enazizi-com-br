@@ -32,6 +32,7 @@ import ImageQuestionUpgradePanel from "@/components/admin/ImageQuestionUpgradePa
 import AdminImageQuestionReviewPanel from "@/components/admin/AdminImageQuestionReviewPanel";
 import AdminModalityPanel from "@/components/admin/AdminModalityPanel";
 import AdminHygieneDashboard from "@/components/admin/AdminHygieneDashboard";
+import AdminLargeUploadPanel from "@/components/admin/AdminLargeUploadPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
