@@ -1,27 +1,27 @@
+import { forwardRef } from "react";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 
 interface Props {
   data: { specialty: string; score: number }[];
 }
 
-const SpecialtyRadarChart = ({ data }: Props) => {
+const SpecialtyRadarChart = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
   if (data.length < 3) {
     return (
-      <div className="glass-card p-6">
+      <div ref={ref} className="glass-card p-6">
         <h2 className="text-lg font-semibold mb-4">Radar de especialidades</h2>
         <p className="text-sm text-muted-foreground text-center py-8">Responda questões de pelo menos 3 especialidades.</p>
       </div>
     );
   }
 
-  // Truncate long specialty names
   const chartData = data.map(d => ({
     ...d,
     label: d.specialty.length > 12 ? d.specialty.slice(0, 11) + "…" : d.specialty,
   }));
 
   return (
-    <div className="glass-card p-6">
+    <div ref={ref} className="glass-card p-6">
       <h2 className="text-lg font-semibold mb-4">Radar de especialidades</h2>
       <ResponsiveContainer width="100%" height={300}>
         <RadarChart data={chartData} outerRadius="75%">
@@ -33,6 +33,8 @@ const SpecialtyRadarChart = ({ data }: Props) => {
       </ResponsiveContainer>
     </div>
   );
-};
+});
+
+SpecialtyRadarChart.displayName = "SpecialtyRadarChart";
 
 export default SpecialtyRadarChart;
