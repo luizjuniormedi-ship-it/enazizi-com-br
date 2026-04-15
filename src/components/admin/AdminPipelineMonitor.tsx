@@ -81,6 +81,22 @@ export default function AdminPipelineMonitor() {
     },
   });
 
+  const curateMutation = useMutation({
+    mutationFn: async (imageType: string) => {
+      const { data, error } = await supabase.functions.invoke("auto-curate-assets", {
+        body: { image_type: imageType, max_per_query: 5 },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Curadoria concluída: ${data?.total_registered || 0} novos assets registrados para ${data?.image_type}`);
+    },
+    onError: (err: any) => {
+      toast.error(`Erro na curadoria: ${err.message || "Erro desconhecido"}`);
+    },
+  });
+
   const { data: runs } = useQuery<PipelineRun[]>({
     queryKey: ["pipeline-runs"],
     queryFn: async () => {
