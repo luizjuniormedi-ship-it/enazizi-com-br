@@ -124,9 +124,9 @@ function mapRows(data: any[]): ImageQuestion[] {
   let blockedImages = 0;
   let skippedIncomplete = 0;
 
-  const result = data
+  // First pass: filter and map
+  const allValid = data
     .filter((q: any) => {
-      // HARD BLOCK: skip incomplete questions entirely
       if (!isCompleteQuestion(q)) {
         skippedIncomplete++;
         console.log("QUESTION SKIPPED (incomplete):", q.id, "stmt_len:", q.statement?.length || 0);
@@ -160,10 +160,18 @@ function mapRows(data: any[]): ImageQuestion[] {
         pitfalls: q.pitfalls || [],
       } as ImageQuestion;
     })
-    // HARD BLOCK: only show questions that have a valid medical image
     .filter((q) => q.image_url !== null);
 
-  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked images: ${blockedImages} | Skipped incomplete: ${skippedIncomplete}`);
+  // DEDUP: keep only ONE question per unique image_url
+  const seenImages = new Set<string>();
+  const result = allValid.filter((q) => {
+    if (!q.image_url) return false;
+    if (seenImages.has(q.image_url)) return false;
+    seenImages.add(q.image_url);
+    return true;
+  });
+
+  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${allValid.length} | Unique images: ${result.length} | Blocked: ${blockedImages} | Skipped: ${skippedIncomplete}`);
   return result;
 }
 
@@ -252,6 +260,8 @@ const MedicalImageQuiz = () => {
 
   const [imageType, setImageType] = useState<string>(adaptiveImageType || "all");
   const [difficulty, setDifficulty] = useState<string>(adaptiveDifficulty || "all");
+  const [quizSize, setQuizSize] = useState<number>(10);
+  const [diagnosisFilter, setDiagnosisFilter] = useState<string>("all");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
@@ -296,9 +306,9 @@ const MedicalImageQuiz = () => {
     }
   }, [adaptiveImageType, getAdaptiveDifficulty]);
 
-  // Fetch with tiered fallback + adaptive difficulty
+  // Fetch with tiered fallback + adaptive difficulty + diagnosis filter + size limit
   const { data: questions = [], isLoading } = useQuery({
-    queryKey: ["image-quiz-questions", imageType, difficulty, visualSkill?.accuracy],
+    queryKey: ["image-quiz-questions", imageType, difficulty, diagnosisFilter, quizSize, visualSkill?.accuracy],
     queryFn: async () => {
       const effectiveDifficulty = getAdaptiveDifficulty() || difficulty;
       let result = await fetchQuestionsWithFallback(imageType, effectiveDifficulty);
@@ -308,7 +318,28 @@ const MedicalImageQuiz = () => {
         result = await fetchQuestionsWithFallback("all", difficulty);
       }
       setActiveTier(result.tier);
-      return result.questions;
+      let filtered = result.questions;
+      // Apply diagnosis filter
+      if (diagnosisFilter !== "all") {
+        filtered = filtered.filter(q => q.diagnosis === diagnosisFilter);
+      }
+      // Shuffle and limit to quizSize
+      const shuffled = filtered.sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, quizSize);
+    },
+  });
+
+  // Available diagnoses for filter
+  const { data: availableDiagnoses = [] } = useQuery({
+    queryKey: ["image-quiz-diagnoses"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("medical_image_assets")
+        .select("diagnosis")
+        .eq("is_active", true)
+        .eq("quality_gate_passed", true);
+      const unique = [...new Set((data || []).map((d: any) => d.diagnosis).filter(Boolean))].sort();
+      return unique as string[];
     },
   });
 
@@ -582,6 +613,30 @@ const MedicalImageQuiz = () => {
             <SelectItem value="easy">🟢 Fácil</SelectItem>
             <SelectItem value="medium">🟡 Médio</SelectItem>
             <SelectItem value="hard">🔴 Difícil</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={diagnosisFilter} onValueChange={setDiagnosisFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Diagnóstico" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os diagnósticos</SelectItem>
+            {availableDiagnoses.map((d) => (
+              <SelectItem key={d} value={d}>{d}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={String(quizSize)} onValueChange={(v) => setQuizSize(Number(v))}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Quantidade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="5">5 imagens</SelectItem>
+            <SelectItem value="10">10 imagens</SelectItem>
+            <SelectItem value="15">15 imagens</SelectItem>
+            <SelectItem value="20">20 imagens</SelectItem>
+            <SelectItem value="30">30 imagens</SelectItem>
+            <SelectItem value="50">50 imagens</SelectItem>
           </SelectContent>
         </Select>
         <Badge variant="secondary" className="self-center">
