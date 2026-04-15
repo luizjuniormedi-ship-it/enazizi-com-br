@@ -241,6 +241,7 @@ const AdminIngestionPanel = () => {
         setEqProgress(prev => prev ? { ...prev, current: i + 1, percent: Math.round(((i) / total) * 100), currentSpecialty: spec.name, eta: etaStr } : prev);
 
         try {
+          // Start background job
           const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content`, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
@@ -252,7 +253,36 @@ const AdminIngestionPanel = () => {
           if (!resp.ok) {
             throw new Error(data?.error || `Falha ao equalizar ${spec.name} (${resp.status})`);
           }
-          const added = (data?.total_imported || 0) + (data?.total_generated || 0);
+
+          // Poll for job completion
+          const jobId = data?.job_id;
+          let jobResult: any = null;
+          if (jobId) {
+            for (let poll = 0; poll < 120; poll++) {
+              await new Promise(r => setTimeout(r, 3000));
+              if (pauseRef.current) break;
+              try {
+                const pollResp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-generate-content?job_id=${jobId}`, {
+                  method: "GET",
+                  headers: { Authorization: `Bearer ${session.access_token}` },
+                });
+                const pollData = await pollResp.json();
+                if (pollData.status === "completed") { jobResult = pollData.result || {}; break; }
+                if (pollData.status === "failed") { throw new Error(pollData.error || "Job falhou"); }
+                // Update progress from background job
+                if (pollData.progress?.specialty) {
+                  setEqProgress(prev => prev ? { ...prev, currentSpecialty: `${spec.name} (processando...)` } : prev);
+                }
+              } catch (pollErr) {
+                if (pollErr instanceof Error && pollErr.message.includes("Job falhou")) throw pollErr;
+              }
+            }
+          } else {
+            // Legacy direct response
+            jobResult = data;
+          }
+
+          const added = (jobResult?.total_imported || 0) + (jobResult?.total_generated || 0);
           log.push({ specialty: spec.name, added });
           const qRemaining = totalQRemaining - log.reduce((s, l) => s + l.added, 0);
           setEqProgress(prev => prev ? { ...prev, percent: Math.round(((i + 1) / total) * 100), log: [...log], questionsRemaining: Math.max(0, qRemaining) } : prev);
