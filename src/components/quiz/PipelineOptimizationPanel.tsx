@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
+import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw, ShieldCheck, ShieldX, Zap, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface PrioritizedItem {
