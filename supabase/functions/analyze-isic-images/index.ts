@@ -236,23 +236,18 @@ serve(async (req) => {
         image_url: `${supabaseUrl}/storage/v1/object/authenticated/user-uploads/${upload.storage_path}`,
         image_type: mapImageType(analysis.image_type),
         diagnosis: analysis.diagnosis,
-        diagnosis_en: analysis.diagnosis_en,
-        description: analysis.description,
+        clinical_findings: analysis.description,
         difficulty: analysis.difficulty,
         specialty: analysis.specialty || meta.specialty,
-        source: `${meta.category}-dataset`,
+        source_reference: `${meta.category}-dataset`,
         source_url: meta.category === "dermatology" ? "https://www.isic-archive.com" : "https://www.kaggle.com",
         clinical_confidence: analysis.confidence || 0.7,
+        asset_origin: "ai_curated",
         review_status: "needs_review",
         is_active: true,
         question_generated: false,
-        metadata: {
-          original_filename: upload.filename,
-          upload_id: upload.id,
-          image_category: meta.category,
-          differential_diagnoses: analysis.differential_diagnoses,
-          ai_model: "gemini-2.5-flash",
-        },
+        distractors: analysis.differential_diagnoses,
+        curation_notes: `AI-analyzed: ${upload.filename} | ${meta.category} | conf: ${analysis.confidence}`,
       }).select("id").single();
 
       if (assetErr) console.error(`Asset insert error:`, assetErr.message);
