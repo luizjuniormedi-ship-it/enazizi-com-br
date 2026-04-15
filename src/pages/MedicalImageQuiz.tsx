@@ -64,7 +64,7 @@ const imageTypeLabels: Record<string, string> = {
   ophthalmology: "👁️ Oftalmo",
   pathology: "🔬 Patologia",
 };
-// ─── Tiered fetcher ──────────────────────────────────────────────────
+// ─── Strict medical-only fetcher ──────────────────────────────────────
 const SELECT_FIELDS = `
   id, statement, option_a, option_b, option_c, option_d, option_e,
   correct_index, explanation, difficulty, exam_style,
@@ -72,76 +72,76 @@ const SELECT_FIELDS = `
   medical_image_assets!inner(
     image_url, image_type, diagnosis, is_active,
     review_status, clinical_confidence, integrity_status,
-    validation_level, asset_origin
+    validation_level, asset_origin, ai_validated
   )
 `;
 
-/** Additional frontend blocklist for URLs that slip through DB filters */
+/** Frontend blocklist — last line of defense against non-medical URLs */
 const BLOCKED_URL_TERMS = [
   "logo", "stock", "laptop", "banner", "algoscope", "placeholder",
   "mock", "demo", "avatar", "portrait", "screenshot", "dashboard",
   "icon", "favicon", "thumbnail", "profile", "headshot", "staff",
   "bio-photo", "doctor-photo", "team", "about-us", "generic",
+  "notebook", "computer", "desktop", "monitor", "phone",
 ];
 
-/** Validate a URL is a real medical image, not a logo/placeholder/etc */
+const VALID_IMAGE_TYPES = ["xray", "ecg", "ct", "us", "dermatology", "pathology", "ophthalmology"];
+
+/** Validate a URL is a real medical image */
 function isValidMedicalImageUrl(url: string | null): boolean {
-  if (!url || typeof url !== "string") return false;
-  // Must pass the safety gate
+  if (!url || typeof url !== "string" || url.trim().length < 10) return false;
   if (!isImageUrlClinical(url)) return false;
   const lower = url.toLowerCase();
-  // Block suspicious terms
   if (BLOCKED_URL_TERMS.some((term) => lower.includes(term))) return false;
-  // Must look like an actual image URL
-  const hasImageExt = /\.(jpg|jpeg|png|webp|gif|bmp|tiff|svg)(\?|$)/i.test(url);
-  const isDataUrl = url.startsWith("data:image/");
+  const hasImageExt = /\.(jpg|jpeg|png|webp|gif|bmp|tiff)(\?|$)/i.test(url);
   const isStorageUrl = url.includes("supabase.co/storage");
-  if (!hasImageExt && !isDataUrl && !isStorageUrl) return false;
+  if (!hasImageExt && !isStorageUrl) return false;
+  return true;
+}
+
+/** Validate a question has all required fields */
+function isCompleteQuestion(q: any): boolean {
+  if (!q.statement || q.statement.trim().length < 50) return false;
+  if (!q.explanation || q.explanation.trim().length < 30) return false;
+  const opts = [q.option_a, q.option_b, q.option_c, q.option_d];
+  if (opts.some((o: any) => !o || String(o).trim().length < 5)) return false;
+  if (typeof q.correct_index !== "number" || q.correct_index < 0 || q.correct_index > 4) return false;
   return true;
 }
 
 /** Validate a full asset object is renderable */
 function isRenderableMedicalImage(asset: any): boolean {
   if (!asset) return false;
-  const url = asset?.image_url;
-  if (!isValidMedicalImageUrl(url)) return false;
-  // Block assets explicitly marked as AI-rejected
+  if (!isValidMedicalImageUrl(asset.image_url)) return false;
   if (asset.ai_validated === false) return false;
-  if (typeof asset.ai_confidence === "number" && asset.ai_confidence < 0.7) return false;
+  if (asset.integrity_status && asset.integrity_status !== "ok") return false;
+  if (asset.image_type && !VALID_IMAGE_TYPES.includes(asset.image_type)) return false;
   return true;
 }
 
 function mapRows(data: any[]): ImageQuestion[] {
-  let blocked = 0;
-  const blockedPatterns: Record<string, number> = {};
+  let blockedImages = 0;
+  let skippedIncomplete = 0;
+
   const result = data
+    .filter((q: any) => {
+      // HARD BLOCK: skip incomplete questions entirely
+      if (!isCompleteQuestion(q)) {
+        skippedIncomplete++;
+        console.log("QUESTION SKIPPED (incomplete):", q.id, "stmt_len:", q.statement?.length || 0);
+        return false;
+      }
+      return true;
+    })
     .map((q: any) => {
       const asset = q.medical_image_assets;
-      // Use full asset validation (URL + AI fields)
-      if (!isRenderableMedicalImage(asset)) {
-        blocked++;
-        const url = (asset?.image_url || "").toLowerCase();
-        const matched = BLOCKED_URL_TERMS.find((t) => url.includes(t));
-        if (matched) blockedPatterns[matched] = (blockedPatterns[matched] || 0) + 1;
-        // Still include the question but without image
-        const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
-        return {
-          id: q.id,
-          statement: q.statement,
-          options: opts,
-          correct_index: q.correct_index,
-          explanation: q.explanation,
-          difficulty: q.difficulty,
-          exam_style: q.exam_style,
-          image_url: null,
-          image_type: asset?.image_type || null,
-          diagnosis: asset?.diagnosis || null,
-          discussion: q.discussion || null,
-          exam_tips: q.exam_tips || [],
-          pitfalls: q.pitfalls || [],
-        } as ImageQuestion;
+      const hasValidImage = isRenderableMedicalImage(asset);
+
+      if (!hasValidImage) {
+        blockedImages++;
+        console.log("INVALID IMAGE BLOCKED:", asset?.image_url || "no-url", "asset:", q.id);
       }
-      const imageUrl = asset?.image_url || null;
+
       const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
       return {
         id: q.id,
@@ -151,7 +151,7 @@ function mapRows(data: any[]): ImageQuestion[] {
         explanation: q.explanation,
         difficulty: q.difficulty,
         exam_style: q.exam_style,
-        image_url: imageUrl,
+        image_url: hasValidImage ? asset.image_url : null,
         image_type: asset?.image_type || null,
         diagnosis: asset?.diagnosis || null,
         discussion: q.discussion || null,
@@ -159,8 +159,10 @@ function mapRows(data: any[]): ImageQuestion[] {
         pitfalls: q.pitfalls || [],
       } as ImageQuestion;
     })
-    .filter(Boolean) as ImageQuestion[];
-  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked images: ${blocked}`, blocked > 0 ? blockedPatterns : "");
+    // HARD BLOCK: only show questions that have a valid medical image
+    .filter((q) => q.image_url !== null);
+
+  console.log(`[ImageQuiz] Fetched: ${data.length} | Valid: ${result.length} | Blocked images: ${blockedImages} | Skipped incomplete: ${skippedIncomplete}`);
   return result;
 }
 
@@ -174,7 +176,7 @@ async function fetchQuestionsWithFallback(
     return q;
   };
 
-  // ── Tier 1: Gold/Silver, confidence >= 0.9 ──
+  // ── Tier 1: Gold/Silver, confidence >= 0.9, ai_validated ──
   const t1 = applyFilters(
     supabase
       .from("medical_image_questions")
@@ -183,19 +185,21 @@ async function fetchQuestionsWithFallback(
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.review_status", "published")
       .eq("medical_image_assets.integrity_status", "ok")
+      .eq("medical_image_assets.ai_validated", true)
       .gte("medical_image_assets.clinical_confidence", 0.9)
       .in("medical_image_assets.validation_level", ["gold", "silver"])
       .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
+      .in("medical_image_assets.image_type", VALID_IMAGE_TYPES as any)
       .neq("medical_image_assets.image_url", ""),
     imageType,
     difficulty,
   );
-  const { data: d1, error: e1 } = await t1.order("created_at", { ascending: false }).limit(30);
+  const { data: d1, error: e1 } = await t1.order("created_at", { ascending: false }).limit(50);
   if (e1) throw e1;
   const q1 = mapRows(d1 || []);
-  if (q1.length >= 10) return { questions: q1, tier: "tier1" };
+  if (q1.length >= 5) return { questions: q1, tier: "tier1" };
 
-  // ── Tier 2: Bronze+, confidence >= 0.7 ──
+  // ── Tier 2: Gold/Silver/Bronze, confidence >= 0.8 ──
   const t2 = applyFilters(
     supabase
       .from("medical_image_questions")
@@ -203,18 +207,19 @@ async function fetchQuestionsWithFallback(
       .eq("status", "published")
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.integrity_status", "ok")
-      .gte("medical_image_assets.clinical_confidence", 0.7)
+      .gte("medical_image_assets.clinical_confidence", 0.8)
       .in("medical_image_assets.validation_level", ["gold", "silver", "bronze"])
+      .in("medical_image_assets.image_type", VALID_IMAGE_TYPES as any)
       .neq("medical_image_assets.image_url", ""),
     imageType,
     difficulty,
   );
-  const { data: d2, error: e2 } = await t2.order("created_at", { ascending: false }).limit(30);
+  const { data: d2, error: e2 } = await t2.order("created_at", { ascending: false }).limit(50);
   if (e2) throw e2;
   const q2 = mapRows(d2 || []);
-  if (q2.length >= 5) return { questions: q2, tier: "tier2" };
+  if (q2.length >= 3) return { questions: q2, tier: "tier2" };
 
-  // ── Tier 3: active + integrity ok + minimum confidence ──
+  // ── Tier 3: active + integrity ok + any confidence ──
   const t3 = applyFilters(
     supabase
       .from("medical_image_questions")
@@ -222,12 +227,12 @@ async function fetchQuestionsWithFallback(
       .eq("status", "published")
       .eq("medical_image_assets.is_active", true)
       .eq("medical_image_assets.integrity_status", "ok")
-      .gte("medical_image_assets.clinical_confidence", 0.6)
+      .in("medical_image_assets.image_type", VALID_IMAGE_TYPES as any)
       .neq("medical_image_assets.image_url", ""),
     imageType,
     difficulty,
   );
-  const { data: d3, error: e3 } = await t3.order("created_at", { ascending: false }).limit(30);
+  const { data: d3, error: e3 } = await t3.order("created_at", { ascending: false }).limit(50);
   if (e3) throw e3;
   const q3 = mapRows(d3 || []);
   console.log(`[ImageQuiz] Tier stats — T1: ${q1.length} | T2: ${q2.length} | T3: ${q3.length}`);
@@ -457,13 +462,24 @@ const MedicalImageQuiz = () => {
       const { data, error } = await supabase.functions.invoke("generate-image-questions-secure", {
         body: { batch_size: 5 },
       });
-      if (error) throw error;
+      if (error) {
+        console.error("GENERATE ERROR:", error);
+        throw error;
+      }
       const generated = data?.generated || 0;
+      const processed = data?.processed || 0;
+      const failed = data?.failed || 0;
+      console.log("GENERATED QUESTIONS:", generated, "processed:", processed, "failed:", failed);
       if (generated > 0) {
         toast.success(`${generated} novas questões geradas com sucesso!`);
         queryClient.invalidateQueries({ queryKey: ["image-quiz-questions"] });
+      } else if (processed === 0) {
+        toast.info("Todos os assets já possuem questões. Nenhum pendente.");
       } else {
-        toast.info("Nenhum asset pendente para gerar questões.");
+        toast.warning(`${processed} assets processados, mas ${failed} falharam. Verifique os logs.`);
+      }
+      if (data?.errors?.length > 0) {
+        console.warn("Generation errors:", data.errors);
       }
     } catch (err: any) {
       toast.error("Erro ao gerar questões: " + (err.message || "tente novamente"));
@@ -602,9 +618,9 @@ const MedicalImageQuiz = () => {
       {questions.length === 0 ? (
         <Card className="p-12 text-center">
           <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Banco sendo atualizado</h3>
-          <p className="text-muted-foreground">Estamos ampliando o acervo de imagens médicas. Novas questões serão disponibilizadas em breve.</p>
-          <p className="text-xs text-muted-foreground mt-2">Tente remover os filtros ou volte mais tarde.</p>
+          <h3 className="text-lg font-semibold mb-2">Não há imagens médicas suficientes para este filtro</h3>
+          <p className="text-muted-foreground">Apenas imagens médicas reais validadas são exibidas neste quiz.</p>
+          <p className="text-xs text-muted-foreground mt-2">Tente remover os filtros de tipo ou dificuldade, ou clique em "Gerar Questões" para criar novas.</p>
         </Card>
       ) : quizMode === "quiz" && currentQuestion ? (
         <>
