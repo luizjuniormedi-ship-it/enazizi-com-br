@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,27 +11,30 @@ import { useStudyLoop } from "@/hooks/useStudyLoop";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
+import { useVisualSkill } from "@/hooks/useVisualSkill";
 import { supabase } from "@/integrations/supabase/client";
+import { motion } from "framer-motion";
 
-import MissionHeroCard from "@/components/mission-control/MissionHeroCard";
+import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
+import ApprovalScoreCard from "@/components/dashboard-v2/ApprovalScoreCard";
+import FocusCard from "@/components/dashboard-v2/FocusCard";
+import DailyProgressCard from "@/components/dashboard-v2/DailyProgressCard";
+import SmartAlerts, { type SmartAlert } from "@/components/dashboard-v2/SmartAlerts";
+
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
-import MissionQuickActions from "@/components/mission-control/MissionQuickActions";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
 import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
 import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
 import SessionBar from "@/components/study-session/SessionBar";
-import VisualSkillCard from "@/components/mission-control/VisualSkillCard";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Flame, Target, RotateCcw, TrendingUp } from "lucide-react";
 import { fireCelebration } from "@/lib/celebrations";
 
 const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
@@ -49,36 +52,8 @@ interface CompletionHandoff {
   badges?: string[];
 }
 
-/* ─── Compact Stats Strip ─── */
-function StatsStrip({ approvalScore, pendingReviews, streak, todayCompleted, todayTotal }: {
-  approvalScore: number; pendingReviews: number; streak: number; todayCompleted: number; todayTotal: number;
-}) {
-  return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-      <MiniStat icon={<Target className="h-4 w-4 text-primary" />} label="Aprovação" value={`${approvalScore}%`} />
-      <MiniStat icon={<RotateCcw className="h-4 w-4 text-primary" />} label="Revisões" value={String(pendingReviews)} highlight={pendingReviews > 5} />
-      <MiniStat icon={<Flame className="h-4 w-4 text-primary" />} label="Streak" value={`${streak}d`} />
-      <MiniStat icon={<TrendingUp className="h-4 w-4 text-primary" />} label="Hoje" value={`${todayCompleted}/${todayTotal}`} />
-    </div>
-  );
-}
-
-function MiniStat({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
-  return (
-    <Card className={`border-border/50 ${highlight ? "border-destructive/30" : ""}`}>
-      <CardContent className="p-3 flex items-center gap-2.5">
-        <div className="shrink-0">{icon}</div>
-        <div className="min-w-0">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-          <p className="text-lg font-bold tabular-nums leading-tight">{value}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
 /* ═══════════════════════════════════════════════════
-   DASHBOARD — Unified Mission Hub
+   DASHBOARD v2 — Mission Control Premium
    ═══════════════════════════════════════════════════ */
 const Dashboard = () => {
   useRevisionNotifier();
@@ -89,6 +64,7 @@ const Dashboard = () => {
   const { isEnabled, loading: flagsLoading } = useFeatureFlags();
   const { data: coreData } = useCoreData();
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
+  const { data: visualSkill } = useVisualSkill();
 
   // Mission engine
   const { data, isLoading: missionLoading, isError, error, refresh } = useStudyNext();
@@ -98,8 +74,6 @@ const Dashboard = () => {
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
   const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
-  const [heroHighlight, setHeroHighlight] = useState(false);
-  const highlightTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const prevLevelRef = useRef<number | null>(null);
   const autostartConsumedRef = useRef(false);
 
@@ -121,34 +95,22 @@ const Dashboard = () => {
 
     autostartConsumedRef.current = true;
     const source = searchParams.get("source") || "manual";
-
-    // Clean URL without triggering navigation
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("autostart");
     newParams.delete("source");
     setSearchParams(newParams, { replace: true });
 
-    // Start session + route recommendation
-    if (!session.metrics.active) {
-      session.startSession(source);
-    }
-
+    if (!session.metrics.active) session.startSession(source);
     const action = resolveRecommendationAction(activeRec);
-    if (action.mode === "navigate") {
-      navigate(action.path);
-    } else {
-      loop.startMission(activeRec);
-    }
+    if (action.mode === "navigate") navigate(action.path);
+    else loop.startMission(activeRec);
   }, [missionLoading, data, activeRec, searchParams, setSearchParams, session, loop, navigate]);
 
-  // ─── Track loop results into session ───
+  // Track loop results
   const prevPhaseRef = useRef(loop.phase);
   useEffect(() => {
     if (prevPhaseRef.current === "feedback" && loop.phase !== "feedback" && loop.result && session.metrics.active) {
-      // Feedback phase just ended → record action
-      const correct = loop.result.correct ?? false;
-      const theme = loop.context?.theme;
-      session.recordAction(correct, theme);
+      session.recordAction(loop.result.correct ?? false, loop.context?.theme);
     }
     prevPhaseRef.current = loop.phase;
   }, [loop.phase, loop.result, loop.context, session]);
@@ -156,14 +118,13 @@ const Dashboard = () => {
   // Celebrations
   useEffect(() => {
     if (!dashData) return;
-    const { metrics } = dashData;
-    if (prevLevelRef.current !== null && metrics.gamificationLevel > prevLevelRef.current) {
+    if (prevLevelRef.current !== null && dashData.metrics.gamificationLevel > prevLevelRef.current) {
       fireCelebration("levelup");
     }
-    prevLevelRef.current = metrics.gamificationLevel;
+    prevLevelRef.current = dashData.metrics.gamificationLevel;
   }, [dashData]);
 
-  // Redirect to MissionEntry on fresh login
+  // Fresh login redirect
   useEffect(() => {
     if (flagsLoading) return;
     if (!isEnabled("mission_entry_enabled")) return;
@@ -181,7 +142,6 @@ const Dashboard = () => {
     if (!user?.id) return;
     let timer: ReturnType<typeof setTimeout> | null = null;
     const pending = new Set<string>();
-
     const debounced = (keys: string[][]) => {
       keys.forEach(k => pending.add(JSON.stringify(k)));
       if (timer) clearTimeout(timer);
@@ -190,7 +150,6 @@ const Dashboard = () => {
         pending.clear();
       }, 1500);
     };
-
     const channel = supabase
       .channel('dashboard-live')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, () => debounced([["core-data"], ["dashboard-data"], ["study-next"]]))
@@ -206,16 +165,10 @@ const Dashboard = () => {
   /* ─── Handlers ─── */
   const handleStart = useCallback(() => {
     if (!activeRec) return;
-    if (!session.metrics.active) {
-      session.startSession("manual");
-    }
-
+    if (!session.metrics.active) session.startSession("manual");
     const action = resolveRecommendationAction(activeRec);
-    if (action.mode === "navigate") {
-      navigate(action.path);
-    } else {
-      loop.startMission(activeRec);
-    }
+    if (action.mode === "navigate") navigate(action.path);
+    else loop.startMission(activeRec);
   }, [activeRec, loop, session, navigate]);
 
   const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
@@ -231,33 +184,23 @@ const Dashboard = () => {
     const wasComplete = loop.phase === "complete";
     const completedTitle = loop.context?.recommendation.title ?? "";
     const badges = loop.result?.completionBadges;
-
     loop.resetLoop();
-
     if (wasComplete) {
       setHandoff({ completedTitle, badges });
       setOverrideRec(null);
-      setHeroHighlight(true);
-      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current);
-      highlightTimerRef.current = setTimeout(() => setHeroHighlight(false), 2000);
       refresh();
     }
   }, [loop, refresh]);
 
   const handleEndSession = useCallback(() => {
-    // If loop is active, close it first
-    if (loopActive) {
-      loop.resetLoop();
-    }
+    if (loopActive) loop.resetLoop();
     session.endSession();
   }, [loopActive, loop, session]);
 
   const handleContinueAfterSummary = useCallback(() => {
     session.dismissSummary();
     session.startSession("continue");
-    if (activeRec) {
-      loop.startMission(activeRec);
-    }
+    if (activeRec) loop.startMission(activeRec);
   }, [session, activeRec, loop]);
 
   const handleDismissSummary = useCallback(() => {
@@ -267,19 +210,64 @@ const Dashboard = () => {
   const dismissBanner = useCallback(() => setHandoff(null), []);
 
   /* ─── Derived ─── */
-  const isNewUser = dashData
-    ? (dashData.metrics.questionsAnswered === 0 && dashData.stats.flashcards === 0)
-    : false;
+  const isNewUser = dashData ? (dashData.metrics.questionsAnswered === 0 && dashData.stats.flashcards === 0) : false;
   const displayName = dashData?.displayName?.split(" ")[0] || "Doutor(a)";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
   const targetExams = dashData?.targetExams || [];
 
+  // Approval score trend
+  const approvalTrend = useMemo(() => {
+    const scores = coreData?.approvalScores || [];
+    if (scores.length < 2) return "stable" as const;
+    const recent = scores[0]?.score ?? 0;
+    const older = scores[1]?.score ?? 0;
+    if (recent - older > 3) return "up" as const;
+    if (recent - older < -3) return "down" as const;
+    return "stable" as const;
+  }, [coreData?.approvalScores]);
+
+  // Smart alerts
+  const smartAlerts = useMemo(() => {
+    const alerts: SmartAlert[] = [];
+    if (visualSkill) {
+      // Check weakest category trend
+      const weakCat = visualSkill.categories.find(c => c.imageType === visualSkill.weakestArea);
+      const strongCat = visualSkill.categories.find(c => c.imageType === visualSkill.strongestArea);
+      if (weakCat?.trend === "declining" && visualSkill.weakestArea) {
+        alerts.push({
+          id: "visual-decline",
+          type: "warning",
+          message: `Seu desempenho em ${visualSkill.weakestArea.toUpperCase()} caiu nos últimos dias`,
+        });
+      }
+      if (strongCat?.trend === "improving" && visualSkill.strongestArea) {
+        alerts.push({
+          id: "visual-improve",
+          type: "success",
+          message: `Você evoluiu em ${visualSkill.strongestArea.toUpperCase()} — continue assim!`,
+        });
+      }
+    }
+    if (snapshot && snapshot.pendingReviews > 10) {
+      alerts.push({
+        id: "pending-reviews",
+        type: "warning",
+        message: `${snapshot.pendingReviews} revisões acumuladas — priorize antes de avançar`,
+      });
+    }
+    return alerts;
+  }, [visualSkill, snapshot]);
+
+  // Focus area
+  const weakestArea = visualSkill?.weakestArea || adaptiveState?.approvalZone === "critical" ? "Revisão geral" : "";
+  const focusArea = visualSkill?.weakestArea || weakestArea;
+
   // First load
   const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
   if (initialLoading) return <MissionControlSkeleton />;
 
-  // ─── Session Summary ───
+  // Session Summary
   if (session.summary) {
     return (
       <div className="max-w-2xl mx-auto pt-8 px-3 animate-fade-in">
@@ -293,16 +281,21 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-5xl mx-auto pb-20 lg:pb-0">
-      {/* Session Bar — sticky top when session active */}
+    <div className="space-y-6 max-w-5xl mx-auto pb-20 lg:pb-0">
+      {/* Session Bar */}
       <SessionBar metrics={session.metrics} onEnd={handleEndSession} />
 
       {/* Achievement toasts */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
-      {/* Greeting — compact, hidden during loop */}
+      {/* Greeting — hidden during loop */}
       {!loopActive && (
-        <div className="flex items-center justify-between px-1">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="flex items-center justify-between px-1"
+        >
           <div>
             <p className="text-sm text-muted-foreground">
               {greeting}, <span className="text-foreground font-semibold">{displayName}</span>
@@ -318,7 +311,7 @@ const Dashboard = () => {
             )}
           </div>
           <SafeCard name="XpWidget"><XpWidget /></SafeCard>
-        </div>
+        </motion.div>
       )}
 
       {/* Completion banner */}
@@ -330,9 +323,7 @@ const Dashboard = () => {
         />
       )}
 
-      {/* ═══════════════════════════════════════════
-          INLINE STUDY LOOP — full focus when active
-         ═══════════════════════════════════════════ */}
+      {/* ═══ INLINE STUDY LOOP ═══ */}
       {loopActive && (
         <StudyLoopContainer
           phase={loop.phase}
@@ -350,12 +341,10 @@ const Dashboard = () => {
         />
       )}
 
-      {/* ═══════════════════════════════════════════
-          MISSION HUB — visible when NOT in loop
-         ═══════════════════════════════════════════ */}
+      {/* ═══ MISSION HUB ═══ */}
       {!loopActive && (
         <>
-          {/* Onboarding for new users */}
+          {/* Onboarding */}
           {isNewUser && dashData && (
             <Suspense fallback={null}>
               <SafeCard name="OnboardingNew">
@@ -372,50 +361,46 @@ const Dashboard = () => {
           {isError && <MissionControlError error={error} onRetry={handleRefresh} />}
           {!isError && !activeRec && <MissionControlEmpty onGenerate={handleRefresh} />}
 
-          {/* HERO — "Sua missão agora" */}
+          {/* HERO — Mission of the day */}
           {activeRec && (
-            <>
-              <div
-                className={`transition-all duration-700 ${
-                  heroHighlight
-                    ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-background rounded-xl"
-                    : "ring-0 ring-transparent"
-                }`}
-              >
-                <MissionHeroCard
-                  recommendation={activeRec}
-                  adaptiveState={adaptiveState}
-                  onStart={handleStart}
-                  onRefresh={handleRefresh}
-                  onShowAlternatives={() => {
-                    document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
-                  }}
-                />
-              </div>
-
-              {/* Justification — compact */}
-              <MissionJustification justification={justification} adaptiveState={adaptiveState} />
-            </>
-          )}
-
-          {/* Stats strip */}
-          {snapshot && (
-            <StatsStrip
-              approvalScore={snapshot.approvalScore}
-              pendingReviews={snapshot.pendingReviews}
-              streak={streak}
-              todayCompleted={snapshot.todayCompleted}
-              todayTotal={snapshot.todayTotal}
+            <MissionHeroAnimated
+              recommendation={activeRec}
+              adaptiveState={adaptiveState}
+              onStart={handleStart}
+              onRefresh={handleRefresh}
+              onShowAlternatives={() => {
+                document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
+              }}
             />
           )}
 
-          {/* Visual Skill */}
-          <VisualSkillCard />
+          {/* Smart Alerts */}
+          <SmartAlerts alerts={smartAlerts} />
 
-          {/* Quick contextual actions */}
-          {activeRec && <MissionQuickActions type={activeRec.type} />}
+          {/* 3-Card Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ApprovalScoreCard
+              score={snapshot?.approvalScore ?? 0}
+              trend={approvalTrend}
+            />
+            <FocusCard
+              weakestArea={focusArea}
+              weakestSubtopic={visualSkill?.weakestArea ? `Priorizar: ${visualSkill.weakestArea}` : undefined}
+            />
+            <DailyProgressCard
+              questionsToday={dashData?.stats.questionsToday ?? 0}
+              accuracyToday={dashData?.metrics.accuracy ?? 0}
+              streak={streak}
+              studyMinutes={Math.round((dashData?.stats.totalStudyHours ?? 0) * 60)}
+            />
+          </div>
 
-          {/* Alternatives — max 3 */}
+          {/* Justification — compact */}
+          {activeRec && (
+            <MissionJustification justification={justification} adaptiveState={adaptiveState} />
+          )}
+
+          {/* Alternatives */}
           {alternatives.length > 0 && (
             <div id="mc-alternatives">
               <MissionAlternatives

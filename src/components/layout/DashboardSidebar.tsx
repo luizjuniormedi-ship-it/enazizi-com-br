@@ -2,12 +2,13 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Rocket, Brain, FileText, FlipVertical,
   BarChart3, LogOut, Shield, User,
-  Zap, Lightbulb, CalendarDays, GraduationCap,
-  ChevronDown, Building2, BookOpen, Target,
-  Stethoscope, Siren, PenTool, Image,
+  Lightbulb, GraduationCap,
+  ChevronDown, Building2, BookOpen,
+  Stethoscope, Siren, Image,
   Trophy, Crown, Bot, TrendingUp,
-  Map, AlertTriangle, Settings, Sparkles,
-  BookMarked, Clock, Briefcase
+  Map, AlertTriangle, Sparkles,
+  BookMarked, PenTool, Target,
+  CalendarDays, Clock, Briefcase, Zap
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
@@ -31,6 +32,7 @@ interface NavItem {
   label: string;
   description: string;
   useAvatar?: boolean;
+  highlight?: boolean;
 }
 
 interface NavGroup {
@@ -38,25 +40,30 @@ interface NavGroup {
   title: string;
   items: NavItem[];
   defaultOpen?: boolean;
-  adminOnly?: boolean;
+  collapsed?: boolean; // collapsed by default
 }
 
-/* ── All nav groups (3 blocks matching user layout) ── */
+/* ── Reorganized sidebar groups per user spec ── */
 const navGroups: NavGroup[] = [
   {
-    id: "estudar",
-    title: "Estudar",
+    id: "principal",
+    title: "Principal",
     defaultOpen: true,
     items: [
-      { to: "/dashboard", moduleKey: "dashboard", icon: Rocket, label: "Dashboard", description: "Sua tarefa prioritária de estudo baseada no seu desempenho" },
-      { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true, description: "Converse com seu professor virtual para aprender e tirar dúvidas" },
+      { to: "/dashboard", moduleKey: "dashboard", icon: Rocket, label: "Dashboard", description: "Sua missão prioritária de estudo" },
+      { to: "/dashboard?autostart=true&source=sidebar", moduleKey: "dashboard", icon: Zap, label: "Começar Agora", description: "Inicie sua missão imediatamente", highlight: true },
       { to: "/dashboard/simulados", moduleKey: "simulados", icon: FileText, label: "Simulados", description: "Simulados completos no formato das principais bancas" },
-      { to: "/dashboard/flashcards", moduleKey: "flashcards", icon: FlipVertical, label: "Flashcards", description: "Revise conteúdos com repetição espaçada inteligente" },
-      { to: "/dashboard/gerar-flashcards", moduleKey: "gerar-flashcards", icon: Sparkles, label: "Gerador de Flashcards", description: "Gere flashcards automaticamente a partir de qualquer tema" },
-      { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos", description: "Resumos inteligentes gerados por IA sobre qualquer tema" },
-      { to: "/dashboard/diagnostico", moduleKey: "diagnostico", icon: Stethoscope, label: "Nivelamento", description: "Faça um teste diagnóstico para mapear seus pontos fracos" },
-      { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo", description: "Inicie uma sessão focada com timer e metas" },
+      { to: "/dashboard/image-quiz", moduleKey: "image-quiz", icon: Image, label: "Quiz de Imagens", description: "Pratique diagnóstico por imagens médicas reais" },
+    ],
+  },
+  {
+    id: "treino",
+    title: "Treino",
+    defaultOpen: true,
+    items: [
       { to: "/dashboard/gerador-questoes", moduleKey: "questoes", icon: Lightbulb, label: "Questões", description: "Gere e pratique questões adaptativas por tema e banca" },
+      { to: "/dashboard/flashcards", moduleKey: "flashcards", icon: FlipVertical, label: "Flashcards", description: "Revise conteúdos com repetição espaçada inteligente" },
+      { to: "/dashboard/banco-erros", moduleKey: "banco-erros", icon: AlertTriangle, label: "Banco de Erros", description: "Revise e domine os temas onde mais erra" },
     ],
   },
   {
@@ -64,61 +71,53 @@ const navGroups: NavGroup[] = [
     title: "Progresso",
     items: [
       { to: "/dashboard/analytics", moduleKey: "analytics", icon: BarChart3, label: "Progresso", description: "Acompanhe seu desempenho, evolução e metas de estudo" },
-      { to: "/dashboard/mapa-dominio", moduleKey: "mapa-dominio", icon: Map, label: "Mapa Evolução", description: "Visualize seu domínio por tema e especialidade" },
-      { to: "/dashboard/banco-erros", moduleKey: "banco-erros", icon: AlertTriangle, label: "Banco de Erros", description: "Revise e domine os temas onde mais erra" },
-      { to: "/dashboard/rankings", moduleKey: "rankings", icon: Crown, label: "Rankings", description: "Compare seu desempenho com outros estudantes" },
-      { to: "/dashboard/conquistas", moduleKey: "conquistas", icon: Trophy, label: "Conquistas", description: "Veja suas medalhas e conquistas desbloqueadas" },
+      { to: "/dashboard/mapa-dominio", moduleKey: "mapa-dominio", icon: Map, label: "Mapa de Evolução", description: "Visualize seu domínio por tema e especialidade" },
     ],
   },
   {
     id: "ferramentas",
     title: "Ferramentas",
+    collapsed: true,
     items: [
-      { to: "/dashboard/anamnese", moduleKey: "anamnese", icon: Stethoscope, label: "Anamnese", description: "Treine coleta de história clínica com pacientes simulados" },
-      { to: "/dashboard/prova-pratica", moduleKey: "prova-pratica", icon: Briefcase, label: "Prova Prática", description: "Prepare-se para provas práticas de residência" },
-      { to: "/dashboard/plantao", moduleKey: "plantao", icon: Siren, label: "Plantão", description: "Resolva casos urgentes em tempo real como num plantão" },
-      { to: "/dashboard/apostilas", moduleKey: "apostilas", icon: BookMarked, label: "Apostilas", description: "Apostilas completas organizadas por especialidade" },
-      { to: "/dashboard/cronicas", moduleKey: "cronicas", icon: BookOpen, label: "Crônicas Médicas", description: "Aprenda medicina através de narrativas clínicas envolventes" },
-      { to: "/dashboard/discursivas", moduleKey: "discursivas", icon: PenTool, label: "Discursivas", description: "Pratique e receba correção de questões discursivas" },
-      { to: "/dashboard/predictor", moduleKey: "predictor", icon: Target, label: "Previsão", description: "Veja sua chance estimada de aprovação por banca" },
-      { to: "/dashboard/proficiencia", moduleKey: "proficiencia", icon: GraduationCap, label: "Proficiência", description: "Avalie seu nível de domínio por especialidade" },
-      { to: "/dashboard/coach", moduleKey: "coach", icon: TrendingUp, label: "Coach", description: "Orientação estratégica para otimizar seus estudos" },
-      { to: "/dashboard/planner", moduleKey: "planner", icon: CalendarDays, label: "Plano Estratégico", description: "Monte seu cronograma de estudo personalizado" },
-      { to: "/dashboard/image-quiz", moduleKey: "image-quiz", icon: Image, label: "Quiz de Imagens", description: "Pratique diagnóstico por imagens médicas reais" },
-      { to: "/dashboard/entrevista", moduleKey: "entrevista", icon: Target, label: "Entrevista", description: "Treine para entrevistas de seleção de residência" },
-      { to: "/dashboard/simulacao-clinica", moduleKey: "simulacao-clinica", icon: Siren, label: "Simulação Clínica", description: "Simulações OSCE com cenários clínicos interativos" },
-      { to: "/dashboard/revisor", moduleKey: "revisor", icon: FileText, label: "Revisor Médico", description: "Revise textos e respostas com correção médica por IA" },
-      { to: "/dashboard/mentor", moduleKey: "mentor", icon: Bot, label: "Mentor IA", description: "Consultor médico para dúvidas rápidas e referências" },
-      { to: "/dashboard/banco-questoes", moduleKey: "banco-questoes", icon: Lightbulb, label: "Banco Questões", description: "Acesse o banco completo de questões do sistema" },
-      { to: "/dashboard/missao", moduleKey: "missao", icon: Target, label: "Modo Missão", description: "Missões temáticas com objetivos e recompensas" },
-      { to: "/dashboard/plano-dia", moduleKey: "plano-dia", icon: Zap, label: "Plano do Dia", description: "Veja e execute suas tarefas de estudo do dia" },
-      { to: "/dashboard/mnemonico", moduleKey: "mnemonico", icon: Brain, label: "Mnemônicos", description: "Crie mnemônicos para memorizar conteúdos difíceis" },
+      { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true, description: "Converse com seu professor virtual" },
+      { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos", description: "Resumos inteligentes gerados por IA" },
+      { to: "/dashboard/anamnese", moduleKey: "anamnese", icon: Stethoscope, label: "Anamnese", description: "Treine coleta de história clínica" },
+      { to: "/dashboard/plantao", moduleKey: "plantao", icon: Siren, label: "Plantão", description: "Resolva casos urgentes em tempo real" },
+      { to: "/dashboard/apostilas", moduleKey: "apostilas", icon: BookMarked, label: "Apostilas", description: "Apostilas organizadas por especialidade" },
+      { to: "/dashboard/gerar-flashcards", moduleKey: "gerar-flashcards", icon: Sparkles, label: "Gerador Flashcards", description: "Gere flashcards automaticamente" },
+      { to: "/dashboard/diagnostico", moduleKey: "diagnostico", icon: Stethoscope, label: "Nivelamento", description: "Teste diagnóstico para mapear pontos fracos" },
+      { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo", description: "Sessão focada com timer e metas" },
+      { to: "/dashboard/prova-pratica", moduleKey: "prova-pratica", icon: Briefcase, label: "Prova Prática", description: "Prepare-se para provas práticas" },
+      { to: "/dashboard/cronicas", moduleKey: "cronicas", icon: BookOpen, label: "Crônicas Médicas", description: "Aprenda através de narrativas clínicas" },
+      { to: "/dashboard/discursivas", moduleKey: "discursivas", icon: PenTool, label: "Discursivas", description: "Pratique questões discursivas" },
+      { to: "/dashboard/predictor", moduleKey: "predictor", icon: Target, label: "Previsão", description: "Chance estimada de aprovação por banca" },
+      { to: "/dashboard/proficiencia", moduleKey: "proficiencia", icon: GraduationCap, label: "Proficiência", description: "Nível de domínio por especialidade" },
+      { to: "/dashboard/coach", moduleKey: "coach", icon: TrendingUp, label: "Coach", description: "Orientação estratégica" },
+      { to: "/dashboard/planner", moduleKey: "planner", icon: CalendarDays, label: "Plano Estratégico", description: "Cronograma personalizado" },
+      { to: "/dashboard/entrevista", moduleKey: "entrevista", icon: Target, label: "Entrevista", description: "Treine para entrevistas" },
+      { to: "/dashboard/simulacao-clinica", moduleKey: "simulacao-clinica", icon: Siren, label: "Simulação Clínica", description: "Cenários OSCE interativos" },
+      { to: "/dashboard/revisor", moduleKey: "revisor", icon: FileText, label: "Revisor Médico", description: "Correção médica por IA" },
+      { to: "/dashboard/mentor", moduleKey: "mentor", icon: Bot, label: "Mentor IA", description: "Dúvidas rápidas e referências" },
+      { to: "/dashboard/banco-questoes", moduleKey: "banco-questoes", icon: Lightbulb, label: "Banco Questões", description: "Banco completo de questões" },
+      { to: "/dashboard/missao", moduleKey: "missao", icon: Target, label: "Modo Missão", description: "Missões temáticas com recompensas" },
+      { to: "/dashboard/plano-dia", moduleKey: "plano-dia", icon: Zap, label: "Plano do Dia", description: "Tarefas de estudo do dia" },
+      { to: "/dashboard/mnemonico", moduleKey: "mnemonico", icon: Brain, label: "Mnemônicos", description: "Memorize conteúdos difíceis" },
+      { to: "/dashboard/conquistas", moduleKey: "conquistas", icon: Trophy, label: "Conquistas", description: "Medalhas e conquistas" },
+      { to: "/dashboard/rankings", moduleKey: "rankings", icon: Crown, label: "Rankings", description: "Compare seu desempenho" },
     ],
   },
 ];
-
-/* ── Contextual highlight mapping ── */
-const CONTEXT_HIGHLIGHTS: Record<string, string[]> = {
-  error_review: ["banco-erros", "questoes", "chatgpt"],
-  review: ["flashcards", "resumos"],
-  daily_task: ["dashboard", "planner", "questoes"],
-  practice: ["simulados", "analytics"],
-  clinical: ["anamnese", "prova-pratica", "simulacao-clinica"],
-  new: ["questoes", "resumos", "chatgpt"],
-};
 
 /* ── Sidebar group component ── */
 const SidebarGroup = ({
   group,
   isOpen,
   onToggle,
-  highlightedKeys,
   isStudyActive,
 }: {
   group: NavGroup & { items: NavItem[] };
   isOpen: boolean;
   onToggle: () => void;
-  highlightedKeys: Set<string>;
   isStudyActive: boolean;
 }) => {
   const location = useLocation();
@@ -130,29 +129,28 @@ const SidebarGroup = ({
         onClick={onToggle}
         className={cn(
           "flex items-center justify-between w-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-colors",
-          hasActive ? "text-sidebar-primary" : "text-sidebar-foreground/40 hover:text-sidebar-foreground/60"
+          hasActive ? "text-primary" : "text-muted-foreground/50 hover:text-muted-foreground/70"
         )}
       >
         {group.title}
-        <ChevronDown className={cn("h-3 w-3 transition-transform", isOpen ? "" : "-rotate-90")} />
+        <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", isOpen ? "" : "-rotate-90")} />
       </button>
       {isOpen && (
         <div className="space-y-0.5 mt-0.5">
           {group.items.map((item) => {
-            const active = location.pathname === item.to;
-            const highlighted = highlightedKeys.has(item.moduleKey);
+            const active = location.pathname === item.to && !item.highlight;
             return (
-              <Tooltip key={item.to} delayDuration={300}>
+              <Tooltip key={item.to + item.label} delayDuration={300}>
                 <TooltipTrigger asChild>
                   <Link
                     to={item.to}
                     className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                      active
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : highlighted && !isStudyActive
-                        ? "text-sidebar-primary/80 bg-sidebar-accent/30"
-                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+                      item.highlight
+                        ? "bg-primary/15 text-primary hover:bg-primary/25 font-semibold"
+                        : active
+                        ? "bg-sidebar-accent text-primary"
+                        : "text-muted-foreground/70 hover:bg-sidebar-accent/40 hover:text-foreground"
                     )}
                   >
                     {item.useAvatar ? (
@@ -161,8 +159,8 @@ const SidebarGroup = ({
                       <item.icon className="h-4 w-4 flex-shrink-0" />
                     )}
                     <span className="truncate text-[13px]">{item.label}</span>
-                    {highlighted && !active && !isStudyActive && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-sidebar-primary/60 flex-shrink-0" />
+                    {item.highlight && (
+                      <span className="ml-auto text-[10px]">🔥</span>
                     )}
                   </Link>
                 </TooltipTrigger>
@@ -190,7 +188,6 @@ const DashboardSidebar = () => {
   const { isModuleEnabled } = useModuleAccess();
   const studyCtx = useStudyContext();
 
-  // Detect active study session
   const isStudyActive = useMemo(() => {
     try {
       const raw = sessionStorage.getItem("enazizi_study_session");
@@ -201,22 +198,12 @@ const DashboardSidebar = () => {
     }
   }, [location.pathname]);
 
-  // Contextual highlights based on study context
-  const highlightedKeys = useMemo(() => {
-    const keys = new Set<string>();
-    if (studyCtx?.taskType) {
-      const mapped = CONTEXT_HIGHLIGHTS[studyCtx.taskType];
-      if (mapped) mapped.forEach((k) => keys.add(k));
-    }
-    return keys;
-  }, [studyCtx]);
-
-  // Group open/close state
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     navGroups.forEach((g) => {
       const hasActive = g.items.some((item) => location.pathname === item.to);
-      initial[g.id] = g.defaultOpen || hasActive;
+      initial[g.id] = hasActive || g.defaultOpen === true;
+      if (g.collapsed && !hasActive) initial[g.id] = false;
     });
     return initial;
   });
@@ -230,7 +217,6 @@ const DashboardSidebar = () => {
     navigate("/");
   };
 
-  // Filter items by module access
   const filteredGroups = useMemo(() => {
     return navGroups
       .map((group) => ({
@@ -241,13 +227,11 @@ const DashboardSidebar = () => {
         }),
       }))
       .filter((g) => g.items.length > 0);
-  }, [isModuleEnabled, isAdmin]);
+  }, [isModuleEnabled]);
 
-  // Admin/conditional links
   const showProfessor = isProfessor || isAdmin;
   const showAdmin = isAdmin;
   const showInstitutional = isInstitutionalStaff;
-  const hasAdminBlock = showProfessor || showAdmin || showInstitutional;
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -259,7 +243,7 @@ const DashboardSidebar = () => {
       <div className={cn("flex-shrink-0 flex items-center", isStudyActive ? "p-3 justify-center" : "p-4 gap-2")}>
         <Link to="/" className="flex items-center gap-2">
           <img src={enazizi} alt="ENAZIZI" className="h-7 w-7 rounded-lg object-cover flex-shrink-0" />
-          {!isStudyActive && <span className="text-base font-bold text-sidebar-foreground">ENAZIZI</span>}
+          {!isStudyActive && <span className="text-base font-bold text-foreground">ENAZIZI</span>}
         </Link>
       </div>
 
@@ -277,10 +261,10 @@ const DashboardSidebar = () => {
                       <Link
                         to={item.to}
                         className={cn(
-                          "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
+                          "flex items-center justify-center w-9 h-9 mx-auto rounded-xl transition-colors",
                           active
-                            ? "bg-sidebar-accent text-sidebar-primary"
-                            : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground"
+                            ? "bg-sidebar-accent text-primary"
+                            : "text-muted-foreground/50 hover:bg-sidebar-accent/40 hover:text-foreground"
                         )}
                       >
                         {item.useAvatar ? (
@@ -290,33 +274,28 @@ const DashboardSidebar = () => {
                         )}
                       </Link>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="max-w-[220px]">
+                    <TooltipContent side="right">
                       <p className="font-semibold text-xs">{item.label}</p>
-                      <p className="text-[11px] text-muted-foreground">{item.description}</p>
                     </TooltipContent>
                   </Tooltip>
                 );
               })}
-              {/* Divider + system links */}
               <div className="border-t border-sidebar-border my-2" />
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <Link
                     to="/dashboard/perfil"
                     className={cn(
-                      "flex items-center justify-center w-9 h-9 mx-auto rounded-lg transition-colors",
+                      "flex items-center justify-center w-9 h-9 mx-auto rounded-xl transition-colors",
                       location.pathname === "/dashboard/perfil"
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/50 hover:bg-sidebar-accent/40"
+                        ? "bg-sidebar-accent text-primary"
+                        : "text-muted-foreground/50 hover:bg-sidebar-accent/40"
                     )}
                   >
                     <User className="h-4 w-4" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[220px]">
-                  <p className="font-semibold text-xs">Perfil</p>
-                  <p className="text-[11px] text-muted-foreground">Gerencie seus dados, preferências e configurações</p>
-                </TooltipContent>
+                <TooltipContent side="right"><p className="text-xs">Perfil</p></TooltipContent>
               </Tooltip>
             </>
           ) : (
@@ -328,91 +307,61 @@ const DashboardSidebar = () => {
                   group={group}
                   isOpen={openGroups[group.id] ?? false}
                   onToggle={() => toggleGroup(group.id)}
-                  highlightedKeys={highlightedKeys}
                   isStudyActive={isStudyActive}
                 />
               ))}
 
-              {/* Bottom section: Meu Perfil + Admin links */}
+              {/* Bottom: Profile + Admin */}
               <div className="pt-2 border-t border-sidebar-border mt-2 space-y-0.5">
                 <Link
                   to="/dashboard/perfil"
                   className={cn(
-                    "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
+                    "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
                     location.pathname === "/dashboard/perfil"
-                      ? "bg-sidebar-accent text-sidebar-primary"
-                      : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
+                      ? "bg-sidebar-accent text-primary"
+                      : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
                   )}
                 >
-                  <User className="h-4 w-4" />
-                  Meu Perfil
+                  <User className="h-4 w-4" /> Meu Perfil
                 </Link>
+
+                {/* Admin-only items */}
                 {showProfessor && (
-                  <Link
-                    to="/professor"
-                    className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                      location.pathname === "/professor"
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
-                    )}
-                  >
-                    <GraduationCap className="h-4 w-4" />
-                    Painel Professor
+                  <Link to="/professor" className={cn(
+                    "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
+                    location.pathname === "/professor" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
+                  )}>
+                    <GraduationCap className="h-4 w-4" /> Painel Professor
                   </Link>
                 )}
                 {showAdmin && (
                   <>
-                    <Link
-                      to="/admin"
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                        location.pathname === "/admin"
-                          ? "bg-sidebar-accent text-sidebar-primary"
-                          : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
-                      )}
-                    >
-                      <Shield className="h-4 w-4" />
-                      Admin
+                    <Link to="/admin" className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
+                      location.pathname === "/admin" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
+                    )}>
+                      <Shield className="h-4 w-4" /> Admin
                     </Link>
-                    <Link
-                      to="/dashboard/mnemonic-studio-v2"
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                        location.pathname === "/dashboard/mnemonic-studio-v2"
-                          ? "bg-sidebar-accent text-sidebar-primary"
-                          : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
-                      )}
-                    >
-                      <Brain className="h-4 w-4" />
-                      Mnemônico (teste)
+                    <Link to="/dashboard/mnemonic-studio-v2" className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
+                      location.pathname === "/dashboard/mnemonic-studio-v2" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
+                    )}>
+                      <Brain className="h-4 w-4" /> Mnemônico (teste)
                     </Link>
-                    <Link
-                      to="/admin/ceo"
-                      className={cn(
-                        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                        location.pathname === "/admin/ceo"
-                          ? "bg-sidebar-accent text-sidebar-primary"
-                          : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
-                      )}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      Painel CEO
+                    <Link to="/admin/ceo" className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
+                      location.pathname === "/admin/ceo" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
+                    )}>
+                      <BarChart3 className="h-4 w-4" /> Painel CEO
                     </Link>
                   </>
                 )}
                 {showInstitutional && (
-                  <Link
-                    to="/institucional"
-                    className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                      location.pathname === "/institucional"
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
-                    )}
-                  >
-                    <Building2 className="h-4 w-4" />
-                    Institucional
+                  <Link to="/institucional" className={cn(
+                    "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
+                    location.pathname === "/institucional" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
+                  )}>
+                    <Building2 className="h-4 w-4" /> Institucional
                   </Link>
                 )}
               </div>
@@ -429,7 +378,7 @@ const DashboardSidebar = () => {
             onClick={handleSignOut}
             title="Sair"
             className={cn(
-              "flex items-center rounded-lg text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/40 transition-colors w-full",
+              "flex items-center rounded-xl text-sm text-muted-foreground/60 hover:bg-sidebar-accent/40 transition-colors w-full",
               isStudyActive ? "justify-center p-2" : "gap-2.5 px-3 py-1.5"
             )}
           >
