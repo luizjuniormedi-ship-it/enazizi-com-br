@@ -411,6 +411,9 @@ const Admin = () => {
             <TabsTrigger value="multimodal" className="gap-1.5">
               <ImageIcon className="h-3.5 w-3.5" /> Multimodal
             </TabsTrigger>
+            <TabsTrigger value="upload2gb" className="gap-1.5">
+              <HardDrive className="h-3.5 w-3.5" /> Upload 2GB
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
