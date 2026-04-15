@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw } from "lucide-react";
+import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
 import { toast } from "sonner";
 
 interface PrioritizedItem {
@@ -34,6 +34,19 @@ const PipelineOptimizationPanel = () => {
     gap_summary: GapSummary;
     priority_mode: string;
   } | null>(null);
+
+  // Quality gate stats
+  const { data: qualityStats } = useQuery({
+    queryKey: ["quality-gate-stats"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("asset_quality_audit_logs")
+        .select("status");
+      const approved = data?.filter((d: any) => d.status === "approved").length || 0;
+      const rejected = data?.filter((d: any) => d.status === "rejected").length || 0;
+      return { approved, rejected, total: approved + rejected };
+    },
+  });
 
   const { data: gapData, isLoading: gapLoading, refetch: refetchGap } = useQuery({
     queryKey: ["content-gaps", selectedType],
@@ -84,7 +97,22 @@ const PipelineOptimizationPanel = () => {
         </Select>
       </div>
 
-      {/* Current Inventory */}
+      {/* Quality Gate Status */}
+      {qualityStats && (
+        <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 rounded-lg px-3 py-1.5 flex-1">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-semibold text-emerald-400">{qualityStats.approved}</span>
+            <span className="text-[10px] text-muted-foreground">aprovados</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-red-500/10 rounded-lg px-3 py-1.5 flex-1">
+            <ShieldX className="h-4 w-4 text-red-400" />
+            <span className="text-sm font-semibold text-red-400">{qualityStats.rejected}</span>
+            <span className="text-[10px] text-muted-foreground">rejeitados</span>
+          </div>
+        </div>
+      )}
+
       {gapLoading ? (
         <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : gapData ? (

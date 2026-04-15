@@ -84,4 +84,5 @@ Security: `service_role` ONLY for curriculum (`curriculum_specialties`, `topics`
 - [Scoring Visual](mem://metodologia/motor-habilidade-visual-scoring) — 60% acc, 20% speed, 20% consistency
 - [Log de Repetição](mem://arquitetura/logs-custo-anti-repeticao-ia) — 24-72h AI anti-repetition window
 - [Fallback Image Quiz](mem://ux/image-quiz-fallback-qualidade-3-tiers) — 3-tier visual fallback system
-- [Motor Priorização Pipeline](mem://arquitetura/motor-priorizacao-pipeline-multimodal) — Intelligent import scoring: exam 40%, weakness 35%, gap 25%
+- [Motor Priorização](mem://arquitetura/motor-priorizacao-pipeline-multimodal) — Exam relevance × 0.40 + gap × 0.25 + weakness × 0.35
+- [Quality Gate Multimodal](mem://qualidade/blindagem-quality-gate-multimodal) — quality_gate_passed obrigatório, audit logs, URL blocklist

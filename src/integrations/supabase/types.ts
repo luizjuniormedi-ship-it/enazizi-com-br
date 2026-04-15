@@ -533,6 +533,53 @@ export type Database = {
         }
         Relationships: []
       }
+      asset_quality_audit_logs: {
+        Row: {
+          asset_id: string
+          clinical_match_score: number | null
+          created_at: string
+          details: Json | null
+          gate_source: string | null
+          id: string
+          image_type: string | null
+          rejection_reason: string | null
+          status: string
+          visual_quality_score: number | null
+        }
+        Insert: {
+          asset_id: string
+          clinical_match_score?: number | null
+          created_at?: string
+          details?: Json | null
+          gate_source?: string | null
+          id?: string
+          image_type?: string | null
+          rejection_reason?: string | null
+          status: string
+          visual_quality_score?: number | null
+        }
+        Update: {
+          asset_id?: string
+          clinical_match_score?: number | null
+          created_at?: string
+          details?: Json | null
+          gate_source?: string | null
+          id?: string
+          image_type?: string | null
+          rejection_reason?: string | null
+          status?: string
+          visual_quality_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_quality_audit_logs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "medical_image_assets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_validation_results: {
         Row: {
           asset_id: string
@@ -3115,7 +3162,9 @@ export type Database = {
           is_active: boolean
           license_type: string
           multimodal_ready: boolean | null
+          quality_gate_passed: boolean | null
           question_generated: boolean
+          rejection_reason: string | null
           review_status: Database["public"]["Enums"]["image_review_status"]
           reviewed_at: string | null
           reviewed_by: string | null
@@ -3161,7 +3210,9 @@ export type Database = {
           is_active?: boolean
           license_type?: string
           multimodal_ready?: boolean | null
+          quality_gate_passed?: boolean | null
           question_generated?: boolean
+          rejection_reason?: string | null
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
@@ -3207,7 +3258,9 @@ export type Database = {
           is_active?: boolean
           license_type?: string
           multimodal_ready?: boolean | null
+          quality_gate_passed?: boolean | null
           question_generated?: boolean
+          rejection_reason?: string | null
           review_status?: Database["public"]["Enums"]["image_review_status"]
           reviewed_at?: string | null
           reviewed_by?: string | null
