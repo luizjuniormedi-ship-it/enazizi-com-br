@@ -615,6 +615,30 @@ const MedicalImageQuiz = () => {
             <SelectItem value="hard">🔴 Difícil</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={diagnosisFilter} onValueChange={setDiagnosisFilter}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Diagnóstico" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os diagnósticos</SelectItem>
+            {availableDiagnoses.map((d) => (
+              <SelectItem key={d} value={d}>{d}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={String(quizSize)} onValueChange={(v) => setQuizSize(Number(v))}>
+          <SelectTrigger className="w-[120px]">
+            <SelectValue placeholder="Quantidade" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="5">5 imagens</SelectItem>
+            <SelectItem value="10">10 imagens</SelectItem>
+            <SelectItem value="15">15 imagens</SelectItem>
+            <SelectItem value="20">20 imagens</SelectItem>
+            <SelectItem value="30">30 imagens</SelectItem>
+            <SelectItem value="50">50 imagens</SelectItem>
+          </SelectContent>
+        </Select>
         <Badge variant="secondary" className="self-center">
           {questions.length} questões
         </Badge>
