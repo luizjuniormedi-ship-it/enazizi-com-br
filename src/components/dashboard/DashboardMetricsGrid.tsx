@@ -74,7 +74,7 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
               { to: "/dashboard/uploads", icon: Upload, value: stats.uploads, label: "Uploads" },
               { to: "/dashboard/discursivas", icon: Stethoscope, value: metrics.discursivasCompleted, label: "Discursivas feitas" },
               { to: "/dashboard/cronicas", icon: BookOpen, value: metrics.chroniclesCompleted, label: "Crônicas médicas" },
-              { to: "/dashboard/quiz-imagens", icon: ImageIcon, value: metrics.imageQuizAttempts, label: "Quiz imagens" },
+              { to: "/dashboard/image-quiz", icon: ImageIcon, value: metrics.imageQuizAttempts, label: "Questões com imagem" },
               { to: "/dashboard/chatgpt", icon: MessageSquare, value: metrics.chatConversations, label: "Conversas IA" },
             ].map((item) => (
               <Link key={item.to} to={item.to} className="glass-card p-4 hover:border-primary/30 transition-all group">

@@ -354,7 +354,7 @@ const Analytics = () => {
             <div className="p-4 rounded-lg bg-secondary/30 border border-border/50 space-y-2">
               <div className="flex items-center gap-2">
                 <ImageIcon className="h-4 w-4 text-cyan-500" />
-                <span className="text-sm font-medium">Quiz de Imagens</span>
+                <span className="text-sm font-medium">Questões com Imagem</span>
               </div>
               {data.imageQuizResults.total > 0 ? (
                 <>

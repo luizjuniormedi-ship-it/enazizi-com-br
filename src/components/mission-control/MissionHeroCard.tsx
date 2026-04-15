@@ -9,7 +9,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; color: string; 
   error_review: { label: "Correção de Erro", icon: "🔴", color: "bg-destructive/20 text-destructive" },
   daily_task: { label: "Missão do Dia", icon: "📋", color: "bg-accent/20 text-accent-foreground" },
   free_study: { label: "Estudo Livre", icon: "📚", color: "bg-muted text-muted-foreground" },
-  image_quiz: { label: "Quiz de Imagem", icon: "🖼️", color: "bg-primary/20 text-primary", cta: "Treinar com imagens" },
+  image_quiz: { label: "Questões com Imagem", icon: "🖼️", color: "bg-primary/20 text-primary", cta: "Treinar com imagens" },
   mnemonic: { label: "Mnemônico", icon: "🧠", color: "bg-accent/20 text-accent-foreground", cta: "Fixar com mnemônico" },
 };
 
