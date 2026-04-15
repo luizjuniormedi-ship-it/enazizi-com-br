@@ -204,6 +204,47 @@ export default function AdminPipelineMonitor() {
         </Card>
       )}
 
+      {/* Pipeline Trigger */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Play className="h-4 w-4 text-emerald-600" />
+            Disparar Pipeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Select value={selectedType} onValueChange={setSelectedType}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ecg">❤️ ECG</SelectItem>
+                <SelectItem value="xray">🫁 Raio-X</SelectItem>
+                <SelectItem value="dermatology">🩹 Dermato</SelectItem>
+                <SelectItem value="ct">🧠 TC</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              onClick={() => runPipelineMutation.mutate(selectedType)}
+              disabled={runPipelineMutation.isPending}
+            >
+              {runPipelineMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Play className="h-3 w-3" />
+              )}
+              {runPipelineMutation.isPending ? "Executando..." : "Executar Pipeline"}
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            Gera questões para assets pendentes (batch de 10). Modo: questions_only.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Runs History */}
       <Card>
         <CardHeader className="pb-2">
