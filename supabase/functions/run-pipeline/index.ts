@@ -207,6 +207,7 @@ Deno.serve(async (req) => {
             }
           }
         }
+      }
 
       // Update progress
       if (progress) {
