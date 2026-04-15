@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Activity, CheckCircle, XCircle, SkipForward, RotateCcw, Trophy, ImageIcon, ZoomIn, X } from "lucide-react";
+import { Activity, CheckCircle, XCircle, SkipForward, RotateCcw, Trophy, ImageIcon, ZoomIn, X, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -252,6 +252,7 @@ const MedicalImageQuiz = () => {
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [quizMode, setQuizMode] = useState<"browse" | "quiz">("browse");
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [activeTier, setActiveTier] = useState<QualityTier>("tier1");
 
@@ -449,6 +450,27 @@ const MedicalImageQuiz = () => {
     setStartTime(Date.now());
   }, []);
 
+  const handleGenerateQuestions = async () => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-image-questions-secure", {
+        body: { batch_size: 5 },
+      });
+      if (error) throw error;
+      const generated = data?.generated || 0;
+      if (generated > 0) {
+        toast.success(`${generated} novas questões geradas com sucesso!`);
+        queryClient.invalidateQueries({ queryKey: ["image-quiz-questions"] });
+      } else {
+        toast.info("Nenhum asset pendente para gerar questões.");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao gerar questões: " + (err.message || "tente novamente"));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -561,6 +583,16 @@ const MedicalImageQuiz = () => {
             <Activity className="h-4 w-4 mr-2" /> Iniciar Quiz
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleGenerateQuestions}
+          disabled={isGenerating}
+          className="gap-1.5"
+        >
+          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {isGenerating ? "Gerando..." : "Gerar Questões"}
+        </Button>
       </div>
 
       {questions.length === 0 ? (
