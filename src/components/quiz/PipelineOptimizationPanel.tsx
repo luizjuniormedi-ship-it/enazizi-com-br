@@ -97,7 +97,22 @@ const PipelineOptimizationPanel = () => {
         </Select>
       </div>
 
-      {/* Current Inventory */}
+      {/* Quality Gate Status */}
+      {qualityStats && (
+        <div className="flex gap-2">
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 rounded-lg px-3 py-1.5 flex-1">
+            <ShieldCheck className="h-4 w-4 text-emerald-400" />
+            <span className="text-sm font-semibold text-emerald-400">{qualityStats.approved}</span>
+            <span className="text-[10px] text-muted-foreground">aprovados</span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-red-500/10 rounded-lg px-3 py-1.5 flex-1">
+            <ShieldX className="h-4 w-4 text-red-400" />
+            <span className="text-sm font-semibold text-red-400">{qualityStats.rejected}</span>
+            <span className="text-[10px] text-muted-foreground">rejeitados</span>
+          </div>
+        </div>
+      )}
+
       {gapLoading ? (
         <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin" /></div>
       ) : gapData ? (
