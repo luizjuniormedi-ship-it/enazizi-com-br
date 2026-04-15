@@ -329,6 +329,20 @@ const MedicalImageQuiz = () => {
     },
   });
 
+  // Available diagnoses for filter
+  const { data: availableDiagnoses = [] } = useQuery({
+    queryKey: ["image-quiz-diagnoses"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("medical_image_assets")
+        .select("diagnosis")
+        .eq("is_active", true)
+        .eq("quality_gate_passed", true);
+      const unique = [...new Set((data || []).map((d: any) => d.diagnosis).filter(Boolean))].sort();
+      return unique as string[];
+    },
+  });
+
   // Stats
   const { data: stats } = useQuery({
     queryKey: ["image-quiz-stats", user?.id],
