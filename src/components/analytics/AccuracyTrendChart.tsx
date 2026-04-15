@@ -1,13 +1,14 @@
+import { forwardRef } from "react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
 
 interface Props {
   data: { week: string; accuracy: number; total: number }[];
 }
 
-const AccuracyTrendChart = ({ data }: Props) => {
+const AccuracyTrendChart = forwardRef<HTMLDivElement, Props>(({ data }, ref) => {
   if (data.length < 2) {
     return (
-      <div className="glass-card p-6">
+      <div ref={ref} className="glass-card p-6">
         <h2 className="text-lg font-semibold mb-4">Evolução da taxa de acerto</h2>
         <p className="text-sm text-muted-foreground text-center py-8">Responda mais questões para ver a evolução semanal.</p>
       </div>
@@ -15,7 +16,7 @@ const AccuracyTrendChart = ({ data }: Props) => {
   }
 
   return (
-    <div className="glass-card p-6">
+    <div ref={ref} className="glass-card p-6">
       <h2 className="text-lg font-semibold mb-4">Evolução da taxa de acerto</h2>
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={data} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
@@ -33,6 +34,8 @@ const AccuracyTrendChart = ({ data }: Props) => {
       </ResponsiveContainer>
     </div>
   );
-};
+});
+
+AccuracyTrendChart.displayName = "AccuracyTrendChart";
 
 export default AccuracyTrendChart;
