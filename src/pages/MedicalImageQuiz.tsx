@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
+import PipelineOptimizationPanel from "@/components/quiz/PipelineOptimizationPanel";
 
 type ImageQuestion = {
   id: string;
@@ -594,6 +595,9 @@ const MedicalImageQuiz = () => {
           {isGenerating ? "Gerando..." : "Gerar Questões"}
         </Button>
       </div>
+
+      {/* Pipeline Optimization Panel */}
+      {quizMode === "browse" && <PipelineOptimizationPanel />}
 
       {questions.length === 0 ? (
         <Card className="p-12 text-center">
