@@ -109,7 +109,7 @@ Retorne APENAS JSON válido:
         pitfalls: Array.isArray(q.pitfalls) ? q.pitfalls.map(clean) : q.pitfalls ? [clean(q.pitfalls)] : [],
         difficulty: diff,
         exam_style: q.exam_style || "USP",
-        status: "needs_review",
+        status: "published",
         language_code: "pt-BR",
         senior_audit_score: 70,
         editorial_grade: "good",
