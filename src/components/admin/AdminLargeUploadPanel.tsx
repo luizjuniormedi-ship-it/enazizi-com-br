@@ -131,8 +131,6 @@ const AdminLargeUploadPanel = () => {
       const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const uploadUrl = `${supabaseUrl}/storage/v1/object/user-uploads/${storagePath}`;
 
-      const contentType = item.file.type || "application/octet-stream";
-
       await uploadWithProgress(
         uploadUrl,
         item.file,
@@ -140,7 +138,6 @@ const AdminLargeUploadPanel = () => {
           Authorization: `Bearer ${accessToken}`,
           apikey: apiKey,
           "x-upsert": "false",
-          "Content-Type": contentType,
         },
         (loaded, total) => {
           const elapsed = (Date.now() - startTime) / 1000;
