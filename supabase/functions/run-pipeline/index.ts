@@ -104,6 +104,7 @@ Deno.serve(async (req) => {
     const mode = body.mode || "full_pipeline"; // assets_only, validate_only, questions_only, full_pipeline
     const batchSize = Math.min(body.batch_size || DEFAULTS[datasetType]?.batch_size || 5, 20);
     const maxErrors = body.max_errors || 3;
+    const usePrioritization = body.use_prioritization !== false; // default on
 
     // Acquire lock
     const locked = await acquireLock(datasetType);
@@ -113,7 +114,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const stats = { items_processed: 0, assets_created: 0, assets_validated: 0, questions_generated: 0, errors: 0, error_details: [] as string[] };
+    const stats = { items_processed: 0, assets_created: 0, assets_validated: 0, questions_generated: 0, errors: 0, error_details: [] as string[], prioritization_used: usePrioritization };
 
     try {
       // Get progress
@@ -121,41 +122,91 @@ Deno.serve(async (req) => {
 
       // Fetch next batch of assets needing questions
       if (mode === "questions_only" || mode === "full_pipeline") {
-        const { data: assets } = await sb
+        let query = sb
           .from("medical_image_assets")
           .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url")
           .eq("question_generated", false)
           .eq("is_active", true)
           .eq("image_type", datasetType)
-          .in("review_status", ["published", "needs_review"])
-          .order("created_at", { ascending: true })
-          .limit(batchSize);
+          .in("review_status", ["published", "needs_review"]);
 
-        if (assets && assets.length > 0) {
-          for (const asset of assets) {
-            if (stats.errors >= maxErrors) {
-              console.log(`[pipeline] Stopping: hit max errors (${maxErrors})`);
-              break;
-            }
+        // If prioritization is enabled, order by exam-relevant diagnoses first
+        if (usePrioritization) {
+          const { data: config } = await sb
+            .from("import_priority_config")
+            .select("diagnosis_rankings")
+            .eq("image_type", datasetType)
+            .eq("is_active", true)
+            .single();
 
-            stats.items_processed++;
-            console.log(`[pipeline] ${stats.items_processed}/${assets.length}: ${asset.asset_code}`);
+          if (config?.diagnosis_rankings) {
+            const rankings = config.diagnosis_rankings as { diagnosis: string; rank: number }[];
+            const priorityDiagnoses = rankings.slice(0, 5).map(r => r.diagnosis);
+            // Prioritize assets matching top-ranked diagnoses
+            query = query.order("created_at", { ascending: true });
+            // Filter to priority diagnoses first if available
+            const { data: priorityAssets } = await sb
+              .from("medical_image_assets")
+              .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url")
+              .eq("question_generated", false)
+              .eq("is_active", true)
+              .eq("image_type", datasetType)
+              .in("review_status", ["published", "needs_review"])
+              .in("diagnosis", priorityDiagnoses)
+              .order("created_at", { ascending: true })
+              .limit(batchSize);
 
-            const result = await generateQuestionsForAsset(asset);
-            if (result.ok) {
-              stats.questions_generated += result.count;
-            } else {
-              stats.errors++;
-              stats.error_details.push(`${asset.asset_code}: ${result.error}`);
-            }
-
-            // Delay between items to avoid rate limits
-            if (stats.items_processed < assets.length) {
-              await new Promise(r => setTimeout(r, 2500));
+            if (priorityAssets && priorityAssets.length > 0) {
+              console.log(`[pipeline] Using prioritized batch: ${priorityAssets.length} priority assets`);
+              // Use priority assets, fall through to regular if not enough
+              const remaining = batchSize - priorityAssets.length;
+              let assets = [...priorityAssets];
+              if (remaining > 0) {
+                const usedIds = priorityAssets.map(a => a.id);
+                const { data: extraAssets } = await sb
+                  .from("medical_image_assets")
+                  .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url")
+                  .eq("question_generated", false)
+                  .eq("is_active", true)
+                  .eq("image_type", datasetType)
+                  .in("review_status", ["published", "needs_review"])
+                  .not("id", "in", `(${usedIds.join(",")})`)
+                  .order("created_at", { ascending: true })
+                  .limit(remaining);
+                if (extraAssets) assets = [...assets, ...extraAssets];
+              }
+              // Process these prioritized assets
+              for (const asset of assets) {
+                if (stats.errors >= maxErrors) break;
+                stats.items_processed++;
+                console.log(`[pipeline] ${stats.items_processed}/${assets.length}: ${asset.asset_code} (priority)`);
+                const result = await generateQuestionsForAsset(asset);
+                if (result.ok) stats.questions_generated += result.count;
+                else { stats.errors++; stats.error_details.push(`${asset.asset_code}: ${result.error}`); }
+                if (stats.items_processed < assets.length) await new Promise(r => setTimeout(r, 2500));
+              }
+              // Skip the regular fetch below
+              query = null as any;
             }
           }
         }
-      }
+
+        // Regular (non-prioritized) fetch
+        if (query) {
+          const { data: assets } = await query.order("created_at", { ascending: true }).limit(batchSize);
+
+          if (assets && assets.length > 0) {
+            for (const asset of assets) {
+              if (stats.errors >= maxErrors) break;
+              stats.items_processed++;
+              console.log(`[pipeline] ${stats.items_processed}/${assets.length}: ${asset.asset_code}`);
+              const result = await generateQuestionsForAsset(asset);
+              if (result.ok) stats.questions_generated += result.count;
+              else { stats.errors++; stats.error_details.push(`${asset.asset_code}: ${result.error}`); }
+              if (stats.items_processed < assets.length) await new Promise(r => setTimeout(r, 2500));
+            }
+          }
+        }
 
       // Update progress
       if (progress) {
