@@ -47,6 +47,13 @@ const difficultyLabels: Record<string, { label: string; color: string }> = {
 };
 
 const imageTypeLabels: Record<string, string> = {
+  dermatology: "🩹 Dermato",
+  xray: "🫁 Raio-X",
+  ecg: "❤️ ECG",
+};
+
+// All known labels for display purposes (badges, etc.)
+const allImageTypeLabels: Record<string, string> = {
   ecg: "❤️ ECG",
   xray: "🫁 Raio-X",
   ct: "🧠 TC",
@@ -592,7 +599,7 @@ const MedicalImageQuiz = () => {
                   )}
                   {currentQuestion.image_type && (
                     <Badge variant="secondary">
-                      {imageTypeLabels[currentQuestion.image_type] || currentQuestion.image_type}
+                      {allImageTypeLabels[currentQuestion.image_type] || currentQuestion.image_type}
                     </Badge>
                   )}
                   {currentQuestion.exam_style && (
@@ -761,7 +768,7 @@ const MedicalImageQuiz = () => {
                   )}
                   {q.image_type && (
                     <Badge variant="secondary" className="text-[10px]">
-                      {imageTypeLabels[q.image_type] || q.image_type}
+                      {allImageTypeLabels[q.image_type] || q.image_type}
                     </Badge>
                   )}
                   {q.diagnosis && (
