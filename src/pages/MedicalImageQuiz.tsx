@@ -450,6 +450,27 @@ const MedicalImageQuiz = () => {
     setStartTime(Date.now());
   }, []);
 
+  const handleGenerateQuestions = async () => {
+    setIsGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-image-questions-secure", {
+        body: { batch_size: 5 },
+      });
+      if (error) throw error;
+      const generated = data?.generated || 0;
+      if (generated > 0) {
+        toast.success(`${generated} novas questões geradas com sucesso!`);
+        queryClient.invalidateQueries({ queryKey: ["image-quiz-questions"] });
+      } else {
+        toast.info("Nenhum asset pendente para gerar questões.");
+      }
+    } catch (err: any) {
+      toast.error("Erro ao gerar questões: " + (err.message || "tente novamente"));
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
