@@ -10,6 +10,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import AlertActions from "./pipeline/AlertActions";
+import { Search } from "lucide-react";
 
 interface PipelineRun {
   id: string;
