@@ -252,6 +252,7 @@ const MedicalImageQuiz = () => {
   const [startTime, setStartTime] = useState<number>(Date.now());
   const [quizMode, setQuizMode] = useState<"browse" | "quiz">("browse");
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [activeTier, setActiveTier] = useState<QualityTier>("tier1");
 
