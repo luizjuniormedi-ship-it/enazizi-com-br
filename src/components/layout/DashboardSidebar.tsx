@@ -333,70 +333,89 @@ const DashboardSidebar = () => {
                 />
               ))}
 
-              {/* Admin block */}
-              {hasAdminBlock && (
-                <div className="pt-2 border-t border-sidebar-border mt-2 space-y-0.5">
-                  <span className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-                    Administração
-                  </span>
-                  {showProfessor && (
+              {/* Bottom section: Meu Perfil + Admin links */}
+              <div className="pt-2 border-t border-sidebar-border mt-2 space-y-0.5">
+                <Link
+                  to="/dashboard/perfil"
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
+                    location.pathname === "/dashboard/perfil"
+                      ? "bg-sidebar-accent text-sidebar-primary"
+                      : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
+                  )}
+                >
+                  <User className="h-4 w-4" />
+                  Meu Perfil
+                </Link>
+                {showProfessor && (
+                  <Link
+                    to="/professor"
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
+                      location.pathname === "/professor"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
+                    )}
+                  >
+                    <GraduationCap className="h-4 w-4" />
+                    Painel Professor
+                  </Link>
+                )}
+                {showAdmin && (
+                  <>
                     <Link
-                      to="/professor"
+                      to="/admin"
                       className={cn(
                         "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                        location.pathname === "/professor"
+                        location.pathname === "/admin"
                           ? "bg-sidebar-accent text-sidebar-primary"
                           : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
                       )}
                     >
-                      <GraduationCap className="h-4 w-4" />
-                      Professor
+                      <Shield className="h-4 w-4" />
+                      Admin
                     </Link>
-                  )}
-                  {showInstitutional && (
                     <Link
-                      to="/institucional"
+                      to="/dashboard/mnemonic-studio-v2"
                       className={cn(
                         "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                        location.pathname === "/institucional"
+                        location.pathname === "/dashboard/mnemonic-studio-v2"
                           ? "bg-sidebar-accent text-sidebar-primary"
                           : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
                       )}
                     >
-                      <Building2 className="h-4 w-4" />
-                      Institucional
+                      <Brain className="h-4 w-4" />
+                      Mnemônico (teste)
                     </Link>
-                  )}
-                  {showAdmin && (
-                    <>
-                      <Link
-                        to="/admin"
-                        className={cn(
-                          "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                          location.pathname === "/admin"
-                            ? "bg-sidebar-accent text-sidebar-primary"
-                            : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
-                        )}
-                      >
-                        <Shield className="h-4 w-4" />
-                        Admin
-                      </Link>
-                      <Link
-                        to="/admin/ceo"
-                        className={cn(
-                          "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
-                          location.pathname === "/admin/ceo"
-                            ? "bg-sidebar-accent text-sidebar-primary"
-                            : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
-                        )}
-                      >
-                        <BarChart3 className="h-4 w-4" />
-                        Painel CEO
-                      </Link>
-                    </>
-                  )}
-                </div>
-              )}
+                    <Link
+                      to="/admin/ceo"
+                      className={cn(
+                        "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
+                        location.pathname === "/admin/ceo"
+                          ? "bg-sidebar-accent text-sidebar-primary"
+                          : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
+                      )}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      Painel CEO
+                    </Link>
+                  </>
+                )}
+                {showInstitutional && (
+                  <Link
+                    to="/institucional"
+                    className={cn(
+                      "flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-colors",
+                      location.pathname === "/institucional"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/65 hover:bg-sidebar-accent/40"
+                    )}
+                  >
+                    <Building2 className="h-4 w-4" />
+                    Institucional
+                  </Link>
+                )}
+              </div>
             </>
           )}
         </nav>
