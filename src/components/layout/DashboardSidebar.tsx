@@ -60,7 +60,7 @@ const navGroups: NavGroup[] = [
     defaultOpen: true,
     items: [
       { to: "/dashboard/simulados", moduleKey: "simulados", icon: FileText, label: "Simulados", description: "Simulados completos no formato das principais bancas" },
-      { to: "/dashboard/image-quiz", moduleKey: "image-quiz", icon: Image, label: "Quiz de Imagens", description: "Pratique diagnóstico por imagens médicas reais" },
+      { to: "/dashboard/image-quiz", moduleKey: "image-quiz", icon: Image, label: "Questões com Imagem", description: "Questões de prova com imagens médicas reais" },
       { to: "/dashboard/gerador-questoes", moduleKey: "questoes", icon: Lightbulb, label: "Gerador Questões", description: "Gere questões adaptativas por tema e banca" },
       { to: "/dashboard/discursivas", moduleKey: "discursivas", icon: PenTool, label: "Discursivas", description: "Pratique questões discursivas" },
       { to: "/dashboard/prova-pratica", moduleKey: "prova-pratica", icon: Briefcase, label: "Prova Prática", description: "Prepare-se para provas práticas (OSCE)" },
