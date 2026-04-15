@@ -696,6 +696,45 @@ export type Database = {
         }
         Relationships: []
       }
+      bulk_generation_jobs: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          mode: string
+          progress: Json | null
+          result: Json | null
+          specialty: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          mode?: string
+          progress?: Json | null
+          result?: Json | null
+          specialty?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          mode?: string
+          progress?: Json | null
+          result?: Json | null
+          specialty?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       chance_by_exam: {
         Row: {
           banca: string
