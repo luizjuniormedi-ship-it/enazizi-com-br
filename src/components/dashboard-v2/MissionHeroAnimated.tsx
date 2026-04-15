@@ -9,7 +9,7 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string; cta?: string }>
   error_review: { label: "Correção de Erro", icon: "🔴" },
   daily_task: { label: "Missão do Dia", icon: "📋" },
   free_study: { label: "Estudo Livre", icon: "📚" },
-  image_quiz: { label: "Quiz de Imagem", icon: "🖼️", cta: "Treinar com imagens" },
+  image_quiz: { label: "Questões com Imagem", icon: "🖼️", cta: "Treinar com imagens" },
   mnemonic: { label: "Mnemônico", icon: "🧠", cta: "Fixar com mnemônico" },
 };
 

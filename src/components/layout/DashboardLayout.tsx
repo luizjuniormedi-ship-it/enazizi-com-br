@@ -54,7 +54,7 @@ const mobileNavGroups: MobileNavGroup[] = [
     items: [
       { to: "/dashboard/simulados", label: "📝 Simulados", moduleKey: "simulados" },
       { to: "/dashboard/proficiencia", label: "🎓 Proficiência", moduleKey: "proficiencia" },
-      { to: "/dashboard/image-quiz", label: "🖼️ Quiz Imagens", moduleKey: "image-quiz" },
+      { to: "/dashboard/image-quiz", label: "🖼️ Questões com Imagem", moduleKey: "image-quiz" },
       { to: "/dashboard/anamnese", label: "🩺 Anamnese", moduleKey: "anamnese" },
       { to: "/dashboard/plantao", label: "🚨 Plantão", moduleKey: "plantao" },
       { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática", moduleKey: "prova-pratica" },
