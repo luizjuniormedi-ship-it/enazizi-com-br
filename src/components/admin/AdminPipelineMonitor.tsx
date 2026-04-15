@@ -61,6 +61,7 @@ export default function AdminPipelineMonitor() {
   const queryClient = useQueryClient();
   const [showAcknowledged, setShowAcknowledged] = useState(false);
   const [selectedType, setSelectedType] = useState("ecg");
+  const [selectedCurationType, setSelectedCurationType] = useState("ecg");
 
   const runPipelineMutation = useMutation({
     mutationFn: async (datasetType: string) => {
