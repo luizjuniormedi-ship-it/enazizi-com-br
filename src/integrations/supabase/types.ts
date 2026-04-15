@@ -2503,6 +2503,84 @@ export type Database = {
           },
         ]
       }
+      gap_fill_logs: {
+        Row: {
+          assets_created: number | null
+          created_at: string | null
+          details: Json | null
+          diagnoses_processed: string[] | null
+          error_details: string[] | null
+          errors: number | null
+          execution_time_ms: number | null
+          gaps_detected: number | null
+          gaps_planned: number | null
+          id: string
+          image_type: string
+          questions_generated: number | null
+          status: string | null
+        }
+        Insert: {
+          assets_created?: number | null
+          created_at?: string | null
+          details?: Json | null
+          diagnoses_processed?: string[] | null
+          error_details?: string[] | null
+          errors?: number | null
+          execution_time_ms?: number | null
+          gaps_detected?: number | null
+          gaps_planned?: number | null
+          id?: string
+          image_type: string
+          questions_generated?: number | null
+          status?: string | null
+        }
+        Update: {
+          assets_created?: number | null
+          created_at?: string | null
+          details?: Json | null
+          diagnoses_processed?: string[] | null
+          error_details?: string[] | null
+          errors?: number | null
+          execution_time_ms?: number | null
+          gaps_detected?: number | null
+          gaps_planned?: number | null
+          id?: string
+          image_type?: string
+          questions_generated?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      gap_fill_state: {
+        Row: {
+          current_image_type: string | null
+          id: number
+          is_running: boolean | null
+          last_run_at: string | null
+          total_gaps_filled: number | null
+          total_runs: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          current_image_type?: string | null
+          id?: number
+          is_running?: boolean | null
+          last_run_at?: string | null
+          total_gaps_filled?: number | null
+          total_runs?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          current_image_type?: string | null
+          id?: number
+          is_running?: boolean | null
+          last_run_at?: string | null
+          total_gaps_filled?: number | null
+          total_runs?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       generated_content_log: {
         Row: {
           cache_hit: boolean
