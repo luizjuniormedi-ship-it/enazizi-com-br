@@ -583,6 +583,16 @@ const MedicalImageQuiz = () => {
             <Activity className="h-4 w-4 mr-2" /> Iniciar Quiz
           </Button>
         )}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleGenerateQuestions}
+          disabled={isGenerating}
+          className="gap-1.5"
+        >
+          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          {isGenerating ? "Gerando..." : "Gerar Questões"}
+        </Button>
       </div>
 
       {questions.length === 0 ? (
