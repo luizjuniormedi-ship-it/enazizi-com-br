@@ -127,6 +127,7 @@ Deno.serve(async (req) => {
           .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url")
           .eq("question_generated", false)
           .eq("is_active", true)
+          .eq("quality_gate_passed", true)
           .eq("image_type", datasetType)
           .in("review_status", ["published", "needs_review"]);
 
@@ -150,6 +151,7 @@ Deno.serve(async (req) => {
               .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url")
               .eq("question_generated", false)
               .eq("is_active", true)
+              .eq("quality_gate_passed", true)
               .eq("image_type", datasetType)
               .in("review_status", ["published", "needs_review"])
               .in("diagnosis", priorityDiagnoses)
@@ -168,6 +170,7 @@ Deno.serve(async (req) => {
                   .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url")
                   .eq("question_generated", false)
                   .eq("is_active", true)
+                  .eq("quality_gate_passed", true)
                   .eq("image_type", datasetType)
                   .in("review_status", ["published", "needs_review"])
                   .not("id", "in", `(${usedIds.join(",")})`)

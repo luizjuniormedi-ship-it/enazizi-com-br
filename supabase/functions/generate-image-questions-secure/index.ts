@@ -147,12 +147,13 @@ Deno.serve(async (req) => {
       if (error) throw error;
       assets = data || [];
     } else {
-      // Auto-select: published assets without questions, strict medical validation
+      // Auto-select: ONLY quality-gate-passed assets without questions
       const { data, error } = await sb
         .from("medical_image_assets")
-        .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url")
+        .select("id, asset_code, diagnosis, image_type, specialty, subtopic, difficulty, image_url, quality_gate_passed")
         .eq("question_generated", false)
         .eq("is_active", true)
+        .eq("quality_gate_passed", true)
         .eq("integrity_status", "ok")
         .in("review_status", ["published", "needs_review"])
         .in("image_type", ["xray", "ecg", "ct", "us", "dermatology", "pathology", "ophthalmology"])
@@ -161,11 +162,16 @@ Deno.serve(async (req) => {
         .limit(Math.min(batch_size, 20));
       if (error) throw error;
       // Additional URL validation: reject non-medical URLs
-      const blocked = ["logo", "stock", "laptop", "placeholder", "generic", "algoscope", "notebook", "banner"];
+      const blocked = ["logo", "stock", "laptop", "placeholder", "generic", "algoscope", "notebook", "banner",
+        "mockup", "screenshot", "dashboard", "portrait", "avatar", "icon", "favicon", "thumbnail"];
       assets = (data || []).filter((a: any) => {
         const url = (a.image_url || "").toLowerCase();
         if (blocked.some(b => url.includes(b))) {
           console.log("ASSET BLOCKED (bad URL):", a.asset_code, a.image_url);
+          return false;
+        }
+        if (!a.diagnosis || a.diagnosis.trim().length < 3) {
+          console.log("ASSET BLOCKED (no diagnosis):", a.asset_code);
           return false;
         }
         return true;

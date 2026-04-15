@@ -1,8 +1,7 @@
 /**
  * validate-medical-image-ai — Single-image AI validation via Gemini Vision.
- * Supports single image and batch mode for auto-validation pipeline.
- * Input: { image_url: string, asset_id?: string } OR { batch: true } for auto-scan
- * Output: { is_medical: boolean, type: string, confidence: number, description: string }
+ * Supports single image, batch mode, and retroactive audit.
+ * Sets quality_gate_passed and logs to asset_quality_audit_logs.
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
@@ -13,6 +12,29 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+/** URL patterns that indicate non-clinical images */
+const BLOCKED_URL_TERMS = [
+  "mockup", "screenshot", "placeholder", "laptop", "dashboard",
+  "notebook", "landing-page", "wireframe", "template", "stock-photo",
+  "stockphoto", "infographic", "hero-image", "banner-image",
+  "certificate", "badge-image", "logo", "branding", "team-photo",
+  "about-us", "staff-photo", "corporate", "portrait", "selfie",
+  "headshot", "avatar", "profile-photo", "profile-pic", "face-photo",
+  "icon-", "emoji", "sticker", "clipart", "cartoon", "illustration",
+  "vector", "flat-design", "shutterstock", "gettyimages", "istockphoto",
+  "dreamstime", "unsplash.com", "pexels.com", "pixabay.com",
+  "youtube.com", "vimeo.com", "algoscope", "generic", "monitor",
+  "computer", "desktop", "phone", "favicon", "thumbnail",
+];
+
+function isUrlSuspicious(url: string): string | null {
+  const lower = url.toLowerCase();
+  for (const term of BLOCKED_URL_TERMS) {
+    if (lower.includes(term)) return term;
+  }
+  return null;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response("ok", { headers: corsHeaders });
@@ -22,6 +44,11 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const body = await req.json().catch(() => ({}));
+
+    // ── Retroactive audit mode ──
+    if (body.audit === true) {
+      return await handleAudit(LOVABLE_API_KEY);
+    }
 
     // ── Batch mode: scan unvalidated assets ──
     if (body.batch === true) {
@@ -35,28 +62,90 @@ serve(async (req) => {
     }
 
     const assetId = body.asset_id as string | undefined;
+
+    // Pre-check URL
+    const suspiciousTerm = isUrlSuspicious(imageUrl);
+    if (suspiciousTerm) {
+      const result = { is_medical: false, type: "not_medical", confidence: 0, description: `URL blocked: contains "${suspiciousTerm}"` };
+      if (assetId) {
+        await rejectAsset(assetId, `URL suspeita: "${suspiciousTerm}"`, "url_filter");
+      }
+      return json(result);
+    }
+
     const result = await classifyImage(imageUrl, LOVABLE_API_KEY);
 
     if (assetId) {
-      await updateAsset(assetId, result);
-      await logTelemetry("image_ai_validated", "validate-medical-image-ai", {
-        asset_id: assetId,
-        is_medical: result.is_medical,
-        confidence: result.confidence,
-        type: result.type,
-        blocked: !result.is_medical || result.confidence < 0.7,
-      });
+      await processAssetResult(assetId, result, "ai_validation");
     }
 
     return json(result);
   } catch (e) {
     console.error("[validate-medical-image-ai]", e);
-    return json(
-      { error: e instanceof Error ? e.message : "Internal error" },
-      500,
-    );
+    return json({ error: e instanceof Error ? e.message : "Internal error" }, 500);
   }
 });
+
+// ── Retroactive audit: check ALL active assets ──
+async function handleAudit(apiKey: string) {
+  const db = getDb();
+  const { data: assets, error } = await db
+    .from("medical_image_assets")
+    .select("id, image_url, image_type, diagnosis, ai_validated, integrity_status, validation_level, clinical_confidence")
+    .eq("is_active", true)
+    .order("created_at", { ascending: true })
+    .limit(100);
+
+  if (error) return json({ error: error.message }, 500);
+  if (!assets || assets.length === 0) return json({ processed: 0, message: "No active assets" });
+
+  let approved = 0, rejected = 0, processed = 0;
+  const rejections: { id: string; reason: string }[] = [];
+
+  for (const asset of assets) {
+    processed++;
+
+    // 1. URL check
+    const suspiciousTerm = isUrlSuspicious(asset.image_url || "");
+    if (suspiciousTerm) {
+      await rejectAsset(asset.id, `URL suspeita: "${suspiciousTerm}"`, "retroactive_audit");
+      rejected++;
+      rejections.push({ id: asset.id, reason: `URL: ${suspiciousTerm}` });
+      continue;
+    }
+
+    // 2. Basic metadata check
+    if (!asset.image_url || asset.image_url.trim().length < 10) {
+      await rejectAsset(asset.id, "URL de imagem ausente ou inválida", "retroactive_audit");
+      rejected++;
+      rejections.push({ id: asset.id, reason: "URL inválida" });
+      continue;
+    }
+
+    // 3. If already AI validated and passed, just set gate
+    if (asset.ai_validated === true && asset.integrity_status === "ok" && (asset.clinical_confidence || 0) >= 0.8) {
+      await approveAsset(asset.id, "retroactive_audit", asset.clinical_confidence);
+      approved++;
+      continue;
+    }
+
+    // 4. Run AI validation
+    try {
+      const result = await classifyImage(asset.image_url, apiKey);
+      await processAssetResult(asset.id, result, "retroactive_audit");
+      if (result.is_medical && result.confidence >= 0.7) approved++;
+      else {
+        rejected++;
+        rejections.push({ id: asset.id, reason: result.description });
+      }
+      await new Promise(r => setTimeout(r, 1000));
+    } catch (e) {
+      console.error(`[audit] Asset ${asset.id} failed:`, e);
+    }
+  }
+
+  return json({ processed, approved, rejected, rejections: rejections.slice(0, 20) });
+}
 
 // ── Batch: scan up to 20 unvalidated active assets ──
 async function handleBatch(apiKey: string) {
@@ -71,24 +160,23 @@ async function handleBatch(apiKey: string) {
   if (error) return json({ error: error.message }, 500);
   if (!assets || assets.length === 0) return json({ processed: 0, message: "No unvalidated assets" });
 
-  let processed = 0;
-  let blocked = 0;
+  let processed = 0, blocked = 0;
 
   for (const asset of assets) {
     try {
+      // Pre-check URL
+      const suspiciousTerm = isUrlSuspicious(asset.image_url || "");
+      if (suspiciousTerm) {
+        await rejectAsset(asset.id, `URL suspeita: "${suspiciousTerm}"`, "url_filter");
+        processed++;
+        blocked++;
+        continue;
+      }
+
       const result = await classifyImage(asset.image_url, apiKey);
-      await updateAsset(asset.id, result);
+      await processAssetResult(asset.id, result, "ai_validation");
       processed++;
       if (!result.is_medical || result.confidence < 0.7) blocked++;
-
-      await logTelemetry("image_ai_batch_validated", "validate-medical-image-ai", {
-        asset_id: asset.id,
-        is_medical: result.is_medical,
-        confidence: result.confidence,
-        blocked: !result.is_medical || result.confidence < 0.7,
-      });
-
-      // Rate limit: 1s between calls
       await new Promise(r => setTimeout(r, 1000));
     } catch (e) {
       console.error(`[batch] Asset ${asset.id} failed:`, e);
@@ -98,27 +186,67 @@ async function handleBatch(apiKey: string) {
   return json({ processed, blocked, total: assets.length });
 }
 
-async function updateAsset(assetId: string, result: ClassifyResult) {
+async function processAssetResult(assetId: string, result: ClassifyResult, source: string) {
   const db = getDb();
+  const passed = result.is_medical && result.confidence >= 0.7;
+
   const updateData: Record<string, unknown> = {
-    ai_validated: result.is_medical && result.confidence >= 0.7,
+    ai_validated: passed,
     ai_confidence: result.confidence,
     ai_type: result.type,
+    quality_gate_passed: passed,
   };
-  if (!result.is_medical || result.confidence < 0.7) {
+
+  if (!passed) {
     updateData.is_active = false;
     updateData.integrity_status = "ai_rejected";
+    updateData.rejection_reason = result.description || "AI validation failed";
+    updateData.quality_gate_passed = false;
   }
+
   await db.from("medical_image_assets").update(updateData).eq("id", assetId);
+
+  // Audit log
+  await db.from("asset_quality_audit_logs").insert({
+    asset_id: assetId,
+    image_type: result.type,
+    status: passed ? "approved" : "rejected",
+    rejection_reason: passed ? null : (result.description || "AI rejected"),
+    clinical_match_score: result.confidence,
+    gate_source: source,
+    details: { is_medical: result.is_medical, type: result.type, confidence: result.confidence },
+  });
 }
 
-async function logTelemetry(eventType: string, module: string, details: Record<string, unknown>) {
-  try {
-    const db = getDb();
-    await db.from("automation_telemetry").insert({ event_type: eventType, module, details });
-  } catch (e) {
-    console.error("[telemetry]", e);
-  }
+async function rejectAsset(assetId: string, reason: string, source: string) {
+  const db = getDb();
+  await db.from("medical_image_assets").update({
+    is_active: false,
+    quality_gate_passed: false,
+    rejection_reason: reason,
+    ai_validated: false,
+  }).eq("id", assetId);
+
+  await db.from("asset_quality_audit_logs").insert({
+    asset_id: assetId,
+    status: "rejected",
+    rejection_reason: reason,
+    gate_source: source,
+  });
+
+  // Also move any published questions to draft
+  await db.from("medical_image_questions").update({ status: "draft" }).eq("asset_id", assetId);
+}
+
+async function approveAsset(assetId: string, source: string, confidence?: number | null) {
+  const db = getDb();
+  await db.from("medical_image_assets").update({ quality_gate_passed: true }).eq("id", assetId);
+  await db.from("asset_quality_audit_logs").insert({
+    asset_id: assetId,
+    status: "approved",
+    clinical_match_score: confidence,
+    gate_source: source,
+  });
 }
 
 interface ClassifyResult {
