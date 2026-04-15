@@ -306,9 +306,9 @@ const MedicalImageQuiz = () => {
     }
   }, [adaptiveImageType, getAdaptiveDifficulty]);
 
-  // Fetch with tiered fallback + adaptive difficulty
+  // Fetch with tiered fallback + adaptive difficulty + diagnosis filter + size limit
   const { data: questions = [], isLoading } = useQuery({
-    queryKey: ["image-quiz-questions", imageType, difficulty, visualSkill?.accuracy],
+    queryKey: ["image-quiz-questions", imageType, difficulty, diagnosisFilter, quizSize, visualSkill?.accuracy],
     queryFn: async () => {
       const effectiveDifficulty = getAdaptiveDifficulty() || difficulty;
       let result = await fetchQuestionsWithFallback(imageType, effectiveDifficulty);
@@ -318,7 +318,14 @@ const MedicalImageQuiz = () => {
         result = await fetchQuestionsWithFallback("all", difficulty);
       }
       setActiveTier(result.tier);
-      return result.questions;
+      let filtered = result.questions;
+      // Apply diagnosis filter
+      if (diagnosisFilter !== "all") {
+        filtered = filtered.filter(q => q.diagnosis === diagnosisFilter);
+      }
+      // Shuffle and limit to quizSize
+      const shuffled = filtered.sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, quizSize);
     },
   });
 
