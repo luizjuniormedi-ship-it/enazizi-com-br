@@ -998,6 +998,48 @@ export type Database = {
         }
         Relationships: []
       }
+      content_gap_reports: {
+        Row: {
+          computed_at: string
+          created_at: string
+          difficulty_gaps: Json | null
+          id: string
+          image_type: string
+          missing_diagnoses: Json | null
+          next_batch_recommendation: Json | null
+          priority_mode: string
+          report_json: Json
+          saturated_diagnoses: Json | null
+          weakness_influenced: Json | null
+        }
+        Insert: {
+          computed_at?: string
+          created_at?: string
+          difficulty_gaps?: Json | null
+          id?: string
+          image_type: string
+          missing_diagnoses?: Json | null
+          next_batch_recommendation?: Json | null
+          priority_mode?: string
+          report_json?: Json
+          saturated_diagnoses?: Json | null
+          weakness_influenced?: Json | null
+        }
+        Update: {
+          computed_at?: string
+          created_at?: string
+          difficulty_gaps?: Json | null
+          id?: string
+          image_type?: string
+          missing_diagnoses?: Json | null
+          next_batch_recommendation?: Json | null
+          priority_mode?: string
+          report_json?: Json
+          saturated_diagnoses?: Json | null
+          weakness_influenced?: Json | null
+        }
+        Relationships: []
+      }
       cronograma_config: {
         Row: {
           created_at: string | null
@@ -2599,6 +2641,54 @@ export type Database = {
           question_id?: string
           reason?: string | null
           triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      import_priority_config: {
+        Row: {
+          created_at: string
+          diagnosis_rankings: Json
+          difficulty_targets: Json
+          id: string
+          image_type: string
+          is_active: boolean
+          max_assets_per_diagnosis: number
+          min_assets_per_diagnosis: number
+          priority_mode: string
+          updated_at: string
+          weight_exam_relevance: number
+          weight_inventory_gap: number
+          weight_student_weakness: number
+        }
+        Insert: {
+          created_at?: string
+          diagnosis_rankings?: Json
+          difficulty_targets?: Json
+          id?: string
+          image_type: string
+          is_active?: boolean
+          max_assets_per_diagnosis?: number
+          min_assets_per_diagnosis?: number
+          priority_mode?: string
+          updated_at?: string
+          weight_exam_relevance?: number
+          weight_inventory_gap?: number
+          weight_student_weakness?: number
+        }
+        Update: {
+          created_at?: string
+          diagnosis_rankings?: Json
+          difficulty_targets?: Json
+          id?: string
+          image_type?: string
+          is_active?: boolean
+          max_assets_per_diagnosis?: number
+          min_assets_per_diagnosis?: number
+          priority_mode?: string
+          updated_at?: string
+          weight_exam_relevance?: number
+          weight_inventory_gap?: number
+          weight_student_weakness?: number
         }
         Relationships: []
       }
@@ -7906,6 +7996,7 @@ export type Database = {
       }
     }
     Functions: {
+      compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
