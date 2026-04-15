@@ -59,6 +59,25 @@ const alertTypeLabels: Record<string, string> = {
 export default function AdminPipelineMonitor() {
   const queryClient = useQueryClient();
   const [showAcknowledged, setShowAcknowledged] = useState(false);
+  const [selectedType, setSelectedType] = useState("ecg");
+
+  const runPipelineMutation = useMutation({
+    mutationFn: async (datasetType: string) => {
+      const { data, error } = await supabase.functions.invoke("run-pipeline", {
+        body: { dataset_type: datasetType, mode: "questions_only", batch_size: 10 },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["pipeline-runs"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline-alerts"] });
+      toast.success(`Pipeline concluído: ${data?.questions_generated || 0} questões geradas, ${data?.items_processed || 0} assets processados`);
+    },
+    onError: (err: any) => {
+      toast.error(`Erro no pipeline: ${err.message || "Erro desconhecido"}`);
+    },
+  });
 
   const { data: runs } = useQuery<PipelineRun[]>({
     queryKey: ["pipeline-runs"],
