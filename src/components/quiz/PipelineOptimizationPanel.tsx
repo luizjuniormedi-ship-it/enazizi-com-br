@@ -29,6 +29,7 @@ interface GapSummary {
 const PipelineOptimizationPanel = () => {
   const [selectedType, setSelectedType] = useState("xray");
   const [isPlanning, setIsPlanning] = useState(false);
+  const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [planResult, setPlanResult] = useState<{
     batch: PrioritizedItem[];
     gap_summary: GapSummary;
@@ -48,6 +49,20 @@ const PipelineOptimizationPanel = () => {
     },
   });
 
+  // Auto-gap status
+  const { data: gapFillState, refetch: refetchGapState } = useQuery({
+    queryKey: ["gap-fill-state"],
+    queryFn: async () => {
+      const { data: logs } = await supabase
+        .from("gap_fill_logs" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      return { logs: logs || [] };
+    },
+    refetchInterval: 30000,
+  });
+
   const { data: gapData, isLoading: gapLoading, refetch: refetchGap } = useQuery({
     queryKey: ["content-gaps", selectedType],
     queryFn: async () => {
@@ -55,6 +70,23 @@ const PipelineOptimizationPanel = () => {
       return data;
     },
   });
+
+  const handleAutoGap = async () => {
+    setIsAutoRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("auto-gap-pipeline", {
+        body: { mode: "force", image_types: [selectedType] },
+      });
+      if (error) throw error;
+      toast.success(`Pipeline automático: ${data.total_questions} questões geradas`);
+      refetchGap();
+      refetchGapState();
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || "falha"));
+    } finally {
+      setIsAutoRunning(false);
+    }
+  };
 
   const handlePlanBatch = async () => {
     setIsPlanning(true);
