@@ -2,7 +2,7 @@ import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, HardDrive 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -27,7 +27,6 @@ const CATEGORIES = [
 
 const ACCEPTED_TYPES = ".pdf,.docx,.zip,.jpg,.jpeg,.png,.webp,.txt";
 const MAX_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
-const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
 
 function formatBytes(bytes: number) {
   if (bytes === 0) return "0 B";
@@ -44,12 +43,41 @@ function formatEta(seconds: number) {
   return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
 }
 
+function uploadWithProgress(
+  url: string,
+  file: File,
+  headers: Record<string, string>,
+  onProgress: (loaded: number, total: number) => void,
+  signal?: AbortSignal,
+): Promise<{ status: number; body: string }> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url, true);
+    Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded, e.total);
+    };
+    xhr.onload = () => resolve({ status: xhr.status, body: xhr.responseText });
+    xhr.onerror = () => reject(new Error("Falha na conexão de rede"));
+    xhr.ontimeout = () => reject(new Error("Timeout no upload"));
+
+    if (signal) {
+      signal.addEventListener("abort", () => { xhr.abort(); reject(new Error("Upload cancelado")); });
+    }
+
+    // Build FormData — Supabase Storage REST API expects the file in the body directly
+    // We'll use the raw body approach
+    xhr.send(file);
+  });
+}
+
 const AdminLargeUploadPanel = () => {
   const [items, setItems] = useState<UploadItem[]>([]);
   const [category, setCategory] = useState("material");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const abortRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -79,91 +107,59 @@ const AdminLargeUploadPanel = () => {
     setItems(prev => prev.filter(i => i.id !== id));
   };
 
-  const updateItem = (id: string, patch: Partial<UploadItem>) => {
+  const updateItem = useCallback((id: string, patch: Partial<UploadItem>) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, ...patch } : i));
-  };
+  }, []);
 
   const uploadFile = useCallback(async (item: UploadItem) => {
     if (!user) return;
     const ext = item.file.name.split(".").pop() || "bin";
     const storagePath = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    
+
     updateItem(item.id, { status: "uploading", progress: 0, speed: "Iniciando...", eta: "--" });
 
     const startTime = Date.now();
-    let uploadedBytes = 0;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     try {
-      // For files <= 50MB use standard upload
-      if (item.file.size <= 50 * 1024 * 1024) {
-        const { error } = await supabase.storage
-          .from("user-uploads")
-          .upload(storagePath, item.file, { upsert: false });
-        if (error) throw error;
-        updateItem(item.id, { status: "done", progress: 100, speed: "", eta: "", storagePath });
-      } else {
-        // Chunked upload: upload parts sequentially
-        const totalChunks = Math.ceil(item.file.size / CHUNK_SIZE);
-        
-        for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
-          if (abortRef.current) throw new Error("Upload cancelado");
-          
-          const start = chunkIdx * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, item.file.size);
-          const chunk = item.file.slice(start, end);
-          
-          const chunkPath = `${storagePath}.part${chunkIdx}`;
-          
-          let retries = 0;
-          while (retries < 3) {
-            try {
-              const { error } = await supabase.storage
-                .from("user-uploads")
-                .upload(chunkPath, chunk, { upsert: true });
-              if (error) throw error;
-              break;
-            } catch (err) {
-              retries++;
-              if (retries >= 3) throw err;
-              await new Promise(r => setTimeout(r, 1000 * retries));
-            }
-          }
-          
-          uploadedBytes = end;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) throw new Error("Sessão expirada. Faça login novamente.");
+
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const apiKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const uploadUrl = `${supabaseUrl}/storage/v1/object/user-uploads/${storagePath}`;
+
+      const contentType = item.file.type || "application/octet-stream";
+
+      await uploadWithProgress(
+        uploadUrl,
+        item.file,
+        {
+          Authorization: `Bearer ${accessToken}`,
+          apikey: apiKey,
+          "x-upsert": "false",
+          "Content-Type": contentType,
+        },
+        (loaded, total) => {
           const elapsed = (Date.now() - startTime) / 1000;
-          const speedBps = uploadedBytes / elapsed;
-          const remaining = (item.file.size - uploadedBytes) / speedBps;
-          const progress = Math.round((uploadedBytes / item.file.size) * 100);
-          
+          const speedBps = elapsed > 0 ? loaded / elapsed : 0;
+          const remaining = speedBps > 0 ? (total - loaded) / speedBps : 0;
+          const progress = Math.round((loaded / total) * 100);
           updateItem(item.id, {
             progress,
             speed: `${formatBytes(speedBps)}/s`,
             eta: formatEta(remaining),
           });
-        }
+        },
+        controller.signal,
+      );
 
-        // Now reassemble: download all parts and upload as final file
-        // For simplicity, we'll just upload the whole file using TUS-compatible approach
-        // Actually, let's use a simpler approach: upload directly with the SDK which handles large files
-        
-        // Clean up parts and do direct upload
-        // The Supabase JS SDK handles large uploads internally
-        // Let's just delete the parts and do a direct upload instead
-        for (let i = 0; i < totalChunks; i++) {
-          await supabase.storage.from("user-uploads").remove([`${storagePath}.part${i}`]);
-        }
-
-        // Direct upload - the SDK + increased bucket limit should handle this
-        const { error } = await supabase.storage
-          .from("user-uploads")
-          .upload(storagePath, item.file, { upsert: false });
-        if (error) throw error;
-        
-        updateItem(item.id, { status: "done", progress: 100, speed: "", eta: "", storagePath });
-      }
+      updateItem(item.id, { status: "done", progress: 100, speed: "", eta: "", storagePath });
 
       // Insert DB record
-      await supabase.from("uploads").insert({
+      const { error: dbError } = await supabase.from("uploads").insert({
         user_id: user.id,
         filename: item.file.name,
         file_type: ext,
@@ -172,31 +168,38 @@ const AdminLargeUploadPanel = () => {
         status: "uploaded",
         is_global: true,
       });
+      if (dbError) console.error("DB insert error:", dbError);
 
     } catch (err: any) {
-      updateItem(item.id, {
-        status: "error",
-        error: err.message || "Erro desconhecido",
-        speed: "",
-        eta: "",
-      });
+      if (err.message === "Upload cancelado") {
+        updateItem(item.id, { status: "queued", progress: 0, speed: "", eta: "", error: undefined });
+      } else {
+        updateItem(item.id, {
+          status: "error",
+          error: err.message || "Erro desconhecido",
+          speed: "",
+          eta: "",
+        });
+      }
     }
-  }, [user]);
+  }, [user, updateItem]);
 
   const startUpload = useCallback(async () => {
     const queued = items.filter(i => i.status === "queued");
     if (queued.length === 0) return;
     setUploading(true);
-    abortRef.current = false;
 
     for (const item of queued) {
-      if (abortRef.current) break;
       await uploadFile(item);
     }
 
     setUploading(false);
     toast({ title: "Upload concluído!", description: `${queued.length} arquivo(s) processado(s).` });
   }, [items, uploadFile, toast]);
+
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+  };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -262,7 +265,7 @@ const AdminLargeUploadPanel = () => {
             </h4>
             <div className="flex gap-2">
               {uploading && (
-                <Button variant="destructive" size="sm" onClick={() => { abortRef.current = true; }}>
+                <Button variant="destructive" size="sm" onClick={handleCancel}>
                   Cancelar
                 </Button>
               )}
@@ -280,14 +283,14 @@ const AdminLargeUploadPanel = () => {
               <div key={item.id} className="glass-card p-3">
                 <div className="flex items-center gap-3">
                   <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    {item.status === "done" ? <CheckCircle className="h-4 w-4 text-green-500" /> :
+                    {item.status === "done" ? <CheckCircle className="h-4 w-4 text-primary" /> :
                      item.status === "error" ? <AlertCircle className="h-4 w-4 text-destructive" /> :
                      item.status === "uploading" ? <Loader2 className="h-4 w-4 text-primary animate-spin" /> :
                      <FileText className="h-4 w-4 text-muted-foreground" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium truncate">{item.file.name}</div>
-                    <div className="text-xs text-muted-foreground flex items-center gap-2">
+                    <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
                       <span>{formatBytes(item.file.size)}</span>
                       <span>•</span>
                       <span>{CATEGORIES.find(c => c.value === item.category)?.label}</span>
