@@ -74,7 +74,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/flashcards", moduleKey: "flashcards", icon: FlipVertical, label: "Flashcards", description: "Revise conteúdos com repetição espaçada inteligente" },
       { to: "/dashboard/gerar-flashcards", moduleKey: "gerar-flashcards", icon: Sparkles, label: "Gerador Flashcards", description: "Gere flashcards automaticamente" },
       { to: "/dashboard/banco-erros", moduleKey: "banco-erros", icon: AlertTriangle, label: "Banco de Erros", description: "Revise e domine os temas onde mais erra" },
-      { to: "/dashboard/mnemonico", moduleKey: "mnemonico", icon: Brain, label: "Mnemônicos", description: "Memorize conteúdos difíceis" },
+      
       { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo", description: "Sessão focada com timer e metas" },
     ],
   },

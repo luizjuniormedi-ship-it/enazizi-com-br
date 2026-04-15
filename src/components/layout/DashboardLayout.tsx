@@ -67,7 +67,7 @@ const mobileNavGroups: MobileNavGroup[] = [
     title: "Apoio ao Estudo",
     items: [
       { to: "/dashboard/resumos", label: "📖 Resumos", moduleKey: "resumos" },
-      { to: "/dashboard/mnemonico", label: "🧠 Mnemônicos", moduleKey: "mnemonico" },
+      
       { to: "/dashboard/apostilas", label: "📚 Apostilas", moduleKey: "apostilas" },
       { to: "/dashboard/cronicas", label: "📖 Crônicas", moduleKey: "cronicas" },
       { to: "/dashboard/planner", label: "📅 Plano Estratégico", moduleKey: "planner" },
