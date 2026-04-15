@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw } from "lucide-react";
+import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
 import { toast } from "sonner";
 
 interface PrioritizedItem {
@@ -34,6 +34,19 @@ const PipelineOptimizationPanel = () => {
     gap_summary: GapSummary;
     priority_mode: string;
   } | null>(null);
+
+  // Quality gate stats
+  const { data: qualityStats } = useQuery({
+    queryKey: ["quality-gate-stats"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("asset_quality_audit_logs")
+        .select("status");
+      const approved = data?.filter((d: any) => d.status === "approved").length || 0;
+      const rejected = data?.filter((d: any) => d.status === "rejected").length || 0;
+      return { approved, rejected, total: approved + rejected };
+    },
+  });
 
   const { data: gapData, isLoading: gapLoading, refetch: refetchGap } = useQuery({
     queryKey: ["content-gaps", selectedType],
