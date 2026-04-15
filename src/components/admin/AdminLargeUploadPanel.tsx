@@ -66,9 +66,9 @@ function uploadWithProgress(
       signal.addEventListener("abort", () => { xhr.abort(); reject(new Error("Upload cancelado")); });
     }
 
-    // Build FormData — Supabase Storage REST API expects the file in the body directly
-    // We'll use the raw body approach
-    xhr.send(file);
+    const formData = new FormData();
+    formData.append("", file, file.name);
+    xhr.send(formData);
   });
 }
 
