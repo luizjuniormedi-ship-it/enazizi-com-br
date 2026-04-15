@@ -100,7 +100,9 @@ async function detectContentGaps(imageType: string): Promise<Gap[]> {
       // Prioritize diagnoses with zero content, then by exam relevance (order in target list)
       const examRelevance = 100 - (targets.indexOf(diagnosis) / targets.length) * 50;
       const contentUrgency = curr.count === 0 ? 50 : (missingQuestions > 0 ? 30 : 10);
-      const priority = Math.round(examRelevance + contentUrgency);
+      // Boost ECG priority (critically underrepresented with only 2 assets)
+      const typeBoost = imageType === "ecg" ? 20 : 0;
+      const priority = Math.round(examRelevance + contentUrgency + typeBoost);
 
       gaps.push({
         diagnosis,
@@ -244,8 +246,8 @@ async function runAutoGapPipeline(imageTypes?: string[]): Promise<any> {
           .limit(MAX_ASSETS_PER_RUN);
 
         if (!pendingAssets || pendingAssets.length === 0) {
-          console.log(`[auto-gap] No pending assets for ${gap.diagnosis}`);
-          typeDetail.processed.push({ diagnosis: gap.diagnosis, status: "no_assets", questions: 0 });
+          console.log(`[auto-gap] ⚠ Gap detected but NO ASSETS available for "${gap.diagnosis}" (${imageType}). Status: needs_assets. Create/import assets first.`);
+          typeDetail.processed.push({ diagnosis: gap.diagnosis, status: "needs_assets", questions: 0, note: "Assets needed before questions can be generated" });
           continue;
         }
 

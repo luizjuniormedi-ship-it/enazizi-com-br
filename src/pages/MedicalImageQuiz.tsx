@@ -20,6 +20,7 @@ import PipelineOptimizationPanel from "@/components/quiz/PipelineOptimizationPan
 
 type ImageQuestion = {
   id: string;
+  asset_id: string | null;
   statement: string;
   options: string[];
   correct_index: number;
@@ -66,11 +67,11 @@ const imageTypeLabels: Record<string, string> = {
 };
 // ─── Strict medical-only fetcher ──────────────────────────────────────
 const SELECT_FIELDS = `
-  id, statement, option_a, option_b, option_c, option_d, option_e,
+  id, asset_id, statement, option_a, option_b, option_c, option_d, option_e,
   correct_index, explanation, difficulty, exam_style,
   discussion, exam_tips, pitfalls,
   medical_image_assets!inner(
-    image_url, image_type, diagnosis, is_active,
+    id, image_url, image_type, diagnosis, is_active,
     review_status, clinical_confidence, integrity_status,
     validation_level, asset_origin, ai_validated, quality_gate_passed
   )
@@ -146,6 +147,7 @@ function mapRows(data: any[]): ImageQuestion[] {
       const opts = [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e].filter(Boolean);
       return {
         id: q.id,
+        asset_id: q.asset_id || asset?.id || null,
         statement: q.statement,
         options: opts,
         correct_index: q.correct_index,
@@ -162,12 +164,13 @@ function mapRows(data: any[]): ImageQuestion[] {
     })
     .filter((q) => q.image_url !== null);
 
-  // DEDUP: keep only ONE question per unique image_url
-  const seenImages = new Set<string>();
+  // DEDUP: allow up to 3 questions per unique image_url
+  const imageCount = new Map<string, number>();
   const result = allValid.filter((q) => {
     if (!q.image_url) return false;
-    if (seenImages.has(q.image_url)) return false;
-    seenImages.add(q.image_url);
+    const count = imageCount.get(q.image_url) || 0;
+    if (count >= 3) return false;
+    imageCount.set(q.image_url, count + 1);
     return true;
   });
 
@@ -361,17 +364,21 @@ const MedicalImageQuiz = () => {
   });
 
   const saveAttempt = useMutation({
-    mutationFn: async (params: { imageId: string; selectedIndex: number; correct: boolean; timeSeconds: number; imageType?: string; questionId?: string }) => {
+    mutationFn: async (params: { assetId: string | null; selectedIndex: number; correct: boolean; timeSeconds: number; imageType?: string; questionId?: string }) => {
       const { error } = await supabase.from("medical_image_attempts").insert({
         user_id: user!.id,
-        image_id: params.imageId,
+        image_id: params.questionId || "unknown",
+        asset_id: params.assetId || null,
         selected_index: params.selectedIndex,
         correct: params.correct,
         time_seconds: params.timeSeconds,
         image_type: params.imageType || null,
         question_id: params.questionId || null,
       } as any);
-      if (error) throw error;
+      if (error) {
+        console.error("[ImageQuiz] attempt insert failed:", error.message);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["image-quiz-stats"] });
@@ -413,7 +420,7 @@ const MedicalImageQuiz = () => {
 
     if (user) {
       saveAttempt.mutate({
-        imageId: currentQuestion.id,
+        assetId: currentQuestion.asset_id,
         selectedIndex: index,
         correct,
         timeSeconds,
@@ -434,11 +441,11 @@ const MedicalImageQuiz = () => {
         });
       }
 
-      // Call study-complete
+      // Call study-complete with actionType "image_quiz" to trigger visual_skill_snapshots
       try {
         await supabase.functions.invoke("study-complete", {
           body: {
-            actionType: "free_study",
+            actionType: "image_quiz",
             themeId: currentQuestion.diagnosis || currentQuestion.image_type || "image-quiz",
             topicId: currentQuestion.image_type || "image-quiz",
             wasCorrect: correct,
@@ -447,13 +454,15 @@ const MedicalImageQuiz = () => {
               source: "image_quiz",
               originModule: "image_quiz",
               imageType: currentQuestion.image_type,
+              diagnosis: currentQuestion.diagnosis,
               difficulty: currentQuestion.difficulty,
+              assetId: currentQuestion.asset_id,
               timeSeconds,
             },
           },
         });
-      } catch {
-        // Non-blocking: don't break quiz flow
+      } catch (e) {
+        console.error("[ImageQuiz] study-complete failed:", e);
       }
     }
 

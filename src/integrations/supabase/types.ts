@@ -3362,10 +3362,11 @@ export type Database = {
       }
       medical_image_attempts: {
         Row: {
+          asset_id: string | null
           correct: boolean
           created_at: string
           id: string
-          image_id: string
+          image_id: string | null
           image_type: string | null
           question_id: string | null
           selected_index: number
@@ -3373,10 +3374,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          asset_id?: string | null
           correct: boolean
           created_at?: string
           id?: string
-          image_id: string
+          image_id?: string | null
           image_type?: string | null
           question_id?: string | null
           selected_index: number
@@ -3384,10 +3386,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          asset_id?: string | null
           correct?: boolean
           created_at?: string
           id?: string
-          image_id?: string
+          image_id?: string | null
           image_type?: string | null
           question_id?: string | null
           selected_index?: number
@@ -3396,10 +3399,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "medical_image_attempts_image_id_fkey"
-            columns: ["image_id"]
+            foreignKeyName: "medical_image_attempts_asset_id_fkey"
+            columns: ["asset_id"]
             isOneToOne: false
-            referencedRelation: "medical_images"
+            referencedRelation: "medical_image_assets"
             referencedColumns: ["id"]
           },
           {
