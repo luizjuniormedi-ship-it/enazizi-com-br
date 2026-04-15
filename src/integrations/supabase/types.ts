@@ -7791,11 +7791,11 @@ export type Database = {
           image_type: string
           recent_window_accuracy: number | null
           score: number
-          strongest_area: string
+          strongest_area: string | null
           trend: string
           updated_at: string
           user_id: string
-          weakest_area: string
+          weakest_area: string | null
         }
         Insert: {
           accuracy?: number
@@ -7809,11 +7809,11 @@ export type Database = {
           image_type: string
           recent_window_accuracy?: number | null
           score?: number
-          strongest_area?: string
+          strongest_area?: string | null
           trend?: string
           updated_at?: string
           user_id: string
-          weakest_area?: string
+          weakest_area?: string | null
         }
         Update: {
           accuracy?: number
@@ -7827,11 +7827,11 @@ export type Database = {
           image_type?: string
           recent_window_accuracy?: number | null
           score?: number
-          strongest_area?: string
+          strongest_area?: string | null
           trend?: string
           updated_at?: string
           user_id?: string
-          weakest_area?: string
+          weakest_area?: string | null
         }
         Relationships: []
       }
