@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 
@@ -73,17 +72,12 @@ function getTarget(specialty: string): number {
   return BASIC_SCIENCES.includes(specialty) ? TARGET_BASIC : TARGET_CLINICAL;
 }
 
-/** Ensures AI-generated topic names stay normalized to the parent specialty */
 function normalizeTopicToParent(generatedTopic: string, parentSpecialty: string): string {
   const normalized = String(generatedTopic || "").trim();
-  // If the generated topic is a known parent specialty, use it
   if (SPECIALTIES.includes(normalized)) return normalized;
-  // If it starts with the parent specialty name, collapse to parent
   if (normalized.toLowerCase().startsWith(parentSpecialty.toLowerCase())) return parentSpecialty;
-  // If it's a subtopic of the parent, keep parent
   const subtopics = TOPICS_BY_SPECIALTY[parentSpecialty];
   if (subtopics && subtopics.some(s => normalized.toLowerCase().includes(s.toLowerCase()))) return parentSpecialty;
-  // Default: use the parent specialty
   return parentSpecialty;
 }
 
@@ -95,89 +89,49 @@ function extractBalancedSegment(input: string, startChar: "{" | "[", endChar: "}
   let depth = 0;
   let inString = false;
   let escaped = false;
-
   for (let i = startIndex; i < input.length; i++) {
     const char = input[i];
-
-    if (escaped) {
-      escaped = false;
-      continue;
-    }
-
-    if (char === "\\") {
-      escaped = true;
-      continue;
-    }
-
-    if (char === '"') {
-      inString = !inString;
-      continue;
-    }
-
+    if (escaped) { escaped = false; continue; }
+    if (char === "\\") { escaped = true; continue; }
+    if (char === '"') { inString = !inString; continue; }
     if (inString) continue;
-
     if (char === startChar) depth++;
-    if (char === endChar) {
-      depth--;
-      if (depth === 0) return input.slice(startIndex, i + 1);
-    }
+    if (char === endChar) { depth--; if (depth === 0) return input.slice(startIndex, i + 1); }
   }
-
   return null;
 }
 
 function repairJsonCandidate(input: string): string {
-  return input
-    .replace(/,\s*([}\]])/g, "$1")
-    .replace(/([{,]\s*)([A-Za-z_][\w-]*)(\s*:)/g, '$1"$2"$3')
-    .replace(/\r?\n/g, " ")
-    .replace(/\t/g, " ")
-    .trim();
+  return input.replace(/,\s*([}\]])/g, "$1").replace(/([{,]\s*)([A-Za-z_][\w-]*)(\s*:)/g, '$1"$2"$3').replace(/\r?\n/g, " ").replace(/\t/g, " ").trim();
 }
 
 function normalizeGeneratedPayload(parsed: unknown): { questions: any[]; flashcards: any[] } | null {
-  if (Array.isArray(parsed)) {
-    return { questions: parsed, flashcards: [] };
-  }
-
+  if (Array.isArray(parsed)) return { questions: parsed, flashcards: [] };
   if (!parsed || typeof parsed !== "object") return null;
-
   const record = parsed as Record<string, unknown>;
   const questions = Array.isArray(record.questions) ? (record.questions as any[]) : [];
   const flashcards = Array.isArray(record.flashcards) ? (record.flashcards as any[]) : [];
-
   if (!questions.length && !flashcards.length) return null;
-
   return { questions, flashcards };
 }
 
 function extractArrayForKey(input: string, key: string): string | null {
   const match = new RegExp(`"?${key}"?\\s*:`, "i").exec(input);
   if (!match) return null;
-
   const arrayStart = input.indexOf("[", match.index + match[0].length);
   if (arrayStart === -1) return null;
-
   return extractBalancedSegment(input, "[", "]", arrayStart);
 }
 
 function parseGeneratedPayload(rawContent: string): { questions: any[]; flashcards: any[] } | null {
-  // Aggressive cleanup: strip markdown fences, leading prose, trailing text after JSON
-  let raw = sanitizeAiContent(rawContent)
-    .replace(/^[\s\S]*?```(?:json)?\s*/i, "")   // strip everything before ```json
-    .replace(/```[\s\S]*$/, "")                   // strip everything after closing ```
-    .trim();
+  let raw = sanitizeAiContent(rawContent).replace(/^[\s\S]*?```(?:json)?\s*/i, "").replace(/```[\s\S]*$/, "").trim();
   if (raw === sanitizeAiContent(rawContent).trim()) {
-    // No markdown fences found — just do basic cleanup
     raw = sanitizeAiContent(rawContent).replace(/```json\s*|```/gi, "").trim();
   }
   if (!raw) return null;
 
   const candidates: string[] = [];
-  const pushCandidate = (candidate?: string | null) => {
-    if (candidate && !candidates.includes(candidate)) candidates.push(candidate);
-  };
-
+  const pushCandidate = (candidate?: string | null) => { if (candidate && !candidates.includes(candidate)) candidates.push(candidate); };
   pushCandidate(raw);
   pushCandidate(repairJsonCandidate(raw));
 
@@ -200,46 +154,27 @@ function parseGeneratedPayload(rawContent: string): { questions: any[]; flashcar
     try {
       const normalized = normalizeGeneratedPayload(JSON.parse(candidate));
       if (normalized) return normalized;
-    } catch {
-      continue;
-    }
+    } catch { continue; }
   }
-
   return null;
 }
 
 async function getExactGlobalCount(supabaseAdmin: any, specialty: string): Promise<number> {
-  const { count } = await supabaseAdmin
-    .from("questions_bank")
-    .select("id", { count: "exact", head: true })
-    .eq("is_global", true)
-    .eq("topic", specialty);
-
+  const { count } = await supabaseAdmin.from("questions_bank").select("id", { count: "exact", head: true }).eq("is_global", true).eq("topic", specialty);
   return count || 0;
 }
 
 async function buildDeficits(supabaseAdmin: any, specialties: string[]) {
-  const counts = await Promise.all(
-    specialties.map(async (specialty) => ({
-      specialty,
-      current: await getExactGlobalCount(supabaseAdmin, specialty),
-      target: getTarget(specialty),
-    }))
-  );
-
-  return counts
-    .map((item) => ({
-      ...item,
-      deficit: Math.max(0, item.target - item.current),
-    }))
-    .filter((item) => item.deficit > 0)
-    .sort((a, b) => b.deficit - a.deficit);
+  const counts = await Promise.all(specialties.map(async (specialty) => ({
+    specialty, current: await getExactGlobalCount(supabaseAdmin, specialty), target: getTarget(specialty),
+  })));
+  return counts.map((item) => ({ ...item, deficit: Math.max(0, item.target - item.current) })).filter((item) => item.deficit > 0).sort((a, b) => b.deficit - a.deficit);
 }
 
 async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 10): Promise<{ questions: number; flashcards: number }> {
   const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5);
   const fcCount = Math.max(1, Math.min(5, Math.round(questionCount * 0.6)));
-  
+
   const prompt = `Gere EXATAMENTE ${questionCount} questões de múltipla escolha e ${fcCount} flashcards para Residência Médica.
 
 ESPECIALIDADE: ${specialty}
@@ -250,103 +185,59 @@ REGRAS PARA QUESTÕES:
 - Casos clínicos realistas com dados de anamnese, exame físico e exames complementares
 - EXATAMENTE 5 alternativas (A, B, C, D, E) sendo apenas 1 correta
 - Explicação detalhada com raciocínio clínico
-- Varie a dificuldade: 20% fácil (difficulty:2), 40% médio (difficulty:3), 40% difícil (difficulty:4-5). Priorize questões difíceis para provas de residência
+- Varie a dificuldade: 20% fácil (difficulty:2), 40% médio (difficulty:3), 40% difícil (difficulty:4-5)
 - Distribua entre os temas fornecidos
-
-ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA):
-- NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
 - Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
-- Variar: nomes regionais brasileiros, idades de 0 a 95 anos, profissões diversas
-- Alternar cenários: PS, enfermaria, UTI, UBS, SAMU, ambulatório, domicílio
-- Variar comorbidades de base: DM, HAS, IRC, HIV, tabagismo, etilismo, gestante
-- Variar queixa principal e tempo de evolução (horas, dias, semanas, meses)
-- Incluir pacientes: idosos frágeis, gestantes, crianças, imunossuprimidos, trabalhadores rurais
-- PROIBIDO: dois pacientes com mesmo perfil demográfico no mesmo bloco
-
-REGRA DE REPETIÇÃO ESPAÇADA (PRIORIDADE MÁXIMA):
-- PODE repetir o mesmo tema/doença, desde que haja pelo menos 2 itens de INTERVALO entre eles
-- Quando repetir, OBRIGATORIAMENTE use ENFOQUE DIFERENTE (ex: Q2=diagnóstico, Q5=tratamento, Q8=complicações)
 - NUNCA coloque dois itens do MESMO TEMA em posições CONSECUTIVAS
-- Distribua subtópicos: diagnóstico, tratamento, fisiopatologia, epidemiologia, complicações, prognóstico, prevenção
-- VERIFICAÇÃO PRÉ-ENVIO:
-  1. Algum tema aparece em posições CONSECUTIVAS? → Intercale com outro tema
-  2. Algum perfil de paciente se repete? → Diversifique obrigatoriamente
-  3. Os itens cobrem pelo menos 5 subtópicos DIFERENTES do tema? → Se não, redistribua
 
 REGRAS PARA FLASHCARDS:
 - Baseados em conceitos-chave dos mesmos temas
 - Pergunta objetiva e resposta completa mas concisa
-- Foco em: definições, diagnóstico diferencial, condutas, farmacologia
 
 FORMATO JSON OBRIGATÓRIO:
-{
-  "questions": [
-    {
-      "statement": "Caso clínico completo...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
-      "correct_index": 0,
-      "explanation": "Explicação detalhada...",
-      "topic": "${specialty}",
-      "difficulty": 3
-    }
-  ],
-  "flashcards": [
-    {
-      "question": "Pergunta do flashcard?",
-      "answer": "Resposta completa...",
-      "topic": "${specialty}"
-    }
-  ]
-}`;
+{"questions":[{"statement":"Caso clínico...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[{"question":"...","answer":"...","topic":"${specialty}"}]}`;
 
   try {
     const response = await aiFetch({
       model: "google/gemini-2.5-flash",
       timeoutMs: 120000,
-      maxRetries: 2,
+      maxRetries: 1,
       messages: [
-        { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA gere questões, alternativas, explicações ou flashcards em inglês. Inglês permitido APENAS em nomes de artigos/guidelines.\n\n⛔ CONTEÚDO PROIBIDO: NUNCA gere questões ou flashcards sobre declarações financeiras, conflitos de interesse, relações com empresas/indústrias farmacêuticas, honorários, pagamentos de palestrantes, vínculos empregatícios com laboratórios. Foque EXCLUSIVAMENTE em conteúdo clínico-científico para estudo médico." },
+        { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).\n\n⛔ CONTEÚDO PROIBIDO: NUNCA gere questões sobre declarações financeiras, conflitos de interesse, relações com empresas farmacêuticas." },
         { role: "user", content: prompt },
       ],
     });
 
-    if (!response.ok) {
-      console.error(`AI error for ${specialty}:`, await response.text());
-      return { questions: 0, flashcards: 0 };
-    }
+    if (!response.ok) { console.error(`AI error for ${specialty}:`, await response.text()); return { questions: 0, flashcards: 0 }; }
 
     const data = await response.json();
     const rawContent = String(data.choices?.[0]?.message?.content || "");
     let parsed = parseGeneratedPayload(rawContent);
 
     if (!parsed) {
-      console.error(`JSON parse failed for ${specialty}, content length: ${rawContent.length}, first 300 chars: ${sanitizeAiContent(rawContent).slice(0, 300)}`);
-      // Retry once with a simpler prompt
+      console.error(`JSON parse failed for ${specialty}, length: ${rawContent.length}`);
       try {
         console.log(`[${specialty}] Retrying with simplified prompt...`);
         const retryResponse = await aiFetch({
           model: "google/gemini-2.5-flash",
           timeoutMs: 90000,
-          maxRetries: 1,
+          maxRetries: 0,
           messages: [
             { role: "system", content: "Responda APENAS com JSON válido. Sem markdown, sem texto extra." },
-            { role: "user", content: `Gere ${questionCount} questões de múltipla escolha sobre ${specialty} para residência médica em PORTUGUÊS BRASILEIRO. Priorize dificuldade 4-5 (difícil).\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":4}],"flashcards":[]}` },
+            { role: "user", content: `Gere ${questionCount} questões sobre ${specialty} para residência médica em PT-BR.\n\nFormato:\n{"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":4}],"flashcards":[]}` },
           ],
         });
         if (retryResponse.ok) {
           const retryData = await retryResponse.json();
-          const retryRawContent = String(retryData.choices?.[0]?.message?.content || "");
-          parsed = parseGeneratedPayload(retryRawContent);
+          parsed = parseGeneratedPayload(String(retryData.choices?.[0]?.message?.content || ""));
         }
-      } catch (retryErr) {
-        console.error(`[${specialty}] Retry also failed:`, retryErr);
-      }
+      } catch (retryErr) { console.error(`[${specialty}] Retry failed:`, retryErr); }
     }
 
     if (!parsed) { console.error(`[${specialty}] All parse strategies failed`); return { questions: 0, flashcards: 0 }; }
 
-    const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
-    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
+    const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo)\b/i;
+    const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
       q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 && typeof q.correct_index === "number" &&
       String(q.statement).trim().length >= 400 &&
@@ -356,41 +247,25 @@ FORMATO JSON OBRIGATÓRIO:
 
     let qCount = 0;
     if (questions.length > 0) {
-      // Dedup: fetch existing hashes for this specialty
-      const { data: existing } = await supabaseAdmin
-        .from("questions_bank")
-        .select("statement")
-        .eq("is_global", true)
-        .eq("topic", specialty);
-      
-      const existingHashes = new Set(
-        (existing || []).map((e: any) => normalizeStatementKey(e.statement))
-      );
+      const { data: existing } = await supabaseAdmin.from("questions_bank").select("statement").eq("is_global", true).eq("topic", specialty);
+      const existingHashes = new Set((existing || []).map((e: any) => normalizeStatementKey(e.statement)));
 
-      const rows = questions
-        .map((q: any) => {
-          const rawTopic = String(q.topic || specialty).trim();
-          const normalizedTopic = normalizeTopicToParent(rawTopic, specialty);
-          return {
-            user_id: userId,
-            statement: String(q.statement).trim(),
-            options: q.options.map(String),
-            correct_index: q.correct_index,
-            explanation: String(q.explanation || "").trim(),
-            topic: normalizedTopic,
-            subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
-            difficulty: q.difficulty || (Math.random() < 0.5 ? 4 : 3),
-            source: "bulk-ai-generated",
-            is_global: true,
-            review_status: "pending",
-          };
-        })
-        .filter((r: any) => {
-          const hash = normalizeStatementKey(r.statement);
-          if (existingHashes.has(hash)) return false;
-          existingHashes.add(hash);
-          return true;
-        });
+      const rows = questions.map((q: any) => {
+        const rawTopic = String(q.topic || specialty).trim();
+        const normalizedTopic = normalizeTopicToParent(rawTopic, specialty);
+        return {
+          user_id: userId, statement: String(q.statement).trim(), options: q.options.map(String),
+          correct_index: q.correct_index, explanation: String(q.explanation || "").trim(),
+          topic: normalizedTopic, subtopic: rawTopic !== normalizedTopic ? rawTopic : null,
+          difficulty: q.difficulty || (Math.random() < 0.5 ? 4 : 3),
+          source: "bulk-ai-generated", is_global: true, review_status: "pending",
+        };
+      }).filter((r: any) => {
+        const hash = normalizeStatementKey(r.statement);
+        if (existingHashes.has(hash)) return false;
+        existingHashes.add(hash);
+        return true;
+      });
 
       if (rows.length > 0) {
         const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
@@ -404,13 +279,9 @@ FORMATO JSON OBRIGATÓRIO:
     let fCount = 0;
     if (flashcards.length > 0) {
       const fRows = flashcards.map((f: any) => ({
-        user_id: userId,
-        question: String(f.question).trim(),
-        answer: String(f.answer).trim(),
-        topic: String(f.topic || specialty).trim(),
-        is_global: true,
+        user_id: userId, question: String(f.question).trim(), answer: String(f.answer).trim(),
+        topic: String(f.topic || specialty).trim(), is_global: true,
       }));
-
       const { error } = await supabaseAdmin.from("flashcards").insert(fRows);
       if (!error) fCount = fRows.length;
       else console.error("F insert error:", error);
@@ -424,21 +295,10 @@ FORMATO JSON OBRIGATÓRIO:
 }
 
 async function importRealExamQuestions(specialty: string, supabaseAdmin: any, userId: string, limit: number): Promise<number> {
-  const { data: realQs } = await supabaseAdmin
-    .from("real_exam_questions")
-    .select("*")
-    .eq("topic", specialty)
-    .eq("is_active", true)
-    .limit(limit);
-
+  const { data: realQs } = await supabaseAdmin.from("real_exam_questions").select("*").eq("topic", specialty).eq("is_active", true).limit(limit);
   if (!realQs || realQs.length === 0) return 0;
 
-  const { data: existing } = await supabaseAdmin
-    .from("questions_bank")
-    .select("statement")
-    .eq("topic", specialty)
-    .eq("is_global", true);
-
+  const { data: existing } = await supabaseAdmin.from("questions_bank").select("statement").eq("topic", specialty).eq("is_global", true);
   const existingSet = new Set((existing || []).map((e: any) => normalizeStatementKey(e.statement)));
   const toInsert: any[] = [];
 
@@ -451,37 +311,189 @@ async function importRealExamQuestions(specialty: string, supabaseAdmin: any, us
   }
 
   if (toInsert.length === 0) return 0;
-
   const rows = toInsert.map((q: any) => ({
-    user_id: userId,
-    statement: q.statement,
-    options: q.options,
-    correct_index: q.correct_index,
-    explanation: q.explanation || "",
-    topic: specialty,
-    subtopic: q.subtopic || null,
-    difficulty: q.difficulty || 4,
-    source: "real_exam_import",
-    source_url: q.source_url,
-    is_global: true,
-    review_status: "pending",
+    user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct_index,
+    explanation: q.explanation || "", topic: specialty, subtopic: q.subtopic || null,
+    difficulty: q.difficulty || 4, source: "real_exam_import", source_url: q.source_url,
+    is_global: true, review_status: "pending",
   }));
 
   const { error } = await supabaseAdmin.from("questions_bank").insert(rows);
-  if (error) {
-    console.error("Real exam import error:", error);
-    return 0;
-  }
+  if (error) { console.error("Real exam import error:", error); return 0; }
   return rows.length;
 }
 
-serve(async (req) => {
+// ── Background processing functions ──
+async function processEqualize(jobId: string, body: any, userId: string, supabaseAdmin: any) {
+  try {
+    const requestedSpecialties = typeof body.specialty === "string" && body.specialty.trim()
+      ? [String(body.specialty).trim()] : SPECIALTIES;
+    const requestedBatchSize = Math.max(1, Math.min(Number(body.batchSize) || 25, 30));
+    const requestedMaxSpecialties = Math.max(1, Math.min(Number(body.maxSpecialties) || 5, 5));
+    const requestedImportLimit = Math.max(1, Math.min(Number(body.importLimit) || 50, 100));
+
+    const deficits = await buildDeficits(supabaseAdmin, requestedSpecialties);
+    const toProcess = deficits.slice(0, body.specialty ? 1 : requestedMaxSpecialties);
+
+    if (toProcess.length === 0) {
+      await supabaseAdmin.from("bulk_generation_jobs").update({
+        status: "completed", result: { message: "Todas as especialidades já atingiram o alvo!", results: [] }, updated_at: new Date().toISOString(),
+      }).eq("id", jobId);
+      return;
+    }
+
+    let totalQ = 0, totalF = 0, totalImported = 0;
+    const results: any[] = [];
+
+    for (const [index, item] of toProcess.entries()) {
+      try {
+        // Update progress
+        await supabaseAdmin.from("bulk_generation_jobs").update({
+          progress: { current: index + 1, total: toProcess.length, specialty: item.specialty },
+          updated_at: new Date().toISOString(),
+        }).eq("id", jobId);
+
+        const imported = await importRealExamQuestions(item.specialty, supabaseAdmin, userId, Math.min(item.deficit, requestedImportLimit));
+        totalImported += imported;
+
+        const remainingDeficit = Math.max(0, item.deficit - imported);
+        let genQ = 0, genF = 0;
+
+        if (remainingDeficit > 0) {
+          const topics = TOPICS_BY_SPECIALTY[item.specialty] || [item.specialty];
+          const batchSize = Math.min(requestedBatchSize, remainingDeficit);
+          const result = await generateBatch(item.specialty, topics, userId, supabaseAdmin, batchSize);
+          genQ = result.questions;
+          genF = result.flashcards;
+          totalQ += genQ;
+          totalF += genF;
+        }
+
+        const remainingAfter = Math.max(0, item.deficit - imported - genQ);
+        results.push({
+          specialty: item.specialty, previous: item.current, target: item.target, deficit: item.deficit,
+          imported, generated: genQ, flashcards: genF, remaining_after: remainingAfter,
+          completed: remainingAfter === 0,
+        });
+
+        console.log(`[equalize] ${index + 1}/${toProcess.length} ${item.specialty}: imported=${imported}, generated=${genQ}, remaining=${remainingAfter}`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Erro inesperado";
+        results.push({
+          specialty: item.specialty, previous: item.current, target: item.target, deficit: item.deficit,
+          imported: 0, generated: 0, flashcards: 0, remaining_after: item.deficit, completed: false, error: message,
+        });
+        console.error(`[equalize] ${item.specialty} failed:`, error);
+      }
+    }
+
+    // Log to daily_generation_log
+    try {
+      await supabaseAdmin.from("daily_generation_log").insert({
+        run_date: new Date().toISOString().split("T")[0],
+        questions_generated: totalImported + totalQ,
+        specialties_processed: results.map((r: any) => r.specialty),
+        status: results.some((r: any) => r.error) ? "partial" : "success",
+      });
+    } catch (logErr) { console.error("[equalize] Failed to write generation log:", logErr); }
+
+    const processedNames = new Set(results.map((r) => r.specialty));
+    const remainingDeficits = [
+      ...results.filter((r) => r.remaining_after > 0).map((r) => ({ specialty: r.specialty, deficit: r.remaining_after })),
+      ...deficits.filter((item) => !processedNames.has(item.specialty)).map((item) => ({ specialty: item.specialty, deficit: item.deficit })),
+    ];
+
+    await supabaseAdmin.from("bulk_generation_jobs").update({
+      status: "completed",
+      result: {
+        message: `Equalização: ${totalImported} importadas, ${totalQ} geradas por IA, ${totalF} flashcards`,
+        results, remaining_deficits: remainingDeficits,
+        total_imported: totalImported, total_generated: totalQ, total_flashcards: totalF,
+        total_specialties_in_run: toProcess.length, specialties_remaining: remainingDeficits.length,
+        questions_remaining: remainingDeficits.reduce((sum, item) => sum + item.deficit, 0),
+      },
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+  } catch (err) {
+    console.error("[equalize] Fatal error:", err);
+    await supabaseAdmin.from("bulk_generation_jobs").update({
+      status: "failed", error: err instanceof Error ? err.message : String(err), updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+  }
+}
+
+async function processNormalMode(jobId: string, body: any, userId: string, supabaseAdmin: any) {
+  try {
+    const batchCount = body.batches || 3;
+    const targetQuestions = body.target || 5000;
+
+    const { count: currentCount } = await supabaseAdmin.from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true);
+    const remaining = targetQuestions - (currentCount || 0);
+
+    if (remaining <= 0) {
+      await supabaseAdmin.from("bulk_generation_jobs").update({
+        status: "completed", result: { message: `Já atingimos ${currentCount} questões globais!`, current_questions: currentCount, target: targetQuestions },
+        updated_at: new Date().toISOString(),
+      }).eq("id", jobId);
+      return;
+    }
+
+    const { data: topicCounts } = await supabaseAdmin.from("questions_bank").select("topic").eq("is_global", true);
+    const countByTopic: Record<string, number> = {};
+    (topicCounts || []).forEach((r: any) => { const t = r.topic || "Geral"; countByTopic[t] = (countByTopic[t] || 0) + 1; });
+
+    const sorted = [...SPECIALTIES].sort((a, b) => (countByTopic[a] || 0) - (countByTopic[b] || 0));
+    const selected = sorted.slice(0, batchCount);
+
+    let totalQ = 0, totalF = 0;
+    for (const [index, spec] of selected.entries()) {
+      await supabaseAdmin.from("bulk_generation_jobs").update({
+        progress: { current: index + 1, total: selected.length, specialty: spec }, updated_at: new Date().toISOString(),
+      }).eq("id", jobId);
+
+      const topics = TOPICS_BY_SPECIALTY[spec] || [spec];
+      const result = await generateBatch(spec, topics, userId, supabaseAdmin);
+      totalQ += result.questions;
+      totalF += result.flashcards;
+      console.log(`${spec}: ${result.questions}Q, ${result.flashcards}F`);
+    }
+
+    const { count: newCount } = await supabaseAdmin.from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true);
+    const { count: flashcardCount } = await supabaseAdmin.from("flashcards").select("*", { count: "exact", head: true }).eq("is_global", true);
+
+    await supabaseAdmin.from("bulk_generation_jobs").update({
+      status: "completed",
+      result: {
+        message: `Geradas ${totalQ} questões e ${totalF} flashcards`,
+        questions_added: totalQ, flashcards_added: totalF, total_questions: newCount,
+        total_flashcards: flashcardCount, specialties_processed: selected, target: targetQuestions,
+      },
+      updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+  } catch (err) {
+    console.error("[normal] Fatal error:", err);
+    await supabaseAdmin.from("bulk_generation_jobs").update({
+      status: "failed", error: err instanceof Error ? err.message : String(err), updated_at: new Date().toISOString(),
+    }).eq("id", jobId);
+  }
+}
+
+// ── Check job status endpoint ──
+function isStatusCheck(url: URL): string | null {
+  const jobId = url.searchParams.get("job_id");
+  return jobId;
+}
+
+// ── Main handler ──
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const url = new URL(req.url);
+
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -491,218 +503,63 @@ serve(async (req) => {
 
     const token = authHeader.replace("Bearer ", "");
     let userId: string;
-    
+
     if (token === serviceRoleKey) {
-      const { data: adminRole } = await supabaseAdmin
-        .from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
+      const { data: adminRole } = await supabaseAdmin.from("user_roles").select("user_id").eq("role", "admin").limit(1).maybeSingle();
       userId = adminRole?.user_id || "92736dea-6422-48ff-8330-de9f0d1094e9";
     } else {
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
+      const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
       const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(token);
       const uid = claimsData?.claims?.sub as string | undefined;
       if (claimsError || !uid) {
-        console.error("[bulk-generate-content] Auth error:", claimsError?.message);
-        return new Response(JSON.stringify({ error: "Token inválido. Faça login novamente." }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ error: "Token inválido. Faça login novamente." }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
-      
-      const { data: roleData } = await supabaseAdmin
-        .from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
+      const { data: roleData } = await supabaseAdmin.from("user_roles").select("role").eq("user_id", uid).eq("role", "admin").maybeSingle();
       if (!roleData) {
-        return new Response(JSON.stringify({ error: "Acesso negado. Apenas administradores." }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ error: "Acesso negado. Apenas administradores." }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       userId = uid;
     }
 
+    // ── Status check ──
+    const checkJobId = isStatusCheck(url);
+    if (checkJobId && req.method === "GET") {
+      const { data: job } = await supabaseAdmin.from("bulk_generation_jobs").select("*").eq("id", checkJobId).single();
+      if (!job) {
+        return new Response(JSON.stringify({ error: "Job not found" }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      return new Response(JSON.stringify(job), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    // ── Create job and process in background ──
     const body = await req.json().catch(() => ({}));
+    const mode = body.equalize ? "equalize" : "normal";
 
-    // ===== EQUALIZE MODE =====
-    if (body.equalize) {
-      const requestedSpecialties = typeof body.specialty === "string" && body.specialty.trim()
-        ? [String(body.specialty).trim()]
-        : SPECIALTIES;
-      const requestedBatchSize = Math.max(1, Math.min(Number(body.batchSize) || 25, 30));
-      const requestedMaxSpecialties = Math.max(1, Math.min(Number(body.maxSpecialties) || 5, 5));
-      const requestedImportLimit = Math.max(1, Math.min(Number(body.importLimit) || 50, 100));
+    const { data: job, error: jobErr } = await supabaseAdmin.from("bulk_generation_jobs").insert({
+      status: "processing", mode, specialty: body.specialty || null, user_id: userId, progress: { current: 0, total: 0 },
+    }).select().single();
 
-      const deficits = await buildDeficits(supabaseAdmin, requestedSpecialties);
-      const toProcess = deficits.slice(0, body.specialty ? 1 : requestedMaxSpecialties);
-
-      if (toProcess.length === 0) {
-        return new Response(JSON.stringify({
-          message: "Todas as especialidades já atingiram o alvo!",
-          results: [],
-          remaining_deficits: [],
-          total_imported: 0,
-          total_generated: 0,
-          total_flashcards: 0,
-          total_specialties_in_run: 0,
-          specialties_remaining: 0,
-          questions_remaining: 0,
-        }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      let totalQ = 0;
-      let totalF = 0;
-      let totalImported = 0;
-      const results: any[] = [];
-
-      for (const [index, item] of toProcess.entries()) {
-        try {
-          const imported = await importRealExamQuestions(
-            item.specialty,
-            supabaseAdmin,
-            userId,
-            Math.min(item.deficit, requestedImportLimit)
-          );
-          totalImported += imported;
-
-          const remainingDeficit = Math.max(0, item.deficit - imported);
-          let genQ = 0;
-          let genF = 0;
-
-          if (remainingDeficit > 0) {
-            const topics = TOPICS_BY_SPECIALTY[item.specialty] || [item.specialty];
-            const batchSize = Math.min(requestedBatchSize, remainingDeficit);
-            const result = await generateBatch(item.specialty, topics, userId, supabaseAdmin, batchSize);
-            genQ = result.questions;
-            genF = result.flashcards;
-            totalQ += genQ;
-            totalF += genF;
-          }
-
-          const remainingAfter = Math.max(0, item.deficit - imported - genQ);
-          results.push({
-            specialty: item.specialty,
-            previous: item.current,
-            target: item.target,
-            deficit: item.deficit,
-            imported,
-            generated: genQ,
-            flashcards: genF,
-            remaining_after: remainingAfter,
-            processed_index: index + 1,
-            total_to_process: toProcess.length,
-            completed: remainingAfter === 0,
-          });
-
-          console.log(`[equalize] ${index + 1}/${toProcess.length} ${item.specialty}: imported=${imported}, generated=${genQ}, remaining=${remainingAfter}`);
-        } catch (error) {
-          const message = error instanceof Error ? error.message : "Erro inesperado";
-          results.push({
-            specialty: item.specialty,
-            previous: item.current,
-            target: item.target,
-            deficit: item.deficit,
-            imported: 0,
-            generated: 0,
-            flashcards: 0,
-            remaining_after: item.deficit,
-            processed_index: index + 1,
-            total_to_process: toProcess.length,
-            completed: false,
-            error: message,
-          });
-          console.error(`[equalize] ${item.specialty} failed:`, error);
-        }
-      }
-
-      const processedNames = new Set(results.map((result) => result.specialty));
-      const remainingDeficits = [
-        ...results
-          .filter((result) => result.remaining_after > 0)
-          .map((result) => ({ specialty: result.specialty, deficit: result.remaining_after })),
-        ...deficits
-          .filter((item) => !processedNames.has(item.specialty))
-          .map((item) => ({ specialty: item.specialty, deficit: item.deficit })),
-      ];
-      const questionsRemaining = remainingDeficits.reduce((sum, item) => sum + item.deficit, 0);
-
-      // Log to daily_generation_log for admin panel tracking
-      try {
-        await supabaseAdmin.from("daily_generation_log").insert({
-          run_date: new Date().toISOString().split("T")[0],
-          questions_generated: totalImported + totalQ,
-          specialties_processed: results.map((r: any) => r.specialty),
-          status: results.some((r: any) => r.error) ? "partial" : "success",
-        });
-      } catch (logErr) {
-        console.error("[equalize] Failed to write generation log:", logErr);
-      }
-
-      return new Response(JSON.stringify({
-        message: `Equalização: ${totalImported} importadas, ${totalQ} geradas por IA, ${totalF} flashcards`,
-        results,
-        remaining_deficits: remainingDeficits,
-        total_imported: totalImported,
-        total_generated: totalQ,
-        total_flashcards: totalF,
-        total_specialties_in_run: toProcess.length,
-        specialties_remaining: remainingDeficits.length,
-        questions_remaining: questionsRemaining,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (jobErr || !job) {
+      return new Response(JSON.stringify({ error: "Falha ao criar job" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // ===== NORMAL MODE =====
-    const batchCount = body.batches || 3;
-    const targetQuestions = body.target || 5000;
+    // Start background processing
+    EdgeRuntime.waitUntil(
+      (mode === "equalize"
+        ? processEqualize(job.id, body, userId, supabaseAdmin)
+        : processNormalMode(job.id, body, userId, supabaseAdmin)
+      ).catch(async (error) => {
+        console.error("[bulk-generate] Background error:", error);
+        await supabaseAdmin.from("bulk_generation_jobs").update({
+          status: "failed", error: error instanceof Error ? error.message : String(error), updated_at: new Date().toISOString(),
+        }).eq("id", job.id);
+      })
+    );
 
-    const { count: currentCount } = await supabaseAdmin
-      .from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true);
-    
-    const remaining = targetQuestions - (currentCount || 0);
-    if (remaining <= 0) {
-      return new Response(JSON.stringify({ 
-        message: `Já atingimos ${currentCount} questões globais!`,
-        current_questions: currentCount,
-        target: targetQuestions,
-      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const { data: topicCounts } = await supabaseAdmin
-      .from("questions_bank")
-      .select("topic")
-      .eq("is_global", true);
-    
-    const countByTopic: Record<string, number> = {};
-    (topicCounts || []).forEach((r: any) => {
-      const t = r.topic || "Geral";
-      countByTopic[t] = (countByTopic[t] || 0) + 1;
-    });
-
-    const sorted = [...SPECIALTIES].sort((a, b) => (countByTopic[a] || 0) - (countByTopic[b] || 0));
-    const selected = sorted.slice(0, batchCount);
-
-    let totalQ = 0, totalF = 0;
-    for (const spec of selected) {
-      const topics = TOPICS_BY_SPECIALTY[spec] || [spec];
-      console.log(`Generating for ${spec}...`);
-      const result = await generateBatch(spec, topics, userId, supabaseAdmin);
-      totalQ += result.questions;
-      totalF += result.flashcards;
-      console.log(`${spec}: ${result.questions}Q, ${result.flashcards}F`);
-    }
-
-    const { count: newCount } = await supabaseAdmin
-      .from("questions_bank").select("*", { count: "exact", head: true }).eq("is_global", true);
-    const { count: flashcardCount } = await supabaseAdmin
-      .from("flashcards").select("*", { count: "exact", head: true }).eq("is_global", true);
-
+    // Return immediately with job ID
     return new Response(JSON.stringify({
-      message: `Geradas ${totalQ} questões e ${totalF} flashcards`,
-      questions_added: totalQ,
-      flashcards_added: totalF,
-      total_questions: newCount,
-      total_flashcards: flashcardCount,
-      specialties_processed: selected,
-      target: targetQuestions,
+      job_id: job.id, status: "processing", mode,
+      message: "Geração iniciada em background. Use o job_id para acompanhar o progresso.",
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
