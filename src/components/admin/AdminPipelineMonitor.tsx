@@ -10,6 +10,7 @@ import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import AlertActions from "./pipeline/AlertActions";
+import { Search } from "lucide-react";
 
 interface PipelineRun {
   id: string;
@@ -60,6 +61,7 @@ export default function AdminPipelineMonitor() {
   const queryClient = useQueryClient();
   const [showAcknowledged, setShowAcknowledged] = useState(false);
   const [selectedType, setSelectedType] = useState("ecg");
+  const [selectedCurationType, setSelectedCurationType] = useState("ecg");
 
   const runPipelineMutation = useMutation({
     mutationFn: async (datasetType: string) => {
@@ -76,6 +78,22 @@ export default function AdminPipelineMonitor() {
     },
     onError: (err: any) => {
       toast.error(`Erro no pipeline: ${err.message || "Erro desconhecido"}`);
+    },
+  });
+
+  const curateMutation = useMutation({
+    mutationFn: async (imageType: string) => {
+      const { data, error } = await supabase.functions.invoke("auto-curate-assets", {
+        body: { image_type: imageType, max_per_query: 5 },
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(`Curadoria concluída: ${data?.total_registered || 0} novos assets registrados para ${data?.image_type}`);
+    },
+    onError: (err: any) => {
+      toast.error(`Erro na curadoria: ${err.message || "Erro desconhecido"}`);
     },
   });
 
@@ -241,6 +259,51 @@ export default function AdminPipelineMonitor() {
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">
             Gera questões para assets pendentes (batch de 10). Modo: questions_only.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Auto-Curation */}
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Search className="h-4 w-4 text-primary" />
+            Curadoria Automática (Open-i / NIH)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3">
+            <Select value={selectedCurationType} onValueChange={setSelectedCurationType}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ecg">❤️ ECG</SelectItem>
+                <SelectItem value="xray">🫁 Raio-X</SelectItem>
+                <SelectItem value="dermatology">🩹 Dermato</SelectItem>
+                <SelectItem value="ct">🧠 TC</SelectItem>
+                <SelectItem value="ophthalmology">👁️ Oftalmo</SelectItem>
+                <SelectItem value="us">📡 US</SelectItem>
+                <SelectItem value="pathology">🔬 Patologia</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              size="sm"
+              className="h-8 text-xs gap-1.5"
+              variant="outline"
+              onClick={() => curateMutation.mutate(selectedCurationType)}
+              disabled={curateMutation.isPending}
+            >
+              {curateMutation.isPending ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Search className="h-3 w-3" />
+              )}
+              {curateMutation.isPending ? "Buscando..." : "Buscar Imagens"}
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-2">
+            Busca imagens open-access no Open-i (NIH) e registra como assets pendentes. Após registrar, execute o Pipeline para gerar questões.
           </p>
         </CardContent>
       </Card>
