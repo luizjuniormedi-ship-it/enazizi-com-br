@@ -71,3 +71,7 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.ingest-nih-xrays]
     verify_jwt = false
+  [functions.generate-image-questions-secure]
+    verify_jwt = false
+  [functions.run-pipeline]
+    verify_jwt = false
