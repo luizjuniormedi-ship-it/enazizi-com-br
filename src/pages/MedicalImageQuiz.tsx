@@ -72,7 +72,7 @@ const SELECT_FIELDS = `
   medical_image_assets!inner(
     image_url, image_type, diagnosis, is_active,
     review_status, clinical_confidence, integrity_status,
-    validation_level, asset_origin, ai_validated
+    validation_level, asset_origin, ai_validated, quality_gate_passed
   )
 `;
 
@@ -114,6 +114,7 @@ function isRenderableMedicalImage(asset: any): boolean {
   if (!asset) return false;
   if (!isValidMedicalImageUrl(asset.image_url)) return false;
   if (asset.ai_validated === false) return false;
+  if (asset.quality_gate_passed === false) return false;
   if (asset.integrity_status && asset.integrity_status !== "ok") return false;
   if (asset.image_type && !VALID_IMAGE_TYPES.includes(asset.image_type)) return false;
   return true;
