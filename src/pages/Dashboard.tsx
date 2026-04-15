@@ -231,14 +231,17 @@ const Dashboard = () => {
   const smartAlerts = useMemo(() => {
     const alerts: SmartAlert[] = [];
     if (visualSkill) {
-      if (visualSkill.trend === "declining" && visualSkill.weakestArea) {
+      // Check weakest category trend
+      const weakCat = visualSkill.categories.find(c => c.imageType === visualSkill.weakestArea);
+      const strongCat = visualSkill.categories.find(c => c.imageType === visualSkill.strongestArea);
+      if (weakCat?.trend === "declining" && visualSkill.weakestArea) {
         alerts.push({
           id: "visual-decline",
           type: "warning",
           message: `Seu desempenho em ${visualSkill.weakestArea.toUpperCase()} caiu nos últimos dias`,
         });
       }
-      if (visualSkill.trend === "improving" && visualSkill.strongestArea) {
+      if (strongCat?.trend === "improving" && visualSkill.strongestArea) {
         alerts.push({
           id: "visual-improve",
           type: "success",
