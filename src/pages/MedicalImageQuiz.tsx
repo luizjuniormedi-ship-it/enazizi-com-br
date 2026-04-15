@@ -462,13 +462,24 @@ const MedicalImageQuiz = () => {
       const { data, error } = await supabase.functions.invoke("generate-image-questions-secure", {
         body: { batch_size: 5 },
       });
-      if (error) throw error;
+      if (error) {
+        console.error("GENERATE ERROR:", error);
+        throw error;
+      }
       const generated = data?.generated || 0;
+      const processed = data?.processed || 0;
+      const failed = data?.failed || 0;
+      console.log("GENERATED QUESTIONS:", generated, "processed:", processed, "failed:", failed);
       if (generated > 0) {
         toast.success(`${generated} novas questões geradas com sucesso!`);
         queryClient.invalidateQueries({ queryKey: ["image-quiz-questions"] });
+      } else if (processed === 0) {
+        toast.info("Todos os assets já possuem questões. Nenhum pendente.");
       } else {
-        toast.info("Nenhum asset pendente para gerar questões.");
+        toast.warning(`${processed} assets processados, mas ${failed} falharam. Verifique os logs.`);
+      }
+      if (data?.errors?.length > 0) {
+        console.warn("Generation errors:", data.errors);
       }
     } catch (err: any) {
       toast.error("Erro ao gerar questões: " + (err.message || "tente novamente"));
@@ -607,9 +618,9 @@ const MedicalImageQuiz = () => {
       {questions.length === 0 ? (
         <Card className="p-12 text-center">
           <ImageIcon className="h-16 w-16 mx-auto text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Banco sendo atualizado</h3>
-          <p className="text-muted-foreground">Estamos ampliando o acervo de imagens médicas. Novas questões serão disponibilizadas em breve.</p>
-          <p className="text-xs text-muted-foreground mt-2">Tente remover os filtros ou volte mais tarde.</p>
+          <h3 className="text-lg font-semibold mb-2">Não há imagens médicas suficientes para este filtro</h3>
+          <p className="text-muted-foreground">Apenas imagens médicas reais validadas são exibidas neste quiz.</p>
+          <p className="text-xs text-muted-foreground mt-2">Tente remover os filtros de tipo ou dificuldade, ou clique em "Gerar Questões" para criar novas.</p>
         </Card>
       ) : quizMode === "quiz" && currentQuestion ? (
         <>
