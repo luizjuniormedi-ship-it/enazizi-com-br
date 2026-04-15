@@ -367,7 +367,6 @@ const MedicalImageQuiz = () => {
     mutationFn: async (params: { assetId: string | null; selectedIndex: number; correct: boolean; timeSeconds: number; imageType?: string; questionId?: string }) => {
       const { error } = await supabase.from("medical_image_attempts").insert({
         user_id: user!.id,
-        image_id: params.questionId || "unknown",
         asset_id: params.assetId || null,
         selected_index: params.selectedIndex,
         correct: params.correct,
