@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw, ShieldCheck, ShieldX } from "lucide-react";
+import { BarChart3, Target, AlertTriangle, TrendingUp, Loader2, RefreshCw, ShieldCheck, ShieldX, Zap, Clock } from "lucide-react";
 import { toast } from "sonner";
 
 interface PrioritizedItem {
@@ -29,6 +29,7 @@ interface GapSummary {
 const PipelineOptimizationPanel = () => {
   const [selectedType, setSelectedType] = useState("xray");
   const [isPlanning, setIsPlanning] = useState(false);
+  const [isAutoRunning, setIsAutoRunning] = useState(false);
   const [planResult, setPlanResult] = useState<{
     batch: PrioritizedItem[];
     gap_summary: GapSummary;
@@ -48,6 +49,20 @@ const PipelineOptimizationPanel = () => {
     },
   });
 
+  // Auto-gap status
+  const { data: gapFillState, refetch: refetchGapState } = useQuery({
+    queryKey: ["gap-fill-state"],
+    queryFn: async () => {
+      const { data: logs } = await supabase
+        .from("gap_fill_logs" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(3);
+      return { logs: logs || [] };
+    },
+    refetchInterval: 30000,
+  });
+
   const { data: gapData, isLoading: gapLoading, refetch: refetchGap } = useQuery({
     queryKey: ["content-gaps", selectedType],
     queryFn: async () => {
@@ -55,6 +70,23 @@ const PipelineOptimizationPanel = () => {
       return data;
     },
   });
+
+  const handleAutoGap = async () => {
+    setIsAutoRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("auto-gap-pipeline", {
+        body: { mode: "force", image_types: [selectedType] },
+      });
+      if (error) throw error;
+      toast.success(`Pipeline automático: ${data.total_questions} questões geradas`);
+      refetchGap();
+      refetchGapState();
+    } catch (err: any) {
+      toast.error("Erro: " + (err.message || "falha"));
+    } finally {
+      setIsAutoRunning(false);
+    }
+  };
 
   const handlePlanBatch = async () => {
     setIsPlanning(true);
@@ -180,13 +212,43 @@ const PipelineOptimizationPanel = () => {
         </div>
       ) : null}
 
-      {/* Plan Button */}
+      {/* Auto Gap-Fill Status */}
+      {gapFillState?.logs && gapFillState.logs.length > 0 && (
+        <div className="bg-muted/20 rounded-lg p-2.5 space-y-1.5">
+          <p className="text-xs font-medium flex items-center gap-1.5">
+            <Zap className="h-3.5 w-3.5 text-primary" />
+            Preenchimento Automático
+          </p>
+          {gapFillState.logs.slice(0, 2).map((log: any, i: number) => (
+            <div key={i} className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                {new Date(log.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+              </span>
+              <span>
+                {log.gaps_detected || 0} lacunas → {log.questions_generated || 0} questões
+              </span>
+              <Badge variant={log.status === "completed" ? "default" : "secondary"} className="text-[9px]">
+                {log.status}
+              </Badge>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Plan Buttons */}
       <div className="flex gap-2">
-        <Button onClick={handlePlanBatch} disabled={isPlanning} size="sm" className="flex-1 gap-1.5">
-          {isPlanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Target className="h-4 w-4" />}
-          {isPlanning ? "Calculando..." : "Planejar Próximo Lote"}
+        <Button onClick={handleAutoGap} disabled={isAutoRunning} size="sm" variant="default" className="flex-1 gap-1.5">
+          {isAutoRunning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+          {isAutoRunning ? "Preenchendo..." : "Auto-Preencher Lacunas"}
         </Button>
-        <Button onClick={() => refetchGap()} variant="outline" size="sm">
+      </div>
+      <div className="flex gap-2">
+        <Button onClick={handlePlanBatch} disabled={isPlanning} size="sm" variant="outline" className="flex-1 gap-1.5">
+          {isPlanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Target className="h-4 w-4" />}
+          {isPlanning ? "Calculando..." : "Planejar Lote"}
+        </Button>
+        <Button onClick={() => { refetchGap(); refetchGapState(); }} variant="outline" size="sm">
           <RefreshCw className="h-4 w-4" />
         </Button>
       </div>
