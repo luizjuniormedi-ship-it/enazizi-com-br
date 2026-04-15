@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -32,6 +32,7 @@ import ImageQuestionUpgradePanel from "@/components/admin/ImageQuestionUpgradePa
 import AdminImageQuestionReviewPanel from "@/components/admin/AdminImageQuestionReviewPanel";
 import AdminModalityPanel from "@/components/admin/AdminModalityPanel";
 import AdminHygieneDashboard from "@/components/admin/AdminHygieneDashboard";
+import AdminLargeUploadPanel from "@/components/admin/AdminLargeUploadPanel";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
 const Admin = () => {
@@ -410,6 +411,9 @@ const Admin = () => {
             <TabsTrigger value="multimodal" className="gap-1.5">
               <ImageIcon className="h-3.5 w-3.5" /> Multimodal
             </TabsTrigger>
+            <TabsTrigger value="upload2gb" className="gap-1.5">
+              <HardDrive className="h-3.5 w-3.5" /> Upload 2GB
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="whatsapp">
@@ -451,7 +455,11 @@ const Admin = () => {
             <AdminModalityPanel />
           </TabsContent>
 
-          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" || activeTab === "uploads" || activeTab === "qa" || activeTab === "flags" || activeTab === "multimodal" ? "__none__" : activeTab}>
+          <TabsContent value="upload2gb">
+            <AdminLargeUploadPanel />
+          </TabsContent>
+
+          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" || activeTab === "uploads" || activeTab === "qa" || activeTab === "flags" || activeTab === "multimodal" || activeTab === "upload2gb" ? "__none__" : activeTab}>
             {loading ? (
               <div className="flex justify-center py-12">
                 <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
