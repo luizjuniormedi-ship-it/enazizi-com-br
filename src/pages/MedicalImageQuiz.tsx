@@ -353,12 +353,12 @@ const MedicalImageQuiz = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("medical_image_attempts")
-        .select("correct, image_id")
+        .select("correct, asset_id")
         .eq("user_id", user!.id);
       if (error) throw error;
       const total = data?.length || 0;
       const correct = data?.filter((a: any) => a.correct).length || 0;
-      const uniqueImages = new Set(data?.map((a: any) => a.image_id)).size;
+      const uniqueImages = new Set(data?.map((a: any) => a.asset_id).filter(Boolean)).size;
       return { total, correct, accuracy: total > 0 ? Math.round((correct / total) * 100) : 0, uniqueImages };
     },
   });
