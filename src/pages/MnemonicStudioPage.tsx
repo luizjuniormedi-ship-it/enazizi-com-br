@@ -767,8 +767,41 @@ export default function MnemonicGeneratorPage() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={handleCopyAll}><Copy className="h-4 w-4 mr-1" /> Copiar tudo</Button>
             <Button variant="outline" size="sm" onClick={handleFavorite} disabled={favoriteMutation.isPending}><Heart className="h-4 w-4 mr-1" /> Favoritar</Button>
-            <Button variant="outline" size="sm" onClick={() => setFeedbackOpen(true)}><MessageSquare className="h-4 w-4 mr-1" /> Feedback</Button>
+            <Button variant="outline" size="sm" onClick={() => setFeedbackOpen(true)}><MessageSquare className="h-4 w-4 mr-1" /> Feedback detalhado</Button>
           </div>
+
+          {/* ═══ QUICK FEEDBACK ═══ */}
+          <Card className="border-muted">
+            <CardContent className="py-3 flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-muted-foreground">Este mnemônico ajudou?</span>
+              <div className="flex gap-2">
+                <Button
+                  variant={quickFeedback === "muito" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickFeedback("muito")}
+                  className={quickFeedback === "muito" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                >
+                  <ThumbsUp className="h-3.5 w-3.5 mr-1" /> Muito
+                </Button>
+                <Button
+                  variant={quickFeedback === "pouco" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickFeedback("pouco")}
+                  className={quickFeedback === "pouco" ? "bg-amber-600 hover:bg-amber-700" : ""}
+                >
+                  <Minus className="h-3.5 w-3.5 mr-1" /> Pouco
+                </Button>
+                <Button
+                  variant={quickFeedback === "nada" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickFeedback("nada")}
+                  className={quickFeedback === "nada" ? "bg-red-600 hover:bg-red-700" : ""}
+                >
+                  <ThumbsDown className="h-3.5 w-3.5 mr-1" /> Não
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="flex flex-wrap gap-2">
             <span className="text-xs text-muted-foreground self-center mr-1">Regenerar:</span>
