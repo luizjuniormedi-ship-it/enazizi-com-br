@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive } from "lucide-react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -8,33 +8,125 @@ import { useAuth } from "@/hooks/useAuth";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
-import WhatsAppPanel from "@/components/admin/WhatsAppPanel";
-import TelegramConfigPanel from "@/components/admin/TelegramConfigPanel";
-import AdminStatsCards from "@/components/admin/AdminStatsCards";
-import AdminOnlineUsers from "@/components/admin/AdminOnlineUsers";
-import AdminPlanDistribution from "@/components/admin/AdminPlanDistribution";
-import AdminDailyGenerationAlert from "@/components/admin/AdminDailyGenerationAlert";
-import AdminPipelineMonitor from "@/components/admin/AdminPipelineMonitor";
-import AdminWebScrapingPanel from "@/components/admin/AdminWebScrapingPanel";
-import AdminIngestionPanel from "@/components/admin/AdminIngestionPanel";
-import AdminQuestionReviewPanel from "@/components/admin/AdminQuestionReviewPanel";
-import AdminAuditLog from "@/components/admin/AdminAuditLog";
-import AdminDialogs from "@/components/admin/AdminDialogs";
-import AdminUserRow from "@/components/admin/AdminUserRow";
-import AdminFeedbackPanel from "@/components/admin/AdminFeedbackPanel";
-import AdminMessagesPanel from "@/components/admin/AdminMessagesPanel";
-import AdminBIPanel from "@/components/admin/AdminBIPanel";
-import AdminUploadsPanel from "@/components/admin/AdminUploadsPanel";
-import AdminHealthHistory from "@/components/admin/AdminHealthHistory";
-import AdminQAPanel from "@/components/admin/AdminQAPanel";
-import AdminFeatureFlags from "@/components/admin/AdminFeatureFlags";
-import ImageQuestionUpgradePanel from "@/components/admin/ImageQuestionUpgradePanel";
-import AdminImageQuestionReviewPanel from "@/components/admin/AdminImageQuestionReviewPanel";
-import AdminModalityPanel from "@/components/admin/AdminModalityPanel";
-import AdminHygieneDashboard from "@/components/admin/AdminHygieneDashboard";
-import AdminLargeUploadPanel from "@/components/admin/AdminLargeUploadPanel";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
 
+// Lazy load all admin panels
+const WhatsAppPanel = lazy(() => import("@/components/admin/WhatsAppPanel"));
+const TelegramConfigPanel = lazy(() => import("@/components/admin/TelegramConfigPanel"));
+const AdminStatsCards = lazy(() => import("@/components/admin/AdminStatsCards"));
+const AdminOnlineUsers = lazy(() => import("@/components/admin/AdminOnlineUsers"));
+const AdminPlanDistribution = lazy(() => import("@/components/admin/AdminPlanDistribution"));
+const AdminDailyGenerationAlert = lazy(() => import("@/components/admin/AdminDailyGenerationAlert"));
+const AdminPipelineMonitor = lazy(() => import("@/components/admin/AdminPipelineMonitor"));
+const AdminWebScrapingPanel = lazy(() => import("@/components/admin/AdminWebScrapingPanel"));
+const AdminIngestionPanel = lazy(() => import("@/components/admin/AdminIngestionPanel"));
+const AdminQuestionReviewPanel = lazy(() => import("@/components/admin/AdminQuestionReviewPanel"));
+const AdminAuditLog = lazy(() => import("@/components/admin/AdminAuditLog"));
+const AdminDialogs = lazy(() => import("@/components/admin/AdminDialogs"));
+const AdminUserRow = lazy(() => import("@/components/admin/AdminUserRow"));
+const AdminFeedbackPanel = lazy(() => import("@/components/admin/AdminFeedbackPanel"));
+const AdminMessagesPanel = lazy(() => import("@/components/admin/AdminMessagesPanel"));
+const AdminBIPanel = lazy(() => import("@/components/admin/AdminBIPanel"));
+const AdminUploadsPanel = lazy(() => import("@/components/admin/AdminUploadsPanel"));
+const AdminHealthHistory = lazy(() => import("@/components/admin/AdminHealthHistory"));
+const AdminQAPanel = lazy(() => import("@/components/admin/AdminQAPanel"));
+const AdminFeatureFlags = lazy(() => import("@/components/admin/AdminFeatureFlags"));
+const ImageQuestionUpgradePanel = lazy(() => import("@/components/admin/ImageQuestionUpgradePanel"));
+const AdminImageQuestionReviewPanel = lazy(() => import("@/components/admin/AdminImageQuestionReviewPanel"));
+const AdminModalityPanel = lazy(() => import("@/components/admin/AdminModalityPanel"));
+const AdminHygieneDashboard = lazy(() => import("@/components/admin/AdminHygieneDashboard"));
+const AdminLargeUploadPanel = lazy(() => import("@/components/admin/AdminLargeUploadPanel"));
+
+// ─── Navigation structure ─────────────────────────────
+interface NavItem {
+  key: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: number;
+}
+
+interface NavGroup {
+  title: string;
+  icon: React.ElementType;
+  items: NavItem[];
+}
+
+function buildNavGroups(pendingCount: number): NavGroup[] {
+  return [
+    {
+      title: "Visão Geral",
+      icon: LayoutDashboard,
+      items: [
+        { key: "overview", label: "Dashboard", icon: LayoutDashboard },
+        { key: "online", label: "Usuários Online", icon: Activity },
+      ],
+    },
+    {
+      title: "Usuários",
+      icon: Users,
+      items: [
+        { key: "users-all", label: "Todos", icon: UserCog },
+        { key: "users-pending", label: "Pendentes", icon: Bell, badge: pendingCount },
+        { key: "users-active", label: "Ativos", icon: UserCheck },
+        { key: "users-blocked", label: "Bloqueados", icon: Shield },
+      ],
+    },
+    {
+      title: "Conteúdo",
+      icon: FileText,
+      items: [
+        { key: "pipeline", label: "Pipeline", icon: Layers },
+        { key: "questions", label: "Questões", icon: FileText },
+        { key: "image-upgrade", label: "Upgrade Imagem", icon: ImageIcon },
+        { key: "image-review", label: "Review Imagem", icon: ImageIcon },
+        { key: "hygiene", label: "Higiene", icon: Bug },
+        { key: "ingestion", label: "Ingestão", icon: Upload },
+        { key: "scraping", label: "Web Scraping", icon: HardDrive },
+        { key: "qa", label: "QA Bot", icon: Bug },
+      ],
+    },
+    {
+      title: "Comunicação",
+      icon: Megaphone,
+      items: [
+        { key: "messages", label: "Mensagens", icon: Mail },
+        { key: "whatsapp", label: "WhatsApp", icon: MessageSquare },
+        { key: "telegram", label: "Telegram", icon: Send },
+      ],
+    },
+    {
+      title: "Analytics",
+      icon: BarChart3,
+      items: [
+        { key: "bi", label: "BI & Métricas", icon: BarChart3 },
+        { key: "feedbacks", label: "Feedbacks", icon: Star },
+        { key: "audit", label: "Log de Auditoria", icon: Shield },
+      ],
+    },
+    {
+      title: "Configurações",
+      icon: Settings,
+      items: [
+        { key: "flags", label: "Feature Flags", icon: ToggleLeft },
+        { key: "uploads", label: "Uploads", icon: Upload },
+        { key: "upload2gb", label: "Upload 2GB", icon: HardDrive },
+        { key: "multimodal", label: "Multimodal", icon: ImageIcon },
+      ],
+    },
+  ];
+}
+
+function PanelLoader() {
+  return (
+    <div className="flex items-center justify-center py-16">
+      <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
+// ─── Main Admin Component ─────────────────────────────
 const Admin = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -45,7 +137,8 @@ const Admin = () => {
   const [filterFaculdade, setFilterFaculdade] = useState<string>("all");
   const [filterPeriodo, setFilterPeriodo] = useState<string>("all");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("all");
+  const [activeSection, setActiveSection] = useState("overview");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [planDialog, setPlanDialog] = useState<{ open: boolean; user: AdminUser | null; plan: string }>({ open: false, user: null, plan: "" });
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; user: AdminUser | null; block: boolean }>({ open: false, user: null, block: false });
@@ -105,7 +198,7 @@ const Admin = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // Action handlers
+  // Action handlers (same logic as before)
   const handleAction = useCallback(async (userId: string, fn: () => Promise<void>) => {
     setActionLoading(userId);
     try { await fn(); loadData(); } catch (e) {
@@ -219,29 +312,29 @@ const Admin = () => {
     });
   };
 
-  // Unique faculdades and periodos for filters
+  // Computed
   const uniqueFaculdades = [...new Set(users.map(u => u.faculdade).filter(Boolean))].sort() as string[];
   const uniquePeriodos = [...new Set(users.map(u => u.periodo).filter(Boolean))].sort((a, b) => (a as number) - (b as number)) as number[];
+  const pendingCount = users.filter((u) => u.status === "pending").length;
+  const activeCount = users.filter((u) => u.status === "active" && !u.is_blocked).length;
+  const blockedCount = users.filter((u) => u.is_blocked || u.status === "disabled").length;
+  const getUserPlan = (u: AdminUser) => u.subscription?.plans?.name || "Free";
 
-  // Computed values
+  const userTab = activeSection.startsWith("users-") ? activeSection.replace("users-", "") : "all";
+
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase();
     const matchesSearch = (u.display_name || "").toLowerCase().includes(q) || (u.email || "").toLowerCase().includes(q);
     if (!matchesSearch) return false;
     if (filterFaculdade !== "all" && u.faculdade !== filterFaculdade) return false;
     if (filterPeriodo !== "all" && String(u.periodo) !== filterPeriodo) return false;
-    switch (activeTab) {
+    switch (userTab) {
       case "pending": return u.status === "pending";
       case "active": return u.status === "active" && !u.is_blocked;
       case "blocked": return u.is_blocked || u.status === "disabled";
       default: return true;
     }
   });
-
-  const pendingCount = users.filter((u) => u.status === "pending").length;
-  const activeCount = users.filter((u) => u.status === "active" && !u.is_blocked).length;
-  const blockedCount = users.filter((u) => u.is_blocked || u.status === "disabled").length;
-  const getUserPlan = (u: AdminUser) => u.subscription?.plans?.name || "Free";
 
   const getStatusBadge = (u: AdminUser) => {
     if (u.is_blocked) return <Badge variant="destructive" className="text-xs">Bloqueado</Badge>;
@@ -253,299 +346,307 @@ const Admin = () => {
     }
   };
 
+  const navGroups = buildNavGroups(pendingCount);
+
+  const isUserSection = activeSection.startsWith("users-");
+
+  // ─── Render ─────────────────────────────
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Shield className="h-5 w-5 text-primary" />
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden -m-4 sm:-m-6">
+      {/* ─── Sidebar ─── */}
+      <aside className={cn(
+        "flex-shrink-0 border-r border-border bg-muted/30 transition-all duration-300 overflow-hidden",
+        sidebarCollapsed ? "w-14" : "w-56"
+      )}>
+        <div className="flex items-center justify-between p-3 border-b border-border/50">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" />
+              <span className="text-sm font-semibold">Admin</span>
             </div>
-            Painel Admin
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie usuários, aprovações, planos e assinaturas.</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <Badge variant="outline" className="text-xs h-7">
-            {users.length} usuários
-          </Badge>
-          <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Atualizar
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 flex-shrink-0"
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          >
+            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
         </div>
-      </div>
 
-      {/* Pending notification */}
-      {pendingCount > 0 && (
-        <div className="flex items-center gap-3 p-4 rounded-lg bg-amber-500/10 border border-amber-500/20 animate-in slide-in-from-top duration-300">
-          <div className="h-10 w-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
-            <Bell className="h-5 w-5 text-amber-500 animate-pulse" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold">🔔 {pendingCount} novo{pendingCount > 1 ? "s" : ""} usuário{pendingCount > 1 ? "s" : ""} aguardando aprovação</p>
-            <p className="text-xs text-muted-foreground">Clique na aba "Novos Usuários" para revisar</p>
-          </div>
-          <Button size="sm" className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white" onClick={() => setActiveTab("pending")}>
-            <UserCheck className="h-4 w-4" /> Revisar agora
-          </Button>
-        </div>
-      )}
-
-      <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
-      <AdminOnlineUsers stats={stats} onUserClick={(userId) => {
-        const found = users.find(u => u.user_id === userId);
-        if (found) { setUserDetailDialog({ open: true, user: found }); }
-        else { toast({ title: "Usuário não encontrado na lista carregada" }); }
-      }} />
-      <AdminPlanDistribution stats={stats} />
-      <AdminDailyGenerationAlert />
-      <AdminPipelineMonitor />
-      <AdminWebScrapingPanel />
-      <AdminIngestionPanel />
-      <AdminQuestionReviewPanel />
-      <div className="glass-card p-6">
-        <ImageQuestionUpgradePanel />
-      </div>
-      <AdminImageQuestionReviewPanel />
-      <AdminHygieneDashboard />
-
-      {/* Users with tabs */}
-      <div className="glass-card p-6">
-        <div className="flex flex-col gap-3 mb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <UserCog className="h-5 w-5" /> Gerenciar Usuários
-            </h2>
-            <div className="relative w-full sm:w-64">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-            </div>
-          </div>
-
-          {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <Select value={filterFaculdade} onValueChange={setFilterFaculdade}>
-              <SelectTrigger className="w-full sm:w-[200px] h-8 text-xs">
-                <SelectValue placeholder="Universidade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas universidades</SelectItem>
-                {uniqueFaculdades.map((f) => (
-                  <SelectItem key={f} value={f}>{f}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
-              <SelectTrigger className="w-full sm:w-[140px] h-8 text-xs">
-                <SelectValue placeholder="Período" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos períodos</SelectItem>
-                {uniquePeriodos.map((p) => (
-                  <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 text-xs gap-1"
-                onClick={() => { setFilterFaculdade("all"); setFilterPeriodo("all"); }}
-              >
-                <X className="h-3 w-3" /> Limpar filtros
-              </Button>
-            )}
-
-            {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
-              <span className="text-xs text-muted-foreground ml-auto">
-                {filteredUsers.length} resultado{filteredUsers.length !== 1 ? "s" : ""}
-              </span>
-            )}
-          </div>
-        </div>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4 flex flex-wrap h-auto gap-1 justify-start">
-            <TabsTrigger value="all" className="gap-1.5">
-              Todos <Badge variant="secondary" className="text-xs ml-1">{users.length}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="gap-1.5">
-              🔔 Novos Usuários
-              {pendingCount > 0 && <Badge className="text-xs ml-1 bg-amber-500 text-white">{pendingCount}</Badge>}
-            </TabsTrigger>
-            <TabsTrigger value="active" className="gap-1.5">
-              Ativos <Badge variant="secondary" className="text-xs ml-1">{activeCount}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="blocked" className="gap-1.5">
-              Bloqueados <Badge variant="secondary" className="text-xs ml-1">{blockedCount}</Badge>
-            </TabsTrigger>
-            <TabsTrigger value="whatsapp" className="gap-1.5">
-              <MessageSquare className="h-3.5 w-3.5" /> WhatsApp
-            </TabsTrigger>
-            <TabsTrigger value="telegram" className="gap-1.5">
-              <Send className="h-3.5 w-3.5" /> Telegram
-            </TabsTrigger>
-            <TabsTrigger value="feedbacks" className="gap-1.5">
-              <Star className="h-3.5 w-3.5" /> Feedbacks
-            </TabsTrigger>
-            <TabsTrigger value="messages" className="gap-1.5">
-              <Mail className="h-3.5 w-3.5" /> Mensagens
-            </TabsTrigger>
-            <TabsTrigger value="bi" className="gap-1.5">
-              <BarChart3 className="h-3.5 w-3.5" /> BI
-            </TabsTrigger>
-            <TabsTrigger value="uploads" className="gap-1.5">
-              <Upload className="h-3.5 w-3.5" /> Uploads
-            </TabsTrigger>
-            <TabsTrigger value="qa" className="gap-1.5">
-              <Bug className="h-3.5 w-3.5" /> QA
-            </TabsTrigger>
-            <TabsTrigger value="flags" className="gap-1.5">
-              <ToggleLeft className="h-3.5 w-3.5" /> Flags
-            </TabsTrigger>
-            <TabsTrigger value="multimodal" className="gap-1.5">
-              <ImageIcon className="h-3.5 w-3.5" /> Multimodal
-            </TabsTrigger>
-            <TabsTrigger value="upload2gb" className="gap-1.5">
-              <HardDrive className="h-3.5 w-3.5" /> Upload 2GB
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="whatsapp">
-            <WhatsAppPanel session={session} />
-          </TabsContent>
-
-          <TabsContent value="telegram">
-            <TelegramConfigPanel />
-          </TabsContent>
-
-          <TabsContent value="feedbacks">
-            <AdminFeedbackPanel />
-          </TabsContent>
-
-          <TabsContent value="messages">
-            <AdminMessagesPanel />
-          </TabsContent>
-
-          <TabsContent value="bi">
-            <div className="space-y-4">
-              <AdminHealthHistory />
-              <AdminBIPanel callAdmin={callAdmin} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="uploads">
-            <AdminUploadsPanel />
-          </TabsContent>
-
-          <TabsContent value="qa">
-            <AdminQAPanel />
-          </TabsContent>
-
-          <TabsContent value="flags">
-            <AdminFeatureFlags />
-          </TabsContent>
-
-          <TabsContent value="multimodal">
-            <AdminModalityPanel />
-          </TabsContent>
-
-          <TabsContent value="upload2gb">
-            <AdminLargeUploadPanel />
-          </TabsContent>
-
-          <TabsContent value={activeTab === "whatsapp" || activeTab === "telegram" || activeTab === "feedbacks" || activeTab === "messages" || activeTab === "bi" || activeTab === "uploads" || activeTab === "qa" || activeTab === "flags" || activeTab === "multimodal" || activeTab === "upload2gb" ? "__none__" : activeTab}>
-            {loading ? (
-              <div className="flex justify-center py-12">
-                <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">
-                {activeTab === "pending" ? "Nenhum usuário aguardando aprovação." : "Nenhum usuário encontrado."}
-              </p>
-            ) : (
-              <div className="space-y-2">
-                <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  <div className="col-span-2">Usuário</div>
-                  <div className="col-span-2">Email</div>
-                  <div className="col-span-1">Plano</div>
-                  <div className="col-span-1">Status</div>
-                  <div className="col-span-1">Último acesso</div>
-                  <div className="col-span-3">Evolução</div>
-                  <div className="col-span-4 text-right">Ações</div>
+        <ScrollArea className="h-[calc(100%-3rem)]">
+          <nav className="p-2 space-y-4">
+            {navGroups.map((group) => (
+              <div key={group.title}>
+                {!sidebarCollapsed && (
+                  <p className="px-2 mb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                    {group.title}
+                  </p>
+                )}
+                <div className="space-y-0.5">
+                  {group.items.map((item) => {
+                    const active = activeSection === item.key;
+                    return (
+                      <button
+                        key={item.key}
+                        onClick={() => setActiveSection(item.key)}
+                        className={cn(
+                          "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors",
+                          active
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                        )}
+                        title={sidebarCollapsed ? item.label : undefined}
+                      >
+                        <item.icon className="h-4 w-4 flex-shrink-0" />
+                        {!sidebarCollapsed && (
+                          <>
+                            <span className="truncate flex-1 text-left">{item.label}</span>
+                            {item.badge && item.badge > 0 && (
+                              <Badge className="h-5 min-w-[20px] px-1 text-[10px] bg-amber-500 text-white border-0">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </>
+                        )}
+                        {sidebarCollapsed && item.badge && item.badge > 0 && (
+                          <span className="absolute right-1 top-0 h-2 w-2 rounded-full bg-amber-500" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-                {filteredUsers.map((u) => (
-                  <AdminUserRow
-                    key={u.user_id}
-                    u={u}
-                    actionLoading={actionLoading}
-                    session={session}
-                    getStatusBadge={getStatusBadge}
-                    getUserPlan={getUserPlan}
-                    onApprove={handleApproveUser}
-                    onReject={handleRejectUser}
-                    onOpenDetail={(u) => setUserDetailDialog({ open: true, user: u })}
-                    onOpenAdmin={(u, makeAdmin) => setAdminDialog({ open: true, user: u, makeAdmin })}
-                    onOpenProfessor={(u, makeProfessor) => setProfessorDialog({ open: true, user: u, makeProfessor })}
-                    onOpenPlan={(u, plan) => setPlanDialog({ open: true, user: u, plan })}
-                    onOpenPassword={(u) => setPasswordDialog({ open: true, user: u, password: "" })}
-                    onOpenBlock={(u, block) => setBlockDialog({ open: true, user: u, block })}
-                    onOpenLogout={(u) => setLogoutDialog({ open: true, user: u })}
-                    onOpenTracking={loadUserTracking}
-                    onOpenAccess={loadUserAccess}
-                    onOpenDelete={(u) => setDeleteDialog({ open: true, user: u })}
-                  />
-                ))}
+              </div>
+            ))}
+          </nav>
+        </ScrollArea>
+      </aside>
+
+      {/* ─── Main Content ─── */}
+      <main className="flex-1 overflow-auto">
+        <div className="p-4 sm:p-6 space-y-6 max-w-7xl">
+          {/* Header bar */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-lg font-bold">
+                {navGroups.flatMap(g => g.items).find(i => i.key === activeSection)?.label || "Painel Admin"}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="text-xs h-7">
+                {users.length} usuários
+              </Badge>
+              <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Atualizar</span>
+              </Button>
+            </div>
+          </div>
+
+          {/* Pending alert (shown in overview & user sections) */}
+          {pendingCount > 0 && (activeSection === "overview" || activeSection === "users-pending") && (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <Bell className="h-5 w-5 text-amber-500 animate-pulse flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">🔔 {pendingCount} usuário{pendingCount > 1 ? "s" : ""} aguardando aprovação</p>
+              </div>
+              <Button size="sm" className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white flex-shrink-0" onClick={() => setActiveSection("users-pending")}>
+                <UserCheck className="h-4 w-4" /> Revisar
+              </Button>
+            </div>
+          )}
+
+          {/* ═══ Section Content ═══ */}
+          <Suspense fallback={<PanelLoader />}>
+            {/* Overview */}
+            {activeSection === "overview" && (
+              <div className="space-y-6">
+                <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
+                <AdminPlanDistribution stats={stats} />
+                <AdminDailyGenerationAlert />
               </div>
             )}
-          </TabsContent>
-        </Tabs>
-      </div>
 
-      <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />
+            {activeSection === "online" && (
+              <AdminOnlineUsers stats={stats} onUserClick={(userId) => {
+                const found = users.find(u => u.user_id === userId);
+                if (found) setUserDetailDialog({ open: true, user: found });
+                else toast({ title: "Usuário não encontrado" });
+              }} />
+            )}
 
-      <AdminDialogs
-        users={users}
-        actionLoading={actionLoading}
-        getStatusBadge={getStatusBadge}
-        getUserPlan={getUserPlan}
-        callAdmin={callAdmin}
-        toast={toast}
-        session={session}
-        userDetailDialog={userDetailDialog}
-        setUserDetailDialog={setUserDetailDialog}
-        blockDialog={blockDialog}
-        setBlockDialog={setBlockDialog}
-        handleBlock={handleBlock}
-        logoutDialog={logoutDialog}
-        setLogoutDialog={setLogoutDialog}
-        setActionLoading={setActionLoading}
-        planDialog={planDialog}
-        setPlanDialog={setPlanDialog}
-        handleChangePlan={handleChangePlan}
-        adminDialog={adminDialog}
-        setAdminDialog={setAdminDialog}
-        handleToggleAdmin={handleToggleAdmin}
-        professorDialog={professorDialog}
-        setProfessorDialog={setProfessorDialog}
-        handleToggleProfessor={handleToggleProfessor}
-        passwordDialog={passwordDialog}
-        setPasswordDialog={setPasswordDialog}
-        handleResetPassword={handleResetPassword}
-        trackingDialog={trackingDialog}
-        setTrackingDialog={setTrackingDialog}
-        accessDialog={accessDialog}
-        setAccessDialog={setAccessDialog}
-        handleSaveAccess={handleSaveAccess}
-        deleteDialog={deleteDialog}
-        setDeleteDialog={setDeleteDialog}
-        handleDeleteUser={handleDeleteUser}
-      />
+            {/* Users sections */}
+            {isUserSection && (
+              <div className="space-y-4">
+                {/* Search + filters */}
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+                  </div>
+                  <div className="flex gap-2">
+                    <Select value={filterFaculdade} onValueChange={setFilterFaculdade}>
+                      <SelectTrigger className="w-[180px] h-9 text-xs">
+                        <SelectValue placeholder="Universidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todas universidades</SelectItem>
+                        {uniqueFaculdades.map((f) => (
+                          <SelectItem key={f} value={f}>{f}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
+                      <SelectTrigger className="w-[130px] h-9 text-xs">
+                        <SelectValue placeholder="Período" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos</SelectItem>
+                        {uniquePeriodos.map((p) => (
+                          <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
+                      <Button variant="ghost" size="sm" className="h-9 px-2 text-xs" onClick={() => { setFilterFaculdade("all"); setFilterPeriodo("all"); }}>
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sub-tabs for user status */}
+                <Tabs value={userTab} onValueChange={(v) => setActiveSection(`users-${v}`)}>
+                  <TabsList className="h-9">
+                    <TabsTrigger value="all" className="text-xs gap-1">Todos <Badge variant="secondary" className="text-[10px] ml-1">{users.length}</Badge></TabsTrigger>
+                    <TabsTrigger value="pending" className="text-xs gap-1">Pendentes {pendingCount > 0 && <Badge className="text-[10px] ml-1 bg-amber-500 text-white">{pendingCount}</Badge>}</TabsTrigger>
+                    <TabsTrigger value="active" className="text-xs gap-1">Ativos <Badge variant="secondary" className="text-[10px] ml-1">{activeCount}</Badge></TabsTrigger>
+                    <TabsTrigger value="blocked" className="text-xs gap-1">Bloqueados <Badge variant="secondary" className="text-[10px] ml-1">{blockedCount}</Badge></TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {/* Results */}
+                <div className="text-xs text-muted-foreground">{filteredUsers.length} resultado{filteredUsers.length !== 1 ? "s" : ""}</div>
+
+                {loading ? (
+                  <PanelLoader />
+                ) : filteredUsers.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">
+                    {userTab === "pending" ? "Nenhum usuário aguardando aprovação." : "Nenhum usuário encontrado."}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                      <div className="col-span-2">Usuário</div>
+                      <div className="col-span-2">Email</div>
+                      <div className="col-span-1">Plano</div>
+                      <div className="col-span-1">Status</div>
+                      <div className="col-span-1">Último acesso</div>
+                      <div className="col-span-3">Evolução</div>
+                      <div className="col-span-4 text-right">Ações</div>
+                    </div>
+                    {filteredUsers.map((u) => (
+                      <AdminUserRow
+                        key={u.user_id}
+                        u={u}
+                        actionLoading={actionLoading}
+                        session={session}
+                        getStatusBadge={getStatusBadge}
+                        getUserPlan={getUserPlan}
+                        onApprove={handleApproveUser}
+                        onReject={handleRejectUser}
+                        onOpenDetail={(u) => setUserDetailDialog({ open: true, user: u })}
+                        onOpenAdmin={(u, makeAdmin) => setAdminDialog({ open: true, user: u, makeAdmin })}
+                        onOpenProfessor={(u, makeProfessor) => setProfessorDialog({ open: true, user: u, makeProfessor })}
+                        onOpenPlan={(u, plan) => setPlanDialog({ open: true, user: u, plan })}
+                        onOpenPassword={(u) => setPasswordDialog({ open: true, user: u, password: "" })}
+                        onOpenBlock={(u, block) => setBlockDialog({ open: true, user: u, block })}
+                        onOpenLogout={(u) => setLogoutDialog({ open: true, user: u })}
+                        onOpenTracking={loadUserTracking}
+                        onOpenAccess={loadUserAccess}
+                        onOpenDelete={(u) => setDeleteDialog({ open: true, user: u })}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Content */}
+            {activeSection === "pipeline" && <AdminPipelineMonitor />}
+            {activeSection === "questions" && <AdminQuestionReviewPanel />}
+            {activeSection === "image-upgrade" && <ImageQuestionUpgradePanel />}
+            {activeSection === "image-review" && <AdminImageQuestionReviewPanel />}
+            {activeSection === "hygiene" && <AdminHygieneDashboard />}
+            {activeSection === "ingestion" && <AdminIngestionPanel />}
+            {activeSection === "scraping" && <AdminWebScrapingPanel />}
+            {activeSection === "qa" && <AdminQAPanel />}
+
+            {/* Communication */}
+            {activeSection === "messages" && <AdminMessagesPanel />}
+            {activeSection === "whatsapp" && <WhatsAppPanel session={session} />}
+            {activeSection === "telegram" && <TelegramConfigPanel />}
+
+            {/* Analytics */}
+            {activeSection === "bi" && (
+              <div className="space-y-4">
+                <AdminHealthHistory />
+                <AdminBIPanel callAdmin={callAdmin} />
+              </div>
+            )}
+            {activeSection === "feedbacks" && <AdminFeedbackPanel />}
+            {activeSection === "audit" && <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />}
+
+            {/* Settings */}
+            {activeSection === "flags" && <AdminFeatureFlags />}
+            {activeSection === "uploads" && <AdminUploadsPanel />}
+            {activeSection === "upload2gb" && <AdminLargeUploadPanel />}
+            {activeSection === "multimodal" && <AdminModalityPanel />}
+          </Suspense>
+        </div>
+      </main>
+
+      {/* Dialogs */}
+      <Suspense fallback={null}>
+        <AdminDialogs
+          users={users}
+          actionLoading={actionLoading}
+          getStatusBadge={getStatusBadge}
+          getUserPlan={getUserPlan}
+          callAdmin={callAdmin}
+          toast={toast}
+          session={session}
+          userDetailDialog={userDetailDialog}
+          setUserDetailDialog={setUserDetailDialog}
+          blockDialog={blockDialog}
+          setBlockDialog={setBlockDialog}
+          handleBlock={handleBlock}
+          logoutDialog={logoutDialog}
+          setLogoutDialog={setLogoutDialog}
+          setActionLoading={setActionLoading}
+          planDialog={planDialog}
+          setPlanDialog={setPlanDialog}
+          handleChangePlan={handleChangePlan}
+          adminDialog={adminDialog}
+          setAdminDialog={setAdminDialog}
+          handleToggleAdmin={handleToggleAdmin}
+          professorDialog={professorDialog}
+          setProfessorDialog={setProfessorDialog}
+          handleToggleProfessor={handleToggleProfessor}
+          passwordDialog={passwordDialog}
+          setPasswordDialog={setPasswordDialog}
+          handleResetPassword={handleResetPassword}
+          trackingDialog={trackingDialog}
+          setTrackingDialog={setTrackingDialog}
+          accessDialog={accessDialog}
+          setAccessDialog={setAccessDialog}
+          handleSaveAccess={handleSaveAccess}
+          deleteDialog={deleteDialog}
+          setDeleteDialog={setDeleteDialog}
+          handleDeleteUser={handleDeleteUser}
+        />
+      </Suspense>
     </div>
   );
 };
