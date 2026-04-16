@@ -317,7 +317,7 @@ export default function MindMaps() {
               <Card
                 key={map.id}
                 className="cursor-pointer hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all group relative overflow-hidden"
-                onClick={() => setSelectedMap(map)}
+                onClick={() => navigate(`/dashboard/mapas-mentais/${map.id}`)}
               >
                 {/* Color bar at top showing category distribution */}
                 <div className="flex h-1">
