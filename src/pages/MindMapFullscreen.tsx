@@ -1,11 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { MindMapViewer } from "@/components/mind-maps/MindMapViewer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Loader2, FlipVertical, FileText, Sparkles, CheckCircle2, BookOpen } from "lucide-react";
+import { toast } from "sonner";
 
 const COLOR_LEGEND = [
   { color: "bg-blue-500", label: "Definição" },
@@ -29,6 +31,7 @@ export default function MindMapFullscreen() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { session } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: map, isLoading } = useQuery({
     queryKey: ["mental-map", id],
@@ -42,6 +45,68 @@ export default function MindMapFullscreen() {
       return data as any;
     },
     enabled: !!session && !!id,
+  });
+
+  // Derived content counts
+  const { data: derivedStats } = useQuery({
+    queryKey: ["map-derived-stats", id],
+    queryFn: async () => {
+      const [fcRes, qRes] = await Promise.all([
+        supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("source_map_id" as any, id),
+        supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("source_map_id" as any, id),
+      ]);
+      return {
+        flashcards: fcRes.count || 0,
+        questions: qRes.count || 0,
+      };
+    },
+    enabled: !!session && !!id,
+  });
+
+  const generateFlashcards = useMutation({
+    mutationFn: async () => {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-map-flashcards`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${s?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ map_id: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro");
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["map-derived-stats", id] });
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const generateQuestions = useMutation({
+    mutationFn: async () => {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-map-questions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${s?.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ map_id: id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro");
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success(data.message);
+      queryClient.invalidateQueries({ queryKey: ["map-derived-stats", id] });
+    },
+    onError: (err: Error) => toast.error(err.message),
   });
 
   if (isLoading) {
@@ -64,47 +129,107 @@ export default function MindMapFullscreen() {
   }
 
   const diffInfo = DIFFICULTY_LABELS[map.difficulty] || DIFFICULTY_LABELS.medium;
+  const hasFlashcards = (derivedStats?.flashcards || 0) > 0;
+  const hasQuestions = (derivedStats?.questions || 0) > 0;
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Compact top bar */}
-      <header className="flex items-center gap-3 px-4 py-2.5 border-b bg-background/95 backdrop-blur-sm flex-shrink-0 z-10">
+      {/* Top bar */}
+      <header className="flex items-center gap-2 px-3 py-2 border-b bg-background/95 backdrop-blur-sm flex-shrink-0 z-10">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => navigate("/dashboard/mapas-mentais")}
-          className="gap-1.5 text-muted-foreground hover:text-foreground"
+          className="gap-1 text-muted-foreground hover:text-foreground px-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Voltar
+          <span className="hidden sm:inline">Voltar</span>
         </Button>
 
-        <div className="h-5 w-px bg-border" />
+        <Separator orientation="vertical" className="h-5" />
 
         <h1 className="text-sm font-bold truncate flex-1">{map.title}</h1>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {map.specialty && (
-            <Badge variant="outline" className="text-[10px] hidden sm:flex">{map.specialty}</Badge>
+            <Badge variant="outline" className="text-[10px] hidden md:flex">{map.specialty}</Badge>
           )}
           <Badge className={`text-[10px] border ${diffInfo.class}`}>
             {diffInfo.label}
           </Badge>
         </div>
+
+        <Separator orientation="vertical" className="h-5 hidden sm:block" />
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-1.5">
+          <Button
+            size="sm"
+            variant={hasFlashcards ? "outline" : "default"}
+            className="gap-1.5 text-xs h-8"
+            disabled={generateFlashcards.isPending || hasFlashcards}
+            onClick={() => generateFlashcards.mutate()}
+          >
+            {generateFlashcards.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : hasFlashcards ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <FlipVertical className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">
+              {hasFlashcards ? `${derivedStats?.flashcards} Flashcards` : "Gerar Flashcards"}
+            </span>
+            <span className="sm:hidden">
+              {hasFlashcards ? derivedStats?.flashcards : <FlipVertical className="h-3.5 w-3.5" />}
+            </span>
+          </Button>
+
+          <Button
+            size="sm"
+            variant={hasQuestions ? "outline" : "default"}
+            className="gap-1.5 text-xs h-8"
+            disabled={generateQuestions.isPending || hasQuestions}
+            onClick={() => generateQuestions.mutate()}
+          >
+            {generateQuestions.isPending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : hasQuestions ? (
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <FileText className="h-3.5 w-3.5" />
+            )}
+            <span className="hidden sm:inline">
+              {hasQuestions ? `${derivedStats?.questions} Questões` : "Gerar Questões"}
+            </span>
+          </Button>
+
+          {hasFlashcards && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5 text-xs h-8"
+              onClick={() => navigate("/dashboard/flashcards")}
+            >
+              <BookOpen className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Revisar</span>
+            </Button>
+          )}
+        </div>
       </header>
 
       {/* Legend bar */}
-      <div className="flex items-center gap-3 px-4 py-1.5 border-b bg-muted/30 overflow-x-auto flex-shrink-0">
-        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Legenda:</span>
+      <div className="flex items-center gap-3 px-3 py-1 border-b bg-muted/20 overflow-x-auto flex-shrink-0">
+        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Legenda:</span>
         {COLOR_LEGEND.map(c => (
           <div key={c.label} className="flex items-center gap-1 whitespace-nowrap">
-            <span className={`h-2.5 w-2.5 rounded-full ${c.color} flex-shrink-0`} />
+            <span className={`h-2 w-2 rounded-full ${c.color} flex-shrink-0`} />
             <span className="text-[10px] text-muted-foreground">{c.label}</span>
           </div>
         ))}
       </div>
 
-      {/* Map — fills all remaining space */}
+      {/* Map */}
       <div className="flex-1 min-h-0">
         <MindMapViewer mapData={map.content_json} />
       </div>
