@@ -246,6 +246,17 @@ export default function MindMaps() {
         </div>
       )}
 
+      {/* Suggestions */}
+      {maps.length > 0 && (
+        <MapSuggestionsBar
+          onGenerate={(topic, specialty) => {
+            setNewTopic(topic);
+            if (specialty) setNewSpecialty(specialty);
+            setGenerateOpen(true);
+          }}
+        />
+      )}
+
       {/* Content */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
