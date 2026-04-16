@@ -172,13 +172,25 @@ Para cada termo clínico, crie uma CENA VISUAL CINEMATOGRÁFICA que contenha:
 A cena_visual deve ser uma NARRATIVA ÚNICA onde todos os elementos interagem.
 Cada associação visual deve explicar POR QUE aquele elemento visual representa aquele termo.
 
-O prompt_imagem DEVE começar com: "Vivid cartoon-style medical memory scene, colorful characters interacting, dynamic action, clean composition, pure white background, no text, no labels, no letters."
+═══ REGRAS DO PROMPT DE IMAGEM (OBRIGATÓRIAS) ═══
+O prompt_imagem DEVE seguir EXATAMENTE este padrão:
+- Estilo: cartoon 3D (Pixar/Disney style)
+- Personagens: claros, expressivos, com emoções visíveis
+- Cores: vivas, saturadas, alto contraste
+- Fundo: limpo, gradiente suave ou branco
+- Composição: elementos bem separados, sem sobreposição confusa
+- Legibilidade visual: cada elemento deve ser identificável instantaneamente
+- Humor: leve e memorável quando possível
+- SEM texto, SEM labels, SEM letras, SEM palavras na imagem
+- SEM poluição visual, SEM excesso de detalhes
+
+O prompt_imagem DEVE começar com: "3D cartoon Pixar-style medical memory scene, vibrant saturated colors, expressive characters with visible emotions, dynamic action pose, clean gradient background, well-separated visual elements, no text, no labels, no letters, no words."
 
 Retorne SOMENTE JSON:
 {
   "cena_visual": "string — narrativa visual completa da cena como um filme",
   "associacoes_visuais": [{"termo":"string","elemento_visual":"string","associacao_fonetica":"string","acao_na_cena":"string"}],
-  "prompt_imagem": "string em inglês"
+  "prompt_imagem": "string em inglês seguindo regras acima"
 }`;
 
 const PROMPT_ESTRUTURA_PROVA = `Você é especialista em provas de residência médica no Brasil.
