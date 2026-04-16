@@ -4127,6 +4127,7 @@ export type Database = {
           request_id: string | null
           result_id: string | null
           user_id: string
+          utility_score: number | null
         }
         Insert: {
           comentario?: string | null
@@ -4138,6 +4139,7 @@ export type Database = {
           request_id?: string | null
           result_id?: string | null
           user_id: string
+          utility_score?: number | null
         }
         Update: {
           comentario?: string | null
@@ -4149,6 +4151,7 @@ export type Database = {
           request_id?: string | null
           result_id?: string | null
           user_id?: string
+          utility_score?: number | null
         }
         Relationships: [
           {
@@ -8173,6 +8176,35 @@ export type Database = {
       }
     }
     Views: {
+      mnemonic_utility_agg: {
+        Row: {
+          avg_rating: number | null
+          avg_utility: number | null
+          feedback_count: number | null
+          last_feedback_at: string | null
+          negative_count: number | null
+          positive_count: number | null
+          result_id: string | null
+          tema: string | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mnemonic_feedback_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "mnemonic_results"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mnemonic_feedback_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "v_mnemonic_latest_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       v_mnemonic_latest_results: {
         Row: {
           aprovado: boolean | null
