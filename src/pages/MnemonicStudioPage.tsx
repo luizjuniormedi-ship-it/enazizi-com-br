@@ -4,6 +4,7 @@ import {
   Copy, Heart, MessageSquare, RefreshCw,
   ChevronDown, ChevronUp, Wand2, BookOpen, Eye, CheckCircle, XCircle, MinusCircle,
   Target, HelpCircle, Lightbulb, Clapperboard, Volume2, Users, Zap, Crosshair,
+  Play, Bookmark, Clock, FlipHorizontal, Map, FileQuestion,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +21,7 @@ import { useRegenerateMnemonic } from "@/hooks/useRegenerateMnemonic";
 import { MnemonicFeedbackModal } from "@/components/mnemonics/MnemonicFeedbackModal";
 import { validateMnemonicForm } from "@/utils/mnemonicValidation";
 import { getScoreColor, getScoreBg, formatScore } from "@/utils/mnemonicStatus";
+import { supabase } from "@/integrations/supabase/client";
 import type { MnemonicResultData, RegenerateStyle } from "@/types/mnemonics";
 import { ESTILOS, PUBLICOS, REGENERATE_OPTIONS } from "@/types/mnemonics";
 
@@ -41,6 +43,70 @@ function QualityBadge({ flag }: { flag: string }) {
   return <Badge className="bg-yellow-500/15 text-yellow-600 border-yellow-500/30 gap-1"><MinusCircle className="h-3 w-3" /> Qualidade média</Badge>;
 }
 
+// ═══ QUIZ VISUAL ═══
+function VisualQuizMode({ result, onClose }: { result: MnemonicResultData; onClose: () => void }) {
+  const [revealed, setRevealed] = useState(false);
+  const pontosDeProva = safeArray(result.pontos_de_prova);
+  const [currentQ, setCurrentQ] = useState(0);
+  const current = pontosDeProva[currentQ];
+
+  if (!current) return null;
+
+  return (
+    <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-violet-500/5">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2 text-primary">
+            <Play className="h-5 w-5" /> Quiz Visual — {currentQ + 1}/{pontosDeProva.length}
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={onClose}>✕</Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Show image */}
+        {result.image_url && (
+          <img src={result.image_url} alt="Mnemônico visual" className="rounded-xl max-h-56 w-full object-contain mx-auto border" />
+        )}
+
+        <div className="text-center">
+          <p className="text-lg font-semibold mb-2">❓ {current.pergunta_gatilho}</p>
+          {current.dica_visual && !revealed && (
+            <p className="text-sm text-violet-600 italic mb-3">🎬 Dica: Olhe para a imagem — {current.dica_visual}</p>
+          )}
+        </div>
+
+        {!revealed ? (
+          <Button onClick={() => setRevealed(true)} className="w-full" size="lg">
+            <FlipHorizontal className="h-4 w-4 mr-2" /> Revelar Resposta
+          </Button>
+        ) : (
+          <div className="space-y-3">
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+              <p className="text-sm font-semibold text-emerald-700">✅ {current.resposta_esperada}</p>
+            </div>
+            {current.armadilha_comum && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                <p className="text-xs text-red-600">⚠️ Armadilha: {current.armadilha_comum}</p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              {currentQ < pontosDeProva.length - 1 ? (
+                <Button onClick={() => { setCurrentQ(currentQ + 1); setRevealed(false); }} className="flex-1">
+                  Próxima →
+                </Button>
+              ) : (
+                <Button onClick={onClose} className="flex-1" variant="outline">
+                  Concluir Quiz
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function MnemonicGeneratorPage() {
   const [tema, setTema] = useState("");
   const [termosText, setTermosText] = useState("");
@@ -52,6 +118,9 @@ export default function MnemonicGeneratorPage() {
   const [showMap, setShowMap] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [quizMode, setQuizMode] = useState(false);
+  const [savingFlashcard, setSavingFlashcard] = useState(false);
+  const [savingFsrs, setSavingFsrs] = useState(false);
 
   const generateMutation = useGenerateMnemonic();
   const favoriteMutation = useToggleFavorite();
@@ -64,6 +133,7 @@ export default function MnemonicGeneratorPage() {
     if (!validation.valid) { setFormErrors(validation.errors); return; }
     setFormErrors({});
     setResult(null);
+    setQuizMode(false);
     generateMutation.mutate(
       { tema: tema.trim(), termos, estilo, publico },
       {
@@ -112,6 +182,80 @@ export default function MnemonicGeneratorPage() {
     });
   }, [result, tema, termos, estilo, publico, regenerateMutation]);
 
+  // ═══ INTEGRAÇÃO: Salvar como Flashcard ═══
+  const handleSaveFlashcard = useCallback(async () => {
+    if (!result) return;
+    setSavingFlashcard(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Faça login para salvar."); return; }
+
+      const question = result.cena_memoravel
+        ? `🎬 ${result.cena_memoravel.cena}\n\n🔊 ${result.cena_memoravel.associacao_fonetica}\n\nQual conceito médico esta cena representa?`
+        : `${result.frase_mnemonica}\n\nQual conceito médico?`;
+      
+      const answer = `${result.tema}\n\n📚 ${result.explicacao_tecnica}\n\n📖 ${result.explicacao_didatica}`;
+
+      const { error } = await supabase.from("flashcards").insert({
+        user_id: user.id,
+        question,
+        answer,
+        topic: result.tema,
+        is_global: false,
+      });
+      if (error) throw error;
+      toast.success("Flashcard criado com sucesso!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao criar flashcard.");
+    } finally {
+      setSavingFlashcard(false);
+    }
+  }, [result]);
+
+  // ═══ INTEGRAÇÃO: Enviar para Revisão FSRS ═══
+  const handleSendToReview = useCallback(async () => {
+    if (!result) return;
+    setSavingFsrs(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { toast.error("Faça login."); return; }
+
+      // Check if FSRS card already exists
+      const { data: existing } = await supabase
+        .from("fsrs_cards")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("card_ref_id", result.result_id)
+        .eq("card_type", "mnemonic")
+        .maybeSingle();
+
+      if (existing) {
+        toast.info("Já está na sua lista de revisão!");
+        return;
+      }
+
+      const { error } = await supabase.from("fsrs_cards").insert({
+        user_id: user.id,
+        card_ref_id: result.result_id,
+        card_type: "mnemonic",
+        due: new Date().toISOString(),
+        stability: 0,
+        difficulty: 0,
+        elapsed_days: 0,
+        scheduled_days: 0,
+        reps: 0,
+        lapses: 0,
+        state: 0,
+      });
+      if (error) throw error;
+      toast.success("Adicionado à revisão espaçada!");
+    } catch (err: any) {
+      toast.error(err.message || "Erro ao agendar revisão.");
+    } finally {
+      setSavingFsrs(false);
+    }
+  }, [result]);
+
   const isLoading = generateMutation.isPending || regenerateMutation.isPending;
 
   return (
@@ -119,8 +263,8 @@ export default function MnemonicGeneratorPage() {
       <div className="flex items-center gap-3">
         <Brain className="h-8 w-8 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">Gerador de Mnemônicos Médicos</h1>
-          <p className="text-muted-foreground text-sm">Pipeline multi-agente com gate clínico e modo prova</p>
+          <h1 className="text-2xl font-bold">Memorização Visual Avançada</h1>
+          <p className="text-muted-foreground text-sm">Veja → Entenda → Lembre → Aplique → Revise</p>
         </div>
       </div>
 
@@ -156,7 +300,7 @@ export default function MnemonicGeneratorPage() {
           </div>
           <Button onClick={handleGenerate} disabled={isLoading} className="w-full">
             {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-            {isLoading ? "Gerando mnemônico..." : "Gerar mnemônico"}
+            {isLoading ? "Gerando mnemônico visual..." : "Gerar Mnemônico Visual"}
           </Button>
         </CardContent>
       </Card>
@@ -174,12 +318,125 @@ export default function MnemonicGeneratorPage() {
         const cenaMemoravel = result.cena_memoravel;
         const assocVisuais = safeArray(result.associacoes_visuais);
 
+        // Quiz mode
+        if (quizMode && pontosDeProva.length > 0) {
+          return <VisualQuizMode result={result} onClose={() => setQuizMode(false)} />;
+        }
+
         return (
         <div className="space-y-4">
+          {/* ═══ HERO: IMAGEM + CENA ═══ */}
+          {(result.image_url || cenaMemoravel) && (
+            <Card className="border-2 border-violet-500/30 bg-gradient-to-br from-violet-500/5 via-fuchsia-500/5 to-amber-500/5 overflow-hidden">
+              <CardContent className="pt-6 space-y-4">
+                {/* Imagem grande no topo */}
+                {result.image_url && (
+                  <div className="relative rounded-2xl overflow-hidden border-2 border-violet-500/20 shadow-lg">
+                    <img
+                      src={result.image_url}
+                      alt={`Mnemônico visual: ${result.tema}`}
+                      className="w-full max-h-[400px] object-contain bg-gradient-to-b from-white to-gray-50"
+                      loading="lazy"
+                    />
+                    <div className="absolute top-3 right-3">
+                      <Badge className="bg-violet-600/90 text-white border-0 shadow-lg">
+                        🎬 Memorização Visual
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+
+                {/* Cena narrativa */}
+                {cenaMemoravel && (
+                  <div className="space-y-3">
+                    {/* 🎬 Cena principal */}
+                    <div className="p-4 rounded-xl bg-background/80 border border-violet-500/20">
+                      <div className="flex items-center gap-2 text-sm font-bold text-violet-600 mb-2">
+                        <Clapperboard className="h-4 w-4" /> 🎬 Imagine esta cena:
+                      </div>
+                      <p className="text-base leading-relaxed font-medium">{cenaMemoravel.cena}</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* 👥 Personagens */}
+                      {cenaMemoravel.personagens && (
+                        <div className="p-3 rounded-lg bg-background/80 border border-fuchsia-500/20">
+                          <div className="flex items-center gap-2 text-xs font-bold text-fuchsia-600 mb-1">
+                            <Users className="h-3.5 w-3.5" /> 👥 Personagens
+                          </div>
+                          <p className="text-sm text-muted-foreground">{cenaMemoravel.personagens}</p>
+                        </div>
+                      )}
+                      {/* ⚡ Ação */}
+                      {cenaMemoravel.acao && (
+                        <div className="p-3 rounded-lg bg-background/80 border border-amber-500/20">
+                          <div className="flex items-center gap-2 text-xs font-bold text-amber-600 mb-1">
+                            <Zap className="h-3.5 w-3.5" /> ⚡ Ação
+                          </div>
+                          <p className="text-sm text-muted-foreground">{cenaMemoravel.acao}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 🔊 Associação Fonética */}
+                    {cenaMemoravel.associacao_fonetica && (
+                      <div className="p-3 rounded-lg bg-background/80 border border-blue-500/20">
+                        <div className="flex items-center gap-2 text-xs font-bold text-blue-600 mb-1">
+                          <Volume2 className="h-3.5 w-3.5" /> 🔊 Associação Fonética
+                        </div>
+                        <p className="text-sm text-muted-foreground">{cenaMemoravel.associacao_fonetica}</p>
+                      </div>
+                    )}
+
+                    {/* 😄 Impacto Emocional */}
+                    {cenaMemoravel.emocao && (
+                      <div className="p-3 rounded-lg bg-background/80 border border-emerald-500/20">
+                        <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 mb-1">
+                          😄 Impacto emocional
+                        </div>
+                        <p className="text-sm text-muted-foreground italic">{cenaMemoravel.emocao}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* ═══ BOTÕES DE AÇÃO PRINCIPAIS ═══ */}
+                <div className="grid grid-cols-3 gap-2 pt-2">
+                  <Button
+                    onClick={() => setQuizMode(true)}
+                    disabled={pontosDeProva.length === 0}
+                    className="bg-primary hover:bg-primary/90"
+                    size="sm"
+                  >
+                    <Play className="h-4 w-4 mr-1" /> Testar Agora
+                  </Button>
+                  <Button
+                    onClick={handleSaveFlashcard}
+                    disabled={savingFlashcard}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {savingFlashcard ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Bookmark className="h-4 w-4 mr-1" />}
+                    Salvar
+                  </Button>
+                  <Button
+                    onClick={handleSendToReview}
+                    disabled={savingFsrs}
+                    variant="outline"
+                    size="sm"
+                  >
+                    {savingFsrs ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Clock className="h-4 w-4 mr-1" />}
+                    Revisar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Quality + Scores */}
           <div className="flex items-center justify-between">
             <QualityBadge flag={result.quality_flag ?? "medium"} />
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <ScoreBadge label="Linguístico" score={result.score_linguistico ?? 0} />
             <ScoreBadge label="Médico" score={result.score_medico} />
@@ -187,7 +444,7 @@ export default function MnemonicGeneratorPage() {
             <ScoreBadge label="Final" score={result.score_final} />
           </div>
 
-          {/* Frase — destaque */}
+          {/* Frase mnemônica */}
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
@@ -201,70 +458,7 @@ export default function MnemonicGeneratorPage() {
             </CardContent>
           </Card>
 
-          {/* ═══ MEMORIZAÇÃO VISUAL AVANÇADA ═══ */}
-          {cenaMemoravel && (
-            <Card className="border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg flex items-center gap-2 text-violet-600">
-                  <Clapperboard className="h-5 w-5" /> Memorização Visual
-                </CardTitle>
-                <p className="text-xs text-muted-foreground">Imagine a cena abaixo como um filme na sua mente</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* 🎬 Cena */}
-                <div className="p-4 rounded-xl bg-background/80 border border-violet-500/20 space-y-2">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-violet-600">
-                    <Clapperboard className="h-4 w-4" /> 🎬 Cena
-                  </div>
-                  <p className="text-sm leading-relaxed">{cenaMemoravel.cena}</p>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* 👥 Personagens */}
-                  {cenaMemoravel.personagens && (
-                    <div className="p-3 rounded-lg bg-background/80 border border-fuchsia-500/20 space-y-1">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-fuchsia-600">
-                        <Users className="h-3.5 w-3.5" /> 👥 Personagens
-                      </div>
-                      <p className="text-sm text-muted-foreground">{cenaMemoravel.personagens}</p>
-                    </div>
-                  )}
-
-                  {/* ⚡ Ação */}
-                  {cenaMemoravel.acao && (
-                    <div className="p-3 rounded-lg bg-background/80 border border-amber-500/20 space-y-1">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-amber-600">
-                        <Zap className="h-3.5 w-3.5" /> ⚡ Ação
-                      </div>
-                      <p className="text-sm text-muted-foreground">{cenaMemoravel.acao}</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* 🧠 Associação Fonética */}
-                {cenaMemoravel.associacao_fonetica && (
-                  <div className="p-3 rounded-lg bg-background/80 border border-blue-500/20 space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
-                      <Volume2 className="h-3.5 w-3.5" /> 🧠 Associação Fonética
-                    </div>
-                    <p className="text-sm text-muted-foreground">{cenaMemoravel.associacao_fonetica}</p>
-                  </div>
-                )}
-
-                {/* 😄 Impacto Emocional */}
-                {cenaMemoravel.emocao && (
-                  <div className="p-3 rounded-lg bg-background/80 border border-emerald-500/20 space-y-1">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600">
-                      😄 Impacto emocional
-                    </div>
-                    <p className="text-sm text-muted-foreground italic">{cenaMemoravel.emocao}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Associações visuais avançadas */}
+          {/* Associações visuais por termo */}
           {assocVisuais.length > 0 && (
             <Card>
               <CardHeader className="pb-2">
@@ -318,22 +512,8 @@ export default function MnemonicGeneratorPage() {
             </Card>
           )}
 
-          {/* Imagem gerada */}
-          {result.image_url && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Eye className="h-4 w-4 text-primary" /> Imagem mnemônica
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <img src={result.image_url} alt={`Mnemônico: ${result.sigla}`} className="rounded-lg max-h-96 w-full object-contain mx-auto border" loading="lazy" />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Cena visual texto (fallback quando não há cena_memoravel) */}
-          {!cenaMemoravel && result.cena_visual && (
+          {/* Cena visual texto (fallback) */}
+          {!cenaMemoravel && !result.image_url && result.cena_visual && (
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /> Cena visual</CardTitle>
@@ -344,7 +524,7 @@ export default function MnemonicGeneratorPage() {
             </Card>
           )}
 
-          {/* Explicações */}
+          {/* 🧠 Explicações */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">📚 Explicação técnica</CardTitle></CardHeader>
@@ -408,7 +588,7 @@ export default function MnemonicGeneratorPage() {
             </Card>
           )}
 
-          {/* Estrutura de prova */}
+          {/* Collapsibles */}
           {itensProva.length > 0 && (
             <Collapsible open={showExam} onOpenChange={setShowExam}>
               <CollapsibleTrigger asChild>
@@ -431,7 +611,6 @@ export default function MnemonicGeneratorPage() {
             </Collapsible>
           )}
 
-          {/* Mapa clínico completo */}
           {mapaClinico.length > 0 && (
             <Collapsible open={showMap} onOpenChange={setShowMap}>
               <CollapsibleTrigger asChild>
@@ -459,7 +638,6 @@ export default function MnemonicGeneratorPage() {
             </Collapsible>
           )}
 
-          {/* Associações de letras (items_map) */}
           {itemsMap.length > 0 && (
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Mapa de associações</CardTitle></CardHeader>
@@ -477,7 +655,6 @@ export default function MnemonicGeneratorPage() {
             </Card>
           )}
 
-          {/* Agent logs */}
           {agentLogs.length > 0 && (
             <Collapsible open={showAgents} onOpenChange={setShowAgents}>
               <CollapsibleTrigger asChild>
