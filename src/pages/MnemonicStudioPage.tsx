@@ -134,7 +134,10 @@ export default function MnemonicGeneratorPage() {
     setResultError(null);
     setQuickFeedback(null);
     setIsGenerating(true);
-    setGeneratingStatus("Gerando mnemônico...");
+    const isAutoMode = termos.length === 0;
+    setGeneratingStatus(isAutoMode
+      ? "🧠 Extraindo termos do tema com IA..."
+      : "Gerando mnemônico...");
     try {
       const res = await generateWithAutoRetry(
         { tema: tema.trim(), termos, estilo, publico },
@@ -143,7 +146,7 @@ export default function MnemonicGeneratorPage() {
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
         setResult(res.data);
         setResultError(null);
-        toast.success("Mnemônico gerado!");
+        toast.success(isAutoMode ? "Mnemônico gerado automaticamente!" : "Mnemônico gerado!");
       } else {
         const msg = res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.";
         setResult(null);
