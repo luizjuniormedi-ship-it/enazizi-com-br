@@ -338,6 +338,7 @@ serve(async (req: Request) => {
       // ══════════════════════════════════════
       interface MnemonicOutput {
         sigla: string; frase_mnemonica: string;
+        explicacao_associacao?: string;
         explicacao_didatica: string; explicacao_tecnica: string;
         cena_visual: string; prompt_imagem: string;
         associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string }>;
@@ -349,19 +350,25 @@ serve(async (req: Request) => {
         const issues: string[] = [];
         if (!m) { issues.push("resposta_vazia"); return issues; }
         const frase = (m.frase_mnemonica || "").trim();
-        const exp = (m.explicacao_didatica || "").trim();
+        const expAssoc = (m.explicacao_associacao || "").trim();
+        const expDid = (m.explicacao_didatica || "").trim();
         if (!frase) issues.push("frase_vazia");
         else if (frase.length < 8) issues.push("frase_curta_demais");
-        if (!exp) issues.push("explicacao_didatica_ausente");
-        else if (exp.length < 20) issues.push("explicacao_curta_demais");
+        if (!expAssoc && !expDid) issues.push("explicacao_associacao_ausente");
+        else if ((expAssoc || expDid).length < 20) issues.push("explicacao_curta_demais");
         if (!(m.explicacao_tecnica || "").trim()) issues.push("explicacao_tecnica_ausente");
         // Eco literal: frase é apenas a junção dos termos
         const fraseLow = frase.toLowerCase();
         const termosLow = termos.map(t => t.toLowerCase().trim());
         const joined = termosLow.join(" ").trim();
         if (fraseLow === joined || fraseLow === termosLow.join(", ")) issues.push("eco_literal_termos");
+        // Eco token: todos os tokens da frase são termos de entrada (frase = só lista de termos)
+        const fraseTokens = fraseLow.split(/\s+/).filter(Boolean);
+        const termTokens = new Set(termosLow.flatMap(t => t.split(/\s+/).filter(Boolean)));
+        const nonEcho = fraseTokens.filter(tok => !termTokens.has(tok));
+        if (fraseTokens.length > 0 && nonEcho.length === 0) issues.push("frase_so_repete_termos");
         // Placeholders óbvios
-        if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + exp)) issues.push("placeholder_detectado");
+        if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + expDid + " " + expAssoc)) issues.push("placeholder_detectado");
         // Score
         const score = Number(m.score_autoavaliacao || 0);
         if (score <= 0) issues.push("score_zero");
