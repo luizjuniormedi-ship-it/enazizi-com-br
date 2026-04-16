@@ -37,6 +37,7 @@ export const ALL_MODULES = [
   { key: "revisor", label: "📋 Revisor Médico" },
   { key: "sessao-estudo", label: "📖 Sessão de Estudo" },
   { key: "mnemonico", label: "🧠 Mnemônico" },
+  { key: "mapas-mentais", label: "🧠 Mapas Mentais" },
 ] as const;
 
 export type ModuleKey = typeof ALL_MODULES[number]["key"];
