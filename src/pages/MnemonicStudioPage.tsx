@@ -326,6 +326,7 @@ function EffectivenessPanel() {
 }
 
 export default function MnemonicGeneratorPage() {
+  const [searchParams] = useSearchParams();
   const [tema, setTema] = useState("");
   const [termosText, setTermosText] = useState("");
   const [estilo, setEstilo] = useState("frase + imagem mental");
@@ -341,6 +342,33 @@ export default function MnemonicGeneratorPage() {
   const [savingFsrs, setSavingFsrs] = useState(false);
   const [quickFeedback, setQuickFeedback] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("gerar");
+  const [missionBanner, setMissionBanner] = useState<{
+    mode: string; style?: string; topic?: string;
+  } | null>(null);
+
+  // ── Deep-link from study-next mission ──
+  useEffect(() => {
+    const origin = searchParams.get("origin");
+    const topicParam = searchParams.get("topic");
+    const modeParam = searchParams.get("mode");
+    const styleParam = searchParams.get("style");
+
+    if (origin === "mission" && topicParam) {
+      setTema(topicParam);
+      setMissionBanner({ mode: modeParam || "create_new", style: styleParam || undefined, topic: topicParam });
+
+      // If regenerate with style hint, pre-select style
+      if (styleParam) {
+        const styleMap: Record<string, string> = {
+          visual: "visual cinematográfico",
+          curto: "frase + imagem mental",
+          "engraçado": "humor médico",
+          "acadêmico": "frase + imagem mental",
+        };
+        setEstilo(styleMap[styleParam] || estilo);
+      }
+    }
+  }, [searchParams]);
 
   const { data: errorSuggestions } = useErrorSuggestions();
 
