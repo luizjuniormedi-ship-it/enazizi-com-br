@@ -2,6 +2,9 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 
+export type MnemonicMode = "review_existing" | "regenerate" | "create_new";
+export type MnemonicStyle = "visual" | "curto" | "engraçado" | "acadêmico";
+
 export interface StudyNextRecommendation {
   type: "review" | "error_review" | "daily_task" | "free_study" | "image_quiz" | "mnemonic";
   title: string;
@@ -11,7 +14,7 @@ export interface StudyNextRecommendation {
   estimatedMinutes: number;
   priorityScore: number;
   /** Optional context from the engine for module-specific params */
-  contextPayload?: Record<string, string>;
+  contextPayload?: Record<string, string | number | boolean | undefined>;
 }
 
 export interface AdaptiveState {
@@ -22,6 +25,8 @@ export interface AdaptiveState {
   pendingReviews: number;
   weakTopicsCount: number;
   examProximityDays: number | null;
+  mnemonicCandidates?: number;
+  mnemonicUtilityTopics?: number;
 }
 
 export interface StudyNextResponse {
@@ -30,6 +35,21 @@ export interface StudyNextResponse {
   justification: string;
   alternativeActions: StudyNextRecommendation[];
   adaptiveState: AdaptiveState;
+}
+
+/** Helper to extract mnemonic-specific context from a recommendation */
+export function getMnemonicContext(rec: StudyNextRecommendation) {
+  if (rec.type !== "mnemonic" || !rec.contextPayload) return null;
+  const ctx = rec.contextPayload;
+  return {
+    topic: ctx.topic as string | undefined,
+    subtopic: ctx.subtopic as string | undefined,
+    mnemonicMode: ctx.mnemonicMode as MnemonicMode | undefined,
+    preferredStyle: ctx.preferredStyle as MnemonicStyle | undefined,
+    resultId: ctx.resultId as string | undefined,
+    utilityScore: ctx.utilityScore as number | undefined,
+    errorCount: ctx.errorCount as number | undefined,
+  };
 }
 
 async function fetchStudyNext(): Promise<StudyNextResponse> {
@@ -56,7 +76,6 @@ export function useStudyNext() {
     gcTime: 10 * 60_000,
     refetchOnWindowFocus: true,
     retry: 2,
-    // Keep previous data while refetching — prevents flicker on mission transition
     placeholderData: (prev) => prev,
   });
 
