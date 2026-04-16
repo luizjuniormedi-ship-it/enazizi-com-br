@@ -386,8 +386,7 @@ export default function MnemonicGeneratorPage() {
     setLoadingTerms(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        // Search curriculum_matrix for matching topics
-        const searchTerm = tema.split("—")[0].trim(); // handle "Tema — Subtema" format
+        const searchTerm = tema.split("—")[0].trim();
         const { data } = await supabase
           .from("curriculum_matrix")
           .select("gatilhos_clinicos, palavras_chave, subtema, tema")
@@ -405,7 +404,14 @@ export default function MnemonicGeneratorPage() {
               row.palavras_chave.forEach((t: string) => allTerms.add(t));
             }
           }
-          setSuggestedTerms([...allTerms].slice(0, 10));
+          const terms = [...allTerms].slice(0, 10);
+          setSuggestedTerms(terms);
+
+          // Auto-fill terms if textarea is empty (3-7 range)
+          if (!termosText.trim() && terms.length >= 3) {
+            const autoFill = terms.slice(0, 7);
+            setTermosText(autoFill.join("\n"));
+          }
         } else {
           setSuggestedTerms([]);
         }
