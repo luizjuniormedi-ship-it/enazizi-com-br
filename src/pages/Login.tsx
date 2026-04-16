@@ -167,10 +167,10 @@ const Login = () => {
         </div>
 
         {/* Features list */}
-        <div className="hidden lg:grid lg:grid-cols-2 gap-2 lg:gap-3">
+        <div className="grid grid-cols-2 gap-1.5 lg:gap-3">
           {features.map((f) => (
-            <div key={f.label} className="flex items-center gap-2 text-sm">
-              <f.icon className="h-4 w-4 text-primary shrink-0" />
+            <div key={f.label} className="flex items-center gap-1.5 lg:gap-2 text-xs lg:text-sm">
+              <f.icon className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-primary shrink-0" />
               <span className="text-muted-foreground">{f.label}</span>
             </div>
           ))}
