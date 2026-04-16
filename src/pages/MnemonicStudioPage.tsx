@@ -3,7 +3,7 @@ import {
   Brain, Sparkles, AlertTriangle, Loader2,
   Copy, Heart, MessageSquare, RefreshCw,
   ChevronDown, ChevronUp, Wand2, BookOpen, Eye, CheckCircle, XCircle, MinusCircle,
-  Target, HelpCircle, Lightbulb,
+  Target, HelpCircle, Lightbulb, Clapperboard, Volume2, Users, Zap, Crosshair,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -77,7 +77,23 @@ export default function MnemonicGeneratorPage() {
   const handleCopyAll = useCallback(() => {
     if (!result) return;
     const parts = [`📝 ${result.sigla}`, `💡 ${result.frase_mnemonica}`, "", `🔬 ${result.explicacao_tecnica}`, "", `📚 ${result.explicacao_didatica}`];
-    if (result.cena_visual) parts.push("", `🎨 ${result.cena_visual}`);
+    if (result.cena_memoravel) {
+      parts.push("", "═══ MEMORIZAÇÃO VISUAL ═══");
+      parts.push(`🎬 Cena: ${result.cena_memoravel.cena}`);
+      if (result.cena_memoravel.personagens) parts.push(`👥 Personagens: ${result.cena_memoravel.personagens}`);
+      if (result.cena_memoravel.acao) parts.push(`⚡ Ação: ${result.cena_memoravel.acao}`);
+      if (result.cena_memoravel.associacao_fonetica) parts.push(`🧠 Associação: ${result.cena_memoravel.associacao_fonetica}`);
+      if (result.cena_memoravel.emocao) parts.push(`😄 Impacto: ${result.cena_memoravel.emocao}`);
+    } else if (result.cena_visual) {
+      parts.push("", `🎨 ${result.cena_visual}`);
+    }
+    if (result.pontos_de_prova?.length) {
+      parts.push("", "═══ PONTOS DE PROVA ═══");
+      result.pontos_de_prova.forEach((pp, i) => {
+        parts.push(`${i + 1}. ❓ ${pp.pergunta_gatilho}`, `   ✅ ${pp.resposta_esperada}`);
+        if (pp.armadilha_comum) parts.push(`   ⚠️ ${pp.armadilha_comum}`);
+      });
+    }
     if (result.memorizacao_ativa?.pergunta_rapida) parts.push("", `❓ ${result.memorizacao_ativa.pergunta_rapida}`, `✅ ${result.memorizacao_ativa.resposta_esperada}`);
     navigator.clipboard.writeText(parts.join("\n"));
     toast.success("Tudo copiado!");
@@ -154,6 +170,9 @@ export default function MnemonicGeneratorPage() {
         const itensProva = safeArray(result.estrutura_prova?.itens_organizados);
         const difChave = safeArray(result.diferencial_prova?.diferencas_chave);
         const pegadinhas = safeArray(result.diferencial_prova?.pegadinhas);
+        const pontosDeProva = safeArray(result.pontos_de_prova);
+        const cenaMemoravel = result.cena_memoravel;
+        const assocVisuais = safeArray(result.associacoes_visuais);
 
         return (
         <div className="space-y-4">
@@ -182,14 +201,157 @@ export default function MnemonicGeneratorPage() {
             </CardContent>
           </Card>
 
+          {/* ═══ MEMORIZAÇÃO VISUAL AVANÇADA ═══ */}
+          {cenaMemoravel && (
+            <Card className="border-violet-500/30 bg-gradient-to-br from-violet-500/5 to-fuchsia-500/5 overflow-hidden">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center gap-2 text-violet-600">
+                  <Clapperboard className="h-5 w-5" /> Memorização Visual
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">Imagine a cena abaixo como um filme na sua mente</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* 🎬 Cena */}
+                <div className="p-4 rounded-xl bg-background/80 border border-violet-500/20 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-violet-600">
+                    <Clapperboard className="h-4 w-4" /> 🎬 Cena
+                  </div>
+                  <p className="text-sm leading-relaxed">{cenaMemoravel.cena}</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* 👥 Personagens */}
+                  {cenaMemoravel.personagens && (
+                    <div className="p-3 rounded-lg bg-background/80 border border-fuchsia-500/20 space-y-1">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-fuchsia-600">
+                        <Users className="h-3.5 w-3.5" /> 👥 Personagens
+                      </div>
+                      <p className="text-sm text-muted-foreground">{cenaMemoravel.personagens}</p>
+                    </div>
+                  )}
+
+                  {/* ⚡ Ação */}
+                  {cenaMemoravel.acao && (
+                    <div className="p-3 rounded-lg bg-background/80 border border-amber-500/20 space-y-1">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-amber-600">
+                        <Zap className="h-3.5 w-3.5" /> ⚡ Ação
+                      </div>
+                      <p className="text-sm text-muted-foreground">{cenaMemoravel.acao}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 🧠 Associação Fonética */}
+                {cenaMemoravel.associacao_fonetica && (
+                  <div className="p-3 rounded-lg bg-background/80 border border-blue-500/20 space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600">
+                      <Volume2 className="h-3.5 w-3.5" /> 🧠 Associação Fonética
+                    </div>
+                    <p className="text-sm text-muted-foreground">{cenaMemoravel.associacao_fonetica}</p>
+                  </div>
+                )}
+
+                {/* 😄 Impacto Emocional */}
+                {cenaMemoravel.emocao && (
+                  <div className="p-3 rounded-lg bg-background/80 border border-emerald-500/20 space-y-1">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600">
+                      😄 Impacto emocional
+                    </div>
+                    <p className="text-sm text-muted-foreground italic">{cenaMemoravel.emocao}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Associações visuais avançadas */}
+          {assocVisuais.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-primary" /> Mapa visual por termo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {assocVisuais.map((av, i) => (
+                    <div key={i} className="p-3 rounded-lg border bg-muted/30 space-y-1">
+                      <div className="flex items-start gap-2">
+                        <Badge variant="outline" className="text-xs shrink-0">{av.termo}</Badge>
+                        <span className="text-sm">→ {av.elemento_visual}</span>
+                      </div>
+                      {av.associacao_fonetica && (
+                        <p className="text-xs text-blue-600">🔊 {av.associacao_fonetica}</p>
+                      )}
+                      {av.acao_na_cena && (
+                        <p className="text-xs text-amber-600">⚡ {av.acao_na_cena}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* 🎯 Pontos de Prova */}
+          {pontosDeProva.length > 0 && (
+            <Card className="border-red-500/20 bg-red-500/5">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2 text-red-600">
+                  <Crosshair className="h-4 w-4" /> 🎯 Pontos de Prova
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pontosDeProva.map((pp, i) => (
+                  <div key={i} className="p-3 rounded-lg border border-red-500/15 bg-background/80 space-y-2">
+                    <p className="text-sm font-semibold">❓ {pp.pergunta_gatilho}</p>
+                    <p className="text-sm text-emerald-600">✅ {pp.resposta_esperada}</p>
+                    {pp.armadilha_comum && (
+                      <p className="text-xs text-destructive">⚠️ Armadilha: {pp.armadilha_comum}</p>
+                    )}
+                    {pp.dica_visual && (
+                      <p className="text-xs text-violet-600">🎬 Dica visual: {pp.dica_visual}</p>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Imagem gerada */}
+          {result.image_url && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Eye className="h-4 w-4 text-primary" /> Imagem mnemônica
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <img src={result.image_url} alt={`Mnemônico: ${result.sigla}`} className="rounded-lg max-h-96 w-full object-contain mx-auto border" loading="lazy" />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Cena visual texto (fallback quando não há cena_memoravel) */}
+          {!cenaMemoravel && result.cena_visual && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2"><Eye className="h-4 w-4 text-primary" /> Cena visual</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{result.cena_visual}</p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Explicações */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Explicação técnica</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">📚 Explicação técnica</CardTitle></CardHeader>
               <CardContent><p className="text-sm text-muted-foreground">{result.explicacao_tecnica}</p></CardContent>
             </Card>
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Explicação didática</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">📖 Explicação didática</CardTitle></CardHeader>
               <CardContent><p className="text-sm text-muted-foreground">{result.explicacao_didatica}</p></CardContent>
             </Card>
           </div>
@@ -297,35 +459,7 @@ export default function MnemonicGeneratorPage() {
             </Collapsible>
           )}
 
-          {/* Cena visual + Imagem */}
-          {(result.cena_visual || result.image_url) && (
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center justify-between gap-2">
-                  <span className="flex items-center gap-2"><Eye className="h-5 w-5 text-primary" /> Cena visual</span>
-                  <Badge variant={result.image_url ? "default" : "secondary"} className="text-xs">{result.image_url ? "Imagem gerada" : "Imagem indisponível"}</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {result.image_url ? (
-                  <img src={result.image_url} alt={`Mnemônico: ${result.sigla}`} className="rounded-lg max-h-96 w-full object-contain mx-auto border" loading="lazy" />
-                ) : (
-                  <div className="rounded-lg border bg-muted/30 p-4 text-sm text-muted-foreground">Use a cena visual como apoio de estudo.</div>
-                )}
-                {result.cena_visual && <p className="text-sm text-muted-foreground">{result.cena_visual}</p>}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Alertas */}
-          {alertas.length > 0 && (
-            <Card className="border-yellow-500/30">
-              <CardHeader className="pb-2"><CardTitle className="text-sm flex items-center gap-2 text-yellow-500"><AlertTriangle className="h-4 w-4" /> Alertas</CardTitle></CardHeader>
-              <CardContent><ul className="text-sm space-y-1">{alertas.map((a, i) => <li key={i} className="text-muted-foreground">• {a}</li>)}</ul></CardContent>
-            </Card>
-          )}
-
-          {/* Associações */}
+          {/* Associações de letras (items_map) */}
           {itemsMap.length > 0 && (
             <Card>
               <CardHeader className="pb-2"><CardTitle className="text-sm">Mapa de associações</CardTitle></CardHeader>

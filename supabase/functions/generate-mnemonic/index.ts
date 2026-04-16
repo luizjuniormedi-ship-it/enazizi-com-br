@@ -9,10 +9,25 @@ const corsHeaders = {
 
 interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; }
 interface MapaClinico { termo_original: string; qualificadores: string[]; representacao_no_mnemonico: string; explicacao: string; }
+interface CenaMemoravel {
+  cena: string;
+  personagens: string;
+  acao: string;
+  associacao_fonetica: string;
+  emocao: string;
+}
+interface PontoDeProva {
+  pergunta_gatilho: string;
+  resposta_esperada: string;
+  armadilha_comum: string;
+  dica_visual: string;
+}
 interface GeneratorOutput {
   tipo: string; sigla: string; frase_mnemonica: string; explicacao_tecnica: string;
   explicacao_didatica: string; mapa_completo: MapaClinico[];
   justificativa_clinica: string; justificativa_linguistica: string;
+  cena_memoravel: CenaMemoravel;
+  pontos_de_prova: PontoDeProva[];
   associacoes?: Array<{ letra: string; termo_original: string; representacao_no_mnemonico: string }>;
 }
 interface LinguisticAuditOutput {
@@ -47,33 +62,32 @@ const GLOBAL_TIMEOUT_MS = 20000; // 20s global timeout
 
 // ═══ PROMPTS ═══
 
-const PROMPT_GERADOR = `Você é um professor brasileiro de medicina com 20 anos de experiência em ensino clínico.
+const PROMPT_GERADOR = `Você é um professor brasileiro de medicina com 20 anos de experiência em ensino clínico E especialista em técnicas de memorização visual avançada (Palácio da Memória, Método de Loci, associação fonética).
 
-Crie um mnemônico médico em português do Brasil que seja NATURAL, COMPLETO e MEMORÁVEL.
+Crie um mnemônico médico que seja VISUAL, NARRATIVO, MEMORÁVEL e CLINICAMENTE FIEL.
 
-REGRAS DE FIDELIDADE CLÍNICA:
+═══ PADRÃO DE MEMORIZAÇÃO VISUAL OBRIGATÓRIO ═══
+
+Para cada mnemônico você DEVE criar:
+
+1. CENA VISUAL CLARA — Descreva uma cena imaginável como se fosse um filme. Deve ser vívida, com cores, ambiente e detalhes.
+2. ASSOCIAÇÃO FONÉTICA — Relacione cada termo com uma palavra que soe parecido (ex: "Contemplação" → "Conta-gotas").
+3. PERSONAGENS — Crie elementos visuais que representem os conceitos (objetos, animais, pessoas em situações inusitadas).
+4. AÇÃO/MOVIMENTO — A cena DEVE ter movimento, comportamento ou interação entre personagens. Cenas estáticas são proibidas.
+5. EMOÇÃO — Inclua humor leve, absurdo memorável ou impacto emocional que fixe a memória.
+
+═══ REGRAS DE FIDELIDADE CLÍNICA ═══
 1. PRESERVAR 100% DOS TERMOS — não omitir nenhum
 2. PRESERVAR QUALIFICADORES — "bordas elevadas e nítidas" NÃO vira "bordas nítidas"
-3. "dor intensa/queimação" NÃO vira "dor queima"
-4. "fatores de risco" NÃO vira "fatores"
-5. NUNCA truncar ou simplificar termos perdendo precisão
+3. NUNCA truncar ou simplificar termos perdendo precisão
 
-REGRAS DE NATURALIDADE:
-6. Deve soar como fala de professor em aula
-7. Fácil de repetir em voz alta
-8. NUNCA palavras truncadas ou artificiais
-9. NUNCA sigla forçada que piore clareza
-10. NUNCA "Paciente com...", "Lembre que..."
-11. Linguagem oral brasileira natural
+═══ REGRAS DE NATURALIDADE ═══
+4. Deve soar como fala de professor em aula
+5. Fácil de repetir em voz alta
+6. NUNCA palavras truncadas ou artificiais
+7. Linguagem oral brasileira natural
 
-FORMATO — ordem de preferência:
-1. FRASE natural (primeira escolha)
-2. IMAGEM MENTAL forte
-3. MINI-HISTÓRIA
-4. SIGLA (somente se excelente e pronunciável)
-
-TESTE: Leia em voz alta mentalmente. Se não soar natural em 5s → reescreva.
-
+═══ FORMATO DE SAÍDA ═══
 Retorne SOMENTE JSON:
 {
   "tipo": "frase" ou "sigla",
@@ -83,7 +97,22 @@ Retorne SOMENTE JSON:
   "explicacao_didatica": "string",
   "mapa_completo": [{"termo_original":"string","qualificadores":["string"],"representacao_no_mnemonico":"string","explicacao":"string"}],
   "justificativa_clinica": "string",
-  "justificativa_linguistica": "string"
+  "justificativa_linguistica": "string",
+  "cena_memoravel": {
+    "cena": "Descrição cinematográfica da cena visual completa",
+    "personagens": "Elementos visuais e personagens da cena",
+    "acao": "O que acontece na cena (movimento, interação)",
+    "associacao_fonetica": "Explicação da ponte sonora entre a palavra e o termo real",
+    "emocao": "Elemento de humor/absurdo/impacto emocional"
+  },
+  "pontos_de_prova": [
+    {
+      "pergunta_gatilho": "Pergunta rápida de prova",
+      "resposta_esperada": "Resposta correta",
+      "armadilha_comum": "Erro frequente em provas",
+      "dica_visual": "Qual parte da cena visual responde isso"
+    }
+  ]
 }`;
 
 const PROMPT_AUDITOR_MEDICO = `Você é auditor médico EXTREMAMENTE rigoroso em fidelidade clínica de mnemônicos.
@@ -132,11 +161,25 @@ Dê nota 0-100. Se necessário, proponha versão otimizada.
 Retorne SOMENTE JSON:
 {"score_pedagogico":0,"facilidade_memorizacao":0,"clareza":0,"associacao_mental":0,"aplicabilidade_em_aula":0,"aplicabilidade_em_prova":0,"pontos_fortes":[],"pontos_fracos":[],"versao_otimizada":null}`;
 
-const PROMPT_VISUAL = `Você é especialista em memória visual aplicada à medicina.
-Crie cena visual forte, associação visual item por item, prompt de imagem em INGLÊS.
-O prompt_imagem DEVE começar com: "Clean medical infographic illustration, flat design, high contrast, saturated colors, pure white background, no text, no labels, no letters."
+const PROMPT_VISUAL = `Você é especialista em memória visual aplicada à medicina, com expertise em Palácio da Memória e técnicas de ancoragem visual.
+
+Para cada termo clínico, crie uma CENA VISUAL CINEMATOGRÁFICA que contenha:
+- Personagens ou objetos que representam visualmente o conceito
+- Uma AÇÃO clara (movimento, interação, transformação)
+- Associação FONÉTICA entre a representação visual e o termo real
+- Elemento de HUMOR ou ABSURDO para fixar na memória
+
+A cena_visual deve ser uma NARRATIVA ÚNICA onde todos os elementos interagem.
+Cada associação visual deve explicar POR QUE aquele elemento visual representa aquele termo.
+
+O prompt_imagem DEVE começar com: "Vivid cartoon-style medical memory scene, colorful characters interacting, dynamic action, clean composition, pure white background, no text, no labels, no letters."
+
 Retorne SOMENTE JSON:
-{"cena_visual":"string","associacoes_visuais":[{"termo":"string","elemento_visual":"string"}],"prompt_imagem":"string"}`;
+{
+  "cena_visual": "string — narrativa visual completa da cena como um filme",
+  "associacoes_visuais": [{"termo":"string","elemento_visual":"string","associacao_fonetica":"string","acao_na_cena":"string"}],
+  "prompt_imagem": "string em inglês"
+}`;
 
 const PROMPT_ESTRUTURA_PROVA = `Você é especialista em provas de residência médica no Brasil.
 Para o tema e termos, crie estrutura de prova com pontos-chave, armadilhas, diferencial diagnóstico e pergunta de memorização ativa.
@@ -549,6 +592,9 @@ serve(async (req: Request) => {
           estrutura_prova: exam.estrutura_prova,
           diferencial_prova: exam.diferencial_prova,
           memorizacao_ativa: exam.memorizacao_ativa,
+          // ═══ NOVO: Memorização Visual Avançada ═══
+          cena_memoravel: approved.cena_memoravel ?? null,
+          pontos_de_prova: approved.pontos_de_prova ?? [],
         },
       });
     } catch (error) {

@@ -116,6 +116,28 @@ export interface MemorizacaoAtiva {
   gatilho_mental: string;
 }
 
+export interface CenaMemoravel {
+  cena: string;
+  personagens: string;
+  acao: string;
+  associacao_fonetica: string;
+  emocao: string;
+}
+
+export interface PontoDeProva {
+  pergunta_gatilho: string;
+  resposta_esperada: string;
+  armadilha_comum: string;
+  dica_visual: string;
+}
+
+export interface AssociacaoVisualAvancada {
+  termo: string;
+  elemento_visual: string;
+  associacao_fonetica?: string;
+  acao_na_cena?: string;
+}
+
 export interface MnemonicResultData {
   request_id: string;
   result_id: string;
@@ -135,7 +157,7 @@ export interface MnemonicResultData {
   image_failed?: boolean;
   alertas: string[];
   associacoes: Associacao[];
-  associacoes_visuais: Array<{ termo: string; elemento_visual: string }>;
+  associacoes_visuais: AssociacaoVisualAvancada[];
   image_url: string | null;
   items_map: Array<{
     letter: string;
@@ -149,6 +171,9 @@ export interface MnemonicResultData {
   estrutura_prova?: { topico: string; itens_organizados: EstruturaProvaItem[] };
   diferencial_prova?: DiferencialProva;
   memorizacao_ativa?: MemorizacaoAtiva;
+  // ═══ MEMORIZAÇÃO VISUAL AVANÇADA ═══
+  cena_memoravel?: CenaMemoravel | null;
+  pontos_de_prova?: PontoDeProva[];
 }
 
 export interface MnemonicApiResponse {
