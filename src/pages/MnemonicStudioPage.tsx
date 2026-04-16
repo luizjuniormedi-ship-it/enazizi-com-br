@@ -15,9 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useGenerateMnemonic } from "@/hooks/useGenerateMnemonic";
 import { useToggleFavorite } from "@/hooks/useToggleFavorite";
 import { useRegenerateMnemonic } from "@/hooks/useRegenerateMnemonic";
+import { generateWithAutoRetry, isValidMnemonicResult } from "@/lib/mnemonicAutoRetry";
 import { MnemonicFeedbackModal } from "@/components/mnemonics/MnemonicFeedbackModal";
 import { validateMnemonicForm } from "@/utils/mnemonicValidation";
 import { supabase } from "@/integrations/supabase/client";
@@ -118,27 +118,39 @@ export default function MnemonicGeneratorPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [tema]);
 
-  const generateMutation = useGenerateMnemonic();
   const favoriteMutation = useToggleFavorite();
   const regenerateMutation = useRegenerateMnemonic();
   const termos = termosText.split("\n").map(t => t.trim()).filter(Boolean);
 
-  const isLoading = generateMutation.isPending || regenerateMutation.isPending;
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingStatus, setGeneratingStatus] = useState<string>("Gerando mnemônico...");
+  const isLoading = isGenerating || regenerateMutation.isPending;
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     const validation = validateMnemonicForm({ tema, termos, estilo, publico });
     if (!validation.valid) { setFormErrors(validation.errors); return; }
     setFormErrors({});
     setResult(null);
     setQuickFeedback(null);
-    generateMutation.mutate(
-      { tema: tema.trim(), termos, estilo, publico },
-      {
-        onSuccess: (res) => { if (res.success && res.data) { setResult(res.data); toast.success("Mnemônico gerado!"); } else { toast.error(res.error || "Erro ao gerar."); } },
-        onError: (err) => toast.error(err.message),
+    setIsGenerating(true);
+    setGeneratingStatus("Gerando mnemônico...");
+    try {
+      const res = await generateWithAutoRetry(
+        { tema: tema.trim(), termos, estilo, publico },
+        (msg) => setGeneratingStatus(msg)
+      );
+      if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
+        setResult(res.data);
+        toast.success("Mnemônico gerado!");
+      } else {
+        toast.error(res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.");
       }
-    );
-  }, [tema, termos, estilo, publico, generateMutation]);
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao gerar mnemônico.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [tema, termos, estilo, publico]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;
@@ -354,8 +366,10 @@ export default function MnemonicGeneratorPage() {
         <Card className="border-primary/20">
           <CardContent className="py-12 text-center space-y-3">
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-            <p className="text-sm text-muted-foreground">Gerando e refinando o mnemônico para garantir qualidade...</p>
-            <p className="text-xs text-muted-foreground">O sistema valida automaticamente e regenera se necessário (até 3 tentativas)</p>
+            <p className="text-sm text-muted-foreground">{generatingStatus}</p>
+            <p className="text-xs text-muted-foreground">
+              O sistema valida automaticamente e regenera se a qualidade não for suficiente.
+            </p>
           </CardContent>
         </Card>
       )}

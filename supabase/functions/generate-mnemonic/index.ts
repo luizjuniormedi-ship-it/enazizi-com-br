@@ -172,52 +172,56 @@ async function insertResult(db: SupabaseClient, p: {
 
 const PROMPT_MNEMONIC = `Você é um especialista em memorização médica para provas de residência.
 
-Sua ÚNICA tarefa é criar um mnemônico PERFEITO em português do Brasil.
+Sua tarefa é criar um mnemônico em português do Brasil com COERÊNCIA TEXTUAL REAL.
 
-═══ REGRAS OBRIGATÓRIAS ═══
-1. Criar uma SIGLA com base nos termos
-2. Criar uma FRASE COMPLETA, coerente e fácil de memorizar
-3. Criar uma CENA VISUAL absurda, exagerada e memorável
-4. Criar EXPLICAÇÃO DIDÁTICA clara
-5. Criar EXPLICAÇÃO TÉCNICA correta
-6. Criar ASSOCIAÇÃO entre cada termo e a frase
+═══ ORDEM DE CRIAÇÃO (siga estritamente) ═══
+1. Primeiro gere a PALAVRA, SIGLA ou FRASE mnemônica.
+2. Ela deve soar NATURAL para um aluno brasileiro (pronunciável, ritmada, fácil de falar em voz alta).
+3. NÃO repita literalmente os termos de entrada.
+4. A frase deve ser memorável, pronunciável e coerente em português.
+5. Depois explique a ASSOCIAÇÃO entre cada termo e a frase.
+6. Depois crie uma CENA VISUAL coerente com a frase.
+7. A frase NÃO pode ser truncada, artificial, traduzida ou sem sentido.
+
+Se a saída ficar incoerente, GERE NOVAMENTE internamente antes de responder.
 
 ═══ PROIBIDO ═══
-- Retornar campos vazios
+- Campos vazios
 - Repetir literalmente os termos como frase
-- Frase sem sentido ou artificial
-- Texto genérico ou acadêmico demais
-- Parecer tradução do inglês
+- Frase sem sentido, artificial ou que pareça tradução do inglês
+- Texto genérico, acadêmico demais ou placeholder
 - Palavras truncadas ou inventadas sem lógica
+- Score zero ou ausente
 
 ═══ EXEMPLOS DE BONS MNEMÔNICOS ═══
 - Nervos cranianos: "Oh Odete, Ouve Tu: Trópegos Abelhudos Ficam Vagando Grosseiramente na Horta e na Hipófise"
 - Critérios de Light: "PELE" (Proteína, Exsudato, LDH, Efusão)
 - Síndrome nefrótica: "PROLAPSO" (Proteinúria, Lipidúria, Albumina baixa, Perda proteica, Sódio retido, Oligúria)
 
-═══ AUTOAVALIAÇÃO ═══
+═══ AUTOAVALIAÇÃO OBRIGATÓRIA ═══
 Antes de retornar, verifique:
 - Consigo falar em voz alta com naturalidade? Se não, refaça.
 - Um aluno lembraria depois de ouvir 2x? Se não, refaça.
-- Todos os termos estão representados? Se não, refaça.
-- A frase faz sentido em português? Se não, refaça.
+- Todos os termos estão representados na associação? Se não, refaça.
+- A frase faz sentido em português brasileiro? Se não, refaça.
 
 ═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
 {
   "sigla": "a sigla criada",
-  "frase_mnemonica": "a frase mnemônica completa e memorável",
+  "frase_mnemonica": "a frase mnemônica completa, natural e memorável",
+  "explicacao_associacao": "como cada termo se conecta à frase mnemônica (linha por termo)",
   "explicacao_didatica": "explicação clara de como o mnemônico ajuda a lembrar",
   "explicacao_tecnica": "breve contexto clínico correto do tema",
-  "cena_visual": "descrição de uma cena 3D estilo Pixar, absurda e memorável, com personagens exagerados",
+  "cena_visual": "cena 3D estilo Pixar, absurda e memorável, COERENTE com a frase, com personagens exagerados",
   "associacoes": [
-    { "termo_original": "termo1", "representacao_no_mnemonico": "como esse termo aparece no mnemônico" }
+    { "termo_original": "termo1", "representacao_no_mnemonico": "como esse termo aparece na frase" }
   ],
   "prompt_imagem": "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words. [descrição da cena em inglês]",
   "score_autoavaliacao": 0-100,
   "problemas_detectados": []
 }
 
-IMPORTANTE: A frase precisa fazer sentido em português e ser fácil de lembrar.`;
+IMPORTANTE: A frase precisa fazer sentido em português brasileiro e ser fácil de lembrar.`;
 
 
 const PROMPT_EXAM_POINTS = `Você é especialista em provas de residência médica brasileira.
@@ -334,6 +338,7 @@ serve(async (req: Request) => {
       // ══════════════════════════════════════
       interface MnemonicOutput {
         sigla: string; frase_mnemonica: string;
+        explicacao_associacao?: string;
         explicacao_didatica: string; explicacao_tecnica: string;
         cena_visual: string; prompt_imagem: string;
         associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string }>;
@@ -345,19 +350,25 @@ serve(async (req: Request) => {
         const issues: string[] = [];
         if (!m) { issues.push("resposta_vazia"); return issues; }
         const frase = (m.frase_mnemonica || "").trim();
-        const exp = (m.explicacao_didatica || "").trim();
+        const expAssoc = (m.explicacao_associacao || "").trim();
+        const expDid = (m.explicacao_didatica || "").trim();
         if (!frase) issues.push("frase_vazia");
         else if (frase.length < 8) issues.push("frase_curta_demais");
-        if (!exp) issues.push("explicacao_didatica_ausente");
-        else if (exp.length < 20) issues.push("explicacao_curta_demais");
+        if (!expAssoc && !expDid) issues.push("explicacao_associacao_ausente");
+        else if ((expAssoc || expDid).length < 20) issues.push("explicacao_curta_demais");
         if (!(m.explicacao_tecnica || "").trim()) issues.push("explicacao_tecnica_ausente");
         // Eco literal: frase é apenas a junção dos termos
         const fraseLow = frase.toLowerCase();
         const termosLow = termos.map(t => t.toLowerCase().trim());
         const joined = termosLow.join(" ").trim();
         if (fraseLow === joined || fraseLow === termosLow.join(", ")) issues.push("eco_literal_termos");
+        // Eco token: todos os tokens da frase são termos de entrada (frase = só lista de termos)
+        const fraseTokens = fraseLow.split(/\s+/).filter(Boolean);
+        const termTokens = new Set(termosLow.flatMap(t => t.split(/\s+/).filter(Boolean)));
+        const nonEcho = fraseTokens.filter(tok => !termTokens.has(tok));
+        if (fraseTokens.length > 0 && nonEcho.length === 0) issues.push("frase_so_repete_termos");
         // Placeholders óbvios
-        if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + exp)) issues.push("placeholder_detectado");
+        if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + expDid + " " + expAssoc)) issues.push("placeholder_detectado");
         // Score
         const score = Number(m.score_autoavaliacao || 0);
         if (score <= 0) issues.push("score_zero");
@@ -484,12 +495,15 @@ serve(async (req: Request) => {
 
       const associacoes = Array.isArray(mnemonic.associacoes) ? mnemonic.associacoes : [];
 
+      const explicacaoAssoc = (mnemonic.explicacao_associacao || mnemonic.explicacao_didatica || "").trim();
+      const explicacaoDid = (mnemonic.explicacao_didatica || mnemonic.explicacao_associacao || "").trim();
+
       const resultId = await insertResult(db, {
         request_id: requestId, user_id: userId, tema: payload.tema,
         sigla: mnemonic.sigla || "",
         frase_mnemonica: mnemonic.frase_mnemonica,
         explicacao_tecnica: mnemonic.explicacao_tecnica,
-        explicacao_didatica: mnemonic.explicacao_didatica,
+        explicacao_didatica: explicacaoDid,
         cena_visual: cenaVisual, prompt_imagem: promptImagem,
         score_medico: scoreMnemonic, score_pedagogico: scoreMnemonic,
         score_linguistico: scoreMnemonic, score_final: scoreFinal,
@@ -508,9 +522,9 @@ serve(async (req: Request) => {
           tema: payload.tema,
           sigla: mnemonic.sigla || "",
           frase_mnemonica: mnemonic.frase_mnemonica,
-          explicacao_associacao: mnemonic.explicacao_didatica,
+          explicacao_associacao: explicacaoAssoc,
           explicacao_tecnica: mnemonic.explicacao_tecnica,
-          explicacao_didatica: mnemonic.explicacao_didatica,
+          explicacao_didatica: explicacaoDid,
           cena_visual: cenaVisual,
           prompt_imagem: promptImagem,
           image_url: imageUrl,
