@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   Brain, Sparkles, AlertTriangle, Loader2,
@@ -325,6 +326,7 @@ function EffectivenessPanel() {
 }
 
 export default function MnemonicGeneratorPage() {
+  const [searchParams] = useSearchParams();
   const [tema, setTema] = useState("");
   const [termosText, setTermosText] = useState("");
   const [estilo, setEstilo] = useState("frase + imagem mental");
@@ -340,6 +342,33 @@ export default function MnemonicGeneratorPage() {
   const [savingFsrs, setSavingFsrs] = useState(false);
   const [quickFeedback, setQuickFeedback] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("gerar");
+  const [missionBanner, setMissionBanner] = useState<{
+    mode: string; style?: string; topic?: string;
+  } | null>(null);
+
+  // ── Deep-link from study-next mission ──
+  useEffect(() => {
+    const origin = searchParams.get("origin");
+    const topicParam = searchParams.get("topic");
+    const modeParam = searchParams.get("mode");
+    const styleParam = searchParams.get("style");
+
+    if (origin === "mission" && topicParam) {
+      setTema(topicParam);
+      setMissionBanner({ mode: modeParam || "create_new", style: styleParam || undefined, topic: topicParam });
+
+      // If regenerate with style hint, pre-select style
+      if (styleParam) {
+        const styleMap: Record<string, string> = {
+          visual: "visual cinematográfico",
+          curto: "frase + imagem mental",
+          "engraçado": "humor médico",
+          "acadêmico": "frase + imagem mental",
+        };
+        setEstilo(styleMap[styleParam] || estilo);
+      }
+    }
+  }, [searchParams]);
 
   const { data: errorSuggestions } = useErrorSuggestions();
 
@@ -497,6 +526,37 @@ export default function MnemonicGeneratorPage() {
 
         {/* ═══ TAB: GERAR ═══ */}
         <TabsContent value="gerar" className="space-y-6">
+          {/* Banner de missão do study-next */}
+          {missionBanner && !result && (
+            <Card className="border-primary/40 bg-gradient-to-r from-primary/10 to-violet-500/10">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+                    {missionBanner.mode === "regenerate" ? <RefreshCw className="h-5 w-5 text-primary" /> :
+                     missionBanner.mode === "review_existing" ? <Eye className="h-5 w-5 text-primary" /> :
+                     <Sparkles className="h-5 w-5 text-primary" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-semibold text-sm">
+                      {missionBanner.mode === "regenerate"
+                        ? `🔄 Regenerar mnemônico: ${missionBanner.topic}`
+                        : missionBanner.mode === "review_existing"
+                        ? `👁️ Revisar mnemônico: ${missionBanner.topic}`
+                        : `✨ Criar mnemônico: ${missionBanner.topic}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {missionBanner.mode === "regenerate"
+                        ? `O sistema detectou que o mnemônico atual não está ajudando. Estilo sugerido: ${missionBanner.style || "visual"}.`
+                        : missionBanner.mode === "review_existing"
+                        ? "Revise o mnemônico para consolidar a memória deste tema."
+                        : "O motor adaptativo recomendou criar um mnemônico para este tema fraco."}
+                    </p>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => setMissionBanner(null)}>✕</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {/* Sugestões baseadas em erros — priorização avançada */}
           {errorSuggestions && errorSuggestions.length > 0 && !result && (
             <Card className="border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-red-500/5">
