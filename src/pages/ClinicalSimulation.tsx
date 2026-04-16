@@ -1832,10 +1832,20 @@ const ClinicalSimulation = () => {
                 <div ref={chatEndRef} />
               </div>
 
-              {/* Quick actions with popovers by category */}
+              {/* Quick actions */}
               {phase === "active" && (
-                <div className="border-t border-border/50 p-2 space-y-1.5">
+                <div className="border-t border-border/30 p-2 space-y-1.5">
                   <div className="flex gap-1.5 flex-wrap">
+                    {/* Mobile vitals trigger */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs shrink-0 gap-1.5 h-8 text-red-500 lg:hidden"
+                      onClick={() => setMobileVitalsOpen(true)}
+                    >
+                      <HeartPulse className="h-3.5 w-3.5" />
+                      Vitais
+                    </Button>
                     {QUICK_ACTION_CATEGORIES.map((cat) => (
                       <Popover key={cat.label}>
                         <PopoverTrigger asChild>
