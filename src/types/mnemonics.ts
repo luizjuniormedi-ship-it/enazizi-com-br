@@ -271,11 +271,8 @@ export const ESTILOS = [
 ] as const;
 
 export const PUBLICOS = [
-  { value: "residencia", label: "Residência Médica" },
   { value: "graduacao", label: "Graduação em Medicina" },
-  { value: "enfermagem", label: "Enfermagem" },
-  { value: "farmacia", label: "Farmácia" },
-  { value: "geral", label: "Saúde em Geral" },
+  { value: "residencia", label: "Residência Médica" },
 ] as const;
 
 export const REGENERATE_OPTIONS: Array<{ value: RegenerateStyle; label: string; description: string }> = [
