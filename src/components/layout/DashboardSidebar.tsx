@@ -98,6 +98,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos", description: "Resumos inteligentes gerados por IA" },
       { to: "/dashboard/apostilas", moduleKey: "apostilas", icon: BookMarked, label: "Apostilas", description: "Apostilas organizadas por especialidade" },
       { to: "/dashboard/cronicas", moduleKey: "cronicas", icon: BookOpen, label: "Crônicas Médicas", description: "Aprenda através de narrativas clínicas" },
+      { to: "/dashboard/mapas-mentais", moduleKey: "mapas-mentais", icon: Brain, label: "Mapas Mentais", description: "Mapas mentais interativos gerados por IA" },
       { to: "/dashboard/mentor", moduleKey: "mentor", icon: Bot, label: "Mentor IA", description: "Dúvidas rápidas e referências" },
       { to: "/dashboard/revisor", moduleKey: "revisor", icon: FileText, label: "Revisor Médico", description: "Correção médica por IA" },
     ],
