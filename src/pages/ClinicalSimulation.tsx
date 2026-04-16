@@ -1613,7 +1613,7 @@ const ClinicalSimulation = () => {
           )}
 
           {/* 3-column hospital layout */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden shrink">
 
             {/* LEFT: Patient panel - vitals + ABCDE */}
             <div className="hidden lg:flex flex-col border-r border-border/30 bg-muted/5 overflow-y-auto">
