@@ -103,31 +103,26 @@ async function generateOnce(
         }. Gere algo MAIS memorável, mais natural em PT-BR, sem repetir literalmente os termos.`
       : `As versões anteriores falharam. Simplifique: priorize uma frase curta, forte e coerente. NÃO invente frase confusa. NÃO repita os termos.`;
 
-  const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
-    body: { ...input, retry_mode: mode, retry_hint: retryHint },
-  });
+  // Use the service layer (handles mapping + edge-function error decoding)
+  const res = await generateMnemonic({
+    ...input,
+    // pass retry hint via estilo suffix so it's preserved through the existing service
+    estilo: input.estilo
+      ? `${input.estilo}${retryHint ? ` | RETRY_HINT: ${retryHint}` : ""}`
+      : retryHint
+      ? `RETRY_HINT: ${retryHint}`
+      : undefined,
+  } as any);
 
-  if (error) {
+  if (!res.success || !res.data) {
     return {
       success: false,
-      error: (error as any)?.message || "Erro de rede ao gerar mnemônico.",
-      code: "INVOKE_ERROR",
+      error: res.error || "Falha ao gerar mnemônico.",
+      code: "GENERATION_FAILED",
     };
   }
 
-  if (!data || typeof data !== "object") {
-    return { success: false, error: "Resposta inválida.", code: "BAD_RESPONSE" };
-  }
-
-  if (data.success === false) {
-    return {
-      success: false,
-      error: data.error || "Falha ao gerar mnemônico.",
-      code: data.code || "GENERATION_FAILED",
-    };
-  }
-
-  return data as GenerateMnemonicOutput;
+  return { success: true, data: res.data };
 }
 
 /**
