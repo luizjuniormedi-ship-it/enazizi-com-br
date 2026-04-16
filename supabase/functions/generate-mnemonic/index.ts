@@ -551,14 +551,25 @@ serve(async (req: Request) => {
       }
 
       // ══════════════════════════════════════
-      // ETAPA 3: Pontos de prova (não-bloqueante)
+      // ETAPA 3: Pontos de prova (preferir os já gerados na ETAPA 2)
       // ══════════════════════════════════════
       let pontosDeProva: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }> = [];
-      try {
-        const examCtx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}`;
-        const examResult = await callAI<{ pontos_de_prova: typeof pontosDeProva }>(aiKey, PROMPT_EXAM_POINTS, examCtx);
-        pontosDeProva = examResult.pontos_de_prova ?? [];
-      } catch { /* non-critical */ }
+      if (Array.isArray(mnemonic.pontos_prova) && mnemonic.pontos_prova.length > 0) {
+        pontosDeProva = mnemonic.pontos_prova
+          .filter((p: any) => p && (p.pergunta || p.resposta))
+          .map((p: any) => ({
+            pergunta_gatilho: String(p.pergunta || "").trim(),
+            resposta_esperada: String(p.resposta || "").trim(),
+            armadilha_comum: String(p.armadilha || "").trim(),
+          }));
+      }
+      if (pontosDeProva.length === 0) {
+        try {
+          const examCtx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}`;
+          const examResult = await callAI<{ pontos_de_prova: typeof pontosDeProva }>(aiKey, PROMPT_EXAM_POINTS, examCtx);
+          pontosDeProva = examResult.pontos_de_prova ?? [];
+        } catch { /* non-critical */ }
+      }
 
       // ══════════════════════════════════════
       // SCORES (simplified)
