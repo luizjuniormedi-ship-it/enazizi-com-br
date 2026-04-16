@@ -51,10 +51,8 @@ export default function MindMapFullscreen() {
   const { data: derivedStats } = useQuery({
     queryKey: ["map-derived-stats", id],
     queryFn: async () => {
-      const [fcRes, qRes] = await Promise.all([
-        supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("source_map_id" as any, id),
-        supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("source_map_id" as any, id),
-      ]);
+      const fcRes = await supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("source_map_id" as any, id);
+      const qRes = await supabase.from("questions_bank").select("id", { count: "exact", head: true }).eq("source_map_id" as any, id);
       return {
         flashcards: fcRes.count || 0,
         questions: qRes.count || 0,
