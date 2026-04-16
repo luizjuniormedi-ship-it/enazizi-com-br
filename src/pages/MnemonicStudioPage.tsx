@@ -118,27 +118,39 @@ export default function MnemonicGeneratorPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [tema]);
 
-  const generateMutation = useGenerateMnemonic();
   const favoriteMutation = useToggleFavorite();
   const regenerateMutation = useRegenerateMnemonic();
   const termos = termosText.split("\n").map(t => t.trim()).filter(Boolean);
 
-  const isLoading = generateMutation.isPending || regenerateMutation.isPending;
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatingStatus, setGeneratingStatus] = useState<string>("Gerando mnemônico...");
+  const isLoading = isGenerating || regenerateMutation.isPending;
 
-  const handleGenerate = useCallback(() => {
+  const handleGenerate = useCallback(async () => {
     const validation = validateMnemonicForm({ tema, termos, estilo, publico });
     if (!validation.valid) { setFormErrors(validation.errors); return; }
     setFormErrors({});
     setResult(null);
     setQuickFeedback(null);
-    generateMutation.mutate(
-      { tema: tema.trim(), termos, estilo, publico },
-      {
-        onSuccess: (res) => { if (res.success && res.data) { setResult(res.data); toast.success("Mnemônico gerado!"); } else { toast.error(res.error || "Erro ao gerar."); } },
-        onError: (err) => toast.error(err.message),
+    setIsGenerating(true);
+    setGeneratingStatus("Gerando mnemônico...");
+    try {
+      const res = await generateWithAutoRetry(
+        { tema: tema.trim(), termos, estilo, publico },
+        (msg) => setGeneratingStatus(msg)
+      );
+      if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
+        setResult(res.data);
+        toast.success("Mnemônico gerado!");
+      } else {
+        toast.error(res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.");
       }
-    );
-  }, [tema, termos, estilo, publico, generateMutation]);
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao gerar mnemônico.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [tema, termos, estilo, publico]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;
