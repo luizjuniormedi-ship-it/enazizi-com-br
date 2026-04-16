@@ -1,4 +1,5 @@
-import { RefreshCw, ArrowRight, ArrowLeft, Zap } from "lucide-react";
+import { RefreshCw, ArrowRight, ArrowLeft, Zap, Brain } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
