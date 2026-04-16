@@ -1582,7 +1582,7 @@ const ClinicalSimulation = () => {
 
       {/* ACTIVE SIMULATION */}
       {(phase === "active" || phase === "finishing") && (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col" style={{ height: isFullscreen ? "calc(100vh - 56px)" : "calc(100vh - 120px)" }}>
           {/* Hospital-style shift header */}
           <ShiftHeader
             patientStatus={patientStatus}
