@@ -15,9 +15,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { useGenerateMnemonic } from "@/hooks/useGenerateMnemonic";
 import { useToggleFavorite } from "@/hooks/useToggleFavorite";
 import { useRegenerateMnemonic } from "@/hooks/useRegenerateMnemonic";
+import { generateWithAutoRetry, isValidMnemonicResult } from "@/lib/mnemonicAutoRetry";
 import { MnemonicFeedbackModal } from "@/components/mnemonics/MnemonicFeedbackModal";
 import { validateMnemonicForm } from "@/utils/mnemonicValidation";
 import { supabase } from "@/integrations/supabase/client";
