@@ -45,11 +45,11 @@ const COLOR_LEGEND = [
 
 export default function MindMaps() {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"recent" | "difficulty" | "alpha">("recent");
-  const [selectedMap, setSelectedMap] = useState<any>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [newTopic, setNewTopic] = useState("");
   const [newSpecialty, setNewSpecialty] = useState("");
@@ -90,7 +90,7 @@ export default function MindMaps() {
       queryClient.invalidateQueries({ queryKey: ["mental-maps"] });
       setGenerateOpen(false);
       setNewTopic("");
-      setSelectedMap(data.map);
+      navigate(`/dashboard/mapas-mentais/${data.map.id}`);
       toast.success("Mapa mental gerado com sucesso!");
     },
     onError: (err: Error) => {
@@ -105,7 +105,6 @@ export default function MindMaps() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mental-maps"] });
-      if (selectedMap) setSelectedMap(null);
       toast.success("Mapa excluído");
     },
   });
@@ -194,47 +193,6 @@ export default function MindMaps() {
       </DialogContent>
     </Dialog>
   );
-
-  // ── MAP VIEWER MODE ──
-  if (selectedMap) {
-    return (
-      <div className="flex flex-col h-[calc(100vh-2rem)] p-3 sm:p-4 md:p-5 animate-fade-in">
-        {/* Top bar */}
-        <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedMap(null)} className="gap-1.5 text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar
-          </Button>
-          <div className="h-5 w-px bg-border" />
-          <h1 className="text-sm sm:text-base font-bold truncate flex-1">{selectedMap.title}</h1>
-          <div className="flex items-center gap-2">
-            {selectedMap.specialty && <Badge variant="outline" className="text-[10px] hidden sm:flex">{selectedMap.specialty}</Badge>}
-            {selectedMap.difficulty && (
-              <Badge className={`text-[10px] border ${DIFFICULTY_LABELS[selectedMap.difficulty]?.class || ""}`}>
-                {DIFFICULTY_LABELS[selectedMap.difficulty]?.label || selectedMap.difficulty}
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Color legend bar */}
-        <div className="flex items-center gap-3 mb-3 overflow-x-auto pb-1 flex-shrink-0">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Legenda:</span>
-          {COLOR_LEGEND.map(c => (
-            <div key={c.label} className="flex items-center gap-1 whitespace-nowrap">
-              <span className={`h-2.5 w-2.5 rounded-full ${c.color} flex-shrink-0`} />
-              <span className="text-[10px] text-muted-foreground">{c.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Map fills remaining space */}
-        <div className="flex-1 min-h-0">
-          <MindMapViewer mapData={selectedMap.content_json} />
-        </div>
-      </div>
-    );
-  }
 
   // ── LIST MODE ──
   return (
