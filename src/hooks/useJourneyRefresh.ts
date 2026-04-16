@@ -60,7 +60,13 @@ export function useJourneyRefresh() {
           }
         });
 
-        invalidateAll();
+        // On SIGNED_IN: full cache reset (new session = fresh data everywhere)
+        // On TOKEN_REFRESHED: just invalidate (avoid wiping in-flight UI state)
+        if (event === "SIGNED_IN") {
+          queryClient.clear();
+        } else {
+          invalidateAll();
+        }
       }
     });
 

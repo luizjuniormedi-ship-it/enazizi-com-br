@@ -54,14 +54,62 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         }
 
-        // Update PWA service worker in background (no reload)
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.getRegistration().then((reg) => {
-            if (reg) {
-              reg.update().catch(() => {});
-              if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+        // ============================================================
+        // GLOBAL REFRESH ON LOGIN (all platforms: web + PWA)
+        // 1. Clear stale localStorage caches (missions, plans, snapshots)
+        // 2. Clear ALL service worker caches
+        // 3. Update SW + force reload if a new version is waiting
+        // ============================================================
+        try {
+          // Skip on the very first session restore of this tab to avoid
+          // reload loops; only act on real sign-in transitions.
+          const lastRefreshKey = "enazizi_last_global_refresh_ts";
+          const lastRefresh = parseInt(localStorage.getItem(lastRefreshKey) || "0", 10);
+          const shouldHardRefresh = !lastRefresh || Date.now() - lastRefresh > 5 * 60 * 1000;
+
+          if (shouldHardRefresh) {
+            localStorage.setItem(lastRefreshKey, String(Date.now()));
+
+            // 1. Purge stale per-user caches in localStorage
+            const keysToPurge = Object.keys(localStorage).filter((k) =>
+              k.startsWith("enazizi_mission_") ||
+              k.startsWith("enazizi_dashboard_snapshot_") ||
+              k.startsWith("enazizi_weekly_snap_") ||
+              k.startsWith("enazizi_daily_plan_cache_") ||
+              k.startsWith("rq-cache-")
+            );
+            keysToPurge.forEach((k) => {
+              try { localStorage.removeItem(k); } catch { /* ignore */ }
+            });
+
+            // 2. Clear all Cache Storage entries (PWA + browser caches)
+            if ("caches" in window) {
+              caches.keys().then((names) => {
+                names.forEach((name) => caches.delete(name).catch(() => {}));
+              }).catch(() => {});
             }
-          }).catch(() => {});
+
+            // 3. Update service worker; if a new version is ready, hard-reload
+            if ("serviceWorker" in navigator) {
+              navigator.serviceWorker.getRegistration().then((reg) => {
+                if (!reg) return;
+                reg.update().then(() => {
+                  if (reg.waiting) {
+                    reg.waiting.postMessage({ type: "SKIP_WAITING" });
+                    // Reload once the new SW takes control
+                    let reloaded = false;
+                    navigator.serviceWorker.addEventListener("controllerchange", () => {
+                      if (reloaded) return;
+                      reloaded = true;
+                      window.location.reload();
+                    });
+                  }
+                }).catch(() => {});
+              }).catch(() => {});
+            }
+          }
+        } catch {
+          // Never block login on refresh errors
         }
       }
 
