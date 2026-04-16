@@ -1,10 +1,11 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Brain, Sparkles, AlertTriangle, Loader2,
   Copy, Heart, MessageSquare, RefreshCw,
   ChevronDown, ChevronUp, Wand2, BookOpen, Eye, CheckCircle, XCircle, MinusCircle,
   Target, HelpCircle, Lightbulb, Clapperboard, Volume2, Users, Zap, Crosshair,
-  Play, Bookmark, Clock, FlipHorizontal, Map, FileQuestion,
+  Play, Bookmark, Clock, FlipHorizontal, Map, FileQuestion, ThumbsUp, ThumbsDown, Minus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -107,6 +108,31 @@ function VisualQuizMode({ result, onClose }: { result: MnemonicResultData; onClo
   );
 }
 
+// ═══ SUGESTÕES DO BANCO DE ERROS ═══
+function useErrorSuggestions() {
+  return useQuery({
+    queryKey: ["mnemonic-error-suggestions"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data } = await supabase
+        .from("error_bank")
+        .select("tema, subtema, vezes_errado, categoria_erro")
+        .eq("user_id", user.id)
+        .eq("dominado", false)
+        .order("vezes_errado", { ascending: false })
+        .limit(5);
+      return (data || []).map(e => ({
+        tema: e.tema,
+        subtema: e.subtema,
+        vezes_errado: e.vezes_errado,
+        categoria: e.categoria_erro,
+      }));
+    },
+    staleTime: 60_000,
+  });
+}
+
 export default function MnemonicGeneratorPage() {
   const [tema, setTema] = useState("");
   const [termosText, setTermosText] = useState("");
@@ -121,6 +147,9 @@ export default function MnemonicGeneratorPage() {
   const [quizMode, setQuizMode] = useState(false);
   const [savingFlashcard, setSavingFlashcard] = useState(false);
   const [savingFsrs, setSavingFsrs] = useState(false);
+  const [quickFeedback, setQuickFeedback] = useState<string | null>(null);
+
+  const { data: errorSuggestions } = useErrorSuggestions();
 
   const generateMutation = useGenerateMnemonic();
   const favoriteMutation = useToggleFavorite();
@@ -256,6 +285,35 @@ export default function MnemonicGeneratorPage() {
     }
   }, [result]);
 
+  // ═══ QUICK FEEDBACK ═══
+  const handleQuickFeedback = useCallback(async (level: "muito" | "pouco" | "nada") => {
+    if (!result) return;
+    setQuickFeedback(level);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const ratings: Record<string, number> = { muito: 5, pouco: 3, nada: 1 };
+      const r = ratings[level];
+      await supabase.from("mnemonic_feedback").insert({
+        user_id: user.id,
+        result_id: result.result_id,
+        request_id: result.request_id || null,
+        rating_general: r,
+        rating_medical: r,
+        rating_pedagogical: r,
+        comentario: `Quick feedback: ${level === "muito" ? "Ajudou muito" : level === "pouco" ? "Ajudou pouco" : "Não ajudou"}`,
+      });
+      toast.success("Feedback salvo!");
+    } catch { /* non-critical */ }
+  }, [result]);
+
+  // ═══ USAR SUGESTÃO DO ERROR BANK ═══
+  const handleUseSuggestion = useCallback((suggestion: { tema: string; subtema: string | null }) => {
+    setTema(suggestion.subtema ? `${suggestion.tema} — ${suggestion.subtema}` : suggestion.tema);
+    setTermosText("");
+    toast.info(`Tema "${suggestion.tema}" selecionado. Adicione os termos e gere o mnemônico.`);
+  }, []);
+
   const isLoading = generateMutation.isPending || regenerateMutation.isPending;
 
   return (
@@ -267,6 +325,34 @@ export default function MnemonicGeneratorPage() {
           <p className="text-muted-foreground text-sm">Veja → Entenda → Lembre → Aplique → Revise</p>
         </div>
       </div>
+
+      {/* ═══ SUGESTÕES BASEADAS EM ERROS ═══ */}
+      {errorSuggestions && errorSuggestions.length > 0 && !result && (
+        <Card className="border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-red-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-4 w-4" /> 🎯 Temas com erros recorrentes — crie mnemônicos para fixar
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {errorSuggestions.map((s, i) => (
+                <Button
+                  key={i}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleUseSuggestion(s)}
+                  className="border-amber-500/30 hover:bg-amber-500/10 text-xs"
+                >
+                  <AlertTriangle className="h-3 w-3 mr-1 text-amber-600" />
+                  {s.subtema || s.tema}
+                  <Badge variant="destructive" className="ml-1.5 text-[10px] px-1 py-0">{s.vezes_errado}×</Badge>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Form */}
       <Card>
@@ -681,8 +767,41 @@ export default function MnemonicGeneratorPage() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={handleCopyAll}><Copy className="h-4 w-4 mr-1" /> Copiar tudo</Button>
             <Button variant="outline" size="sm" onClick={handleFavorite} disabled={favoriteMutation.isPending}><Heart className="h-4 w-4 mr-1" /> Favoritar</Button>
-            <Button variant="outline" size="sm" onClick={() => setFeedbackOpen(true)}><MessageSquare className="h-4 w-4 mr-1" /> Feedback</Button>
+            <Button variant="outline" size="sm" onClick={() => setFeedbackOpen(true)}><MessageSquare className="h-4 w-4 mr-1" /> Feedback detalhado</Button>
           </div>
+
+          {/* ═══ QUICK FEEDBACK ═══ */}
+          <Card className="border-muted">
+            <CardContent className="py-3 flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-muted-foreground">Este mnemônico ajudou?</span>
+              <div className="flex gap-2">
+                <Button
+                  variant={quickFeedback === "muito" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickFeedback("muito")}
+                  className={quickFeedback === "muito" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+                >
+                  <ThumbsUp className="h-3.5 w-3.5 mr-1" /> Muito
+                </Button>
+                <Button
+                  variant={quickFeedback === "pouco" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickFeedback("pouco")}
+                  className={quickFeedback === "pouco" ? "bg-amber-600 hover:bg-amber-700" : ""}
+                >
+                  <Minus className="h-3.5 w-3.5 mr-1" /> Pouco
+                </Button>
+                <Button
+                  variant={quickFeedback === "nada" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleQuickFeedback("nada")}
+                  className={quickFeedback === "nada" ? "bg-red-600 hover:bg-red-700" : ""}
+                >
+                  <ThumbsDown className="h-3.5 w-3.5 mr-1" /> Não
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="flex flex-wrap gap-2">
             <span className="text-xs text-muted-foreground self-center mr-1">Regenerar:</span>
