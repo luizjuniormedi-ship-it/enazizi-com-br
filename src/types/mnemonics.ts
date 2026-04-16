@@ -12,6 +12,20 @@ export interface MnemonicRequest {
   termos: string[];
   estilo: string;
   publico: string;
+  termos_digitados?: string[];
+  termos_enriquecidos?: string[];
+  termos_priorizados?: string[];
+  subtopicos_relacionados?: string[];
+  contexto_clinico?: MnemonicClinicalContext;
+}
+
+export interface MnemonicClinicalContext {
+  tema_principal: string;
+  subtopicos_relacionados: string[];
+  palavras_chave: string[];
+  diferenciais_relevantes: string[];
+  termos_de_prova: string[];
+  fontes_utilizadas: string[];
 }
 
 // ══════════════════════════════════════════════════
@@ -144,6 +158,7 @@ export interface MnemonicResultData {
   tema: string;
   sigla: string;
   frase_mnemonica: string;
+  explicacao_associacao?: string;
   explicacao_tecnica: string;
   explicacao_didatica: string;
   cena_visual: string;
@@ -155,6 +170,11 @@ export interface MnemonicResultData {
   quality_flag: "high" | "medium" | "low";
   coverage_ok?: boolean;
   image_failed?: boolean;
+  termos_digitados?: string[];
+  termos_enriquecidos?: string[];
+  termos_priorizados?: string[];
+  subtopicos_relacionados?: string[];
+  contexto_clinico?: MnemonicClinicalContext | null;
   alertas: string[];
   associacoes: Associacao[];
   associacoes_visuais: AssociacaoVisualAvancada[];
