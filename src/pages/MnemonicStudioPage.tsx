@@ -285,6 +285,35 @@ export default function MnemonicGeneratorPage() {
     }
   }, [result]);
 
+  // ═══ QUICK FEEDBACK ═══
+  const handleQuickFeedback = useCallback(async (level: "muito" | "pouco" | "nada") => {
+    if (!result) return;
+    setQuickFeedback(level);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const ratings: Record<string, number> = { muito: 5, pouco: 3, nada: 1 };
+      const r = ratings[level];
+      await supabase.from("mnemonic_feedback").insert({
+        user_id: user.id,
+        result_id: result.result_id,
+        request_id: result.request_id || null,
+        rating_general: r,
+        rating_medical: r,
+        rating_pedagogical: r,
+        comentario: `Quick feedback: ${level === "muito" ? "Ajudou muito" : level === "pouco" ? "Ajudou pouco" : "Não ajudou"}`,
+      });
+      toast.success("Feedback salvo!");
+    } catch { /* non-critical */ }
+  }, [result]);
+
+  // ═══ USAR SUGESTÃO DO ERROR BANK ═══
+  const handleUseSuggestion = useCallback((suggestion: { tema: string; subtema: string | null }) => {
+    setTema(suggestion.subtema ? `${suggestion.tema} — ${suggestion.subtema}` : suggestion.tema);
+    setTermosText("");
+    toast.info(`Tema "${suggestion.tema}" selecionado. Adicione os termos e gere o mnemônico.`);
+  }, []);
+
   const isLoading = generateMutation.isPending || regenerateMutation.isPending;
 
   return (
@@ -296,6 +325,34 @@ export default function MnemonicGeneratorPage() {
           <p className="text-muted-foreground text-sm">Veja → Entenda → Lembre → Aplique → Revise</p>
         </div>
       </div>
+
+      {/* ═══ SUGESTÕES BASEADAS EM ERROS ═══ */}
+      {errorSuggestions && errorSuggestions.length > 0 && !result && (
+        <Card className="border-amber-500/30 bg-gradient-to-r from-amber-500/5 to-red-500/5">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-2 text-amber-700">
+              <AlertTriangle className="h-4 w-4" /> 🎯 Temas com erros recorrentes — crie mnemônicos para fixar
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {errorSuggestions.map((s, i) => (
+                <Button
+                  key={i}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleUseSuggestion(s)}
+                  className="border-amber-500/30 hover:bg-amber-500/10 text-xs"
+                >
+                  <AlertTriangle className="h-3 w-3 mr-1 text-amber-600" />
+                  {s.subtema || s.tema}
+                  <Badge variant="destructive" className="ml-1.5 text-[10px] px-1 py-0">{s.vezes_errado}×</Badge>
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Form */}
       <Card>
