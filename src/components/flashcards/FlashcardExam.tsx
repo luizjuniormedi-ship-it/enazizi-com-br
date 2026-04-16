@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Clock, ArrowRight, ArrowLeft, Bookmark, GraduationCap,
@@ -7,6 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Rating } from "@/hooks/useFsrs";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
 
 export interface FlashcardItem {
   id: string;
@@ -123,13 +124,30 @@ const FlashcardExam = ({
     setAnswerSubmitted(false);
   };
 
+  // Swipe gestures for mobile navigation
+  const swipeHandlers = useMemo(() => ({
+    onSwipeLeft: () => {
+      if (current < cards.length - 1) navigateTo(current + 1);
+    },
+    onSwipeRight: () => {
+      if (current > 0) navigateTo(current - 1);
+    },
+    onSwipeUp: () => {
+      if (!flipped) {
+        setFlipped(true);
+      }
+    },
+  }), [current, cards.length, flipped]);
+
+  const { onTouchStart, onTouchEnd } = useSwipeGesture(swipeHandlers);
+
   if (!card) return null;
 
   const unreviewedCount = cards.length - reviewedCount;
   const timeWarning = mode === "sprint" && (externalTimeLeft ?? 999) < 30;
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
+    <div className="space-y-4 animate-fade-in max-w-3xl mx-auto" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* Header sticky */}
       <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur py-2">
         <span className="text-sm font-medium">{current + 1}/{cards.length}</span>
