@@ -383,6 +383,22 @@ export default function MnemonicGeneratorPage() {
         </Card>
       )}
 
+      {/* Erro — quando todas as tentativas falharam */}
+      {!isLoading && !result && resultError && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="py-8 text-center space-y-3">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
+            <p className="text-sm font-medium text-destructive">{resultError}</p>
+            <p className="text-xs text-muted-foreground">
+              Nenhum resultado foi exibido para evitar conteúdo incoerente.
+            </p>
+            <Button onClick={handleGenerate} size="sm">
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Tentar novamente
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ═══ RESULT ═══ */}
       {result && (
         <div className="space-y-4">
