@@ -399,7 +399,16 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Justification — compact */}
+          {/* Weekly Summary + Personal Goals */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Suspense fallback={null}>
+              <SafeCard name="WeeklySummary"><WeeklySummaryCard /></SafeCard>
+            </Suspense>
+            <Suspense fallback={null}>
+              <SafeCard name="PersonalGoals"><PersonalGoalsCard /></SafeCard>
+            </Suspense>
+          </div>
+
           {activeRec && (
             <MissionJustification justification={justification} adaptiveState={adaptiveState} />
           )}
