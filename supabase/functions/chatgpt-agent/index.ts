@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import ENAZIZI_PROMPT from "../_shared/enazizi-prompt.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
+import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,14 @@ const LOVABLE_GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // ── Auth guard ──
+  const userId = await extractUserId(req);
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const { messages, userContext, enazizi_progress, error_bank, session_memory, mission_context } = await req.json();
@@ -146,7 +155,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
 
       if (response.ok) {
-        logAiUsage({ userId: "stream", functionName: "chatgpt-agent", modelUsed: "gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
+        logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "gpt-4o", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "standard" }).catch(() => {});
         return new Response(response.body, {
           headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
         });
@@ -197,7 +206,7 @@ ${session_memory.erros_consecutivos >= 3 ? "\n⚠️ ALERTA DE TRAVAMENTO: O alu
       });
     }
 
-    logAiUsage({ userId: "stream", functionName: "chatgpt-agent", modelUsed: "google/gemini-2.5-pro", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
+    logAiUsage({ userId, functionName: "chatgpt-agent", modelUsed: "google/gemini-2.5-pro", success: true, responseTimeMs: Date.now() - startMs, cacheHit: false, modelTier: "pro" }).catch(() => {});
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });

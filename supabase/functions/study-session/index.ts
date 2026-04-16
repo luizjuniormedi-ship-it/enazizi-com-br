@@ -433,6 +433,13 @@ let activeStreams = 0;
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const userId = await extractUserId(req);
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   // Check concurrency before processing
   if (activeStreams >= MAX_CONCURRENT_STREAMS) {
     console.warn(`study-session: rejected — ${activeStreams}/${MAX_CONCURRENT_STREAMS} streams active`);
@@ -494,7 +501,7 @@ ${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplif
 
     // Log AI usage (fire-and-forget)
     logAiUsage({
-      userId: "system-study-session",
+      userId,
       functionName: "study-session",
       modelUsed: usedModel,
       success: response.ok,

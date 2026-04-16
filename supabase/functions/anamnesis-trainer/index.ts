@@ -174,9 +174,9 @@ function ok(data: unknown) {
   });
 }
 
-function logAnamnesis(success: boolean, elapsed: number, errMsg?: string) {
+function logAnamnesis(success: boolean, elapsed: number, userId: string, errMsg?: string) {
   logAiUsage({
-    userId: "system-anamnesis",
+    userId,
     functionName: "anamnesis-trainer",
     modelUsed: "google/gemini-2.5-flash",
     success,
