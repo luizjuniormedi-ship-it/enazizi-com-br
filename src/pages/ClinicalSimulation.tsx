@@ -1945,12 +1945,29 @@ const ClinicalSimulation = () => {
             </CardContent>
           </Card>
 
-            {/* Side panels - desktop only */}
-            <div className="space-y-3 hidden lg:block">
-              <VitalsChart snapshots={vitalsSnapshots} />
-              <ExamsPanel exams={examResults} />
+            {/* RIGHT: Exams + Vitals Chart panel */}
+            <div className="hidden lg:flex flex-col border-l border-border/30 bg-muted/5 overflow-y-auto">
+              <div className="p-3 space-y-4">
+                <ExamsPanel exams={examResults} />
+                <VitalsChart snapshots={vitalsSnapshots} />
+              </div>
             </div>
           </div>
+
+          {/* Mobile: vitals sheet */}
+          <Sheet open={mobileVitalsOpen} onOpenChange={setMobileVitalsOpen}>
+            <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
+              <SheetHeader>
+                <SheetTitle className="flex items-center gap-2">
+                  <HeartPulse className="h-5 w-5 text-red-500" /> Sinais Vitais & Exames
+                </SheetTitle>
+              </SheetHeader>
+              <div className="space-y-4 mt-4">
+                <VitalsMonitor snapshots={vitalsSnapshots} patientStatus={patientStatus} />
+                <ExamsPanel exams={examResults} />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       )}
 
