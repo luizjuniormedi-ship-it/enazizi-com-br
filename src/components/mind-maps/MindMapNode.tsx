@@ -51,7 +51,7 @@ export const CategoryNode = memo(({ data, selected }: NodeProps) => {
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0 !w-0 !h-0" />
       <Handle type="source" position={Position.Bottom} className="!bg-transparent !border-0 !w-0 !h-0" />
       <div
-        className="px-4 py-3 rounded-xl text-center min-w-[150px] max-w-[200px] transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-lg"
+        className="px-5 py-3.5 rounded-xl text-center min-w-[160px] max-w-[220px] transition-all duration-200 group-hover:scale-[1.03] group-hover:shadow-lg"
         style={{
           background: colors.bg,
           color: colors.text,
@@ -61,10 +61,10 @@ export const CategoryNode = memo(({ data, selected }: NodeProps) => {
             : `0 2px 8px ${colors.glow}`,
         }}
       >
-        <span className="text-sm mr-1.5">{icon}</span>
-        <span className="text-[12px] font-semibold leading-tight">{d.label}</span>
+        <span className="text-base mr-1.5">{icon}</span>
+        <span className="text-sm font-semibold leading-tight">{d.label}</span>
         {d.details && (
-          <div className="mt-1 text-[9px] opacity-60 font-normal truncate">
+          <div className="mt-1 text-[11px] opacity-60 font-normal truncate">
             Clique para detalhes
           </div>
         )}
@@ -83,13 +83,13 @@ export const LeafNode = memo(({ data, selected }: NodeProps) => {
     <div className="relative group">
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0 !w-0 !h-0" />
       <div
-        className="px-3 py-2 rounded-lg text-center max-w-[160px] transition-all duration-200 group-hover:scale-[1.04]"
+        className="px-4 py-2.5 rounded-lg text-center max-w-[180px] transition-all duration-200 group-hover:scale-[1.04]"
         style={{
           background: `${colors.bg}dd`,
           color: colors.text,
           border: `1.5px solid ${selected ? colors.border : colors.border + "66"}`,
           boxShadow: selected ? `0 0 0 2px ${colors.glow}` : "none",
-          fontSize: "10px",
+          fontSize: "12px",
           fontWeight: 500,
         }}
       >
