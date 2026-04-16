@@ -394,27 +394,53 @@ serve(async (req: Request) => {
         if (!raw || typeof raw !== "object") return null;
         const m: any = { ...raw };
 
+        // cena_neuro_memoravel (novo schema) -> cena_visual
+        if (m.cena_neuro_memoravel && typeof m.cena_neuro_memoravel === "object" && !m.cena_visual) {
+          const cv = m.cena_neuro_memoravel;
+          const norm = {
+            descricao: cv.descricao,
+            personagens: cv.personagem ?? cv.personagens,
+            acao: cv.acao,
+            emocao: cv.emocao,
+          };
+          const parts = [norm.descricao, norm.personagens, norm.acao, norm.emocao]
+            .filter((v: any) => typeof v === "string" && v.trim());
+          m.cena_visual_obj = norm;
+          m.cena_visual = parts.join(" — ");
+        }
+
         // cena_visual pode vir como objeto { descricao, personagens, acao, emocao }
         if (m.cena_visual && typeof m.cena_visual === "object") {
           const cv = m.cena_visual;
-          const parts = [cv.descricao, cv.personagens, cv.acao, cv.emocao]
+          const parts = [cv.descricao, cv.personagens ?? cv.personagem, cv.acao, cv.emocao]
             .filter((v: any) => typeof v === "string" && v.trim());
           m.cena_visual_obj = cv;
           m.cena_visual = parts.join(" — ");
         }
 
-        // mapa_associacao -> associacoes (compat)
-        if (Array.isArray(m.mapa_associacao) && (!Array.isArray(m.associacoes) || m.associacoes.length === 0)) {
-          m.associacoes = m.mapa_associacao.map((a: any) => ({
-            termo_original: a?.termo_original ?? "",
-            representacao_no_mnemonico: a?.representacao ?? a?.representacao_no_mnemonico ?? "",
+        // associacoes pode vir no novo formato { termo, simbolo, explicacao }
+        if (Array.isArray(m.associacoes) && m.associacoes.length > 0 && m.associacoes.some((a: any) => a?.termo || a?.simbolo)) {
+          m.associacoes = m.associacoes.map((a: any) => ({
+            termo_original: a?.termo_original ?? a?.termo ?? "",
+            representacao_no_mnemonico: a?.representacao_no_mnemonico ?? a?.simbolo ?? a?.representacao ?? "",
             explicacao: a?.explicacao ?? "",
           }));
         }
 
-        // explicacao_associacao: derivar de explicacao_clinica ou do mapa
+        // mapa_associacao -> associacoes (compat)
+        if (Array.isArray(m.mapa_associacao) && (!Array.isArray(m.associacoes) || m.associacoes.length === 0)) {
+          m.associacoes = m.mapa_associacao.map((a: any) => ({
+            termo_original: a?.termo_original ?? a?.termo ?? "",
+            representacao_no_mnemonico: a?.representacao ?? a?.representacao_no_mnemonico ?? a?.simbolo ?? "",
+            explicacao: a?.explicacao ?? "",
+          }));
+        }
+
+        // explicacao_associacao: derivar de explicacao / explicacao_clinica / associacoes
         if (!m.explicacao_associacao || !String(m.explicacao_associacao).trim()) {
-          if (m.explicacao_clinica && String(m.explicacao_clinica).trim()) {
+          if (m.explicacao && String(m.explicacao).trim()) {
+            m.explicacao_associacao = String(m.explicacao).trim();
+          } else if (m.explicacao_clinica && String(m.explicacao_clinica).trim()) {
             m.explicacao_associacao = String(m.explicacao_clinica).trim();
           } else if (Array.isArray(m.associacoes) && m.associacoes.length) {
             m.explicacao_associacao = m.associacoes
@@ -425,7 +451,12 @@ serve(async (req: Request) => {
 
         // explicacao_didatica fallback
         if (!m.explicacao_didatica || !String(m.explicacao_didatica).trim()) {
-          m.explicacao_didatica = m.explicacao_clinica || m.explicacao_associacao || "";
+          m.explicacao_didatica = m.explicacao_clinica || m.explicacao || m.explicacao_associacao || "";
+        }
+
+        // explicacao_tecnica fallback (evita falhar validação no novo schema enxuto)
+        if (!m.explicacao_tecnica || !String(m.explicacao_tecnica).trim()) {
+          m.explicacao_tecnica = m.explicacao_clinica || m.explicacao || m.explicacao_didatica || "";
         }
 
         return m as MnemonicOutput;
