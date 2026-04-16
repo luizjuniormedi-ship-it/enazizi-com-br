@@ -486,17 +486,45 @@ serve(async (req: Request) => {
       const scoreFinal = Math.round((scoreMnemonic * 0.6 + scoreVisual * 0.2 + (imageUrl ? 100 : 0) * 0.2));
 
       // ══════════════════════════════════════
-      // PERSIST
+      // PERSIST — só itens REAIS de associação (sem fake termo→termo)
       // ══════════════════════════════════════
-      const itemsMap = payload.termos.map((t, i) => ({
-        letter: (mnemonic.sigla || "")[i]?.toUpperCase() || t.charAt(0).toUpperCase(),
-        word: t, original_item: t, symbol: null, symbol_reason: null,
-      }));
+      const associacoes = Array.isArray(mnemonic.associacoes)
+        ? mnemonic.associacoes.filter(a =>
+            a && typeof a === "object" &&
+            String(a.termo_original || "").trim() &&
+            String(a.representacao_no_mnemonico || "").trim() &&
+            String(a.representacao_no_mnemonico).trim().toLowerCase() !== String(a.termo_original).trim().toLowerCase()
+          )
+        : [];
 
-      const associacoes = Array.isArray(mnemonic.associacoes) ? mnemonic.associacoes : [];
+      // items_map só é construído a partir de associações REAIS (não inventado dos termos)
+      const itemsMap = associacoes.map((a: any) => ({
+        letter: String(a.representacao_no_mnemonico || "").trim().charAt(0).toUpperCase(),
+        word: String(a.representacao_no_mnemonico || "").trim(),
+        original_item: String(a.termo_original || "").trim(),
+        symbol: null, symbol_reason: null,
+      }));
 
       const explicacaoAssoc = (mnemonic.explicacao_associacao || mnemonic.explicacao_didatica || "").trim();
       const explicacaoDid = (mnemonic.explicacao_didatica || mnemonic.explicacao_associacao || "").trim();
+
+      // ══════════════════════════════════════
+      // VALIDAÇÃO FINAL antes de persistir (defesa em profundidade)
+      // ══════════════════════════════════════
+      const finalIssues: string[] = [];
+      if (!mnemonic.frase_mnemonica?.trim() || mnemonic.frase_mnemonica.trim().length < 8) finalIssues.push("frase_invalida");
+      if (!explicacaoAssoc || explicacaoAssoc.length < 20) finalIssues.push("explicacao_invalida");
+      if (!cenaVisual?.trim() || cenaVisual.trim().length < 12) finalIssues.push("cena_invalida");
+      if (finalIssues.length > 0) {
+        console.error("[MNEMONIC] FINAL VALIDATION FAILED:", finalIssues);
+        if (requestId) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
+        return jsonResponse({
+          success: false,
+          error: "Resultado gerado não passou na validação final.",
+          code: "GENERATION_FAILED",
+          details: finalIssues.join(", "),
+        }, 422);
+      }
 
       const resultId = await insertResult(db, {
         request_id: requestId, user_id: userId, tema: payload.tema,
@@ -546,10 +574,13 @@ serve(async (req: Request) => {
       const msg = error instanceof Error ? error.message : "Erro interno.";
       console.error("[MNEMONIC] FAILED:", msg);
       if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-
-      // No fake fallback — return real error
-
-      return jsonResponse({ success: false, error: msg }, 500);
+      // NUNCA retornar fallback fake como sucesso
+      return jsonResponse({
+        success: false,
+        error: "Falha ao gerar mnemônico. Tente novamente.",
+        code: "GENERATION_FAILED",
+        details: msg,
+      }, 500);
     }
   };
 
