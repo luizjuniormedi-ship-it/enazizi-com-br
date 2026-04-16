@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import {
   Brain, Sparkles, AlertTriangle, Loader2,
   Copy, Heart, MessageSquare, RefreshCw,
   ChevronDown, ChevronUp, Wand2, BookOpen, Eye, CheckCircle, XCircle, MinusCircle,
   Target, HelpCircle, Lightbulb, Clapperboard, Volume2, Users, Zap, Crosshair,
-  Play, Bookmark, Clock, FlipHorizontal, Map, FileQuestion,
+  Play, Bookmark, Clock, FlipHorizontal, Map, FileQuestion, ThumbsUp, ThumbsDown, Minus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
