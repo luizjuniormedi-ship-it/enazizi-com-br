@@ -345,14 +345,6 @@ const DashboardSidebar = () => {
                   <User className="h-4 w-4" /> Meu Perfil
                 </Link>
 
-                {/* Mnemônico — disponível para todos os usuários */}
-                <Link to="/dashboard/mnemonic-studio-v2" className={cn(
-                  "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
-                  location.pathname === "/dashboard/mnemonic-studio-v2" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
-                )}>
-                  <Brain className="h-4 w-4" /> Mnemônico
-                </Link>
-
                 {/* Admin-only items */}
                 {showProfessor && (
                   <Link to="/professor" className={cn(
