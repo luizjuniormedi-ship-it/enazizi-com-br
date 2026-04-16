@@ -83,7 +83,7 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
     }
   }
 
-  const associacoesVisuais = (visual?.associacoes_visuais ?? d.associacoes_visuais ?? []) as Array<{ termo: string; elemento_visual: string }>;
+  const associacoesVisuais = (visual?.associacoes_visuais ?? d.associacoes_visuais ?? []) as Array<{ termo: string; elemento_visual: string; associacao_fonetica?: string; acao_na_cena?: string }>;
 
   const qualityFlag = (() => {
     const sl = Number(d.score_linguistico ?? 0);
@@ -97,6 +97,16 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
   const imageUrl = typeof d.image_url === "string" && d.image_url.trim() && d.image_url !== "null"
     ? d.image_url
     : null;
+
+  // Map cena_memoravel
+  const cenaMemoravel = d.cena_memoravel && typeof d.cena_memoravel === "object"
+    ? d.cena_memoravel as MnemonicResultData["cena_memoravel"]
+    : null;
+
+  // Map pontos_de_prova
+  const pontosDeProva = Array.isArray(d.pontos_de_prova)
+    ? d.pontos_de_prova as MnemonicResultData["pontos_de_prova"]
+    : [];
 
   return {
     request_id: String(d.request_id ?? ""),
@@ -123,6 +133,8 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
     image_url: imageUrl,
     items_map: itemsMap,
     agent_logs: agentLogs,
+    cena_memoravel: cenaMemoravel,
+    pontos_de_prova: pontosDeProva,
   };
 }
 
