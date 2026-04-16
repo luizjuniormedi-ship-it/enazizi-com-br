@@ -1836,7 +1836,7 @@ const ClinicalSimulation = () => {
 
               {/* Quick actions */}
               {phase === "active" && (
-                <div className="border-t border-border/30 p-2 space-y-1.5">
+                <div className="border-t border-border/30 p-2 space-y-1.5 shrink-0">
                   <div className="flex gap-1.5 flex-wrap">
                     {/* Mobile vitals trigger */}
                     <Button
