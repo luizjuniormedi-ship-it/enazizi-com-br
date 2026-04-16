@@ -1601,7 +1601,7 @@ const ClinicalSimulation = () => {
 
           {/* Clinical Timeline */}
           {actionTimeline.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto py-1.5 px-3 border-b border-border/30 bg-muted/5">
+            <div className="flex gap-1.5 overflow-x-auto py-1.5 px-3 border-b border-border/30 bg-muted/5 shrink-0">
               {actionTimeline.slice(-8).map((entry, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] shrink-0 gap-1 font-normal border-border/30">
                   <span>{entry.icon}</span>
