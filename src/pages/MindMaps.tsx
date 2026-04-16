@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -8,9 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Brain, Plus, Search, Loader2, Trash2, Clock, Filter, Sparkles, ArrowLeft, Eye, Network } from "lucide-react";
+import { Brain, Plus, Search, Loader2, Trash2, Clock, Filter, Sparkles, Eye, Network } from "lucide-react";
 import { toast } from "sonner";
-import { MindMapViewer } from "@/components/mind-maps/MindMapViewer";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cirurgia Geral", "Pediatria", "Ginecologia e Obstetrícia",
@@ -44,11 +44,11 @@ const COLOR_LEGEND = [
 
 export default function MindMaps() {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"recent" | "difficulty" | "alpha">("recent");
-  const [selectedMap, setSelectedMap] = useState<any>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [newTopic, setNewTopic] = useState("");
   const [newSpecialty, setNewSpecialty] = useState("");
@@ -89,7 +89,7 @@ export default function MindMaps() {
       queryClient.invalidateQueries({ queryKey: ["mental-maps"] });
       setGenerateOpen(false);
       setNewTopic("");
-      setSelectedMap(data.map);
+      navigate(`/dashboard/mapas-mentais/${data.map.id}`);
       toast.success("Mapa mental gerado com sucesso!");
     },
     onError: (err: Error) => {
@@ -104,7 +104,6 @@ export default function MindMaps() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mental-maps"] });
-      if (selectedMap) setSelectedMap(null);
       toast.success("Mapa excluído");
     },
   });
@@ -193,47 +192,6 @@ export default function MindMaps() {
       </DialogContent>
     </Dialog>
   );
-
-  // ── MAP VIEWER MODE ──
-  if (selectedMap) {
-    return (
-      <div className="flex flex-col h-[calc(100vh-2rem)] p-3 sm:p-4 md:p-5 animate-fade-in">
-        {/* Top bar */}
-        <div className="flex items-center gap-3 mb-3 flex-shrink-0">
-          <Button variant="ghost" size="sm" onClick={() => setSelectedMap(null)} className="gap-1.5 text-muted-foreground hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
-            Voltar
-          </Button>
-          <div className="h-5 w-px bg-border" />
-          <h1 className="text-sm sm:text-base font-bold truncate flex-1">{selectedMap.title}</h1>
-          <div className="flex items-center gap-2">
-            {selectedMap.specialty && <Badge variant="outline" className="text-[10px] hidden sm:flex">{selectedMap.specialty}</Badge>}
-            {selectedMap.difficulty && (
-              <Badge className={`text-[10px] border ${DIFFICULTY_LABELS[selectedMap.difficulty]?.class || ""}`}>
-                {DIFFICULTY_LABELS[selectedMap.difficulty]?.label || selectedMap.difficulty}
-              </Badge>
-            )}
-          </div>
-        </div>
-
-        {/* Color legend bar */}
-        <div className="flex items-center gap-3 mb-3 overflow-x-auto pb-1 flex-shrink-0">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">Legenda:</span>
-          {COLOR_LEGEND.map(c => (
-            <div key={c.label} className="flex items-center gap-1 whitespace-nowrap">
-              <span className={`h-2.5 w-2.5 rounded-full ${c.color} flex-shrink-0`} />
-              <span className="text-[10px] text-muted-foreground">{c.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Map fills remaining space */}
-        <div className="flex-1 min-h-0">
-          <MindMapViewer mapData={selectedMap.content_json} />
-        </div>
-      </div>
-    );
-  }
 
   // ── LIST MODE ──
   return (
@@ -358,7 +316,7 @@ export default function MindMaps() {
               <Card
                 key={map.id}
                 className="cursor-pointer hover:border-primary/40 hover:shadow-md hover:shadow-primary/5 transition-all group relative overflow-hidden"
-                onClick={() => setSelectedMap(map)}
+                onClick={() => navigate(`/dashboard/mapas-mentais/${map.id}`)}
               >
                 {/* Color bar at top showing category distribution */}
                 <div className="flex h-1">
