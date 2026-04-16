@@ -90,8 +90,12 @@ const MicroQuizDialog = ({ open, onOpenChange, topic, specialty, onPass }: Props
   const handleSelect = (idx: number) => {
     if (selected !== null) return;
     setSelected(idx);
-    if (idx === questions[currentQ]?.correctIndex) {
+    const correct = idx === questions[currentQ]?.correctIndex;
+    if (correct) {
       setScore(s => s + 1);
+      import("@/lib/haptics").then(h => h.hapticSuccess());
+    } else {
+      import("@/lib/haptics").then(h => h.hapticError());
     }
   };
 

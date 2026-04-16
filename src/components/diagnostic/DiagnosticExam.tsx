@@ -83,6 +83,7 @@ const DiagnosticExam = ({ questions, onFinish, onGoToReview }: DiagnosticExamPro
       topic: q.topic,
       timeSpent,
     }]);
+    import("@/lib/haptics").then(h => isCorrect ? h.hapticSuccess() : h.hapticError());
   };
 
   const nextQuestion = () => {
