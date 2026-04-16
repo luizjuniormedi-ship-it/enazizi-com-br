@@ -36,6 +36,7 @@ import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
 import SessionBar from "@/components/study-session/SessionBar";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
+import CognitiveCockpit from "@/components/cockpit/CognitiveCockpit";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 
@@ -311,6 +312,13 @@ const Dashboard = () => {
 
       {/* Achievement toasts */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
+
+      {/* ═══ COCKPIT COGNITIVO (novo, no topo) ═══ */}
+      {!loopActive && (
+        <SafeCard name="CognitiveCockpit">
+          <CognitiveCockpit />
+        </SafeCard>
+      )}
 
       {/* ═══ INLINE STUDY LOOP ═══ */}
       {loopActive && (
