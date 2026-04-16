@@ -452,7 +452,8 @@ serve(async (req: Request) => {
         } catch { /* non-critical */ }
       }
 
-      const ctx = `Tema: ${payload.tema}\nTermos (TODOS devem estar no mnemônico):\n${payload.termos.map((t, i) => `${i + 1}. ${t}`).join("\n")}${payload.estilo ? `\nEstilo preferido: ${payload.estilo}` : ""}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`;
+      const contextoClinico = (payload as any).contexto_clinico as string | undefined;
+      const ctx = `Tema: ${payload.tema}${contextoClinico ? `\nContexto clínico: ${contextoClinico}` : ""}\nTermos (TODOS devem estar no mnemônico):\n${payload.termos.map((t, i) => `${i + 1}. ${t}`).join("\n")}${payload.estilo ? `\nEstilo preferido: ${payload.estilo}` : ""}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`;
 
       // ══════════════════════════════════════
       // HANDLE: Regenerate image only
