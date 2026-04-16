@@ -21,9 +21,11 @@ export function validateMnemonicForm(data: {
     errors.tema = "Tema deve ter pelo menos 2 caracteres.";
   }
 
+  // Termos agora é OPCIONAL — se vazio, IA extrai automaticamente.
+  // Se o usuário fornecer termos, validamos o intervalo 3-7.
   const cleanTermos = data.termos.filter(t => t.trim().length > 0);
-  if (cleanTermos.length < 3) {
-    errors.termos = "Informe ao menos 3 termos.";
+  if (cleanTermos.length > 0 && cleanTermos.length < 3) {
+    errors.termos = "Se for informar termos, use ao menos 3 (ou deixe em branco para a IA extrair).";
   } else if (cleanTermos.length > 7) {
     errors.termos = "Máximo de 7 termos.";
   }
