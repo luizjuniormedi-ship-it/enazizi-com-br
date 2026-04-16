@@ -1,5 +1,5 @@
 /**
- * study-next — API Assistente Phase 1 (v3 — composite scoring + image_quiz + mnemonic)
+ * study-next — API Assistente Phase 1 (v4 — mnemonic adaptive integration)
  * Returns the next recommended study action with weighted justification.
  * Purely deterministic — no AI calls.
  */
@@ -11,10 +11,10 @@ import {
 import {
   ScoringContext, getApprovalZone,
   scoreReview, scoreFSRS, scoreError, scoreDailyTask, scoreFreeStudy,
-  scoreImageQuiz, scoreMnemonic,
+  scoreImageQuiz, scoreMnemonic, decideMnemonicMode,
   isVisualTopic, isMnemonicTopic,
   buildJustification, pickDiverseAlternatives,
-  type ScoredCandidate, type VisualWeaknessEntry,
+  type ScoredCandidate, type VisualWeaknessEntry, type MnemonicUtilityEntry,
 } from "../_shared/study-next-scoring.ts";
 
 serve(async (req) => {
@@ -29,11 +29,12 @@ serve(async (req) => {
     const now = new Date().toISOString();
     const today = now.slice(0, 10);
 
-    // ── Parallel data fetch (existing + new image quiz count) ──
+    // ── Parallel data fetch ──
     const [
       pendingReviews, errorBankItems, dailyPlanToday, dailyTasks,
       fsrsDue, approvalData, profile, gamification,
       imageQuizCount, visualAttempts,
+      mnemonicFeedbackAgg, mnemonicResultsForUser,
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) =>
         c.from("revisoes")
@@ -44,7 +45,7 @@ serve(async (req) => {
         "revisoes"),
       safeQuery<any[]>(db, (c) =>
         c.from("error_bank")
-          .select("id, tema, subtema, vezes_errado, categoria_erro, updated_at")
+          .select("id, tema, subtema, vezes_errado, categoria_erro, updated_at, dificuldade")
           .eq("user_id", userId).eq("dominado", false)
           .order("vezes_errado", { ascending: false }).limit(15),
         "error_bank"),
@@ -83,14 +84,12 @@ serve(async (req) => {
           .select("current_streak")
           .eq("user_id", userId).maybeSingle(),
         "gamification"),
-      // NEW: check if published image quiz questions exist (lightweight)
       safeQuery<any[]>(db, (c) =>
         c.from("medical_image_questions")
           .select("id")
           .eq("status", "published")
           .limit(1),
         "image_quiz_check"),
-      // NEW: visual weakness data from real attempts
       safeQuery<any[]>(db, (c) =>
         c.from("medical_image_attempts")
           .select("correct, image_type, created_at")
@@ -99,6 +98,23 @@ serve(async (req) => {
           .order("created_at", { ascending: false })
           .limit(200),
         "visual_attempts"),
+      // NEW: Mnemonic feedback aggregated by topic for this user
+      safeQuery<any[]>(db, (c) =>
+        c.from("mnemonic_feedback")
+          .select("result_id, utility_score, topic")
+          .eq("user_id", userId)
+          .not("utility_score", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(100),
+        "mnemonic_feedback"),
+      // NEW: Latest mnemonic results per topic for this user
+      safeQuery<any[]>(db, (c) =>
+        c.from("mnemonic_results")
+          .select("id, topic, subtopic, is_latest")
+          .eq("user_id", userId)
+          .eq("is_latest", true)
+          .limit(50),
+        "mnemonic_results"),
     ]);
 
     const reviews = pendingReviews ?? [];
@@ -109,7 +125,6 @@ serve(async (req) => {
     const recoveryActive = dailyPlanToday?.recovery_mode ?? false;
     const contentLocked = dailyPlanToday?.content_lock ?? false;
 
-    // Image quiz availability — check if any published questions exist
     const imgQuizAvailable = Array.isArray(imageQuizCount) ? imageQuizCount.length : 0;
 
     // ── Exam proximity ──
@@ -134,7 +149,6 @@ serve(async (req) => {
       }
       for (const [imageType, data] of byType) {
         const accuracy = Math.round((data.correct / data.total) * 100);
-        // Simple trend: compare first half vs second half
         let trend: "improving" | "declining" | "stable" = "stable";
         if (data.total >= 10) {
           const mid = Math.floor(data.total / 2);
@@ -147,6 +161,50 @@ serve(async (req) => {
           else if (recentAcc - olderAcc < -0.1) trend = "declining";
         }
         visualWeaknesses.push({ imageType, accuracy, attemptsCount: data.total, trend });
+      }
+    }
+
+    // ── Aggregate mnemonic utility by topic ──
+    const mnemonicUtility: MnemonicUtilityEntry[] = [];
+    if (Array.isArray(mnemonicFeedbackAgg) && mnemonicFeedbackAgg.length > 0) {
+      const byTopic = new Map<string, { sum: number; count: number; latestResultId?: string }>();
+      for (const fb of mnemonicFeedbackAgg) {
+        const topic = (fb.topic || "").toLowerCase();
+        if (!topic) continue;
+        if (!byTopic.has(topic)) byTopic.set(topic, { sum: 0, count: 0 });
+        const entry = byTopic.get(topic)!;
+        entry.sum += (fb.utility_score ?? 0);
+        entry.count++;
+        if (!entry.latestResultId && fb.result_id) entry.latestResultId = fb.result_id;
+      }
+      // Also map latest result IDs from mnemonic_results
+      const resultsByTopic = new Map<string, string>();
+      if (Array.isArray(mnemonicResultsForUser)) {
+        for (const r of mnemonicResultsForUser) {
+          if (r.topic) resultsByTopic.set(r.topic.toLowerCase(), r.id);
+        }
+      }
+      for (const [topic, data] of byTopic) {
+        mnemonicUtility.push({
+          topic,
+          avg_utility: Math.round((data.sum / data.count) * 100) / 100,
+          feedback_count: data.count,
+          latest_result_id: resultsByTopic.get(topic) || data.latestResultId,
+        });
+      }
+    }
+    // Also add topics that have results but no feedback yet
+    if (Array.isArray(mnemonicResultsForUser)) {
+      for (const r of mnemonicResultsForUser) {
+        const t = (r.topic || "").toLowerCase();
+        if (t && !mnemonicUtility.find(u => u.topic === t)) {
+          mnemonicUtility.push({
+            topic: t,
+            avg_utility: 0,
+            feedback_count: 0,
+            latest_result_id: r.id,
+          });
+        }
       }
     }
 
@@ -163,15 +221,25 @@ serve(async (req) => {
       today,
       imageQuizAvailable: imgQuizAvailable,
       visualWeaknesses,
+      mnemonicUtility,
     };
 
-    // ── Classify errors by type for new scorers ──
+    // ── Classify errors ──
     const visualErrors = errors.filter((e: any) => isVisualTopic(e.tema, e.subtema));
     const mnemonicErrors = errors.filter((e: any) =>
       isMnemonicTopic(e.tema, e.subtema) && (e.vezes_errado ?? 0) >= 2
     );
 
-    // ── Consecutive error detection (2+ errors in a row → force review + quiz + mnemonic) ──
+    // ── Also include ANY topic with 3+ errors as mnemonic-eligible ──
+    // (even if it doesn't match mnemonic patterns, high error count = needs memory help)
+    for (const err of errors) {
+      if ((err.vezes_errado ?? 0) >= 3 &&
+          !mnemonicErrors.find((m: any) => m.tema === err.tema)) {
+        mnemonicErrors.push(err);
+      }
+    }
+
+    // ── Consecutive error detection ──
     let consecutiveErrorBoost = false;
     if (errors.length >= 2) {
       const sorted = [...errors].sort((a: any, b: any) =>
@@ -240,8 +308,7 @@ serve(async (req) => {
       });
     }
 
-    // ── Image Quiz candidate (enhanced with real visual weakness + snapshots) ──
-    // Also fetch persisted visual skill snapshots for richer recommendations
+    // ── Image Quiz candidate ──
     const visualSnapshots = await safeQuery<any[]>(db, (c) =>
       c.from("visual_skill_snapshots")
         .select("image_type, accuracy, score, trend, weakest_area, attempts_count")
@@ -255,7 +322,6 @@ serve(async (req) => {
       const topic = imgResult.bestTopic;
       let targetType = imgResult.targetImageType;
 
-      // Enhance with persisted snapshots — use >= 1 attempt to react early
       if (!targetType && Array.isArray(visualSnapshots) && visualSnapshots.length > 0) {
         const weakSnap = visualSnapshots.find((s: any) => s.accuracy < 70 && s.attempts_count >= 1);
         if (weakSnap) targetType = weakSnap.image_type;
@@ -273,7 +339,6 @@ serve(async (req) => {
           ? `Treino visual: ${topic.tema}`
           : "Treino de interpretação visual";
 
-      // Build specific adaptive message with trend-aware language
       let description: string;
       if (targetType && typeName) {
         const snap = Array.isArray(visualSnapshots)
@@ -329,16 +394,50 @@ serve(async (req) => {
       });
     }
 
-    // ── Mnemonic candidate ──
+    // ── Mnemonic candidate (enhanced with utility + mode decision) ──
     const mnemResult = scoreMnemonic(mnemonicErrors, ctx);
     if (mnemResult.score > 0 && mnemResult.bestTopic) {
       const topic = mnemResult.bestTopic;
       let mnemScore = mnemResult.score;
       if (consecutiveErrorBoost) mnemScore = Math.min(150, mnemScore + 20);
+
+      // Decide mode: review_existing, regenerate, or create_new
+      const decision = decideMnemonicMode(
+        topic.tema,
+        mnemonicUtility,
+        topic.categoria_erro,
+      );
+
+      // Build adaptive title and description based on mode
+      let title: string;
+      let description: string;
+
+      switch (decision.mode) {
+        case "review_existing":
+          title = `Fixar com mnemônico: ${topic.tema}`;
+          description = decision.utilityScore && decision.utilityScore > 0
+            ? `O mnemônico de "${topic.tema}" está ajudando — revise para consolidar a memória.`
+            : `Você já errou "${topic.tema}" ${topic.vezes_errado}x. Revise o mnemônico para reforçar.`;
+          break;
+        case "regenerate":
+          title = `Novo mnemônico: ${topic.tema}`;
+          const styleLabel = decision.preferredStyle === "visual" ? "mais visual"
+            : decision.preferredStyle === "engraçado" ? "mais engraçado"
+            : decision.preferredStyle === "acadêmico" ? "mais acadêmico"
+            : decision.preferredStyle === "curto" ? "mais curto"
+            : "diferente";
+          description = `O mnemônico atual de "${topic.tema}" não está funcionando bem. Gere uma versão ${styleLabel}.`;
+          break;
+        case "create_new":
+          title = `Criar mnemônico: ${topic.tema}`;
+          description = `Você erra "${topic.tema}" com frequência (${topic.vezes_errado}x). Um mnemônico visual pode ajudar a fixar.`;
+          break;
+      }
+
       candidates.push({
         type: "mnemonic",
-        title: `Fixar com mnemônico: ${topic.tema}`,
-        description: `Você já errou "${topic.tema}" ${topic.vezes_errado}x. Um mnemônico pode ajudar a consolidar.`,
+        title,
+        description,
         targetType: "mnemonic",
         estimatedMinutes: 5,
         priorityScore: mnemScore,
@@ -348,11 +447,15 @@ serve(async (req) => {
           errorCount: topic.vezes_errado,
           errorCategory: topic.categoria_erro,
           consecutiveErrorBoost,
+          mnemonicMode: decision.mode,
+          preferredStyle: decision.preferredStyle,
+          resultId: decision.resultId,
+          utilityScore: decision.utilityScore,
         },
       });
     }
 
-    // Free-study fallback candidate
+    // Free-study fallback
     candidates.push({
       type: "free_study",
       title: "Estudo livre",
@@ -391,9 +494,10 @@ serve(async (req) => {
       mnemonicCandidates: mnemonicErrors.length,
       imageQuizAvailable: imgQuizAvailable,
       consecutiveErrorBoost,
+      mnemonicUtilityTopics: mnemonicUtility.length,
     };
 
-    // ── Telemetry: log visual recommendations and consecutive error triggers ──
+    // ── Telemetry ──
     if (recommendation.type === "image_quiz" || recommendation.type === "mnemonic" || consecutiveErrorBoost) {
       try {
         await db.from("automation_telemetry").insert({
@@ -405,6 +509,9 @@ serve(async (req) => {
             visual_errors: visualErrors.length,
             mnemonic_candidates: mnemonicErrors.length,
             consecutive_boost: consecutiveErrorBoost,
+            mnemonic_mode: recommendation.type === "mnemonic"
+              ? (recommendation.contextPayload as any)?.mnemonicMode
+              : undefined,
           },
           user_id: userId,
         });
@@ -424,12 +531,16 @@ serve(async (req) => {
         visualErrors: visualErrors.length,
         mnemonicCandidates: mnemonicErrors.length,
         imageQuizAvailable: imgQuizAvailable,
+        mnemonicUtilityTopics: mnemonicUtility.length,
       },
       decision_output: {
         recommendation: recommendation.type, title: recommendation.title,
         priorityScore: recommendation.priorityScore,
         alternatives: alternativeActions.length,
         approvalZone: ctx.approvalZone,
+        mnemonicMode: recommendation.type === "mnemonic"
+          ? (recommendation.contextPayload as any)?.mnemonicMode
+          : undefined,
       },
       justification,
       confidence_score: recommendation.priorityScore,
@@ -442,8 +553,8 @@ serve(async (req) => {
       alternativeActions,
       adaptiveState,
     });
-  } catch (e) {
-    console.error("[study-next]", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro interno", 500);
+  } catch (err: any) {
+    console.error("[study-next]", err);
+    return errorResponse(err.message || "Erro interno", 500);
   }
 });
