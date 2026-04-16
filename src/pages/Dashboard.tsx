@@ -39,6 +39,8 @@ import { Badge } from "@/components/ui/badge";
 import { fireCelebration } from "@/lib/celebrations";
 
 const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
+const WeeklySummaryCard = lazy(() => import("@/components/dashboard/WeeklySummaryCard"));
+const PersonalGoalsCard = lazy(() => import("@/components/dashboard/PersonalGoalsCard"));
 
 const EXAM_LABELS: Record<string, string> = {
   enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
@@ -58,6 +60,7 @@ interface CompletionHandoff {
    ═══════════════════════════════════════════════════ */
 const Dashboard = () => {
   useRevisionNotifier();
+  usePrefetch("/dashboard");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
