@@ -241,14 +241,16 @@ A cena deve parecer um FILME ABSURDO da Pixar.
 - resposta objetiva
 - armadilha comum de prova
 
-═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA (antes de responder) ═══
-1. A frase tem VERBO e faz sentido completo?
-2. Parece um MEME / CENA real que dá pra falar em voz alta?
-3. Tem RITMO e FLUIDEZ?
-4. Dá pra IMAGINAR na hora?
-5. Tem EXAGERO + EMOÇÃO?
-6. Tem LÓGICA CLÍNICA?
+═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA OBRIGATÓRIA (antes de responder) ═══
+1. A frase está em PORTUGUÊS DO BRASIL correto, com sujeito + verbo, e faz sentido completo?
+2. A frase é fácil de FALAR EM VOZ ALTA e tem ritmo (não parece lista de palavras)?
+3. Parece um MEME / CENA real que daria pra contar no plantão?
+4. Dá pra IMAGINAR a cena na hora?
+5. Tem EXAGERO + EMOÇÃO + HUMOR clínico?
+6. Tem COERÊNCIA CLÍNICA com o tema (não inventou diagnóstico)?
 7. Tem ASSOCIAÇÃO FONÉTICA em pelo menos 1 termo difícil?
+8. A frase NÃO repete simplesmente os termos como uma lista?
+9. Os termos escolhidos realmente representam o tema?
 
 ❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE até passar.
 
@@ -263,19 +265,20 @@ Se entrada indicar dificuldade do aluno:
 {
   "sigla": "",
   "frase_mnemonica": "",
+  "contexto_clinico": "tipo (diagnóstico/síndrome/conduta/...) + 1 frase do cenário",
   "explicacao": "",
   "explicacao_clinica": "",
-  "explicacao_didatica": "",
-  "explicacao_tecnica": "",
+  "explicacao_didatica": "como cada parte da frase ajuda a lembrar dos termos",
+  "explicacao_tecnica": "por que esses termos são os mais importantes em prova",
   "cena_neuro_memoravel": {
-    "descricao": "",
-    "personagem": "",
-    "acao": "",
-    "emocao": "",
-    "associacao_fonetica": ""
+    "descricao": "frame da cena absurda em 1-2 frases",
+    "personagem": "quem é o personagem principal",
+    "acao": "o que está acontecendo",
+    "emocao": "emoção forte (dor/desespero/riso/...)",
+    "associacao_fonetica": "rima/trocadilho que conecta termo difícil a som fácil"
   },
   "associacoes": [
-    { "termo": "", "simbolo": "", "explicacao": "" }
+    { "termo": "termo original exato", "simbolo": "símbolo/representação visual na cena", "explicacao": "por que esse símbolo lembra o termo" }
   ],
   "prompt_imagem": "3D cartoon Pixar-style, vibrant saturated colors, exaggerated expressions, dynamic action scene, clean background, no text, no labels, no letters. [cena absurda em inglês]",
   "pontos_prova": [
@@ -304,32 +307,48 @@ Retorne SOMENTE JSON:
 }`;
 
 // ═══ NOVO: PROMPT DE EXTRAÇÃO AUTOMÁTICA DE TERMOS ═══
-const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina e Educação para provas de residência médica brasileira.
+const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina, provas de residência médica brasileira e neuro-memorização.
 
-Dado um TEMA médico, extraia automaticamente de 3 a 7 TERMOS ESSENCIAIS que são:
-- Mais cobrados em provas de residência (ENARE, USP, UNIFESP, UNICAMP, SUS-SP)
-- Clinicamente relevantes
-- Fáceis de transformar em mnemônico (curtos)
+ETAPA 1 — GERAÇÃO AUTOMÁTICA DOS TERMOS
 
-Tipos de termos permitidos:
-- critérios diagnósticos
-- sinais e sintomas clássicos
-- mecanismos fisiopatológicos
-- classificações
-- condutas / tratamentos principais
-- causas / etiologias
-- complicações principais
+A partir do TEMA, identifique de 3 a 7 termos essenciais que sejam:
+- altamente relevantes para prova (ENARE, USP, UNIFESP, UNICAMP, SUS-SP, ENARE)
+- clinicamente importantes
+- úteis para formar um mnemônico
+- curtos e claros (1-4 palavras)
+- sem redundância
 
-🚨 REGRAS:
+PRIORIZE NESTA ORDEM:
+1. sinais e sintomas clássicos
+2. critérios diagnósticos
+3. achados de exame
+4. complicações marcantes
+5. condutas-chave
+6. diferenciais importantes
+
+NÃO usar:
+- frases longas
+- definições extensas
+- termos vagos
+- itens repetidos
+
+ETAPA 2 — CONTEXTO CLÍNICO
+
+Identifique o tipo do tema:
+- diagnóstico / síndrome / tratamento / fisiopatologia / classificação / urgência
+
+Se o tema for amplo, escolha os termos mais característicos e cobrados em prova.
+Se o tema NÃO for médico ou for impossível de definir, retorne lista vazia.
+
+🚨 REGRAS DURAS:
 - NÃO inventar termos sem base médica
-- NÃO usar frases longas — cada termo deve ter 1-4 palavras
-- Evitar redundância
-- Ordem por importância em provas
-- Se o tema NÃO for médico ou for muito vago, retorne lista vazia
+- Ordenar do mais cobrado para o menos cobrado
+- Cada termo: 1-4 palavras
 
 Retorne SOMENTE JSON:
 {
   "termos": ["Termo 1", "Termo 2", "Termo 3", "..."],
+  "contexto_clinico": "Tipo (diagnóstico/síndrome/...) + 1 frase descrevendo o cenário clínico",
   "justificativa": "Breve explicação (1 frase) do porquê esses termos são os mais cobrados em prova"
 }`;
 
@@ -374,7 +393,7 @@ serve(async (req: Request) => {
         console.log(`[MNEMONIC] ETAPA 0: Extraindo termos automaticamente para "${payload.tema}"`);
         const extractStart = Date.now();
         try {
-          const extracted = await callAI<{ termos?: unknown; justificativa?: string }>(
+          const extracted = await callAI<{ termos?: unknown; contexto_clinico?: string; justificativa?: string }>(
             aiKey,
             PROMPT_EXTRACT_TERMS,
             `Tema médico: ${payload.tema}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`
@@ -393,6 +412,10 @@ serve(async (req: Request) => {
             }, 422);
           }
           payload.termos = normalizeTerms(cleanTermos);
+          if (extracted?.contexto_clinico && typeof extracted.contexto_clinico === "string") {
+            (payload as any).contexto_clinico = extracted.contexto_clinico.trim();
+            console.log(`[MNEMONIC] ETAPA 0: contexto_clinico = ${(payload as any).contexto_clinico}`);
+          }
           console.log(`[MNEMONIC] ETAPA 0 OK: ${payload.termos.length} termos extraídos: ${payload.termos.join(", ")}`);
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
@@ -432,7 +455,8 @@ serve(async (req: Request) => {
         } catch { /* non-critical */ }
       }
 
-      const ctx = `Tema: ${payload.tema}\nTermos (TODOS devem estar no mnemônico):\n${payload.termos.map((t, i) => `${i + 1}. ${t}`).join("\n")}${payload.estilo ? `\nEstilo preferido: ${payload.estilo}` : ""}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`;
+      const contextoClinico = (payload as any).contexto_clinico as string | undefined;
+      const ctx = `Tema: ${payload.tema}${contextoClinico ? `\nContexto clínico: ${contextoClinico}` : ""}\nTermos (TODOS devem estar no mnemônico):\n${payload.termos.map((t, i) => `${i + 1}. ${t}`).join("\n")}${payload.estilo ? `\nEstilo preferido: ${payload.estilo}` : ""}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`;
 
       // ══════════════════════════════════════
       // HANDLE: Regenerate image only
