@@ -170,84 +170,89 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um especialista em memorização clínica para provas médicas (ENARE, residência médica, Cebraspe).
+const PROMPT_MNEMONIC = `Você é um especialista em memorização extrema para provas médicas.
 
-Sua missão é criar um MNEMÔNICO PERFEITO com base nos termos fornecidos.
+Sua missão é criar um MNEMÔNICO IMPOSSÍVEL DE ESQUECER usando princípios de neurociência da memória:
+- exagero visual
+- humor (quando possível)
+- emoção intensa
+- cenas absurdas e marcantes
+- associação simbólica
 
-⚠️ REGRA ABSOLUTA: A resposta só é válida se for NATURAL, MEMORIZÁVEL e COM COERÊNCIA CLÍNICA.
-Se não atingir isso, você DEVE REFAZER internamente antes de responder.
+⚠️ REGRA ABSOLUTA: Se o mnemônico parecer comum, sem impacto ou difícil de lembrar → REFAÇA automaticamente antes de responder.
 
-═══ ETAPA 1 — COMPREENSÃO CLÍNICA (OBRIGATÓRIA) ═══
-Antes de criar o mnemônico:
-- Entenda o contexto clínico dos termos
-- Identifique se são: sintomas, sinais, exames, diagnóstico, critérios ou fisiopatologia
-- Organize mentalmente em sequência lógica (como apareceria na prática médica)
-
-PROIBIDO: converter termos em palavras soltas; criar frase sem lógica clínica.
+═══ ETAPA 1 — INTERPRETAÇÃO CLÍNICA ═══
+- Entenda profundamente os termos
+- Identifique o contexto clínico real
+- Organize em sequência lógica (como acontece no paciente)
 
 ═══ ETAPA 2 — CRIAÇÃO DO MNEMÔNICO ═══
 
 1) SIGLA
-- Curta (3–7 letras), fácil de lembrar
-- Pode reorganizar os termos para melhorar memorização
+- Curta (3–7 letras), forte e fácil de lembrar
 
-2) FRASE MNEMÔNICA (CRÍTICO)
-✔ Português natural (Brasil), parecer falada
-✔ Sentido completo, com começo, meio e fim
-✔ Deve conter VERBO
-✔ Fácil de repetir, gera imagem mental clara
-❌ PROIBIDO: lista de palavras, frase quebrada, termos colados sem sentido, repetir literalmente os termos, linguagem robótica
-👉 REGRA DE OURO: ao ler a frase, o estudante deve repetir sem esforço.
+2) FRASE MNEMÔNICA (OBRIGATÓRIO)
+✔ Natural em português brasileiro
+✔ Com EMOÇÃO ou IMPACTO
+✔ Cria imagem mental imediata
+✔ Tem RITMO (quase fala dramática)
+❌ PROIBIDO: lista de palavras, frase sem sentido, linguagem robótica
+👉 REGRA DE OURO: se NÃO der para imaginar uma cena imediatamente → REFAÇA.
 
-3) MAPA DE ASSOCIAÇÃO — para CADA termo:
-- termo_original
-- representacao (como aparece na frase)
-- explicacao (clínica da associação)
+3) CENA NEURO-MEMORÁVEL (CRÍTICO)
+Crie uma cena com:
+- EXAGERO (gigante, explosão, sangue, luz, fogo)
+- PERSONAGEM (médico, monstro, coração vivo, paciente sofrendo)
+- AÇÃO (movimento claro)
+- EMOÇÃO (dor, desespero, urgência, choque)
+A cena deve ser quase um "filme absurdo".
+Exemplos do nível esperado: coração GRITANDO, braço BRILHANDO, suor virando RIO, troponina como líquido vermelho EXPLODINDO.
 
-4) CENA VISUAL (OBRIGATÓRIA) — extremamente clara:
-✔ Personagem principal
-✔ Ação acontecendo
-✔ Elementos visuais ligados aos termos
-✔ Emoção (dor, urgência, perigo, etc.)
+4) ASSOCIAÇÃO SIMBÓLICA — para CADA termo:
+- transformar o termo em IMAGEM ou SÍMBOLO
+- associar com a cena
 
 5) PROMPT DE IMAGEM (OBRIGATÓRIO)
-- Estilo: 3D cartoon Pixar-style, cores vivas, personagens expressivos
+- Estilo: 3D cartoon Pixar-style
+- Cores VIVAS e SATURADAS
+- Expressões EXAGERADAS
+- Cena DINÂMICA
 - SEM texto/letras na imagem
-- Foco em memorização
 
-6) PONTOS DE PROVA — gerar 3 itens:
-- pergunta (gatilho)
-- resposta
-- armadilha (erro comum)
+6) PONTOS DE PROVA (3 itens)
+- pergunta gatilho
+- resposta direta
+- armadilha clássica de prova
 
-═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA (OBRIGATÓRIA) ═══
-Antes de responder, valide:
-1. A frase faz sentido em português?
-2. A frase tem verbo?
-3. A frase parece natural?
-4. Dá para memorizar rápido?
-5. NÃO parece lista de termos?
-6. Existe lógica clínica?
+═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA ═══
+Antes de responder, verifique:
+1. A frase é natural?
+2. Dá para imaginar a cena instantaneamente?
+3. Existe EXAGERO?
+4. Existe EMOÇÃO?
+5. Existe lógica clínica?
+6. Isso seria lembrado 1 SEMANA depois?
 
-Se QUALQUER resposta for "NÃO", REFAÇA o mnemônico internamente antes de responder.
+❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE antes de responder.
 
-═══ ETAPA 4 — FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
+═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
 {
   "sigla": "",
   "frase_mnemonica": "",
+  "explicacao": "",
   "explicacao_clinica": "",
   "explicacao_didatica": "",
   "explicacao_tecnica": "",
-  "mapa_associacao": [
-    { "termo_original": "", "representacao": "", "explicacao": "" }
-  ],
-  "cena_visual": {
+  "cena_neuro_memoravel": {
     "descricao": "",
-    "personagens": "",
+    "personagem": "",
     "acao": "",
     "emocao": ""
   },
-  "prompt_imagem": "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters. [cena em inglês]",
+  "associacoes": [
+    { "termo": "", "simbolo": "", "explicacao": "" }
+  ],
+  "prompt_imagem": "3D cartoon Pixar-style, vibrant saturated colors, exaggerated expressions, dynamic action scene, clean background, no text, no labels, no letters. [cena absurda em inglês]",
   "pontos_prova": [
     { "pergunta": "", "resposta": "", "armadilha": "" }
   ],
@@ -255,7 +260,7 @@ Se QUALQUER resposta for "NÃO", REFAÇA o mnemônico internamente antes de resp
   "problemas_detectados": []
 }
 
-IMPORTANTE: A frase precisa fazer sentido em português brasileiro e ser fácil de lembrar.`;
+IMPORTANTE: a frase precisa ser falável, dramática e a cena precisa ser absurda o suficiente para gravar na memória de longo prazo.`;
 
 
 const PROMPT_EXAM_POINTS = `Você é especialista em provas de residência médica brasileira.
@@ -389,27 +394,53 @@ serve(async (req: Request) => {
         if (!raw || typeof raw !== "object") return null;
         const m: any = { ...raw };
 
+        // cena_neuro_memoravel (novo schema) -> cena_visual
+        if (m.cena_neuro_memoravel && typeof m.cena_neuro_memoravel === "object" && !m.cena_visual) {
+          const cv = m.cena_neuro_memoravel;
+          const norm = {
+            descricao: cv.descricao,
+            personagens: cv.personagem ?? cv.personagens,
+            acao: cv.acao,
+            emocao: cv.emocao,
+          };
+          const parts = [norm.descricao, norm.personagens, norm.acao, norm.emocao]
+            .filter((v: any) => typeof v === "string" && v.trim());
+          m.cena_visual_obj = norm;
+          m.cena_visual = parts.join(" — ");
+        }
+
         // cena_visual pode vir como objeto { descricao, personagens, acao, emocao }
         if (m.cena_visual && typeof m.cena_visual === "object") {
           const cv = m.cena_visual;
-          const parts = [cv.descricao, cv.personagens, cv.acao, cv.emocao]
+          const parts = [cv.descricao, cv.personagens ?? cv.personagem, cv.acao, cv.emocao]
             .filter((v: any) => typeof v === "string" && v.trim());
           m.cena_visual_obj = cv;
           m.cena_visual = parts.join(" — ");
         }
 
-        // mapa_associacao -> associacoes (compat)
-        if (Array.isArray(m.mapa_associacao) && (!Array.isArray(m.associacoes) || m.associacoes.length === 0)) {
-          m.associacoes = m.mapa_associacao.map((a: any) => ({
-            termo_original: a?.termo_original ?? "",
-            representacao_no_mnemonico: a?.representacao ?? a?.representacao_no_mnemonico ?? "",
+        // associacoes pode vir no novo formato { termo, simbolo, explicacao }
+        if (Array.isArray(m.associacoes) && m.associacoes.length > 0 && m.associacoes.some((a: any) => a?.termo || a?.simbolo)) {
+          m.associacoes = m.associacoes.map((a: any) => ({
+            termo_original: a?.termo_original ?? a?.termo ?? "",
+            representacao_no_mnemonico: a?.representacao_no_mnemonico ?? a?.simbolo ?? a?.representacao ?? "",
             explicacao: a?.explicacao ?? "",
           }));
         }
 
-        // explicacao_associacao: derivar de explicacao_clinica ou do mapa
+        // mapa_associacao -> associacoes (compat)
+        if (Array.isArray(m.mapa_associacao) && (!Array.isArray(m.associacoes) || m.associacoes.length === 0)) {
+          m.associacoes = m.mapa_associacao.map((a: any) => ({
+            termo_original: a?.termo_original ?? a?.termo ?? "",
+            representacao_no_mnemonico: a?.representacao ?? a?.representacao_no_mnemonico ?? a?.simbolo ?? "",
+            explicacao: a?.explicacao ?? "",
+          }));
+        }
+
+        // explicacao_associacao: derivar de explicacao / explicacao_clinica / associacoes
         if (!m.explicacao_associacao || !String(m.explicacao_associacao).trim()) {
-          if (m.explicacao_clinica && String(m.explicacao_clinica).trim()) {
+          if (m.explicacao && String(m.explicacao).trim()) {
+            m.explicacao_associacao = String(m.explicacao).trim();
+          } else if (m.explicacao_clinica && String(m.explicacao_clinica).trim()) {
             m.explicacao_associacao = String(m.explicacao_clinica).trim();
           } else if (Array.isArray(m.associacoes) && m.associacoes.length) {
             m.explicacao_associacao = m.associacoes
@@ -420,7 +451,12 @@ serve(async (req: Request) => {
 
         // explicacao_didatica fallback
         if (!m.explicacao_didatica || !String(m.explicacao_didatica).trim()) {
-          m.explicacao_didatica = m.explicacao_clinica || m.explicacao_associacao || "";
+          m.explicacao_didatica = m.explicacao_clinica || m.explicacao || m.explicacao_associacao || "";
+        }
+
+        // explicacao_tecnica fallback (evita falhar validação no novo schema enxuto)
+        if (!m.explicacao_tecnica || !String(m.explicacao_tecnica).trim()) {
+          m.explicacao_tecnica = m.explicacao_clinica || m.explicacao || m.explicacao_didatica || "";
         }
 
         return m as MnemonicOutput;
