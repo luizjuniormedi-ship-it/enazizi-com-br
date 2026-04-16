@@ -7,6 +7,7 @@ import {
   Lightbulb, BookOpen, Eye, Image as ImageIcon,
   Target, Play, Bookmark, Clock,
   ThumbsUp, ThumbsDown, Minus, Wand2,
+  ChevronDown, ChevronUp, Wand,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { toast } from "sonner";
 import { useToggleFavorite } from "@/hooks/useToggleFavorite";
 import { useRegenerateMnemonic } from "@/hooks/useRegenerateMnemonic";
