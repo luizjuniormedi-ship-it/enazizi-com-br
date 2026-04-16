@@ -9,10 +9,10 @@ import {
   type Node,
   type Edge,
   Panel,
+  MarkerType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpen, X } from "lucide-react";
 
@@ -32,120 +32,142 @@ interface MindMapData {
 }
 
 const COLOR_MAP: Record<string, { bg: string; border: string; text: string; minimap: string }> = {
-  blue:   { bg: "hsl(217 91% 95%)", border: "hsl(217 91% 60%)", text: "hsl(217 91% 30%)", minimap: "hsl(217 91% 60%)" },
-  sky:    { bg: "hsl(199 89% 93%)", border: "hsl(199 89% 48%)", text: "hsl(199 89% 25%)", minimap: "hsl(199 89% 48%)" },
-  purple: { bg: "hsl(262 83% 94%)", border: "hsl(262 83% 58%)", text: "hsl(262 83% 30%)", minimap: "hsl(262 83% 58%)" },
-  amber:  { bg: "hsl(38 92% 92%)",  border: "hsl(38 92% 50%)",  text: "hsl(38 92% 25%)",  minimap: "hsl(38 92% 50%)" },
-  yellow: { bg: "hsl(48 96% 90%)",  border: "hsl(48 96% 53%)",  text: "hsl(48 96% 25%)",  minimap: "hsl(48 96% 53%)" },
-  green:  { bg: "hsl(142 76% 92%)", border: "hsl(142 76% 36%)", text: "hsl(142 76% 18%)", minimap: "hsl(142 76% 36%)" },
-  red:    { bg: "hsl(0 84% 94%)",   border: "hsl(0 84% 60%)",   text: "hsl(0 84% 30%)",   minimap: "hsl(0 84% 60%)" },
-  gray:   { bg: "hsl(220 9% 93%)",  border: "hsl(220 9% 46%)",  text: "hsl(220 9% 25%)",  minimap: "hsl(220 9% 46%)" },
-  orange: { bg: "hsl(25 95% 92%)",  border: "hsl(25 95% 53%)",  text: "hsl(25 95% 25%)",  minimap: "hsl(25 95% 53%)" },
-  pink:   { bg: "hsl(339 90% 94%)", border: "hsl(339 90% 51%)", text: "hsl(339 90% 28%)", minimap: "hsl(339 90% 51%)" },
+  blue:   { bg: "#dbeafe", border: "#3b82f6", text: "#1e3a5f", minimap: "#3b82f6" },
+  sky:    { bg: "#e0f2fe", border: "#38bdf8", text: "#0c4a6e", minimap: "#38bdf8" },
+  purple: { bg: "#ede9fe", border: "#8b5cf6", text: "#3b0764", minimap: "#8b5cf6" },
+  amber:  { bg: "#fef3c7", border: "#f59e0b", text: "#78350f", minimap: "#f59e0b" },
+  yellow: { bg: "#fef9c3", border: "#eab308", text: "#713f12", minimap: "#eab308" },
+  green:  { bg: "#dcfce7", border: "#22c55e", text: "#14532d", minimap: "#22c55e" },
+  red:    { bg: "#fee2e2", border: "#ef4444", text: "#7f1d1d", minimap: "#ef4444" },
+  gray:   { bg: "#f3f4f6", border: "#6b7280", text: "#1f2937", minimap: "#6b7280" },
+  orange: { bg: "#ffedd5", border: "#f97316", text: "#7c2d12", minimap: "#f97316" },
+  pink:   { bg: "#fce7f3", border: "#ec4899", text: "#831843", minimap: "#ec4899" },
 };
 
 function getColors(color: string) {
   return COLOR_MAP[color] || COLOR_MAP.blue;
 }
 
+/* ── Improved hierarchical tree layout (top-down) ── */
 function buildFlowElements(data: MindMapData): { nodes: Node[]; edges: Edge[] } {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   let nodeId = 0;
 
-  // Center node
+  const categoryCount = data.nodes.length;
+
+  // Layout params
+  const catSpacing = 260; // horizontal spacing between categories
+  const totalCatWidth = (categoryCount - 1) * catSpacing;
+  const startX = -totalCatWidth / 2;
+  const catY = 180;
+  const childStartY = 360;
+  const childSpacingY = 70;
+  const childSpacingX = 170;
+
+  // ── Root node ──
   const centerId = `node-${nodeId++}`;
   nodes.push({
     id: centerId,
-    position: { x: 0, y: 0 },
+    position: { x: -100, y: 0 },
     data: { label: data.title, details: "", color: "blue" },
-    type: "default",
     style: {
       background: "hsl(var(--primary))",
       color: "white",
-      border: "2px solid hsl(var(--primary))",
-      borderRadius: "12px",
-      padding: "12px 20px",
-      fontSize: "14px",
+      border: "none",
+      borderRadius: "14px",
+      padding: "14px 28px",
+      fontSize: "15px",
       fontWeight: 700,
-      minWidth: "180px",
+      minWidth: "200px",
       textAlign: "center" as const,
-      boxShadow: "0 4px 20px hsl(var(--primary) / 0.3)",
+      boxShadow: "0 8px 32px hsl(var(--primary) / 0.35)",
     },
   });
 
-  const categoryCount = data.nodes.length;
-  const radius = 320;
-
   data.nodes.forEach((cat, catIdx) => {
-    const angle = (2 * Math.PI * catIdx) / categoryCount - Math.PI / 2;
-    const cx = Math.cos(angle) * radius;
-    const cy = Math.sin(angle) * radius;
+    const cx = startX + catIdx * catSpacing;
     const colors = getColors(cat.color);
     const catId = `node-${nodeId++}`;
 
     nodes.push({
       id: catId,
-      position: { x: cx - 80, y: cy - 20 },
+      position: { x: cx - 70, y: catY },
       data: { label: cat.name, details: cat.details || "", color: cat.color },
       style: {
         background: colors.bg,
         color: colors.text,
         border: `2px solid ${colors.border}`,
         borderRadius: "10px",
-        padding: "8px 14px",
+        padding: "10px 16px",
         fontSize: "12px",
         fontWeight: 600,
-        minWidth: "120px",
+        minWidth: "140px",
         textAlign: "center" as const,
         cursor: "pointer",
+        boxShadow: `0 2px 8px ${colors.border}33`,
       },
     });
 
     edges.push({
-      id: `edge-${centerId}-${catId}`,
+      id: `e-${centerId}-${catId}`,
       source: centerId,
       target: catId,
+      type: "smoothstep",
       style: { stroke: colors.border, strokeWidth: 2 },
-      animated: false,
+      markerEnd: { type: MarkerType.ArrowClosed, color: colors.border, width: 12, height: 12 },
     });
 
-    if (cat.children) {
-      const childRadius = 160;
-      const spread = Math.PI / Math.max(cat.children.length, 3);
-      const baseAngle = angle;
+    // ── Children ──
+    if (cat.children && cat.children.length > 0) {
+      const childCount = cat.children.length;
+      const totalChildWidth = (childCount - 1) * childSpacingX;
+      const childStartX = cx - totalChildWidth / 2;
 
       cat.children.forEach((child, childIdx) => {
-        const childAngle = baseAngle + (childIdx - (cat.children!.length - 1) / 2) * spread * 0.5;
-        const childX = cx + Math.cos(childAngle) * childRadius;
-        const childY = cy + Math.sin(childAngle) * childRadius;
         const childColors = getColors(child.color || cat.color);
         const childId = `node-${nodeId++}`;
 
+        // Stagger rows if many children
+        const row = Math.floor(childIdx / 3);
+        const col = childIdx % 3;
+        let childX: number, childY: number;
+
+        if (childCount <= 3) {
+          childX = childStartX + childIdx * childSpacingX - 55;
+          childY = childStartY;
+        } else {
+          const colsInRow = Math.min(3, childCount - row * 3);
+          const rowWidth = (colsInRow - 1) * childSpacingX;
+          childX = cx - rowWidth / 2 + col * childSpacingX - 55;
+          childY = childStartY + row * childSpacingY;
+        }
+
         nodes.push({
           id: childId,
-          position: { x: childX - 60, y: childY - 15 },
+          position: { x: childX, y: childY },
           data: { label: child.name, details: child.details || "", color: child.color || cat.color },
           style: {
             background: childColors.bg,
             color: childColors.text,
             border: `1.5px solid ${childColors.border}`,
             borderRadius: "8px",
-            padding: "6px 10px",
+            padding: "6px 12px",
             fontSize: "10px",
             fontWeight: 500,
-            maxWidth: "140px",
+            maxWidth: "150px",
             textAlign: "center" as const,
             cursor: "pointer",
-            opacity: 0.95,
+            opacity: 0.92,
           },
         });
 
         edges.push({
-          id: `edge-${catId}-${childId}`,
+          id: `e-${catId}-${childId}`,
           source: catId,
           target: childId,
-          style: { stroke: childColors.border, strokeWidth: 1.5, opacity: 0.6 },
+          type: "smoothstep",
+          style: { stroke: childColors.border, strokeWidth: 1.5, opacity: 0.5 },
         });
       });
     }
@@ -173,7 +195,7 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
   }, []);
 
   return (
-    <div className="relative w-full h-[calc(100vh-160px)] rounded-xl border bg-background overflow-hidden">
+    <div className="relative w-full h-full rounded-xl border bg-background/50 overflow-hidden">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -181,38 +203,51 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
         onEdgesChange={onEdgesChange}
         onNodeClick={onNodeClick}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
-        minZoom={0.2}
+        fitViewOptions={{ padding: 0.3, maxZoom: 1.2 }}
+        minZoom={0.15}
         maxZoom={2}
         proOptions={{ hideAttribution: true }}
       >
-        <Background gap={20} size={1} />
-        <Controls />
+        <Background gap={24} size={1} color="hsl(var(--muted-foreground) / 0.08)" />
+        <Controls
+          showInteractive={false}
+          className="!bg-background !border-border !shadow-lg [&>button]:!bg-background [&>button]:!border-border [&>button]:!text-foreground"
+        />
         <MiniMap
           nodeColor={(n) => {
             const c = (n.data as any)?.color;
-            return COLOR_MAP[c]?.minimap || "hsl(var(--primary))";
+            return COLOR_MAP[c]?.minimap || "#3b82f6";
           }}
-          style={{ borderRadius: 8 }}
+          style={{ borderRadius: 8, opacity: 0.85 }}
+          maskColor="hsl(var(--background) / 0.7)"
         />
 
+        {/* Tip panel */}
+        <Panel position="top-left">
+          <div className="bg-background/80 backdrop-blur-sm border rounded-lg px-3 py-2 text-[10px] text-muted-foreground shadow-sm">
+            💡 Clique em um nó para ver a explicação detalhada
+          </div>
+        </Panel>
+
         {/* References panel */}
-        {(mapData.references?.length || mapData.clinical_pearls?.length) && (
+        {(mapData.references?.length || mapData.clinical_pearls?.length || mapData.traps?.length) && (
           <Panel position="top-right">
-            <Card className="w-64 shadow-lg">
+            <Card className="w-60 shadow-lg bg-background/95 backdrop-blur-sm">
               <CardHeader className="pb-2 pt-3 px-3">
                 <CardTitle className="text-xs flex items-center gap-1.5">
                   <BookOpen className="h-3.5 w-3.5" />
-                  Referências
+                  Referências & Dicas
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3 pt-0">
-                <ScrollArea className="max-h-32">
-                  <ul className="space-y-1">
-                    {mapData.references?.map((r, i) => (
-                      <li key={i} className="text-[10px] text-muted-foreground">• {r}</li>
-                    ))}
-                  </ul>
+                <ScrollArea className="max-h-40">
+                  {mapData.references?.length ? (
+                    <ul className="space-y-0.5">
+                      {mapData.references.map((r, i) => (
+                        <li key={i} className="text-[10px] text-muted-foreground">📚 {r}</li>
+                      ))}
+                    </ul>
+                  ) : null}
                   {mapData.clinical_pearls?.length ? (
                     <div className="mt-2 pt-2 border-t">
                       <p className="text-[10px] font-semibold mb-1">💡 Pérolas Clínicas</p>
@@ -223,7 +258,7 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
                   ) : null}
                   {mapData.traps?.length ? (
                     <div className="mt-2 pt-2 border-t">
-                      <p className="text-[10px] font-semibold mb-1">⚠️ Armadilhas</p>
+                      <p className="text-[10px] font-semibold mb-1">⚠️ Armadilhas de Prova</p>
                       {mapData.traps.map((t, i) => (
                         <p key={i} className="text-[10px] text-muted-foreground">• {t}</p>
                       ))}
@@ -238,17 +273,23 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
 
       {/* Detail panel */}
       {selectedNode && (
-        <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50">
+        <div className="absolute bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 z-50 animate-fade-in">
           <Card className="shadow-xl border-2" style={{ borderColor: COLOR_MAP[selectedNode.color]?.border }}>
             <CardHeader className="pb-2 pt-3 px-4 flex-row items-center justify-between">
-              <CardTitle className="text-sm">{selectedNode.label}</CardTitle>
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-3 w-3 rounded-full flex-shrink-0"
+                  style={{ background: COLOR_MAP[selectedNode.color]?.border }}
+                />
+                <CardTitle className="text-sm">{selectedNode.label}</CardTitle>
+              </div>
               <button onClick={() => setSelectedNode(null)} className="p-1 hover:bg-muted rounded">
                 <X className="h-4 w-4" />
               </button>
             </CardHeader>
             <CardContent className="px-4 pb-4 pt-0">
-              <ScrollArea className="max-h-40">
-                <p className="text-xs leading-relaxed text-muted-foreground">{selectedNode.details}</p>
+              <ScrollArea className="max-h-48">
+                <p className="text-xs leading-relaxed text-muted-foreground whitespace-pre-line">{selectedNode.details}</p>
               </ScrollArea>
             </CardContent>
           </Card>
