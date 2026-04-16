@@ -592,6 +592,9 @@ serve(async (req: Request) => {
           estrutura_prova: exam.estrutura_prova,
           diferencial_prova: exam.diferencial_prova,
           memorizacao_ativa: exam.memorizacao_ativa,
+          // ═══ NOVO: Memorização Visual Avançada ═══
+          cena_memoravel: approved.cena_memoravel ?? null,
+          pontos_de_prova: approved.pontos_de_prova ?? [],
         },
       });
     } catch (error) {
