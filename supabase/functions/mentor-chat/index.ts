@@ -4,6 +4,7 @@ import { aiFetch } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,6 +13,13 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const userId = await extractUserId(req);
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const body = await req.json();
@@ -73,7 +81,7 @@ Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
     const elapsed = Date.now() - startMs;
 
     logAiUsage({
-      userId: "system-mentor",
+      userId,
       functionName: "mentor-chat",
       modelUsed: "google/gemini-3-flash-preview",
       success: response.ok,
