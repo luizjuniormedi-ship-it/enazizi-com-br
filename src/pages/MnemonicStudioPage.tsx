@@ -543,10 +543,11 @@ export default function MnemonicGeneratorPage() {
   }, [result]);
 
   const handleUseSuggestion = useCallback((suggestion: { tema: string; subtema: string | null }) => {
-    setTema(suggestion.subtema ? `${suggestion.tema} — ${suggestion.subtema}` : suggestion.tema);
-    setTermosText("");
+    const newTema = suggestion.subtema ? `${suggestion.tema} — ${suggestion.subtema}` : suggestion.tema;
+    setTema(newTema);
+    setTermosText(""); // Will trigger auto-suggestion via the useEffect
     setActiveTab("gerar");
-    toast.info(`Tema "${suggestion.tema}" selecionado.`);
+    toast.info(`Tema "${suggestion.subtema || suggestion.tema}" selecionado — termos serão sugeridos.`);
   }, []);
 
   const isLoading = generateMutation.isPending || regenerateMutation.isPending;
