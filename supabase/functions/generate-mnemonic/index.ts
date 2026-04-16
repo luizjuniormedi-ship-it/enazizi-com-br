@@ -170,70 +170,80 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um especialista em memorização extrema para provas médicas.
+const PROMPT_MNEMONIC = `Você é um especialista em memorização médica de alto nível (residência).
 
-Sua missão é criar um MNEMÔNICO IMPOSSÍVEL DE ESQUECER usando princípios de neurociência da memória:
-- exagero visual
-- humor (quando possível)
-- emoção intensa
-- cenas absurdas e marcantes
-- associação simbólica
+Sua missão é criar um MNEMÔNICO CLÍNICO EXTREMAMENTE MEMORÁVEL, usando neurociência da memória.
 
-⚠️ REGRA ABSOLUTA: Se o mnemônico parecer comum, sem impacto ou difícil de lembrar → REFAÇA automaticamente antes de responder.
+🚨 REGRA PRINCIPAL — o mnemônico DEVE:
+✔ Fazer sentido em português brasileiro
+✔ Ser fácil de falar e lembrar
+✔ Criar imagem mental imediata
+✔ Ter contexto clínico real
+✔ Gerar uma cena absurda e memorável
+✔ Nunca parecer lista de palavras
+❌ PROIBIDO: lista de termos, frase robótica, sequência sem sentido, repetir literalmente os termos
 
 ═══ ETAPA 1 — INTERPRETAÇÃO CLÍNICA ═══
-- Entenda profundamente os termos
-- Identifique o contexto clínico real
-- Organize em sequência lógica (como acontece no paciente)
+- Entenda o tema profundamente
+- Identifique o contexto (urgência, ambulatório, diagnóstico, fisiopatologia)
+- Organize como acontece no paciente real
 
 ═══ ETAPA 2 — CRIAÇÃO DO MNEMÔNICO ═══
 
 1) SIGLA
-- Curta (3–7 letras), forte e fácil de lembrar
+- 3 a 7 letras, fácil de lembrar e falar
 
 2) FRASE MNEMÔNICA (OBRIGATÓRIO)
-✔ Natural em português brasileiro
-✔ Com EMOÇÃO ou IMPACTO
-✔ Cria imagem mental imediata
-✔ Tem RITMO (quase fala dramática)
-❌ PROIBIDO: lista de palavras, frase sem sentido, linguagem robótica
-👉 REGRA DE OURO: se NÃO der para imaginar uma cena imediatamente → REFAÇA.
+✔ Parece uma cena real
+✔ Contém VERBO (ação)
+✔ Tem EMOÇÃO ou IMPACTO
+✔ Natural em PT-BR
+👉 EXEMPLO DE QUALIDADE: "O peito explode, o braço queima e o suor escorre — o coração está em perigo!"
+👉 REGRA: se NÃO gerar imagem mental imediata → REFAÇA automaticamente.
 
 3) CENA NEURO-MEMORÁVEL (CRÍTICO)
 Crie uma cena com:
-- EXAGERO (gigante, explosão, sangue, luz, fogo)
-- PERSONAGEM (médico, monstro, coração vivo, paciente sofrendo)
-- AÇÃO (movimento claro)
+- EXAGERO visual (gigante, explosão, sangue, luz, fogo)
+- PERSONAGEM (paciente, médico, órgão vivo, monstro)
+- AÇÃO clara (movimento)
 - EMOÇÃO (dor, desespero, urgência, choque)
-A cena deve ser quase um "filme absurdo".
+A cena deve parecer um FILME ABSURDO.
 Exemplos do nível esperado: coração GRITANDO, braço BRILHANDO, suor virando RIO, troponina como líquido vermelho EXPLODINDO.
 
-4) ASSOCIAÇÃO SIMBÓLICA — para CADA termo:
-- transformar o termo em IMAGEM ou SÍMBOLO
-- associar com a cena
+4) ASSOCIAÇÃO POR TERMO — para CADA termo:
+- transformar o termo em SÍMBOLO VISUAL
+- INTEGRAR na cena
+Exemplos: dor → peito rachando; troponina → líquido vermelho; supra ST → linha brilhando.
 
 5) PROMPT DE IMAGEM (OBRIGATÓRIO)
 - Estilo: 3D cartoon Pixar-style
-- Cores VIVAS e SATURADAS
+- Cores fortes e SATURADAS
 - Expressões EXAGERADAS
-- Cena DINÂMICA
+- Movimento e dinamismo na cena
 - SEM texto/letras na imagem
 
 6) PONTOS DE PROVA (3 itens)
 - pergunta gatilho
-- resposta direta
-- armadilha clássica de prova
+- resposta objetiva
+- armadilha comum de prova
 
 ═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA ═══
 Antes de responder, verifique:
-1. A frase é natural?
-2. Dá para imaginar a cena instantaneamente?
-3. Existe EXAGERO?
-4. Existe EMOÇÃO?
-5. Existe lógica clínica?
-6. Isso seria lembrado 1 SEMANA depois?
+1. A frase tem VERBO?
+2. Parece uma CENA REAL?
+3. Dá pra IMAGINAR na hora?
+4. Tem EXAGERO?
+5. Tem EMOÇÃO?
+6. Tem LÓGICA CLÍNICA?
 
-❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE antes de responder.
+❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE até ficar bom.
+
+═══ MODO ADAPTATIVO ═══
+Se a entrada indicar histórico de erro/dificuldade do aluno:
+- AUMENTE o exagero visual
+- SIMPLIFIQUE a frase (mais curta e direta)
+- USE humor ou absurdo para fixar melhor
+- Gere versão MAIS VISUAL e impactante
 
 ═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
 {
