@@ -276,3 +276,84 @@
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* ── XP / Gamification animations ── */
+@keyframes xp-float {
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  20% { opacity: 1; transform: translateY(-10px) scale(1); }
+  80% { opacity: 1; transform: translateY(-30px) scale(1); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.6); }
+}
+
+@keyframes score-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+@keyframes streak-fire {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.1) rotate(-3deg); }
+  75% { transform: scale(1.1) rotate(3deg); }
+}
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down-fade {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-xp-float {
+  animation: xp-float 2s ease-out forwards;
+}
+
+.animate-score-pop {
+  animation: score-pop 0.4s ease-out;
+}
+
+.animate-streak-fire {
+  animation: streak-fire 0.6s ease-in-out;
+}
+
+.animate-slide-up {
+  animation: slide-up-fade 0.3s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down-fade 0.3s ease-out;
+}
+
+/* ── Swipe hint for mobile ── */
+@keyframes swipe-hint {
+  0%, 100% { transform: translateX(0); opacity: 0.6; }
+  50% { transform: translateX(-8px); opacity: 1; }
+}
+
+.animate-swipe-hint {
+  animation: swipe-hint 2s ease-in-out 3;
+}
+
+/* ── Dark mode contrast improvements ── */
+@layer base {
+  :root {
+    /* Ensure minimum contrast on muted text */
+    --min-contrast-muted: 215 20% 60%;
+  }
+}
+
+/* Better focus visibility */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+/* Improve readability of small text in dark mode */
+.text-muted-foreground {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
