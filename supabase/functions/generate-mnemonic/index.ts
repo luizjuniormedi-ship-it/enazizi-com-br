@@ -330,11 +330,8 @@ serve(async (req: Request) => {
       }
 
       // ══════════════════════════════════════
-      // ETAPA 1: Gerar mnemônico (texto)
+      // ETAPA 1: Gerar mnemônico (texto) — até 3 tentativas com validação
       // ══════════════════════════════════════
-      console.log("[MNEMONIC] ETAPA 1: Gerando mnemônico...");
-      let startMs = Date.now();
-
       interface MnemonicOutput {
         sigla: string; frase_mnemonica: string;
         explicacao_didatica: string; explicacao_tecnica: string;
@@ -343,31 +340,86 @@ serve(async (req: Request) => {
         score_autoavaliacao: number; problemas_detectados: string[];
       }
 
-      let mnemonic = await callAI<MnemonicOutput>(aiKey, PROMPT_MNEMONIC, ctx);
-      await insertAgentLog(db, {
-        request_id: requestId, user_id: userId, agent_name: "gerador",
-        execution_order: ++order, status: "completed",
-        input_json: { prompt: ctx.substring(0, 500) },
-        output_json: mnemonic, score: mnemonic.score_autoavaliacao,
-        duration_ms: Date.now() - startMs,
-      });
+      // Validador interno de qualidade
+      function validateMnemonic(m: MnemonicOutput | null, termos: string[]): string[] {
+        const issues: string[] = [];
+        if (!m) { issues.push("resposta_vazia"); return issues; }
+        const frase = (m.frase_mnemonica || "").trim();
+        const exp = (m.explicacao_didatica || "").trim();
+        if (!frase) issues.push("frase_vazia");
+        else if (frase.length < 8) issues.push("frase_curta_demais");
+        if (!exp) issues.push("explicacao_didatica_ausente");
+        else if (exp.length < 20) issues.push("explicacao_curta_demais");
+        if (!(m.explicacao_tecnica || "").trim()) issues.push("explicacao_tecnica_ausente");
+        // Eco literal: frase é apenas a junção dos termos
+        const fraseLow = frase.toLowerCase();
+        const termosLow = termos.map(t => t.toLowerCase().trim());
+        const joined = termosLow.join(" ").trim();
+        if (fraseLow === joined || fraseLow === termosLow.join(", ")) issues.push("eco_literal_termos");
+        // Placeholders óbvios
+        if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + exp)) issues.push("placeholder_detectado");
+        // Score
+        const score = Number(m.score_autoavaliacao || 0);
+        if (score <= 0) issues.push("score_zero");
+        return issues;
+      }
 
-      // Self-validation: if score < 70 or problems detected, retry once
-      if (mnemonic.score_autoavaliacao < 70 || (mnemonic.problemas_detectados?.length > 0)) {
-        console.log(`[MNEMONIC] Auto-avaliação baixa (${mnemonic.score_autoavaliacao}), retentando...`);
-        startMs = Date.now();
-        const retryCtx = `${ctx}\n\n⚠️ A versão anterior falhou na autoavaliação (score=${mnemonic.score_autoavaliacao}).\nProblemas: ${(mnemonic.problemas_detectados || []).join(", ")}\nVersão anterior: "${mnemonic.frase_mnemonica}"\n\nCrie uma versão MELHOR, mais memorável e natural em português brasileiro.`;
-        const retry = await callAI<MnemonicOutput>(aiKey, PROMPT_MNEMONIC, retryCtx);
-        await insertAgentLog(db, {
-          request_id: requestId, user_id: userId, agent_name: "retry_gerador",
-          execution_order: ++order, status: "completed",
-          input_json: { prompt: retryCtx.substring(0, 500) },
-          output_json: retry, score: retry.score_autoavaliacao,
-          duration_ms: Date.now() - startMs,
-        });
-        if (retry.score_autoavaliacao >= mnemonic.score_autoavaliacao) {
-          mnemonic = retry;
+      console.log("[MNEMONIC] ETAPA 1: Gerando mnemônico (loop até 3 tentativas)...");
+      let mnemonic: MnemonicOutput | null = null;
+      let lastIssues: string[] = [];
+      let lastVersion: MnemonicOutput | null = null;
+      const MAX_ATTEMPTS = 3;
+
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const startMs = Date.now();
+        let attemptCtx = ctx;
+        if (attempt === 2 && lastVersion) {
+          attemptCtx = `${ctx}\n\n⚠️ TENTATIVA ${attempt}/${MAX_ATTEMPTS}. A versão anterior falhou na validação.\nProblemas: ${lastIssues.join(", ")}\nVersão anterior: "${lastVersion.frase_mnemonica}"\n\nCrie uma versão MAIS COERENTE, MAIS MEMORÁVEL e MAIS NATURAL em português brasileiro. NÃO repita literalmente os termos. Crie uma frase mais forte, clara e fácil de lembrar.`;
+        } else if (attempt === 3) {
+          attemptCtx = `${ctx}\n\n⚠️ ÚLTIMA TENTATIVA (${attempt}/${MAX_ATTEMPTS}). As tentativas anteriores falharam.\nProblemas detectados: ${lastIssues.join(", ")}\n\nFOQUE NO ESSENCIAL:\n- Crie UMA SIGLA CURTA E FORTE (até 8 letras) ou UMA FRASE CURTA (5-10 palavras)\n- Português brasileiro natural\n- Cada letra/palavra ligada a um termo\n- Explicação didática clara e direta\n- Cena visual simples mas marcante`;
         }
+
+        let candidate: MnemonicOutput | null = null;
+        let errMsg: string | undefined;
+        try {
+          candidate = await callAI<MnemonicOutput>(aiKey, PROMPT_MNEMONIC, attemptCtx);
+        } catch (e) {
+          errMsg = e instanceof Error ? e.message : String(e);
+        }
+
+        const issues = validateMnemonic(candidate, payload.termos);
+        const isValid = issues.length === 0 && !errMsg;
+
+        await insertAgentLog(db, {
+          request_id: requestId, user_id: userId,
+          agent_name: attempt === 1 ? "gerador" : "retry_gerador",
+          execution_order: ++order,
+          status: isValid ? "completed" : "failed",
+          input_json: { attempt, prompt: attemptCtx.substring(0, 500) },
+          output_json: { ...candidate, _attempt: attempt, _issues: issues },
+          score: candidate?.score_autoavaliacao,
+          duration_ms: Date.now() - startMs,
+          error_message: errMsg ?? (issues.length ? `Validação falhou: ${issues.join(", ")}` : undefined),
+        });
+
+        console.log(`[MNEMONIC] Tentativa ${attempt}: ${isValid ? "✓ VÁLIDA" : "✗ INVÁLIDA"} — issues=[${issues.join(", ")}]${errMsg ? ` err=${errMsg}` : ""}`);
+
+        if (isValid && candidate) {
+          mnemonic = candidate;
+          break;
+        }
+        lastIssues = issues;
+        if (candidate) lastVersion = candidate;
+      }
+
+      if (!mnemonic) {
+        if (requestId) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
+        return jsonResponse({
+          success: false,
+          error: "Não foi possível gerar um mnemônico válido após 3 tentativas. Tente novamente.",
+          code: "GENERATION_FAILED",
+          details: lastIssues.join(", "),
+        }, 422);
       }
 
       // ══════════════════════════════════════
