@@ -89,14 +89,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }).catch(() => {});
             }
 
-            // 3. Update service worker; if a new version is ready, hard-reload
+            // 3. Update service worker; force activation of any new version
             if ("serviceWorker" in navigator) {
               navigator.serviceWorker.getRegistration().then((reg) => {
                 if (!reg) return;
                 reg.update().then(() => {
                   if (reg.waiting) {
                     reg.waiting.postMessage({ type: "SKIP_WAITING" });
-                    // Reload once the new SW takes control
                     let reloaded = false;
                     navigator.serviceWorker.addEventListener("controllerchange", () => {
                       if (reloaded) return;
@@ -106,6 +105,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   }
                 }).catch(() => {});
               }).catch(() => {});
+            }
+
+            // 4. MOBILE/PWA SAFETY NET: if the bundle release stored on this
+            // device is older than the one currently running, force a hard
+            // reload with cache-busting query so the WebView fetches fresh HTML.
+            // This catches Android WebView / iOS standalone PWAs where the SW
+            // serves stale assets even after login.
+            try {
+              const APP_RELEASE_KEY = "enazizi_release";
+              const currentRelease = localStorage.getItem(APP_RELEASE_KEY);
+              const loginRefreshFlag = "enazizi_login_hard_reload_done";
+              const alreadyReloaded = sessionStorage.getItem(loginRefreshFlag);
+              const isStandalonePWA =
+                window.matchMedia("(display-mode: standalone)").matches ||
+                // iOS Safari standalone
+                (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+
+              if (!alreadyReloaded && (isStandalonePWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))) {
+                sessionStorage.setItem(loginRefreshFlag, "1");
+                // Small delay to let auth state persist before reload
+                setTimeout(() => {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set("__r", currentRelease || String(Date.now()));
+                  window.location.replace(url.toString());
+                }, 800);
+              }
+            } catch {
+              /* ignore */
             }
           }
         } catch {
