@@ -108,10 +108,7 @@ export default function MnemonicGeneratorPage() {
           }
           const terms = [...allTerms].slice(0, 10);
           setSuggestedTerms(terms);
-          // Auto-fill if empty
-          if (!termosText.trim() && terms.length >= 3) {
-            setTermosText(terms.slice(0, 7).join("\n"));
-          }
+          // NÃO auto-preenche mais — modo automático extrai via IA quando usuário não digita.
         } else {
           setSuggestedTerms([]);
         }
