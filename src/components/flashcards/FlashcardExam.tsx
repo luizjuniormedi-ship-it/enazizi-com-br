@@ -90,6 +90,7 @@ const FlashcardExam = ({
     const isCorrect = quality !== "again";
     setStatuses(prev => new Map(prev).set(current, isCorrect ? "correct" : "wrong"));
     onReview(card.id, ratingMap[quality], userAnswer);
+    import("@/lib/haptics").then(h => isCorrect ? h.hapticSuccess() : h.hapticError());
 
     // Auto-advance
     if (current < cards.length - 1) {
