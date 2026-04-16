@@ -495,12 +495,15 @@ serve(async (req: Request) => {
 
       const associacoes = Array.isArray(mnemonic.associacoes) ? mnemonic.associacoes : [];
 
+      const explicacaoAssoc = (mnemonic.explicacao_associacao || mnemonic.explicacao_didatica || "").trim();
+      const explicacaoDid = (mnemonic.explicacao_didatica || mnemonic.explicacao_associacao || "").trim();
+
       const resultId = await insertResult(db, {
         request_id: requestId, user_id: userId, tema: payload.tema,
         sigla: mnemonic.sigla || "",
         frase_mnemonica: mnemonic.frase_mnemonica,
         explicacao_tecnica: mnemonic.explicacao_tecnica,
-        explicacao_didatica: mnemonic.explicacao_didatica,
+        explicacao_didatica: explicacaoDid,
         cena_visual: cenaVisual, prompt_imagem: promptImagem,
         score_medico: scoreMnemonic, score_pedagogico: scoreMnemonic,
         score_linguistico: scoreMnemonic, score_final: scoreFinal,
@@ -519,9 +522,9 @@ serve(async (req: Request) => {
           tema: payload.tema,
           sigla: mnemonic.sigla || "",
           frase_mnemonica: mnemonic.frase_mnemonica,
-          explicacao_associacao: mnemonic.explicacao_didatica,
+          explicacao_associacao: explicacaoAssoc,
           explicacao_tecnica: mnemonic.explicacao_tecnica,
-          explicacao_didatica: mnemonic.explicacao_didatica,
+          explicacao_didatica: explicacaoDid,
           cena_visual: cenaVisual,
           prompt_imagem: promptImagem,
           image_url: imageUrl,
