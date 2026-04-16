@@ -318,37 +318,30 @@ export default function MnemonicGeneratorPage() {
       {!result && (
         <Card>
           <CardContent className="pt-6 space-y-4">
+            {/* Banner Modo Automático */}
+            <div className="rounded-lg border border-primary/30 bg-gradient-to-r from-primary/10 to-primary/5 p-3 flex items-start gap-3">
+              <Wand className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div className="space-y-0.5">
+                <p className="text-sm font-semibold text-primary">Modo Automático Ativado</p>
+                <p className="text-xs text-muted-foreground">
+                  Apenas digite o tema — a IA extrai automaticamente os termos mais cobrados em prova e cria o mnemônico completo.
+                </p>
+              </div>
+            </div>
+
             <div className="space-y-1">
-              <label className="text-sm font-medium">Tema</label>
-              <Input value={tema} onChange={(e) => setTema(e.target.value)} placeholder="Ex: Critérios de Light para derrame pleural" />
+              <label className="text-sm font-medium">Tema médico</label>
+              <Input
+                value={tema}
+                onChange={(e) => setTema(e.target.value)}
+                placeholder="Ex: Critérios de Light para derrame pleural"
+              />
               {formErrors.tema && <p className="text-xs text-destructive">{formErrors.tema}</p>}
+              <p className="text-[11px] text-muted-foreground">
+                Quanto mais específico, melhor o mnemônico (ex: "Tríade de Charcot na colangite", "Critérios de Ranson na pancreatite").
+              </p>
             </div>
-            <div className="space-y-1">
-              <label className="text-sm font-medium">Termos (um por linha, 3–7)</label>
-              <Textarea value={termosText} onChange={(e) => setTermosText(e.target.value)} placeholder={"Proteína\nLDH\nGlicose"} rows={5} />
-              <p className="text-xs text-muted-foreground">{termos.length} termo(s)</p>
-              {formErrors.termos && <p className="text-xs text-destructive">{formErrors.termos}</p>}
-              {suggestedTerms.length > 0 && (
-                <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-medium text-primary flex items-center gap-1.5">
-                      <Lightbulb className="h-3.5 w-3.5" /> Termos sugeridos
-                    </p>
-                    <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleApplySuggestedTerms(suggestedTerms)}>
-                      Usar todos
-                    </Button>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {suggestedTerms.map((term, i) => (
-                      <Button key={i} variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleApplySuggestedTerms([term])}>
-                        + {term}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {loadingTerms && <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Loader2 className="h-3 w-3 animate-spin" /> Buscando termos...</p>}
-            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1">
                 <label className="text-sm font-medium">Estilo</label>
@@ -365,9 +358,63 @@ export default function MnemonicGeneratorPage() {
                 </Select>
               </div>
             </div>
+
+            {/* Opções avançadas — termos manuais */}
+            <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm" className="w-full justify-between text-xs text-muted-foreground hover:text-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <Lightbulb className="h-3.5 w-3.5" />
+                    Opções avançadas: definir termos manualmente
+                    {termos.length > 0 && (
+                      <Badge variant="secondary" className="ml-1 text-[10px]">{termos.length}</Badge>
+                    )}
+                  </span>
+                  {advancedOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="space-y-2 pt-2">
+                <p className="text-[11px] text-muted-foreground">
+                  Deixe em branco para a IA extrair automaticamente. Se preferir, informe entre 3 e 7 termos (um por linha).
+                </p>
+                <Textarea
+                  value={termosText}
+                  onChange={(e) => setTermosText(e.target.value)}
+                  placeholder={"Proteína\nLDH\nGlicose"}
+                  rows={5}
+                />
+                <p className="text-xs text-muted-foreground">{termos.length} termo(s)</p>
+                {formErrors.termos && <p className="text-xs text-destructive">{formErrors.termos}</p>}
+                {suggestedTerms.length > 0 && (
+                  <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-primary flex items-center gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5" /> Termos sugeridos do currículo
+                      </p>
+                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleApplySuggestedTerms(suggestedTerms)}>
+                        Usar todos
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestedTerms.map((term, i) => (
+                        <Button key={i} variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleApplySuggestedTerms([term])}>
+                          + {term}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {loadingTerms && <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Loader2 className="h-3 w-3 animate-spin" /> Buscando termos do currículo...</p>}
+              </CollapsibleContent>
+            </Collapsible>
+
             <Button onClick={handleGenerate} disabled={isLoading} className="w-full" size="lg">
               {isLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
-              {isLoading ? "Gerando..." : "Gerar Mnemônico"}
+              {isLoading
+                ? "Gerando..."
+                : termos.length === 0
+                  ? "Gerar Mnemônico Automaticamente"
+                  : "Gerar Mnemônico"}
             </Button>
           </CardContent>
         </Card>
