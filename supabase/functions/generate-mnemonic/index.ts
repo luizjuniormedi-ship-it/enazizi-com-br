@@ -390,7 +390,7 @@ serve(async (req: Request) => {
         console.log(`[MNEMONIC] ETAPA 0: Extraindo termos automaticamente para "${payload.tema}"`);
         const extractStart = Date.now();
         try {
-          const extracted = await callAI<{ termos?: unknown; justificativa?: string }>(
+          const extracted = await callAI<{ termos?: unknown; contexto_clinico?: string; justificativa?: string }>(
             aiKey,
             PROMPT_EXTRACT_TERMS,
             `Tema médico: ${payload.tema}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`
@@ -409,6 +409,10 @@ serve(async (req: Request) => {
             }, 422);
           }
           payload.termos = normalizeTerms(cleanTermos);
+          if (extracted?.contexto_clinico && typeof extracted.contexto_clinico === "string") {
+            (payload as any).contexto_clinico = extracted.contexto_clinico.trim();
+            console.log(`[MNEMONIC] ETAPA 0: contexto_clinico = ${(payload as any).contexto_clinico}`);
+          }
           console.log(`[MNEMONIC] ETAPA 0 OK: ${payload.termos.length} termos extraídos: ${payload.termos.join(", ")}`);
         } catch (e) {
           const msg = e instanceof Error ? e.message : String(e);
