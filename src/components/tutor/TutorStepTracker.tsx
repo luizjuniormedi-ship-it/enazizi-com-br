@@ -25,6 +25,7 @@ const TutorStepTracker = ({
   isLoading, changingTopic, setChangingTopic, newTopic, setNewTopic,
   onChangeTopic, onPhaseAction, onGoBackStep, nextPhase,
 }: TutorStepTrackerProps) => {
+  const navigate = useNavigate();
   const progressPercent = Math.round((enaziziStep / 15) * 100);
 
   return (
