@@ -372,6 +372,59 @@ export default function MnemonicGeneratorPage() {
 
   const { data: errorSuggestions } = useErrorSuggestions();
 
+  // ── Auto-suggest terms from curriculum_matrix when tema changes ──
+  const [suggestedTerms, setSuggestedTerms] = useState<string[]>([]);
+  const [loadingTerms, setLoadingTerms] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!tema || tema.trim().length < 3) {
+      setSuggestedTerms([]);
+      return;
+    }
+    setLoadingTerms(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        // Search curriculum_matrix for matching topics
+        const searchTerm = tema.split("—")[0].trim(); // handle "Tema — Subtema" format
+        const { data } = await supabase
+          .from("curriculum_matrix")
+          .select("gatilhos_clinicos, palavras_chave, subtema, tema")
+          .eq("ativo", true)
+          .or(`tema.ilike.%${searchTerm}%,subtema.ilike.%${searchTerm}%`)
+          .limit(3);
+
+        if (data && data.length > 0) {
+          const allTerms = new Set<string>();
+          for (const row of data) {
+            if (Array.isArray(row.gatilhos_clinicos)) {
+              row.gatilhos_clinicos.forEach((t: string) => allTerms.add(t));
+            }
+            if (Array.isArray(row.palavras_chave)) {
+              row.palavras_chave.forEach((t: string) => allTerms.add(t));
+            }
+          }
+          setSuggestedTerms([...allTerms].slice(0, 10));
+        } else {
+          setSuggestedTerms([]);
+        }
+      } catch {
+        setSuggestedTerms([]);
+      } finally {
+        setLoadingTerms(false);
+      }
+    }, 500);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [tema]);
+
+  const handleApplySuggestedTerms = useCallback((terms: string[]) => {
+    const current = termosText.split("\n").map(t => t.trim()).filter(Boolean);
+    const merged = [...new Set([...current, ...terms])];
+    setTermosText(merged.join("\n"));
+    toast.success(`${terms.length} termo(s) adicionado(s)`);
+  }, [termosText]);
+
   const generateMutation = useGenerateMnemonic();
   const favoriteMutation = useToggleFavorite();
   const regenerateMutation = useRegenerateMnemonic();
