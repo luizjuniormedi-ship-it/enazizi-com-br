@@ -387,12 +387,13 @@ export default function MnemonicGeneratorPage() {
     debounceRef.current = setTimeout(async () => {
       try {
         const searchTerm = tema.split("—")[0].trim();
+        // Search in tema, subtema AND palavras_chave array
         const { data } = await supabase
           .from("curriculum_matrix")
           .select("gatilhos_clinicos, palavras_chave, subtema, tema")
           .eq("ativo", true)
-          .or(`tema.ilike.%${searchTerm}%,subtema.ilike.%${searchTerm}%`)
-          .limit(3);
+          .or(`tema.ilike.%${searchTerm}%,subtema.ilike.%${searchTerm}%,palavras_chave.cs.{${searchTerm}}`)
+          .limit(5);
 
         if (data && data.length > 0) {
           const allTerms = new Set<string>();
