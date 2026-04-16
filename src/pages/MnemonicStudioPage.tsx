@@ -271,7 +271,7 @@ export default function MnemonicGeneratorPage() {
   const handleUseSuggestion = useCallback((s: { tema: string; subtema: string | null }) => {
     setTema(s.subtema ? `${s.tema} — ${s.subtema}` : s.tema);
     setTermosText("");
-    toast.info(`Tema selecionado — termos serão sugeridos.`);
+    toast.info("Tema selecionado — IA extrairá os termos automaticamente.");
   }, []);
 
   const handleApplySuggestedTerms = useCallback((terms: string[]) => {
