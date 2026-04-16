@@ -108,6 +108,31 @@ function VisualQuizMode({ result, onClose }: { result: MnemonicResultData; onClo
   );
 }
 
+// ═══ SUGESTÕES DO BANCO DE ERROS ═══
+function useErrorSuggestions() {
+  return useQuery({
+    queryKey: ["mnemonic-error-suggestions"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data } = await supabase
+        .from("error_bank")
+        .select("tema, subtema, vezes_errado, categoria_erro")
+        .eq("user_id", user.id)
+        .eq("dominado", false)
+        .order("vezes_errado", { ascending: false })
+        .limit(5);
+      return (data || []).map(e => ({
+        tema: e.tema,
+        subtema: e.subtema,
+        vezes_errado: e.vezes_errado,
+        categoria: e.categoria_erro,
+      }));
+    },
+    staleTime: 60_000,
+  });
+}
+
 export default function MnemonicGeneratorPage() {
   const [tema, setTema] = useState("");
   const [termosText, setTermosText] = useState("");
@@ -122,6 +147,9 @@ export default function MnemonicGeneratorPage() {
   const [quizMode, setQuizMode] = useState(false);
   const [savingFlashcard, setSavingFlashcard] = useState(false);
   const [savingFsrs, setSavingFsrs] = useState(false);
+  const [quickFeedback, setQuickFeedback] = useState<string | null>(null);
+
+  const { data: errorSuggestions } = useErrorSuggestions();
 
   const generateMutation = useGenerateMnemonic();
   const favoriteMutation = useToggleFavorite();
