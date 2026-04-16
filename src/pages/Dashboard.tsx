@@ -6,6 +6,7 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { resolveRecommendationAction } from "@/lib/recommendationRouter";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
+import { usePrefetch } from "@/hooks/usePrefetch";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useStudyLoop } from "@/hooks/useStudyLoop";
 import { useStudySession } from "@/hooks/useStudySession";
