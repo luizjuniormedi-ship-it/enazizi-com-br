@@ -219,31 +219,6 @@ Antes de retornar, verifique:
 
 IMPORTANTE: A frase precisa fazer sentido em português e ser fácil de lembrar.`;
 
-const PROMPT_VISUAL = `Você é especialista em memorização visual aplicada à medicina brasileira.
-
-Dada uma PALAVRA ou FRASE MNEMÔNICA, crie uma CENA VISUAL MEMORÁVEL que ajude a fixar o mnemônico na memória.
-
-═══ REGRAS DA CENA ═══
-1. A cena deve nascer diretamente do mnemônico (da palavra/frase criada)
-2. Deve ser SIMPLES — máximo 3-4 elementos visuais
-3. Deve ter AÇÃO/MOVIMENTO — cenas estáticas não funcionam
-4. Deve ter algo ENGRAÇADO, ABSURDO ou EMOCIONANTE
-5. Deve ser descrita como se fosse um frame de animação Pixar
-6. NÃO use elementos abstratos — tudo deve ser visual e concreto
-
-═══ REGRAS DO PROMPT DE IMAGEM ═══
-O prompt_imagem DEVE:
-- Ser em INGLÊS
-- Começar com: "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words."
-- Descrever exatamente a cena visual criada
-- Ser específico sobre personagens, objetos e ações
-- NÃO incluir conceitos médicos abstratos — apenas a representação visual
-
-Retorne SOMENTE JSON:
-{
-  "cena_visual": "descrição da cena em português, 2-3 frases",
-  "prompt_imagem": "prompt em inglês para gerar a imagem"
-}`;
 
 const PROMPT_EXAM_POINTS = `Você é especialista em provas de residência médica brasileira.
 
