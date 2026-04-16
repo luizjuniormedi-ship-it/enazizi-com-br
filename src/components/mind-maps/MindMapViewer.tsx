@@ -144,7 +144,7 @@ function LeafItem({
           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">Toque para ver detalhes</p>
         )}
       </div>
-    </motion.button>
+    </motion.div>
   );
 }
 
