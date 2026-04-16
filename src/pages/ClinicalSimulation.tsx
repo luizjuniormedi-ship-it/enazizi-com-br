@@ -1939,7 +1939,7 @@ const ClinicalSimulation = () => {
 
               {/* Input */}
               {phase === "active" && (
-                <div className="border-t border-border/50 p-3 flex gap-2">
+                <div className="border-t border-border/50 p-3 flex gap-2 shrink-0">
                   <Input
                     ref={inputRef}
                     value={input}
