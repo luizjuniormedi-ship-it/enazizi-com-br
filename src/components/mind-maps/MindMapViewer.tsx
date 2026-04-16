@@ -1,6 +1,7 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { ChevronDown, ChevronRight, Lightbulb, AlertTriangle, BookOpen, X } from "lucide-react";
+import { useState, useCallback, useMemo, useRef } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, Lightbulb, AlertTriangle, BookOpen, X, ArrowLeft } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { getNodeColors, CATEGORY_ICONS } from "./MindMapNode";
 
@@ -20,85 +21,209 @@ interface MindMapData {
   traps?: string[];
 }
 
-/* ── Detail Panel (bottom sheet on mobile, side panel on desktop) ── */
-function DetailPanel({
+interface FlatNode {
+  label: string;
+  details: string;
+  color: string;
+  parentLabel?: string;
+}
+
+/* ── Build flat navigable list ── */
+function buildFlatNodes(data: MindMapData): FlatNode[] {
+  const flat: FlatNode[] = [];
+  for (const cat of data.nodes) {
+    if (cat.details) flat.push({ label: cat.name, details: cat.details, color: cat.color });
+    for (const child of cat.children || []) {
+      if (child.details) flat.push({ label: child.name, details: child.details, color: child.color || cat.color, parentLabel: cat.name });
+    }
+  }
+  return flat;
+}
+
+/* ══════════════════════════════════════════════════
+   READING PANEL — large, comfortable, navigable
+   ══════════════════════════════════════════════════ */
+function ReadingPanel({
   node,
+  flatNodes,
+  currentIndex,
+  onNavigate,
   onClose,
   references,
   clinicalPearls,
   traps,
 }: {
-  node: { label: string; details: string; color: string } | null;
+  node: FlatNode;
+  flatNodes: FlatNode[];
+  currentIndex: number;
+  onNavigate: (idx: number) => void;
   onClose: () => void;
   references?: string[];
   clinicalPearls?: string[];
   traps?: string[];
 }) {
-  if (!node) return null;
   const colors = getNodeColors(node.color);
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < flatNodes.length - 1;
+
+  // Parse details into sections if structured with ## headers
+  const sections = useMemo(() => {
+    const text = node.details;
+    // Try to split by markdown-like headers
+    const parts = text.split(/\n(?=#{1,3}\s)/);
+    if (parts.length > 1) {
+      return parts.map(part => {
+        const match = part.match(/^(#{1,3})\s+(.+)\n?([\s\S]*)/);
+        if (match) return { title: match[2].trim(), body: match[3].trim() };
+        return { title: "", body: part.trim() };
+      }).filter(s => s.body || s.title);
+    }
+    return [{ title: "", body: text }];
+  }, [node.details]);
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Reset scroll on navigation
+  const prevIdx = useRef(currentIndex);
+  if (prevIdx.current !== currentIndex) {
+    prevIdx.current = currentIndex;
+    scrollRef.current?.scrollTo({ top: 0 });
+  }
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 20 }}
-      className="fixed bottom-0 left-0 right-0 z-50 lg:absolute lg:bottom-4 lg:right-4 lg:left-auto lg:w-[420px] lg:max-w-[calc(100vw-2rem)]"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2 }}
+      className="fixed inset-0 z-50 flex flex-col lg:flex-row"
     >
+      {/* Backdrop — dims the map on desktop */}
       <div
-        className="rounded-t-2xl lg:rounded-2xl border bg-background/95 backdrop-blur-xl shadow-2xl overflow-hidden max-h-[70vh] lg:max-h-[500px]"
-        style={{ borderColor: colors.border + "40" }}
-      >
+        className="hidden lg:block lg:w-[40%] xl:w-[45%] bg-black/40 backdrop-blur-sm cursor-pointer"
+        onClick={onClose}
+      />
+
+      {/* Reading area — fullscreen mobile, 55-60% desktop */}
+      <div className="flex-1 flex flex-col bg-background overflow-hidden lg:border-l border-border/50 lg:shadow-2xl">
+        {/* Header */}
         <div
-          className="px-5 py-4 flex items-center justify-between sticky top-0 z-10"
-          style={{ background: `linear-gradient(135deg, ${colors.bg}, transparent)` }}
+          className="shrink-0 px-5 sm:px-8 py-4 sm:py-5 flex items-center gap-3 border-b"
+          style={{
+            background: `linear-gradient(135deg, ${colors.bg}, transparent)`,
+            borderColor: colors.border + "30",
+          }}
         >
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="h-4 w-4 rounded-full shrink-0 ring-2 ring-white/50" style={{ background: colors.border }} />
-            <h3 className="text-base font-bold truncate" style={{ color: colors.text }}>{node.label}</h3>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted/50 transition-colors shrink-0">
-            <X className="h-5 w-5 text-muted-foreground" />
+          <button
+            onClick={onClose}
+            className="p-2 -ml-2 rounded-xl hover:bg-background/50 transition-colors shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5 text-muted-foreground" />
           </button>
+          <div className="flex-1 min-w-0">
+            {node.parentLabel && (
+              <p className="text-xs text-muted-foreground mb-0.5">{node.parentLabel}</p>
+            )}
+            <h1 className="text-xl sm:text-2xl font-bold leading-tight truncate" style={{ color: colors.text }}>
+              {node.label}
+            </h1>
+          </div>
+          <span
+            className="h-4 w-4 rounded-full shrink-0 ring-2 ring-white/30"
+            style={{ background: colors.border }}
+          />
         </div>
 
-        <ScrollArea className="max-h-[calc(70vh-60px)] lg:max-h-[440px]">
-          <div className="px-5 pb-5 pt-3 space-y-4">
-            <p className="text-sm leading-relaxed text-foreground/85 whitespace-pre-line">{node.details}</p>
+        {/* Content — scrollable */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto">
+          <div className="max-w-2xl mx-auto px-5 sm:px-8 py-6 sm:py-8 space-y-6">
+            {/* Main explanation */}
+            {sections.map((sec, i) => (
+              <div key={i}>
+                {sec.title && (
+                  <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
+                    <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: colors.border }} />
+                    {sec.title}
+                  </h2>
+                )}
+                <p className="text-base leading-[1.8] text-foreground/90 whitespace-pre-line">
+                  {sec.body}
+                </p>
+              </div>
+            ))}
 
+            {/* Clinical Pearls */}
             {clinicalPearls?.length ? (
-              <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">
-                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-2 mb-2">
-                  <Lightbulb className="h-4 w-4" /> Pérolas Clínicas
+              <div className="rounded-2xl bg-amber-500/5 border border-amber-500/20 p-5 sm:p-6">
+                <p className="text-sm font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2 mb-3">
+                  <Lightbulb className="h-5 w-5" /> Pérolas Clínicas
                 </p>
-                {clinicalPearls.map((p, i) => (
-                  <p key={i} className="text-xs text-foreground/70 leading-relaxed mb-1">• {p}</p>
-                ))}
+                <div className="space-y-2">
+                  {clinicalPearls.map((p, i) => (
+                    <p key={i} className="text-base text-foreground/80 leading-relaxed pl-4 border-l-2 border-amber-500/30">
+                      {p}
+                    </p>
+                  ))}
+                </div>
               </div>
             ) : null}
 
+            {/* Exam Traps */}
             {traps?.length ? (
-              <div className="rounded-xl bg-red-500/5 border border-red-500/20 p-4">
-                <p className="text-xs font-semibold text-red-600 dark:text-red-400 flex items-center gap-2 mb-2">
-                  <AlertTriangle className="h-4 w-4" /> Armadilhas de Prova
+              <div className="rounded-2xl bg-red-500/5 border border-red-500/20 p-5 sm:p-6">
+                <p className="text-sm font-bold text-red-600 dark:text-red-400 flex items-center gap-2 mb-3">
+                  <AlertTriangle className="h-5 w-5" /> Armadilhas de Prova
                 </p>
-                {traps.map((t, i) => (
-                  <p key={i} className="text-xs text-foreground/70 leading-relaxed mb-1">• {t}</p>
-                ))}
+                <div className="space-y-2">
+                  {traps.map((t, i) => (
+                    <p key={i} className="text-base text-foreground/80 leading-relaxed pl-4 border-l-2 border-red-500/30">
+                      {t}
+                    </p>
+                  ))}
+                </div>
               </div>
             ) : null}
 
+            {/* References */}
             {references?.length ? (
-              <div className="pt-3 border-t border-border/50">
-                <p className="text-xs font-semibold text-muted-foreground flex items-center gap-2 mb-2">
+              <div className="pt-4 border-t border-border/30">
+                <p className="text-sm font-bold text-muted-foreground flex items-center gap-2 mb-3">
                   <BookOpen className="h-4 w-4" /> Referências
                 </p>
                 {references.map((r, i) => (
-                  <p key={i} className="text-xs text-muted-foreground/80 mb-0.5">📚 {r}</p>
+                  <p key={i} className="text-sm text-muted-foreground/80 mb-1">📚 {r}</p>
                 ))}
               </div>
             ) : null}
           </div>
-        </ScrollArea>
+        </div>
+
+        {/* Navigation footer */}
+        <div className="shrink-0 border-t border-border/50 px-5 sm:px-8 py-3 sm:py-4 flex items-center justify-between bg-background/95 backdrop-blur-sm">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 rounded-xl"
+            disabled={!hasPrev}
+            onClick={() => onNavigate(currentIndex - 1)}
+          >
+            <ChevronLeft className="h-4 w-4" /> Anterior
+          </Button>
+
+          <span className="text-xs text-muted-foreground tabular-nums">
+            {currentIndex + 1} / {flatNodes.length}
+          </span>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 rounded-xl"
+            disabled={!hasNext}
+            onClick={() => onNavigate(currentIndex + 1)}
+          >
+            Próximo <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
     </motion.div>
   );
@@ -141,9 +266,12 @@ function LeafItem({
           {node.name}
         </span>
         {hasDetails && (
-          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">Toque para ver detalhes</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Toque para ler</p>
         )}
       </div>
+      {hasDetails && (
+        <ChevronRight className="h-4 w-4 mt-0.5 shrink-0 text-muted-foreground" />
+      )}
     </motion.div>
   );
 }
@@ -168,7 +296,6 @@ function CategorySection({
   const handleToggle = useCallback(() => {
     const next = !open;
     setOpen(next);
-    // Scroll into view when opening
     if (next && sectionRef.current) {
       setTimeout(() => {
         sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -180,7 +307,6 @@ function CategorySection({
     <div ref={sectionRef} className="rounded-2xl border overflow-hidden transition-shadow hover:shadow-md"
       style={{ borderColor: colors.border + "55" }}
     >
-      {/* Category header — always visible */}
       <button
         onClick={handleToggle}
         className="w-full flex items-center gap-3 px-5 py-4 text-left transition-colors hover:brightness-95 active:scale-[0.995]"
@@ -204,7 +330,7 @@ function CategorySection({
               className="text-xs px-2.5 py-1 rounded-lg border transition-colors hover:bg-background/50"
               style={{ borderColor: colors.border + "44", color: colors.text }}
             >
-              Detalhes
+              Ler
             </button>
           )}
           <motion.div
@@ -216,7 +342,6 @@ function CategorySection({
         </div>
       </button>
 
-      {/* Children — collapsible */}
       <AnimatePresence initial={false}>
         {open && node.children && node.children.length > 0 && (
           <motion.div
@@ -243,15 +368,22 @@ function CategorySection({
   );
 }
 
-/* ── Main Viewer ── */
+/* ═══════════════════════════════════════════
+   MAIN VIEWER
+   ═══════════════════════════════════════════ */
 export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
-  const [selectedNode, setSelectedNode] = useState<{ label: string; details: string; color: string } | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  const flatNodes = useMemo(() => buildFlatNodes(mapData), [mapData]);
 
   const handleSelectNode = useCallback((n: MindMapNodeData) => {
-    if (n.details) {
-      setSelectedNode({ label: n.name, details: n.details, color: n.color });
-    }
-  }, []);
+    if (!n.details) return;
+    // Find this node in flatNodes
+    const idx = flatNodes.findIndex(f => f.label === n.name && f.details === n.details);
+    setSelectedIndex(idx >= 0 ? idx : null);
+  }, [flatNodes]);
+
+  const selectedNode = selectedIndex !== null ? flatNodes[selectedIndex] : null;
 
   return (
     <div className="relative w-full h-full overflow-y-auto">
@@ -272,7 +404,7 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
           </p>
         </div>
 
-        {/* Category sections — collapsed by default */}
+        {/* Category sections */}
         {mapData.nodes.map((cat, i) => (
           <CategorySection
             key={`${cat.name}-${i}`}
@@ -282,7 +414,7 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
           />
         ))}
 
-        {/* Global info: pearls + traps */}
+        {/* Global pearls + traps */}
         {(mapData.clinical_pearls?.length || mapData.traps?.length) ? (
           <div className="space-y-3 pt-4 border-t border-border/30">
             {mapData.clinical_pearls?.length ? (
@@ -295,7 +427,6 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
                 ))}
               </div>
             ) : null}
-
             {mapData.traps?.length ? (
               <div className="rounded-xl bg-red-500/5 border border-red-500/20 p-4">
                 <p className="text-sm font-semibold text-red-600 dark:text-red-400 flex items-center gap-2 mb-2">
@@ -310,25 +441,19 @@ export function MindMapViewer({ mapData }: { mapData: MindMapData }) {
         ) : null}
       </div>
 
-      {/* Detail panel overlay */}
+      {/* Reading Panel — fullscreen mobile, 55-60% side panel desktop */}
       <AnimatePresence>
-        {selectedNode && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/30 z-40 lg:hidden"
-              onClick={() => setSelectedNode(null)}
-            />
-            <DetailPanel
-              node={selectedNode}
-              onClose={() => setSelectedNode(null)}
-              references={mapData.references}
-              clinicalPearls={mapData.clinical_pearls}
-              traps={mapData.traps}
-            />
-          </>
+        {selectedNode && selectedIndex !== null && (
+          <ReadingPanel
+            node={selectedNode}
+            flatNodes={flatNodes}
+            currentIndex={selectedIndex}
+            onNavigate={setSelectedIndex}
+            onClose={() => setSelectedIndex(null)}
+            references={mapData.references}
+            clinicalPearls={mapData.clinical_pearls}
+            traps={mapData.traps}
+          />
         )}
       </AnimatePresence>
     </div>
