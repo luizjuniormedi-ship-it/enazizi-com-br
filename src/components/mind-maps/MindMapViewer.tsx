@@ -118,7 +118,9 @@ function LeafItem({
   const hasDetails = !!node.details;
 
   return (
-    <motion.button
+    <motion.div
+      role="button"
+      tabIndex={hasDetails ? 0 : undefined}
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       className={`w-full text-left flex items-start gap-3 px-4 py-3 rounded-xl border transition-all
