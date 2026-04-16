@@ -24,6 +24,8 @@ import {
   Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard, Trash2
 } from "lucide-react";
 import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
+import VitalsMonitor from "@/components/plantao/VitalsMonitor";
+import ShiftHeader from "@/components/plantao/ShiftHeader";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
 import PrescriptionDialog from "@/components/plantao/PrescriptionDialog";
 import { Button } from "@/components/ui/button";
