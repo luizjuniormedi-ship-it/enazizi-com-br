@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Brain, Plus, Search, Loader2, Trash2, Clock, Filter, Sparkles, Eye, Network } from "lucide-react";
 import { toast } from "sonner";
+import { MapSuggestionsBar } from "@/components/mind-maps/MapSuggestions";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cirurgia Geral", "Pediatria", "Ginecologia e Obstetrícia",
