@@ -241,14 +241,16 @@ A cena deve parecer um FILME ABSURDO da Pixar.
 - resposta objetiva
 - armadilha comum de prova
 
-═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA (antes de responder) ═══
-1. A frase tem VERBO e faz sentido completo?
-2. Parece um MEME / CENA real que dá pra falar em voz alta?
-3. Tem RITMO e FLUIDEZ?
-4. Dá pra IMAGINAR na hora?
-5. Tem EXAGERO + EMOÇÃO?
-6. Tem LÓGICA CLÍNICA?
+═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA OBRIGATÓRIA (antes de responder) ═══
+1. A frase está em PORTUGUÊS DO BRASIL correto, com sujeito + verbo, e faz sentido completo?
+2. A frase é fácil de FALAR EM VOZ ALTA e tem ritmo (não parece lista de palavras)?
+3. Parece um MEME / CENA real que daria pra contar no plantão?
+4. Dá pra IMAGINAR a cena na hora?
+5. Tem EXAGERO + EMOÇÃO + HUMOR clínico?
+6. Tem COERÊNCIA CLÍNICA com o tema (não inventou diagnóstico)?
 7. Tem ASSOCIAÇÃO FONÉTICA em pelo menos 1 termo difícil?
+8. A frase NÃO repete simplesmente os termos como uma lista?
+9. Os termos escolhidos realmente representam o tema?
 
 ❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE até passar.
 
