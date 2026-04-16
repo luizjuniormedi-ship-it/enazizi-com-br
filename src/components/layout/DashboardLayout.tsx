@@ -70,6 +70,7 @@ const mobileNavGroups: MobileNavGroup[] = [
       
       { to: "/dashboard/apostilas", label: "📚 Apostilas", moduleKey: "apostilas" },
       { to: "/dashboard/cronicas", label: "📖 Crônicas", moduleKey: "cronicas" },
+      { to: "/dashboard/mapas-mentais", label: "🧠 Mapas Mentais", moduleKey: "mapas-mentais" },
       { to: "/dashboard/planner", label: "📅 Plano Estratégico", moduleKey: "planner" },
       { to: "/dashboard/plano-dia", label: "⚡ Plano do Dia", moduleKey: "plano-dia" },
       { to: "/dashboard/sessao-estudo", label: "📖 Sessão Estudo", moduleKey: "sessao-estudo" },

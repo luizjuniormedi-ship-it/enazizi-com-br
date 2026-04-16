@@ -74,6 +74,7 @@ const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "Prac
 const MnemonicStudio = lazyWithRetry(() => import("./pages/MnemonicStudio"), "MnemonicStudio");
 const MnemonicStudioPage = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
 const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryPage"), "MnemonicHistoryPage");
+const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
@@ -161,6 +162,7 @@ const App = () => (
                 <Route path="mnemonic-studio" element={<MnemonicStudio />} />
                 <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
                 <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
+                <Route path="mapas-mentais" element={<MindMaps />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />

@@ -3714,6 +3714,48 @@ export type Database = {
         }
         Relationships: []
       }
+      mental_maps: {
+        Row: {
+          content_json: Json
+          created_at: string
+          difficulty: string | null
+          id: string
+          source_topic: string | null
+          source_type: string | null
+          specialty: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_json?: Json
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          source_topic?: string | null
+          source_type?: string | null
+          specialty?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_json?: Json
+          created_at?: string
+          difficulty?: string | null
+          id?: string
+          source_topic?: string | null
+          source_type?: string | null
+          specialty?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mentor_theme_plan_progress: {
         Row: {
           correct_answers: number
