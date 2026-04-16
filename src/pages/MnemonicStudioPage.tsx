@@ -652,6 +652,42 @@ export default function MnemonicGeneratorPage() {
                 <Textarea value={termosText} onChange={(e) => setTermosText(e.target.value)} placeholder={"Bordas elevadas e nítidas\nDor intensa/queimação\nPlaca eritematosa bem delimitada"} rows={5} />
                 <p className="text-xs text-muted-foreground">{termos.length} termo(s)</p>
                 {formErrors.termos && <p className="text-xs text-destructive">{formErrors.termos}</p>}
+                {/* Suggested terms from curriculum */}
+                {suggestedTerms.length > 0 && (
+                  <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-medium text-primary flex items-center gap-1.5">
+                        <Lightbulb className="h-3.5 w-3.5" /> Termos sugeridos do currículo
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 text-[10px] px-2 text-primary hover:text-primary"
+                        onClick={() => handleApplySuggestedTerms(suggestedTerms)}
+                      >
+                        Usar todos
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestedTerms.map((term, i) => (
+                        <Button
+                          key={i}
+                          variant="outline"
+                          size="sm"
+                          className="h-7 text-xs border-primary/20 hover:bg-primary/10"
+                          onClick={() => handleApplySuggestedTerms([term])}
+                        >
+                          + {term}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {loadingTerms && tema.trim().length >= 3 && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando termos do currículo...
+                  </p>
+                )}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
