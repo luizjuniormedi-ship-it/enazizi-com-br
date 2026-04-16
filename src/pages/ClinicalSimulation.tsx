@@ -1584,18 +1584,20 @@ const ClinicalSimulation = () => {
       {(phase === "active" || phase === "finishing") && (
         <div className="flex flex-col" style={{ height: isFullscreen ? "calc(100vh - 56px)" : "calc(100vh - 120px)" }}>
           {/* Hospital-style shift header */}
-          <ShiftHeader
-            patientStatus={patientStatus}
-            statusAlert={statusAlert}
-            countdown={countdown}
-            timerExpired={timerExpired}
-            score={score}
-            scoreFlash={scoreFlash}
-            triageColor={triageColor}
-            setting={setting}
-            inactivityWarning={inactivityWarning}
-            abcdeChecklist={abcdeChecklist}
-          />
+          <div className="shrink-0">
+            <ShiftHeader
+              patientStatus={patientStatus}
+              statusAlert={statusAlert}
+              countdown={countdown}
+              timerExpired={timerExpired}
+              score={score}
+              scoreFlash={scoreFlash}
+              triageColor={triageColor}
+              setting={setting}
+              inactivityWarning={inactivityWarning}
+              abcdeChecklist={abcdeChecklist}
+            />
+          </div>
 
           {/* Clinical Timeline */}
           {actionTimeline.length > 0 && (
