@@ -1,4 +1,5 @@
-import { RefreshCw, ArrowRight, ArrowLeft, Zap } from "lucide-react";
+import { RefreshCw, ArrowRight, ArrowLeft, Zap, Brain } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -24,6 +25,7 @@ const TutorStepTracker = ({
   isLoading, changingTopic, setChangingTopic, newTopic, setNewTopic,
   onChangeTopic, onPhaseAction, onGoBackStep, nextPhase,
 }: TutorStepTrackerProps) => {
+  const navigate = useNavigate();
   const progressPercent = Math.round((enaziziStep / 15) * 100);
 
   return (
@@ -100,9 +102,15 @@ const TutorStepTracker = ({
                   <button onClick={() => onPhaseAction("questions")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5">
                     <Zap className="h-2.5 w-2.5" /> Questões
                   </button>
-                  <button onClick={() => onPhaseAction("consolidation")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5">
-                    <RefreshCw className="h-2.5 w-2.5" /> Consolidar
-                  </button>
+                   <button onClick={() => onPhaseAction("consolidation")} disabled={isLoading} className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5">
+                     <RefreshCw className="h-2.5 w-2.5" /> Consolidar
+                   </button>
+                   <button
+                     onClick={() => navigate(`/dashboard/mapas-mentais?generate=${encodeURIComponent(currentTopic)}`)}
+                     className="text-[10px] text-muted-foreground hover:text-primary transition-colors flex items-center gap-0.5"
+                   >
+                     <Brain className="h-2.5 w-2.5" /> Mapa Mental
+                   </button>
                 </>
               )}
             </>

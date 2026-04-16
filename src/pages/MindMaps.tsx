@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Brain, Plus, Search, Loader2, Trash2, Clock, Filter, Sparkles, Eye, Network } from "lucide-react";
 import { toast } from "sonner";
+import { MapSuggestionsBar } from "@/components/mind-maps/MapSuggestions";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cirurgia Geral", "Pediatria", "Ginecologia e Obstetrícia",
@@ -45,6 +46,7 @@ const COLOR_LEGEND = [
 export default function MindMaps() {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState<string>("all");
@@ -53,6 +55,15 @@ export default function MindMaps() {
   const [newTopic, setNewTopic] = useState("");
   const [newSpecialty, setNewSpecialty] = useState("");
   const [newDifficulty, setNewDifficulty] = useState("medium");
+
+  // Auto-open generate dialog from URL param (e.g., from Tutor IA)
+  useEffect(() => {
+    const generateTopic = searchParams.get("generate");
+    if (generateTopic) {
+      setNewTopic(decodeURIComponent(generateTopic));
+      setGenerateOpen(true);
+    }
+  }, [searchParams]);
 
   const { data: maps = [], isLoading } = useQuery({
     queryKey: ["mental-maps"],
@@ -243,6 +254,17 @@ export default function MindMaps() {
             </SelectContent>
           </Select>
         </div>
+      )}
+
+      {/* Suggestions */}
+      {maps.length > 0 && (
+        <MapSuggestionsBar
+          onGenerate={(topic, specialty) => {
+            setNewTopic(topic);
+            if (specialty) setNewSpecialty(specialty);
+            setGenerateOpen(true);
+          }}
+        />
       )}
 
       {/* Content */}

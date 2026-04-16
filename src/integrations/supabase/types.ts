@@ -2414,6 +2414,7 @@ export type Database = {
           is_global: boolean
           organization_id: string | null
           question: string
+          source_map_id: string | null
           topic: string | null
           user_id: string
         }
@@ -2424,6 +2425,7 @@ export type Database = {
           is_global?: boolean
           organization_id?: string | null
           question: string
+          source_map_id?: string | null
           topic?: string | null
           user_id: string
         }
@@ -2434,6 +2436,7 @@ export type Database = {
           is_global?: boolean
           organization_id?: string | null
           question?: string
+          source_map_id?: string | null
           topic?: string | null
           user_id?: string
         }
@@ -2443,6 +2446,13 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcards_source_map_id_fkey"
+            columns: ["source_map_id"]
+            isOneToOne: false
+            referencedRelation: "mental_maps"
             referencedColumns: ["id"]
           },
         ]
@@ -3719,7 +3729,9 @@ export type Database = {
           content_json: Json
           created_at: string
           difficulty: string | null
+          flashcards_count: number
           id: string
+          questions_count: number
           source_topic: string | null
           source_type: string | null
           specialty: string | null
@@ -3732,7 +3744,9 @@ export type Database = {
           content_json?: Json
           created_at?: string
           difficulty?: string | null
+          flashcards_count?: number
           id?: string
+          questions_count?: number
           source_topic?: string | null
           source_type?: string | null
           specialty?: string | null
@@ -3745,7 +3759,9 @@ export type Database = {
           content_json?: Json
           created_at?: string
           difficulty?: string | null
+          flashcards_count?: number
           id?: string
+          questions_count?: number
           source_topic?: string | null
           source_type?: string | null
           specialty?: string | null
@@ -5531,6 +5547,7 @@ export type Database = {
           question_order: number | null
           review_status: string | null
           source: string | null
+          source_map_id: string | null
           source_type: string | null
           source_url: string | null
           statement: string
@@ -5556,6 +5573,7 @@ export type Database = {
           question_order?: number | null
           review_status?: string | null
           source?: string | null
+          source_map_id?: string | null
           source_type?: string | null
           source_url?: string | null
           statement: string
@@ -5581,6 +5599,7 @@ export type Database = {
           question_order?: number | null
           review_status?: string | null
           source?: string | null
+          source_map_id?: string | null
           source_type?: string | null
           source_url?: string | null
           statement?: string
@@ -5608,6 +5627,13 @@ export type Database = {
             columns: ["original_question_id"]
             isOneToOne: false
             referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_source_map_id_fkey"
+            columns: ["source_map_id"]
+            isOneToOne: false
+            referencedRelation: "mental_maps"
             referencedColumns: ["id"]
           },
         ]
