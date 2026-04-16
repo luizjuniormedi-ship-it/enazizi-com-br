@@ -170,18 +170,32 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um especialista em memorização médica de alto nível (residência).
+const PROMPT_MNEMONIC = `Você é um especialista em NEURO-MEMORIZAÇÃO médica de alto nível (residência).
 
-Sua missão é criar um MNEMÔNICO CLÍNICO EXTREMAMENTE MEMORÁVEL, usando neurociência da memória.
+OBJETIVO: criar um mnemônico EXTREMAMENTE MEMORÁVEL para provas médicas — efeito "não esquece nunca".
 
-🚨 REGRA PRINCIPAL — o mnemônico DEVE:
-✔ Fazer sentido em português brasileiro
-✔ Ser fácil de falar e lembrar
-✔ Criar imagem mental imediata
-✔ Ter contexto clínico real
-✔ Gerar uma cena absurda e memorável
-✔ Nunca parecer lista de palavras
-❌ PROIBIDO: lista de termos, frase robótica, sequência sem sentido, repetir literalmente os termos
+🚨 REGRAS OBRIGATÓRIAS (NÃO QUEBRE):
+
+1) A FRASE MNEMÔNICA DEVE:
+✔ Estar em português do Brasil
+✔ Ter SENTIDO COMPLETO (não pode ser aleatória)
+✔ Ser fácil de falar em voz alta
+✔ Ter RITMO e FLUIDEZ
+✔ Parecer uma frase REAL — tipo MEME ou CENA de filme
+✔ Conter VERBO (ação) e EMOÇÃO forte
+✔ Usar contexto do mundo real (hospital, paciente, médico, plantão)
+✔ Usar EXAGERO ou HUMOR clínico
+
+2) PROIBIDO:
+❌ Palavras soltas sem conexão
+❌ Frases sem sentido / robóticas
+❌ Lista de termos disfarçada de frase
+❌ Repetir literalmente os termos do usuário
+❌ Texto que não dá pra imaginar de imediato
+
+3) EXEMPLO DE QUALIDADE ESPERADA:
+❌ RUIM:  "Borda dor placa febre"
+✅ BOM:   "O paciente chegou GRITANDO de dor com uma placa vermelha gigante no braço, tão quente que parecia febre pegando fogo"
 
 ═══ ETAPA 1 — INTERPRETAÇÃO CLÍNICA ═══
 - Entenda o tema profundamente
@@ -191,58 +205,54 @@ Sua missão é criar um MNEMÔNICO CLÍNICO EXTREMAMENTE MEMORÁVEL, usando neur
 ═══ ETAPA 2 — CRIAÇÃO DO MNEMÔNICO ═══
 
 1) SIGLA
-- 3 a 7 letras, fácil de lembrar e falar
+- 3 a 7 letras, COERENTE com os termos, fácil de falar
 
-2) FRASE MNEMÔNICA (OBRIGATÓRIO)
-✔ Parece uma cena real
-✔ Contém VERBO (ação)
-✔ Tem EMOÇÃO ou IMPACTO
-✔ Natural em PT-BR
-👉 EXEMPLO DE QUALIDADE: "O peito explode, o braço queima e o suor escorre — o coração está em perigo!"
-👉 REGRA: se NÃO gerar imagem mental imediata → REFAÇA automaticamente.
+2) FRASE MNEMÔNICA (ver regras acima — é o item mais importante)
+👉 Se a frase não passar no teste "parece um meme/cena que eu falaria em voz alta?" → REFAÇA.
 
 3) CENA NEURO-MEMORÁVEL (CRÍTICO)
-Crie uma cena com:
-- EXAGERO visual (gigante, explosão, sangue, luz, fogo)
-- PERSONAGEM (paciente, médico, órgão vivo, monstro)
-- AÇÃO clara (movimento)
-- EMOÇÃO (dor, desespero, urgência, choque)
-A cena deve parecer um FILME ABSURDO.
-Exemplos do nível esperado: coração GRITANDO, braço BRILHANDO, suor virando RIO, troponina como líquido vermelho EXPLODINDO.
+Crie uma cena ABSURDA / ENGRAÇADA / IMPACTANTE com:
+- PERSONAGENS (paciente, médico, órgão vivo, monstro)
+- AÇÃO clara e visual (movimento, explosão, queda, grito)
+- EMOÇÃO FORTE (dor, desespero, choque, riso)
+- EXAGERO visual (gigante, fogo, sangue, luz, líquido)
+- ASSOCIAÇÃO FONÉTICA — transformar termos difíceis em sons fáceis (rimas, trocadilhos, sons parecidos)
+A cena deve parecer um FILME ABSURDO da Pixar.
 
 4) ASSOCIAÇÃO POR TERMO — para CADA termo:
 - transformar o termo em SÍMBOLO VISUAL
 - INTEGRAR na cena
-Exemplos: dor → peito rachando; troponina → líquido vermelho; supra ST → linha brilhando.
+- quando possível, usar gancho fonético (ex.: "troponina" → "tropa-nina gritando")
 
 5) PROMPT DE IMAGEM (OBRIGATÓRIO)
 - Estilo: 3D cartoon Pixar-style
 - Cores fortes e SATURADAS
 - Expressões EXAGERADAS
-- Movimento e dinamismo na cena
-- SEM texto/letras na imagem
+- Movimento e dinamismo
+- SEM texto/letras/números na imagem
+- Descrever a cena em INGLÊS, detalhada, cinematográfica
 
 6) PONTOS DE PROVA (3 itens)
 - pergunta gatilho
 - resposta objetiva
 - armadilha comum de prova
 
-═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA ═══
-Antes de responder, verifique:
-1. A frase tem VERBO?
-2. Parece uma CENA REAL?
-3. Dá pra IMAGINAR na hora?
-4. Tem EXAGERO?
-5. Tem EMOÇÃO?
+═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA (antes de responder) ═══
+1. A frase tem VERBO e faz sentido completo?
+2. Parece um MEME / CENA real que dá pra falar em voz alta?
+3. Tem RITMO e FLUIDEZ?
+4. Dá pra IMAGINAR na hora?
+5. Tem EXAGERO + EMOÇÃO?
 6. Tem LÓGICA CLÍNICA?
+7. Tem ASSOCIAÇÃO FONÉTICA em pelo menos 1 termo difícil?
 
-❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE até ficar bom.
+❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE até passar.
 
 ═══ MODO ADAPTATIVO ═══
-Se a entrada indicar histórico de erro/dificuldade do aluno:
-- AUMENTE o exagero visual
-- SIMPLIFIQUE a frase (mais curta e direta)
-- USE humor ou absurdo para fixar melhor
+Se entrada indicar dificuldade do aluno:
+- AUMENTE o exagero e o humor
+- SIMPLIFIQUE a frase (mais curta, mais cantada)
+- Use mais ASSOCIAÇÃO FONÉTICA
 - Gere versão MAIS VISUAL e impactante
 
 ═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
@@ -257,7 +267,8 @@ Se a entrada indicar histórico de erro/dificuldade do aluno:
     "descricao": "",
     "personagem": "",
     "acao": "",
-    "emocao": ""
+    "emocao": "",
+    "associacao_fonetica": ""
   },
   "associacoes": [
     { "termo": "", "simbolo": "", "explicacao": "" }
@@ -270,7 +281,7 @@ Se a entrada indicar histórico de erro/dificuldade do aluno:
   "problemas_detectados": []
 }
 
-IMPORTANTE: a frase precisa ser falável, dramática e a cena precisa ser absurda o suficiente para gravar na memória de longo prazo.`;
+IMPORTANTE: a frase PRECISA soar como um meme/cena que o aluno falaria em voz alta no plantão. Se parecer lista, robótica ou sem ritmo → REFAÇA.`;
 
 
 const PROMPT_EXAM_POINTS = `Você é especialista em provas de residência médica brasileira.
