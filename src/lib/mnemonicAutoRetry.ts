@@ -6,7 +6,7 @@
  * any low-quality result from ever reaching the UI, plus 1 extra retry
  * with a stronger hint if validation fails on the client side.
  */
-import { supabase } from "@/integrations/supabase/client";
+import { generateMnemonic } from "@/services/mnemonics";
 import type { MnemonicResultData } from "@/types/mnemonics";
 
 export type RetryMode = "normal" | "retry_stronger" | "retry_simplified";
