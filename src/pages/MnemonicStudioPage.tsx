@@ -72,6 +72,7 @@ export default function MnemonicGeneratorPage() {
   const [savingFlashcard, setSavingFlashcard] = useState(false);
   const [savingFsrs, setSavingFsrs] = useState(false);
   const [regeneratingImage, setRegeneratingImage] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
 
   // ── Deep-link from study-next ──
   useEffect(() => {
