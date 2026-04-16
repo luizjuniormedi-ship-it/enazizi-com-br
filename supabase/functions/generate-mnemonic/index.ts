@@ -170,54 +170,88 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um especialista em memorização médica para provas de residência.
+const PROMPT_MNEMONIC = `Você é um especialista em memorização clínica para provas médicas (ENARE, residência médica, Cebraspe).
 
-Sua tarefa é criar um mnemônico em português do Brasil com COERÊNCIA TEXTUAL REAL.
+Sua missão é criar um MNEMÔNICO PERFEITO com base nos termos fornecidos.
 
-═══ ORDEM DE CRIAÇÃO (siga estritamente) ═══
-1. Primeiro gere a PALAVRA, SIGLA ou FRASE mnemônica.
-2. Ela deve soar NATURAL para um aluno brasileiro (pronunciável, ritmada, fácil de falar em voz alta).
-3. NÃO repita literalmente os termos de entrada.
-4. A frase deve ser memorável, pronunciável e coerente em português.
-5. Depois explique a ASSOCIAÇÃO entre cada termo e a frase.
-6. Depois crie uma CENA VISUAL coerente com a frase.
-7. A frase NÃO pode ser truncada, artificial, traduzida ou sem sentido.
+⚠️ REGRA ABSOLUTA: A resposta só é válida se for NATURAL, MEMORIZÁVEL e COM COERÊNCIA CLÍNICA.
+Se não atingir isso, você DEVE REFAZER internamente antes de responder.
 
-Se a saída ficar incoerente, GERE NOVAMENTE internamente antes de responder.
+═══ ETAPA 1 — COMPREENSÃO CLÍNICA (OBRIGATÓRIA) ═══
+Antes de criar o mnemônico:
+- Entenda o contexto clínico dos termos
+- Identifique se são: sintomas, sinais, exames, diagnóstico, critérios ou fisiopatologia
+- Organize mentalmente em sequência lógica (como apareceria na prática médica)
 
-═══ PROIBIDO ═══
-- Campos vazios
-- Repetir literalmente os termos como frase
-- Frase sem sentido, artificial ou que pareça tradução do inglês
-- Texto genérico, acadêmico demais ou placeholder
-- Palavras truncadas ou inventadas sem lógica
-- Score zero ou ausente
+PROIBIDO: converter termos em palavras soltas; criar frase sem lógica clínica.
 
-═══ EXEMPLOS DE BONS MNEMÔNICOS ═══
-- Nervos cranianos: "Oh Odete, Ouve Tu: Trópegos Abelhudos Ficam Vagando Grosseiramente na Horta e na Hipófise"
-- Critérios de Light: "PELE" (Proteína, Exsudato, LDH, Efusão)
-- Síndrome nefrótica: "PROLAPSO" (Proteinúria, Lipidúria, Albumina baixa, Perda proteica, Sódio retido, Oligúria)
+═══ ETAPA 2 — CRIAÇÃO DO MNEMÔNICO ═══
 
-═══ AUTOAVALIAÇÃO OBRIGATÓRIA ═══
-Antes de retornar, verifique:
-- Consigo falar em voz alta com naturalidade? Se não, refaça.
-- Um aluno lembraria depois de ouvir 2x? Se não, refaça.
-- Todos os termos estão representados na associação? Se não, refaça.
-- A frase faz sentido em português brasileiro? Se não, refaça.
+1) SIGLA
+- Curta (3–7 letras), fácil de lembrar
+- Pode reorganizar os termos para melhorar memorização
 
-═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
+2) FRASE MNEMÔNICA (CRÍTICO)
+✔ Português natural (Brasil), parecer falada
+✔ Sentido completo, com começo, meio e fim
+✔ Deve conter VERBO
+✔ Fácil de repetir, gera imagem mental clara
+❌ PROIBIDO: lista de palavras, frase quebrada, termos colados sem sentido, repetir literalmente os termos, linguagem robótica
+👉 REGRA DE OURO: ao ler a frase, o estudante deve repetir sem esforço.
+
+3) MAPA DE ASSOCIAÇÃO — para CADA termo:
+- termo_original
+- representacao (como aparece na frase)
+- explicacao (clínica da associação)
+
+4) CENA VISUAL (OBRIGATÓRIA) — extremamente clara:
+✔ Personagem principal
+✔ Ação acontecendo
+✔ Elementos visuais ligados aos termos
+✔ Emoção (dor, urgência, perigo, etc.)
+
+5) PROMPT DE IMAGEM (OBRIGATÓRIO)
+- Estilo: 3D cartoon Pixar-style, cores vivas, personagens expressivos
+- SEM texto/letras na imagem
+- Foco em memorização
+
+6) PONTOS DE PROVA — gerar 3 itens:
+- pergunta (gatilho)
+- resposta
+- armadilha (erro comum)
+
+═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA (OBRIGATÓRIA) ═══
+Antes de responder, valide:
+1. A frase faz sentido em português?
+2. A frase tem verbo?
+3. A frase parece natural?
+4. Dá para memorizar rápido?
+5. NÃO parece lista de termos?
+6. Existe lógica clínica?
+
+Se QUALQUER resposta for "NÃO", REFAÇA o mnemônico internamente antes de responder.
+
+═══ ETAPA 4 — FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
 {
-  "sigla": "a sigla criada",
-  "frase_mnemonica": "a frase mnemônica completa, natural e memorável",
-  "explicacao_associacao": "como cada termo se conecta à frase mnemônica (linha por termo)",
-  "explicacao_didatica": "explicação clara de como o mnemônico ajuda a lembrar",
-  "explicacao_tecnica": "breve contexto clínico correto do tema",
-  "cena_visual": "cena 3D estilo Pixar, absurda e memorável, COERENTE com a frase, com personagens exagerados",
-  "associacoes": [
-    { "termo_original": "termo1", "representacao_no_mnemonico": "como esse termo aparece na frase" }
+  "sigla": "",
+  "frase_mnemonica": "",
+  "explicacao_clinica": "",
+  "explicacao_didatica": "",
+  "explicacao_tecnica": "",
+  "mapa_associacao": [
+    { "termo_original": "", "representacao": "", "explicacao": "" }
   ],
-  "prompt_imagem": "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words. [descrição da cena em inglês]",
-  "score_autoavaliacao": 0-100,
+  "cena_visual": {
+    "descricao": "",
+    "personagens": "",
+    "acao": "",
+    "emocao": ""
+  },
+  "prompt_imagem": "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters. [cena em inglês]",
+  "pontos_prova": [
+    { "pergunta": "", "resposta": "", "armadilha": "" }
+  ],
+  "score_autoavaliacao": 0,
   "problemas_detectados": []
 }
 
@@ -339,10 +373,57 @@ serve(async (req: Request) => {
       interface MnemonicOutput {
         sigla: string; frase_mnemonica: string;
         explicacao_associacao?: string;
+        explicacao_clinica?: string;
         explicacao_didatica: string; explicacao_tecnica: string;
-        cena_visual: string; prompt_imagem: string;
-        associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string }>;
+        cena_visual: string;
+        cena_visual_obj?: { descricao?: string; personagens?: string; acao?: string; emocao?: string };
+        prompt_imagem: string;
+        associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string; explicacao?: string }>;
+        mapa_associacao?: Array<{ termo_original: string; representacao: string; explicacao?: string }>;
+        pontos_prova?: Array<{ pergunta: string; resposta: string; armadilha: string }>;
         score_autoavaliacao: number; problemas_detectados: string[];
+      }
+
+      // Normaliza o novo schema (4 etapas) para o formato interno do pipeline
+      function normalizeMnemonic(raw: any): MnemonicOutput | null {
+        if (!raw || typeof raw !== "object") return null;
+        const m: any = { ...raw };
+
+        // cena_visual pode vir como objeto { descricao, personagens, acao, emocao }
+        if (m.cena_visual && typeof m.cena_visual === "object") {
+          const cv = m.cena_visual;
+          const parts = [cv.descricao, cv.personagens, cv.acao, cv.emocao]
+            .filter((v: any) => typeof v === "string" && v.trim());
+          m.cena_visual_obj = cv;
+          m.cena_visual = parts.join(" — ");
+        }
+
+        // mapa_associacao -> associacoes (compat)
+        if (Array.isArray(m.mapa_associacao) && (!Array.isArray(m.associacoes) || m.associacoes.length === 0)) {
+          m.associacoes = m.mapa_associacao.map((a: any) => ({
+            termo_original: a?.termo_original ?? "",
+            representacao_no_mnemonico: a?.representacao ?? a?.representacao_no_mnemonico ?? "",
+            explicacao: a?.explicacao ?? "",
+          }));
+        }
+
+        // explicacao_associacao: derivar de explicacao_clinica ou do mapa
+        if (!m.explicacao_associacao || !String(m.explicacao_associacao).trim()) {
+          if (m.explicacao_clinica && String(m.explicacao_clinica).trim()) {
+            m.explicacao_associacao = String(m.explicacao_clinica).trim();
+          } else if (Array.isArray(m.associacoes) && m.associacoes.length) {
+            m.explicacao_associacao = m.associacoes
+              .map((a: any) => `${a.termo_original}: ${a.representacao_no_mnemonico}${a.explicacao ? ` — ${a.explicacao}` : ""}`)
+              .join("\n");
+          }
+        }
+
+        // explicacao_didatica fallback
+        if (!m.explicacao_didatica || !String(m.explicacao_didatica).trim()) {
+          m.explicacao_didatica = m.explicacao_clinica || m.explicacao_associacao || "";
+        }
+
+        return m as MnemonicOutput;
       }
 
       // Validador interno de qualidade
@@ -393,7 +474,8 @@ serve(async (req: Request) => {
         let candidate: MnemonicOutput | null = null;
         let errMsg: string | undefined;
         try {
-          candidate = await callAI<MnemonicOutput>(aiKey, PROMPT_MNEMONIC, attemptCtx);
+          const raw = await callAI<any>(aiKey, PROMPT_MNEMONIC, attemptCtx);
+          candidate = normalizeMnemonic(raw);
         } catch (e) {
           errMsg = e instanceof Error ? e.message : String(e);
         }
@@ -469,14 +551,25 @@ serve(async (req: Request) => {
       }
 
       // ══════════════════════════════════════
-      // ETAPA 3: Pontos de prova (não-bloqueante)
+      // ETAPA 3: Pontos de prova (preferir os já gerados na ETAPA 2)
       // ══════════════════════════════════════
       let pontosDeProva: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }> = [];
-      try {
-        const examCtx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}`;
-        const examResult = await callAI<{ pontos_de_prova: typeof pontosDeProva }>(aiKey, PROMPT_EXAM_POINTS, examCtx);
-        pontosDeProva = examResult.pontos_de_prova ?? [];
-      } catch { /* non-critical */ }
+      if (Array.isArray(mnemonic.pontos_prova) && mnemonic.pontos_prova.length > 0) {
+        pontosDeProva = mnemonic.pontos_prova
+          .filter((p: any) => p && (p.pergunta || p.resposta))
+          .map((p: any) => ({
+            pergunta_gatilho: String(p.pergunta || "").trim(),
+            resposta_esperada: String(p.resposta || "").trim(),
+            armadilha_comum: String(p.armadilha || "").trim(),
+          }));
+      }
+      if (pontosDeProva.length === 0) {
+        try {
+          const examCtx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}`;
+          const examResult = await callAI<{ pontos_de_prova: typeof pontosDeProva }>(aiKey, PROMPT_EXAM_POINTS, examCtx);
+          pontosDeProva = examResult.pontos_de_prova ?? [];
+        } catch { /* non-critical */ }
+      }
 
       // ══════════════════════════════════════
       // SCORES (simplified)
@@ -550,10 +643,12 @@ serve(async (req: Request) => {
           tema: payload.tema,
           sigla: mnemonic.sigla || "",
           frase_mnemonica: mnemonic.frase_mnemonica,
+          explicacao_clinica: mnemonic.explicacao_clinica || explicacaoDid,
           explicacao_associacao: explicacaoAssoc,
           explicacao_tecnica: mnemonic.explicacao_tecnica,
           explicacao_didatica: explicacaoDid,
           cena_visual: cenaVisual,
+          cena_visual_obj: mnemonic.cena_visual_obj ?? null,
           prompt_imagem: promptImagem,
           image_url: imageUrl,
           image_failed: imageFailed,
@@ -565,8 +660,14 @@ serve(async (req: Request) => {
           alertas: imageFailed ? ["Imagem não foi gerada — use 'Regenerar imagem'"] : [],
           items_map: itemsMap,
           associacoes,
+          mapa_associacao: associacoes.map((a: any) => ({
+            termo_original: a.termo_original,
+            representacao: a.representacao_no_mnemonico,
+            explicacao: a.explicacao || "",
+          })),
           associacoes_visuais: [],
           pontos_de_prova: pontosDeProva,
+          pontos_prova: pontosDeProva,
         },
       });
 
