@@ -26,7 +26,7 @@ serve(async (req) => {
     try {
       const cached = await getCachedContent(cacheKey, "study-guide");
       if (cached) {
-        logAiUsage({ userId: "system", functionName: "generate-study-guide", modelUsed: MODEL, success: true, responseTimeMs: 0, cacheHit: true, modelTier: "standard" }).catch(() => {});
+        logAiUsage({ userId, functionName: "generate-study-guide", modelUsed: MODEL, success: true, responseTimeMs: 0, cacheHit: true, modelTier: "standard" }).catch(() => {});
         return new Response(JSON.stringify(cached), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -81,7 +81,7 @@ REGRAS:
     if (!response.ok) {
       const t = await response.text();
       console.error("AI error:", response.status, t);
-      logAiUsage({ userId: "system", functionName: "generate-study-guide", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard", errorMessage: `status ${response.status}` }).catch(() => {});
+      logAiUsage({ userId, functionName: "generate-study-guide", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard", errorMessage: `status ${response.status}` }).catch(() => {});
       return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
         status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -92,7 +92,7 @@ REGRAS:
     const result = { content, specialty, topic };
 
     // Log + cache
-    logAiUsage({ userId: "system", functionName: "generate-study-guide", modelUsed: MODEL, success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard" }).catch(() => {});
+    logAiUsage({ userId, functionName: "generate-study-guide", modelUsed: MODEL, success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "standard" }).catch(() => {});
     setCachedContent(cacheKey, "study-guide", result, MODEL, 30).catch(() => {});
 
     return new Response(JSON.stringify(result), {

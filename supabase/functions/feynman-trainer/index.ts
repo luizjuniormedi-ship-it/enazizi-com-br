@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
+import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -73,6 +74,13 @@ Agora tente explicar novamente, mas desta vez inclua: [pontos específicos que f
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const userId = await extractUserId(req);
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const { messages, userContext } = await req.json();
 
@@ -106,7 +114,7 @@ Com links clicáveis no formato: [Acessar no PubMed](URL_COMPLETA)`;
     const elapsed = Date.now() - startMs;
 
     logAiUsage({
-      userId: "system-feynman",
+      userId,
       functionName: "feynman-trainer",
       modelUsed: "google/gemini-3-flash-preview",
       success: response.ok,

@@ -2,6 +2,7 @@ import "https://deno.land/x/xhr@0.3.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
+import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -196,6 +197,13 @@ function err(msg: string, status = 500) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const userId = await extractUserId(req);
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const { action, specialty, subtopic, difficulty, messages, conversationHistory, hypothesis, differentials, proposed_conduct, pediatric_age_range } = await req.json();
