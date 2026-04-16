@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import {
+import { useState, useCallback, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
   Brain, Sparkles, AlertTriangle, Loader2,
   Copy, Heart, MessageSquare, RefreshCw,
   ChevronDown, ChevronUp, Wand2, BookOpen, Eye, CheckCircle, XCircle, MinusCircle,
