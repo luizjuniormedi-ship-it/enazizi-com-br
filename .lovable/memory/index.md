@@ -8,8 +8,10 @@ Questions: Stem >= 400 chars, explanation >= 200 chars. No 'however'/English lea
 Multimodal: No "observe the image". Block missing/fake assets (logos/screenshots). Images must be essential.
 Mnemonics: NO text in generated images. Clean infographic style, white background.
 Security: `service_role` ONLY for curriculum (`curriculum_specialties`, `topics`). Users read-only.
+NEVER change module names, sidebar labels, group organization, or route names without explicit user approval.
 
 ## Memories
+- [Dashboard Nomenclatura Intocável](mem://constraint/dashboard-nomenclatura-intocavel) — Never change module names/labels/organization without permission
 - [Mapeamento de Temas](mem://arquitetura/mapeamento-temas-especialidades-unificado) — 13 clinical specialties unified mapping
 - [Biblioteca Médica](mem://funcionalidades/biblioteca-medica-interligada) — AMBOSS-style definitions via Gemini
 - [Identidade do Projeto](mem://marca/identidade-projeto) — ENAZIZI branding guidelines
@@ -86,3 +88,4 @@ Security: `service_role` ONLY for curriculum (`curriculum_specialties`, `topics`
 - [Fallback Image Quiz](mem://ux/image-quiz-fallback-qualidade-3-tiers) — 3-tier visual fallback system
 - [Motor Priorização](mem://arquitetura/motor-priorizacao-pipeline-multimodal) — Exam relevance × 0.40 + gap × 0.25 + weakness × 0.35
 - [Quality Gate Multimodal](mem://qualidade/blindagem-quality-gate-multimodal) — quality_gate_passed obrigatório, audit logs, URL blocklist
+- [Mapas Mentais Inteligentes](mem://funcionalidades/mapas-mentais-inteligentes) — React Flow mind maps, 10 academic categories, Gemini generation
