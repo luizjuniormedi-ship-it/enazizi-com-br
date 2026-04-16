@@ -77,7 +77,23 @@ export default function MnemonicGeneratorPage() {
   const handleCopyAll = useCallback(() => {
     if (!result) return;
     const parts = [`📝 ${result.sigla}`, `💡 ${result.frase_mnemonica}`, "", `🔬 ${result.explicacao_tecnica}`, "", `📚 ${result.explicacao_didatica}`];
-    if (result.cena_visual) parts.push("", `🎨 ${result.cena_visual}`);
+    if (result.cena_memoravel) {
+      parts.push("", "═══ MEMORIZAÇÃO VISUAL ═══");
+      parts.push(`🎬 Cena: ${result.cena_memoravel.cena}`);
+      if (result.cena_memoravel.personagens) parts.push(`👥 Personagens: ${result.cena_memoravel.personagens}`);
+      if (result.cena_memoravel.acao) parts.push(`⚡ Ação: ${result.cena_memoravel.acao}`);
+      if (result.cena_memoravel.associacao_fonetica) parts.push(`🧠 Associação: ${result.cena_memoravel.associacao_fonetica}`);
+      if (result.cena_memoravel.emocao) parts.push(`😄 Impacto: ${result.cena_memoravel.emocao}`);
+    } else if (result.cena_visual) {
+      parts.push("", `🎨 ${result.cena_visual}`);
+    }
+    if (result.pontos_de_prova?.length) {
+      parts.push("", "═══ PONTOS DE PROVA ═══");
+      result.pontos_de_prova.forEach((pp, i) => {
+        parts.push(`${i + 1}. ❓ ${pp.pergunta_gatilho}`, `   ✅ ${pp.resposta_esperada}`);
+        if (pp.armadilha_comum) parts.push(`   ⚠️ ${pp.armadilha_comum}`);
+      });
+    }
     if (result.memorizacao_ativa?.pergunta_rapida) parts.push("", `❓ ${result.memorizacao_ativa.pergunta_rapida}`, `✅ ${result.memorizacao_ativa.resposta_esperada}`);
     navigator.clipboard.writeText(parts.join("\n"));
     toast.success("Tudo copiado!");
