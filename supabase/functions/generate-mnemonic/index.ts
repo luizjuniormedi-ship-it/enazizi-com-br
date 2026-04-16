@@ -444,7 +444,7 @@ serve(async (req: Request) => {
           execution_order: ++order, status: imageUrl ? "completed" : "failed",
           input_json: { prompt: promptImagem.substring(0, 500) },
           output_json: { image_url: imageUrl, error: imgResult.error },
-          duration_ms: Date.now() - startMs, error_message: imgResult.error,
+          duration_ms: Date.now() - imgStartMs, error_message: imgResult.error,
         });
       } catch (e) {
         imageFailed = true;
@@ -452,7 +452,7 @@ serve(async (req: Request) => {
           request_id: requestId, user_id: userId, agent_name: "gerador_imagem",
           execution_order: ++order, status: "failed",
           input_json: { prompt: promptImagem.substring(0, 500) },
-          output_json: null, duration_ms: Date.now() - startMs,
+          output_json: null, duration_ms: Date.now() - imgStartMs,
           error_message: e instanceof Error ? e.message : String(e),
         });
       }
