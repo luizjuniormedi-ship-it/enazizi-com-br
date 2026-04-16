@@ -303,6 +303,36 @@ Retorne SOMENTE JSON:
   ]
 }`;
 
+// ═══ NOVO: PROMPT DE EXTRAÇÃO AUTOMÁTICA DE TERMOS ═══
+const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina e Educação para provas de residência médica brasileira.
+
+Dado um TEMA médico, extraia automaticamente de 3 a 7 TERMOS ESSENCIAIS que são:
+- Mais cobrados em provas de residência (ENARE, USP, UNIFESP, UNICAMP, SUS-SP)
+- Clinicamente relevantes
+- Fáceis de transformar em mnemônico (curtos)
+
+Tipos de termos permitidos:
+- critérios diagnósticos
+- sinais e sintomas clássicos
+- mecanismos fisiopatológicos
+- classificações
+- condutas / tratamentos principais
+- causas / etiologias
+- complicações principais
+
+🚨 REGRAS:
+- NÃO inventar termos sem base médica
+- NÃO usar frases longas — cada termo deve ter 1-4 palavras
+- Evitar redundância
+- Ordem por importância em provas
+- Se o tema NÃO for médico ou for muito vago, retorne lista vazia
+
+Retorne SOMENTE JSON:
+{
+  "termos": ["Termo 1", "Termo 2", "Termo 3", "..."],
+  "justificativa": "Breve explicação (1 frase) do porquê esses termos são os mais cobrados em prova"
+}`;
+
 // ═══ PIPELINE ═══
 
 serve(async (req: Request) => {
