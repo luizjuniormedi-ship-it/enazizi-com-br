@@ -35,13 +35,12 @@ function buildFlowElements(data: MindMapData): { nodes: Node[]; edges: Edge[] } 
   let nodeId = 0;
 
   const categoryCount = data.nodes.length;
-  const catSpacing = 280;
+  const catSpacing = 300;
   const totalCatWidth = (categoryCount - 1) * catSpacing;
   const startX = -totalCatWidth / 2;
   const catY = 200;
-  const childStartY = 400;
-  const childSpacingY = 80;
-  const childSpacingX = 180;
+  const childStartY = 380;
+  const childSpacingY = 65;
 
   const centerId = `node-${nodeId++}`;
   nodes.push({
@@ -72,27 +71,13 @@ function buildFlowElements(data: MindMapData): { nodes: Node[]; edges: Edge[] } 
       markerEnd: { type: MarkerType.ArrowClosed, color: colors.border, width: 10, height: 10 },
     });
 
+    // Stack children VERTICALLY below each category
     if (cat.children?.length) {
-      const childCount = cat.children.length;
-      const totalChildWidth = (childCount - 1) * childSpacingX;
-      const childStartX = cx - totalChildWidth / 2;
-
       cat.children.forEach((child, childIdx) => {
         const childColors = getNodeColors(child.color || cat.color);
         const childId = `node-${nodeId++}`;
-        const row = Math.floor(childIdx / 3);
-        const col = childIdx % 3;
-        let childX: number, childY: number;
-
-        if (childCount <= 3) {
-          childX = childStartX + childIdx * childSpacingX - 55;
-          childY = childStartY;
-        } else {
-          const colsInRow = Math.min(3, childCount - row * 3);
-          const rowWidth = (colsInRow - 1) * childSpacingX;
-          childX = cx - rowWidth / 2 + col * childSpacingX - 55;
-          childY = childStartY + row * childSpacingY;
-        }
+        const childX = cx - 75;
+        const childY = childStartY + childIdx * childSpacingY;
 
         nodes.push({
           id: childId,
