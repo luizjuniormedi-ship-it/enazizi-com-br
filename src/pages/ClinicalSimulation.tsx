@@ -1582,24 +1582,26 @@ const ClinicalSimulation = () => {
 
       {/* ACTIVE SIMULATION */}
       {(phase === "active" || phase === "finishing") && (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col" style={{ height: isFullscreen ? "calc(100vh - 56px)" : "calc(100vh - 120px)" }}>
           {/* Hospital-style shift header */}
-          <ShiftHeader
-            patientStatus={patientStatus}
-            statusAlert={statusAlert}
-            countdown={countdown}
-            timerExpired={timerExpired}
-            score={score}
-            scoreFlash={scoreFlash}
-            triageColor={triageColor}
-            setting={setting}
-            inactivityWarning={inactivityWarning}
-            abcdeChecklist={abcdeChecklist}
-          />
+          <div className="shrink-0">
+            <ShiftHeader
+              patientStatus={patientStatus}
+              statusAlert={statusAlert}
+              countdown={countdown}
+              timerExpired={timerExpired}
+              score={score}
+              scoreFlash={scoreFlash}
+              triageColor={triageColor}
+              setting={setting}
+              inactivityWarning={inactivityWarning}
+              abcdeChecklist={abcdeChecklist}
+            />
+          </div>
 
           {/* Clinical Timeline */}
           {actionTimeline.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto py-1.5 px-3 border-b border-border/30 bg-muted/5">
+            <div className="flex gap-1.5 overflow-x-auto py-1.5 px-3 border-b border-border/30 bg-muted/5 shrink-0">
               {actionTimeline.slice(-8).map((entry, i) => (
                 <Badge key={i} variant="outline" className="text-[10px] shrink-0 gap-1 font-normal border-border/30">
                   <span>{entry.icon}</span>
@@ -1613,7 +1615,7 @@ const ClinicalSimulation = () => {
           )}
 
           {/* 3-column hospital layout */}
-          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden">
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden shrink">
 
             {/* LEFT: Patient panel - vitals + ABCDE */}
             <div className="hidden lg:flex flex-col border-r border-border/30 bg-muted/5 overflow-y-auto">
@@ -1713,8 +1715,8 @@ const ClinicalSimulation = () => {
             </div>
 
             {/* CENTER: Chat area */}
-           <Card className="overflow-hidden flex flex-col h-full border-0 rounded-none lg:border lg:rounded-xl">
-            <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+           <Card className="overflow-hidden flex flex-col min-h-0 border-0 rounded-none lg:border lg:rounded-xl">
+            <CardContent className="p-0 flex flex-col flex-1 min-h-0 overflow-hidden">
               <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map((msg, i) => {
                   const TypeIcon = getTypeIcon(msg.type);
@@ -1834,7 +1836,7 @@ const ClinicalSimulation = () => {
 
               {/* Quick actions */}
               {phase === "active" && (
-                <div className="border-t border-border/30 p-2 space-y-1.5">
+                <div className="border-t border-border/30 p-2 space-y-1.5 shrink-0">
                   <div className="flex gap-1.5 flex-wrap">
                     {/* Mobile vitals trigger */}
                     <Button
@@ -1937,7 +1939,7 @@ const ClinicalSimulation = () => {
 
               {/* Input */}
               {phase === "active" && (
-                <div className="border-t border-border/50 p-3 flex gap-2">
+                <div className="border-t border-border/50 p-3 flex gap-2 shrink-0">
                   <Input
                     ref={inputRef}
                     value={input}
