@@ -643,10 +643,12 @@ serve(async (req: Request) => {
           tema: payload.tema,
           sigla: mnemonic.sigla || "",
           frase_mnemonica: mnemonic.frase_mnemonica,
+          explicacao_clinica: mnemonic.explicacao_clinica || explicacaoDid,
           explicacao_associacao: explicacaoAssoc,
           explicacao_tecnica: mnemonic.explicacao_tecnica,
           explicacao_didatica: explicacaoDid,
           cena_visual: cenaVisual,
+          cena_visual_obj: mnemonic.cena_visual_obj ?? null,
           prompt_imagem: promptImagem,
           image_url: imageUrl,
           image_failed: imageFailed,
@@ -658,8 +660,14 @@ serve(async (req: Request) => {
           alertas: imageFailed ? ["Imagem não foi gerada — use 'Regenerar imagem'"] : [],
           items_map: itemsMap,
           associacoes,
+          mapa_associacao: associacoes.map((a: any) => ({
+            termo_original: a.termo_original,
+            representacao: a.representacao_no_mnemonico,
+            explicacao: a.explicacao || "",
+          })),
           associacoes_visuais: [],
           pontos_de_prova: pontosDeProva,
+          pontos_prova: pontosDeProva,
         },
       });
 
