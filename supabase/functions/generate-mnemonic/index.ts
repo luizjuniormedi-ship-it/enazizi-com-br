@@ -304,32 +304,48 @@ Retorne SOMENTE JSON:
 }`;
 
 // ═══ NOVO: PROMPT DE EXTRAÇÃO AUTOMÁTICA DE TERMOS ═══
-const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina e Educação para provas de residência médica brasileira.
+const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina, provas de residência médica brasileira e neuro-memorização.
 
-Dado um TEMA médico, extraia automaticamente de 3 a 7 TERMOS ESSENCIAIS que são:
-- Mais cobrados em provas de residência (ENARE, USP, UNIFESP, UNICAMP, SUS-SP)
-- Clinicamente relevantes
-- Fáceis de transformar em mnemônico (curtos)
+ETAPA 1 — GERAÇÃO AUTOMÁTICA DOS TERMOS
 
-Tipos de termos permitidos:
-- critérios diagnósticos
-- sinais e sintomas clássicos
-- mecanismos fisiopatológicos
-- classificações
-- condutas / tratamentos principais
-- causas / etiologias
-- complicações principais
+A partir do TEMA, identifique de 3 a 7 termos essenciais que sejam:
+- altamente relevantes para prova (ENARE, USP, UNIFESP, UNICAMP, SUS-SP, ENARE)
+- clinicamente importantes
+- úteis para formar um mnemônico
+- curtos e claros (1-4 palavras)
+- sem redundância
 
-🚨 REGRAS:
+PRIORIZE NESTA ORDEM:
+1. sinais e sintomas clássicos
+2. critérios diagnósticos
+3. achados de exame
+4. complicações marcantes
+5. condutas-chave
+6. diferenciais importantes
+
+NÃO usar:
+- frases longas
+- definições extensas
+- termos vagos
+- itens repetidos
+
+ETAPA 2 — CONTEXTO CLÍNICO
+
+Identifique o tipo do tema:
+- diagnóstico / síndrome / tratamento / fisiopatologia / classificação / urgência
+
+Se o tema for amplo, escolha os termos mais característicos e cobrados em prova.
+Se o tema NÃO for médico ou for impossível de definir, retorne lista vazia.
+
+🚨 REGRAS DURAS:
 - NÃO inventar termos sem base médica
-- NÃO usar frases longas — cada termo deve ter 1-4 palavras
-- Evitar redundância
-- Ordem por importância em provas
-- Se o tema NÃO for médico ou for muito vago, retorne lista vazia
+- Ordenar do mais cobrado para o menos cobrado
+- Cada termo: 1-4 palavras
 
 Retorne SOMENTE JSON:
 {
   "termos": ["Termo 1", "Termo 2", "Termo 3", "..."],
+  "contexto_clinico": "Tipo (diagnóstico/síndrome/...) + 1 frase descrevendo o cenário clínico",
   "justificativa": "Breve explicação (1 frase) do porquê esses termos são os mais cobrados em prova"
 }`;
 
