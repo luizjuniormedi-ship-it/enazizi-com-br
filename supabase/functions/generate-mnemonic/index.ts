@@ -474,7 +474,8 @@ serve(async (req: Request) => {
         let candidate: MnemonicOutput | null = null;
         let errMsg: string | undefined;
         try {
-          candidate = await callAI<MnemonicOutput>(aiKey, PROMPT_MNEMONIC, attemptCtx);
+          const raw = await callAI<any>(aiKey, PROMPT_MNEMONIC, attemptCtx);
+          candidate = normalizeMnemonic(raw);
         } catch (e) {
           errMsg = e instanceof Error ? e.message : String(e);
         }
