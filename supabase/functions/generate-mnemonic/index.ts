@@ -432,7 +432,7 @@ serve(async (req: Request) => {
       // ETAPA 3: Gerar imagem
       // ══════════════════════════════════════
       console.log("[MNEMONIC] ETAPA 2: Gerando imagem...");
-      startMs = Date.now();
+      const imgStartMs = Date.now();
       let imageUrl: string | null = null;
       let imageFailed = false;
       try {
