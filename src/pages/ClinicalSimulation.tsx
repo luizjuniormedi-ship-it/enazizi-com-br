@@ -1582,198 +1582,29 @@ const ClinicalSimulation = () => {
 
       {/* ACTIVE SIMULATION */}
       {(phase === "active" || phase === "finishing") && (
-        <div className="space-y-3">
-          {/* Status bar */}
-          <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 ${statusAlert ? "animate-pulse" : ""}`}>
-            <Card className={`transition-all ${statusAlert ? "border-destructive/50 shadow-destructive/20 shadow-lg" : ""}`}>
-              <CardContent className="p-3 flex items-center gap-2">
-                <Heart className={`h-4 w-4 ${getStatusColor(patientStatus)} ${statusAlert ? "animate-bounce" : ""}`} />
-                <div>
-                  <p className="text-xs text-muted-foreground">Paciente</p>
-                  <p className={`text-sm font-bold capitalize ${getStatusColor(patientStatus)}`}>{patientStatus}</p>
-                </div>
-              </CardContent>
-            </Card>
-            {inactivityWarning && (
-              <Card className="border-amber-500/50 bg-amber-500/10 animate-pulse">
-                <CardContent className="p-3 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  <p className="text-xs font-semibold text-amber-600 dark:text-amber-400">⚠️ Paciente aguardando conduta...</p>
-                </CardContent>
-              </Card>
-            )}
-            <Card className={timerExpired ? "border-destructive/50 bg-destructive/5" : countdown <= 120 ? "border-amber-500/50" : ""}>
-              <CardContent className="p-3 flex items-center gap-2">
-                <Clock className={`h-4 w-4 ${getTimerColor()}`} />
-                <div>
-                  <p className="text-xs text-muted-foreground">{timerExpired ? "Tempo Esgotado!" : "Tempo"}</p>
-                  <p className={`text-sm font-bold font-mono ${getTimerColor()}`}>
-                    {timerExpired ? "00:00" : formatCountdown(countdown)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card className={`transition-all ${scoreFlash === "green" ? "border-green-500/50 bg-green-500/5" : scoreFlash === "red" ? "border-destructive/50 bg-destructive/5" : ""}`}>
-              <CardContent className="p-3 flex items-center gap-2">
-                <Star className={`h-4 w-4 ${scoreFlash === "green" ? "text-green-500" : scoreFlash === "red" ? "text-destructive" : "text-amber-500"}`} />
-                <div>
-                  <p className="text-xs text-muted-foreground">Score</p>
-                  <p className="text-sm font-bold">{score}/100</p>
-                </div>
-              </CardContent>
-            </Card>
-            {/* Mobile: vitals summary + Sheet trigger */}
-            <Card className="lg:hidden">
-              <CardContent className="p-3">
-                <Sheet open={mobileVitalsOpen} onOpenChange={setMobileVitalsOpen}>
-                  <SheetTrigger asChild>
-                    <button className="flex items-center gap-2 w-full text-left">
-                      <HeartPulse className="h-4 w-4 text-destructive shrink-0" />
-                      <div className="min-w-0">
-                        <p className="text-xs text-muted-foreground">Vitais</p>
-                        {vitals ? (
-                          <p className="text-xs font-mono truncate">PA:{vitals.PA} FC:{vitals.FC}</p>
-                        ) : (
-                          <p className="text-xs text-muted-foreground">—</p>
-                        )}
-                      </div>
-                    </button>
-                  </SheetTrigger>
-                  <SheetContent side="bottom" className="max-h-[70vh] overflow-y-auto">
-                    <SheetHeader>
-                      <SheetTitle className="flex items-center gap-2">
-                        <HeartPulse className="h-5 w-5 text-destructive" /> Sinais Vitais & Exames
-                      </SheetTitle>
-                    </SheetHeader>
-                    <div className="space-y-4 mt-4">
-                      {vitals && (
-                        <div className="grid grid-cols-5 gap-2">
-                          {Object.entries(vitals).map(([k, v]) => (
-                            <div key={k} className="text-center p-2 rounded-lg bg-muted/30 border border-border/50">
-                              <p className="text-[10px] text-muted-foreground font-semibold">{k}</p>
-                              <p className="text-sm font-bold font-mono">{v}</p>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      <VitalsChart snapshots={vitalsSnapshots} />
-                      <ExamsPanel exams={examResults} />
-                    </div>
-                  </SheetContent>
-                </Sheet>
-              </CardContent>
-            </Card>
-            {/* Desktop: mini vitals */}
-            {vitals && (
-              <Card className="hidden lg:block">
-                <CardContent className="p-3 flex items-center gap-2">
-                  <Thermometer className="h-4 w-4 text-destructive" />
-                  <div>
-                    <p className="text-xs text-muted-foreground">Sinais Vitais</p>
-                    <p className="text-xs font-mono">PA:{vitals.PA} FC:{vitals.FC}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+        <div className="flex flex-col h-full">
+          {/* Hospital-style shift header */}
+          <ShiftHeader
+            patientStatus={patientStatus}
+            statusAlert={statusAlert}
+            countdown={countdown}
+            timerExpired={timerExpired}
+            score={score}
+            scoreFlash={scoreFlash}
+            triageColor={triageColor}
+            setting={setting}
+            inactivityWarning={inactivityWarning}
+            abcdeChecklist={abcdeChecklist}
+          />
 
-          {/* ABCDE Checklist + Category Scores + Prontuário */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            {/* ABCDE Checklist */}
-            <Collapsible open={abcdeOpen} onOpenChange={setAbcdeOpen} className="flex-1">
-              <CollapsibleTrigger className="flex items-center gap-2 text-xs font-semibold w-full p-2 rounded-lg bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors">
-                <Shield className="h-3.5 w-3.5 text-primary" />
-                ABCDE
-                <div className="flex gap-1 ml-1">
-                  {ABCDE_STEPS.map(step => (
-                    <span key={step.key} className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center ${abcdeChecklist[step.key] ? "bg-green-500 text-white" : "bg-muted text-muted-foreground"}`}>
-                      {step.key}
-                    </span>
-                  ))}
-                </div>
-                <span className="text-muted-foreground ml-1">{Object.values(abcdeChecklist).filter(Boolean).length}/5</span>
-                {abcdeOpen ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
-              </CollapsibleTrigger>
-              <CollapsibleContent className="mt-1">
-                <div className="grid grid-cols-5 gap-1 p-2 rounded-lg bg-muted/20 border border-border/30">
-                  {ABCDE_STEPS.map(step => (
-                    <div key={step.key} className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-all ${abcdeChecklist[step.key] ? "bg-green-500/10 border border-green-500/30" : "bg-muted/30 border border-border/30 opacity-50"}`}>
-                      <step.icon className={`h-4 w-4 ${abcdeChecklist[step.key] ? "text-green-500" : "text-muted-foreground"}`} />
-                      <span className="text-[10px] font-semibold text-center leading-tight">{step.label}</span>
-                      {abcdeChecklist[step.key] && <CheckCircle className="h-3 w-3 text-green-500" />}
-                    </div>
-                  ))}
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
-
-            {/* Category Scores Mini Bars */}
-            <div className="flex-1 p-2 rounded-lg bg-muted/30 border border-border/50 space-y-1">
-              <p className="text-[10px] font-semibold text-muted-foreground flex items-center gap-1"><Target className="h-3 w-3" /> Score por Categoria</p>
-              {[
-                { key: "anamnesis", label: "Anam.", max: 15 },
-                { key: "physical_exam", label: "Ex.Fís.", max: 15 },
-                { key: "complementary_exams", label: "Exames", max: 15 },
-                { key: "management", label: "Conduta", max: 15 },
-              ].map(cat => (
-                <div key={cat.key} className="flex items-center gap-1.5">
-                  <span className="text-[10px] w-12 truncate">{cat.label}</span>
-                  <Progress value={(categoryScores[cat.key as keyof CategoryScores] / cat.max) * 100} className="h-1.5 flex-1" />
-                  <span className="text-[10px] font-mono w-8 text-right">{categoryScores[cat.key as keyof CategoryScores]}/{cat.max}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Mini-Prontuário Trigger */}
-            <Sheet open={medRecordOpen} onOpenChange={setMedRecordOpen}>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="sm" className="h-full min-h-[60px] gap-1.5 text-xs border-primary/30">
-                  <Clipboard className="h-4 w-4 text-primary" />
-                  <span className="hidden sm:inline">Prontuário</span>
-                  {medicalRecord.length > 0 && (
-                    <Badge className="text-[10px] px-1 h-4">{medicalRecord.length}</Badge>
-                  )}
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-[340px] sm:w-[400px]">
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2">
-                    <Clipboard className="h-5 w-5 text-primary" /> Mini-Prontuário
-                  </SheetTitle>
-                </SheetHeader>
-                <div className="mt-4 space-y-3 overflow-y-auto max-h-[80vh]">
-                  {medicalRecord.length === 0 && (
-                    <p className="text-xs text-muted-foreground text-center py-8">Nenhuma informação coletada ainda. As informações aparecerão aqui conforme você interage.</p>
-                  )}
-                  {(["anamnesis", "physical_exam", "lab", "imaging", "prescription"] as const).map(cat => {
-                    const entries = medicalRecord.filter(e => e.category === cat);
-                    if (entries.length === 0) return null;
-                    const catLabels: Record<string, string> = { anamnesis: "📋 Anamnese", physical_exam: "🩺 Exame Físico", lab: "🔬 Laboratório", imaging: "📷 Imagem", prescription: "💊 Prescrição" };
-                    return (
-                      <div key={cat} className="space-y-1">
-                        <p className="text-xs font-semibold">{catLabels[cat]}</p>
-                        {entries.map((e, i) => (
-                          <div key={i} className="text-xs text-muted-foreground p-2 rounded bg-muted/30 border border-border/30">
-                            {e.system && <Badge variant="outline" className="text-[10px] mb-1">{e.system}</Badge>}
-                            <p>{e.summary}</p>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-
-          {/* Action Timeline (collapsible) */}
+          {/* Clinical Timeline */}
           {actionTimeline.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto py-1 px-1">
+            <div className="flex gap-1.5 overflow-x-auto py-1.5 px-3 border-b border-border/30 bg-muted/5">
               {actionTimeline.slice(-8).map((entry, i) => (
-                <Badge key={i} variant="outline" className="text-[10px] shrink-0 gap-1 font-normal">
+                <Badge key={i} variant="outline" className="text-[10px] shrink-0 gap-1 font-normal border-border/30">
                   <span>{entry.icon}</span>
                   {entry.label}
-                  <span className="text-muted-foreground">
+                  <span className="text-muted-foreground/50">
                     {new Date(entry.timestamp).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
                   </span>
                 </Badge>
@@ -1781,10 +1612,107 @@ const ClinicalSimulation = () => {
             </div>
           )}
 
-          {/* Main layout: Chat + Side panels */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
+          {/* 3-column hospital layout */}
+          <div className="flex-1 grid grid-cols-1 lg:grid-cols-[260px_1fr_280px] gap-0 min-h-0 overflow-hidden">
 
-          {/* Chat area */}
+            {/* LEFT: Patient panel - vitals + ABCDE */}
+            <div className="hidden lg:flex flex-col border-r border-border/30 bg-muted/5 overflow-y-auto">
+              <div className="p-3 space-y-4">
+                {/* Vitals Monitor */}
+                <VitalsMonitor
+                  snapshots={vitalsSnapshots}
+                  patientStatus={patientStatus}
+                  statusAlert={statusAlert}
+                />
+
+                {/* ABCDE Checklist */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">ABCDE</span>
+                    <span className="text-[10px] text-muted-foreground">{Object.values(abcdeChecklist).filter(Boolean).length}/5</span>
+                  </div>
+                  <div className="space-y-1">
+                    {ABCDE_STEPS.map(step => (
+                      <div key={step.key} className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg transition-all ${
+                        abcdeChecklist[step.key]
+                          ? "bg-emerald-500/10 border border-emerald-500/20"
+                          : "bg-muted/20 border border-border/20 opacity-40"
+                      }`}>
+                        <step.icon className={`h-3.5 w-3.5 ${abcdeChecklist[step.key] ? "text-emerald-400" : "text-muted-foreground"}`} />
+                        <span className="text-[11px] font-medium flex-1">{step.label}</span>
+                        {abcdeChecklist[step.key] && <CheckCircle className="h-3 w-3 text-emerald-400" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Category Scores */}
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3.5 w-3.5 text-amber-400" />
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Desempenho</span>
+                  </div>
+                  {[
+                    { key: "anamnesis", label: "Anamnese", max: 15 },
+                    { key: "physical_exam", label: "Ex. Físico", max: 15 },
+                    { key: "complementary_exams", label: "Exames", max: 15 },
+                    { key: "management", label: "Conduta", max: 15 },
+                  ].map(cat => (
+                    <div key={cat.key} className="space-y-0.5">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-muted-foreground">{cat.label}</span>
+                        <span className="font-mono font-bold">{categoryScores[cat.key as keyof CategoryScores]}/{cat.max}</span>
+                      </div>
+                      <Progress value={(categoryScores[cat.key as keyof CategoryScores] / cat.max) * 100} className="h-1" />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Prontuário button */}
+                <Sheet open={medRecordOpen} onOpenChange={setMedRecordOpen}>
+                  <SheetTrigger asChild>
+                    <button className="w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left">
+                      <Clipboard className="h-4 w-4 text-primary" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[11px] font-semibold block">Prontuário</span>
+                        <span className="text-[9px] text-muted-foreground">{medicalRecord.length} registros</span>
+                      </div>
+                    </button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-[340px] sm:w-[400px]">
+                    <SheetHeader>
+                      <SheetTitle className="flex items-center gap-2">
+                        <Clipboard className="h-5 w-5 text-primary" /> Mini-Prontuário
+                      </SheetTitle>
+                    </SheetHeader>
+                    <div className="mt-4 space-y-3 overflow-y-auto max-h-[80vh]">
+                      {medicalRecord.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-8">Nenhuma informação coletada ainda.</p>
+                      )}
+                      {(["anamnesis", "physical_exam", "lab", "imaging", "prescription"] as const).map(cat => {
+                        const entries = medicalRecord.filter(e => e.category === cat);
+                        if (entries.length === 0) return null;
+                        const catLabels: Record<string, string> = { anamnesis: "📋 Anamnese", physical_exam: "🩺 Exame Físico", lab: "🔬 Laboratório", imaging: "📷 Imagem", prescription: "💊 Prescrição" };
+                        return (
+                          <div key={cat} className="space-y-1">
+                            <p className="text-xs font-semibold">{catLabels[cat]}</p>
+                            {entries.map((e, i) => (
+                              <div key={i} className="text-xs text-muted-foreground p-2 rounded bg-muted/30 border border-border/30">
+                                {e.system && <Badge variant="outline" className="text-[10px] mb-1">{e.system}</Badge>}
+                                <p>{e.summary}</p>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+            </div>
+
+            {/* CENTER: Chat area */}
           <Card className="overflow-hidden">
             <CardContent className="p-0">
               <div className="h-[50vh] lg:h-[500px] overflow-y-auto p-4 space-y-3">
