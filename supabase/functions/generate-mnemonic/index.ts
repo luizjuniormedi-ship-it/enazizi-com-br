@@ -373,10 +373,57 @@ serve(async (req: Request) => {
       interface MnemonicOutput {
         sigla: string; frase_mnemonica: string;
         explicacao_associacao?: string;
+        explicacao_clinica?: string;
         explicacao_didatica: string; explicacao_tecnica: string;
-        cena_visual: string; prompt_imagem: string;
-        associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string }>;
+        cena_visual: string;
+        cena_visual_obj?: { descricao?: string; personagens?: string; acao?: string; emocao?: string };
+        prompt_imagem: string;
+        associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string; explicacao?: string }>;
+        mapa_associacao?: Array<{ termo_original: string; representacao: string; explicacao?: string }>;
+        pontos_prova?: Array<{ pergunta: string; resposta: string; armadilha: string }>;
         score_autoavaliacao: number; problemas_detectados: string[];
+      }
+
+      // Normaliza o novo schema (4 etapas) para o formato interno do pipeline
+      function normalizeMnemonic(raw: any): MnemonicOutput | null {
+        if (!raw || typeof raw !== "object") return null;
+        const m: any = { ...raw };
+
+        // cena_visual pode vir como objeto { descricao, personagens, acao, emocao }
+        if (m.cena_visual && typeof m.cena_visual === "object") {
+          const cv = m.cena_visual;
+          const parts = [cv.descricao, cv.personagens, cv.acao, cv.emocao]
+            .filter((v: any) => typeof v === "string" && v.trim());
+          m.cena_visual_obj = cv;
+          m.cena_visual = parts.join(" — ");
+        }
+
+        // mapa_associacao -> associacoes (compat)
+        if (Array.isArray(m.mapa_associacao) && (!Array.isArray(m.associacoes) || m.associacoes.length === 0)) {
+          m.associacoes = m.mapa_associacao.map((a: any) => ({
+            termo_original: a?.termo_original ?? "",
+            representacao_no_mnemonico: a?.representacao ?? a?.representacao_no_mnemonico ?? "",
+            explicacao: a?.explicacao ?? "",
+          }));
+        }
+
+        // explicacao_associacao: derivar de explicacao_clinica ou do mapa
+        if (!m.explicacao_associacao || !String(m.explicacao_associacao).trim()) {
+          if (m.explicacao_clinica && String(m.explicacao_clinica).trim()) {
+            m.explicacao_associacao = String(m.explicacao_clinica).trim();
+          } else if (Array.isArray(m.associacoes) && m.associacoes.length) {
+            m.explicacao_associacao = m.associacoes
+              .map((a: any) => `${a.termo_original}: ${a.representacao_no_mnemonico}${a.explicacao ? ` — ${a.explicacao}` : ""}`)
+              .join("\n");
+          }
+        }
+
+        // explicacao_didatica fallback
+        if (!m.explicacao_didatica || !String(m.explicacao_didatica).trim()) {
+          m.explicacao_didatica = m.explicacao_clinica || m.explicacao_associacao || "";
+        }
+
+        return m as MnemonicOutput;
       }
 
       // Validador interno de qualidade
