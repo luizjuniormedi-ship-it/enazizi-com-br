@@ -14,7 +14,7 @@ const GLOBAL_TIMEOUT_MS = 45_000;
 const AGENT_TIMEOUT_MS = 30_000;
 
 // ═══ TYPES ═══
-interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; regenerate_image_only?: boolean; original_result_id?: string; }
+interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; regenerate_image_only?: boolean; original_result_id?: string; auto_extract_terms?: boolean; }
 
 // ═══ HELPERS ═══
 function jsonResponse(body: unknown, status = 200): Response {
@@ -26,16 +26,20 @@ function validatePayload(body: unknown): MnemonicRequest {
   if (!body || typeof body !== "object") throw new Error("Body inválido.");
   const b = body as Record<string, unknown>;
   const tema = (b.tema ?? b.topic) as string | undefined;
-  const termos = (b.termos ?? b.items) as string[] | undefined;
+  const rawTermos = (b.termos ?? b.items) as unknown;
   if (!tema?.trim()) throw new Error("Campo 'tema' é obrigatório.");
-  if (!Array.isArray(termos) || termos.length === 0) throw new Error("Campo 'termos' deve ser array não vazio.");
-  for (const t of termos) { if (typeof t !== "string" || !t.trim()) throw new Error("Cada termo deve ser string não vazia."); }
+  // Termos agora é OPCIONAL — se ausente/vazio, será extraído via IA (modo automático)
+  let termos: string[] = [];
+  if (Array.isArray(rawTermos)) {
+    termos = rawTermos.filter((t): t is string => typeof t === "string" && !!t.trim());
+  }
   return {
     tema, termos,
     estilo: typeof b.estilo === "string" ? b.estilo : undefined,
     publico: typeof b.publico === "string" ? b.publico : undefined,
     regenerate_image_only: b.regenerate_image_only === true,
     original_result_id: typeof b.original_result_id === "string" ? b.original_result_id : undefined,
+    auto_extract_terms: termos.length === 0,
   };
 }
 
