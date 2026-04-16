@@ -1713,9 +1713,9 @@ const ClinicalSimulation = () => {
             </div>
 
             {/* CENTER: Chat area */}
-          <Card className="overflow-hidden">
-            <CardContent className="p-0">
-              <div className="h-[50vh] lg:h-[500px] overflow-y-auto p-4 space-y-3">
+           <Card className="overflow-hidden flex flex-col h-full border-0 rounded-none lg:border lg:rounded-xl">
+            <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map((msg, i) => {
                   const TypeIcon = getTypeIcon(msg.type);
                   return (
