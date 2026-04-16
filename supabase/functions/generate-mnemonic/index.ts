@@ -170,73 +170,55 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um professor brasileiro de medicina com 20 anos de experiência em ensino clínico e técnicas de memorização.
+const PROMPT_MNEMONIC = `Você é um especialista em memorização médica para provas de residência.
 
-Sua ÚNICA tarefa: criar um MNEMÔNICO MEMORÁVEL em PORTUGUÊS DO BRASIL.
-
-═══ O QUE É UM BOM MNEMÔNICO ═══
-- Uma SIGLA, PALAVRA INVENTADA ou FRASE CURTA que ajude a lembrar os termos
-- Fácil de pronunciar em voz alta
-- Engraçado, absurdo ou marcante — quanto mais inusitado, melhor
-- Soa como português falado no Brasil
-- NÃO é uma lista, NÃO é uma explicação, NÃO é um resumo
-
-═══ EXEMPLOS DE BONS MNEMÔNICOS ═══
-- Para lembrar nervos cranianos: "Oh Odete, Ouve Tu: Trópegos Abelhudos Ficam Vagando Grosseiramente na Horta e na Hipófise"
-- Para critérios de Light: "PELE" (Proteína, Exsudato, LDH, Efusão)
-- Para síndrome nefrótica: "PROLAPSO" (Proteinúria, Lipidúria, Albumina baixa, Perda proteica, Sódio retido, Oligúria)
+Sua ÚNICA tarefa é criar um mnemônico PERFEITO em português do Brasil.
 
 ═══ REGRAS OBRIGATÓRIAS ═══
-1. TODOS os termos fornecidos devem estar representados no mnemônico
-2. A frase/sigla deve ser curta (máximo ~12 palavras para frase, ~8 letras para sigla)
-3. A explicação deve mostrar COMO cada parte do mnemônico se liga a cada termo
-4. Linguagem oral brasileira natural — como um professor explicaria em aula
-5. NÃO use palavras truncadas ou artificiais
-6. NÃO pareça tradução do inglês
+1. Criar uma SIGLA com base nos termos
+2. Criar uma FRASE COMPLETA, coerente e fácil de memorizar
+3. Criar uma CENA VISUAL absurda, exagerada e memorável
+4. Criar EXPLICAÇÃO DIDÁTICA clara
+5. Criar EXPLICAÇÃO TÉCNICA correta
+6. Criar ASSOCIAÇÃO entre cada termo e a frase
+
+═══ PROIBIDO ═══
+- Retornar campos vazios
+- Repetir literalmente os termos como frase
+- Frase sem sentido ou artificial
+- Texto genérico ou acadêmico demais
+- Parecer tradução do inglês
+- Palavras truncadas ou inventadas sem lógica
+
+═══ EXEMPLOS DE BONS MNEMÔNICOS ═══
+- Nervos cranianos: "Oh Odete, Ouve Tu: Trópegos Abelhudos Ficam Vagando Grosseiramente na Horta e na Hipófise"
+- Critérios de Light: "PELE" (Proteína, Exsudato, LDH, Efusão)
+- Síndrome nefrótica: "PROLAPSO" (Proteinúria, Lipidúria, Albumina baixa, Perda proteica, Sódio retido, Oligúria)
 
 ═══ AUTOAVALIAÇÃO ═══
 Antes de retornar, verifique:
 - Consigo falar em voz alta com naturalidade? Se não, refaça.
 - Um aluno lembraria depois de ouvir 2x? Se não, refaça.
 - Todos os termos estão representados? Se não, refaça.
+- A frase faz sentido em português? Se não, refaça.
 
-═══ FORMATO DE SAÍDA ═══
-Retorne SOMENTE JSON:
+═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
 {
-  "tipo": "sigla" ou "frase",
-  "sigla": "a sigla ou palavra-chave (vazio se tipo=frase)",
-  "frase_mnemonica": "a frase ou palavra mnemônica completa",
-  "explicacao_associacao": "como cada parte do mnemônico se liga a cada termo — direto e claro",
-  "explicacao_tecnica": "breve contexto clínico do tema",
+  "sigla": "a sigla criada",
+  "frase_mnemonica": "a frase mnemônica completa e memorável",
+  "explicacao_didatica": "explicação clara de como o mnemônico ajuda a lembrar",
+  "explicacao_tecnica": "breve contexto clínico correto do tema",
+  "cena_visual": "descrição de uma cena 3D estilo Pixar, absurda e memorável, com personagens exagerados",
+  "associacoes": [
+    { "termo_original": "termo1", "representacao_no_mnemonico": "como esse termo aparece no mnemônico" }
+  ],
+  "prompt_imagem": "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words. [descrição da cena em inglês]",
   "score_autoavaliacao": 0-100,
   "problemas_detectados": []
-}`;
+}
 
-const PROMPT_VISUAL = `Você é especialista em memorização visual aplicada à medicina brasileira.
+IMPORTANTE: A frase precisa fazer sentido em português e ser fácil de lembrar.`;
 
-Dada uma PALAVRA ou FRASE MNEMÔNICA, crie uma CENA VISUAL MEMORÁVEL que ajude a fixar o mnemônico na memória.
-
-═══ REGRAS DA CENA ═══
-1. A cena deve nascer diretamente do mnemônico (da palavra/frase criada)
-2. Deve ser SIMPLES — máximo 3-4 elementos visuais
-3. Deve ter AÇÃO/MOVIMENTO — cenas estáticas não funcionam
-4. Deve ter algo ENGRAÇADO, ABSURDO ou EMOCIONANTE
-5. Deve ser descrita como se fosse um frame de animação Pixar
-6. NÃO use elementos abstratos — tudo deve ser visual e concreto
-
-═══ REGRAS DO PROMPT DE IMAGEM ═══
-O prompt_imagem DEVE:
-- Ser em INGLÊS
-- Começar com: "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words."
-- Descrever exatamente a cena visual criada
-- Ser específico sobre personagens, objetos e ações
-- NÃO incluir conceitos médicos abstratos — apenas a representação visual
-
-Retorne SOMENTE JSON:
-{
-  "cena_visual": "descrição da cena em português, 2-3 frases",
-  "prompt_imagem": "prompt em inglês para gerar a imagem"
-}`;
 
 const PROMPT_EXAM_POINTS = `Você é especialista em provas de residência médica brasileira.
 
@@ -264,17 +246,12 @@ serve(async (req: Request) => {
 
   const globalTimeout = new Promise<Response>((resolve) => {
     setTimeout(() => {
-      console.warn("[MNEMONIC] GLOBAL TIMEOUT — fallback");
+      console.warn("[MNEMONIC] GLOBAL TIMEOUT");
       resolve(jsonResponse({
-        success: true,
-        data: {
-          timeout_fallback: true,
-          warning: "Geração simplificada por timeout. Tente novamente.",
-          sigla: "", frase_mnemonica: "", explicacao_associacao: "",
-          cena_visual: "", prompt_imagem: "", image_url: null,
-          image_failed: true, score_final: 0,
-        },
-      }));
+        success: false,
+        error: "Tempo de geração excedido. Tente novamente.",
+        code: "TIMEOUT",
+      }, 504));
     }, GLOBAL_TIMEOUT_MS);
   });
 
@@ -359,8 +336,10 @@ serve(async (req: Request) => {
       let startMs = Date.now();
 
       interface MnemonicOutput {
-        tipo: string; sigla: string; frase_mnemonica: string;
-        explicacao_associacao: string; explicacao_tecnica: string;
+        sigla: string; frase_mnemonica: string;
+        explicacao_didatica: string; explicacao_tecnica: string;
+        cena_visual: string; prompt_imagem: string;
+        associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string }>;
         score_autoavaliacao: number; problemas_detectados: string[];
       }
 
@@ -392,53 +371,26 @@ serve(async (req: Request) => {
       }
 
       // ══════════════════════════════════════
-      // ETAPA 2: Gerar cena visual + prompt de imagem
+      // Cena visual e prompt de imagem agora vêm do ETAPA 1
       // ══════════════════════════════════════
-      console.log("[MNEMONIC] ETAPA 2: Gerando cena visual...");
-      startMs = Date.now();
-
-      interface VisualOutput { cena_visual: string; prompt_imagem: string; }
-
-      const visualCtx = `Mnemônico: "${mnemonic.frase_mnemonica}"\nSigla: "${mnemonic.sigla}"\nTema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}\nAssociação: ${mnemonic.explicacao_associacao}`;
-
-      let visual: VisualOutput = {
-        cena_visual: `Cena visual para "${mnemonic.frase_mnemonica}" — imagine os elementos do mnemônico interagindo de forma memorável.`,
-        prompt_imagem: `3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words. Medical memory scene representing "${mnemonic.sigla || mnemonic.frase_mnemonica}" with expressive characters in dynamic action.`,
-      };
-      try {
-        visual = await callAI<VisualOutput>(aiKey, PROMPT_VISUAL, visualCtx);
-        await insertAgentLog(db, {
-          request_id: requestId, user_id: userId, agent_name: "visual",
-          execution_order: ++order, status: "completed",
-          input_json: { prompt: visualCtx.substring(0, 500) },
-          output_json: visual, duration_ms: Date.now() - startMs,
-        });
-      } catch (e) {
-        console.warn("[MNEMONIC] Visual agent failed, using fallback:", e instanceof Error ? e.message : String(e));
-        await insertAgentLog(db, {
-          request_id: requestId, user_id: userId, agent_name: "visual",
-          execution_order: ++order, status: "failed",
-          input_json: { prompt: visualCtx.substring(0, 500) },
-          output_json: null, duration_ms: Date.now() - startMs,
-          error_message: e instanceof Error ? e.message : String(e),
-        });
-      }
+      const cenaVisual = mnemonic.cena_visual || `Cena visual para "${mnemonic.frase_mnemonica}" — imagine os elementos do mnemônico interagindo de forma memorável.`;
+      const promptImagem = mnemonic.prompt_imagem || `3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words. Medical memory scene representing "${mnemonic.sigla || mnemonic.frase_mnemonica}" with expressive characters in dynamic action.`;
 
       // ══════════════════════════════════════
       // ETAPA 3: Gerar imagem
       // ══════════════════════════════════════
-      console.log("[MNEMONIC] ETAPA 3: Gerando imagem...");
+      console.log("[MNEMONIC] ETAPA 2: Gerando imagem...");
       startMs = Date.now();
       let imageUrl: string | null = null;
       let imageFailed = false;
       try {
-        const imgResult = await generateImage(visual.prompt_imagem);
+        const imgResult = await generateImage(promptImagem);
         imageUrl = imgResult.url;
         imageFailed = imgResult.failed;
         await insertAgentLog(db, {
           request_id: requestId, user_id: userId, agent_name: "gerador_imagem",
           execution_order: ++order, status: imageUrl ? "completed" : "failed",
-          input_json: { prompt: visual.prompt_imagem.substring(0, 500) },
+          input_json: { prompt: promptImagem.substring(0, 500) },
           output_json: { image_url: imageUrl, error: imgResult.error },
           duration_ms: Date.now() - startMs, error_message: imgResult.error,
         });
@@ -447,14 +399,14 @@ serve(async (req: Request) => {
         await insertAgentLog(db, {
           request_id: requestId, user_id: userId, agent_name: "gerador_imagem",
           execution_order: ++order, status: "failed",
-          input_json: { prompt: visual.prompt_imagem.substring(0, 500) },
+          input_json: { prompt: promptImagem.substring(0, 500) },
           output_json: null, duration_ms: Date.now() - startMs,
           error_message: e instanceof Error ? e.message : String(e),
         });
       }
 
       // ══════════════════════════════════════
-      // ETAPA 4: Pontos de prova (paralelo, não-bloqueante)
+      // ETAPA 3: Pontos de prova (não-bloqueante)
       // ══════════════════════════════════════
       let pontosDeProva: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }> = [];
       try {
@@ -467,7 +419,7 @@ serve(async (req: Request) => {
       // SCORES (simplified)
       // ══════════════════════════════════════
       const scoreMnemonic = Math.min(100, Math.max(0, mnemonic.score_autoavaliacao || 75));
-      const scoreVisual = visual.cena_visual ? 80 : 50;
+      const scoreVisual = cenaVisual ? 80 : 50;
       const scoreFinal = Math.round((scoreMnemonic * 0.6 + scoreVisual * 0.2 + (imageUrl ? 100 : 0) * 0.2));
 
       // ══════════════════════════════════════
@@ -478,17 +430,19 @@ serve(async (req: Request) => {
         word: t, original_item: t, symbol: null, symbol_reason: null,
       }));
 
+      const associacoes = Array.isArray(mnemonic.associacoes) ? mnemonic.associacoes : [];
+
       const resultId = await insertResult(db, {
         request_id: requestId, user_id: userId, tema: payload.tema,
         sigla: mnemonic.sigla || "",
         frase_mnemonica: mnemonic.frase_mnemonica,
         explicacao_tecnica: mnemonic.explicacao_tecnica,
-        explicacao_didatica: mnemonic.explicacao_associacao,
-        cena_visual: visual.cena_visual, prompt_imagem: visual.prompt_imagem,
+        explicacao_didatica: mnemonic.explicacao_didatica,
+        cena_visual: cenaVisual, prompt_imagem: promptImagem,
         score_medico: scoreMnemonic, score_pedagogico: scoreMnemonic,
         score_linguistico: scoreMnemonic, score_final: scoreFinal,
         aprovado: scoreMnemonic >= 70, aprovado_medico: true, aprovado_pedagogico: scoreMnemonic >= 70,
-        image_url: imageUrl, associacoes_json: [], associacoes_visuais_json: [],
+        image_url: imageUrl, associacoes_json: associacoes, associacoes_visuais_json: [],
         alertas_json: imageFailed ? ["Imagem não foi gerada — use 'Regenerar imagem'"] : [],
       });
 
@@ -502,11 +456,11 @@ serve(async (req: Request) => {
           tema: payload.tema,
           sigla: mnemonic.sigla || "",
           frase_mnemonica: mnemonic.frase_mnemonica,
-          explicacao_associacao: mnemonic.explicacao_associacao,
+          explicacao_associacao: mnemonic.explicacao_didatica,
           explicacao_tecnica: mnemonic.explicacao_tecnica,
-          explicacao_didatica: mnemonic.explicacao_associacao,
-          cena_visual: visual.cena_visual,
-          prompt_imagem: visual.prompt_imagem,
+          explicacao_didatica: mnemonic.explicacao_didatica,
+          cena_visual: cenaVisual,
+          prompt_imagem: promptImagem,
           image_url: imageUrl,
           image_failed: imageFailed,
           score_medico: scoreMnemonic,
@@ -516,7 +470,7 @@ serve(async (req: Request) => {
           quality_flag: scoreFinal >= 80 ? "high" : scoreFinal >= 60 ? "medium" : "low",
           alertas: imageFailed ? ["Imagem não foi gerada — use 'Regenerar imagem'"] : [],
           items_map: itemsMap,
-          associacoes: [],
+          associacoes,
           associacoes_visuais: [],
           pontos_de_prova: pontosDeProva,
         },
@@ -527,29 +481,7 @@ serve(async (req: Request) => {
       console.error("[MNEMONIC] FAILED:", msg);
       if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
 
-      // Fallback: simple mnemonic
-      try {
-        const rawBody = await req.clone().json().catch(() => null);
-        if (rawBody) {
-          const p = validatePayload(rawBody);
-          const letters = p.termos.map(t => t.charAt(0).toUpperCase());
-          const sigla = letters.join("");
-          return jsonResponse({
-            success: true,
-            data: {
-              tema: p.tema, sigla, frase_mnemonica: `Lembre: ${p.termos.join(", ")}`,
-              explicacao_associacao: `Use "${sigla}" para lembrar: ${p.termos.join(", ")}.`,
-              explicacao_tecnica: `Mnemônico simples para ${p.tema}.`,
-              explicacao_didatica: `Use "${sigla}" para lembrar: ${p.termos.join(", ")}.`,
-              cena_visual: "", prompt_imagem: "", image_url: null, image_failed: true,
-              score_medico: 50, score_pedagogico: 50, score_linguistico: 50, score_final: 50,
-              quality_flag: "low", alertas: ["Geração simplificada — tente novamente para resultado completo."],
-              items_map: p.termos.map((t, i) => ({ letter: letters[i], word: t, original_item: t, symbol: null, symbol_reason: null })),
-              pontos_de_prova: [],
-            },
-          });
-        }
-      } catch {}
+      // No fake fallback — return real error
 
       return jsonResponse({ success: false, error: msg }, 500);
     }
