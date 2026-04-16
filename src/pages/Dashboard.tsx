@@ -20,7 +20,11 @@ import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
 import ApprovalScoreCard from "@/components/dashboard-v2/ApprovalScoreCard";
 import FocusCard from "@/components/dashboard-v2/FocusCard";
 import DailyProgressCard from "@/components/dashboard-v2/DailyProgressCard";
+import ReadinessCard from "@/components/dashboard-v2/ReadinessCard";
 import SmartAlerts, { type SmartAlert } from "@/components/dashboard-v2/SmartAlerts";
+import WeeklyFocusPanel from "@/components/dashboard-v2/WeeklyFocusPanel";
+import PerformanceEnergyPanel from "@/components/dashboard-v2/PerformanceEnergyPanel";
+import QuickActionsPanel from "@/components/dashboard-v2/QuickActionsPanel";
 
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
@@ -39,8 +43,6 @@ import { Badge } from "@/components/ui/badge";
 import { fireCelebration } from "@/lib/celebrations";
 
 const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
-const WeeklySummaryCard = lazy(() => import("@/components/dashboard/WeeklySummaryCard"));
-const PersonalGoalsCard = lazy(() => import("@/components/dashboard/PersonalGoalsCard"));
 
 const EXAM_LABELS: Record<string, string> = {
   enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
@@ -56,7 +58,7 @@ interface CompletionHandoff {
 }
 
 /* ═══════════════════════════════════════════════════
-   DASHBOARD v2 — Mission Control Premium
+   DASHBOARD — Cockpit do Aluno
    ═══════════════════════════════════════════════════ */
 const Dashboard = () => {
   useRevisionNotifier();
@@ -235,7 +237,6 @@ const Dashboard = () => {
   const smartAlerts = useMemo(() => {
     const alerts: SmartAlert[] = [];
     if (visualSkill) {
-      // Check weakest category trend
       const weakCat = visualSkill.categories.find(c => c.imageType === visualSkill.weakestArea);
       const strongCat = visualSkill.categories.find(c => c.imageType === visualSkill.strongestArea);
       if (weakCat?.trend === "declining" && visualSkill.weakestArea) {
@@ -264,8 +265,35 @@ const Dashboard = () => {
   }, [visualSkill, snapshot]);
 
   // Focus area
-  const weakestArea = visualSkill?.weakestArea || adaptiveState?.approvalZone === "critical" ? "Revisão geral" : "";
+  const weakestArea = visualSkill?.weakestArea || (adaptiveState?.approvalZone === "critical" ? "Revisão geral" : "");
   const focusArea = visualSkill?.weakestArea || weakestArea;
+
+  // Weekly questions estimate
+  const questionsThisWeek = useMemo(() => {
+    const attempts = coreData?.practiceAttempts || [];
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    return attempts.filter(a => new Date(a.created_at) >= weekAgo).length;
+  }, [coreData?.practiceAttempts]);
+
+  // Days active this week estimate
+  const daysActiveThisWeek = useMemo(() => {
+    const attempts = coreData?.practiceAttempts || [];
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    const days = new Set(
+      attempts
+        .filter(a => new Date(a.created_at) >= weekAgo)
+        .map(a => a.created_at.slice(0, 10))
+    );
+    return days.size;
+  }, [coreData?.practiceAttempts]);
+
+  // Last simulado score
+  const lastSimuladoScore = useMemo(() => {
+    const exams = coreData?.examSessions || [];
+    return exams.length > 0 ? Math.round(exams[0].score) : null;
+  }, [coreData?.examSessions]);
 
   // First load
   const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
@@ -285,47 +313,12 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-20 lg:pb-0">
+    <div className="space-y-5 max-w-5xl mx-auto pb-20 lg:pb-0">
       {/* Session Bar */}
       <SessionBar metrics={session.metrics} onEnd={handleEndSession} />
 
       {/* Achievement toasts */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
-
-      {/* Greeting — hidden during loop */}
-      {!loopActive && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
-          className="flex items-center justify-between px-1"
-        >
-          <div>
-            <p className="text-sm text-muted-foreground">
-              {greeting}, <span className="text-foreground font-semibold">{displayName}</span>
-            </p>
-            {targetExams.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-0.5">
-                {targetExams.map((e: string) => (
-                  <Badge key={e} variant="outline" className="text-[10px] px-1.5 py-0">
-                    {EXAM_LABELS[e] || e}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-          <SafeCard name="XpWidget"><XpWidget /></SafeCard>
-        </motion.div>
-      )}
-
-      {/* Completion banner */}
-      {handoff && (
-        <MissionCompletionBanner
-          completedTitle={handoff.completedTitle}
-          badges={handoff.badges}
-          onDismiss={dismissBanner}
-        />
-      )}
 
       {/* ═══ INLINE STUDY LOOP ═══ */}
       {loopActive && (
@@ -345,9 +338,42 @@ const Dashboard = () => {
         />
       )}
 
-      {/* ═══ MISSION HUB ═══ */}
+      {/* ═══ COCKPIT ═══ */}
       {!loopActive && (
         <>
+          {/* ── Greeting Bar ── */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center justify-between px-1"
+          >
+            <div>
+              <p className="text-sm text-muted-foreground">
+                {greeting}, <span className="text-foreground font-semibold">{displayName}</span>
+              </p>
+              {targetExams.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-0.5">
+                  {targetExams.map((e: string) => (
+                    <Badge key={e} variant="outline" className="text-[10px] px-1.5 py-0">
+                      {EXAM_LABELS[e] || e}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            <SafeCard name="XpWidget"><XpWidget /></SafeCard>
+          </motion.div>
+
+          {/* Completion banner */}
+          {handoff && (
+            <MissionCompletionBanner
+              completedTitle={handoff.completedTitle}
+              badges={handoff.badges}
+              onDismiss={dismissBanner}
+            />
+          )}
+
           {/* Onboarding */}
           {isNewUser && dashData && (
             <Suspense fallback={null}>
@@ -365,7 +391,7 @@ const Dashboard = () => {
           {isError && <MissionControlError error={error} onRetry={handleRefresh} />}
           {!isError && !activeRec && <MissionControlEmpty onGenerate={handleRefresh} />}
 
-          {/* HERO — Mission of the day */}
+          {/* ═══ BLOCO 1 — HERO MISSION ═══ */}
           {activeRec && (
             <MissionHeroAnimated
               recommendation={activeRec}
@@ -378,11 +404,11 @@ const Dashboard = () => {
             />
           )}
 
-          {/* Smart Alerts */}
+          {/* ═══ BLOCO 2 — Smart Alerts ═══ */}
           <SmartAlerts alerts={smartAlerts} />
 
-          {/* 3-Card Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* ═══ BLOCO 3 — STATUS GRID (4 cards) ═══ */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <ApprovalScoreCard
               score={snapshot?.approvalScore ?? 0}
               trend={approvalTrend}
@@ -397,23 +423,40 @@ const Dashboard = () => {
               streak={streak}
               studyMinutes={Math.round((dashData?.stats.totalStudyHours ?? 0) * 60)}
             />
+            <ReadinessCard
+              simuladosCompleted={dashData?.metrics.simuladosCompleted ?? 0}
+              lastScore={lastSimuladoScore}
+              accuracy={dashData?.metrics.accuracy ?? 0}
+            />
           </div>
 
-          {/* Weekly Summary + Personal Goals */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Suspense fallback={null}>
-              <SafeCard name="WeeklySummary"><WeeklySummaryCard /></SafeCard>
-            </Suspense>
-            <Suspense fallback={null}>
-              <SafeCard name="PersonalGoals"><PersonalGoalsCard /></SafeCard>
-            </Suspense>
+          {/* ═══ BLOCO 4 — FOCO + ENERGIA (2-col) ═══ */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <WeeklyFocusPanel
+              weakestArea={focusArea}
+              pendingReviews={snapshot?.pendingReviews ?? 0}
+              errorsCount={dashData?.metrics.errorsCount ?? 0}
+            />
+            <PerformanceEnergyPanel
+              streak={streak}
+              studyMinutes={Math.round((dashData?.stats.totalStudyHours ?? 0) * 60)}
+              pendingReviews={snapshot?.pendingReviews ?? 0}
+              questionsThisWeek={questionsThisWeek}
+              daysActiveThisWeek={daysActiveThisWeek}
+            />
           </div>
 
+          {/* ═══ BLOCO 5 — QUICK ACTIONS ═══ */}
+          <QuickActionsPanel
+            hasErrors={(dashData?.metrics.errorsCount ?? 0) > 0}
+            hasPendingReviews={(snapshot?.pendingReviews ?? 0) > 0}
+          />
+
+          {/* ═══ BLOCO 6 — Justification + Alternatives ═══ */}
           {activeRec && (
             <MissionJustification justification={justification} adaptiveState={adaptiveState} />
           )}
 
-          {/* Alternatives */}
           {alternatives.length > 0 && (
             <div id="mc-alternatives">
               <MissionAlternatives
