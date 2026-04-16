@@ -63,6 +63,7 @@ export default function MnemonicGeneratorPage() {
   const [estilo, setEstilo] = useState("frase + imagem mental");
   const [publico, setPublico] = useState("graduacao");
   const [result, setResult] = useState<MnemonicResultData | null>(null);
+  const [resultError, setResultError] = useState<string | null>(null);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [quickFeedback, setQuickFeedback] = useState<string | null>(null);
@@ -131,6 +132,7 @@ export default function MnemonicGeneratorPage() {
     if (!validation.valid) { setFormErrors(validation.errors); return; }
     setFormErrors({});
     setResult(null);
+    setResultError(null);
     setQuickFeedback(null);
     setIsGenerating(true);
     setGeneratingStatus("Gerando mnemônico...");
@@ -141,12 +143,19 @@ export default function MnemonicGeneratorPage() {
       );
       if (res.success && res.data && isValidMnemonicResult(res.data, { inputTerms: termos, requireScene: true })) {
         setResult(res.data);
+        setResultError(null);
         toast.success("Mnemônico gerado!");
       } else {
-        toast.error(res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.");
+        const msg = res.error || "Não foi possível gerar um mnemônico válido. Tente novamente.";
+        setResult(null);
+        setResultError(msg);
+        toast.error(msg);
       }
     } catch (err: any) {
-      toast.error(err?.message || "Erro ao gerar mnemônico.");
+      const msg = err?.message || "Erro ao gerar mnemônico.";
+      setResult(null);
+      setResultError(msg);
+      toast.error(msg);
     } finally {
       setIsGenerating(false);
     }
@@ -370,6 +379,22 @@ export default function MnemonicGeneratorPage() {
             <p className="text-xs text-muted-foreground">
               O sistema valida automaticamente e regenera se a qualidade não for suficiente.
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Erro — quando todas as tentativas falharam */}
+      {!isLoading && !result && resultError && (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="py-8 text-center space-y-3">
+            <AlertTriangle className="h-10 w-10 text-destructive mx-auto" />
+            <p className="text-sm font-medium text-destructive">{resultError}</p>
+            <p className="text-xs text-muted-foreground">
+              Nenhum resultado foi exibido para evitar conteúdo incoerente.
+            </p>
+            <Button onClick={handleGenerate} size="sm">
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Tentar novamente
+            </Button>
           </CardContent>
         </Card>
       )}

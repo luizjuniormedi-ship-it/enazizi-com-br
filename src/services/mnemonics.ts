@@ -34,23 +34,20 @@ function mapEdgeFunctionResponse(raw: Record<string, unknown>, inputTermos?: str
   const associacoes = (gerador?.associacoes ?? d.associacoes) as Array<Record<string, string>> | undefined;
   let itemsMap: MnemonicResultData["items_map"] = [];
 
+  // items_map só a partir de associações REAIS — NUNCA inventado dos termos (sem fallback termo→termo)
   if (Array.isArray(associacoes) && associacoes.length > 0) {
-    itemsMap = associacoes.map((a) => ({
-      letter: String(a.letra ?? a.letter ?? ""),
-      word: String(a.representacao_no_mnemonico ?? a.word ?? ""),
-      original_item: String(a.termo_original ?? a.original_item ?? ""),
-      symbol: null,
-      symbol_reason: null,
-    }));
-  } else if (inputTermos) {
-    const letters = sigla.split("");
-    itemsMap = inputTermos.map((item, i) => ({
-      letter: letters[i] ?? "",
-      word: item,
-      original_item: item,
-      symbol: null,
-      symbol_reason: null,
-    }));
+    itemsMap = associacoes
+      .filter((a) =>
+        a && String(a.termo_original ?? a.original_item ?? "").trim() &&
+        String(a.representacao_no_mnemonico ?? a.word ?? "").trim()
+      )
+      .map((a) => ({
+        letter: String(a.letra ?? a.letter ?? "").trim(),
+        word: String(a.representacao_no_mnemonico ?? a.word ?? "").trim(),
+        original_item: String(a.termo_original ?? a.original_item ?? "").trim(),
+        symbol: null,
+        symbol_reason: null,
+      }));
   }
 
   // Build agent_logs from agentes object
@@ -171,6 +168,18 @@ export async function generateMnemonic(input: MnemonicRequest): Promise<Mnemonic
 
   try {
     const mapped = mapEdgeFunctionResponse(raw, input.termos);
+
+    // Guardrail final: rejeita resultado vazio/incoerente vindo da edge
+    const fraseOk = (mapped.frase_mnemonica || "").trim().length >= 8;
+    const expOk = (mapped.explicacao_didatica || "").trim().length >= 20;
+    const scoreOk = Number(mapped.score_final) > 0;
+    if (!fraseOk || !expOk || !scoreOk) {
+      return {
+        success: false,
+        error: "Resultado inválido recebido do servidor.",
+      };
+    }
+
     return { success: true, data: mapped };
   } catch (e) {
     console.error("[mnemonics] Failed to map response:", e);
