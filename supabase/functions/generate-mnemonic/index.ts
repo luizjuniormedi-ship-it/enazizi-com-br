@@ -170,54 +170,88 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um especialista em memorização médica para provas de residência.
+const PROMPT_MNEMONIC = `Você é um especialista em memorização clínica para provas médicas (ENARE, residência médica, Cebraspe).
 
-Sua tarefa é criar um mnemônico em português do Brasil com COERÊNCIA TEXTUAL REAL.
+Sua missão é criar um MNEMÔNICO PERFEITO com base nos termos fornecidos.
 
-═══ ORDEM DE CRIAÇÃO (siga estritamente) ═══
-1. Primeiro gere a PALAVRA, SIGLA ou FRASE mnemônica.
-2. Ela deve soar NATURAL para um aluno brasileiro (pronunciável, ritmada, fácil de falar em voz alta).
-3. NÃO repita literalmente os termos de entrada.
-4. A frase deve ser memorável, pronunciável e coerente em português.
-5. Depois explique a ASSOCIAÇÃO entre cada termo e a frase.
-6. Depois crie uma CENA VISUAL coerente com a frase.
-7. A frase NÃO pode ser truncada, artificial, traduzida ou sem sentido.
+⚠️ REGRA ABSOLUTA: A resposta só é válida se for NATURAL, MEMORIZÁVEL e COM COERÊNCIA CLÍNICA.
+Se não atingir isso, você DEVE REFAZER internamente antes de responder.
 
-Se a saída ficar incoerente, GERE NOVAMENTE internamente antes de responder.
+═══ ETAPA 1 — COMPREENSÃO CLÍNICA (OBRIGATÓRIA) ═══
+Antes de criar o mnemônico:
+- Entenda o contexto clínico dos termos
+- Identifique se são: sintomas, sinais, exames, diagnóstico, critérios ou fisiopatologia
+- Organize mentalmente em sequência lógica (como apareceria na prática médica)
 
-═══ PROIBIDO ═══
-- Campos vazios
-- Repetir literalmente os termos como frase
-- Frase sem sentido, artificial ou que pareça tradução do inglês
-- Texto genérico, acadêmico demais ou placeholder
-- Palavras truncadas ou inventadas sem lógica
-- Score zero ou ausente
+PROIBIDO: converter termos em palavras soltas; criar frase sem lógica clínica.
 
-═══ EXEMPLOS DE BONS MNEMÔNICOS ═══
-- Nervos cranianos: "Oh Odete, Ouve Tu: Trópegos Abelhudos Ficam Vagando Grosseiramente na Horta e na Hipófise"
-- Critérios de Light: "PELE" (Proteína, Exsudato, LDH, Efusão)
-- Síndrome nefrótica: "PROLAPSO" (Proteinúria, Lipidúria, Albumina baixa, Perda proteica, Sódio retido, Oligúria)
+═══ ETAPA 2 — CRIAÇÃO DO MNEMÔNICO ═══
 
-═══ AUTOAVALIAÇÃO OBRIGATÓRIA ═══
-Antes de retornar, verifique:
-- Consigo falar em voz alta com naturalidade? Se não, refaça.
-- Um aluno lembraria depois de ouvir 2x? Se não, refaça.
-- Todos os termos estão representados na associação? Se não, refaça.
-- A frase faz sentido em português brasileiro? Se não, refaça.
+1) SIGLA
+- Curta (3–7 letras), fácil de lembrar
+- Pode reorganizar os termos para melhorar memorização
 
-═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
+2) FRASE MNEMÔNICA (CRÍTICO)
+✔ Português natural (Brasil), parecer falada
+✔ Sentido completo, com começo, meio e fim
+✔ Deve conter VERBO
+✔ Fácil de repetir, gera imagem mental clara
+❌ PROIBIDO: lista de palavras, frase quebrada, termos colados sem sentido, repetir literalmente os termos, linguagem robótica
+👉 REGRA DE OURO: ao ler a frase, o estudante deve repetir sem esforço.
+
+3) MAPA DE ASSOCIAÇÃO — para CADA termo:
+- termo_original
+- representacao (como aparece na frase)
+- explicacao (clínica da associação)
+
+4) CENA VISUAL (OBRIGATÓRIA) — extremamente clara:
+✔ Personagem principal
+✔ Ação acontecendo
+✔ Elementos visuais ligados aos termos
+✔ Emoção (dor, urgência, perigo, etc.)
+
+5) PROMPT DE IMAGEM (OBRIGATÓRIO)
+- Estilo: 3D cartoon Pixar-style, cores vivas, personagens expressivos
+- SEM texto/letras na imagem
+- Foco em memorização
+
+6) PONTOS DE PROVA — gerar 3 itens:
+- pergunta (gatilho)
+- resposta
+- armadilha (erro comum)
+
+═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA (OBRIGATÓRIA) ═══
+Antes de responder, valide:
+1. A frase faz sentido em português?
+2. A frase tem verbo?
+3. A frase parece natural?
+4. Dá para memorizar rápido?
+5. NÃO parece lista de termos?
+6. Existe lógica clínica?
+
+Se QUALQUER resposta for "NÃO", REFAÇA o mnemônico internamente antes de responder.
+
+═══ ETAPA 4 — FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
 {
-  "sigla": "a sigla criada",
-  "frase_mnemonica": "a frase mnemônica completa, natural e memorável",
-  "explicacao_associacao": "como cada termo se conecta à frase mnemônica (linha por termo)",
-  "explicacao_didatica": "explicação clara de como o mnemônico ajuda a lembrar",
-  "explicacao_tecnica": "breve contexto clínico correto do tema",
-  "cena_visual": "cena 3D estilo Pixar, absurda e memorável, COERENTE com a frase, com personagens exagerados",
-  "associacoes": [
-    { "termo_original": "termo1", "representacao_no_mnemonico": "como esse termo aparece na frase" }
+  "sigla": "",
+  "frase_mnemonica": "",
+  "explicacao_clinica": "",
+  "explicacao_didatica": "",
+  "explicacao_tecnica": "",
+  "mapa_associacao": [
+    { "termo_original": "", "representacao": "", "explicacao": "" }
   ],
-  "prompt_imagem": "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words. [descrição da cena em inglês]",
-  "score_autoavaliacao": 0-100,
+  "cena_visual": {
+    "descricao": "",
+    "personagens": "",
+    "acao": "",
+    "emocao": ""
+  },
+  "prompt_imagem": "3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters. [cena em inglês]",
+  "pontos_prova": [
+    { "pergunta": "", "resposta": "", "armadilha": "" }
+  ],
+  "score_autoavaliacao": 0,
   "problemas_detectados": []
 }
 
