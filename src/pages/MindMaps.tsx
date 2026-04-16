@@ -9,9 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Brain, Plus, Search, Loader2, Trash2, Clock, Filter, Sparkles, ArrowLeft, Eye, Network } from "lucide-react";
+import { Brain, Plus, Search, Loader2, Trash2, Clock, Filter, Sparkles, Eye, Network } from "lucide-react";
 import { toast } from "sonner";
-import { MindMapViewer } from "@/components/mind-maps/MindMapViewer";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cirurgia Geral", "Pediatria", "Ginecologia e Obstetrícia",
