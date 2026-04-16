@@ -354,8 +354,8 @@ export default function MnemonicGeneratorPage() {
         <Card className="border-primary/20">
           <CardContent className="py-12 text-center space-y-3">
             <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-            <p className="text-sm text-muted-foreground">Criando mnemônico, cena visual e imagem...</p>
-            <p className="text-xs text-muted-foreground">Isso pode levar até 30 segundos</p>
+            <p className="text-sm text-muted-foreground">Gerando e refinando o mnemônico para garantir qualidade...</p>
+            <p className="text-xs text-muted-foreground">O sistema valida automaticamente e regenera se necessário (até 3 tentativas)</p>
           </CardContent>
         </Card>
       )}
