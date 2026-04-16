@@ -52,6 +52,12 @@ export function isValidMnemonicResult(
   if (options.requireScene && cena.length < 12) return false;
 
   // Eco literal: frase é igual à junção dos termos
+  // Quando rodamos em modo automático (termos vazios no input do usuário),
+  // não há base para comparar eco-token, então pulamos esse check.
+  if (options.inputTerms.length === 0) {
+    return true;
+  }
+
   const normalize = (s: string) =>
     s.toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu, "").trim();
 

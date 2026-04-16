@@ -14,7 +14,7 @@ const GLOBAL_TIMEOUT_MS = 45_000;
 const AGENT_TIMEOUT_MS = 30_000;
 
 // ═══ TYPES ═══
-interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; regenerate_image_only?: boolean; original_result_id?: string; }
+interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; regenerate_image_only?: boolean; original_result_id?: string; auto_extract_terms?: boolean; }
 
 // ═══ HELPERS ═══
 function jsonResponse(body: unknown, status = 200): Response {
@@ -26,16 +26,20 @@ function validatePayload(body: unknown): MnemonicRequest {
   if (!body || typeof body !== "object") throw new Error("Body inválido.");
   const b = body as Record<string, unknown>;
   const tema = (b.tema ?? b.topic) as string | undefined;
-  const termos = (b.termos ?? b.items) as string[] | undefined;
+  const rawTermos = (b.termos ?? b.items) as unknown;
   if (!tema?.trim()) throw new Error("Campo 'tema' é obrigatório.");
-  if (!Array.isArray(termos) || termos.length === 0) throw new Error("Campo 'termos' deve ser array não vazio.");
-  for (const t of termos) { if (typeof t !== "string" || !t.trim()) throw new Error("Cada termo deve ser string não vazia."); }
+  // Termos agora é OPCIONAL — se ausente/vazio, será extraído via IA (modo automático)
+  let termos: string[] = [];
+  if (Array.isArray(rawTermos)) {
+    termos = rawTermos.filter((t): t is string => typeof t === "string" && !!t.trim());
+  }
   return {
     tema, termos,
     estilo: typeof b.estilo === "string" ? b.estilo : undefined,
     publico: typeof b.publico === "string" ? b.publico : undefined,
     regenerate_image_only: b.regenerate_image_only === true,
     original_result_id: typeof b.original_result_id === "string" ? b.original_result_id : undefined,
+    auto_extract_terms: termos.length === 0,
   };
 }
 
@@ -299,6 +303,36 @@ Retorne SOMENTE JSON:
   ]
 }`;
 
+// ═══ NOVO: PROMPT DE EXTRAÇÃO AUTOMÁTICA DE TERMOS ═══
+const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina e Educação para provas de residência médica brasileira.
+
+Dado um TEMA médico, extraia automaticamente de 3 a 7 TERMOS ESSENCIAIS que são:
+- Mais cobrados em provas de residência (ENARE, USP, UNIFESP, UNICAMP, SUS-SP)
+- Clinicamente relevantes
+- Fáceis de transformar em mnemônico (curtos)
+
+Tipos de termos permitidos:
+- critérios diagnósticos
+- sinais e sintomas clássicos
+- mecanismos fisiopatológicos
+- classificações
+- condutas / tratamentos principais
+- causas / etiologias
+- complicações principais
+
+🚨 REGRAS:
+- NÃO inventar termos sem base médica
+- NÃO usar frases longas — cada termo deve ter 1-4 palavras
+- Evitar redundância
+- Ordem por importância em provas
+- Se o tema NÃO for médico ou for muito vago, retorne lista vazia
+
+Retorne SOMENTE JSON:
+{
+  "termos": ["Termo 1", "Termo 2", "Termo 3", "..."],
+  "justificativa": "Breve explicação (1 frase) do porquê esses termos são os mais cobrados em prova"
+}`;
+
 // ═══ PIPELINE ═══
 
 serve(async (req: Request) => {
@@ -332,8 +366,71 @@ serve(async (req: Request) => {
 
       const userId = await getUserIdFromRequest(req);
       db = getServiceClient();
+
+      // ══════════════════════════════════════
+      // ETAPA 0 (NOVA): Extração automática de termos quando não fornecidos
+      // ══════════════════════════════════════
+      if (payload.auto_extract_terms && !payload.regenerate_image_only) {
+        console.log(`[MNEMONIC] ETAPA 0: Extraindo termos automaticamente para "${payload.tema}"`);
+        const extractStart = Date.now();
+        try {
+          const extracted = await callAI<{ termos?: unknown; justificativa?: string }>(
+            aiKey,
+            PROMPT_EXTRACT_TERMS,
+            `Tema médico: ${payload.tema}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`
+          );
+          const rawTermos = Array.isArray(extracted?.termos) ? extracted.termos : [];
+          const cleanTermos = rawTermos
+            .filter((t): t is string => typeof t === "string" && !!t.trim())
+            .map((t) => t.trim())
+            .slice(0, 7);
+          if (cleanTermos.length < 3) {
+            return jsonResponse({
+              success: false,
+              error: "Tema muito vago ou não-médico. Forneça um tema mais específico (ex: 'Critérios de Light para derrame pleural').",
+              code: "EXTRACTION_FAILED",
+              details: extracted?.justificativa || "IA não conseguiu extrair termos suficientes.",
+            }, 422);
+          }
+          payload.termos = normalizeTerms(cleanTermos);
+          console.log(`[MNEMONIC] ETAPA 0 OK: ${payload.termos.length} termos extraídos: ${payload.termos.join(", ")}`);
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          console.error("[MNEMONIC] ETAPA 0 FAILED:", msg);
+          return jsonResponse({
+            success: false,
+            error: "Não foi possível extrair termos do tema. Tente reformular ou seja mais específico.",
+            code: "EXTRACTION_FAILED",
+            details: msg,
+          }, 422);
+        }
+      }
+
+      // Validação final: precisamos ter termos para o pipeline (exceto regenerate_image_only)
+      if (!payload.regenerate_image_only && payload.termos.length === 0) {
+        return jsonResponse({
+          success: false,
+          error: "Nenhum termo disponível para gerar o mnemônico.",
+          code: "NO_TERMS",
+        }, 422);
+      }
+
       requestId = await insertRequest(db, userId, payload);
       let order = 0;
+
+      // Log da extração (depois do insertRequest para ter o request_id)
+      if (payload.auto_extract_terms && requestId) {
+        try {
+          await insertAgentLog(db, {
+            request_id: requestId, user_id: userId,
+            agent_name: "gerador",
+            execution_order: ++order, status: "completed",
+            input_json: { tema: payload.tema, mode: "auto_extract_terms" },
+            output_json: { termos_extraidos: payload.termos },
+            duration_ms: 0,
+          });
+        } catch { /* non-critical */ }
+      }
 
       const ctx = `Tema: ${payload.tema}\nTermos (TODOS devem estar no mnemônico):\n${payload.termos.map((t, i) => `${i + 1}. ${t}`).join("\n")}${payload.estilo ? `\nEstilo preferido: ${payload.estilo}` : ""}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`;
 
