@@ -265,19 +265,20 @@ Se entrada indicar dificuldade do aluno:
 {
   "sigla": "",
   "frase_mnemonica": "",
+  "contexto_clinico": "tipo (diagnóstico/síndrome/conduta/...) + 1 frase do cenário",
   "explicacao": "",
   "explicacao_clinica": "",
-  "explicacao_didatica": "",
-  "explicacao_tecnica": "",
+  "explicacao_didatica": "como cada parte da frase ajuda a lembrar dos termos",
+  "explicacao_tecnica": "por que esses termos são os mais importantes em prova",
   "cena_neuro_memoravel": {
-    "descricao": "",
-    "personagem": "",
-    "acao": "",
-    "emocao": "",
-    "associacao_fonetica": ""
+    "descricao": "frame da cena absurda em 1-2 frases",
+    "personagem": "quem é o personagem principal",
+    "acao": "o que está acontecendo",
+    "emocao": "emoção forte (dor/desespero/riso/...)",
+    "associacao_fonetica": "rima/trocadilho que conecta termo difícil a som fácil"
   },
   "associacoes": [
-    { "termo": "", "simbolo": "", "explicacao": "" }
+    { "termo": "termo original exato", "simbolo": "símbolo/representação visual na cena", "explicacao": "por que esse símbolo lembra o termo" }
   ],
   "prompt_imagem": "3D cartoon Pixar-style, vibrant saturated colors, exaggerated expressions, dynamic action scene, clean background, no text, no labels, no letters. [cena absurda em inglês]",
   "pontos_prova": [
