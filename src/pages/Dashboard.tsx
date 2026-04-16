@@ -6,6 +6,7 @@ import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { resolveRecommendationAction } from "@/lib/recommendationRouter";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
+import { usePrefetch } from "@/hooks/usePrefetch";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useStudyLoop } from "@/hooks/useStudyLoop";
 import { useStudySession } from "@/hooks/useStudySession";
@@ -38,6 +39,8 @@ import { Badge } from "@/components/ui/badge";
 import { fireCelebration } from "@/lib/celebrations";
 
 const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
+const WeeklySummaryCard = lazy(() => import("@/components/dashboard/WeeklySummaryCard"));
+const PersonalGoalsCard = lazy(() => import("@/components/dashboard/PersonalGoalsCard"));
 
 const EXAM_LABELS: Record<string, string> = {
   enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
@@ -57,6 +60,7 @@ interface CompletionHandoff {
    ═══════════════════════════════════════════════════ */
 const Dashboard = () => {
   useRevisionNotifier();
+  usePrefetch("/dashboard");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -395,7 +399,16 @@ const Dashboard = () => {
             />
           </div>
 
-          {/* Justification — compact */}
+          {/* Weekly Summary + Personal Goals */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Suspense fallback={null}>
+              <SafeCard name="WeeklySummary"><WeeklySummaryCard /></SafeCard>
+            </Suspense>
+            <Suspense fallback={null}>
+              <SafeCard name="PersonalGoals"><PersonalGoalsCard /></SafeCard>
+            </Suspense>
+          </div>
+
           {activeRec && (
             <MissionJustification justification={justification} adaptiveState={adaptiveState} />
           )}
