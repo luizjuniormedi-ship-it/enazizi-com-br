@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -46,6 +46,7 @@ const COLOR_LEGEND = [
 export default function MindMaps() {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterSpecialty, setFilterSpecialty] = useState<string>("all");
@@ -54,6 +55,15 @@ export default function MindMaps() {
   const [newTopic, setNewTopic] = useState("");
   const [newSpecialty, setNewSpecialty] = useState("");
   const [newDifficulty, setNewDifficulty] = useState("medium");
+
+  // Auto-open generate dialog from URL param (e.g., from Tutor IA)
+  useEffect(() => {
+    const generateTopic = searchParams.get("generate");
+    if (generateTopic) {
+      setNewTopic(decodeURIComponent(generateTopic));
+      setGenerateOpen(true);
+    }
+  }, [searchParams]);
 
   const { data: maps = [], isLoading } = useQuery({
     queryKey: ["mental-maps"],
