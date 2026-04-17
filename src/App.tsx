@@ -171,6 +171,8 @@ const App = () => (
                 <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
                 <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
                 <Route path="mapas-mentais" element={<MindMaps />} />
+                <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
+
               </Route>
               {/* Fullscreen mind map viewer — outside DashboardLayout */}
               <Route path="/dashboard/mapas-mentais/:id" element={<ProtectedRoute><MindMapFullscreen /></ProtectedRoute>} />
