@@ -65,9 +65,17 @@ export const useModuleAccess = () => {
         // No records = all modules enabled (default for existing users)
         setEnabledModules(new Set(ALL_MODULES.map(m => m.key)));
       } else {
-        const enabled = new Set(
-          data.filter(d => d.enabled).map(d => d.module_key)
-        );
+        const enabled = new Set<string>(ALL_MODULES.map(m => m.key));
+
+        data.forEach((record) => {
+          if (record.enabled) {
+            enabled.add(record.module_key);
+            return;
+          }
+
+          enabled.delete(record.module_key);
+        });
+
         // Always keep dashboard enabled
         enabled.add("dashboard");
         setEnabledModules(enabled);
