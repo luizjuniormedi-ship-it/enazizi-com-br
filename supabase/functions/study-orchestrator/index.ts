@@ -405,7 +405,7 @@ serve(async (req) => {
       }));
     }
 
-    // R8 — Empty daily plan
+    // R8 — Empty daily plan (F5: with auto-fallback generation)
     {
       const fired = dailyPlanEmpty;
       const weight = fired ? 50 : 0;
@@ -420,6 +420,67 @@ serve(async (req) => {
           reason: "Sua missão do dia ainda não foi gerada. Vamos montar agora.",
           confidence: 0.95,
         }));
+
+        // F5 — Auto-fallback: synthesize a minimal plan inline so user never
+        // sees an empty dashboard. Best-effort, never throws.
+        try {
+          const { data: planRow } = await db.from("daily_plans").upsert({
+            user_id: userId,
+            plan_date: today,
+            objective: topRepeatedError?.tema
+              ? `Reforçar ${topRepeatedError.tema}`
+              : "Sessão guiada do dia",
+            phase: "fallback",
+            plan_json: { source: "orchestrator_fallback" },
+            total_blocks: 3,
+            completed_count: 0,
+          }, { onConflict: "user_id,plan_date" }).select("id").maybeSingle();
+
+          if (planRow?.id) {
+            // Skip if tasks already exist for this plan
+            const { data: existingTasks } = await db.from("daily_plan_tasks")
+              .select("id").eq("daily_plan_id", planRow.id).limit(1);
+            if (!existingTasks || existingTasks.length === 0) {
+              const fallbackTasks = [
+                topRepeatedError ? {
+                  daily_plan_id: planRow.id,
+                  user_id: userId,
+                  task_type: "error_review",
+                  title: `Revisar erro: ${topRepeatedError.tema}`,
+                  topic: topRepeatedError.tema,
+                  ordem: 1,
+                  estimated_minutes: 15,
+                  priority: "high",
+                } : null,
+                visualWeaknesses[0] ? {
+                  daily_plan_id: planRow.id,
+                  user_id: userId,
+                  task_type: "image_quiz",
+                  title: `Treinar imagem: ${visualWeaknesses[0].type}`,
+                  topic: visualWeaknesses[0].type,
+                  ordem: 2,
+                  estimated_minutes: 10,
+                  priority: "medium",
+                } : null,
+                {
+                  daily_plan_id: planRow.id,
+                  user_id: userId,
+                  task_type: "free_study",
+                  title: "Sessão guiada de estudo",
+                  topic: topRepeatedError?.tema ?? null,
+                  ordem: 3,
+                  estimated_minutes: 20,
+                  priority: "medium",
+                },
+              ].filter(Boolean) as any[];
+              if (fallbackTasks.length > 0) {
+                await db.from("daily_plan_tasks").insert(fallbackTasks);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("[orchestrator] planner fallback failed:", (e as Error).message);
+        }
       }
     }
 
