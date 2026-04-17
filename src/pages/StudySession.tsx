@@ -116,7 +116,7 @@ const StudySession = () => {
       });
   }, [user]);
 
-  // Read professor query params
+  // Read query params (professor context + cockpit deep-link)
   useEffect(() => {
     const paramTopic = searchParams.get("topic");
     const paramProfessorTopics = searchParams.get("professorTopics");
@@ -130,8 +130,39 @@ const StudySession = () => {
         materialUrl: paramMaterialUrl || undefined,
         assignmentId: paramAssignmentId || undefined,
       });
+    } else if (paramTopic) {
+      // Deep-link from cockpit / weakness — preload topic field
+      setTopicInput(paramTopic);
+      setTopic(paramTopic);
     }
   }, [searchParams]);
+
+  // Auto-start study when arriving via cockpit deep-link (?topic=...&auto=1 or origin=cockpit)
+  const autoStartedRef = useRef(false);
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    const paramTopic = searchParams.get("topic");
+    const paramAuto = searchParams.get("auto");
+    const paramOrigin = searchParams.get("origin");
+    const paramFocus = searchParams.get("focus");
+    const shouldAuto =
+      paramTopic &&
+      phase === "start" &&
+      (paramAuto === "1" || paramAuto === "true" || paramOrigin === "cockpit" || paramOrigin === "guided");
+
+    if (shouldAuto) {
+      autoStartedRef.current = true;
+      setTopic(paramTopic);
+      setTopicInput(paramTopic);
+      // If focused on review/errors, jump straight to a "review" or "correction" mode
+      const mode: StudyMode = paramFocus === "reviews" ? "review" : paramFocus === "errors" ? "correction" : "full";
+      // Tiny delay so state settles before triggering
+      const t = setTimeout(() => {
+        handleStyleSelect(mode);
+      }, 200);
+      return () => clearTimeout(t);
+    }
+  }, [searchParams, phase]);
 
   const {
     pendingSession, checked: sessionChecked, saveSession: persistSession,
