@@ -278,7 +278,7 @@ serve(async (req) => {
       });
       if (fired) {
         candidates.push(safeRec("review_fsrs", {
-          priority: 50 + Math.min(40, pendingReviews + fsrsDueCount),
+          priority: tunedPriority("R1", 50 + Math.min(40, pendingReviews + fsrsDueCount)),
           reason: `Você tem ${pendingReviews + fsrsDueCount} revisões vencidas. Revisar agora protege a curva de retenção.`,
           confidence: 0.9,
         }));
@@ -296,7 +296,7 @@ serve(async (req) => {
       });
       if (fired && topRepeatedError) {
         candidates.push(safeRec("error_review", {
-          priority: 40 + Math.min(30, repeatedErrorTopics * 5 + (topRepeatedError.vezes_errado ?? 0) * 2),
+          priority: tunedPriority("R2", 40 + Math.min(30, repeatedErrorTopics * 5 + (topRepeatedError.vezes_errado ?? 0) * 2)),
           reason: `Você errou "${topRepeatedError.tema}" ${topRepeatedError.vezes_errado}× recentemente. Hora de quebrar o padrão.`,
           payload: { topic: topRepeatedError.tema, subtopic: topRepeatedError.subtema, errorId: topRepeatedError.id },
           confidence: 0.85,
@@ -316,7 +316,7 @@ serve(async (req) => {
       });
       if (fired && topRepeatedError) {
         candidates.push(safeRec("tutor", {
-          priority: 35 + (repeatedErrorTopics * 3),
+          priority: tunedPriority("R3", 35 + (repeatedErrorTopics * 3)),
           reason: `Erros conceituais em "${topRepeatedError.tema}". O Tutor pode destravar a base.`,
           payload: { topic: topRepeatedError.tema, tutorPhase: "correction" },
           confidence: 0.75,
@@ -340,7 +340,7 @@ serve(async (req) => {
         const mode: "review_existing" | "regenerate" | "create_new" =
           lowUtilTop ? "regenerate" : topRepeatedError ? "create_new" : "review_existing";
         candidates.push(safeRec("mnemonic", {
-          priority: 35 + mnemonicLowUtility * 4,
+          priority: tunedPriority("R4", 35 + mnemonicLowUtility * 4),
           reason: lowUtilTop
             ? `Mnemônico com baixa utilidade (${lowUtilTop.utility_score}/100). Vamos refazer.`
             : `Padrão de esquecimento em "${targetTopic ?? "tema fraco"}". Mnemônico pode fixar.`,
@@ -371,7 +371,7 @@ serve(async (req) => {
       });
       if (fired && worst) {
         candidates.push(safeRec("image_quiz", {
-          priority: 30 + Math.round((1 - worst.accuracy) * 30),
+          priority: tunedPriority("R5", 30 + Math.round((1 - worst.accuracy) * 30)),
           reason: `Acurácia visual de ${Math.round(worst.accuracy * 100)}% em ${worst.type}. Bora treinar.`,
           payload: { imageType: worst.type },
           confidence: 0.8,
@@ -392,7 +392,7 @@ serve(async (req) => {
       });
       if (fired) {
         candidates.push(safeRec("simulado", {
-          priority: 25,
+          priority: tunedPriority("R6", 25),
           reason: `Base sólida (score ${approvalScore}) e revisões em dia. Hora de medir desempenho real.`,
           confidence: 0.7,
         }));
@@ -407,7 +407,7 @@ serve(async (req) => {
         signals: { weakestTopic: topRepeatedError?.tema ?? null },
       });
       candidates.push(safeRec("study_session", {
-        priority: 10 + (topRepeatedError ? 5 : 0),
+        priority: tunedPriority("R7", 10 + (topRepeatedError ? 5 : 0)),
         reason: topRepeatedError
           ? `Sessão guiada focada em "${topRepeatedError.tema}".`
           : "Sessão guiada para manter o ritmo.",
@@ -427,7 +427,7 @@ serve(async (req) => {
       });
       if (fired) {
         candidates.push(safeRec("planner_rebuild", {
-          priority: 60,
+          priority: tunedPriority("R8", 60),
           reason: "Sua missão do dia ainda não foi gerada. Vamos montar agora.",
           confidence: 0.95,
         }));
