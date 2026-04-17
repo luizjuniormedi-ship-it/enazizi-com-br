@@ -214,6 +214,16 @@ const StudySession = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Drain any pending study-complete retries from past failures (network, reload).
+  useEffect(() => {
+    if (!user) return;
+    flushStudyCompleteQueue()
+      .then((r) => {
+        if (r.flushed > 0) console.info(`[StudySession] flushed ${r.flushed} pending study-complete retries`);
+      })
+      .catch(() => {});
+  }, [user]);
+
   // Load performance from real database
   useEffect(() => {
     if (!user) return;
@@ -934,7 +944,7 @@ const StudySession = () => {
                   >
                     {m.role === "assistant" ? (
                       <div className="prose prose-sm prose-invert max-w-none [&_table]:text-xs [&_th]:px-2 [&_td]:px-2">
-                        <ReactMarkdown>{m.content}</ReactMarkdown>
+                        <ReactMarkdown>{stripStudySignal(m.content)}</ReactMarkdown>
                       </div>
                     ) : (
                       m.content
