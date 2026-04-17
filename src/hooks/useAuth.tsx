@@ -118,12 +118,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const alreadyReloaded = sessionStorage.getItem(loginRefreshFlag);
               const isStandalonePWA =
                 window.matchMedia("(display-mode: standalone)").matches ||
-                // iOS Safari standalone
                 (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+              const isMobileOrPWA =
+                isStandalonePWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-              if (!alreadyReloaded && (isStandalonePWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))) {
+              // Force hard reload on EVERY login for mobile/PWA/desktop installed apps
+              // to guarantee fresh bundle. Use sessionStorage flag only to prevent
+              // the post-reload tab from looping.
+              if (!alreadyReloaded && isMobileOrPWA) {
                 sessionStorage.setItem(loginRefreshFlag, "1");
-                // Small delay to let auth state persist before reload
                 setTimeout(() => {
                   const url = new URL(window.location.href);
                   url.searchParams.set("__r", currentRelease || String(Date.now()));
