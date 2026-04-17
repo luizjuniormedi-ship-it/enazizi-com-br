@@ -15,6 +15,7 @@ import CockpitRadar from "./CockpitRadar";
 import CockpitNextSteps from "./CockpitNextSteps";
 import CockpitProfile from "./CockpitProfile";
 import CockpitVisualQuiz from "./CockpitVisualQuiz";
+import OrchestratorShadowRunner from "./OrchestratorShadowRunner";
 
 export default function CognitiveCockpit() {
   const { user } = useAuth();
@@ -50,6 +51,9 @@ export default function CognitiveCockpit() {
 
   return (
     <div className="space-y-4">
+      {/* F1 shadow mode — runs orchestrator silently, logs decisions */}
+      <OrchestratorShadowRunner />
+
       {/* Bloco 1 — Hero */}
       <CockpitHero
         cockpit={cockpit}
