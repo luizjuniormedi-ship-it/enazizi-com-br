@@ -20,6 +20,8 @@ export interface TutorDrawerContext {
   initialPrompt?: string;
   /** Source module that triggered the drawer (for telemetry) */
   source?: string;
+  /** P0 — orchestrator decision id, so the drawer can close the adaptive loop */
+  decisionId?: string;
 }
 
 const EVENT_OPEN = "enazizi:tutor-drawer:open";
