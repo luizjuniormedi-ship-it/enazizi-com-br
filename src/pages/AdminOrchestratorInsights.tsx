@@ -314,13 +314,126 @@ export default function AdminOrchestratorInsights() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="decisions">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
+      {/* ALERTAS */}
+      {alerts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {alerts.map((a, i) => (
+            <div
+              key={i}
+              className={`text-xs rounded-md border px-3 py-2 flex items-center gap-2 ${
+                a.kind === "red"
+                  ? "border-destructive/40 bg-destructive/5 text-destructive"
+                  : a.kind === "yellow"
+                  ? "border-yellow-500/40 bg-yellow-500/5"
+                  : "border-green-500/40 bg-green-500/5"
+              }`}
+            >
+              <span>{a.kind === "red" ? "🔴" : a.kind === "yellow" ? "🟡" : "🟢"}</span>
+              <span>{a.msg}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Tabs defaultValue="overview">
+        <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="decisions">Decisões</TabsTrigger>
           <TabsTrigger value="executions">Execução</TabsTrigger>
           <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
           <TabsTrigger value="learning">Aprendizado</TabsTrigger>
+          <TabsTrigger value="debug">Debug</TabsTrigger>
         </TabsList>
+
+        {/* TAB 0: OVERVIEW */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Kpi label="Decisões 7d" value={totalDec7d} icon={<Cpu className="h-4 w-4" />} />
+            <Kpi label="Decisões 30d" value={decisionsQuery.data?.count30d ?? 0} />
+            <Kpi label="Study Complete 7d" value={totalCmp7d} />
+            <Kpi label="% c/ decisionId" value={fmtPct(completesQuery.data?.pctWithDid ?? 0)} />
+            <Kpi label="Outcomes total" value={outcomesQuery.data?.total ?? 0} />
+            <Kpi label="Outcomes 7d" value={totalOut7d} />
+            <Kpi label="Conversão dec→out" value={fmtPct(conversion)} />
+            <Kpi label="Taxa sucesso" value={fmtPct(outcomesQuery.data?.successRate)} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Última decisão</CardDescription>
+                <CardTitle className="text-base">
+                  {lastDecision
+                    ? `${(lastDecision as any).decision_output?.nextAction ?? "—"} → ${(lastDecision as any).decision_output?.targetModule ?? "—"}`
+                    : "—"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                {lastDecision ? new Date((lastDecision as any).created_at).toLocaleString("pt-BR") : "Sem decisões"}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Último outcome</CardDescription>
+                <CardTitle className="text-base">
+                  {lastOutcome
+                    ? `${(lastOutcome as any).modality ?? "—"} · ${(lastOutcome as any).outcome ?? "—"}`
+                    : "—"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                {lastOutcome ? new Date((lastOutcome as any).created_at).toLocaleString("pt-BR") : "Sem outcomes"}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>🥇 Melhor modalidade</CardDescription>
+                <CardTitle className="text-lg">{best?.modality ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">Δ imp: {fmt(best?.avgImprovement, 3)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>📉 Pior modalidade</CardDescription>
+                <CardTitle className="text-lg">{worst?.modality ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">Δ imp: {fmt(worst?.avgImprovement, 3)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Exploração</CardDescription>
+                <CardTitle className="text-lg">{fmtPct(explorationRate)}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                {explorationCount} de {outcomesQuery.data?.rows.length ?? 0} outcomes
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Regra com peso mais alto</CardDescription>
+                <CardTitle className="text-base">{(heaviestRule as any)?.rule_name ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                peso {fmt((heaviestRule as any)?.current_weight)} · baseline {fmt((heaviestRule as any)?.baseline_weight)}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Regra com peso mais baixo</CardDescription>
+                <CardTitle className="text-base">{(lightestRule as any)?.rule_name ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                peso {fmt((lightestRule as any)?.current_weight)} · baseline {fmt((lightestRule as any)?.baseline_weight)}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* TAB 1: DECISIONS */}
         <TabsContent value="decisions" className="space-y-4">
