@@ -4,7 +4,7 @@ import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
 import "./index.css";
 
-const APP_RELEASE = "2026-04-16-v12";
+const APP_RELEASE = "2026-04-17-v13";
 const RELEASE_KEY = "enazizi_release";
 const RELEASE_QUERY_KEY = "__app_release";
 const canonical = "enazizi.com";

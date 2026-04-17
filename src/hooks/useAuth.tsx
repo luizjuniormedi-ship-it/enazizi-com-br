@@ -61,11 +61,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 3. Update SW + force reload if a new version is waiting
         // ============================================================
         try {
-          // Skip on the very first session restore of this tab to avoid
-          // reload loops; only act on real sign-in transitions.
+          // Force refresh on EVERY login transition (not just every 5 min).
+          // We still guard against reload loops via sessionStorage flag below.
           const lastRefreshKey = "enazizi_last_global_refresh_ts";
-          const lastRefresh = parseInt(localStorage.getItem(lastRefreshKey) || "0", 10);
-          const shouldHardRefresh = !lastRefresh || Date.now() - lastRefresh > 5 * 60 * 1000;
+          const shouldHardRefresh = true;
 
           if (shouldHardRefresh) {
             localStorage.setItem(lastRefreshKey, String(Date.now()));
