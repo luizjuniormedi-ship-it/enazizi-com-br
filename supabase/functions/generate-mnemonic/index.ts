@@ -183,9 +183,12 @@ OBJETIVO: criar um mnemônico EXTREMAMENTE MEMORÁVEL para provas médicas — e
 1) A FRASE MNEMÔNICA DEVE:
 ✔ Estar em português do Brasil
 ✔ Ter SENTIDO COMPLETO (não pode ser aleatória)
+✔ Ter SUJEITO + VERBO + COMPLEMENTO + CONSEQUÊNCIA clara
 ✔ Ser fácil de falar em voz alta
 ✔ Ter RITMO e FLUIDEZ
 ✔ Parecer uma frase REAL — tipo MEME ou CENA de filme
+✔ Funcionar como uma MICRO-HISTÓRIA: alguém faz algo e algo acontece
+✔ Fazer sentido mesmo para quem não viu a lista de termos
 ✔ Conter VERBO (ação) e EMOÇÃO forte
 ✔ Usar contexto do mundo real (hospital, paciente, médico, plantão)
 ✔ Usar EXAGERO ou HUMOR clínico
@@ -194,12 +197,14 @@ OBJETIVO: criar um mnemônico EXTREMAMENTE MEMORÁVEL para provas médicas — e
 ❌ Palavras soltas sem conexão
 ❌ Frases sem sentido / robóticas
 ❌ Lista de termos disfarçada de frase
+❌ Frase telegráfica do tipo "dor febre tosse corre cai"
 ❌ Repetir literalmente os termos do usuário
 ❌ Texto que não dá pra imaginar de imediato
 
 3) EXEMPLO DE QUALIDADE ESPERADA:
 ❌ RUIM:  "Borda dor placa febre"
 ✅ BOM:   "O paciente chegou GRITANDO de dor com uma placa vermelha gigante no braço, tão quente que parecia febre pegando fogo"
+✅ BOM:   "No plantão, a pleura chorou tanto líquido que o pulmão escorregou e o residente berrava: LIGHT, mostra esse exsudato logo!"
 
 ═══ ETAPA 1 — INTERPRETAÇÃO CLÍNICA ═══
 - Entenda o tema profundamente
@@ -251,6 +256,8 @@ A cena deve parecer um FILME ABSURDO da Pixar.
 7. Tem ASSOCIAÇÃO FONÉTICA em pelo menos 1 termo difícil?
 8. A frase NÃO repete simplesmente os termos como uma lista?
 9. Os termos escolhidos realmente representam o tema?
+10. Se alguém ler a frase isoladamente, entende o que aconteceu sem precisar ver a lista?
+11. Existe relação de causa/ação/consequência entre os elementos da frase?
 
 ❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE até passar.
 
@@ -604,6 +611,92 @@ serve(async (req: Request) => {
         return m as MnemonicOutput;
       }
 
+      function normalizeForAnalysis(text: string): string {
+        return text
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .trim();
+      }
+
+      const SENTENCE_GLUE_WORDS = new Set([
+        "o", "a", "os", "as", "um", "uma", "uns", "umas",
+        "de", "do", "da", "dos", "das", "no", "na", "nos", "nas",
+        "em", "com", "sem", "por", "para", "pra", "pro", "e", "que",
+        "se", "ao", "aos", "como", "quando", "porque", "mas", "so", "sob",
+      ]);
+
+      const COMMON_SUBJECT_HINTS = new Set([
+        "paciente", "medico", "medica", "residente", "plantonista", "enfermeira",
+        "hospital", "ambulancia", "pulmao", "coracao", "cerebro", "figado", "rim",
+        "pleura", "crianca", "idoso", "idosa", "bebe", "monstro", "orgão", "orgao",
+      ]);
+
+      const COMMON_PORTUGUESE_VERBS = [
+        /\b(e|eh|esta|estao|estava|estavam|foi|foram|fica|ficou|ficaram|tem|teve|tinham?)\b/,
+        /\b(chega|chegou|chegam|entra|entrou|entram|sai|saiu|saem|corre|correu|correm|cai|caiu|caem)\b/,
+        /\b(grita|gritou|gritam|berra|berrou|berram|chora|chorou|choram|ri|riu|riram|desmaia|desmaiou)\b/,
+        /\b(implode|implodiu|explode|explodiu|queima|queimou|sangra|sangrou|incha|inchou|trava|travou)\b/,
+        /\b(vira|virou|viram|mostra|mostrou|mostram|pede|pediu|pedem|leva|levou|levam|salva|salvou|salvam)\b/,
+        /\b(derrama|derramou|derramam|vomita|vomitou|vomitam|bate|bateu|batem|segura|segurou|seguram)\b/,
+        /\b(acende|acendeu|acendem|apaga|apagou|apagam|abre|abriu|abrem|fecha|fechou|fecham|parece|pareceu)\b/,
+        /\b(chama|chamou|chamam|empurra|empurrou|empurram|puxa|puxou|puxam|socorre|socorreu|socorrem)\b/,
+      ];
+
+      function analyzeMnemonicSentence(frase: string, termos: string[]) {
+        const normalizedPhrase = normalizeForAnalysis(frase);
+        const tokens = normalizedPhrase.match(/[a-z0-9]+/g) ?? [];
+        const termTokens = new Set(
+          termos
+            .map((termo) => normalizeForAnalysis(termo))
+            .flatMap((termo) => termo.split(/\s+/).filter(Boolean))
+        );
+        const glueCount = tokens.filter((token) => SENTENCE_GLUE_WORDS.has(token)).length;
+        const nonTermTokens = tokens.filter((token) => !termTokens.has(token));
+        const uniqueNonTermCount = new Set(nonTermTokens).size;
+        const hasVerb = COMMON_PORTUGUESE_VERBS.some((pattern) => pattern.test(normalizedPhrase))
+          || /\b[a-z]{3,}(ou|eu|iu|ava|avam|aram|eram|iram|ando|endo|indo)\b/.test(normalizedPhrase);
+        const hasSubjectHint = tokens.some((token) => COMMON_SUBJECT_HINTS.has(token));
+        const termTokenRatio = tokens.length === 0
+          ? 1
+          : tokens.filter((token) => termTokens.has(token)).length / tokens.length;
+        const looksTelegraphic = (glueCount === 0 && !hasVerb)
+          || (termTokenRatio >= 0.6 && !hasVerb)
+          || (/[,;:/\-]/.test(frase) && glueCount === 0);
+
+        return {
+          tokenCount: tokens.length,
+          glueCount,
+          hasVerb,
+          hasSubjectHint,
+          uniqueNonTermCount,
+          termTokenRatio,
+          looksTelegraphic,
+        };
+      }
+
+      const ISSUE_MESSAGES: Record<string, string> = {
+        resposta_vazia: "a IA não retornou um mnemônico utilizável",
+        frase_vazia: "a frase veio vazia",
+        frase_curta_demais: "a frase ficou curta demais",
+        frase_sem_contexto: "a frase está curta demais para formar uma cena lógica",
+        frase_sem_verbo: "a frase não tem verbo ou ação explícita",
+        frase_sem_conexao_logica: "a frase não tem conectivos e parece palavras soltas",
+        frase_pouco_natural: "a frase continua artificial e sem naturalidade",
+        frase_parece_lista: "a frase parece lista ou frase telegráfica, sem lógica narrativa",
+        explicacao_associacao_ausente: "faltou explicação de associação",
+        explicacao_curta_demais: "a explicação ficou curta demais",
+        explicacao_tecnica_ausente: "faltou explicação técnica",
+        eco_literal_termos: "a frase ecoa literalmente os termos",
+        frase_so_repete_termos: "a frase só repete os termos",
+        placeholder_detectado: "a saída parece placeholder ou texto genérico",
+        score_zero: "a autoavaliação veio zerada",
+      };
+
+      function describeIssues(issues: string[]): string {
+        return issues.map((issue) => ISSUE_MESSAGES[issue] ?? issue).join("; ");
+      }
+
       // Validador interno de qualidade
       function validateMnemonic(m: MnemonicOutput | null, termos: string[]): string[] {
         const issues: string[] = [];
@@ -626,6 +719,14 @@ serve(async (req: Request) => {
         const termTokens = new Set(termosLow.flatMap(t => t.split(/\s+/).filter(Boolean)));
         const nonEcho = fraseTokens.filter(tok => !termTokens.has(tok));
         if (fraseTokens.length > 0 && nonEcho.length === 0) issues.push("frase_so_repete_termos");
+        const sentenceAnalysis = analyzeMnemonicSentence(frase, termos);
+        if (sentenceAnalysis.tokenCount < 5) issues.push("frase_sem_contexto");
+        if (!sentenceAnalysis.hasVerb) issues.push("frase_sem_verbo");
+        if (sentenceAnalysis.glueCount === 0) issues.push("frase_sem_conexao_logica");
+        if (sentenceAnalysis.uniqueNonTermCount < 3) issues.push("frase_pouco_natural");
+        if (sentenceAnalysis.looksTelegraphic || (!sentenceAnalysis.hasSubjectHint && sentenceAnalysis.glueCount === 0)) {
+          issues.push("frase_parece_lista");
+        }
         // Placeholders óbvios
         if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + expDid + " " + expAssoc)) issues.push("placeholder_detectado");
         // Score
@@ -644,9 +745,9 @@ serve(async (req: Request) => {
         const startMs = Date.now();
         let attemptCtx = ctx;
         if (attempt === 2 && lastVersion) {
-          attemptCtx = `${ctx}\n\n⚠️ TENTATIVA ${attempt}/${MAX_ATTEMPTS}. A versão anterior falhou na validação.\nProblemas: ${lastIssues.join(", ")}\nVersão anterior: "${lastVersion.frase_mnemonica}"\n\nCrie uma versão MAIS COERENTE, MAIS MEMORÁVEL e MAIS NATURAL em português brasileiro. NÃO repita literalmente os termos. Crie uma frase mais forte, clara e fácil de lembrar.`;
+          attemptCtx = `${ctx}\n\n⚠️ TENTATIVA ${attempt}/${MAX_ATTEMPTS}. A versão anterior falhou na validação.\nProblemas: ${describeIssues(lastIssues)}\nVersão anterior: "${lastVersion.frase_mnemonica}"\n\nREFAÇA com estas exigências DURA: a frase precisa ser uma micro-história completa com sujeito + verbo + consequência. Ela deve soar natural quando lida isoladamente, como uma cena de plantão ou meme clínico. NÃO repita literalmente os termos. NÃO escreva frase telegráfica.`;
         } else if (attempt === 3) {
-          attemptCtx = `${ctx}\n\n⚠️ ÚLTIMA TENTATIVA (${attempt}/${MAX_ATTEMPTS}). As tentativas anteriores falharam.\nProblemas detectados: ${lastIssues.join(", ")}\n\nFOQUE NO ESSENCIAL:\n- Crie UMA SIGLA CURTA E FORTE (até 8 letras) ou UMA FRASE CURTA (5-10 palavras)\n- Português brasileiro natural\n- Cada letra/palavra ligada a um termo\n- Explicação didática clara e direta\n- Cena visual simples mas marcante`;
+          attemptCtx = `${ctx}\n\n⚠️ ÚLTIMA TENTATIVA (${attempt}/${MAX_ATTEMPTS}). As tentativas anteriores falharam.\nProblemas detectados: ${describeIssues(lastIssues)}\n\nFOQUE NO ESSENCIAL:\n- Crie UMA FRASE CURTA E FORTE (6-12 palavras), sempre com sujeito + verbo + consequência\n- A sigla pode existir, mas NÃO substitui a frase lógica\n- Português brasileiro natural, falável, com ritmo\n- A frase deve funcionar sozinha como cena compreensível\n- Explicação didática clara e direta\n- Cena visual simples mas marcante`;
         }
 
         let candidate: MnemonicOutput | null = null;
@@ -784,6 +885,9 @@ serve(async (req: Request) => {
       // ══════════════════════════════════════
       const finalIssues: string[] = [];
       if (!mnemonic.frase_mnemonica?.trim() || mnemonic.frase_mnemonica.trim().length < 8) finalIssues.push("frase_invalida");
+      const finalSentenceAnalysis = analyzeMnemonicSentence(mnemonic.frase_mnemonica || "", payload.termos);
+      if (!finalSentenceAnalysis.hasVerb) finalIssues.push("frase_sem_verbo");
+      if (finalSentenceAnalysis.glueCount === 0 || finalSentenceAnalysis.looksTelegraphic) finalIssues.push("frase_sem_logica");
       if (!explicacaoAssoc || explicacaoAssoc.length < 20) finalIssues.push("explicacao_invalida");
       if (!cenaVisual?.trim() || cenaVisual.trim().length < 12) finalIssues.push("cena_invalida");
       if (finalIssues.length > 0) {
