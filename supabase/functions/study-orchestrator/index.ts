@@ -76,17 +76,19 @@ interface Recommendation {
 // ─────────────────────────────────────────────────────────────────────────────
 // Routing table
 // ─────────────────────────────────────────────────────────────────────────────
+// P0-bis: routes MUST exist in src/App.tsx — missing routes silently drop ?did=
+// and break the orchestrator → outcome loop. All routes here are verified.
 const ACTION_META: Record<OrchestratorAction, { route: string; mode: "inline" | "navigate" | "drawer"; cta: string }> = {
-  study_session:   { route: "/dashboard/quiz",         mode: "inline",   cta: "Começar sessão guiada" },
-  review_fsrs:     { route: "/dashboard/revisao",      mode: "navigate", cta: "Fazer revisões pendentes" },
-  error_review:    { route: "/dashboard/banco-erros",  mode: "navigate", cta: "Revisar erros recorrentes" },
-  tutor:           { route: "/dashboard/tutor",        mode: "drawer",   cta: "Falar com o Tutor IA" },
-  mnemonic:        { route: "/dashboard/mnemonico",    mode: "navigate", cta: "Ativar mnemônico" },
-  image_quiz:      { route: "/dashboard/image-quiz",   mode: "navigate", cta: "Treinar imagem clínica" },
-  simulado:        { route: "/dashboard/simulados",    mode: "navigate", cta: "Fazer um simulado" },
-  clinical_case:   { route: "/dashboard/plantao",      mode: "navigate", cta: "Atender caso clínico" },
-  planner_rebuild: { route: "/dashboard",              mode: "inline",   cta: "Gerar missão do dia" },
-  reinforcement:   { route: "/dashboard/quiz",         mode: "inline",   cta: "Reforçar tema fraco" },
+  study_session:   { route: "/dashboard/sessao-estudo",                  mode: "navigate", cta: "Começar sessão guiada" },
+  review_fsrs:     { route: "/dashboard/sessao-estudo?focus=reviews",    mode: "navigate", cta: "Fazer revisões pendentes" },
+  error_review:    { route: "/dashboard/banco-erros",                    mode: "navigate", cta: "Revisar erros recorrentes" },
+  tutor:           { route: "/dashboard/tutor",                          mode: "drawer",   cta: "Falar com o Tutor IA" },
+  mnemonic:        { route: "/dashboard/mnemonico",                      mode: "navigate", cta: "Ativar mnemônico" },
+  image_quiz:      { route: "/dashboard/image-quiz",                     mode: "navigate", cta: "Treinar imagem clínica" },
+  simulado:        { route: "/dashboard/simulados",                      mode: "navigate", cta: "Fazer um simulado" },
+  clinical_case:   { route: "/dashboard/plantao",                        mode: "navigate", cta: "Atender caso clínico" },
+  planner_rebuild: { route: "/dashboard",                                mode: "inline",   cta: "Gerar missão do dia" },
+  reinforcement:   { route: "/dashboard/sessao-estudo",                  mode: "navigate", cta: "Reforçar tema fraco" },
 };
 
 const HEAVY_ACTIONS = new Set<OrchestratorAction>(["simulado", "clinical_case", "image_quiz"]);

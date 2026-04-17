@@ -12,6 +12,7 @@ import InstitutionalRoute from "@/components/auth/InstitutionalRoute";
 import { ModuleGuard } from "@/components/guards/ModuleGuard";
 import { Suspense } from "react";
 import { Navigate } from "react-router-dom";
+import PreserveQueryNavigate from "@/components/routing/PreserveQueryNavigate";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
@@ -121,8 +122,11 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
-                <Route path="quiz" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
-                <Route path="revisoes" element={<Navigate to="/dashboard/sessao-estudo?focus=reviews" replace />} />
+                {/* P0-bis: preserve ?did= so orchestrator decisions reach the destination */}
+                <Route path="quiz" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo" />} />
+                <Route path="revisoes" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo?focus=reviews" />} />
+                <Route path="revisao" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo?focus=reviews" />} />
+                <Route path="tutor" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo" />} />
                 <Route path="flashcards" element={<Flashcards />} />
                 <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
                 <Route path="simulados" element={<Simulados />} />
