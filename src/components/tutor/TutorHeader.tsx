@@ -78,6 +78,7 @@ const TutorHeader = ({
       </DropdownMenu>
     </div>
   </div>
-);
+  );
+};
 
 export default TutorHeader;
