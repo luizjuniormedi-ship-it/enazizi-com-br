@@ -1,6 +1,7 @@
-import { Maximize2, Minimize2, MoreVertical, Plus, History, HelpCircle, LogOut, Target } from "lucide-react";
+import { Maximize2, Minimize2, MoreVertical, Plus, History, HelpCircle, LogOut, Target, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useNavigate } from "react-router-dom";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 
 interface TutorHeaderProps {
@@ -18,9 +19,20 @@ interface TutorHeaderProps {
 const TutorHeader = ({
   isFullscreen, setIsFullscreen, studyStarted, taxaAcerto,
   showHistory, setShowHistory, onFinishSession, onNewSession, onShowOnboarding,
-}: TutorHeaderProps) => (
+}: TutorHeaderProps) => {
+  const navigate = useNavigate();
+  return (
   <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
     <div className="min-w-0 flex-1 flex items-center gap-3">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => navigate("/dashboard")}
+        className="h-9 w-9 flex-shrink-0"
+        title="Voltar ao Dashboard"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </Button>
       <div className="h-14 w-11 sm:h-[4.5rem] sm:w-14 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg">
         <img src={tutorAvatar} alt="Tutor" className="h-full w-full object-contain" />
       </div>
@@ -35,6 +47,9 @@ const TutorHeader = ({
           <Target className="h-3 w-3" /> {taxaAcerto}%
         </span>
       )}
+      <Button variant="outline" size="sm" onClick={() => navigate("/dashboard")} className="h-8 gap-1 hidden sm:flex" title="Sair do Tutor">
+        <LogOut className="h-3.5 w-3.5" /> Sair
+      </Button>
       <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
         {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
       </Button>
@@ -63,6 +78,7 @@ const TutorHeader = ({
       </DropdownMenu>
     </div>
   </div>
-);
+  );
+};
 
 export default TutorHeader;
