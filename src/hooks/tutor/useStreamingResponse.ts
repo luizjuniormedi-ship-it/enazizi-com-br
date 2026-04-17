@@ -1,5 +1,6 @@
 import { useRef, useCallback } from "react";
 import type { Msg } from "@/components/tutor/TutorConstants";
+import { supabase } from "@/integrations/supabase/client";
 
 interface StreamOptions {
   url: string;
@@ -39,11 +40,14 @@ export function useStreamingResponse() {
     };
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
       const resp = await fetch(url, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
       });
