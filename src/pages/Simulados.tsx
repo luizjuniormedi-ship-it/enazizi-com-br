@@ -646,21 +646,32 @@ const Simulados = () => {
   };
 
 
-  // Auto-start quando vindo do daily-plan com contexto de prática
+  // Auto-start quando vindo do daily-plan / cockpit / banco-de-erros com contexto de prática
   useEffect(() => {
     if (
       autoStartedRef.current ||
       !studyCtx ||
       !checked ||
       pendingSession ||
-      phase !== "setup" ||
-      studyCtx.source !== "daily-plan" ||
-      studyCtx.taskType !== "practice"
+      phase !== "setup"
     ) return;
+
+    const allowedSources = new Set([
+      "daily-plan",
+      "weak-topics",
+      "error-bank",
+      "mission",
+      "planner",
+    ]);
+    if (!allowedSources.has(studyCtx.source) || studyCtx.taskType !== "practice") return;
+
+    const urlCount = Number(new URLSearchParams(window.location.search).get("sc_count"));
+    const count = Number.isFinite(urlCount) && urlCount > 0 ? urlCount : studyCtx.source === "daily-plan" ? 20 : 10;
+
     autoStartedRef.current = true;
     handleStart({
-      topics: [studyCtx.specialty || "Clínica Médica"],
-      count: 20,
+      topics: [studyCtx.specialty || studyCtx.topic || "Clínica Médica"],
+      count,
       difficulty: studyCtx.difficulty || "misto",
       timePerQuestion: 3,
       mode: "estudo",
