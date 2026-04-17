@@ -4434,45 +4434,63 @@ export type Database = {
         Row: {
           created_at: string
           decision_id: string | null
+          error_reduction: number | null
+          exploration: boolean | null
           followed: boolean | null
           id: string
           improvement_delta: number | null
           measured_at: string
+          modality: string | null
           next_action: string
           outcome: string | null
+          phase: string | null
           post_signals: Json | null
           pre_signals: Json | null
+          retention_delta: number | null
           subtopic: string | null
+          time_to_follow_seconds: number | null
           topic: string | null
           user_id: string
         }
         Insert: {
           created_at?: string
           decision_id?: string | null
+          error_reduction?: number | null
+          exploration?: boolean | null
           followed?: boolean | null
           id?: string
           improvement_delta?: number | null
           measured_at?: string
+          modality?: string | null
           next_action: string
           outcome?: string | null
+          phase?: string | null
           post_signals?: Json | null
           pre_signals?: Json | null
+          retention_delta?: number | null
           subtopic?: string | null
+          time_to_follow_seconds?: number | null
           topic?: string | null
           user_id: string
         }
         Update: {
           created_at?: string
           decision_id?: string | null
+          error_reduction?: number | null
+          exploration?: boolean | null
           followed?: boolean | null
           id?: string
           improvement_delta?: number | null
           measured_at?: string
+          modality?: string | null
           next_action?: string
           outcome?: string | null
+          phase?: string | null
           post_signals?: Json | null
           pre_signals?: Json | null
+          retention_delta?: number | null
           subtopic?: string | null
+          time_to_follow_seconds?: number | null
           topic?: string | null
           user_id?: string
         }
@@ -4489,6 +4507,8 @@ export type Database = {
       orchestrator_rule_weights: {
         Row: {
           baseline_weight: number
+          category: string | null
+          cooldown_minutes: number | null
           created_at: string
           current_weight: number
           failure_count: number
@@ -4501,6 +4521,8 @@ export type Database = {
         }
         Insert: {
           baseline_weight?: number
+          category?: string | null
+          cooldown_minutes?: number | null
           created_at?: string
           current_weight?: number
           failure_count?: number
@@ -4513,6 +4535,8 @@ export type Database = {
         }
         Update: {
           baseline_weight?: number
+          category?: string | null
+          cooldown_minutes?: number | null
           created_at?: string
           current_weight?: number
           failure_count?: number
