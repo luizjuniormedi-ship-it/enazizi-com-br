@@ -67,6 +67,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      if (session) {
+        void forceLoginRefresh(session);
+      }
     });
 
     return () => subscription.unsubscribe();
