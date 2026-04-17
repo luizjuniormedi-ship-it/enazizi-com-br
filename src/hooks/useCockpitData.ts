@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "./useAuth";
 
 export interface CockpitWeakness {
   tema: string;
@@ -77,14 +78,18 @@ export interface CockpitData {
 }
 
 export function useCockpitData() {
+  const { user } = useAuth();
+
   return useQuery<CockpitData>({
-    queryKey: ["cockpit-data"],
+    queryKey: ["cockpit-data", user?.id],
     queryFn: async () => {
       const { data, error } = await supabase.functions.invoke("cockpit-data");
       if (error) throw error;
       return data as CockpitData;
     },
+    enabled: !!user,
     staleTime: 60_000,
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
   });
 }
