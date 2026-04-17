@@ -381,10 +381,31 @@ serve(async (req) => {
             exploration,
           });
           effects.outcomeRecorded = true;
+          console.info("[study-complete] outcome recorded", {
+            userId,
+            decisionId,
+            modality,
+            wasCorrect,
+            topic: (topicId || themeId || decPayload.topic || null),
+          });
         }
       } catch (e) {
         errors.push(`outcome: ${(e as Error).message}`);
+        console.error("[study-complete] outcome insert failed", {
+          userId,
+          decisionId,
+          error: (e as Error).message,
+        });
       }
+    } else if (typeof wasCorrect === "boolean" && !decisionId) {
+      // Loud signal that the loop is open — the action was performed but
+      // there is no decisionId to attribute the outcome to. This is the
+      // single biggest leak we audited; keep it visible.
+      console.warn("[study-complete] no decisionId — outcome NOT recorded", {
+        userId,
+        actionType,
+        originModule: (metadata?.originModule as string | undefined) ?? null,
+      });
     }
 
     // ── Log decision ──
