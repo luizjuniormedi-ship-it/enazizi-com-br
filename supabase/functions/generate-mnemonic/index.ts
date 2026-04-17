@@ -687,6 +687,18 @@ serve(async (req: Request) => {
         return issues.map((issue) => ISSUE_MESSAGES[issue] ?? issue).join("; ");
       }
 
+      // Validação dura: frase sem sentido (regras do usuário)
+      function fraseSemSentido(frase: string): boolean {
+        if (!frase) return true;
+        const words = frase.trim().split(/\s+/);
+        if (words.length < 6) return true;
+        const hasVerb =
+          /\b(é|está|estão|estava|era|foi|foram|tem|tinha|sente|sentiu|aperta|apertou|dói|doe|escorre|corre|correu|irradia|irradiou|aponta|apontou|grita|gritou|dispara|disparou|sofre|sofreu|padece|padeceu|queima|queimou|desce|desceu|sobe|subiu|chega|chegou|cai|caiu|vira|virou|chora|chorou|berrou|berra|explode|explodiu|colapsa|colapsou|para|parou|salva|salvou|leva|levou|mostra|mostrou|abre|abriu|fecha|fechou|chama|chamou|avisa|avisou|toma|tomou|usa|usou|faz|fez|gera|gerou|causa|causou)\b/i.test(frase);
+        if (!hasVerb) return true;
+        if (/[,:;]{2,}/.test(frase)) return true;
+        return false;
+      }
+
       // Validador interno de qualidade
       function validateMnemonic(m: MnemonicOutput | null, termos: string[]): string[] {
         const issues: string[] = [];
@@ -717,6 +729,7 @@ serve(async (req: Request) => {
         if (sentenceAnalysis.looksTelegraphic || (!sentenceAnalysis.hasSubjectHint && sentenceAnalysis.glueCount === 0)) {
           issues.push("frase_parece_lista");
         }
+        if (fraseSemSentido(frase)) issues.push("frase_parece_lista");
         // Placeholders óbvios
         if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + expDid + " " + expAssoc)) issues.push("placeholder_detectado");
         // Score
