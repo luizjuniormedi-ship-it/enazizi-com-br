@@ -179,6 +179,18 @@ export default function MnemonicGeneratorPage() {
     }
   }, [tema, termos, estilo, publico]);
 
+  // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
+  useEffect(() => {
+    const auto = searchParams.get("auto");
+    if (auto !== "1" && auto !== "true") return;
+    if (autoTriggeredRef.current) return;
+    if (!tema || tema.trim().length < 3) return;
+    if (isLoading || result) return;
+    autoTriggeredRef.current = true;
+    const t = setTimeout(() => { handleGenerate(); }, 250);
+    return () => clearTimeout(t);
+  }, [searchParams, tema, isLoading, result, handleGenerate]);
+
   const handleCopy = useCallback(() => {
     if (!result) return;
     const parts = [
