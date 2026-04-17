@@ -225,7 +225,7 @@ Deno.serve(async (req) => {
         id: "weak-topic",
         title: `Treinar ${errors[0].tema} (${errors[0].vezes_errado} erros)`,
         cta: "Treinar agora",
-        route: `/dashboard/sessao-estudo?topic=${encodeURIComponent(errors[0].tema)}&origin=cockpit`,
+        route: `/dashboard/sessao-estudo?topic=${encodeURIComponent(errors[0].tema)}&origin=cockpit&auto=1`,
         priority: "primary",
       });
     }
@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
         id: "fsrs",
         title: `Limpar ${Math.min(fsrsDueCount, 10)} revisões vencidas`,
         cta: "Revisar",
-        route: "/dashboard/sessao-estudo?focus=reviews&origin=cockpit",
+        route: "/dashboard/sessao-estudo?focus=reviews&origin=cockpit&auto=1",
         priority: "secondary",
       });
     }
