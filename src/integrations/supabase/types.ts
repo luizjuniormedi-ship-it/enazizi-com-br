@@ -8278,6 +8278,16 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      get_classmate_profile: {
+        Args: { _target_user_id: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          faculdade: string
+          user_id: string
+          user_type: string
+        }[]
+      }
       get_image_integrity_summary: {
         Args: never
         Returns: {
@@ -8304,6 +8314,25 @@ export type Database = {
           avg_rating: number
           display_name: string
           feedback_text: string
+        }[]
+      }
+      get_ranking_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          avatar_url: string
+          consistency_rank: number
+          consistency_score: number
+          display_name: string
+          evolution_rank: number
+          evolution_score: number
+          percentile: number
+          performance_rank: number
+          performance_rank_delta: number
+          performance_score: number
+          practical_rank: number
+          practical_score: number
+          snapshot_date: string
+          user_id: string
         }[]
       }
       has_role: {
