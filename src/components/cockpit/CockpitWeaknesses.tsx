@@ -57,11 +57,19 @@ export default function CockpitWeaknesses({ weaknesses }: Props) {
                   size="sm"
                   variant="default"
                   className="h-7 text-xs gap-1"
-                  onClick={() =>
-                    navigate(
-                      `/dashboard/sessao-estudo?topic=${encodeURIComponent(w.tema)}&origin=cockpit&auto=1`,
-                    )
-                  }
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      sc_source: "weak-topics",
+                      sc_taskType: "practice",
+                      sc_objective: "practice",
+                      sc_topic: w.tema,
+                      sc_specialty: w.tema,
+                      sc_difficulty: "misto",
+                      sc_count: "10",
+                    });
+                    if (w.subtema) params.set("sc_subtopic", w.subtema);
+                    navigate(`/dashboard/simulados?${params.toString()}`);
+                  }}
                 >
                   <BookOpen className="h-3 w-3" /> Treinar
                 </Button>

@@ -221,11 +221,23 @@ Deno.serve(async (req) => {
     // Próximos passos
     const nextSteps: Array<{ id: string; title: string; cta: string; route: string; priority: "primary" | "secondary" | "quick" }> = [];
     if (errors[0]) {
+      const tema = errors[0].tema as string;
+      const subtema = errors[0].subtema as string | null | undefined;
+      const params = new URLSearchParams({
+        sc_source: "weak-topics",
+        sc_taskType: "practice",
+        sc_objective: "practice",
+        sc_topic: tema,
+        sc_specialty: tema,
+        sc_difficulty: "misto",
+        sc_count: "10",
+      });
+      if (subtema) params.set("sc_subtopic", subtema);
       nextSteps.push({
         id: "weak-topic",
-        title: `Treinar ${errors[0].tema} (${errors[0].vezes_errado} erros)`,
+        title: `Treinar ${tema} — simulado de 10 questões`,
         cta: "Treinar agora",
-        route: `/dashboard/sessao-estudo?topic=${encodeURIComponent(errors[0].tema)}&origin=cockpit&auto=1`,
+        route: `/dashboard/simulados?${params.toString()}`,
         priority: "primary",
       });
     }
