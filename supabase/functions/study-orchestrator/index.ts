@@ -119,7 +119,7 @@ serve(async (req) => {
     // ── Parallel data fetch (reuses tables already used by study-next) ──
     const [
       revisoes, fsrsDue, errorBank, dailyPlan, dailyTasks,
-      visualAttempts, mnemonicResults, lastSimulado,
+      visualAttempts, mnemonicFeedback, lastSimulado,
       approval, profile,
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) =>
@@ -158,15 +158,21 @@ serve(async (req) => {
           .gte("created_at", sevenDaysAgo)
           .limit(200),
         "visual_attempts"),
+      // Mnemonic utility lives in mnemonic_feedback (not mnemonic_results).
+      // Join via result_id → mnemonic_results to fetch tema/sigla.
       safeQuery<any[]>(db, (c) =>
-        (c.from("mnemonic_results" as any) as any)
-          .select("id, request_id, utility_score, topic, subtopic, is_latest")
-          .eq("user_id", userId).eq("is_latest", true).limit(50),
-        "mnemonic_results"),
-      safeQuery<any>(db, (c) =>
-        (c.from("simulado_results" as any) as any)
-          .select("created_at, accuracy")
+        (c.from("mnemonic_feedback" as any) as any)
+          .select("id, result_id, utility_score, mnemonic_results:result_id(id, tema, sigla, request_id, is_latest)")
           .eq("user_id", userId)
+          .not("utility_score", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        "mnemonic_feedback"),
+      // Real table name is teacher_simulado_results
+      safeQuery<any>(db, (c) =>
+        (c.from("teacher_simulado_results" as any) as any)
+          .select("created_at, score, total_questions")
+          .eq("student_id", userId)
           .order("created_at", { ascending: false }).limit(1).maybeSingle(),
         "last_simulado"),
       safeQuery<any>(db, (c) =>
@@ -226,12 +232,14 @@ serve(async (req) => {
       }
     });
 
-    // Mnemonic low utility
-    const mnemonicLowUtility = (mnemonicResults ?? [])
-      .filter((m) => typeof m.utility_score === "number" && m.utility_score < 60).length;
-    const lowUtilTop = (mnemonicResults ?? [])
-      .filter((m) => typeof m.utility_score === "number" && m.utility_score < 60)
-      .sort((a, b) => (a.utility_score ?? 0) - (b.utility_score ?? 0))[0] ?? null;
+    // Mnemonic low utility — utility_score lives in mnemonic_feedback
+    const lowUtilFeedback = (mnemonicFeedback ?? [])
+      .filter((m: any) => typeof m.utility_score === "number" && m.utility_score < 60);
+    const mnemonicLowUtility = lowUtilFeedback.length;
+    const lowUtilTop = lowUtilFeedback
+      .sort((a: any, b: any) => (a.utility_score ?? 0) - (b.utility_score ?? 0))[0] ?? null;
+    const lowUtilTopic: string | null = lowUtilTop?.mnemonic_results?.tema ?? null;
+    const lowUtilResultId: string | null = lowUtilTop?.mnemonic_results?.id ?? null;
 
     // Daily plan empty
     const dailyPlanEmpty = !dailyPlan || (dailyTasks?.length ?? 0) === 0;
@@ -316,19 +324,20 @@ serve(async (req) => {
         signals: { topErrorCategory, mnemonicLowUtility, isMem },
       });
       if (fired) {
-        const target = lowUtilTop ?? topRepeatedError;
+        const targetTopic = lowUtilTopic ?? topRepeatedError?.tema ?? null;
+        const targetSubtopic = topRepeatedError?.subtema ?? null;
         const mode: "review_existing" | "regenerate" | "create_new" =
           lowUtilTop ? "regenerate" : topRepeatedError ? "create_new" : "review_existing";
         candidates.push(safeRec("mnemonic", {
           priority: 35 + mnemonicLowUtility * 4,
           reason: lowUtilTop
             ? `Mnemônico com baixa utilidade (${lowUtilTop.utility_score}/100). Vamos refazer.`
-            : `Padrão de esquecimento em "${target?.tema ?? "tema fraco"}". Mnemônico pode fixar.`,
+            : `Padrão de esquecimento em "${targetTopic ?? "tema fraco"}". Mnemônico pode fixar.`,
           payload: {
-            topic: target?.topic ?? target?.tema,
-            subtopic: target?.subtopic ?? target?.subtema,
+            topic: targetTopic ?? undefined,
+            subtopic: targetSubtopic ?? undefined,
             mnemonicMode: mode,
-            resultId: lowUtilTop?.id,
+            resultId: lowUtilResultId ?? undefined,
           },
           confidence: 0.7,
         }));
