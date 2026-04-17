@@ -158,7 +158,7 @@ const StudySession = () => {
       const mode: StudyMode = paramFocus === "reviews" ? "review" : paramFocus === "errors" ? "correction" : "full";
       // Tiny delay so state settles before triggering
       const t = setTimeout(() => {
-        handleStyleSelect(mode);
+        handleStyleSelect(mode, paramTopic);
       }, 200);
       return () => clearTimeout(t);
     }
