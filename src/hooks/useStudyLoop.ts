@@ -295,8 +295,13 @@ export function useStudyLoop() {
     setError(null);
 
     try {
-      await queryClient.invalidateQueries({ queryKey: ["study-next"] });
-      await queryClient.invalidateQueries({ queryKey: ["analytics-snapshot"] });
+      // F2: invalidate ALL pedagogical state — orchestrator + study-next + cockpit
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["study-next"] }),
+        queryClient.invalidateQueries({ queryKey: ["study-orchestrator"] }),
+        queryClient.invalidateQueries({ queryKey: ["analytics-snapshot"] }),
+        queryClient.invalidateQueries({ queryKey: ["cockpit-data"] }),
+      ]);
 
       // Track loop completion
       const durationSeconds = sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : undefined;
