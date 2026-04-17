@@ -74,10 +74,25 @@ export default function MnemonicGeneratorPage() {
   const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // ── Deep-link from study-next ──
+  // ── Deep-link from study-next / cockpit ──
+  // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
+  const autoTriggeredRef = useRef(false);
   useEffect(() => {
-    const topicParam = searchParams.get("topic");
-    if (topicParam) setTema(topicParam);
+    const temaParam = searchParams.get("tema") || searchParams.get("topic");
+    const termosParam = searchParams.get("termos");
+    const estiloParam = searchParams.get("estilo");
+    const publicoParam = searchParams.get("publico");
+    if (temaParam) setTema(temaParam);
+    if (termosParam) {
+      // aceita separadores , ; | ou newline
+      const list = termosParam
+        .split(/[,;|\n]+/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (list.length > 0) setTermosText(list.join("\n"));
+    }
+    if (estiloParam) setEstilo(estiloParam);
+    if (publicoParam) setPublico(publicoParam);
   }, [searchParams]);
 
   const { data: errorSuggestions } = useErrorSuggestions();
