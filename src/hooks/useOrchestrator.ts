@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import type { OrchestratorResponse } from "@/types/orchestrator";
 
-async function fetchOrchestrator(shadowMode = true): Promise<OrchestratorResponse> {
+async function fetchOrchestrator(shadowMode = false): Promise<OrchestratorResponse> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error("Não autenticado");
 
@@ -32,7 +32,7 @@ interface UseOrchestratorOptions {
 export function useOrchestrator(opts: UseOrchestratorOptions = {}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const shadow = opts.shadow ?? true;
+  const shadow = opts.shadow ?? false;
   const enabled = (opts.enabled ?? true) && !!user;
 
   const query = useQuery({

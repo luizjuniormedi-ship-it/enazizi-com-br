@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import { Rocket, Sparkles, AlertTriangle, Brain, Layers } from "lucide-react";
+import { Rocket, Sparkles, AlertTriangle, Brain, Layers, Compass, RefreshCw, Zap, Battery, Target } from "lucide-react";
 import type { CockpitData } from "@/hooks/useCockpitData";
 import type { StudyNextRecommendation } from "@/hooks/useStudyNext";
 import type { OrchestratorRecommendation, OrchestratorResponse } from "@/types/orchestrator";
@@ -61,10 +61,22 @@ export default function CockpitHero({
           ? `Foque em ${cockpit.topWeaknesses[0].tema} agora`
           : "Comece sua sessão de hoje"));
 
-  const reason = orchRec?.reason ||
+  const reason = (orchRec as any)?.humanReason ||
+    orchRec?.reason ||
     justification ||
     (cockpit?.alerts?.[0]?.message ??
       "Vamos transformar suas fraquezas em pontos fortes com sessões guiadas.");
+
+  const badges = (orchRec as any)?.badges as string[] | undefined;
+  const adaptive = orchestrator?.adaptiveState as any;
+  const badgeMeta: Record<string, { label: string; icon: any; tone: string }> = {
+    exploring:           { label: "Explorando",         icon: Compass,   tone: "border-primary/30 text-primary" },
+    repetition_avoided:  { label: "Repetição evitada",  icon: RefreshCw, tone: "border-muted-foreground/30 text-muted-foreground" },
+    tutor_favored:       { label: "Modalidade favorável", icon: Zap,     tone: "border-primary/30 text-primary" },
+    high_review_urgency: { label: "Alta urgência de revisão", icon: AlertTriangle, tone: "border-destructive/40 text-destructive" },
+    fatigue_aware:       { label: "Ajustado para fadiga", icon: Battery, tone: "border-amber-500/30 text-amber-600 dark:text-amber-400" },
+    phase_aligned:       { label: "Alinhado à fase",    icon: Target,    tone: "border-primary/30 text-primary" },
+  };
 
   const handleAction = (rec: OrchestratorRecommendation) => {
     if (onAlternativeAction) return onAlternativeAction(rec);
@@ -109,6 +121,21 @@ export default function CockpitHero({
                 <Brain className="h-3 w-3" /> Orquestrador
               </Badge>
             )}
+            {adaptive?.studyPhase && adaptive.studyPhase !== "unknown" && (
+              <Badge variant="outline" className="gap-1 border-primary/20 text-primary capitalize">
+                {adaptive.studyPhase.replace("_", " ")}
+              </Badge>
+            )}
+            {badges?.map((b) => {
+              const meta = badgeMeta[b];
+              if (!meta) return null;
+              const Icon = meta.icon;
+              return (
+                <Badge key={b} variant="outline" className={`gap-1 ${meta.tone}`}>
+                  <Icon className="h-3 w-3" /> {meta.label}
+                </Badge>
+              );
+            })}
             {cockpit?.alerts?.find((a) => a.severity === "high") && (
               <Badge variant="destructive" className="gap-1">
                 <AlertTriangle className="h-3 w-3" /> Atenção
