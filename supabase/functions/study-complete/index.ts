@@ -23,6 +23,19 @@ serve(async (req) => {
 
     if (!actionType) return errorResponse("actionType is required");
 
+    // Structured entry log — makes the adaptive loop auditable end-to-end.
+    // Without this, orchestrator_outcomes filling up was a black box.
+    console.info("[study-complete] received", {
+      userId,
+      actionType,
+      topicId: topicId ?? null,
+      themeId: themeId ?? null,
+      wasCorrect: typeof wasCorrect === "boolean" ? wasCorrect : null,
+      decisionId: (metadata?.decisionId as string | undefined) ?? null,
+      originModule: (metadata?.originModule as string | undefined) ?? null,
+      source: (metadata?.source as string | undefined) ?? null,
+    });
+
     const db = getServiceClient();
     const now = new Date().toISOString();
     const today = now.slice(0, 10);
