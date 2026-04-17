@@ -6,6 +6,7 @@ import { Rocket, Sparkles, AlertTriangle, Brain, Layers } from "lucide-react";
 import type { CockpitData } from "@/hooks/useCockpitData";
 import type { StudyNextRecommendation } from "@/hooks/useStudyNext";
 import type { OrchestratorRecommendation, OrchestratorResponse } from "@/types/orchestrator";
+import { openTutorDrawer } from "@/hooks/useTutorDrawer";
 
 interface Props {
   cockpit: CockpitData | undefined;
@@ -67,6 +68,18 @@ export default function CockpitHero({
 
   const handleAction = (rec: OrchestratorRecommendation) => {
     if (onAlternativeAction) return onAlternativeAction(rec);
+    // F4 — drawer mode opens contextual Tutor without leaving the dashboard
+    if (rec.executionMode === "drawer" && rec.nextAction === "tutor") {
+      openTutorDrawer({
+        topic: rec.payload?.topic as string | undefined,
+        subtopic: rec.payload?.subtopic as string | undefined,
+        specialty: rec.payload?.specialty as string | undefined,
+        tutorPhase: rec.payload?.tutorPhase as string | undefined,
+        reason: rec.reason,
+        source: "Orquestrador",
+      });
+      return;
+    }
     const qs = buildSearchParams(rec.payload);
     navigate(`${rec.targetModule}${qs}`);
   };

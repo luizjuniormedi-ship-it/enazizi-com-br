@@ -4486,6 +4486,45 @@ export type Database = {
           },
         ]
       }
+      orchestrator_rule_weights: {
+        Row: {
+          baseline_weight: number
+          created_at: string
+          current_weight: number
+          failure_count: number
+          last_adjusted_at: string | null
+          notes: string | null
+          rule_id: string
+          rule_name: string
+          success_count: number
+          updated_at: string
+        }
+        Insert: {
+          baseline_weight?: number
+          created_at?: string
+          current_weight?: number
+          failure_count?: number
+          last_adjusted_at?: string | null
+          notes?: string | null
+          rule_id: string
+          rule_name: string
+          success_count?: number
+          updated_at?: string
+        }
+        Update: {
+          baseline_weight?: number
+          created_at?: string
+          current_weight?: number
+          failure_count?: number
+          last_adjusted_at?: string | null
+          notes?: string | null
+          rule_id?: string
+          rule_name?: string
+          success_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       organizations: {
         Row: {
           created_at: string
