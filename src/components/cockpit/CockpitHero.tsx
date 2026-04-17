@@ -30,6 +30,21 @@ function buildSearchParams(payload: Record<string, string | number | boolean | u
   return qs ? `?${qs}` : "";
 }
 
+/**
+ * P0-bis: targetModule may already contain a query string (e.g. "/dashboard/sessao-estudo?focus=reviews").
+ * Naive concat with `?did=...` would produce "?focus=reviews?did=..." (invalid → did is lost).
+ * Merge both into a single, well-formed query string.
+ */
+function appendQuery(targetModule: string, payload: Record<string, string | number | boolean | undefined>): string {
+  const [path, existingQs = ""] = targetModule.split("?");
+  const params = new URLSearchParams(existingQs);
+  for (const [k, v] of Object.entries(payload)) {
+    if (v !== undefined && v !== null && v !== "") params.set(k, String(v));
+  }
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
 export default function CockpitHero({
   cockpit,
   recommendation,
