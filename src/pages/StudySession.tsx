@@ -367,12 +367,10 @@ const StudySession = () => {
             setIsLoading(true);
             const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
             try {
+              const headers = await getStudySessionHeaders();
               const resp = await fetch(url, {
                 method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-                },
+                headers,
                 body: JSON.stringify({
                   messages: newMsgs,
                   phase: "reinforcement",
@@ -448,12 +446,10 @@ const StudySession = () => {
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
 
     try {
+      const headers = await getStudySessionHeaders();
       const resp = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
+        headers,
         body: JSON.stringify({
           messages: msgs,
           phase: currentPhase,
