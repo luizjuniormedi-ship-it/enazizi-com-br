@@ -315,8 +315,11 @@ const MedicalImageQuiz = () => {
         });
       }
 
-      // Notify study-complete
+      // Notify study-complete — closes the orchestrator adaptive loop
+      // by propagating decisionId (?did=) when the user came from a
+      // recommendation. Without this, orchestrator_outcomes stays empty.
       try {
+        const decisionId = searchParams.get("did") || undefined;
         await supabase.functions.invoke("study-complete", {
           body: {
             actionType: "image_quiz",
@@ -332,6 +335,7 @@ const MedicalImageQuiz = () => {
               difficulty: currentQuestion.difficulty,
               assetId: currentQuestion.asset_id,
               timeSeconds,
+              decisionId,
             },
           },
         });

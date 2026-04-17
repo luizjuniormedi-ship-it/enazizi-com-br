@@ -793,8 +793,13 @@ const Simulados = () => {
           if (error) console.warn("[Simulado] image_attempts insert:", error.message);
         });
 
-        // Call study-complete for each image type to update visual_skill_snapshots
+        // Call study-complete for each image type to update visual_skill_snapshots.
+        // Also propagates decisionId when the simulado was launched from an
+        // orchestrator recommendation (URL ?did=) — closes the adaptive loop.
         const imageTypes = [...new Set(imageQuestions.map((q: any) => q.image_type))];
+        const did = (typeof window !== "undefined")
+          ? new URLSearchParams(window.location.search).get("did") || undefined
+          : undefined;
         for (const imgType of imageTypes) {
           try {
             await supabase.functions.invoke("study-complete", {
@@ -806,6 +811,7 @@ const Simulados = () => {
                   originModule: "image_quiz",
                   imageType: imgType,
                   source: "simulado",
+                  decisionId: did,
                 },
               },
             });
