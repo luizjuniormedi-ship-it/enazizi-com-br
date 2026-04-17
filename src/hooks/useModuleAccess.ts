@@ -65,7 +65,7 @@ export const useModuleAccess = () => {
         // No records = all modules enabled (default for existing users)
         setEnabledModules(new Set(ALL_MODULES.map(m => m.key)));
       } else {
-        const enabled = new Set(ALL_MODULES.map(m => m.key));
+        const enabled = new Set<string>(ALL_MODULES.map(m => m.key));
 
         data.forEach((record) => {
           if (record.enabled) {
