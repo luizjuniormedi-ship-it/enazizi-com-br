@@ -2,7 +2,15 @@
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
-import { APP_RELEASE, RELEASE_KEY, buildAppRefreshUrl, removeAppRefreshQueryParams } from "./lib/app-release";
+import {
+  APP_RELEASE,
+  LOGIN_REFRESH_QUERY_KEY,
+  LOGIN_REFRESH_SIGNATURE_KEY,
+  RELEASE_KEY,
+  buildAppRefreshUrl,
+  removeAppRefreshQueryParams,
+} from "./lib/app-release";
+import { performHardAppReset, unregisterServiceWorkers } from "./lib/app-hard-reset";
 import "./index.css";
 
 const canonical = "enazizi.com";
@@ -30,20 +38,6 @@ const standaloneNavigator = navigator as Navigator & { standalone?: boolean };
 const isStandalone =
   window.matchMedia("(display-mode: standalone)").matches ||
   Boolean(standaloneNavigator.standalone);
-
-const unregisterServiceWorkers = async () => {
-  if (!("serviceWorker" in navigator)) return;
-
-  const registrations = await navigator.serviceWorker.getRegistrations();
-  await Promise.allSettled(registrations.map((registration) => registration.unregister()));
-};
-
-const clearCacheStorage = async () => {
-  if (!("caches" in window)) return;
-
-  const cacheNames = await caches.keys();
-  await Promise.allSettled(cacheNames.map((cacheName) => caches.delete(cacheName)));
-};
 
 const forceReloadWithRelease = () => {
   const reloadUrl = buildAppRefreshUrl(window.location.href);
@@ -104,12 +98,27 @@ const boot = async () => {
     return;
   }
 
+  const currentUrl = new URL(window.location.href);
+  const isLoginRefresh = currentUrl.searchParams.get(LOGIN_REFRESH_QUERY_KEY) === "1";
+  const loginRefreshSignature = sessionStorage.getItem(LOGIN_REFRESH_SIGNATURE_KEY);
+
+  if (isLoginRefresh) {
+    await performHardAppReset({
+      preserveSessionEntries: loginRefreshSignature
+        ? [[LOGIN_REFRESH_SIGNATURE_KEY, loginRefreshSignature]]
+        : [],
+    });
+  }
+
   const storedRelease = localStorage.getItem(RELEASE_KEY);
 
   if (storedRelease && storedRelease !== APP_RELEASE) {
     console.log(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
-    await unregisterServiceWorkers();
-    await clearCacheStorage();
+    await performHardAppReset({
+      preserveSessionEntries: loginRefreshSignature
+        ? [[LOGIN_REFRESH_SIGNATURE_KEY, loginRefreshSignature]]
+        : [],
+    });
     localStorage.setItem(RELEASE_KEY, APP_RELEASE);
     forceReloadWithRelease();
     return;

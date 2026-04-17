@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Brain, ClipboardList, User, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Brain, ClipboardList, User, CalendarDays, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -65,6 +65,7 @@ const BottomTabBar = () => {
   const tabs = [
     { to: "/dashboard", icon: LayoutDashboard, label: "Missão", badge: 0 },
     { to: "/dashboard/chatgpt", icon: Brain, label: "Tutor", badge: 0 },
+    { to: "/dashboard/mnemonic-studio-v2", icon: Sparkles, label: "Mnemônico", badge: 0 },
     { to: "/dashboard/gerador-questoes", icon: ClipboardList, label: "Questões", badge: 0 },
     { to: "/dashboard/simulados", icon: CalendarDays, label: "Simulados", badge: pendingCount || 0 },
     { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: unreadMessages || 0 },
@@ -80,7 +81,7 @@ const BottomTabBar = () => {
               key={tab.to}
               to={tab.to}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 flex-1 h-full text-[10px] font-medium transition-all relative group active:scale-95",
+                "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 px-1 text-[9px] font-medium leading-none transition-all group active:scale-95",
                 active ? "text-primary" : "text-muted-foreground"
               )}
             >
@@ -100,7 +101,7 @@ const BottomTabBar = () => {
                 )}
               </div>
               <span className={cn(
-                "transition-all duration-200",
+                "text-center leading-[1.05] transition-all duration-200",
                 active ? "font-semibold" : ""
               )}>
                 {tab.label}
