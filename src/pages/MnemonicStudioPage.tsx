@@ -74,10 +74,25 @@ export default function MnemonicGeneratorPage() {
   const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
-  // ── Deep-link from study-next ──
+  // ── Deep-link from study-next / cockpit ──
+  // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
+  const autoTriggeredRef = useRef(false);
   useEffect(() => {
-    const topicParam = searchParams.get("topic");
-    if (topicParam) setTema(topicParam);
+    const temaParam = searchParams.get("tema") || searchParams.get("topic");
+    const termosParam = searchParams.get("termos");
+    const estiloParam = searchParams.get("estilo");
+    const publicoParam = searchParams.get("publico");
+    if (temaParam) setTema(temaParam);
+    if (termosParam) {
+      // aceita separadores , ; | ou newline
+      const list = termosParam
+        .split(/[,;|\n]+/)
+        .map((t) => t.trim())
+        .filter(Boolean);
+      if (list.length > 0) setTermosText(list.join("\n"));
+    }
+    if (estiloParam) setEstilo(estiloParam);
+    if (publicoParam) setPublico(publicoParam);
   }, [searchParams]);
 
   const { data: errorSuggestions } = useErrorSuggestions();
@@ -163,6 +178,18 @@ export default function MnemonicGeneratorPage() {
       setIsGenerating(false);
     }
   }, [tema, termos, estilo, publico]);
+
+  // ── Auto-trigger generation when arriving via deep-link with ?auto=1 ──
+  useEffect(() => {
+    const auto = searchParams.get("auto");
+    if (auto !== "1" && auto !== "true") return;
+    if (autoTriggeredRef.current) return;
+    if (!tema || tema.trim().length < 3) return;
+    if (isLoading || result) return;
+    autoTriggeredRef.current = true;
+    const t = setTimeout(() => { handleGenerate(); }, 250);
+    return () => clearTimeout(t);
+  }, [searchParams, tema, isLoading, result, handleGenerate]);
 
   const handleCopy = useCallback(() => {
     if (!result) return;

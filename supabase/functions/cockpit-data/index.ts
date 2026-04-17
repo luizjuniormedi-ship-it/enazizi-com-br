@@ -247,11 +247,14 @@ Deno.serve(async (req) => {
         priority: "quick",
       });
     } else if (errors[0]) {
+      const e0: any = errors[0];
+      const temaCompleto = e0.subtema ? `${e0.tema} — ${e0.subtema}` : e0.tema;
       nextSteps.push({
         id: "create-mnem",
-        title: `Criar mnemônico para ${errors[0].tema}`,
-        cta: "Criar",
-        route: `/dashboard/mnemonic-studio-v2?tema=${encodeURIComponent(errors[0].tema)}`,
+        title: `Criar mnemônico para ${temaCompleto}`,
+        cta: "Criar agora",
+        // auto=1 dispara geração automática ao abrir o Studio
+        route: `/dashboard/mnemonic-studio-v2?tema=${encodeURIComponent(temaCompleto)}&auto=1`,
         priority: "quick",
       });
     }
