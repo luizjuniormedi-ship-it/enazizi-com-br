@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { useCockpitData } from "@/hooks/useCockpitData";
 import { useStudyNext } from "@/hooks/useStudyNext";
+import { useOrchestrator } from "@/hooks/useOrchestrator";
 import { useCoreData } from "@/hooks/useCoreData";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,13 +16,15 @@ import CockpitRadar from "./CockpitRadar";
 import CockpitNextSteps from "./CockpitNextSteps";
 import CockpitProfile from "./CockpitProfile";
 import CockpitVisualQuiz from "./CockpitVisualQuiz";
-import OrchestratorShadowRunner from "./OrchestratorShadowRunner";
 
 export default function CognitiveCockpit() {
   const { user } = useAuth();
   const { data: cockpit, isLoading, isError } = useCockpitData();
   const { data: studyNext } = useStudyNext();
   const { data: core } = useCoreData();
+
+  // F3: Orchestrator drives the Hero (with safe fallback to study-next)
+  const { data: orchestrator } = useOrchestrator({ shadow: false, enabled: true });
 
   const userName = (core?.profile as any)?.display_name?.split(" ")[0];
   const streak = core?.gamification?.current_streak ?? 0;
@@ -51,39 +54,31 @@ export default function CognitiveCockpit() {
 
   return (
     <div className="space-y-4">
-      {/* F1 shadow mode — runs orchestrator silently, logs decisions */}
-      <OrchestratorShadowRunner />
-
-      {/* Bloco 1 — Hero */}
+      {/* Bloco 1 — Hero (orquestrador com fallback seguro para study-next) */}
       <CockpitHero
         cockpit={cockpit}
         recommendation={studyNext?.recommendation}
         justification={studyNext?.justification ?? ""}
+        orchestrator={orchestrator ?? null}
         userName={userName}
       />
 
-      {/* Bloco 8 — Alertas (compacto) */}
       <CockpitAlerts alerts={cockpit.alerts} />
 
-      {/* Blocos 7 + 11 lado a lado */}
       <div className="grid lg:grid-cols-2 gap-4">
         <CockpitNextSteps steps={cockpit.nextSteps} />
         <CockpitVisualQuiz weaknesses={cockpit.visualWeaknesses} />
       </div>
 
-      {/* Bloco 2 — Fraquezas */}
       <CockpitWeaknesses weaknesses={cockpit.topWeaknesses} />
 
-      {/* Bloco 3 — Mnemônicos */}
       <CockpitMnemonics useful={cockpit.mnemUseful} bad={cockpit.mnemBad} />
 
-      {/* Blocos 4 + 5 lado a lado */}
       <div className="grid lg:grid-cols-2 gap-4">
         <CockpitMemory data={cockpit} />
         <CockpitPerformance data={cockpit} streak={streak} />
       </div>
 
-      {/* Blocos 6 + 9 lado a lado */}
       <div className="grid lg:grid-cols-2 gap-4">
         <CockpitRadar radar={cockpit.radar} />
         <CockpitProfile profile={cockpit.cognitiveProfile} />
