@@ -78,6 +78,8 @@ export default function CockpitHero({
     phase_aligned:       { label: "Alinhado à fase",    icon: Target,    tone: "border-primary/30 text-primary" },
   };
 
+  const decisionId = orchestrator?.decisionId;
+
   const handleAction = (rec: OrchestratorRecommendation) => {
     if (onAlternativeAction) return onAlternativeAction(rec);
     // F4 — drawer mode opens contextual Tutor without leaving the dashboard
@@ -89,10 +91,13 @@ export default function CockpitHero({
         tutorPhase: rec.payload?.tutorPhase as string | undefined,
         reason: rec.reason,
         source: "Orquestrador",
+        decisionId,
       });
       return;
     }
-    const qs = buildSearchParams(rec.payload);
+    // P0: propagate decisionId so the destination can close the adaptive loop
+    const payload = decisionId ? { ...rec.payload, did: decisionId } : rec.payload;
+    const qs = buildSearchParams(payload);
     navigate(`${rec.targetModule}${qs}`);
   };
 
