@@ -121,6 +121,8 @@ const App = () => (
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
+                <Route path="quiz" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                <Route path="revisoes" element={<Navigate to="/dashboard/sessao-estudo?focus=reviews" replace />} />
                 <Route path="flashcards" element={<Flashcards />} />
                 <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
                 <Route path="simulados" element={<Simulados />} />
