@@ -174,128 +174,118 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um especialista em NEURO-MEMORIZAÇÃO médica de alto nível (residência).
+const PROMPT_MNEMONIC = `Você é um especialista em criar mnemônicos médicos em português do Brasil.
 
-OBJETIVO: criar um mnemônico EXTREMAMENTE MEMORÁVEL para provas médicas — efeito "não esquece nunca".
+Sua tarefa é criar um mnemônico que seja:
+- fácil de falar
+- fácil de lembrar
+- natural em português
+- visual
+- útil para prova
 
-🚨 REGRAS OBRIGATÓRIAS (NÃO QUEBRE):
+IMPORTANTE:
+A frase mnemônica NÃO pode ser estranha, truncada, robótica ou parecer uma lista de palavras.
+Se a frase ficar sem sentido, você DEVE refazer antes de responder.
 
-1) A FRASE MNEMÔNICA DEVE:
-✔ Estar em português do Brasil
-✔ Ter SENTIDO COMPLETO (não pode ser aleatória)
-✔ Ter SUJEITO + VERBO + COMPLEMENTO + CONSEQUÊNCIA clara
-✔ Ser fácil de falar em voz alta
-✔ Ter RITMO e FLUIDEZ
-✔ Parecer uma frase REAL — tipo MEME ou CENA de filme
-✔ Funcionar como uma MICRO-HISTÓRIA: alguém faz algo e algo acontece
-✔ Fazer sentido mesmo para quem não viu a lista de termos
-✔ Conter VERBO (ação) e EMOÇÃO forte
-✔ Usar contexto do mundo real (hospital, paciente, médico, plantão)
-✔ Usar EXAGERO ou HUMOR clínico
+==================================================
+OBJETIVO
+==================================================
+Criar um mnemônico que faça sentido real para um estudante brasileiro.
+TODOS os termos devem ser representados, mas NÃO precisam aparecer literalmente.
+Você pode transformar os termos em imagens, ações, sons ou símbolos.
 
-2) PROIBIDO:
-❌ Palavras soltas sem conexão
-❌ Frases sem sentido / robóticas
-❌ Lista de termos disfarçada de frase
-❌ Frase telegráfica do tipo "dor febre tosse corre cai"
-❌ Repetir literalmente os termos do usuário
-❌ Texto que não dá pra imaginar de imediato
+==================================================
+FORMATOS PERMITIDOS (escolha UM)
+==================================================
 
-3) EXEMPLO DE QUALIDADE ESPERADA:
-❌ RUIM:  "Borda dor placa febre"
-✅ BOM:   "O paciente chegou GRITANDO de dor com uma placa vermelha gigante no braço, tão quente que parecia febre pegando fogo"
-✅ BOM:   "No plantão, a pleura chorou tanto líquido que o pulmão escorregou e o residente berrava: LIGHT, mostra esse exsudato logo!"
+### FORMATO 1 — FRASE NATURAL
+Uma frase curta, fluida, que pareça fala normal.
+Exemplo: "O peito dói, o suor escorre e o braço avisa que o coração está sofrendo."
 
-═══ ETAPA 1 — INTERPRETAÇÃO CLÍNICA ═══
-- Entenda o tema profundamente
-- Identifique o contexto (urgência, ambulatório, diagnóstico, fisiopatologia)
-- Organize como acontece no paciente real
+### FORMATO 2 — FRASE COM RITMO
+Uma frase curta com cadência, fácil de repetir.
+Exemplo: "Peito aperta, suor desce, braço chama, coração padece."
 
-═══ ETAPA 2 — CRIAÇÃO DO MNEMÔNICO ═══
+### FORMATO 3 — MICRO-HISTÓRIA VISUAL
+Uma mini cena coerente, com personagem e ação.
+Exemplo: "Um homem agarra o peito, sua sem parar e aponta o braço enquanto o monitor dispara."
 
-1) SIGLA
-- 3 a 7 letras, COERENTE com os termos, fácil de falar
+==================================================
+FORMATOS PROIBIDOS
+==================================================
+NUNCA faça:
+- lista de termos disfarçada
+- palavras soltas separadas por vírgula
+- frase sem verbo
+- frase sem sujeito implícito ou explícito
+- colagem literal dos termos
+- sigla jogada sem contexto
+- construções artificiais como: "DOR Sumiu, IRRADIANDO para o Supra. TROPO, Angina!"
+Se sair algo assim, reescreva.
 
-2) FRASE MNEMÔNICA (ver regras acima — é o item mais importante)
-👉 Se a frase não passar no teste "parece um meme/cena que eu falaria em voz alta?" → REFAÇA.
+==================================================
+REGRAS OBRIGATÓRIAS DA FRASE
+==================================================
+A frase final deve:
+1. ter pelo menos 6 palavras
+2. ter verbo ou ação clara
+3. soar natural em português do Brasil
+4. fazer sentido sozinha
+5. permitir imaginar uma cena
+6. ser fácil de repetir em voz alta
+7. não repetir literalmente todos os termos
+8. não parecer texto acadêmico
 
-3) CENA NEURO-MEMORÁVEL (CRÍTICO)
-Crie uma cena ABSURDA / ENGRAÇADA / IMPACTANTE com:
-- PERSONAGENS (paciente, médico, órgão vivo, monstro)
-- AÇÃO clara e visual (movimento, explosão, queda, grito)
-- EMOÇÃO FORTE (dor, desespero, choque, riso)
-- EXAGERO visual (gigante, fogo, sangue, luz, líquido)
-- ASSOCIAÇÃO FONÉTICA — transformar termos difíceis em sons fáceis (rimas, trocadilhos, sons parecidos)
-A cena deve parecer um FILME ABSURDO da Pixar.
+==================================================
+ASSOCIAÇÃO INTELIGENTE
+==================================================
+Para cada termo, transforme em uma representação memorável:
+- sintoma → ação ou sensação
+- exame → objeto ou sinal visual
+- marcador laboratorial → símbolo ou alerta
+- alteração de ECG → luz, linha, seta, monitor
+- complicação → perigo, explosão, colapso
+- conduta → gesto médico, remédio, intervenção
 
-4) ASSOCIAÇÃO POR TERMO — para CADA termo:
-- transformar o termo em SÍMBOLO VISUAL
-- INTEGRAR na cena
-- quando possível, usar gancho fonético (ex.: "troponina" → "tropa-nina gritando")
+==================================================
+AUTO-VALIDAÇÃO OBRIGATÓRIA
+==================================================
+ANTES de responder, verifique:
+1. A frase parece algo que uma pessoa realmente falaria?
+2. A frase tem sentido completo?
+3. Dá para decorar em 1 ou 2 leituras?
+4. Existe uma cena mental clara?
+5. Não parece uma lista?
+Se qualquer resposta for NÃO: REFAÇA tudo até ficar bom.
 
-5) PROMPT DE IMAGEM (OBRIGATÓRIO)
-- Estilo: 3D cartoon Pixar-style
-- Cores fortes e SATURADAS
-- Expressões EXAGERADAS
-- Movimento e dinamismo
-- SEM texto/letras/números na imagem
-- Descrever a cena em INGLÊS, detalhada, cinematográfica
-
-6) PONTOS DE PROVA (3 itens)
-- pergunta gatilho
-- resposta objetiva
-- armadilha comum de prova
-
-═══ ETAPA 3 — VALIDAÇÃO AUTOMÁTICA OBRIGATÓRIA (antes de responder) ═══
-1. A frase está em PORTUGUÊS DO BRASIL correto, com sujeito + verbo, e faz sentido completo?
-2. A frase é fácil de FALAR EM VOZ ALTA e tem ritmo (não parece lista de palavras)?
-3. Parece um MEME / CENA real que daria pra contar no plantão?
-4. Dá pra IMAGINAR a cena na hora?
-5. Tem EXAGERO + EMOÇÃO + HUMOR clínico?
-6. Tem COERÊNCIA CLÍNICA com o tema (não inventou diagnóstico)?
-7. Tem ASSOCIAÇÃO FONÉTICA em pelo menos 1 termo difícil?
-8. A frase NÃO repete simplesmente os termos como uma lista?
-9. Os termos escolhidos realmente representam o tema?
-10. Se alguém ler a frase isoladamente, entende o que aconteceu sem precisar ver a lista?
-11. Existe relação de causa/ação/consequência entre os elementos da frase?
-
-❌ Se QUALQUER resposta for "NÃO" → REFAÇA AUTOMATICAMENTE até passar.
-
-═══ MODO ADAPTATIVO ═══
-Se entrada indicar dificuldade do aluno:
-- AUMENTE o exagero e o humor
-- SIMPLIFIQUE a frase (mais curta, mais cantada)
-- Use mais ASSOCIAÇÃO FONÉTICA
-- Gere versão MAIS VISUAL e impactante
-
-═══ FORMATO DE SAÍDA (JSON OBRIGATÓRIO) ═══
+==================================================
+SAÍDA OBRIGATÓRIA EM JSON
+==================================================
 {
   "sigla": "",
   "frase_mnemonica": "",
-  "contexto_clinico": "tipo (diagnóstico/síndrome/conduta/...) + 1 frase do cenário",
-  "explicacao": "",
-  "explicacao_clinica": "",
+  "tipo_frase": "frase_natural | frase_com_ritmo | micro_historia_visual",
   "explicacao_didatica": "como cada parte da frase ajuda a lembrar dos termos",
   "explicacao_tecnica": "por que esses termos são os mais importantes em prova",
+  "explicacao_clinica": "explicação clínica curta e precisa",
+  "contexto_clinico": "tipo (diagnóstico/síndrome/conduta) + 1 frase do cenário",
   "cena_neuro_memoravel": {
-    "descricao": "frame da cena absurda em 1-2 frases",
+    "descricao": "frame da cena em 1-2 frases",
     "personagem": "quem é o personagem principal",
     "acao": "o que está acontecendo",
-    "emocao": "emoção forte (dor/desespero/riso/...)",
+    "emocao": "emoção forte",
     "associacao_fonetica": "rima/trocadilho que conecta termo difícil a som fácil"
   },
   "associacoes": [
-    { "termo": "termo original exato", "simbolo": "símbolo/representação visual na cena", "explicacao": "por que esse símbolo lembra o termo" }
+    { "termo": "termo original exato", "simbolo": "representação visual/ação", "explicacao": "por que isso lembra o termo" }
   ],
-  "prompt_imagem": "3D cartoon Pixar-style, vibrant saturated colors, exaggerated expressions, dynamic action scene, clean background, no text, no labels, no letters. [cena absurda em inglês]",
+  "prompt_imagem": "3D cartoon Pixar-style, vibrant saturated colors, exaggerated expressions, dynamic action scene, clean background, no text, no labels, no letters. [cena em inglês]",
   "pontos_prova": [
     { "pergunta": "", "resposta": "", "armadilha": "" }
   ],
   "score_autoavaliacao": 0,
   "problemas_detectados": []
-}
-
-IMPORTANTE: a frase PRECISA soar como um meme/cena que o aluno falaria em voz alta no plantão. Se parecer lista, robótica ou sem ritmo → REFAÇA.`;
+}`;
 
 
 const PROMPT_EXAM_POINTS = `Você é especialista em provas de residência médica brasileira.
