@@ -4430,6 +4430,62 @@ export type Database = {
           },
         ]
       }
+      orchestrator_outcomes: {
+        Row: {
+          created_at: string
+          decision_id: string | null
+          followed: boolean | null
+          id: string
+          improvement_delta: number | null
+          measured_at: string
+          next_action: string
+          outcome: string | null
+          post_signals: Json | null
+          pre_signals: Json | null
+          subtopic: string | null
+          topic: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decision_id?: string | null
+          followed?: boolean | null
+          id?: string
+          improvement_delta?: number | null
+          measured_at?: string
+          next_action: string
+          outcome?: string | null
+          post_signals?: Json | null
+          pre_signals?: Json | null
+          subtopic?: string | null
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decision_id?: string | null
+          followed?: boolean | null
+          id?: string
+          improvement_delta?: number | null
+          measured_at?: string
+          next_action?: string
+          outcome?: string | null
+          post_signals?: Json | null
+          pre_signals?: Json | null
+          subtopic?: string | null
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orchestrator_outcomes_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string
