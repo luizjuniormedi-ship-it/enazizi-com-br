@@ -8288,6 +8288,17 @@ export type Database = {
           user_type: string
         }[]
       }
+      get_gamification_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          avatar_url: string
+          current_streak: number
+          display_name: string
+          level: number
+          user_id: string
+          xp: number
+        }[]
+      }
       get_image_integrity_summary: {
         Args: never
         Returns: {
