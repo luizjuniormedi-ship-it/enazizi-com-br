@@ -328,6 +328,29 @@ const StudySession = () => {
       const { updateDomainMap } = await import("@/lib/updateDomainMap");
       await updateDomainMap(user.id, [{ topic, correct }]);
 
+      // ── P0: bridge to study-complete (single point of persistence) ──
+      // Feeds error_bank, FSRS card AND orchestrator_outcomes (when did is present)
+      const decisionId = searchParams.get("did") || undefined;
+      try {
+        await supabase.functions.invoke("study-complete", {
+          body: {
+            actionType: "free_study",
+            topicId: topic,
+            themeId: topic,
+            wasCorrect: correct,
+            metadata: {
+              originModule: "study-session",
+              source: "tutor-ia-mcq",
+              subtopic: searchParams.get("subtopic") || undefined,
+              decisionId,
+              errorCategory: correct ? undefined : "conceito",
+            },
+          },
+        });
+      } catch (e) {
+        console.error("study-complete bridge failed:", e);
+      }
+
       if (!correct) {
         const errorCategory = "conceito";
         await logErrorToBank({
