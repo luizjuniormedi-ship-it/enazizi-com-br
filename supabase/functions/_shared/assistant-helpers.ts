@@ -70,16 +70,23 @@ export async function logDecision(
     justification: string;
     confidence_score?: number;
   }
-): Promise<void> {
-  await db.from("assistant_decisions").insert({
-    user_id: params.user_id,
-    decision_type: params.decision_type,
-    source_module: params.source_module,
-    input_snapshot: params.input_snapshot,
-    decision_output: params.decision_output,
-    justification: params.justification,
-    confidence_score: params.confidence_score ?? null,
-  }).then(({ error }) => {
-    if (error) console.error("[Assistant] logDecision failed:", error.message);
-  });
+): Promise<{ id: string | null }> {
+  const { data, error } = await db
+    .from("assistant_decisions")
+    .insert({
+      user_id: params.user_id,
+      decision_type: params.decision_type,
+      source_module: params.source_module,
+      input_snapshot: params.input_snapshot,
+      decision_output: params.decision_output,
+      justification: params.justification,
+      confidence_score: params.confidence_score ?? null,
+    })
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[Assistant] logDecision failed:", error.message);
+    return { id: null };
+  }
+  return { id: (data as { id: string }).id };
 }

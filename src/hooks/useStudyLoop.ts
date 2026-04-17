@@ -13,6 +13,8 @@ export interface LoopContext {
   /** Resolved theme — prefers targetId > targetType > title */
   theme: string;
   subtopic?: string;
+  /** P0 — orchestrator decision id, propagated to study-complete to close the loop */
+  decisionId?: string;
 }
 
 export interface StepResult {
@@ -76,6 +78,8 @@ function buildCompletePayload(
       theme: ctx.theme,
       subtopic: ctx.subtopic || "",
       title: rec.title,
+      // P0 — closes the orchestrator loop when this loop was triggered by a recommendation
+      decisionId: ctx.decisionId,
     },
   };
 }
@@ -139,9 +143,14 @@ export function useStudyLoop() {
   const loopSessionIdRef = useRef<string>(crypto.randomUUID());
 
   /* ─── Start mission ─── */
-  const startMission = useCallback((rec: StudyNextRecommendation) => {
+  const startMission = useCallback((rec: StudyNextRecommendation, opts?: { decisionId?: string }) => {
     const theme = resolveTheme(rec);
-    setContext({ recommendation: rec, theme, subtopic: rec.targetType !== theme ? rec.targetType : undefined });
+    setContext({
+      recommendation: rec,
+      theme,
+      subtopic: rec.targetType !== theme ? rec.targetType : undefined,
+      decisionId: opts?.decisionId,
+    });
     setResult(null);
     setError(null);
     reinforceCountRef.current = 0;
