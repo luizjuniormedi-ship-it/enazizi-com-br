@@ -305,47 +305,70 @@ serve(async (req) => {
     // came from an orchestrator recommendation (decisionId in metadata), we
     // also write an orchestrator_outcomes row so F9/F10 (effectiveness +
     // exploration) can actually learn. No parallel logic anywhere else.
+    //
+    // Idempotency: if an outcome row already exists for this decision_id we
+    // do NOT insert a duplicate — the first answer is the canonical one.
     const decisionId = (metadata?.decisionId as string | undefined) ?? undefined;
     if (decisionId && typeof wasCorrect === "boolean") {
       try {
-        const { data: decision } = await db
-          .from("assistant_decisions")
-          .select("decision_output, input_snapshot")
-          .eq("id", decisionId).eq("user_id", userId).maybeSingle();
+        const { data: existingOutcome } = await db
+          .from("orchestrator_outcomes")
+          .select("id")
+          .eq("decision_id", decisionId)
+          .eq("user_id", userId)
+          .maybeSingle();
 
-        const decOut = (decision?.decision_output ?? {}) as Record<string, unknown>;
-        const decIn = (decision?.input_snapshot ?? {}) as Record<string, unknown>;
-        const adaptive = (decIn.adaptiveState ?? {}) as Record<string, unknown>;
-        const decPayload = (decOut.payload ?? {}) as Record<string, unknown>;
-        const badges = Array.isArray(decOut.badges) ? (decOut.badges as string[]) : [];
+        if (existingOutcome) {
+          effects.outcomeRecorded = true;
+          effects.outcomeAlreadyExisted = true;
+        } else {
+          const { data: decision } = await db
+            .from("assistant_decisions")
+            .select("decision_output, input_snapshot")
+            .eq("id", decisionId).eq("user_id", userId).maybeSingle();
 
-        const modality = (decOut.nextAction as string | undefined) ?? actionType;
-        const phase = (adaptive.studyPhase as string | undefined) ?? null;
-        const exploration = badges.includes("exploring");
+          const decOut = (decision?.decision_output ?? {}) as Record<string, unknown>;
+          const decIn = (decision?.input_snapshot ?? {}) as Record<string, unknown>;
+          const adaptive = (decIn.adaptiveState ?? {}) as Record<string, unknown>;
+          const decPayload = (decOut.payload ?? {}) as Record<string, unknown>;
+          const badges = Array.isArray(decOut.badges) ? (decOut.badges as string[]) : [];
 
-        // Minimal viable improvement_delta: ±1 carries the F9 moving average
-        const improvementDelta = wasCorrect ? 1 : -1;
-        const errorReduction = wasCorrect ? 1 : 0;
+          const modality = (decOut.nextAction as string | undefined) ?? actionType;
+          const phase = (adaptive.studyPhase as string | undefined) ?? null;
+          const exploration = badges.includes("exploring");
 
-        await db.from("orchestrator_outcomes").insert({
-          user_id: userId,
-          decision_id: decisionId,
-          next_action: modality,
-          topic: (topicId || themeId || decPayload.topic || null) as string | null,
-          subtopic: (subtopicId || metadata?.subtopic || decPayload.subtopic || null) as string | null,
-          followed: true,
-          outcome: wasCorrect ? "correct" : "wrong",
-          pre_signals: {},
-          post_signals: { effects, durationSeconds: durationSeconds ?? null },
-          improvement_delta: improvementDelta,
-          retention_delta: null,
-          error_reduction: errorReduction,
-          time_to_follow_seconds: typeof durationSeconds === "number" ? durationSeconds : null,
-          modality,
-          phase,
-          exploration,
-        });
-        effects.outcomeRecorded = true;
+          // Minimal viable improvement_delta: ±1 carries the F9 moving average.
+          // retention_delta is computed asynchronously by the FSRS recalc job
+          // (see future TODO). Leaving null here is acceptable — F9 weights it
+          // only when present.
+          const improvementDelta = wasCorrect ? 1 : -1;
+          const errorReduction = wasCorrect ? 1 : 0;
+
+          await db.from("orchestrator_outcomes").insert({
+            user_id: userId,
+            decision_id: decisionId,
+            next_action: modality,
+            topic: (topicId || themeId || decPayload.topic || null) as string | null,
+            subtopic: (subtopicId || metadata?.subtopic || decPayload.subtopic || null) as string | null,
+            followed: true,
+            outcome: wasCorrect ? "correct" : "wrong",
+            pre_signals: {},
+            post_signals: {
+              effects,
+              durationSeconds: durationSeconds ?? null,
+              signalConfidence: (metadata?.confidence as number | undefined) ?? null,
+              signalCategory: (metadata?.errorCategory as string | undefined) ?? null,
+            },
+            improvement_delta: improvementDelta,
+            retention_delta: null,
+            error_reduction: errorReduction,
+            time_to_follow_seconds: typeof durationSeconds === "number" ? durationSeconds : null,
+            modality,
+            phase,
+            exploration,
+          });
+          effects.outcomeRecorded = true;
+        }
       } catch (e) {
         errors.push(`outcome: ${(e as Error).message}`);
       }

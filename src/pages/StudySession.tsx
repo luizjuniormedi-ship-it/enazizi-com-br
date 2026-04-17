@@ -23,6 +23,11 @@ import ReactMarkdown from "react-markdown";
 
 import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
 import TutorChatPanel from "@/components/study/TutorChatPanel";
+import { parseStudySignal, stripStudySignal, type StudySignal } from "@/lib/parseStudySignal";
+import {
+  invokeStudyCompleteWithRetry,
+  flushStudyCompleteQueue,
+} from "@/lib/studyCompleteRetryQueue";
 
 type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring" | "reinforcement";
 type Msg = { role: "user" | "assistant"; content: string };
@@ -209,6 +214,16 @@ const StudySession = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Drain any pending study-complete retries from past failures (network, reload).
+  useEffect(() => {
+    if (!user) return;
+    flushStudyCompleteQueue()
+      .then((r) => {
+        if (r.flushed > 0) console.info(`[StudySession] flushed ${r.flushed} pending study-complete retries`);
+      })
+      .catch(() => {});
+  }, [user]);
+
   // Load performance from real database
   useEffect(() => {
     if (!user) return;
@@ -307,61 +322,59 @@ const StudySession = () => {
     }
   }, [user]);
 
-  // Detect MCQ answers in assistant responses and register practice_attempts
+  // Detect MCQ answers using STRUCTURED SIGNAL (no more emoji/regex).
+  // The edge function `study-session` injects a <!--SIGNAL-->{...}<!--/SIGNAL--> block
+  // at the end of correction messages. We trust ONLY that block.
   const detectAndRegisterMCQ = useCallback(async (assistantContent: string, userAnswer: string) => {
     if (!user || !topic) return;
-    // Check if user sent a single letter answer (A-E)
-    const answerMatch = userAnswer.trim().match(/^[A-Ea-e]$/);
-    if (!answerMatch) return;
 
-    // Check if assistant response contains correction indicators
-    const content = assistantContent.toLowerCase();
-    const isCorrect = content.includes("✅") || content.includes("correta") || content.includes("acertou") || content.includes("parabéns");
-    const isWrong = content.includes("❌") || content.includes("incorreta") || content.includes("errou") || content.includes("não é a alternativa");
+    const signal: StudySignal | null = parseStudySignal(assistantContent);
+    if (!signal) {
+      // No structured signal → don't fabricate a pedagogical signal from text.
+      // We log the miss so we can audit prompt drift later.
+      const looksLikeAnswer = /^[A-Ea-e]$/.test(userAnswer.trim());
+      if (looksLikeAnswer) {
+        console.warn("[StudySession] missing SIGNAL block on correction message");
+      }
+      return;
+    }
+    if (signal.confidence < 0.4) {
+      console.warn("[StudySession] SIGNAL confidence too low — skipping persistence", signal);
+      return;
+    }
 
-    if (!isCorrect && !isWrong) return;
-    const correct = isCorrect && !isWrong;
+    const correct = signal.wasCorrect;
+    const subtopic = signal.subtopic || searchParams.get("subtopic") || undefined;
+    const errorCategory = signal.errorCategory;
 
     try {
-      // We need a question_id — use a generated one based on conversation context
-      // Instead, update domain map and error bank directly
+      // Update local domain map (lightweight; not adaptive critical-path)
       const { updateDomainMap } = await import("@/lib/updateDomainMap");
       await updateDomainMap(user.id, [{ topic, correct }]);
 
-      // ── P0: bridge to study-complete (single point of persistence) ──
-      // Feeds error_bank, FSRS card AND orchestrator_outcomes (when did is present)
+      // ── SINGLE point of persistence: study-complete ──
+      // Feeds error_bank, FSRS card, temas_estudados AND orchestrator_outcomes
+      // (when decisionId is present). Has its own retry queue on failure.
       const decisionId = searchParams.get("did") || undefined;
-      try {
-        await supabase.functions.invoke("study-complete", {
-          body: {
-            actionType: "free_study",
-            topicId: topic,
-            themeId: topic,
-            wasCorrect: correct,
-            metadata: {
-              originModule: "study-session",
-              source: "tutor-ia-mcq",
-              subtopic: searchParams.get("subtopic") || undefined,
-              decisionId,
-              errorCategory: correct ? undefined : "conceito",
-            },
-          },
-        });
-      } catch (e) {
-        console.error("study-complete bridge failed:", e);
-      }
+      await invokeStudyCompleteWithRetry({
+        actionType: "free_study",
+        topicId: topic,
+        themeId: topic,
+        wasCorrect: correct,
+        metadata: {
+          originModule: "study-session",
+          source: "tutor-ia-mcq",
+          subtopic,
+          decisionId,
+          errorCategory: correct ? undefined : errorCategory,
+          questionText: signal.feedbackShort,
+          confidence: signal.confidence,
+          correctLetter: signal.correctLetter,
+          detectedAnswer: signal.detectedAnswer,
+        },
+      });
 
-      if (!correct) {
-        const errorCategory = "conceito";
-        await logErrorToBank({
-          userId: user.id,
-          tema: topic,
-          tipoQuestao: "objetiva",
-          conteudo: `Questão MCQ do Tutor IA sobre ${topic}`,
-          motivoErro: "Erro em questão objetiva durante sessão de estudo",
-          categoriaErro: errorCategory,
-        });
-
+      if (!correct && signal.shouldReinforce) {
         // Trigger reinforcement loop if under max cycles
         const currentCycles = reinforcementCycles[topic] || 0;
         if (currentCycles < 2 && phase !== "reinforcement") {
@@ -369,7 +382,6 @@ const StudySession = () => {
           setReinforcementCycles(prev => ({ ...prev, [topic]: nextCycle }));
           setPreReinforcementPhase(phase);
 
-          // Short delay so the user reads the correction first
           setTimeout(async () => {
             setPhase("reinforcement");
             const reinforceMsg: Msg = {
@@ -379,13 +391,12 @@ const StudySession = () => {
             const newMsgs = [...messages, { role: "assistant" as const, content: assistantContent }, reinforceMsg];
             setMessages(newMsgs);
 
-            // Pass reinforcement context in performanceData
             const reinforcementPerf = {
               ...performance,
               reinforcement: {
                 topic,
                 categoriaErro: errorCategory,
-                content: assistantContent.slice(0, 500),
+                content: (signal.feedbackDetailed || assistantContent).slice(0, 500),
                 cycle: nextCycle,
               },
             };
@@ -464,7 +475,7 @@ const StudySession = () => {
     } catch (err) {
       console.error("Error registering MCQ attempt:", err);
     }
-  }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode, searchParams]);
+  }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode, searchParams, getStudySessionHeaders, targetExam]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
     setIsLoading(true);
@@ -532,23 +543,17 @@ const StudySession = () => {
           } catch {}
         }
       }
-      // After streaming completes, check if this was an MCQ answer
+      // After streaming completes, check if this was an MCQ answer.
+      // We trust ONLY the structured SIGNAL block — never emoji/regex.
       const lastUserMsg = msgs[msgs.length - 1];
       if (lastUserMsg?.role === "user" && assistantContent) {
         if (currentPhase === "reinforcement") {
-          // Check if reinforcement question was answered correctly
-          const answerMatch = lastUserMsg.content.trim().match(/^[A-Ea-e]$/);
-          if (answerMatch) {
-            const lower = assistantContent.toLowerCase();
-            const wasCorrect = (lower.includes("✅") || lower.includes("correta") || lower.includes("acertou")) && !(lower.includes("❌") || lower.includes("incorreta"));
-            if (wasCorrect) {
-              // Success! Return to previous phase after a beat
-              toast({ title: "✅ Conceito corrigido!", description: "Você fixou o ponto. Continuando..." });
-              setTimeout(() => setPhase(preReinforcementPhase), 2000);
-            }
-            // If wrong again and under limit, detectAndRegisterMCQ will trigger another cycle
-            detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
+          const signal = parseStudySignal(assistantContent);
+          if (signal && signal.wasCorrect && signal.confidence >= 0.5) {
+            toast({ title: "✅ Conceito corrigido!", description: "Você fixou o ponto. Continuando..." });
+            setTimeout(() => setPhase(preReinforcementPhase), 2000);
           }
+          detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
         } else if (currentPhase === "questions" || currentPhase === "discussion") {
           detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
         }
@@ -939,7 +944,7 @@ const StudySession = () => {
                   >
                     {m.role === "assistant" ? (
                       <div className="prose prose-sm prose-invert max-w-none [&_table]:text-xs [&_th]:px-2 [&_td]:px-2">
-                        <ReactMarkdown>{m.content}</ReactMarkdown>
+                        <ReactMarkdown>{stripStudySignal(m.content)}</ReactMarkdown>
                       </div>
                     ) : (
                       m.content

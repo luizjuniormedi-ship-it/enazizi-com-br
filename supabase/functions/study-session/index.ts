@@ -63,6 +63,44 @@ REGRA DE REFORÇO POR ERRO:
 - Ao retomar: use ângulo diferente (se errou diagnóstico → foque em conduta; se errou conduta → foque em complicações)`;
 }
 
+/**
+ * STRUCTURED SIGNAL CONTRACT
+ * Whenever the AI corrects an objective answer (MCQ A–E), it MUST append a
+ * machine-readable SIGNAL block at the end of its message. The frontend uses
+ * this block (NOT regex on emojis) to update error_bank, FSRS and outcomes.
+ */
+const STRUCTURED_SIGNAL_BLOCK = `
+==================================================
+SINAL ESTRUTURADO OBRIGATÓRIO (NÃO REMOVER)
+==================================================
+SEMPRE QUE você corrigir uma resposta objetiva do aluno (letra A–E) ou
+avaliar acerto/erro de uma questão de verificação, ANEXE no FINAL da
+mensagem (após todo o feedback humano) o seguinte bloco — exatamente neste
+formato, em UMA ÚNICA linha de JSON, entre os marcadores HTML comments:
+
+<!--SIGNAL-->
+{"wasCorrect":true,"correctLetter":"B","detectedAnswer":"A","errorCategory":"conceitual","subtopic":"","topic":"","confidence":0.9,"feedbackShort":"","feedbackDetailed":"","shouldReinforce":true,"recommendedNextStep":"review"}
+<!--/SIGNAL-->
+
+REGRAS DO BLOCO:
+- "wasCorrect" boolean (obrigatório)
+- "correctLetter" letra A–E da alternativa correta
+- "detectedAnswer" letra A–E que o aluno respondeu
+- "errorCategory" um de: conceitual | memorizacao | interpretacao | atencao | desconhecido
+- "subtopic" subtema clínico específico (ex: "tratamento da pneumonia comunitária")
+- "topic" tema geral
+- "confidence" sua confiança na classificação (0.0 a 1.0). Se não tiver certeza, use < 0.5 e errorCategory "desconhecido".
+- "feedbackShort" 1 frase resumindo a correção
+- "shouldReinforce" true se vale acionar reforço
+- "recommendedNextStep" um de: review | tutor | mnemonic | image_quiz | continue
+
+CRÍTICO:
+- O bloco SIGNAL deve aparecer SOMENTE quando há correção objetiva (não em explicações teóricas).
+- O texto humano acima do bloco continua livre, didático e formatado normalmente.
+- O bloco DEVE ser válido JSON em uma linha. NUNCA quebre linhas dentro dele.
+- NUNCA mostre o bloco como código visível para o aluno — ele é HTML comment.
+`;
+
 function getPhasePrompt(phase: string, topic: string, performanceData: unknown, studyMode?: string): string {
   const levelPrompt = getLevelPrompt(performanceData);
   const weakTopicsPrompt = getWeakTopicsPrompt(performanceData);
@@ -465,6 +503,13 @@ serve(async (req) => {
     // Inject banca-specific adaptation
     const bancaProfile = getBancaProfile(targetExam);
     systemPrompt += buildBancaBlock(bancaProfile);
+
+    // Inject the structured-signal contract for any phase that may correct
+    // objective answers. The block is harmless in pure-teaching phases (the
+    // model just won't emit it).
+    if (["questions", "discussion", "reinforcement", "active-recall", "lesson"].includes(phase)) {
+      systemPrompt += "\n" + STRUCTURED_SIGNAL_BLOCK;
+    }
 
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
