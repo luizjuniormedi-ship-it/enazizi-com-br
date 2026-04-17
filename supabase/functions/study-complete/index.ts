@@ -68,6 +68,86 @@ serve(async (req) => {
       if (!error) effects.themeTracked = true;
     }
 
+    // ── 4b. Feed error_bank when answer was wrong (F2: Sessão alimenta cérebro) ──
+    if (wasCorrect === false && (topicId || themeId)) {
+      const tema = (topicId || themeId) as string;
+      const subtema = (subtopicId || metadata?.subtopic) as string | undefined;
+      const categoria = (metadata?.errorCategory as string | undefined) || "conceitual";
+      try {
+        // Upsert pattern: try to find existing then increment vezes_errado
+        const { data: existing } = await db.from("error_bank")
+          .select("id, vezes_errado")
+          .eq("user_id", userId).eq("tema", tema)
+          .eq("dominado", false)
+          .order("updated_at", { ascending: false })
+          .limit(1).maybeSingle();
+        if (existing) {
+          await db.from("error_bank")
+            .update({
+              vezes_errado: (existing.vezes_errado ?? 0) + 1,
+              updated_at: now,
+              ...(subtema ? { subtema } : {}),
+              categoria_erro: categoria,
+            })
+            .eq("id", existing.id);
+        } else {
+          await db.from("error_bank").insert({
+            user_id: userId,
+            tema,
+            subtema: subtema ?? null,
+            categoria_erro: categoria,
+            tipo_questao: actionType === "image_quiz" ? "imagem" : "objetiva",
+            conteudo: (metadata?.questionText as string | undefined) ?? null,
+            motivo_erro: (metadata?.errorReason as string | undefined) ?? null,
+            dificuldade: (metadata?.difficulty as number | undefined) ?? 3,
+            vezes_errado: 1,
+          });
+        }
+        effects.errorBankFed = true;
+      } catch (e) {
+        errors.push(`error_bank_feed: ${(e as Error).message}`);
+      }
+    }
+
+    // ── 4c. Feed FSRS card when there's a correct/wrong outcome (F2) ──
+    if (typeof wasCorrect === "boolean" && (topicId || themeId)) {
+      const cardRefId = (topicId || themeId) as string;
+      try {
+        const { data: existing } = await db.from("fsrs_cards")
+          .select("id, reps, lapses, stability, state")
+          .eq("user_id", userId)
+          .eq("card_type", "topic")
+          .eq("card_ref_id", cardRefId)
+          .maybeSingle();
+        // Lightweight FSRS-like update (full FSRS lives in dedicated function).
+        // Here we just keep the card alive so review_fsrs rule can fire.
+        const reps = (existing?.reps ?? 0) + 1;
+        const lapses = (existing?.lapses ?? 0) + (wasCorrect ? 0 : 1);
+        const stability = wasCorrect
+          ? Math.min(60, (existing?.stability ?? 0.4) * 1.6)
+          : Math.max(0.2, (existing?.stability ?? 0.4) * 0.6);
+        const dueOffsetDays = wasCorrect ? Math.max(1, Math.round(stability)) : 1;
+        const due = new Date(Date.now() + dueOffsetDays * 86_400_000).toISOString();
+        if (existing) {
+          await db.from("fsrs_cards").update({
+            reps, lapses, stability, due,
+            last_review: now, state: wasCorrect ? 2 : 3, updated_at: now,
+          }).eq("id", existing.id);
+        } else {
+          await db.from("fsrs_cards").insert({
+            user_id: userId,
+            card_type: "topic",
+            card_ref_id: cardRefId,
+            reps, lapses, stability,
+            due, last_review: now,
+            state: wasCorrect ? 2 : 3,
+          });
+        }
+        effects.fsrsUpdated = true;
+      } catch (e) {
+        errors.push(`fsrs_feed: ${(e as Error).message}`);
+      }
+    }
     // ── 5. Record study action event ──
     await db.from("study_action_events").insert({
       user_id: userId,
