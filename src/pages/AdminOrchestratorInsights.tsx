@@ -224,6 +224,35 @@ export default function AdminOrchestratorInsights() {
     .filter((m) => m.avgImprovement != null)
     .sort((a, b) => (a.avgImprovement ?? 0) - (b.avgImprovement ?? 0))[0];
 
+  const lastDecision = decisionsQuery.data?.rows?.[0];
+  const lastOutcome = outcomesQuery.data?.rows?.[0];
+
+  // Extra signals
+  const modalityStats = outcomesQuery.data?.modalityStats ?? [];
+  const totalOutcomesSample = modalityStats.reduce((a, m) => a + m.total, 0);
+  const topModalityShare = totalOutcomesSample > 0
+    ? (modalityStats[0]?.total ?? 0) / totalOutcomesSample
+    : 0;
+  const explorationCount = (outcomesQuery.data?.rows ?? []).filter((r: any) => r.exploration === true).length;
+  const explorationRate = (outcomesQuery.data?.rows?.length ?? 0) > 0
+    ? explorationCount / (outcomesQuery.data!.rows.length)
+    : 0;
+  const heaviestRule = (weightsQuery.data ?? [])[0];
+  const lightestRule = (weightsQuery.data ?? [])[(weightsQuery.data ?? []).length - 1];
+
+  const alerts: Array<{ kind: "red" | "yellow" | "green"; msg: string }> = [];
+  if (totalOut7d === 0) alerts.push({ kind: "red", msg: "Nenhum outcome registrado nos últimos 7d" });
+  if ((completesQuery.data?.withDid ?? 0) === 0 && (completesQuery.data?.rows.length ?? 0) > 0)
+    alerts.push({ kind: "red", msg: "Zero study_complete chegando com decisionId" });
+  if (totalDec7d > 0 && conversion < 0.1)
+    alerts.push({ kind: "yellow", msg: `Conversão decisão→outcome baixa (${fmtPct(conversion)})` });
+  if (topModalityShare > 0.7 && totalOutcomesSample >= 10)
+    alerts.push({ kind: "yellow", msg: `Outcomes muito concentrados em ${modalityStats[0]?.modality} (${fmtPct(topModalityShare)})` });
+  if (totalOutcomesSample >= 10 && (explorationRate < 0.05 || explorationRate > 0.4))
+    alerts.push({ kind: "yellow", msg: `Exploração fora da faixa saudável (${fmtPct(explorationRate)})` });
+  if (alerts.length === 0 && totalOut7d > 0)
+    alerts.push({ kind: "green", msg: "Ciclo adaptativo saudável — outcomes chegando, pesos vivos" });
+
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
