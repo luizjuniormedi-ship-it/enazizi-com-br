@@ -57,7 +57,11 @@ export default function CockpitWeaknesses({ weaknesses }: Props) {
                   size="sm"
                   variant="default"
                   className="h-7 text-xs gap-1"
-                  onClick={() => navigate(`/dashboard/quiz?tema=${encodeURIComponent(w.tema)}`)}
+                  onClick={() =>
+                    navigate(
+                      `/dashboard/sessao-estudo?topic=${encodeURIComponent(w.tema)}&origin=cockpit&auto=1`,
+                    )
+                  }
                 >
                   <BookOpen className="h-3 w-3" /> Treinar
                 </Button>
@@ -76,7 +80,11 @@ export default function CockpitWeaknesses({ weaknesses }: Props) {
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs gap-1"
-                  onClick={() => navigate(`/dashboard/revisoes?tema=${encodeURIComponent(w.tema)}`)}
+                  onClick={() =>
+                    navigate(
+                      `/dashboard/sessao-estudo?topic=${encodeURIComponent(w.tema)}&focus=reviews&origin=cockpit&auto=1`,
+                    )
+                  }
                 >
                   <RefreshCw className="h-3 w-3" /> Revisar
                 </Button>
