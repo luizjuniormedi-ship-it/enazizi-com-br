@@ -43,38 +43,24 @@ const Rankings = () => {
 
   useEffect(() => {
     const load = async () => {
-      const today = new Date().toISOString().split("T")[0];
-
-      const { data: snapshots } = await supabase
-        .from("ranking_snapshots")
-        .select("*")
-        .eq("snapshot_date", today)
-        .order("performance_rank", { ascending: true })
-        .limit(100);
+      // Public leaderboard via secure RPC (no sensitive fields exposed)
+      const { data: snapshots } = await supabase.rpc("get_ranking_leaderboard", { _limit: 100 });
 
       if (!snapshots || snapshots.length === 0) {
         setLoading(false);
         return;
       }
 
-      // Fetch display names
-      const userIds = snapshots.map((s: any) => s.user_id);
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("user_id, display_name")
-        .in("user_id", userIds);
-
-      const nameMap = new Map((profiles || []).map((p: any) => [p.user_id, p.display_name || "Anônimo"]));
-
-      const buildRanking = (scoreKey: string, rankKey: string, deltaKey: string): RankingEntry[] => {
+      const buildRanking = (scoreKey: string, rankKey: string, deltaKey?: string): RankingEntry[] => {
         return [...snapshots]
+          .filter((s: any) => (s as any)[rankKey] != null)
           .sort((a: any, b: any) => (a as any)[rankKey] - (b as any)[rankKey])
           .map((s: any) => ({
             user_id: s.user_id,
-            display_name: nameMap.get(s.user_id) || "Anônimo",
-            score: Math.round((s as any)[scoreKey]),
+            display_name: s.display_name || "Anônimo",
+            score: Math.round((s as any)[scoreKey] ?? 0),
             rank: (s as any)[rankKey],
-            rank_delta: (s as any)[deltaKey] || 0,
+            rank_delta: deltaKey ? ((s as any)[deltaKey] || 0) : 0,
           }));
       };
 
