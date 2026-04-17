@@ -224,6 +224,35 @@ export default function AdminOrchestratorInsights() {
     .filter((m) => m.avgImprovement != null)
     .sort((a, b) => (a.avgImprovement ?? 0) - (b.avgImprovement ?? 0))[0];
 
+  const lastDecision = decisionsQuery.data?.rows?.[0];
+  const lastOutcome = outcomesQuery.data?.rows?.[0];
+
+  // Extra signals
+  const modalityStats = outcomesQuery.data?.modalityStats ?? [];
+  const totalOutcomesSample = modalityStats.reduce((a, m) => a + m.total, 0);
+  const topModalityShare = totalOutcomesSample > 0
+    ? (modalityStats[0]?.total ?? 0) / totalOutcomesSample
+    : 0;
+  const explorationCount = (outcomesQuery.data?.rows ?? []).filter((r: any) => r.exploration === true).length;
+  const explorationRate = (outcomesQuery.data?.rows?.length ?? 0) > 0
+    ? explorationCount / (outcomesQuery.data!.rows.length)
+    : 0;
+  const heaviestRule = (weightsQuery.data ?? [])[0];
+  const lightestRule = (weightsQuery.data ?? [])[(weightsQuery.data ?? []).length - 1];
+
+  const alerts: Array<{ kind: "red" | "yellow" | "green"; msg: string }> = [];
+  if (totalOut7d === 0) alerts.push({ kind: "red", msg: "Nenhum outcome registrado nos últimos 7d" });
+  if ((completesQuery.data?.withDid ?? 0) === 0 && (completesQuery.data?.rows.length ?? 0) > 0)
+    alerts.push({ kind: "red", msg: "Zero study_complete chegando com decisionId" });
+  if (totalDec7d > 0 && conversion < 0.1)
+    alerts.push({ kind: "yellow", msg: `Conversão decisão→outcome baixa (${fmtPct(conversion)})` });
+  if (topModalityShare > 0.7 && totalOutcomesSample >= 10)
+    alerts.push({ kind: "yellow", msg: `Outcomes muito concentrados em ${modalityStats[0]?.modality} (${fmtPct(topModalityShare)})` });
+  if (totalOutcomesSample >= 10 && (explorationRate < 0.05 || explorationRate > 0.4))
+    alerts.push({ kind: "yellow", msg: `Exploração fora da faixa saudável (${fmtPct(explorationRate)})` });
+  if (alerts.length === 0 && totalOut7d > 0)
+    alerts.push({ kind: "green", msg: "Ciclo adaptativo saudável — outcomes chegando, pesos vivos" });
+
   return (
     <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -285,13 +314,126 @@ export default function AdminOrchestratorInsights() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="decisions">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full">
+      {/* ALERTAS */}
+      {alerts.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {alerts.map((a, i) => (
+            <div
+              key={i}
+              className={`text-xs rounded-md border px-3 py-2 flex items-center gap-2 ${
+                a.kind === "red"
+                  ? "border-destructive/40 bg-destructive/5 text-destructive"
+                  : a.kind === "yellow"
+                  ? "border-yellow-500/40 bg-yellow-500/5"
+                  : "border-green-500/40 bg-green-500/5"
+              }`}
+            >
+              <span>{a.kind === "red" ? "🔴" : a.kind === "yellow" ? "🟡" : "🟢"}</span>
+              <span>{a.msg}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Tabs defaultValue="overview">
+        <TabsList className="grid grid-cols-3 md:grid-cols-6 w-full">
+          <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="decisions">Decisões</TabsTrigger>
           <TabsTrigger value="executions">Execução</TabsTrigger>
           <TabsTrigger value="outcomes">Outcomes</TabsTrigger>
           <TabsTrigger value="learning">Aprendizado</TabsTrigger>
+          <TabsTrigger value="debug">Debug</TabsTrigger>
         </TabsList>
+
+        {/* TAB 0: OVERVIEW */}
+        <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Kpi label="Decisões 7d" value={totalDec7d} icon={<Cpu className="h-4 w-4" />} />
+            <Kpi label="Decisões 30d" value={decisionsQuery.data?.count30d ?? 0} />
+            <Kpi label="Study Complete 7d" value={totalCmp7d} />
+            <Kpi label="% c/ decisionId" value={fmtPct(completesQuery.data?.pctWithDid ?? 0)} />
+            <Kpi label="Outcomes total" value={outcomesQuery.data?.total ?? 0} />
+            <Kpi label="Outcomes 7d" value={totalOut7d} />
+            <Kpi label="Conversão dec→out" value={fmtPct(conversion)} />
+            <Kpi label="Taxa sucesso" value={fmtPct(outcomesQuery.data?.successRate)} />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Última decisão</CardDescription>
+                <CardTitle className="text-base">
+                  {lastDecision
+                    ? `${(lastDecision as any).decision_output?.nextAction ?? "—"} → ${(lastDecision as any).decision_output?.targetModule ?? "—"}`
+                    : "—"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                {lastDecision ? new Date((lastDecision as any).created_at).toLocaleString("pt-BR") : "Sem decisões"}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Último outcome</CardDescription>
+                <CardTitle className="text-base">
+                  {lastOutcome
+                    ? `${(lastOutcome as any).modality ?? "—"} · ${(lastOutcome as any).outcome ?? "—"}`
+                    : "—"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                {lastOutcome ? new Date((lastOutcome as any).created_at).toLocaleString("pt-BR") : "Sem outcomes"}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>🥇 Melhor modalidade</CardDescription>
+                <CardTitle className="text-lg">{best?.modality ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">Δ imp: {fmt(best?.avgImprovement, 3)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>📉 Pior modalidade</CardDescription>
+                <CardTitle className="text-lg">{worst?.modality ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">Δ imp: {fmt(worst?.avgImprovement, 3)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Exploração</CardDescription>
+                <CardTitle className="text-lg">{fmtPct(explorationRate)}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                {explorationCount} de {outcomesQuery.data?.rows.length ?? 0} outcomes
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Regra com peso mais alto</CardDescription>
+                <CardTitle className="text-base">{(heaviestRule as any)?.rule_name ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                peso {fmt((heaviestRule as any)?.current_weight)} · baseline {fmt((heaviestRule as any)?.baseline_weight)}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardDescription>Regra com peso mais baixo</CardDescription>
+                <CardTitle className="text-base">{(lightestRule as any)?.rule_name ?? "—"}</CardTitle>
+              </CardHeader>
+              <CardContent className="text-xs text-muted-foreground">
+                peso {fmt((lightestRule as any)?.current_weight)} · baseline {fmt((lightestRule as any)?.baseline_weight)}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* TAB 1: DECISIONS */}
         <TabsContent value="decisions" className="space-y-4">
@@ -597,45 +739,52 @@ export default function AdminOrchestratorInsights() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* TAB 5: DEBUG */}
+        <TabsContent value="debug" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">🧪 Debug — últimas 10 decisões completas</CardTitle>
+              <CardDescription>
+                Inspeção bruta de <code>decision_output</code>, <code>rulesTrace</code>, <code>adaptiveState</code> e <code>input_snapshot</code>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-[700px] overflow-y-auto">
+                {(decisionsQuery.data?.rows ?? []).slice(0, 10).map((r: any) => (
+                  <details key={r.id} className="border rounded-md p-3 text-xs" open={showDebug}>
+                    <summary className="cursor-pointer font-medium">
+                      {new Date(r.created_at).toLocaleString("pt-BR")} ·{" "}
+                      {r.decision_output?.nextAction ?? "—"} → {r.decision_output?.targetModule ?? "—"}
+                    </summary>
+                    <pre className="mt-2 overflow-x-auto bg-muted/30 rounded p-2 text-[10px]">
+                      {JSON.stringify(
+                        {
+                          decision_output: r.decision_output,
+                          rulesTrace: r.decision_output?.rulesTrace,
+                          adaptiveState: r.decision_output?.adaptiveState,
+                          input_snapshot: r.input_snapshot,
+                          justification: r.justification,
+                          confidence_score: r.confidence_score,
+                        },
+                        null,
+                        2
+                      )}
+                    </pre>
+                  </details>
+                ))}
+                {(decisionsQuery.data?.rows ?? []).length === 0 && (
+                  <div className="text-xs text-muted-foreground text-center py-6">Sem decisões disponíveis</div>
+                )}
+              </div>
+              <div className="mt-3 flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => setShowDebug((v) => !v)}>
+                  {showDebug ? "Recolher tudo" : "Expandir tudo"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
-
-      {/* DEBUG */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">🧪 Debug — últimas 10 decisões completas</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => setShowDebug((v) => !v)}>
-              {showDebug ? "Ocultar" : "Mostrar"}
-            </Button>
-          </div>
-        </CardHeader>
-        {showDebug && (
-          <CardContent>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {(decisionsQuery.data?.rows ?? []).slice(0, 10).map((r: any) => (
-                <details key={r.id} className="border rounded-md p-3 text-xs">
-                  <summary className="cursor-pointer font-medium">
-                    {new Date(r.created_at).toLocaleString("pt-BR")} ·{" "}
-                    {r.decision_output?.nextAction ?? "—"} → {r.decision_output?.targetModule ?? "—"}
-                  </summary>
-                  <pre className="mt-2 overflow-x-auto bg-muted/30 rounded p-2 text-[10px]">
-                    {JSON.stringify(
-                      {
-                        decision_output: r.decision_output,
-                        rulesTrace: r.decision_output?.rulesTrace,
-                        adaptiveState: r.decision_output?.adaptiveState,
-                        justification: r.justification,
-                      },
-                      null,
-                      2
-                    )}
-                  </pre>
-                </details>
-              ))}
-            </div>
-          </CardContent>
-        )}
-      </Card>
     </div>
   );
 }
