@@ -65,7 +65,10 @@ export default function CockpitWeaknesses({ weaknesses }: Props) {
                   size="sm"
                   variant="outline"
                   className="h-7 text-xs gap-1"
-                  onClick={() => navigate(`/dashboard/mnemonic-studio-v2?tema=${encodeURIComponent(w.tema)}`)}
+                  onClick={() => {
+                    const t = w.subtema ? `${w.tema} — ${w.subtema}` : w.tema;
+                    navigate(`/dashboard/mnemonic-studio-v2?tema=${encodeURIComponent(t)}&auto=1`);
+                  }}
                 >
                   <Brain className="h-3 w-3" /> Mnemônico
                 </Button>
