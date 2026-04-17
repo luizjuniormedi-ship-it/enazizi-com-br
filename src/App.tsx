@@ -179,6 +179,7 @@ const App = () => (
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
                 <Route path="metrics" element={<ProductMetricsPage />} />
+                <Route path="orchestrator-insights" element={<AdminOrchestratorInsights />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
