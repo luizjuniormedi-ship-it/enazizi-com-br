@@ -28,6 +28,7 @@ import { useTheme } from "@/hooks/useTheme";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import ActiveVideoRoomPopup from "@/components/dashboard/ActiveVideoRoomPopup";
+import TutorDrawer from "@/components/tutor/TutorDrawer";
 import ProficiencyGate from "@/components/dashboard/ProficiencyGate";
 import { useInvisibleMnemonic } from "@/hooks/useInvisibleMnemonic";
 import { InvisibleMnemonicOverlay } from "@/components/mnemonic/InvisibleMnemonicOverlay";
@@ -307,6 +308,8 @@ const DashboardLayout = () => {
       </main>
       {!isMissionLocked && <BottomTabBar />}
     </div>
+    {/* F4 — Contextual Tutor IA drawer (global, openable from any module) */}
+    <TutorDrawer />
   </div>
   </SessionMemoryProvider>
   );
