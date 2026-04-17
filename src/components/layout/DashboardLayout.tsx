@@ -61,6 +61,7 @@ const mobileNavGroups: MobileNavGroup[] = [
     items: [
       { to: "/dashboard/flashcards", label: "🃏 Flashcards", moduleKey: "flashcards" },
       { to: "/dashboard/gerar-flashcards", label: "⚡ Gerador Flashcards", moduleKey: "gerar-flashcards" },
+      { to: "/dashboard/mnemonic-studio-v2", label: "🧠 Mnemônico", moduleKey: "mnemonico" },
       { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros", moduleKey: "banco-erros" },
       { to: "/dashboard/sessao-estudo", label: "📖 Sessão de Estudo", moduleKey: "sessao-estudo" },
     ],
