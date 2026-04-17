@@ -76,7 +76,7 @@ const navGroups: NavGroup[] = [
       { to: "/dashboard/mnemonic-studio-v2", moduleKey: "mnemonico", icon: Brain, label: "Mnemônico", description: "Crie mnemônicos visuais memoráveis com IA" },
       { to: "/dashboard/banco-erros", moduleKey: "banco-erros", icon: AlertTriangle, label: "Banco de Erros", description: "Revise e domine os temas onde mais erra" },
       
-      { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo", description: "Sessão focada com timer e metas" },
+      { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo", description: "Aprendizado guiado com ciclo completo: ensinar, testar, corrigir e reforçar" },
     ],
   },
   {
@@ -95,7 +95,7 @@ const navGroups: NavGroup[] = [
     title: "Conteúdo & Estudo",
     defaultOpen: true,
     items: [
-      { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true, description: "Converse com seu professor virtual" },
+      { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true, description: "Assistente para dúvidas, explicações e aprofundamento" },
       { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos", description: "Resumos inteligentes gerados por IA" },
       { to: "/dashboard/apostilas", moduleKey: "apostilas", icon: BookMarked, label: "Apostilas", description: "Apostilas organizadas por especialidade" },
       { to: "/dashboard/cronicas", moduleKey: "cronicas", icon: BookOpen, label: "Crônicas Médicas", description: "Aprenda através de narrativas clínicas" },

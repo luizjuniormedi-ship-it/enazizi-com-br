@@ -57,6 +57,20 @@ export default function CockpitWeaknesses({ weaknesses }: Props) {
                   size="sm"
                   variant="default"
                   className="h-7 text-xs gap-1"
+                  title="Aprendizado guiado com ciclo completo (ensinar, testar, corrigir, reforçar)"
+                  onClick={() =>
+                    navigate(
+                      `/dashboard/sessao-estudo?topic=${encodeURIComponent(w.tema)}&focus=errors&origin=cockpit&auto=1`,
+                    )
+                  }
+                >
+                  <BookOpen className="h-3 w-3" /> Estudar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1"
+                  title="Treinar 10 questões deste tema"
                   onClick={() => {
                     const params = new URLSearchParams({
                       sc_source: "weak-topics",
@@ -71,30 +85,25 @@ export default function CockpitWeaknesses({ weaknesses }: Props) {
                     navigate(`/dashboard/simulados?${params.toString()}`);
                   }}
                 >
-                  <BookOpen className="h-3 w-3" /> Treinar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-xs gap-1"
-                  onClick={() => {
-                    const t = w.subtema ? `${w.tema} — ${w.subtema}` : w.tema;
-                    navigate(`/dashboard/mnemonic-studio-v2?tema=${encodeURIComponent(t)}&auto=1`);
-                  }}
-                >
-                  <Brain className="h-3 w-3" /> Mnemônico
+                  <RefreshCw className="h-3 w-3" /> Treinar 10Q
                 </Button>
                 <Button
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs gap-1"
-                  onClick={() =>
-                    navigate(
-                      `/dashboard/sessao-estudo?topic=${encodeURIComponent(w.tema)}&focus=reviews&origin=cockpit&auto=1`,
-                    )
-                  }
+                  title="Tirar dúvida rápida com o Tutor IA"
+                  onClick={() => {
+                    const params = new URLSearchParams({
+                      tutor_mode: "mission",
+                      sc_topic: w.tema,
+                      sc_objective: "correction",
+                      tutor_origin: "cockpit-weakness",
+                    });
+                    if (w.subtema) params.set("sc_subtopic", w.subtema);
+                    navigate(`/dashboard/chatgpt?${params.toString()}`);
+                  }}
                 >
-                  <RefreshCw className="h-3 w-3" /> Revisar
+                  <Brain className="h-3 w-3" /> Perguntar ao Tutor
                 </Button>
               </div>
             </div>
