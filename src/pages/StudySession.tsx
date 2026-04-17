@@ -530,9 +530,10 @@ const StudySession = () => {
     setPhase("style-select");
   };
 
-  const handleStyleSelect = async (mode: StudyMode) => {
+  const handleStyleSelect = async (mode: StudyMode, topicOverride?: string) => {
     setStudyMode(mode);
-    const t = topic;
+    const t = topicOverride?.trim() || topic;
+    if (!t) return;
 
     // Map mode to initial phase
     const phaseMap: Record<StudyMode, Phase> = {
