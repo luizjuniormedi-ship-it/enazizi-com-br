@@ -65,6 +65,7 @@ const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartP
 const AdminMonitoring = lazyWithRetry(() => import("./pages/AdminMonitoring"), "AdminMonitoring");
 const AdminCEO = lazyWithRetry(() => import("./pages/AdminCEO"), "AdminCEO");
 const ProductMetricsPage = lazyWithRetry(() => import("./pages/ProductMetricsPage"), "ProductMetricsPage");
+const AdminOrchestratorInsights = lazyWithRetry(() => import("./pages/AdminOrchestratorInsights"), "AdminOrchestratorInsights");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
 const MissionControlPage = lazyWithRetry(() => import("./pages/MissionControlPage"), "MissionControlPage");
 const MissionEntry = lazyWithRetry(() => import("./pages/MissionEntry"), "MissionEntry");
