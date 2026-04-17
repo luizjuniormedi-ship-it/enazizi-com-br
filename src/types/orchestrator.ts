@@ -1,6 +1,6 @@
 /**
  * Orchestrator — Shared types between edge function and frontend.
- * F1 (shadow mode): Lightweight types reused by useOrchestrator hook.
+ * F1 (shadow mode) → F3 (UI consumption with safe fallback).
  */
 
 export type OrchestratorAction =
@@ -28,15 +28,14 @@ export interface OrchestratorPayload {
   tutorPhase?: string;
   difficulty?: string;
   imageType?: string;
-  // Allow extension without breaking shadow mode
   [key: string]: string | number | boolean | undefined;
 }
 
 export interface RuleTrace {
-  ruleId: string;          // R1..R8
+  ruleId: string;
   ruleName: string;
   fired: boolean;
-  weight: number;          // contribution if fired
+  weight: number;
   signals: Record<string, number | string | boolean | null>;
   notes?: string;
 }
@@ -44,14 +43,14 @@ export interface RuleTrace {
 export interface AdaptiveState {
   pendingReviews: number;
   fsrsDueCount: number;
-  repeatedErrorTopics: number;       // distinct topics errado >= 2x
-  topErrorCategory: string | null;   // "conceitual" | "memorizacao" | null
-  visualWeaknessCount: number;       // image_types com acurácia < 60%
-  mnemonicLowUtility: number;        // resultados com utility < 60
+  repeatedErrorTopics: number;
+  topErrorCategory: string | null;
+  visualWeaknessCount: number;
+  mnemonicLowUtility: number;
   dailyPlanEmpty: boolean;
   lastSimuladoDaysAgo: number | null;
   approvalScore: number | null;
-  approvalZone: string;              // "critical" | "recovery" | "stable" | "advanced"
+  approvalZone: string;
   examProximityDays: number | null;
   weakestTopic: string | null;
   recommendedModality: OrchestratorAction;
@@ -59,24 +58,23 @@ export interface AdaptiveState {
 
 export interface OrchestratorRecommendation {
   nextAction: OrchestratorAction;
-  targetModule: string;              // route hint, e.g. "/dashboard/quiz"
+  targetModule: string;
   executionMode: ExecutionMode;
-  priority: number;                  // 0-100
+  priority: number;
   reason: string;
   cta: string;
   payload: OrchestratorPayload;
-  confidence: number;                // 0-1
+  confidence: number;
 }
 
 export interface OrchestratorResponse {
   success: boolean;
   recommendation: OrchestratorRecommendation;
   alternatives: OrchestratorRecommendation[];
-  adaptiveState: AdaptiveState;
+  adaptiveState: AdaptiveState | null;
   rulesTrace: RuleTrace[];
-  /** Snapshot id for tying outcomes back later (F6). */
   decisionId?: string;
-  /** Flag: when true, frontend may consume; when false, shadow only. */
   shadowMode: boolean;
   generatedAt: string;
+  error?: string;
 }
