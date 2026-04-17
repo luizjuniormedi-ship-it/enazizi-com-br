@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { clearLoginRefreshSignature, forceLoginRefresh } from "@/lib/force-login-refresh";
 
 interface SignUpOptions {
   displayName: string;
@@ -54,95 +55,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         }
 
-        // ============================================================
-        // GLOBAL REFRESH ON LOGIN (all platforms: web + PWA)
-        // 1. Clear stale localStorage caches (missions, plans, snapshots)
-        // 2. Clear ALL service worker caches
-        // 3. Update SW + force reload if a new version is waiting
-        // ============================================================
-        try {
-          // Force refresh on EVERY login transition (not just every 5 min).
-          // We still guard against reload loops via sessionStorage flag below.
-          const lastRefreshKey = "enazizi_last_global_refresh_ts";
-          const shouldHardRefresh = true;
-
-          if (shouldHardRefresh) {
-            localStorage.setItem(lastRefreshKey, String(Date.now()));
-
-            // 1. Purge stale per-user caches in localStorage
-            const keysToPurge = Object.keys(localStorage).filter((k) =>
-              k.startsWith("enazizi_mission_") ||
-              k.startsWith("enazizi_dashboard_snapshot_") ||
-              k.startsWith("enazizi_weekly_snap_") ||
-              k.startsWith("enazizi_daily_plan_cache_") ||
-              k.startsWith("rq-cache-")
-            );
-            keysToPurge.forEach((k) => {
-              try { localStorage.removeItem(k); } catch { /* ignore */ }
-            });
-
-            // 2. Clear all Cache Storage entries (PWA + browser caches)
-            if ("caches" in window) {
-              caches.keys().then((names) => {
-                names.forEach((name) => caches.delete(name).catch(() => {}));
-              }).catch(() => {});
-            }
-
-            // 3. Update service worker; force activation of any new version
-            if ("serviceWorker" in navigator) {
-              navigator.serviceWorker.getRegistration().then((reg) => {
-                if (!reg) return;
-                reg.update().then(() => {
-                  if (reg.waiting) {
-                    reg.waiting.postMessage({ type: "SKIP_WAITING" });
-                    let reloaded = false;
-                    navigator.serviceWorker.addEventListener("controllerchange", () => {
-                      if (reloaded) return;
-                      reloaded = true;
-                      window.location.reload();
-                    });
-                  }
-                }).catch(() => {});
-              }).catch(() => {});
-            }
-
-            // 4. MOBILE/PWA SAFETY NET: if the bundle release stored on this
-            // device is older than the one currently running, force a hard
-            // reload with cache-busting query so the WebView fetches fresh HTML.
-            // This catches Android WebView / iOS standalone PWAs where the SW
-            // serves stale assets even after login.
-            try {
-              const APP_RELEASE_KEY = "enazizi_release";
-              const currentRelease = localStorage.getItem(APP_RELEASE_KEY);
-              const loginRefreshFlag = "enazizi_login_hard_reload_done";
-              const alreadyReloaded = sessionStorage.getItem(loginRefreshFlag);
-              const isStandalonePWA =
-                window.matchMedia("(display-mode: standalone)").matches ||
-                (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-              const isMobileOrPWA =
-                isStandalonePWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-              // Force hard reload on EVERY login for mobile/PWA/desktop installed apps
-              // to guarantee fresh bundle. Use sessionStorage flag only to prevent
-              // the post-reload tab from looping.
-              if (!alreadyReloaded && isMobileOrPWA) {
-                sessionStorage.setItem(loginRefreshFlag, "1");
-                setTimeout(() => {
-                  const url = new URL(window.location.href);
-                  url.searchParams.set("__r", currentRelease || String(Date.now()));
-                  window.location.replace(url.toString());
-                }, 800);
-              }
-            } catch {
-              /* ignore */
-            }
-          }
-        } catch {
-          // Never block login on refresh errors
-        }
+        void forceLoginRefresh(session);
       }
 
-      // No-op on SIGNED_OUT — state is cleared by React
+      if (event === "SIGNED_OUT") {
+        clearLoginRefreshSignature();
+      }
     });
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -178,6 +96,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    clearLoginRefreshSignature();
     await supabase.auth.signOut();
   };
 
