@@ -61,11 +61,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // 3. Update SW + force reload if a new version is waiting
         // ============================================================
         try {
-          // Skip on the very first session restore of this tab to avoid
-          // reload loops; only act on real sign-in transitions.
+          // Force refresh on EVERY login transition (not just every 5 min).
+          // We still guard against reload loops via sessionStorage flag below.
           const lastRefreshKey = "enazizi_last_global_refresh_ts";
-          const lastRefresh = parseInt(localStorage.getItem(lastRefreshKey) || "0", 10);
-          const shouldHardRefresh = !lastRefresh || Date.now() - lastRefresh > 5 * 60 * 1000;
+          const shouldHardRefresh = true;
 
           if (shouldHardRefresh) {
             localStorage.setItem(lastRefreshKey, String(Date.now()));
@@ -119,12 +118,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const alreadyReloaded = sessionStorage.getItem(loginRefreshFlag);
               const isStandalonePWA =
                 window.matchMedia("(display-mode: standalone)").matches ||
-                // iOS Safari standalone
                 (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+              const isMobileOrPWA =
+                isStandalonePWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 
-              if (!alreadyReloaded && (isStandalonePWA || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent))) {
+              // Force hard reload on EVERY login for mobile/PWA/desktop installed apps
+              // to guarantee fresh bundle. Use sessionStorage flag only to prevent
+              // the post-reload tab from looping.
+              if (!alreadyReloaded && isMobileOrPWA) {
                 sessionStorage.setItem(loginRefreshFlag, "1");
-                // Small delay to let auth state persist before reload
                 setTimeout(() => {
                   const url = new URL(window.location.href);
                   url.searchParams.set("__r", currentRelease || String(Date.now()));
