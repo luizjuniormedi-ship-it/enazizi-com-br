@@ -2,11 +2,9 @@
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
+import { APP_RELEASE, RELEASE_KEY, buildAppRefreshUrl, removeAppRefreshQueryParams } from "./lib/app-release";
 import "./index.css";
 
-const APP_RELEASE = "2026-04-17-v14";
-const RELEASE_KEY = "enazizi_release";
-const RELEASE_QUERY_KEY = "__app_release";
 const canonical = "enazizi.com";
 
 const shouldRedirectToCanonical =
@@ -48,17 +46,16 @@ const clearCacheStorage = async () => {
 };
 
 const forceReloadWithRelease = () => {
-  const reloadUrl = new URL(window.location.href);
-  reloadUrl.searchParams.set(RELEASE_QUERY_KEY, APP_RELEASE);
+  const reloadUrl = buildAppRefreshUrl(window.location.href);
   window.location.replace(reloadUrl.toString());
 };
 
 const removeReleaseQueryParam = () => {
   const currentUrl = new URL(window.location.href);
-  if (!currentUrl.searchParams.has(RELEASE_QUERY_KEY)) return;
+  const cleanedUrl = removeAppRefreshQueryParams(currentUrl);
+  if (cleanedUrl.toString() === currentUrl.toString()) return;
 
-  currentUrl.searchParams.delete(RELEASE_QUERY_KEY);
-  window.history.replaceState({}, "", currentUrl.toString());
+  window.history.replaceState({}, "", cleanedUrl.toString());
 };
 
 const mountApp = () => {
