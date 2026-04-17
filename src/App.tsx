@@ -123,6 +123,9 @@ const App = () => (
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                 <Route path="quiz" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="revisoes" element={<Navigate to="/dashboard/sessao-estudo?focus=reviews" replace />} />
+                {/* P0-bis: defensive redirect — old orchestrator decisions point to /revisao */}
+                <Route path="revisao" element={<Navigate to="/dashboard/sessao-estudo?focus=reviews" replace />} />
+                <Route path="tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="flashcards" element={<Flashcards />} />
                 <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
                 <Route path="simulados" element={<Simulados />} />

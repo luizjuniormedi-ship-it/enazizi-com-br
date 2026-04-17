@@ -110,10 +110,10 @@ export default function CockpitHero({
       });
       return;
     }
-    // P0: propagate decisionId so the destination can close the adaptive loop
+    // P0-bis: propagate decisionId via well-formed merge (preserves any
+    // existing query string in targetModule like ?focus=reviews).
     const payload = decisionId ? { ...rec.payload, did: decisionId } : rec.payload;
-    const qs = buildSearchParams(payload);
-    navigate(`${rec.targetModule}${qs}`);
+    navigate(appendQuery(rec.targetModule, payload));
   };
 
   const handleStart = () => {
