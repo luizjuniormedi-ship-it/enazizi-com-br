@@ -188,6 +188,17 @@ serve(async (req) => {
         "profile"),
     ]);
 
+    // F6 — Load tuned weights (best-effort, defaults to 1.0)
+    const { data: weightRows } = await db
+      .from("orchestrator_rule_weights")
+      .select("rule_id, current_weight");
+    const ruleWeight = (id: string): number => {
+      const row = (weightRows ?? []).find((w: any) => w.rule_id === id);
+      const w = row ? Number(row.current_weight) : 1.0;
+      return Number.isFinite(w) && w > 0 ? w : 1.0;
+    };
+    const tunedPriority = (id: string, base: number) => Math.round(base * ruleWeight(id));
+
     // ── Derive signals ──
     const pendingReviews = revisoes?.length ?? 0;
     const fsrsDueCount = fsrsDue?.length ?? 0;
