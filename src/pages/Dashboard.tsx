@@ -13,6 +13,7 @@ import { useStudySession } from "@/hooks/useStudySession";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useVisualSkill } from "@/hooks/useVisualSkill";
+import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 
@@ -37,6 +38,7 @@ import SessionBar from "@/components/study-session/SessionBar";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import CognitiveCockpit from "@/components/cockpit/CognitiveCockpit";
+import { AdaptiveMnemonicCard } from "@/components/mnemonic/AdaptiveMnemonicCard";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 
@@ -72,6 +74,7 @@ const Dashboard = () => {
   const { data: coreData } = useCoreData();
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
   const { data: visualSkill } = useVisualSkill();
+  const { data: dashboardMnemonic } = useDashboardMnemonic();
 
   // Mission engine
   const { data, isLoading: missionLoading, isError, error, refresh } = useStudyNext();
@@ -81,6 +84,7 @@ const Dashboard = () => {
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
   const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
+  const [dismissedMnemonicId, setDismissedMnemonicId] = useState<string | null>(null);
   const prevLevelRef = useRef<number | null>(null);
   const autostartConsumedRef = useRef(false);
 
@@ -91,6 +95,15 @@ const Dashboard = () => {
 
   const streak = coreData?.gamification?.current_streak ?? snapshot?.streak ?? 0;
   const loopActive = loop.phase !== "idle";
+
+  useEffect(() => {
+    setDismissedMnemonicId(null);
+  }, [dashboardMnemonic?.link.id]);
+
+  const visibleDashboardMnemonic =
+    dashboardMnemonic && dashboardMnemonic.link.id !== dismissedMnemonicId
+      ? dashboardMnemonic
+      : null;
 
   // ─── AUTOSTART ───
   useEffect(() => {
@@ -317,6 +330,15 @@ const Dashboard = () => {
       {!loopActive && (
         <SafeCard name="CognitiveCockpit">
           <CognitiveCockpit />
+        </SafeCard>
+      )}
+
+      {!loopActive && visibleDashboardMnemonic && (
+        <SafeCard name="DashboardMnemonic">
+          <AdaptiveMnemonicCard
+            mnemonic={visibleDashboardMnemonic}
+            onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
+          />
         </SafeCard>
       )}
 

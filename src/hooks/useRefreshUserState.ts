@@ -19,6 +19,8 @@ export function useRefreshUserState() {
     queryClient.invalidateQueries({ queryKey: ["core-data"] });
     queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
     queryClient.invalidateQueries({ queryKey: ["study-engine"] });
+    queryClient.invalidateQueries({ queryKey: ["cockpit-data"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-mnemonic"] });
 
     // Readiness & progress
     queryClient.invalidateQueries({ queryKey: ["exam-readiness"] });
