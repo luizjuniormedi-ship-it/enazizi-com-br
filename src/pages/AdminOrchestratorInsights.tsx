@@ -739,45 +739,52 @@ export default function AdminOrchestratorInsights() {
             </CardContent>
           </Card>
         </TabsContent>
+        {/* TAB 5: DEBUG */}
+        <TabsContent value="debug" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">🧪 Debug — últimas 10 decisões completas</CardTitle>
+              <CardDescription>
+                Inspeção bruta de <code>decision_output</code>, <code>rulesTrace</code>, <code>adaptiveState</code> e <code>input_snapshot</code>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-[700px] overflow-y-auto">
+                {(decisionsQuery.data?.rows ?? []).slice(0, 10).map((r: any) => (
+                  <details key={r.id} className="border rounded-md p-3 text-xs" open={showDebug}>
+                    <summary className="cursor-pointer font-medium">
+                      {new Date(r.created_at).toLocaleString("pt-BR")} ·{" "}
+                      {r.decision_output?.nextAction ?? "—"} → {r.decision_output?.targetModule ?? "—"}
+                    </summary>
+                    <pre className="mt-2 overflow-x-auto bg-muted/30 rounded p-2 text-[10px]">
+                      {JSON.stringify(
+                        {
+                          decision_output: r.decision_output,
+                          rulesTrace: r.decision_output?.rulesTrace,
+                          adaptiveState: r.decision_output?.adaptiveState,
+                          input_snapshot: r.input_snapshot,
+                          justification: r.justification,
+                          confidence_score: r.confidence_score,
+                        },
+                        null,
+                        2
+                      )}
+                    </pre>
+                  </details>
+                ))}
+                {(decisionsQuery.data?.rows ?? []).length === 0 && (
+                  <div className="text-xs text-muted-foreground text-center py-6">Sem decisões disponíveis</div>
+                )}
+              </div>
+              <div className="mt-3 flex justify-end">
+                <Button variant="outline" size="sm" onClick={() => setShowDebug((v) => !v)}>
+                  {showDebug ? "Recolher tudo" : "Expandir tudo"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
-
-      {/* DEBUG */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base">🧪 Debug — últimas 10 decisões completas</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => setShowDebug((v) => !v)}>
-              {showDebug ? "Ocultar" : "Mostrar"}
-            </Button>
-          </div>
-        </CardHeader>
-        {showDebug && (
-          <CardContent>
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {(decisionsQuery.data?.rows ?? []).slice(0, 10).map((r: any) => (
-                <details key={r.id} className="border rounded-md p-3 text-xs">
-                  <summary className="cursor-pointer font-medium">
-                    {new Date(r.created_at).toLocaleString("pt-BR")} ·{" "}
-                    {r.decision_output?.nextAction ?? "—"} → {r.decision_output?.targetModule ?? "—"}
-                  </summary>
-                  <pre className="mt-2 overflow-x-auto bg-muted/30 rounded p-2 text-[10px]">
-                    {JSON.stringify(
-                      {
-                        decision_output: r.decision_output,
-                        rulesTrace: r.decision_output?.rulesTrace,
-                        adaptiveState: r.decision_output?.adaptiveState,
-                        justification: r.justification,
-                      },
-                      null,
-                      2
-                    )}
-                  </pre>
-                </details>
-              ))}
-            </div>
-          </CardContent>
-        )}
-      </Card>
     </div>
   );
 }
