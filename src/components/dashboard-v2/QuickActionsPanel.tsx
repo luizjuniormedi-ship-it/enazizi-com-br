@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
-  Image, FileText, AlertCircle, Brain,
+  Image, FileText, AlertCircle, Brain, Sparkles,
   MessageSquare, Map, Stethoscope, BookOpen,
 } from "lucide-react";
 
@@ -25,6 +25,7 @@ export default function QuickActionsPanel({ hasErrors, hasPendingReviews }: Prop
     { icon: <FileText className="h-5 w-5" />, label: "Simulado", path: "/dashboard/simulados" },
     { icon: <AlertCircle className="h-5 w-5" />, label: "Banco de Erros", path: "/dashboard/banco-erros", highlight: hasErrors },
     { icon: <Brain className="h-5 w-5" />, label: "Flashcards", path: "/dashboard/flashcards" },
+    { icon: <Sparkles className="h-5 w-5" />, label: "Mnemônico", path: "/dashboard/mnemonic-studio-v2" },
     { icon: <MessageSquare className="h-5 w-5" />, label: "Tutor IA", path: "/dashboard/tutor" },
     { icon: <Map className="h-5 w-5" />, label: "Mapas Mentais", path: "/dashboard/mapas-mentais" },
     { icon: <Stethoscope className="h-5 w-5" />, label: "Plantão", path: "/dashboard/clinical-simulation" },
