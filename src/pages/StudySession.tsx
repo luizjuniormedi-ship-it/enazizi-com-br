@@ -15,12 +15,14 @@ import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
   Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
-  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical
+  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical, Sparkles
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import ReactMarkdown from "react-markdown";
 
 import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
+import TutorChatPanel from "@/components/study/TutorChatPanel";
 
 type Phase = "start" | "style-select" | "performance" | "lesson" | "active-recall" | "questions" | "discussion" | "discursive" | "scoring" | "reinforcement";
 type Msg = { role: "user" | "assistant"; content: string };
@@ -740,6 +742,33 @@ const StudySession = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5">
+            {phase !== "start" && phase !== "style-select" && topic && (
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                    title="Pedir ajuda contextual ao Tutor IA sem sair da sessão"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Pedir ajuda ao Tutor
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+                  <TutorChatPanel
+                    context={{
+                      topic,
+                      specialty: searchParams.get("sc_specialty") || undefined,
+                      phase: PHASE_META[phase].label,
+                      focus: studyMode,
+                      mode: "mission",
+                      origin: "study-session",
+                    }}
+                  />
+                </SheetContent>
+              </Sheet>
+            )}
             <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
             </Button>

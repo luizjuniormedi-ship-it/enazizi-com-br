@@ -638,6 +638,48 @@ const ChatGPT = () => {
             onPhaseAction={handlePhaseAction} onGoBackStep={handleGoBackStep} nextPhase={nextPhase}
           />
 
+          {/* Handoff Tutor → Sessão de Estudo */}
+          {currentTopic && tutorMode !== "mission" && (
+            <div className="px-3 pb-2 flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10"
+                title="Abrir o ciclo guiado de aprendizado deste tema"
+                onClick={() => {
+                  const params = new URLSearchParams({
+                    topic: currentTopic,
+                    auto: "1",
+                    origin: "tutor-handoff",
+                  });
+                  navigate(`/dashboard/sessao-estudo?${params.toString()}`);
+                }}
+              >
+                <ArrowRight className="h-3 w-3" />
+                Ir para Sessão de Estudo deste tema
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 text-xs gap-1"
+                title="Treinar 10 questões deste tema"
+                onClick={() => {
+                  const params = new URLSearchParams({
+                    sc_source: "tutor-handoff",
+                    sc_taskType: "practice",
+                    sc_objective: "practice",
+                    sc_topic: currentTopic,
+                    sc_difficulty: "misto",
+                    sc_count: "10",
+                  });
+                  navigate(`/dashboard/simulados?${params.toString()}`);
+                }}
+              >
+                Gerar questões deste assunto
+              </Button>
+            </div>
+          )}
+
           <TutorMessageList ref={scrollRef} messages={messages} isLoading={isLoading} onCopy={copyToClipboard} />
 
           <TutorInputBar
