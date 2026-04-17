@@ -119,7 +119,7 @@ serve(async (req) => {
     // ── Parallel data fetch (reuses tables already used by study-next) ──
     const [
       revisoes, fsrsDue, errorBank, dailyPlan, dailyTasks,
-      visualAttempts, mnemonicResults, lastSimulado,
+      visualAttempts, mnemonicFeedback, lastSimulado,
       approval, profile,
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) =>
@@ -158,15 +158,21 @@ serve(async (req) => {
           .gte("created_at", sevenDaysAgo)
           .limit(200),
         "visual_attempts"),
+      // Mnemonic utility lives in mnemonic_feedback (not mnemonic_results).
+      // Join via result_id → mnemonic_results to fetch tema/sigla.
       safeQuery<any[]>(db, (c) =>
-        (c.from("mnemonic_results" as any) as any)
-          .select("id, request_id, utility_score, topic, subtopic, is_latest")
-          .eq("user_id", userId).eq("is_latest", true).limit(50),
-        "mnemonic_results"),
-      safeQuery<any>(db, (c) =>
-        (c.from("simulado_results" as any) as any)
-          .select("created_at, accuracy")
+        (c.from("mnemonic_feedback" as any) as any)
+          .select("id, result_id, utility_score, mnemonic_results:result_id(id, tema, sigla, request_id, is_latest)")
           .eq("user_id", userId)
+          .not("utility_score", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(50),
+        "mnemonic_feedback"),
+      // Real table name is teacher_simulado_results
+      safeQuery<any>(db, (c) =>
+        (c.from("teacher_simulado_results" as any) as any)
+          .select("created_at, score, total_questions")
+          .eq("student_id", userId)
           .order("created_at", { ascending: false }).limit(1).maybeSingle(),
         "last_simulado"),
       safeQuery<any>(db, (c) =>
@@ -226,12 +232,14 @@ serve(async (req) => {
       }
     });
 
-    // Mnemonic low utility
-    const mnemonicLowUtility = (mnemonicResults ?? [])
-      .filter((m) => typeof m.utility_score === "number" && m.utility_score < 60).length;
-    const lowUtilTop = (mnemonicResults ?? [])
-      .filter((m) => typeof m.utility_score === "number" && m.utility_score < 60)
-      .sort((a, b) => (a.utility_score ?? 0) - (b.utility_score ?? 0))[0] ?? null;
+    // Mnemonic low utility — utility_score lives in mnemonic_feedback
+    const lowUtilFeedback = (mnemonicFeedback ?? [])
+      .filter((m: any) => typeof m.utility_score === "number" && m.utility_score < 60);
+    const mnemonicLowUtility = lowUtilFeedback.length;
+    const lowUtilTop = lowUtilFeedback
+      .sort((a: any, b: any) => (a.utility_score ?? 0) - (b.utility_score ?? 0))[0] ?? null;
+    const lowUtilTopic: string | null = lowUtilTop?.mnemonic_results?.tema ?? null;
+    const lowUtilResultId: string | null = lowUtilTop?.mnemonic_results?.id ?? null;
 
     // Daily plan empty
     const dailyPlanEmpty = !dailyPlan || (dailyTasks?.length ?? 0) === 0;
@@ -316,19 +324,20 @@ serve(async (req) => {
         signals: { topErrorCategory, mnemonicLowUtility, isMem },
       });
       if (fired) {
-        const target = lowUtilTop ?? topRepeatedError;
+        const targetTopic = lowUtilTopic ?? topRepeatedError?.tema ?? null;
+        const targetSubtopic = topRepeatedError?.subtema ?? null;
         const mode: "review_existing" | "regenerate" | "create_new" =
           lowUtilTop ? "regenerate" : topRepeatedError ? "create_new" : "review_existing";
         candidates.push(safeRec("mnemonic", {
           priority: 35 + mnemonicLowUtility * 4,
           reason: lowUtilTop
             ? `Mnemônico com baixa utilidade (${lowUtilTop.utility_score}/100). Vamos refazer.`
-            : `Padrão de esquecimento em "${target?.tema ?? "tema fraco"}". Mnemônico pode fixar.`,
+            : `Padrão de esquecimento em "${targetTopic ?? "tema fraco"}". Mnemônico pode fixar.`,
           payload: {
-            topic: target?.topic ?? target?.tema,
-            subtopic: target?.subtopic ?? target?.subtema,
+            topic: targetTopic ?? undefined,
+            subtopic: targetSubtopic ?? undefined,
             mnemonicMode: mode,
-            resultId: lowUtilTop?.id,
+            resultId: lowUtilResultId ?? undefined,
           },
           confidence: 0.7,
         }));
@@ -396,7 +405,7 @@ serve(async (req) => {
       }));
     }
 
-    // R8 — Empty daily plan
+    // R8 — Empty daily plan (F5: with auto-fallback generation)
     {
       const fired = dailyPlanEmpty;
       const weight = fired ? 50 : 0;
@@ -411,6 +420,67 @@ serve(async (req) => {
           reason: "Sua missão do dia ainda não foi gerada. Vamos montar agora.",
           confidence: 0.95,
         }));
+
+        // F5 — Auto-fallback: synthesize a minimal plan inline so user never
+        // sees an empty dashboard. Best-effort, never throws.
+        try {
+          const { data: planRow } = await db.from("daily_plans").upsert({
+            user_id: userId,
+            plan_date: today,
+            objective: topRepeatedError?.tema
+              ? `Reforçar ${topRepeatedError.tema}`
+              : "Sessão guiada do dia",
+            phase: "fallback",
+            plan_json: { source: "orchestrator_fallback" },
+            total_blocks: 3,
+            completed_count: 0,
+          }, { onConflict: "user_id,plan_date" }).select("id").maybeSingle();
+
+          if (planRow?.id) {
+            // Skip if tasks already exist for this plan
+            const { data: existingTasks } = await db.from("daily_plan_tasks")
+              .select("id").eq("daily_plan_id", planRow.id).limit(1);
+            if (!existingTasks || existingTasks.length === 0) {
+              const fallbackTasks = [
+                topRepeatedError ? {
+                  daily_plan_id: planRow.id,
+                  user_id: userId,
+                  task_type: "error_review",
+                  title: `Revisar erro: ${topRepeatedError.tema}`,
+                  topic: topRepeatedError.tema,
+                  ordem: 1,
+                  estimated_minutes: 15,
+                  priority: "high",
+                } : null,
+                visualWeaknesses[0] ? {
+                  daily_plan_id: planRow.id,
+                  user_id: userId,
+                  task_type: "image_quiz",
+                  title: `Treinar imagem: ${visualWeaknesses[0].type}`,
+                  topic: visualWeaknesses[0].type,
+                  ordem: 2,
+                  estimated_minutes: 10,
+                  priority: "medium",
+                } : null,
+                {
+                  daily_plan_id: planRow.id,
+                  user_id: userId,
+                  task_type: "free_study",
+                  title: "Sessão guiada de estudo",
+                  topic: topRepeatedError?.tema ?? null,
+                  ordem: 3,
+                  estimated_minutes: 20,
+                  priority: "medium",
+                },
+              ].filter(Boolean) as any[];
+              if (fallbackTasks.length > 0) {
+                await db.from("daily_plan_tasks").insert(fallbackTasks);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("[orchestrator] planner fallback failed:", (e as Error).message);
+        }
       }
     }
 
