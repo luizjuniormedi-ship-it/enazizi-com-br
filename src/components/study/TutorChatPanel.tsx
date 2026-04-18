@@ -199,22 +199,7 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
           </div>
         )}
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={cn(
-                "max-w-[90%] rounded-2xl px-3 py-2 text-sm",
-                m.role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"
-              )}
-            >
-              {m.role === "assistant" ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_table]:text-xs">
-                  <ReactMarkdown>{m.content || "..."}</ReactMarkdown>
-                </div>
-              ) : (
-                m.content
-              )}
-            </div>
-          </div>
+          <ChatMsgRow key={i} role={m.role} content={m.content} />
         ))}
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
