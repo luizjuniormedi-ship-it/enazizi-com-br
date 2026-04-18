@@ -1,29 +1,20 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import TaskCompletionCard from "@/components/study/TaskCompletionCard";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { createPortal } from "react-dom";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
-import StudyContextBanner from "@/components/study/StudyContextBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionTracking, SessionOrigin } from "@/hooks/useSessionTracking";
 import { logErrorToBank } from "@/lib/errorBankLogger";
-import { exportToPdf } from "@/lib/exportPdf";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
-import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
-import ReactMarkdown from "react-markdown";
 import {
-  Activity, Loader2, Send, Stethoscope, Syringe, FileSearch,
-  Clock, Heart, AlertTriangle, Award, ArrowRight, RotateCcw,
-  MessageCircle, Thermometer, Zap, Star, CheckCircle, XCircle,
-  Trophy, Target, HelpCircle, Users, ClipboardCheck, ShieldAlert, History, Eye, Maximize2, Minimize2,
-  User, Brain, Pill, MonitorCheck, Bone, Scan, HeartPulse, Ear, Hand,
-  Wind, Droplets, Shield, BookOpen, FileText, ChevronDown, ChevronUp, GraduationCap, Download, Clipboard, Trash2
+  Activity, Loader2, Send, Stethoscope, Users, ClipboardCheck, Maximize2, Minimize2,
 } from "lucide-react";
-import VitalsChart, { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
+import { parseVitalsToSnapshot } from "@/components/plantao/VitalsChart";
+import VitalsChart from "@/components/plantao/VitalsChart";
 import VitalsMonitor from "@/components/plantao/VitalsMonitor";
 import ShiftHeader from "@/components/plantao/ShiftHeader";
 import ExamsPanel from "@/components/plantao/ExamsPanel";
@@ -32,22 +23,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter
 } from "@/components/ui/dialog";
 import {
-  Popover, PopoverContent, PopoverTrigger
-} from "@/components/ui/popover";
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger
+  Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet";
-import { Switch } from "@/components/ui/switch";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
-import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
+import LobbyPanel from "@/components/clinical-simulation/LobbyPanel";
+import HistoryDetailDialog from "@/components/clinical-simulation/HistoryDetailDialog";
+import ResultPanel, { type FinalEval } from "@/components/clinical-simulation/ResultPanel";
+import SidePanel, { ABCDE_STEPS, type CategoryScores } from "@/components/clinical-simulation/SidePanel";
+import QuickActionsBar from "@/components/clinical-simulation/QuickActionsBar";
+import MessageList from "@/components/clinical-simulation/MessageList";
+import type { ChatMessage, ManeuverPerformed } from "@/components/clinical-simulation/MessageBubble";
+import { exportToPdf } from "@/lib/exportPdf";
 
 const PEDIATRIC_AGE_RANGES = [
   { key: "neonato", label: "Neonato (0-28 dias)", vitalRef: "FC 120-160, FR 40-60, PA 60-80/30-45, Temp 36.5-37.5, SpO2 ≥95%" },
