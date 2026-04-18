@@ -60,7 +60,8 @@ const PipelineOptimizationPanel = () => {
         .limit(3);
       return { logs: logs || [] };
     },
-    refetchInterval: 30000,
+    refetchInterval: 120_000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: gapData, isLoading: gapLoading, refetch: refetchGap } = useQuery({

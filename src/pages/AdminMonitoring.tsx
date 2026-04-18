@@ -37,8 +37,9 @@ export default function AdminMonitoring() {
       return response.json();
     },
     enabled: !!session,
-    staleTime: 30_000,
-    refetchInterval: autoRefresh ? 60_000 : false,
+    staleTime: 60_000,
+    refetchInterval: autoRefresh ? 120_000 : false,
+    refetchIntervalInBackground: false,
   });
 
   const { data: mentorData } = useQuery<{
@@ -60,8 +61,9 @@ export default function AdminMonitoring() {
       return response.json();
     },
     enabled: !!session,
-    staleTime: 60_000,
-    refetchInterval: autoRefresh ? 120_000 : false,
+    staleTime: 120_000,
+    refetchInterval: autoRefresh ? 240_000 : false,
+    refetchIntervalInBackground: false,
   });
 
   const { data: alertsData } = useQuery({

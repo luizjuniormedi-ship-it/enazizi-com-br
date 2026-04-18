@@ -107,7 +107,8 @@ export default function AdminPipelineMonitor() {
         .limit(15);
       return (data as any) || [];
     },
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
+    refetchIntervalInBackground: false,
   });
 
   const { data: alerts } = useQuery<PipelineAlert[]>({
@@ -120,7 +121,8 @@ export default function AdminPipelineMonitor() {
         .limit(30);
       return (data as any) || [];
     },
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
+    refetchIntervalInBackground: false,
   });
 
   const ackMutation = useMutation({
