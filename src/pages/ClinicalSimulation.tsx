@@ -323,7 +323,7 @@ const ClinicalSimulation = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const queryClient = useQueryClient();
-  const { refreshAll } = useRefreshUserState();
+  const { refresh } = useRefreshUserState();
   const [searchParams] = useSearchParams();
   const studyCtx = useStudyContext();
   const teacherCaseId = searchParams.get("teacher_case_id");
@@ -1098,7 +1098,7 @@ const ClinicalSimulation = () => {
           originModule: "clinical-simulation",
         });
       }
-      refreshAll();
+      refresh("session");
       await saveSimulationToHistory(res);
 
       if (user && res.final_score < 70) {

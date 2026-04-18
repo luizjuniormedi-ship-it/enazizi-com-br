@@ -224,7 +224,7 @@ const Simulados = () => {
   const { toast } = useToast();
   const { addXp } = useGamification();
   const queryClient = useQueryClient();
-  const { refreshAll } = useRefreshUserState();
+  const { refresh } = useRefreshUserState();
   const studyCtx = useStudyContext();
   const autoStartedRef = useRef(false);
 
@@ -859,7 +859,7 @@ const Simulados = () => {
       }
     }
 
-    refreshAll();
+    refresh("session");
     setPhase("finished");
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questions, user, mode]);
