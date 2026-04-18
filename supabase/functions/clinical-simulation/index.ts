@@ -477,7 +477,7 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       const learnerInstruction = learner_mode
         ? ` OBRIGATÓRIO: inclua o campo "teaching_tip" com uma dica didática contextual relacionada à ação do aluno (ex: após ausculta pulmonar, explique técnica de ausculta simétrica). A dica deve ser educativa e curta (1-2 frases). Inclua também "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`
@@ -488,7 +488,7 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
       });
     } else if (action === "hint") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       messages.push({
         role: "user",
@@ -496,7 +496,7 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
       });
     } else if (action === "specialist") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       messages.push({
         role: "user",
@@ -504,7 +504,7 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
       });
     } else if (action === "finish") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       messages.push({
         role: "user",
@@ -513,7 +513,7 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
     } else if (action === "deteriorate") {
       const level = deterioration_level || 1;
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       const triageCtx = requestedTriageColor || "desconhecido";
       const statusCtx = requestedPatientStatus || "desconhecido";
