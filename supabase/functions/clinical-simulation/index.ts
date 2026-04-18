@@ -473,7 +473,7 @@ REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição 
 
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock} Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock}${avoidDiagnosesBlock} Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
