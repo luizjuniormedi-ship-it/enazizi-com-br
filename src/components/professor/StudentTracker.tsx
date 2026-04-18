@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
+// jsPDF carregado sob demanda (lazy) para reduzir bundle inicial
 import { FACULDADES } from "@/constants/faculdades";
 
 interface StudentProfile {
@@ -110,8 +110,9 @@ const StudentTracker = () => {
     ? Math.round(detail.domain_scores.reduce((s, d) => s + d.domain_score, 0) / detail.domain_scores.length)
     : 0);
 
-  const exportStudentPDF = () => {
+  const exportStudentPDF = async () => {
     if (!detail) return;
+    const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const M = 15;
     const W = doc.internal.pageSize.getWidth() - M * 2;

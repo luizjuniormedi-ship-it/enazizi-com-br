@@ -1,4 +1,5 @@
-import jsPDF from "jspdf";
+// jsPDF carregado sob demanda (lazy) — não entra no bundle inicial
+// Reduz ~390 KB do chunk principal das páginas que importam este módulo
 
 interface ExportItem {
   title: string;
@@ -6,7 +7,8 @@ interface ExportItem {
   subtitle?: string;
 }
 
-export function exportToPdf(items: ExportItem[], docTitle: string) {
+export async function exportToPdf(items: ExportItem[], docTitle: string) {
+  const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 15;
@@ -76,7 +78,8 @@ interface BIReportData {
   studentPercentile?: { display_name: string; percentile: number; accuracy: number };
 }
 
-export function exportProfessorBIReport(data: BIReportData, title: string) {
+export async function exportProfessorBIReport(data: BIReportData, title: string) {
+  const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 15;
