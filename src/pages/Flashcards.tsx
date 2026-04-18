@@ -42,7 +42,7 @@ interface FsrsReviewState {
 const Flashcards = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { refreshAll } = useRefreshUserState();
+  const { refresh } = useRefreshUserState();
   const studyCtx = useStudyContext();
   const [allCards, setAllCards] = useState<FlashcardItem[]>([]);
   const [dueCards, setDueCards] = useState<FlashcardItem[]>([]);
@@ -281,7 +281,7 @@ const Flashcards = () => {
         originModule: "flashcards",
       });
     }
-    refreshAll();
+    refresh("review");
     setPhase("finished");
   };
 

@@ -81,7 +81,7 @@ type Phase = "setup" | "loading" | "exam" | "evaluating" | "result";
 export default function PracticalExam() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { refreshAll } = useRefreshUserState();
+  const { refresh } = useRefreshUserState();
   const { user } = useAuth();
   const [phase, setPhase] = useState<Phase>("setup");
   const [specialty, setSpecialty] = useState("Clínica Médica");
@@ -178,7 +178,7 @@ export default function PracticalExam() {
           originModule: "practical-exam",
         });
       }
-      refreshAll();
+      refresh("session");
       setPhase("result");
     } catch (err) {
       console.error(err);
