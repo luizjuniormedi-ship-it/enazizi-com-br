@@ -357,9 +357,54 @@ serve(async (req) => {
 
     const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus, learner_mode, target_exams, recent_errors, exam_proximity_days } = await req.json();
 
+    // 🚀 PERF: Para ações de continuação usamos um prompt compacto (apenas regras de formato JSON).
+    // O SYSTEM_PROMPT completo (~12k tokens com banco de cenários) só é necessário em "start".
+    const COMPACT_SYSTEM_PROMPT = `IDIOMA: pt-BR obrigatório. Você é o simulador de PLANTÃO MÉDICO do ENAZIZI atuando como PACIENTE e NARRADOR CLÍNICO.
+REGRAS DE RESPOSTA:
+- Responda SEMPRE em JSON válido (sem markdown, sem comentários).
+- Mantenha coerência clínica com a apresentação inicial e com as ações já realizadas no histórico.
+- Para EXAME FÍSICO: pergunte qual sistema antes de descrever achados; inclua 'maneuvers_performed' quando aplicável.
+- Para EXAMES (lab/imagem): pergunte quais antes de fornecer; alerte se não for padrão-ouro.
+- Para PRESCRIÇÃO/CONDUTA: descreva evolução proporcional ao acerto e atualize 'vitals' + 'treatment_outcome'.
+- NUNCA revele o diagnóstico antes do "finish".
+- Inclua sempre 'vitals', 'patient_status', 'response_type', 'score_delta', 'category_scores' quando pedido.`;
+
+    const isContinuation = action !== "start";
     let messages: Array<{ role: string; content: string }> = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: isContinuation ? COMPACT_SYSTEM_PROMPT : SYSTEM_PROMPT },
     ];
+
+    // 🛡️ ANTI-REPETIÇÃO REAL: busca diagnósticos recentes do usuário para evitar repetição entre sessões.
+    let avoidDiagnosesBlock = "";
+    if (action === "start" && !teacher_case_id) {
+      try {
+        const supabaseService = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        const { data: recentSims } = await supabaseService
+          .from("simulation_history")
+          .select("correct_diagnosis, specialty")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10);
+        const recentDx = (recentSims ?? [])
+          .map((r: any) => r.correct_diagnosis)
+          .filter((d: any) => typeof d === "string" && d.trim().length > 0);
+        if (recentDx.length > 0) {
+          avoidDiagnosesBlock = `\n\n## 🚫 DIAGNÓSTICOS PROIBIDOS NESTA SESSÃO (já vistos pelo aluno recentemente)
+NÃO use NENHUM destes diagnósticos nem variações próximas:
+${recentDx.map((d: string, i: number) => `${i + 1}. ${d}`).join("\n")}
+
+REGRA INVIOLÁVEL: o 'hidden_diagnosis' deste novo caso DEVE ser uma condição CLINICAMENTE DIFERENTE de todas as listadas acima (mecanismo fisiopatológico distinto, sistema acometido distinto, ou apresentação claramente diferente). Se a especialidade solicitada já tem casos repetidos, escolha um subtema da lista de "Banco de Cenários" que ainda não apareceu.`;
+        }
+      } catch (err) {
+        console.error("[anti-repeat] Falha ao buscar histórico:", err);
+      }
+    }
+
+    // 🚀 PERF: poda histórico para no máximo 16 mensagens (8 turnos) — evita prompts gigantes em sessões longas.
+    const trimHistory = (hist: any[]) => Array.isArray(hist) ? hist.slice(-16) : [];
 
     if (action === "start") {
       if (teacher_case_id) {
@@ -428,11 +473,11 @@ serve(async (req) => {
 
       messages.push({
         role: "user",
-        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock} Responda APENAS em JSON válido.`,
+        content: `action="start". Gere um caso clínico de plantão na especialidade: ${specialty || "Clínica Médica"}${subtopic ? ` — Subassunto/Tema específico: ${subtopic}. O caso DEVE ser sobre este subassunto.` : ""}. Dificuldade: ${difficulty || "intermediário"}. Classificação de risco obrigatória: ${triage.toUpperCase()}. O campo triage_color DEVE ser "${triage}". Os sinais vitais e a gravidade do caso DEVEM ser coerentes com a classificação ${triage.toUpperCase()}.${pediatricInstruction}${bancaBlock}${errorsBlock}${proximityBlock}${avoidDiagnosesBlock} Responda APENAS em JSON válido.`,
       });
     } else if (action === "interact") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       const learnerInstruction = learner_mode
         ? ` OBRIGATÓRIO: inclua o campo "teaching_tip" com uma dica didática contextual relacionada à ação do aluno (ex: após ausculta pulmonar, explique técnica de ausculta simétrica). A dica deve ser educativa e curta (1-2 frases). Inclua também "category_scores" com scores parciais acumulados por categoria (anamnesis, physical_exam, complementary_exams, management), cada um de 0-15.`
@@ -443,7 +488,7 @@ serve(async (req) => {
       });
     } else if (action === "hint") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       messages.push({
         role: "user",
@@ -451,7 +496,7 @@ serve(async (req) => {
       });
     } else if (action === "specialist") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       messages.push({
         role: "user",
@@ -459,7 +504,7 @@ serve(async (req) => {
       });
     } else if (action === "finish") {
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       messages.push({
         role: "user",
@@ -468,7 +513,7 @@ serve(async (req) => {
     } else if (action === "deteriorate") {
       const level = deterioration_level || 1;
       if (conversation_history && Array.isArray(conversation_history)) {
-        messages.push(...conversation_history);
+        messages.push(...trimHistory(conversation_history));
       }
       const triageCtx = requestedTriageColor || "desconhecido";
       const statusCtx = requestedPatientStatus || "desconhecido";
