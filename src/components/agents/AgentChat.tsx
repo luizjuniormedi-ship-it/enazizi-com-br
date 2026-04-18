@@ -613,6 +613,18 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
         }
       }
 
+      // Final synchronous flush so UI shows complete message before persistence
+      if (assistantSoFar !== lastFlushed) {
+        lastFlushed = assistantSoFar;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
+            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+          }
+          return [...prev, { role: "assistant", content: assistantSoFar }];
+        });
+      }
+
       if (convId && assistantSoFar) {
         await supabase.from("chat_messages").insert({
           conversation_id: convId, user_id: user.id, role: "assistant", content: assistantSoFar,
