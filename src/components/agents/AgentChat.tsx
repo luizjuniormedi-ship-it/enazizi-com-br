@@ -527,10 +527,13 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       let textBuffer = "";
       let streamDone = false;
 
-      const appendAssistantChunk = (content: string) => {
-        if (!content) return;
-        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
-        assistantSoFar += content;
+      // rAF-throttled flush: at most 1 React render per frame (~60Hz)
+      let pendingFlush = false;
+      let lastFlushed = "";
+      const flushAssistant = () => {
+        pendingFlush = false;
+        if (assistantSoFar === lastFlushed) return;
+        lastFlushed = assistantSoFar;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
@@ -538,6 +541,22 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           }
           return [...prev, { role: "assistant", content: assistantSoFar }];
         });
+      };
+      const scheduleAssistantFlush = () => {
+        if (pendingFlush) return;
+        pendingFlush = true;
+        if (typeof requestAnimationFrame !== "undefined") {
+          requestAnimationFrame(flushAssistant);
+        } else {
+          setTimeout(flushAssistant, 16);
+        }
+      };
+
+      const appendAssistantChunk = (content: string) => {
+        if (!content) return;
+        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
+        assistantSoFar += content;
+        scheduleAssistantFlush();
       };
 
       const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
