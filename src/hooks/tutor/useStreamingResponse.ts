@@ -16,10 +16,30 @@ export function useStreamingResponse() {
   const streamResponse = useCallback(async ({ url, body, onChunk, onComplete, onError }: StreamOptions) => {
     accumulatorRef.current = "";
 
+    // === rAF-based flush throttle: at most 1 React render per frame (~60Hz) ===
+    let pendingFlush = false;
+    let lastFlushed = "";
+    const flushNow = () => {
+      pendingFlush = false;
+      const current = accumulatorRef.current;
+      if (current === lastFlushed) return;
+      lastFlushed = current;
+      onChunk(current);
+    };
+    const scheduleFlush = () => {
+      if (pendingFlush) return;
+      pendingFlush = true;
+      if (typeof requestAnimationFrame !== "undefined") {
+        requestAnimationFrame(flushNow);
+      } else {
+        setTimeout(flushNow, 16);
+      }
+    };
+
     const appendChunk = (content: string) => {
       if (!content) return;
       accumulatorRef.current += content;
-      onChunk(accumulatorRef.current);
+      scheduleFlush();
     };
 
     const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
@@ -88,6 +108,12 @@ export function useStreamingResponse() {
           const result = processSseLine(line);
           if (result === "done") break;
         }
+      }
+
+      // Guarantee final state is delivered to UI before onComplete
+      if (accumulatorRef.current !== lastFlushed) {
+        lastFlushed = accumulatorRef.current;
+        onChunk(accumulatorRef.current);
       }
 
       const finalText = accumulatorRef.current;
