@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import jsPDF from "jspdf";
+// jsPDF carregado sob demanda (lazy) para reduzir bundle inicial
 
 const PerformanceReport = () => {
   const { user } = useAuth();
@@ -38,6 +38,7 @@ const PerformanceReport = () => {
         return;
       }
 
+      const { default: jsPDF } = await import("jspdf");
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       const W = doc.internal.pageSize.getWidth();
       const M = 15;
