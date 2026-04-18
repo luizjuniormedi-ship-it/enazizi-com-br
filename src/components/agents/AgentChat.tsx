@@ -527,10 +527,13 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
       let textBuffer = "";
       let streamDone = false;
 
-      const appendAssistantChunk = (content: string) => {
-        if (!content) return;
-        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
-        assistantSoFar += content;
+      // rAF-throttled flush: at most 1 React render per frame (~60Hz)
+      let pendingFlush = false;
+      let lastFlushed = "";
+      const flushAssistant = () => {
+        pendingFlush = false;
+        if (assistantSoFar === lastFlushed) return;
+        lastFlushed = assistantSoFar;
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
@@ -538,6 +541,22 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           }
           return [...prev, { role: "assistant", content: assistantSoFar }];
         });
+      };
+      const scheduleAssistantFlush = () => {
+        if (pendingFlush) return;
+        pendingFlush = true;
+        if (typeof requestAnimationFrame !== "undefined") {
+          requestAnimationFrame(flushAssistant);
+        } else {
+          setTimeout(flushAssistant, 16);
+        }
+      };
+
+      const appendAssistantChunk = (content: string) => {
+        if (!content) return;
+        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
+        assistantSoFar += content;
+        scheduleAssistantFlush();
       };
 
       const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
@@ -592,6 +611,18 @@ const AgentChat = ({ title, subtitle, icon, welcomeMessage, welcomeMessageWithUp
           const result = processSseLine(line);
           if (result === "done") break;
         }
+      }
+
+      // Final synchronous flush so UI shows complete message before persistence
+      if (assistantSoFar !== lastFlushed) {
+        lastFlushed = assistantSoFar;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.role === "assistant" && prev.length > 1 && prev[prev.length - 2]?.role === "user") {
+            return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
+          }
+          return [...prev, { role: "assistant", content: assistantSoFar }];
+        });
       }
 
       if (convId && assistantSoFar) {
