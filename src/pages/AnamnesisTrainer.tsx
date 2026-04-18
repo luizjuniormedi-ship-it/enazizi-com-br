@@ -1,4 +1,6 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+
+const AnamnesisRadarChart = lazy(() => import("@/components/anamnesis/AnamnesisRadarChart"));
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
@@ -30,7 +32,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from "recharts";
 import ReactMarkdown from "react-markdown";
 import { exportToPdf } from "@/lib/exportPdf";
 
@@ -888,14 +889,9 @@ const AnamnesisTrainer = () => {
           <Card className="glass-card">
             <CardContent className="p-6">
               <h2 className="font-semibold mb-4 flex items-center gap-2"><Target className="h-5 w-5 text-primary" /> Radar de Desempenho</h2>
-              <ResponsiveContainer width="100%" height={280}>
-                <RadarChart data={radarData} outerRadius="70%">
-                  <PolarGrid className="stroke-border" />
-                  <PolarAngleAxis dataKey="category" tick={{ fontSize: 10 }} className="fill-muted-foreground" />
-                  <PolarRadiusAxis domain={[0, 10]} tick={{ fontSize: 9 }} className="fill-muted-foreground" />
-                  <Radar name="Score" dataKey="score" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.2} strokeWidth={2} />
-                </RadarChart>
-              </ResponsiveContainer>
+              <Suspense fallback={<div className="h-[280px] animate-pulse rounded-md bg-muted/30" />}>
+                <AnamnesisRadarChart data={radarData} />
+              </Suspense>
             </CardContent>
           </Card>
         )}
