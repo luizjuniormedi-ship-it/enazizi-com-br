@@ -18,7 +18,12 @@ export type FlagKey =
   | "image_questions_enabled"
   | "mission_control_enabled"
   | "study_loop_enabled"
-  | "product_metrics_enabled";
+  | "product_metrics_enabled"
+  // Tutor V2 — Sprint 1 (todas opt-in, default false)
+  | "tutor_v2_enabled"
+  | "tutor_blocks_enabled"
+  | "tutor_adaptive_context_enabled"
+  | "tutor_adaptive_writeback_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -43,6 +48,11 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   mission_control_enabled: false,
   study_loop_enabled: false,
   product_metrics_enabled: true,
+  // Tutor V2 — defaults seguros: tudo desligado até cada sprint validar
+  tutor_v2_enabled: false,
+  tutor_blocks_enabled: false,
+  tutor_adaptive_context_enabled: false,
+  tutor_adaptive_writeback_enabled: false,
 };
 
 export const useFeatureFlags = () => {

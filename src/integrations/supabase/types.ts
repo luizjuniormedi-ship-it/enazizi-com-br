@@ -7342,6 +7342,48 @@ export type Database = {
           },
         ]
       }
+      tutor_events: {
+        Row: {
+          block_type: string | null
+          conversation_id: string | null
+          created_at: string
+          event_type: string
+          id: string
+          outcome: string | null
+          payload: Json
+          related_message_id: string | null
+          subtopic: string | null
+          topic: string | null
+          user_id: string
+        }
+        Insert: {
+          block_type?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          outcome?: string | null
+          payload?: Json
+          related_message_id?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          user_id: string
+        }
+        Update: {
+          block_type?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          outcome?: string | null
+          payload?: Json
+          related_message_id?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tutor_messages: {
         Row: {
           content: string
