@@ -1,20 +1,21 @@
 import { useCallback, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isTutorBlock, type TutorBlock } from "@/types/tutor";
 
 /**
- * useTutorStream — Sprint 3
+ * useTutorStream — Sprint 4 (dual mode)
  *
- * Encapsulates the SSE streaming pipeline used by the Tutor IA chat:
- *  - HTTP POST with Bearer token + apikey
- *  - reader.getReader() / TextDecoder
- *  - SSE line parsing ("data: ..." / "[DONE]")
- *  - rAF-throttled flush
- *  - final flush
- *  - cleanup / abort support
+ * Mantém todo o comportamento da Sprint 3 para `format: "markdown"` (default),
+ * e adiciona suporte opt-in para `format: "blocks"` (NDJSON, 1 TutorBlock por linha).
  *
- * No behavior change vs V1: the consumer still owns `messages` state and
- * decides how to render each delta. This hook is purely transport+parsing.
+ * Regras de compatibilidade:
+ *  - Sem `format` → markdown (idêntico ao V1).
+ *  - format="blocks" + payload inválido → tolerado, ignorado silenciosamente.
+ *  - format="blocks" mas backend retorna texto cru → fallback automático para
+ *    onDelta() acumulando como markdown (consumer pode embrulhar em deep_dive).
  */
+
+export type TutorStreamFormat = "markdown" | "blocks";
 
 export interface StreamErrorInfo {
   status?: number;
@@ -24,10 +25,14 @@ export interface StreamErrorInfo {
 export interface StreamResponseOptions {
   url: string;
   body: Record<string, unknown>;
+  /** Formato esperado da resposta. Default: "markdown" (compatibilidade V1). */
+  format?: TutorStreamFormat;
   /** Called once when the first non-empty delta arrives. */
   onFirstChunk?: () => void;
   /** Called on every flushed delta with the FULL accumulated text so far. */
   onDelta: (fullText: string) => void;
+  /** Called when a valid TutorBlock is parsed (only in format="blocks"). */
+  onBlock?: (block: TutorBlock) => void;
   /** Called once at the end with the final accumulated text. */
   onComplete?: (finalText: string) => void;
   /** Called on transport / HTTP error. */
@@ -53,12 +58,13 @@ export function useTutorStream() {
     async ({
       url,
       body,
+      format = "markdown",
       onFirstChunk,
       onDelta,
+      onBlock,
       onComplete,
       onError,
     }: StreamResponseOptions): Promise<string | null> => {
-      // Cancel any previous in-flight stream from this hook instance.
       abortStream();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -96,6 +102,7 @@ export function useTutorStream() {
         scheduleAssistantFlush();
       };
 
+      // ── MARKDOWN MODE (V1 behavior) ──────────────────────────────────────
       const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
         let line = rawLine;
         if (line.endsWith("\r")) line = line.slice(0, -1);
@@ -112,6 +119,36 @@ export function useTutorStream() {
           return "incomplete";
         }
       };
+
+      // ── BLOCKS MODE (NDJSON, 1 TutorBlock por linha) ─────────────────────
+      const processBlockLine = (rawLine: string): "ok" | "done" | "incomplete" => {
+        const line = rawLine.endsWith("\r") ? rawLine.slice(0, -1) : rawLine;
+        const trimmed = line.trim();
+        if (!trimmed) return "ok";
+        if (trimmed === "[DONE]") return "done";
+        try {
+          const parsed = JSON.parse(trimmed);
+          if (isTutorBlock(parsed)) {
+            if (!firstChunkFired) {
+              firstChunkFired = true;
+              onFirstChunk?.();
+            }
+            onBlock?.(parsed);
+            // Mantém um espelho textual para compat com onDelta consumers.
+            const mirror =
+              parsed.type === "deep_dive"
+                ? parsed.payload.markdown
+                : `[${parsed.type}]`;
+            appendAssistantChunk((assistantSoFar ? "\n\n" : "") + mirror);
+          }
+          // Bloco inválido → tolerado, segue stream.
+          return "ok";
+        } catch {
+          return "incomplete";
+        }
+      };
+
+      const lineProcessor = format === "blocks" ? processBlockLine : processSseLine;
 
       try {
         const {
@@ -155,7 +192,7 @@ export function useTutorStream() {
           while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
             const line = textBuffer.slice(0, newlineIndex);
             textBuffer = textBuffer.slice(newlineIndex + 1);
-            const result = processSseLine(line);
+            const result = lineProcessor(line);
             if (result === "done") {
               streamDone = true;
               break;
@@ -167,19 +204,16 @@ export function useTutorStream() {
           }
         }
 
-        // Final flush of any remaining bytes still in the decoder.
         textBuffer += decoder.decode();
         if (textBuffer.trim()) {
           const remainingLines = textBuffer.split("\n");
           for (const line of remainingLines) {
             if (!line) continue;
-            const result = processSseLine(line);
+            const result = lineProcessor(line);
             if (result === "done") break;
           }
         }
 
-        // Guarantee the very last accumulated state reaches the consumer
-        // before onComplete fires (in case rAF didn't run yet).
         if (assistantSoFar !== lastFlushed) {
           lastFlushed = assistantSoFar;
           onDelta(assistantSoFar);
@@ -189,7 +223,6 @@ export function useTutorStream() {
         return assistantSoFar;
       } catch (e) {
         if ((e as { name?: string })?.name === "AbortError") {
-          // Silent abort — caller initiated cleanup.
           return assistantSoFar || null;
         }
         console.error("[useTutorStream] error:", e);
