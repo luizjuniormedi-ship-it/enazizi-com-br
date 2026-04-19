@@ -8,6 +8,7 @@ import { useTutorVoice } from "./hooks/useTutorVoice";
 import { useTutorHistory } from "./hooks/useTutorHistory";
 import { useTutorContext } from "./hooks/useTutorContext";
 import { useTutorStream } from "./hooks/useTutorStream";
+import { useTutorAdaptiveContext } from "./hooks/useTutorAdaptiveContext";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
 
 interface UseAgentChatOptions {
@@ -103,6 +104,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   });
 
   const { streamResponse } = useTutorStream();
+  const { fetchAdaptive, isAdaptiveEnabled } = useTutorAdaptiveContext();
 
   // Auto-save (uses history.activeConversationId)
   useEffect(() => {
@@ -171,6 +173,21 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         ? context.buildUserContext(contextOverride)
         : context.buildUserContext();
 
+      // Sprint 5 — Adaptive context (opt-in via flag, falha-silenciosa).
+      // Não bloqueia o envio se desligado ou se a edge falhar.
+      let adaptiveContext: unknown = undefined;
+      let adaptiveStatus: "off" | "ok" | "failed" | "skipped" = "off";
+      if (isAdaptiveEnabled) {
+        const adaptive = await fetchAdaptive({
+          message: text,
+          conversationId: convId ?? null,
+        });
+        adaptiveStatus = adaptive.status;
+        if (adaptive.context) {
+          adaptiveContext = adaptive.context;
+        }
+      }
+
       // Helper: apply a streamed delta to the messages array (last assistant turn).
       const applyDelta = (fullText: string) => {
         assistantSoFar = fullText;
@@ -195,6 +212,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           body: {
             messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
             userContext: contextToSend || undefined,
+            // Campo opcional — backends antigos podem ignorar sem erro.
+            adaptiveContext: adaptiveContext,
+            adaptiveMeta: { status: adaptiveStatus },
           },
           onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
@@ -266,6 +286,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       history,
       context,
       streamResponse,
+      isAdaptiveEnabled,
+      fetchAdaptive,
     ]
   );
 
