@@ -136,20 +136,12 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
             )}
 
             {f.questionMode === "manual" && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label className="text-xs">Tempo limite</Label>
-                  <select
-                    value={f.timeLimit}
-                    onChange={(e) => f.setTimeLimit(e.target.value)}
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
-                  >
-                    {[30, 60, 90, 120, 180].map((m) => (
-                      <option key={m} value={String(m)}>{m} minutos</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              <SimuladoManualQuantityFields
+                questionCount={f.questionCount}
+                timeLimit={f.timeLimit}
+                onQuestionCountChange={f.setQuestionCount}
+                onTimeLimitChange={f.setTimeLimit}
+              />
             )}
 
             {f.questionMode === "ai" && (
