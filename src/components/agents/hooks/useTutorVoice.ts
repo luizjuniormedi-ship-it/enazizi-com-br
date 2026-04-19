@@ -1,12 +1,15 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import type * as React from "react";
 import type { Msg } from "../agentChatTypes";
 
 const AUTO_SPEAK_LS_KEY = "tutor_auto_speak";
 
+type SetInput = React.Dispatch<React.SetStateAction<string>>;
+
 interface UseTutorVoiceOptions {
   messages: Msg[];
   isLoading: boolean;
-  setInput: (updater: (prev: string) => string) | ((value: string) => void);
+  setInput: SetInput;
 }
 
 /**
@@ -71,8 +74,7 @@ export function useTutorVoice({ messages, isLoading, setInput }: UseTutorVoiceOp
         if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript + " ";
         else interim += event.results[i][0].transcript;
       }
-      // setInput accepts plain value here
-      (setInput as (v: string) => void)(finalTranscript + interim);
+      setInput(finalTranscript + interim);
     };
     recognition.onerror = () => setIsListening(false);
     recognition.onend = () => setIsListening(false);
