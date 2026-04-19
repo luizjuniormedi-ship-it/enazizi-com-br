@@ -7,6 +7,7 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { useTutorVoice } from "./hooks/useTutorVoice";
 import { useTutorHistory } from "./hooks/useTutorHistory";
 import { useTutorContext } from "./hooks/useTutorContext";
+import { useTutorStream } from "./hooks/useTutorStream";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
 
 interface UseAgentChatOptions {
