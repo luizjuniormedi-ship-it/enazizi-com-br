@@ -5,6 +5,13 @@ import { useOrchestrator } from "@/hooks/useOrchestrator";
 import { useCoreData } from "@/hooks/useCoreData";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { TrendingUp, Wrench } from "lucide-react";
 
 import CockpitHero from "./CockpitHero";
 import CockpitAlerts from "./CockpitAlerts";
@@ -54,7 +61,7 @@ export default function CognitiveCockpit() {
 
   return (
     <div className="space-y-4">
-      {/* Bloco 1 — Hero (orquestrador com fallback seguro para study-next) */}
+      {/* ═══ BLOCO 1 — HERO PRINCIPAL ═══ */}
       <CockpitHero
         cockpit={cockpit}
         recommendation={studyNext?.recommendation}
@@ -63,26 +70,66 @@ export default function CognitiveCockpit() {
         userName={userName}
       />
 
+      {/* ═══ BLOCO 3 — ALERTAS ACIONÁVEIS ═══ */}
       <CockpitAlerts alerts={cockpit.alerts} />
 
+      {/* ═══ BLOCO 6 — PRÓXIMOS PASSOS + QUIZ VISUAL (ações rápidas contextuais) ═══ */}
       <div className="grid lg:grid-cols-2 gap-4">
         <CockpitNextSteps steps={cockpit.nextSteps} />
         <CockpitVisualQuiz weaknesses={cockpit.visualWeaknesses} />
       </div>
 
-      <CockpitWeaknesses weaknesses={cockpit.topWeaknesses} />
+      {/* ═══ BLOCO 4 — EVOLUÇÃO (agrupado e expansível) ═══ */}
+      <Card className="overflow-hidden">
+        <Accordion type="single" collapsible defaultValue="evolucao">
+          <AccordionItem value="evolucao" className="border-0">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                <span className="text-lg font-semibold">📈 Evolução</span>
+                <span className="text-xs text-muted-foreground font-normal ml-2">
+                  Radar · Memória · Performance · Perfil
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <CockpitRadar radar={cockpit.radar} />
+                  <CockpitProfile profile={cockpit.cognitiveProfile} />
+                </div>
+                <div className="grid lg:grid-cols-2 gap-4">
+                  <CockpitMemory data={cockpit} />
+                  <CockpitPerformance data={cockpit} streak={streak} />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </Card>
 
-      <CockpitMnemonics useful={cockpit.mnemUseful} bad={cockpit.mnemBad} />
-
-      <div className="grid lg:grid-cols-2 gap-4">
-        <CockpitMemory data={cockpit} />
-        <CockpitPerformance data={cockpit} streak={streak} />
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-4">
-        <CockpitRadar radar={cockpit.radar} />
-        <CockpitProfile profile={cockpit.cognitiveProfile} />
-      </div>
+      {/* ═══ BLOCO 5 — FERRAMENTAS DE REFORÇO (agrupado e expansível) ═══ */}
+      <Card className="overflow-hidden">
+        <Accordion type="single" collapsible>
+          <AccordionItem value="reforco" className="border-0">
+            <AccordionTrigger className="px-6 py-4 hover:no-underline">
+              <div className="flex items-center gap-2">
+                <Wrench className="h-5 w-5 text-warning" />
+                <span className="text-lg font-semibold">🛠️ Ferramentas de reforço</span>
+                <span className="text-xs text-muted-foreground font-normal ml-2">
+                  Fraquezas · Mnemônicos
+                </span>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4">
+                <CockpitWeaknesses weaknesses={cockpit.topWeaknesses} />
+                <CockpitMnemonics useful={cockpit.mnemUseful} bad={cockpit.mnemBad} />
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </Card>
     </div>
   );
 }
