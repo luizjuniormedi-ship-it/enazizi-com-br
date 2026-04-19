@@ -1,0 +1,604 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { EXAM_PROFILES } from "@/lib/examProfiles";
+import { useToast } from "@/hooks/use-toast";
+
+type CallAPI = (body: Record<string, unknown>) => Promise<any>;
+
+interface Args {
+  open: boolean;
+  callAPI: CallAPI;
+  onCreated: () => void;
+  onOpenChange: (open: boolean) => void;
+}
+
+/**
+ * Centraliza TODO o estado e lógica do CreateSimuladoDialog.
+ * O dialog vira um orquestrador puro de UI.
+ *
+ * Estado é desmontado naturalmente quando o dialog fecha.
+ */
+export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }: Args) {
+  const { toast } = useToast();
+
+  // Estado de criação/geração
+  const [creating, setCreating] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  // Form básico
+  const [title, setTitle] = useState("Simulado");
+  const [description, setDescription] = useState("");
+  const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [newTopicInput, setNewTopicInput] = useState("");
+  const [subtopics, setSubtopics] = useState<Record<string, string>>({});
+  const [faculdadeFilter, setFaculdadeFilter] = useState("");
+  const [periodoFilter, setPeriodoFilter] = useState("");
+  const [questionCount, setQuestionCount] = useState("10");
+  const [timeLimit, setTimeLimit] = useState("60");
+  const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
+  const [questionMode, setQuestionMode] = useState<"ai" | "manual">("ai");
+  const [difficulty, setDifficulty] = useState("misto");
+  const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 40, dificil: 40 });
+  const [scheduledAt, setScheduledAt] = useState("");
+  const [autoAssign, setAutoAssign] = useState(true);
+  const [examBoard, setExamBoard] = useState("all");
+
+  // Manual question form
+  const [manualStatement, setManualStatement] = useState("");
+  const [manualOptions, setManualOptions] = useState(["", "", "", "", ""]);
+  const [manualCorrect, setManualCorrect] = useState("0");
+  const [manualTopic, setManualTopic] = useState("");
+  const [manualQuestions, setManualQuestions] = useState<any[]>([]);
+
+  // Bank questions (compat — useAI sempre true neste fluxo)
+  const useAI = true;
+  const [bankQuestions] = useState<any[]>([]);
+  const [selectedBankQuestions] = useState<string[]>([]);
+
+  // Alunos
+  const [previewStudents, setPreviewStudents] = useState<any[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchingStudents, setSearchingStudents] = useState(false);
+
+  // UI auxiliar
+  const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
+  const [topicDistribution, setTopicDistribution] = useState<Record<string, number>>({});
+  const [useDistribution, setUseDistribution] = useState(false);
+
+  const allExamTopics = useMemo(() => {
+    const topics = new Set<string>();
+    Object.values(EXAM_PROFILES).forEach((profile) => {
+      Object.keys(profile.specialtyWeights || {}).forEach((topic) => topics.add(topic));
+    });
+    return [...topics];
+  }, []);
+
+  // Auto-preencher temas quando "Todas as bancas"
+  useEffect(() => {
+    if (!open || questionMode !== "ai" || examBoard !== "all") return;
+    setSelectedTopics((prev) => (prev.length > 0 ? prev : allExamTopics));
+  }, [allExamTopics, examBoard, questionMode, open]);
+
+  // ============ Handlers de Alunos ============
+  const previewMatchingStudents = useCallback(async () => {
+    setPreviewLoading(true);
+    try {
+      const res = await callAPI({
+        action: "get_students",
+        faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
+        periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+      });
+      const students = res.students || [];
+      setPreviewStudents(students);
+      setSelectedStudentIds(students.map((s: any) => s.user_id));
+    } catch {
+      setPreviewStudents([]);
+      setSelectedStudentIds([]);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [callAPI, faculdadeFilter, periodoFilter]);
+
+  const searchStudentGlobal = useCallback(async () => {
+    if (studentSearch.length < 3) {
+      toast({ title: "Digite pelo menos 3 caracteres", variant: "destructive" });
+      return;
+    }
+    setSearchingStudents(true);
+    try {
+      const res = await callAPI({ action: "search_students", query: studentSearch });
+      setSearchResults(
+        (res.students || []).filter((s: any) => !previewStudents.some((p: any) => p.user_id === s.user_id))
+      );
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setSearchingStudents(false);
+    }
+  }, [callAPI, studentSearch, previewStudents, toast]);
+
+  const addSearchedStudent = useCallback((student: any) => {
+    setPreviewStudents((prev) =>
+      prev.some((s: any) => s.user_id === student.user_id) ? prev : [...prev, student]
+    );
+    setSelectedStudentIds((prev) => (prev.includes(student.user_id) ? prev : [...prev, student.user_id]));
+    setSearchResults((prev) => prev.filter((s: any) => s.user_id !== student.user_id));
+  }, []);
+
+  const toggleStudentSelection = useCallback((userId: string) => {
+    setSelectedStudentIds((prev) =>
+      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
+    );
+  }, []);
+
+  const toggleAllStudents = useCallback(() => {
+    setSelectedStudentIds((prev) =>
+      prev.length === previewStudents.length ? [] : previewStudents.map((s: any) => s.user_id)
+    );
+  }, [previewStudents]);
+
+  // ============ Handlers de Temas ============
+  const addTopic = useCallback(() => {
+    const t = newTopicInput.trim();
+    if (!t) return;
+    setSelectedTopics((prev) => (prev.includes(t) ? prev : [...prev, t]));
+    setNewTopicInput("");
+  }, [newTopicInput]);
+
+  const removeTopic = useCallback((topic: string) => {
+    setSelectedTopics((prev) => prev.filter((t) => t !== topic));
+    setSubtopics((prev) => {
+      const next = { ...prev };
+      delete next[topic];
+      return next;
+    });
+  }, []);
+
+  const setSubtopicFor = useCallback((topic: string, value: string) => {
+    setSubtopics((prev) => ({ ...prev, [topic]: value }));
+  }, []);
+
+  const toggleDistribution = useCallback(
+    (v: boolean) => {
+      setUseDistribution(v);
+      if (v) {
+        const total = parseInt(questionCount);
+        const perTopic = Math.floor(total / selectedTopics.length);
+        const remainder = total - perTopic * selectedTopics.length;
+        const dist: Record<string, number> = {};
+        selectedTopics.forEach((t, i) => {
+          dist[t] = perTopic + (i < remainder ? 1 : 0);
+        });
+        setTopicDistribution(dist);
+      }
+    },
+    [questionCount, selectedTopics]
+  );
+
+  const updateTopicDistribution = useCallback((topic: string, value: number) => {
+    setTopicDistribution((prev) => ({ ...prev, [topic]: value }));
+  }, []);
+
+  // ============ Banca ============
+  const handleExamBoardChange = useCallback(
+    (val: string) => {
+      setExamBoard(val);
+      const keyMap: Record<string, string> = {
+        ENARE: "enare",
+        REVALIDA: "revalida",
+        "USP-SP": "usp",
+        UNIFESP: "unifesp",
+        "SUS-SP": "sus-sp",
+        UNICAMP: "unicamp",
+        SANTA_CASA: "santa-casa-sp",
+      };
+      if (val !== "all") {
+        const profile = EXAM_PROFILES[keyMap[val] || "outra"];
+        if (profile?.specialtyWeights) {
+          const bancaTopics = Object.keys(profile.specialtyWeights);
+          setSelectedTopics((prev) => {
+            const newOnes = bancaTopics.filter((t) => !prev.includes(t));
+            return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+          });
+        }
+      } else {
+        const allBancaTopics = new Set<string>();
+        Object.values(EXAM_PROFILES).forEach((profile) => {
+          if (profile?.specialtyWeights) {
+            Object.keys(profile.specialtyWeights).forEach((t) => allBancaTopics.add(t));
+          }
+        });
+        setSelectedTopics((prev) => {
+          const newOnes = [...allBancaTopics].filter((t) => !prev.includes(t));
+          return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+        });
+      }
+    },
+    []
+  );
+
+  // ============ Dificuldade ============
+  const updateDifficultyMix = useCallback(
+    (key: "facil" | "intermediario" | "dificil", val: number) => {
+      setDifficultyMix((prev) => {
+        const others = (["facil", "intermediario", "dificil"] as const).filter((k) => k !== key);
+        const remaining = 100 - val;
+        const otherTotal = prev[others[0]] + prev[others[1]];
+        let v0: number, v1: number;
+        if (otherTotal === 0) {
+          v0 = Math.round(remaining / 2);
+          v1 = remaining - v0;
+        } else {
+          v0 = Math.round((prev[others[0]] / otherTotal) * remaining);
+          v1 = remaining - v0;
+        }
+        return { ...prev, [key]: val, [others[0]]: v0, [others[1]]: v1 };
+      });
+    },
+    []
+  );
+
+  // ============ Questões ============
+  const removeGeneratedQuestion = useCallback((idx: number) => {
+    setGeneratedQuestions((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const removeManualQuestion = useCallback((idx: number) => {
+    setManualQuestions((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const generateQuestionsAI = useCallback(async () => {
+    if (selectedTopics.length === 0) {
+      toast({
+        title: "Selecione temas",
+        description: "Escolha pelo menos um tema para gerar questões.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setGenerating(true);
+    setGeneratedQuestions([]);
+    setExpandedQuestion(null);
+    try {
+      const total = parseInt(questionCount);
+      let allQuestions: any[] = [];
+
+      if (useDistribution && selectedTopics.length > 1) {
+        for (const topic of selectedTopics) {
+          const topicCount = topicDistribution[topic] || 0;
+          if (topicCount <= 0) continue;
+          const subs = subtopics[topic]?.trim();
+          const topicLabel = subs ? `${topic} (${subs})` : topic;
+
+          const BATCH = 10;
+          const batches = Math.ceil(topicCount / BATCH);
+          let topicQuestions: any[] = [];
+
+          for (let b = 0; b < batches; b++) {
+            const batchCount = Math.min(BATCH, topicCount - topicQuestions.length);
+            if (batchCount <= 0) break;
+
+            toast({
+              title: `${topic}: lote ${b + 1}/${batches}`,
+              description: `${allQuestions.length + topicQuestions.length}/${total} questões prontas`,
+            });
+
+            const previousStatements = [...allQuestions, ...topicQuestions].map((q: any) =>
+              String(q.statement || "").slice(0, 120)
+            );
+
+            try {
+              const res = await callAPI({
+                action: "generate_questions",
+                topics: [topicLabel],
+                count: batchCount,
+                difficulty,
+                difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+                previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+                examBoard: examBoard !== "all" ? examBoard : undefined,
+              });
+              if (res.source === "cache") {
+                toast({
+                  title: "📦 Questões do banco",
+                  description: "Todas as questões vieram do banco existente (sem custo de IA).",
+                });
+              } else if (res.source === "mixed") {
+                toast({
+                  title: "🔄 Questões mistas",
+                  description: "Parte do banco existente + parte gerada por IA.",
+                });
+              } else if (res.source === "bank") {
+                toast({
+                  title: "📦 Questões do banco",
+                  description: "A IA não respondeu, usamos questões do banco existente.",
+                });
+              }
+              topicQuestions = [...topicQuestions, ...(res.questions || [])];
+            } catch (batchErr) {
+              console.error(`Batch ${b + 1} for ${topic} failed:`, batchErr);
+              toast({
+                title: `Erro no lote ${b + 1} de ${topic}`,
+                description: "Continuando com os próximos...",
+                variant: "destructive",
+              });
+            }
+          }
+          allQuestions = [...allQuestions, ...topicQuestions];
+          setGeneratedQuestions([...allQuestions]);
+        }
+      } else {
+        const topicsWithSubs = selectedTopics.map((t) => {
+          const subs = subtopics[t]?.trim();
+          return subs ? `${t} (${subs})` : t;
+        });
+        const FRONTEND_BATCH = 10;
+        const batches = Math.ceil(total / FRONTEND_BATCH);
+
+        for (let b = 0; b < batches; b++) {
+          const batchCount = Math.min(FRONTEND_BATCH, total - allQuestions.length);
+          if (batchCount <= 0) break;
+
+          toast({
+            title: `Gerando lote ${b + 1}/${batches}...`,
+            description: `${allQuestions.length}/${total} questões prontas`,
+          });
+
+          const previousStatements = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+
+          try {
+            const res = await callAPI({
+              action: "generate_questions",
+              topics: topicsWithSubs,
+              count: batchCount,
+              difficulty,
+              difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+              previousStatements: previousStatements.length > 0 ? previousStatements : undefined,
+              examBoard: examBoard !== "all" ? examBoard : undefined,
+            });
+            if (res.source === "cache") {
+              toast({
+                title: "📦 Questões do banco",
+                description: "Todas as questões vieram do banco existente (sem custo de IA).",
+              });
+            } else if (res.source === "mixed") {
+              toast({
+                title: "🔄 Questões mistas",
+                description: "Parte do banco existente + parte gerada por IA.",
+              });
+            } else if (res.source === "bank") {
+              toast({
+                title: "📦 Questões do banco",
+                description: "A IA não respondeu, usamos questões do banco existente.",
+              });
+            }
+            const batchQ = res.questions || [];
+            allQuestions = [...allQuestions, ...batchQ];
+            setGeneratedQuestions([...allQuestions]);
+          } catch (batchErr) {
+            console.error(`Batch ${b + 1} failed:`, batchErr);
+            toast({
+              title: `Erro no lote ${b + 1}`,
+              description: "Continuando com os próximos...",
+              variant: "destructive",
+            });
+          }
+        }
+      }
+
+      const target = total;
+      for (let fill = 0; fill < 4 && allQuestions.length < target; fill++) {
+        const deficit = target - allQuestions.length;
+        toast({
+          title: `Completando déficit...`,
+          description: `Faltam ${deficit} questões (tentativa ${fill + 1})`,
+        });
+        const prevStmts = allQuestions.map((q: any) => String(q.statement || "").slice(0, 120));
+        const topicsWithSubsFill = selectedTopics.map((t) => {
+          const subs = subtopics[t]?.trim();
+          return subs ? `${t} (${subs})` : t;
+        });
+        try {
+          const res = await callAPI({
+            action: "generate_questions",
+            topics: topicsWithSubsFill,
+            count: deficit,
+            difficulty,
+            previousStatements: prevStmts,
+            examBoard: examBoard !== "all" ? examBoard : undefined,
+          });
+          allQuestions = [...allQuestions, ...(res.questions || [])];
+          setGeneratedQuestions([...allQuestions]);
+        } catch {
+          break;
+        }
+      }
+
+      toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas.` });
+    } catch (e) {
+      toast({
+        title: "Erro",
+        description: e instanceof Error ? e.message : "Erro ao gerar",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  }, [
+    callAPI, toast, selectedTopics, questionCount, useDistribution, topicDistribution,
+    subtopics, difficulty, difficultyMix, examBoard,
+  ]);
+
+  const regenerateMissing = useCallback(async () => {
+    const target = parseInt(questionCount);
+    const currentQuestions = [...generatedQuestions];
+    const deficit = target - currentQuestions.length;
+    if (deficit <= 0) return;
+    setGenerating(true);
+    try {
+      const topicsWithSubs = selectedTopics.map((t) => {
+        const subs = subtopics[t]?.trim();
+        return subs ? `${t} (${subs})` : t;
+      });
+      const previousStatements = currentQuestions.map((q: any) =>
+        String(q.statement || "").slice(0, 120)
+      );
+
+      toast({ title: "Regenerando...", description: `Gerando ${deficit} questões faltantes` });
+
+      const res = await callAPI({
+        action: "generate_questions",
+        topics: topicsWithSubs,
+        count: deficit,
+        difficulty,
+        difficultyMix: difficulty === "misto" ? difficultyMix : undefined,
+        previousStatements,
+      });
+
+      const newQs = res.questions || [];
+      const merged = [...currentQuestions, ...newQs];
+      setGeneratedQuestions(merged);
+      toast({
+        title: "Pronto!",
+        description: `${newQs.length} questões regeneradas. Total: ${merged.length}/${target}`,
+      });
+    } catch (e) {
+      toast({
+        title: "Erro",
+        description: e instanceof Error ? e.message : "Erro ao regenerar",
+        variant: "destructive",
+      });
+    } finally {
+      setGenerating(false);
+    }
+  }, [callAPI, toast, questionCount, generatedQuestions, selectedTopics, subtopics, difficulty, difficultyMix]);
+
+  const addManualQuestion = useCallback(() => {
+    if (!manualStatement.trim()) return;
+    const filledOptions = manualOptions.filter((o) => o.trim());
+    if (filledOptions.length < 2) return;
+
+    setManualQuestions((prev) => [
+      ...prev,
+      {
+        statement: manualStatement.trim(),
+        options: manualOptions
+          .map((o, i) => `${String.fromCharCode(65 + i)}) ${o.trim()}`)
+          .filter((_, i) => manualOptions[i].trim()),
+        correct_index: parseInt(manualCorrect),
+        topic: manualTopic || selectedTopics[0] || "Geral",
+        explanation: "",
+      },
+    ]);
+    setManualStatement("");
+    setManualOptions(["", "", "", "", ""]);
+    setManualCorrect("0");
+    setManualTopic("");
+  }, [manualStatement, manualOptions, manualCorrect, manualTopic, selectedTopics]);
+
+  const updateManualOption = useCallback((i: number, value: string) => {
+    setManualOptions((prev) => {
+      const copy = [...prev];
+      copy[i] = value;
+      return copy;
+    });
+  }, []);
+
+  const createSimulado = useCallback(async () => {
+    const questions =
+      questionMode === "manual"
+        ? manualQuestions
+        : useAI
+        ? generatedQuestions
+        : bankQuestions.filter((q) => selectedBankQuestions.includes(q.id));
+    if (questions.length === 0) {
+      toast({
+        title: "Sem questões",
+        description: "Gere ou selecione questões primeiro.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setCreating(true);
+    try {
+      const res = await callAPI({
+        action: "create_simulado",
+        title,
+        description,
+        topics: selectedTopics,
+        faculdade_filter: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : null,
+        periodo_filter: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : null,
+        total_questions: questions.length,
+        time_limit_minutes: parseInt(timeLimit),
+        questions_json: questions,
+        student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : null,
+        scheduled_at: scheduledAt || null,
+        auto_assign: autoAssign,
+        exam_board: examBoard !== "all" ? examBoard : null,
+      });
+      toast({ title: "Simulado criado!", description: `Atribuído a ${res.students_assigned} aluno(s).` });
+      onOpenChange(false);
+      onCreated();
+    } catch (e) {
+      toast({
+        title: "Erro",
+        description: e instanceof Error ? e.message : "Erro",
+        variant: "destructive",
+      });
+    } finally {
+      setCreating(false);
+    }
+  }, [
+    callAPI, toast, onOpenChange, onCreated, questionMode, manualQuestions, generatedQuestions,
+    bankQuestions, selectedBankQuestions, title, description, selectedTopics, faculdadeFilter,
+    periodoFilter, timeLimit, selectedStudentIds, scheduledAt, autoAssign, examBoard,
+  ]);
+
+  const allQs = questionMode === "ai" ? generatedQuestions : manualQuestions;
+  const target = parseInt(questionCount);
+  const deficit = questionMode === "ai" ? target - allQs.length : 0;
+  const groupedBlocks = useMemo(() => {
+    const grouped = allQs.reduce<Record<string, any[]>>((acc, q) => {
+      const block = q.block || q.topic || "Geral";
+      if (!acc[block]) acc[block] = [];
+      acc[block].push(q);
+      return acc;
+    }, {});
+    return Object.entries(grouped);
+  }, [allQs]);
+
+  return {
+    // estados
+    creating, generating,
+    title, setTitle, description, setDescription,
+    selectedTopics, newTopicInput, setNewTopicInput, subtopics,
+    faculdadeFilter, setFaculdadeFilter, periodoFilter, setPeriodoFilter,
+    questionCount, setQuestionCount, timeLimit, setTimeLimit,
+    generatedQuestions, manualQuestions, questionMode, setQuestionMode,
+    difficulty, setDifficulty, difficultyMix, scheduledAt, setScheduledAt,
+    autoAssign, setAutoAssign, examBoard,
+    manualStatement, setManualStatement, manualOptions, manualCorrect, setManualCorrect,
+    manualTopic, setManualTopic,
+    previewStudents, previewLoading, selectedStudentIds, studentSearch, setStudentSearch,
+    searchResults, searchingStudents,
+    expandedQuestion, setExpandedQuestion, topicDistribution, useDistribution,
+
+    // derived
+    allQs, target, deficit, groupedBlocks,
+
+    // handlers
+    addTopic, removeTopic, setSubtopicFor,
+    toggleDistribution, updateTopicDistribution,
+    handleExamBoardChange,
+    updateDifficultyMix,
+    previewMatchingStudents, searchStudentGlobal, addSearchedStudent,
+    toggleStudentSelection, toggleAllStudents,
+    removeGeneratedQuestion, removeManualQuestion,
+    generateQuestionsAI, regenerateMissing,
+    addManualQuestion, updateManualOption,
+    createSimulado,
+  };
+}
+
+export type CreateSimuladoFormState = ReturnType<typeof useCreateSimuladoForm>;
