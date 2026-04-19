@@ -286,6 +286,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       history,
       context,
       streamResponse,
+      isAdaptiveEnabled,
+      fetchAdaptive,
     ]
   );
 
