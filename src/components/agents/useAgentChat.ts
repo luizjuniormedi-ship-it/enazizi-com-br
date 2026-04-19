@@ -102,6 +102,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     onStartNewConversation: completeSession,
   });
 
+  const { streamResponse } = useTutorStream();
+
   // Auto-save (uses history.activeConversationId)
   useEffect(() => {
     registerAutoSave(() => {
