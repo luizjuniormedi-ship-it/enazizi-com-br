@@ -64,7 +64,7 @@ export function useTutorAdaptiveSync() {
           outcome: input.outcome ?? null,
           related_message_id: input.related_message_id ?? null,
         };
-        const { error } = await supabase.from("tutor_events").insert(row);
+        const { error } = await supabase.from("tutor_events").insert([row]);
         if (error) console.warn("[TutorSync] tutor_events insert failed:", error.message);
       } catch (e) {
         console.warn("[TutorSync] logEvent exception:", e);
@@ -154,16 +154,18 @@ export function useTutorAdaptiveSync() {
               })
               .eq("id", existing.id);
           } else {
-            await supabase.from("error_bank").insert({
-              user_id: user.id,
-              tema: baseTopic,
-              subtema: baseSubtopic,
-              tipo_questao: "objetiva",
-              categoria_erro: "tutor_mini_quiz",
-              motivo_erro: args.stem ?? null,
-              conteudo: args.stem ?? null,
-              vezes_errado: 1,
-            });
+            await supabase.from("error_bank").insert([
+              {
+                user_id: user.id,
+                tema: baseTopic,
+                subtema: baseSubtopic,
+                tipo_questao: "objetiva",
+                categoria_erro: "tutor_mini_quiz",
+                motivo_erro: args.stem ?? null,
+                conteudo: args.stem ?? null,
+                vezes_errado: 1,
+              },
+            ]);
           }
         } catch (e) {
           console.warn("[TutorSync] error_bank writeback failed:", e);
