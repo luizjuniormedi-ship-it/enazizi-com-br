@@ -7,6 +7,7 @@ import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { useTutorVoice } from "./hooks/useTutorVoice";
 import { useTutorHistory } from "./hooks/useTutorHistory";
 import { useTutorContext } from "./hooks/useTutorContext";
+import { useTutorStream } from "./hooks/useTutorStream";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
 
 interface UseAgentChatOptions {
@@ -101,6 +102,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     onStartNewConversation: completeSession,
   });
 
+  const { streamResponse } = useTutorStream();
+
   // Auto-save (uses history.activeConversationId)
   useEffect(() => {
     registerAutoSave(() => {
@@ -168,144 +171,53 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         ? context.buildUserContext(contextOverride)
         : context.buildUserContext();
 
+      // Helper: apply a streamed delta to the messages array (last assistant turn).
+      const applyDelta = (fullText: string) => {
+        assistantSoFar = fullText;
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (
+            last?.role === "assistant" &&
+            prev.length > 1 &&
+            prev[prev.length - 2]?.role === "user"
+          ) {
+            return prev.map((m, i) =>
+              i === prev.length - 1 ? { ...m, content: fullText } : m
+            );
+          }
+          return [...prev, { role: "assistant", content: fullText }];
+        });
+      };
+
       try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const accessToken = session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-        const resp = await fetch(CHAT_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          },
-          body: JSON.stringify({
+        const result = await streamResponse({
+          url: CHAT_URL,
+          body: {
             messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
             userContext: contextToSend || undefined,
-          }),
+          },
+          onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
+          onDelta: applyDelta,
+          onError: ({ status, message }) => {
+            const errorMessages: Record<number, string> = {
+              429: "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.",
+              402: "Créditos de IA esgotados. Adicione créditos no seu workspace para continuar.",
+              401: "Sessão expirada. Faça login novamente.",
+              500: "Erro interno do servidor. Tente novamente.",
+            };
+            const description =
+              (status && errorMessages[status]) ||
+              message ||
+              "Erro ao conectar com o agente IA";
+            toast({ title: "Erro", description, variant: "destructive" });
+          },
         });
 
-        if (!resp.ok) {
-          const errData = await resp.json().catch(() => ({}));
-          const errorMessages: Record<number, string> = {
-            429: "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.",
-            402: "Créditos de IA esgotados. Adicione créditos no seu workspace para continuar.",
-            401: "Sessão expirada. Faça login novamente.",
-            500: "Erro interno do servidor. Tente novamente.",
-          };
-          const description =
-            errData.error || errorMessages[resp.status] || "Erro ao conectar com o agente IA";
-          toast({ title: "Erro", description, variant: "destructive" });
+        if (result === null) {
+          // Error already surfaced via onError
           setIsLoading(false);
           setLoadingStage("");
           return;
-        }
-
-        if (!resp.body) throw new Error("No response body");
-
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let textBuffer = "";
-        let streamDone = false;
-
-        let pendingFlush = false;
-        let lastFlushed = "";
-        const flushAssistant = () => {
-          pendingFlush = false;
-          if (assistantSoFar === lastFlushed) return;
-          lastFlushed = assistantSoFar;
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            if (
-              last?.role === "assistant" &&
-              prev.length > 1 &&
-              prev[prev.length - 2]?.role === "user"
-            ) {
-              return prev.map((m, i) =>
-                i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
-              );
-            }
-            return [...prev, { role: "assistant", content: assistantSoFar }];
-          });
-        };
-        const scheduleAssistantFlush = () => {
-          if (pendingFlush) return;
-          pendingFlush = true;
-          if (typeof requestAnimationFrame !== "undefined")
-            requestAnimationFrame(flushAssistant);
-          else setTimeout(flushAssistant, 16);
-        };
-
-        const appendAssistantChunk = (content: string) => {
-          if (!content) return;
-          if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
-          assistantSoFar += content;
-          scheduleAssistantFlush();
-        };
-
-        const processSseLine = (rawLine: string): "ok" | "done" | "incomplete" => {
-          let line = rawLine;
-          if (line.endsWith("\r")) line = line.slice(0, -1);
-          if (line.startsWith(":") || line.trim() === "") return "ok";
-          if (!line.startsWith("data: ")) return "ok";
-          const jsonStr = line.slice(6).trim();
-          if (jsonStr === "[DONE]") return "done";
-          try {
-            const parsed = JSON.parse(jsonStr);
-            const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-            if (content) appendAssistantChunk(content);
-            return "ok";
-          } catch {
-            return "incomplete";
-          }
-        };
-
-        while (!streamDone) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          textBuffer += decoder.decode(value, { stream: true });
-          let newlineIndex: number;
-          while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
-            const line = textBuffer.slice(0, newlineIndex);
-            textBuffer = textBuffer.slice(newlineIndex + 1);
-            const result = processSseLine(line);
-            if (result === "done") {
-              streamDone = true;
-              break;
-            }
-            if (result === "incomplete") {
-              textBuffer = `${line}\n${textBuffer}`;
-              break;
-            }
-          }
-        }
-
-        textBuffer += decoder.decode();
-        if (textBuffer.trim()) {
-          const remainingLines = textBuffer.split("\n");
-          for (const line of remainingLines) {
-            if (!line) continue;
-            const result = processSseLine(line);
-            if (result === "done") break;
-          }
-        }
-
-        if (assistantSoFar !== lastFlushed) {
-          lastFlushed = assistantSoFar;
-          setMessages((prev) => {
-            const last = prev[prev.length - 1];
-            if (
-              last?.role === "assistant" &&
-              prev.length > 1 &&
-              prev[prev.length - 2]?.role === "user"
-            ) {
-              return prev.map((m, i) =>
-                i === prev.length - 1 ? { ...m, content: assistantSoFar } : m
-              );
-            }
-            return [...prev, { role: "assistant", content: assistantSoFar }];
-          });
         }
 
         if (convId && assistantSoFar) {
@@ -353,6 +265,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       onSaveMessage,
       history,
       context,
+      streamResponse,
     ]
   );
 
