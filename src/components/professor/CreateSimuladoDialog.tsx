@@ -11,6 +11,7 @@ import SimuladoStudentPicker from "./SimuladoStudentPicker";
 import SimuladoTopicsPicker from "./SimuladoTopicsPicker";
 import SimuladoDifficultyMix from "./SimuladoDifficultyMix";
 import SimuladoManualForm from "./SimuladoManualForm";
+import SimuladoManualQuantityFields from "./SimuladoManualQuantityFields";
 import SimuladoQuestionsPreview from "./SimuladoQuestionsPreview";
 import SimuladoSchedule from "./SimuladoSchedule";
 
