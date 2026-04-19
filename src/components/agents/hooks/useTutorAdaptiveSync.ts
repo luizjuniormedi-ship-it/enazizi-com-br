@@ -60,11 +60,12 @@ export function useTutorAdaptiveSync() {
           topic: input.topic ?? null,
           subtopic: input.subtopic ?? null,
           block_type: input.block_type ?? null,
-          payload: input.payload ?? {},
+          payload: (input.payload ?? {}) as Record<string, unknown>,
           outcome: input.outcome ?? null,
           related_message_id: input.related_message_id ?? null,
         };
-        const { error } = await supabase.from("tutor_events").insert([row]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { error } = await supabase.from("tutor_events").insert([row as any]);
         if (error) console.warn("[TutorSync] tutor_events insert failed:", error.message);
       } catch (e) {
         console.warn("[TutorSync] logEvent exception:", e);
