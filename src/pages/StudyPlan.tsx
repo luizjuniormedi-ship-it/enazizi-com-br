@@ -1,3 +1,9 @@
+/**
+ * @legacy-write — Página /study-plan (atualmente órfã, sem rota em App.tsx).
+ * Lê e escreve em study_plans/study_tasks (shape semanal). Fonte viva oficial: daily_plans/daily_plan_tasks.
+ * NÃO migrar sem redesign de UX — daily_plans é diário; weeklySchedule não tem equivalente direto.
+ * Mantido para retrocompatibilidade. Não exibir esta página sem reavaliação.
+ */
 import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, RefreshCw } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";

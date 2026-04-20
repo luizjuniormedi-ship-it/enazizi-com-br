@@ -37,7 +37,8 @@ const PerformancePredictor = () => {
         supabase.from("practice_attempts").select("correct, question_id, questions_bank(topic)").eq("user_id", user.id),
         supabase.from("profiles").select("exam_date, daily_study_hours, has_completed_diagnostic").eq("user_id", user.id).maybeSingle(),
         supabase.from("reviews").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("study_tasks").select("completed, created_at").eq("user_id", user.id),
+        // [planner-unification] Fonte viva: daily_plan_tasks (substitui study_tasks legado)
+        supabase.from("daily_plan_tasks").select("completed, created_at").eq("user_id", user.id),
         supabase.from("exam_sessions").select("score, finished_at").eq("user_id", user.id).eq("status", "finished").order("finished_at", { ascending: true }),
       ]);
 

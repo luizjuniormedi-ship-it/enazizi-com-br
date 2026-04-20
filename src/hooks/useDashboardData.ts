@@ -85,9 +85,11 @@ export const useDashboardData = () => {
         ] = await Promise.all([
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          // @deprecated-source — `study_tasks`/`study_plans` são tabelas legado.
-          // Fonte viva: `daily_plan_tasks` + `daily_plans`. Mantidas para retrocompatibilidade do dashboard.
-          supabase.from("study_tasks").select("completed, created_at, task_json").eq("user_id", userId),
+          // [planner-unification] Fonte viva: daily_plan_tasks (substitui study_tasks legado).
+          // estimated_minutes substitui task_json.duration; completed_at substitui filtro por created_at.
+          supabase.from("daily_plan_tasks").select("completed, created_at, completed_at, estimated_minutes").eq("user_id", userId),
+          // @legacy-read — study_plans.plan_json contém weeklySchedule semanal sem equivalente em daily_plans (que é diário).
+          // Mantido para preservar a UI atual de hasStudyPlan/subjects/exam_date/weeklySchedule. Não migrar sem redesign de UX.
           supabase.from("study_plans").select("plan_json").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
           supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
           supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
@@ -169,14 +171,16 @@ export const useDashboardData = () => {
         const weekMap: Record<string, { hours: number; timestamp: number }> = {};
         for (const task of tasks) {
           if (!(task as any).completed) continue;
-          const date = new Date((task as any).created_at);
+          // [planner-unification] usar completed_at quando existir; fallback para created_at
+          const refDate = (task as any).completed_at || (task as any).created_at;
+          const date = new Date(refDate);
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           weekStart.setHours(0, 0, 0, 0);
           const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
-          const taskJson = (task as any).task_json as any;
-          const durationMatch = taskJson?.duration?.match?.(/(\d+(?:\.\d+)?)/);
-          const hours = durationMatch ? parseFloat(durationMatch[1]) : 1;
+          // [planner-unification] estimated_minutes substitui task_json.duration
+          const minutes = (task as any).estimated_minutes ?? 60;
+          const hours = minutes / 60;
           if (!weekMap[key]) weekMap[key] = { hours: 0, timestamp: weekStart.getTime() };
           weekMap[key].hours += hours;
         }

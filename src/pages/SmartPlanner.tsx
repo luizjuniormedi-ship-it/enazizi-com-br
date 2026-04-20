@@ -531,6 +531,8 @@ const SmartPlanner = () => {
               await supabase.from("temas_estudados").delete().eq("user_id", user.id);
               setTemas([]);
               if (subjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
+              // @legacy-read — study_plans.plan_json.topicMap não tem equivalente em daily_plans (estrutura semanal vs diária).
+              // Mantido como fallback opcional para enriquecer subtopics. Sem ele, subtopico fica null e o fluxo segue normal.
               const { data: latestPlan } = await supabase.from("study_plans").select("plan_json").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle();
               const topicMap: { topic: string; subtopics: string[] }[] = (latestPlan?.plan_json as any)?.topicMap || [];
               const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];

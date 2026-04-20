@@ -47,7 +47,8 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
     supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", userId),
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    supabase.from("study_tasks").select("completed, created_at").eq("user_id", userId),
+    // [planner-unification] Fonte viva: daily_plan_tasks (substitui study_tasks legado)
+    supabase.from("daily_plan_tasks").select("completed, created_at").eq("user_id", userId),
     supabase.from("exam_sessions").select("title, score, finished_at, total_questions").eq("user_id", userId).eq("status", "finished").order("finished_at", { ascending: false }).limit(10),
     supabase.from("study_performance").select("*").eq("user_id", userId).maybeSingle(),
     supabase.from("simulation_history").select("final_score, student_got_diagnosis, grade").eq("user_id", userId),
