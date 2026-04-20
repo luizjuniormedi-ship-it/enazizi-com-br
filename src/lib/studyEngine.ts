@@ -1115,6 +1115,50 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     console.warn("[StudyEngine] monthly goal signal skipped:", e);
   }
 
+  // ── Volume rolante 30d + pressão da prova (V3) ────────────────
+  // Boost adicional para forçar o aluno a manter ritmo de questões
+  // e ajustar a prioridade conforme proximidade da prova.
+  try {
+    const { getQuestionGoalStatus } = await import("./questionGoalEngine");
+    const { getExamPressure } = await import("./examPressureEngine");
+    const examDateForV3 = (profileData as any)?.exam_date || mentorExamDate;
+    const goal = await getQuestionGoalStatus(userId, examDateForV3);
+    const exam = getExamPressure(examDateForV3);
+
+    for (const rec of recs) {
+      const t = (rec.type || "").toLowerCase();
+      const isQuestionType =
+        t === "practice" ||
+        t === "simulado" ||
+        t === "error_review" ||
+        t.includes("question") ||
+        t.includes("simul");
+      const isNewContent = t === "new" || t === "new_content" || t.includes("new_topic");
+
+      // (a) Volume: backlog rolante 30d
+      if (goal.status === "behind" && isQuestionType) {
+        rec.priority = cap(rec.priority + 20);
+        if (!rec.reason.includes("📊")) rec.reason = `📊 ${rec.reason}`;
+      }
+      if (goal.backlog > 500 && isQuestionType) {
+        rec.priority = cap(rec.priority + 10);
+      }
+
+      // (b) Pressão da prova → multiplica prioridade
+      if (exam.multiplier !== 1.0) {
+        rec.priority = cap(rec.priority * exam.multiplier);
+      }
+
+      // (c) Conteúdo novo perto da prova → reduz
+      if (exam.days !== null && exam.days >= 0 && exam.days < 30 && isNewContent) {
+        rec.priority = cap(rec.priority - 15);
+        if (!rec.reason.includes("⏱️")) rec.reason = `⏱️ ${rec.reason}`;
+      }
+    }
+  } catch (e) {
+    console.warn("[StudyEngine] question goal / exam pressure skipped:", e);
+  }
+
   // ── Mentor topic priority boost (dynamic by exam proximity) ────
   if (mentorTopics.length > 0) {
     // Dynamic boost: flat +10, +15 if ≤30 days, +20 if ≤14 days, +25 if ≤7 days
