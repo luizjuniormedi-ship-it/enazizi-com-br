@@ -9126,6 +9126,10 @@ export type Database = {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
       }
+      professor_owns_mentor_plan: {
+        Args: { _plan_id: string; _user_id: string }
+        Returns: boolean
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -9144,6 +9148,10 @@ export type Database = {
       }
       student_has_study_assignment_result: {
         Args: { _assignment_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_can_read_mentor_plan: {
+        Args: { _plan_id: string; _user_id: string }
         Returns: boolean
       }
       user_institution_id: { Args: { _user_id: string }; Returns: string }
