@@ -278,6 +278,7 @@ const DailyPlan = () => {
       const next = new Set(completedReviews);
       next.add(reviewId);
       setCompletedReviews(next);
+      setLastCompletedAt(Date.now());
 
       // Update performance context in background
       const review = scheduledReviews.find(r => r.id === reviewId);
@@ -306,6 +307,7 @@ const DailyPlan = () => {
       next.add(pendingTopicId);
       setCompletedTopics(next);
       setPendingTopicId(null);
+      setLastCompletedAt(Date.now());
       toast({ title: "Autoavaliação salva!", description: `Confiança: ${confidence}/5 em ${assessmentTopic}` });
       if (user) {
         updateStudyPerformanceContext(user.id, [{ id: "", tema: assessmentTopic, especialidade: "" }]).catch(() => {});
