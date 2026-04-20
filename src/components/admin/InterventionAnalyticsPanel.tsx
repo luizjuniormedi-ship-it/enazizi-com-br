@@ -353,9 +353,174 @@ export default function InterventionAnalyticsPanel() {
                 </div>
               </div>
             </div>
+            {/* Seção 5 — Adaptive Ranking (V2) */}
+            <AdaptiveRankingSection metrics={data.byType} />
           </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+/* ─────────────────── Sub-bloco: Adaptive Ranking (V2) ─────────────────── */
+
+interface AdaptiveRow {
+  type: string;
+  baseWeight: number;
+  delta: number;
+  reason: string;
+  finalWeight: number;
+  exposed: number;
+}
+
+function AdaptiveRankingSection({ metrics }: { metrics: InterventionMetrics[] }) {
+  // Inclui todos os tipos conhecidos (mesmo sem amostra) para visibilidade.
+  const knownTypes = Object.keys(BASE_WEIGHT_BY_TYPE);
+  const metricsByType = new Map(metrics.map((m) => [m.type, m]));
+
+  const rows: AdaptiveRow[] = knownTypes.map((type) => {
+    const m = metricsByType.get(type);
+    const baseWeight = BASE_WEIGHT_BY_TYPE[type] ?? 0;
+    if (!m) {
+      return {
+        type,
+        baseWeight,
+        delta: 0,
+        reason: "no-data",
+        finalWeight: baseWeight,
+        exposed: 0,
+      };
+    }
+    const adj = computeInterventionAdjustment({
+      type: m.type,
+      exposed: m.exposed,
+      clicked: m.clicked,
+      resolved: m.resolved,
+      ctr: m.ctr,
+      conversionRate: m.conversionRate,
+    });
+    return {
+      type,
+      baseWeight,
+      delta: adj.weightDelta,
+      reason: adj.reason,
+      finalWeight: baseWeight + adj.weightDelta,
+      exposed: m.exposed,
+    };
+  });
+
+  const promoted = rows.filter((r) => r.delta > 0);
+  const demoted = rows.filter((r) => r.delta < 0);
+
+  return (
+    <div className="space-y-3 pt-2 border-t">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4 text-primary" />
+        <div className="text-sm font-semibold">Adaptive Ranking (V2)</div>
+        <Badge variant="outline" className="text-[10px]">
+          read-only
+        </Badge>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-1.5">
+          <div className="text-xs font-semibold flex items-center gap-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+            Promovidas
+          </div>
+          {promoted.length === 0 ? (
+            <div className="text-xs text-muted-foreground italic">Nenhuma</div>
+          ) : (
+            <ul className="text-xs space-y-0.5">
+              {promoted.map((r) => (
+                <li key={`up-${r.type}`} className="flex justify-between gap-2">
+                  <span className="truncate">
+                    {TYPE_LABEL[r.type] ?? r.type}
+                  </span>
+                  <span className="font-mono text-emerald-700 dark:text-emerald-400">
+                    +{r.delta} · {r.reason}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 space-y-1.5">
+          <div className="text-xs font-semibold flex items-center gap-1.5">
+            <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+            Rebaixadas
+          </div>
+          {demoted.length === 0 ? (
+            <div className="text-xs text-muted-foreground italic">Nenhuma</div>
+          ) : (
+            <ul className="text-xs space-y-0.5">
+              {demoted.map((r) => (
+                <li key={`down-${r.type}`} className="flex justify-between gap-2">
+                  <span className="truncate">
+                    {TYPE_LABEL[r.type] ?? r.type}
+                  </span>
+                  <span className="font-mono text-destructive">
+                    {r.delta} · {r.reason}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-lg border overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Tipo</TableHead>
+              <TableHead className="text-right">Peso base</TableHead>
+              <TableHead className="text-right">Δ adaptativo</TableHead>
+              <TableHead>Razão</TableHead>
+              <TableHead className="text-right">Peso final</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((r) => {
+              const lowSample = r.exposed < 5;
+              const deltaClass =
+                r.delta > 0
+                  ? "text-emerald-700 dark:text-emerald-400"
+                  : r.delta < 0
+                    ? "text-destructive"
+                    : "text-muted-foreground";
+              return (
+                <TableRow key={`adapt-${r.type}`}>
+                  <TableCell className="font-medium">
+                    <div className="flex items-center gap-2">
+                      <span>{TYPE_LABEL[r.type] ?? r.type}</span>
+                      {lowSample && (
+                        <Badge variant="outline" className="text-[9px] px-1 py-0">
+                          sem amostra
+                        </Badge>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {r.baseWeight}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right tabular-nums font-mono ${deltaClass}`}
+                  >
+                    {r.delta > 0 ? `+${r.delta}` : r.delta}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {r.reason}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums font-semibold">
+                    {r.finalWeight}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 }
