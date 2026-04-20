@@ -359,6 +359,8 @@ export default function InterventionAnalyticsPanel() {
             <AdaptiveRankingSection metrics={data.byType} />
             {/* Seção 6 — Penalty System (Fase 5) */}
             <PenaltySystemSection />
+            {/* Seção 7 — User Fit / Profile Personalization (Fase 6) */}
+            <InterventionProfileSection />
           </>
         )}
       </CardContent>
