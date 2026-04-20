@@ -16,6 +16,7 @@ import { useStudyEngineImpact } from "./useStudyEngineImpact";
 import { useFsrsDueCount } from "./useFsrsDueCount";
 import { useInterventionAnalytics } from "./useInterventionAnalytics";
 import { useFeatureFlags } from "./useFeatureFlags";
+import { useInterventionPenalty } from "./useInterventionPenalty";
 import {
   computeInterventionAdjustment,
   type InterventionAdaptiveAdjustment,
@@ -36,14 +37,20 @@ export interface InterventionAction {
   href: string;
   /** Peso base da V1. */
   weight: number;
-  /** Peso final após adaptação (V2). Igual a `weight` quando V2 desligada. */
+  /** Peso final após adaptação (V2/V3). Igual a `weight` quando V2/V3 desligadas. */
   finalWeight?: number;
   /** Delta aplicado pela V2 (apenas para telemetria/debug). */
   adaptiveDelta?: number;
   /** Razão textual do ajuste V2 (ex: "high-performance"). */
   adaptiveReason?: string;
-  /** Marca cenários mandatórios (não podem ser destronados). */
+  /** Marca cenários mandatórios (não podem ser destronados nem penalizados). */
   mandatory?: boolean;
+  /** Nível de penalidade aplicado (Fase 5). 0 = sem penalidade. */
+  penaltyLevel?: number;
+  /** Delta de penalidade aplicado (Fase 5). 0 quando bypass por mandatory. */
+  penaltyDelta?: number;
+  /** Indica se a penalidade foi efetivamente aplicada (Fase 5). */
+  penaltyApplied?: boolean;
 }
 
 export interface InterventionCandidate extends InterventionAction {}
@@ -154,6 +161,9 @@ export interface InterventionAdaptiveContext {
   /** Map<actionType, ajuste calculado>. Vazio se analytics indisponível. */
   adjustments: Map<string, InterventionAdaptiveAdjustment>;
   enabled: boolean;
+  /** Map<actionType, weightDelta da Fase 5>. Vazio se desligada/sem dados. */
+  penalties?: Map<string, { level: number; weightDelta: number }>;
+  penaltyEnabled?: boolean;
 }
 
 /**
@@ -161,6 +171,7 @@ export interface InterventionAdaptiveContext {
  *   - Se existe candidata `mandatory`, escolhe a maior `finalWeight` apenas
  *     entre as mandatórias (default nunca pode vencê-las).
  *   - Caso contrário, escolhe a maior `finalWeight` global.
+ *   - Penalidade (Fase 5) é aplicada APENAS em candidatas não mandatórias.
  */
 export function pickAdaptiveAction(
   candidates: InterventionCandidate[],
@@ -169,23 +180,30 @@ export function pickAdaptiveAction(
   if (candidates.length === 0) return null;
 
   const enriched: InterventionCandidate[] = candidates.map((c) => {
-    if (!ctx.enabled) {
-      return { ...c, finalWeight: c.weight, adaptiveDelta: 0, adaptiveReason: "v2-off" };
-    }
-    const adj = ctx.adjustments.get(c.type);
-    if (!adj) {
-      return {
-        ...c,
-        finalWeight: c.weight,
-        adaptiveDelta: 0,
-        adaptiveReason: "no-data",
-      };
-    }
+    // V2 — ajuste adaptativo
+    const adj = ctx.enabled ? ctx.adjustments.get(c.type) : null;
+    const adaptiveDelta = ctx.enabled ? (adj?.weightDelta ?? 0) : 0;
+    const adaptiveReason = ctx.enabled
+      ? (adj?.reason ?? "no-data")
+      : "v2-off";
+
+    // Fase 5 — penalidade (NUNCA aplica em mandatory)
+    const penalty =
+      ctx.penaltyEnabled && !c.mandatory
+        ? ctx.penalties?.get(c.type)
+        : undefined;
+    const penaltyLevel = penalty?.level ?? 0;
+    const penaltyDelta = penalty?.weightDelta ?? 0;
+    const penaltyApplied = penaltyDelta !== 0;
+
     return {
       ...c,
-      finalWeight: c.weight + adj.weightDelta,
-      adaptiveDelta: adj.weightDelta,
-      adaptiveReason: adj.reason,
+      finalWeight: c.weight + adaptiveDelta + penaltyDelta,
+      adaptiveDelta,
+      adaptiveReason,
+      penaltyLevel,
+      penaltyDelta,
+      penaltyApplied,
     };
   });
 
@@ -207,7 +225,9 @@ export function useInterventionEngine(): InterventionAction | null {
   const { totalDue, isLoading: fsrsLoading } = useFsrsDueCount();
   const { isEnabled } = useFeatureFlags();
   const v2Enabled = isEnabled("intervention_engine_v2_enabled");
+  const penaltyEnabled = isEnabled("intervention_penalty_memory_enabled");
   const { data: analytics } = useInterventionAnalytics(7);
+  const { penaltiesByType } = useInterventionPenalty();
 
   return useMemo(() => {
     const ready = !!impact && !fsrsLoading;
@@ -221,8 +241,9 @@ export function useInterventionEngine(): InterventionAction | null {
 
     if (candidates.length === 0) return null;
 
-    // Sem V2 ou sem dados → fallback puro V1
-    if (!v2Enabled || !analytics) {
+    // Sem V2 e sem penalidade ativa → fallback puro V1
+    const hasPenaltyData = penaltyEnabled && penaltiesByType.size > 0;
+    if (!v2Enabled && !hasPenaltyData) {
       return pickAdaptiveAction(candidates, {
         adjustments: new Map(),
         enabled: false,
@@ -230,21 +251,28 @@ export function useInterventionEngine(): InterventionAction | null {
     }
 
     const adjustments = new Map<string, InterventionAdaptiveAdjustment>();
-    for (const m of analytics.byType) {
-      adjustments.set(
-        m.type,
-        computeInterventionAdjustment({
-          type: m.type,
-          exposed: m.exposed,
-          clicked: m.clicked,
-          resolved: m.resolved,
-          ctr: m.ctr,
-          conversionRate: m.conversionRate,
-        })
-      );
+    if (v2Enabled && analytics) {
+      for (const m of analytics.byType) {
+        adjustments.set(
+          m.type,
+          computeInterventionAdjustment({
+            type: m.type,
+            exposed: m.exposed,
+            clicked: m.clicked,
+            resolved: m.resolved,
+            ctr: m.ctr,
+            conversionRate: m.conversionRate,
+          })
+        );
+      }
     }
 
-    return pickAdaptiveAction(candidates, { adjustments, enabled: true });
+    return pickAdaptiveAction(candidates, {
+      adjustments,
+      enabled: v2Enabled && !!analytics,
+      penalties: penaltiesByType,
+      penaltyEnabled,
+    });
   }, [
     impact,
     totalDue,
@@ -252,5 +280,7 @@ export function useInterventionEngine(): InterventionAction | null {
     prediction?.riskLevel,
     v2Enabled,
     analytics,
+    penaltyEnabled,
+    penaltiesByType,
   ]);
 }

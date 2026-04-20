@@ -29,6 +29,8 @@ import {
   type InterventionType,
 } from "@/hooks/useInterventionEngine";
 import { trackAlertEvent } from "@/lib/alertTelemetry";
+import { useAuth } from "@/hooks/useAuth";
+import { clearPenaltyForType } from "@/lib/interventionPenaltyUpdater";
 
 const TYPE_ICON: Record<InterventionType, React.ComponentType<{ className?: string }>> = {
   "min-mission": Rocket,
@@ -57,6 +59,7 @@ const TYPE_ICON_COLOR: Record<InterventionType, string> = {
 export default function InterventionCard() {
   const action = useInterventionEngine();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   // Telemetria de exposição — fire-and-forget, deduped por sessão.
   useEffect(() => {
@@ -75,6 +78,9 @@ export default function InterventionCard() {
           finalWeight: action.finalWeight ?? action.weight,
           adaptiveDelta: action.adaptiveDelta ?? 0,
           adaptiveReason: action.adaptiveReason ?? "v2-off",
+          penaltyLevel: action.penaltyLevel ?? 0,
+          penaltyDelta: action.penaltyDelta ?? 0,
+          penaltyApplied: !!action.penaltyApplied,
         },
       },
       eventType: "exposed",
@@ -100,6 +106,9 @@ export default function InterventionCard() {
           finalWeight: action.finalWeight ?? action.weight,
           adaptiveDelta: action.adaptiveDelta ?? 0,
           adaptiveReason: action.adaptiveReason ?? "v2-off",
+          penaltyLevel: action.penaltyLevel ?? 0,
+          penaltyDelta: action.penaltyDelta ?? 0,
+          penaltyApplied: !!action.penaltyApplied,
         },
       },
       eventType: "clicked",
@@ -109,8 +118,15 @@ export default function InterventionCard() {
         finalWeight: action.finalWeight ?? action.weight,
         adaptiveDelta: action.adaptiveDelta ?? 0,
         adaptiveReason: action.adaptiveReason ?? "v2-off",
+        penaltyLevel: action.penaltyLevel ?? 0,
+        penaltyDelta: action.penaltyDelta ?? 0,
+        penaltyApplied: !!action.penaltyApplied,
       },
     });
+    // Reset imediato — clique zera a penalidade desse tipo (fire-and-forget).
+    if (user?.id) {
+      void clearPenaltyForType(user.id, action.type);
+    }
     navigate(action.href);
   };
 

@@ -32,7 +32,9 @@ export type FlagKey =
   // Alert Orchestrator — Fase 5 (Adaptive Ranking)
   | "alert_adaptive_ranking_enabled"
   // Intervention Engine V2 — Adaptive Ranking
-  | "intervention_engine_v2_enabled";
+  | "intervention_engine_v2_enabled"
+  // Intervention Engine Fase 5 — Memória de Intervenção (Penalty)
+  | "intervention_penalty_memory_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -72,6 +74,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   alert_adaptive_ranking_enabled: false,
   // Intervention Engine V2 — adaptive ranking ON por padrão (fallback seguro embutido)
   intervention_engine_v2_enabled: true,
+  // Intervention Engine Fase 5 — Penalty Memory ON por padrão (fallback seguro embutido)
+  intervention_penalty_memory_enabled: true,
 };
 
 export const useFeatureFlags = () => {

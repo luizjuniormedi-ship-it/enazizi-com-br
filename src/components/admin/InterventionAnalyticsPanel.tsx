@@ -34,6 +34,7 @@ import {
   type InterventionMetrics,
 } from "@/hooks/useInterventionAnalytics";
 import { computeInterventionAdjustment } from "@/lib/interventionAdaptiveRanking";
+import PenaltySystemSection from "./PenaltySystemSection";
 
 /** Pesos base da V1 — usados apenas para visualização no admin. */
 const BASE_WEIGHT_BY_TYPE: Record<string, number> = {
@@ -355,6 +356,8 @@ export default function InterventionAnalyticsPanel() {
             </div>
             {/* Seção 5 — Adaptive Ranking (V2) */}
             <AdaptiveRankingSection metrics={data.byType} />
+            {/* Seção 6 — Penalty System (Fase 5) */}
+            <PenaltySystemSection />
           </>
         )}
       </CardContent>
