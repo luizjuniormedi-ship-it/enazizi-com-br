@@ -69,7 +69,13 @@ export default function InterventionCard() {
         layer: "structural",
         legacyOrigin: "core",
         viaBridge: false,
-        metadata: { actionType: action.type, weight: action.weight },
+        metadata: {
+          actionType: action.type,
+          weight: action.weight,
+          finalWeight: action.finalWeight ?? action.weight,
+          adaptiveDelta: action.adaptiveDelta ?? 0,
+          adaptiveReason: action.adaptiveReason ?? "v2-off",
+        },
       },
       eventType: "exposed",
     });
@@ -88,10 +94,22 @@ export default function InterventionCard() {
         layer: "structural",
         legacyOrigin: "core",
         viaBridge: false,
-        metadata: { actionType: action.type, weight: action.weight },
+        metadata: {
+          actionType: action.type,
+          weight: action.weight,
+          finalWeight: action.finalWeight ?? action.weight,
+          adaptiveDelta: action.adaptiveDelta ?? 0,
+          adaptiveReason: action.adaptiveReason ?? "v2-off",
+        },
       },
       eventType: "clicked",
-      extra: { actionType: action.type, href: action.href },
+      extra: {
+        actionType: action.type,
+        href: action.href,
+        finalWeight: action.finalWeight ?? action.weight,
+        adaptiveDelta: action.adaptiveDelta ?? 0,
+        adaptiveReason: action.adaptiveReason ?? "v2-off",
+      },
     });
     navigate(action.href);
   };
