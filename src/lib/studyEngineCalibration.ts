@@ -56,6 +56,26 @@ export interface StudyEngineCalibration {
     /** Janela de médio prazo em dias. */
     midTermDays: number;
   };
+
+  /**
+   * Aprovação preditiva — boosts/penalidades aplicados quando o
+   * approvalEngine sinaliza risco, queda de tendência ou folga.
+   * Tudo opcional/defensivo: se o sinal não vier, nenhum boost é aplicado.
+   */
+  approvalRisk: {
+    /** +pts em recs de questão quando riskLevel === "high". */
+    highRiskQuestionBoost: number;
+    /** +pts em recs de revisão (review/fsrs/flashcard/error) quando riskLevel === "high". */
+    highRiskReviewBoost: number;
+    /** -pts em recs de conteúdo novo quando riskLevel === "high". */
+    highRiskNewContentPenalty: number;
+    /** +pts em recs de revisão quando trend === "down". */
+    downTrendReviewBoost: number;
+    /** +pts em recs de error_review quando trend === "down". */
+    downTrendErrorBoost: number;
+    /** +pts em recs de cobertura/conteúdo novo quando riskLevel === "low". */
+    lowRiskCoverageBoost: number;
+  };
 }
 
 const BALANCED: StudyEngineCalibration = {
