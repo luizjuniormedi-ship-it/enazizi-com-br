@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Rocket, Clock, RefreshCw, ChevronDown, AlertTriangle, Shield } from "lucide-react";
+import { Rocket, Clock, RefreshCw, ChevronDown, AlertTriangle, Shield, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { StudyNextRecommendation, AdaptiveState } from "@/hooks/useStudyNext";
+import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
+import { approvalToneClass } from "@/engines/approvalEngine";
 
 const TYPE_CONFIG: Record<string, { label: string; icon: string; cta?: string }> = {
   review: { label: "Revisão", icon: "🔄" },
@@ -23,6 +25,7 @@ interface Props {
 
 export default function MissionHeroAnimated({ recommendation, adaptiveState, onStart, onRefresh, onShowAlternatives }: Props) {
   const cfg = TYPE_CONFIG[recommendation.type] || TYPE_CONFIG.free_study;
+  const prediction = useApprovalPrediction();
 
   return (
     <motion.div
