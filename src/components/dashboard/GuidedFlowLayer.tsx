@@ -22,6 +22,7 @@ import NextBestActionCard from "./guided/NextBestActionCard";
 import MissionCard from "./guided/MissionCard";
 import ReviewCard from "./guided/ReviewCard";
 import GuidedFocusCard from "./guided/GuidedFocusCard";
+import CoverageCard from "./guided/CoverageCard";
 import FocusModeEntry from "./guided/FocusModeEntry";
 
 export default function GuidedFlowLayer() {
@@ -33,6 +34,7 @@ export default function GuidedFlowLayer() {
         <MissionCard />
         <ReviewCard />
         <GuidedFocusCard />
+        <CoverageCard />
       </div>
       <FocusModeEntry />
     </section>
