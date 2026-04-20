@@ -6,7 +6,7 @@
  *
  * Atualiza profiles.exam_date diretamente. Sem migração nova.
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CalendarClock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,13 +26,17 @@ export default function ExamDateRequiredBanner() {
   const [examDate, setExamDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
+  const [snoozedTick, setSnoozedTick] = useState(0);
+
+  // Re-evaluate snooze on mount
+  useEffect(() => { setSnoozedTick(Date.now()); }, []);
 
   if (isLoading || !user || !coreData) return null;
   if (coreData.profile.exam_date) return null;
 
-  // Snooze leve — 24h após "ainda não sei", ainda assim volta a aparecer
+  // Snooze leve — 24h após "ainda não sei", ainda assim volta a aparecer depois
   const snoozedUntil = Number(localStorage.getItem(SNOOZE_KEY) || 0);
-  if (snoozedUntil > Date.now()) return null;
+  if (snoozedUntil > Date.now() && snoozedTick > 0) return null;
 
   const save = async () => {
     if (!examDate) return;
@@ -54,11 +58,10 @@ export default function ExamDateRequiredBanner() {
   };
 
   const dontKnow = () => {
-    // Esconde por 24h, mas volta a aparecer
+    // Esconde por 24h, mas volta a aparecer depois
     localStorage.setItem(SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
     setOpen(false);
-    // Force re-render via small state hop
-    queryClient.invalidateQueries({ queryKey: ["core-data"] });
+    setSnoozedTick(Date.now());
   };
 
   return (

@@ -219,13 +219,17 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
                 <Label className="flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
                   Data da prova
-                  <span className="text-xs text-muted-foreground">(opcional)</span>
+                  <span className="text-xs text-destructive font-medium">obrigatória*</span>
                 </Label>
                 <Input
                   type="date"
                   value={examDate}
                   onChange={(e) => setExamDate(e.target.value)}
+                  min={new Date().toISOString().slice(0, 10)}
                 />
+                <p className="text-[11px] text-muted-foreground">
+                  Sem essa data, o motor não consegue apertar o ritmo perto da prova. Se ainda não souber, escolha uma data estimada — você pode ajustar depois.
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -251,7 +255,7 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
             <Button
               onClick={nextStep}
               className="w-full gap-2"
-              disabled={targetExams.length === 0}
+              disabled={targetExams.length === 0 || !examDate}
             >
               Gerar meu plano <Sparkles className="h-4 w-4" />
             </Button>
