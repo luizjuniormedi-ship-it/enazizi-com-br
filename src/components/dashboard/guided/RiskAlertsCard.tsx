@@ -48,6 +48,26 @@ export default function RiskAlertsCard() {
 
   const alerts: AlertItem[] = [];
 
+  // Alertas preditivos (prioridade máxima)
+  if (prediction && prediction.hasEnoughData) {
+    if (prediction.score < 40) {
+      alerts.push({
+        icon: AlertTriangle,
+        text: `⚠️ Risco alto de reprovação (${prediction.score}%)`,
+        to: "/dashboard/analytics",
+        tone: "danger",
+      });
+    }
+    if (prediction.trend === "down" && prediction.delta !== null && prediction.delta <= -3) {
+      alerts.push({
+        icon: TrendingDown,
+        text: `📉 Sua chance caiu ${Math.abs(prediction.delta)} pts esta semana`,
+        to: "/dashboard/analytics",
+        tone: "warn",
+      });
+    }
+  }
+
   if (impact.questions7d === 0) {
     alerts.push({
       icon: AlertTriangle,
