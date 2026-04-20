@@ -3072,6 +3072,51 @@ export type Database = {
         }
         Relationships: []
       }
+      intervention_user_profiles: {
+        Row: {
+          clicked_count: number
+          conversion_rate: number
+          created_at: string
+          ctr: number
+          id: string
+          intervention_type: string
+          last_event_at: string | null
+          profile_score: number
+          resolved_count: number
+          shown_count: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          clicked_count?: number
+          conversion_rate?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          intervention_type: string
+          last_event_at?: string | null
+          profile_score?: number
+          resolved_count?: number
+          shown_count?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          clicked_count?: number
+          conversion_rate?: number
+          created_at?: string
+          ctr?: number
+          id?: string
+          intervention_type?: string
+          last_event_at?: string | null
+          profile_score?: number
+          resolved_count?: number
+          shown_count?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lesson_doubts: {
         Row: {
           created_at: string
