@@ -27,6 +27,7 @@ export default function RiskAlertsCard() {
   const { user } = useAuth();
   const { data: impact } = useStudyEngineImpact();
   const { data: coreData } = useCoreData();
+  const prediction = useApprovalPrediction();
 
   // Pending FSRS reviews (cheap count query)
   const { data: pendingReviews = 0 } = useQuery({
