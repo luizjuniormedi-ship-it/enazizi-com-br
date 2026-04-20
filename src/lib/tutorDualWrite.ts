@@ -42,12 +42,13 @@ async function resolveSessionId(
     }
 
     // 3. Insert (unique constraint prevents dupes from concurrent calls)
+    // NOTE: schema default = 'livre'. Mantemos alinhamento explícito para evitar drift.
     const { data: created, error } = await supabase
       .from("tutor_sessions" as any)
       .insert({
         user_id: userId,
         conversation_id: conversationId,
-        mode: extra?.mode || "free",
+        mode: extra?.mode || "livre",
         topic: extra?.topic || null,
         specialty: extra?.specialty || null,
         mission_id: extra?.missionId || null,
@@ -68,6 +69,11 @@ async function resolveSessionId(
         const id = (retry as any).id;
         sessionCache.set(conversationId, id);
         return id;
+      }
+      // Telemetria leve: erro real (não unique-violation) precisa ser visível
+      // para evitar fragmentação silenciosa do dual-write.
+      if (typeof console !== "undefined") {
+        console.warn("[tutorDualWrite] tutor_sessions insert failed:", error.message);
       }
       return null;
     }
