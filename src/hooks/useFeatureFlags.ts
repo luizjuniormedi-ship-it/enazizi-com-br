@@ -30,7 +30,9 @@ export type FlagKey =
   | "trajectory_apply_v1_enabled"
   | "trajectory_explain_v1_enabled"
   // Alert Orchestrator — Fase 5 (Adaptive Ranking)
-  | "alert_adaptive_ranking_enabled";
+  | "alert_adaptive_ranking_enabled"
+  // Intervention Engine V2 — Adaptive Ranking
+  | "intervention_engine_v2_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -68,6 +70,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   trajectory_explain_v1_enabled: true,
   // Alert Orchestrator Fase 5 — adaptive ranking opt-in (default false até validação)
   alert_adaptive_ranking_enabled: false,
+  // Intervention Engine V2 — adaptive ranking ON por padrão (fallback seguro embutido)
+  intervention_engine_v2_enabled: true,
 };
 
 export const useFeatureFlags = () => {

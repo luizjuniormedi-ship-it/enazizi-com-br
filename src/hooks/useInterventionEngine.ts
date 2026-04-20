@@ -1,22 +1,25 @@
 /**
- * useInterventionEngine — Next Best Action (V1 determinística)
- * ─────────────────────────────────────────────────────────────
- * Decide UMA ação prioritária a executar agora, com base nos dados já
- * existentes (sem novas queries, sem IA). Reutiliza:
- *   - useApprovalPrediction
- *   - useStudyEngineImpact
- *   - useFsrsDueCount
+ * useInterventionEngine — Next Best Action (V2 adaptativa)
+ * ────────────────────────────────────────────────────────
+ * V1: regras determinísticas (inatividade → fsrs → recovery → coverage → default).
+ * V2: continua usando V1 como base, mas reordena candidatas por
+ *     `finalWeight = baseWeight + adaptiveDelta` usando dados de
+ *     `useInterventionAnalytics`. Travas mandatórias garantem que cenários
+ *     críticos (inatividade, FSRS alto, risco alto) nunca percam para default.
  *
- * Princípios:
- *   - Pura: dada a entrada, sempre devolve a mesma saída
- *   - Defensiva: retorna `null` se inputs ainda estão carregando
- *   - Não compete com o Alert Orchestrator (não emite alertas)
- *   - Apenas SUGERE a próxima ação concreta com 1-clique
+ * Fallback seguro: se a feature flag estiver off OU os analytics ainda não
+ * carregaram, devolve a escolha pura da V1.
  */
 import { useMemo } from "react";
 import { useApprovalPrediction } from "./useApprovalPrediction";
 import { useStudyEngineImpact } from "./useStudyEngineImpact";
 import { useFsrsDueCount } from "./useFsrsDueCount";
+import { useInterventionAnalytics } from "./useInterventionAnalytics";
+import { useFeatureFlags } from "./useFeatureFlags";
+import {
+  computeInterventionAdjustment,
+  type InterventionAdaptiveAdjustment,
+} from "@/lib/interventionAdaptiveRanking";
 
 export type InterventionType =
   | "min-mission"
@@ -30,11 +33,20 @@ export interface InterventionAction {
   title: string;
   description: string;
   ctaLabel: string;
-  /** Rota destino — usada pelo componente para navegação. */
   href: string;
-  /** Prioridade interna (apenas para telemetria/ordenação futura). */
+  /** Peso base da V1. */
   weight: number;
+  /** Peso final após adaptação (V2). Igual a `weight` quando V2 desligada. */
+  finalWeight?: number;
+  /** Delta aplicado pela V2 (apenas para telemetria/debug). */
+  adaptiveDelta?: number;
+  /** Razão textual do ajuste V2 (ex: "high-performance"). */
+  adaptiveReason?: string;
+  /** Marca cenários mandatórios (não podem ser destronados). */
+  mandatory?: boolean;
 }
+
+export interface InterventionCandidate extends InterventionAction {}
 
 interface InterventionInputs {
   questions7d: number | null;
@@ -44,97 +56,201 @@ interface InterventionInputs {
   ready: boolean;
 }
 
+/* ─────────────────────────── V1 — gera candidatas ─────────────────────────── */
+
 /**
- * Pura — pode ser testada sem React.
- * Retorna `null` se os dados ainda não estiverem prontos.
+ * Gera todas as candidatas potencialmente aplicáveis para o estado atual.
+ * Mantém a semântica original da V1 (mesmas condições e textos), mas em vez
+ * de retornar a primeira que casa, devolve a lista completa para a V2 ranquear.
+ *
+ * Regra: marca `mandatory: true` nos cenários onde a V1 obrigatoriamente
+ * escolhia aquele tipo (inatividade, FSRS alto, risco alto).
  */
-export function getNextBestAction(
+export function buildInterventionCandidates(
   i: InterventionInputs
-): InterventionAction | null {
-  if (!i.ready) return null;
+): InterventionCandidate[] {
+  if (!i.ready) return [];
 
   const questions7d = i.questions7d ?? 0;
   const totalDue = i.totalDue ?? 0;
   const requiredCoveragePct = i.requiredCoveragePct ?? 100;
 
-  // 1) 🚨 Inatividade — maior prioridade
+  const candidates: InterventionCandidate[] = [];
+
   if (questions7d === 0) {
-    return {
+    candidates.push({
       type: "min-mission",
       title: "Missão destrava",
       description: "Vamos destravar com 10 questões + 1 revisão",
       ctaLabel: "Começar agora",
       href: "/banco-questoes?mode=quick10",
       weight: 100,
-    };
+      mandatory: true,
+    });
   }
 
-  // 2) 📚 FSRS backlog alto
   if (totalDue > 50) {
-    return {
+    candidates.push({
       type: "fsrs",
       title: "Revisões pendentes",
       description: `Você tem ${totalDue} revisões críticas`,
       ctaLabel: "Revisar agora",
       href: "/flashcards",
       weight: 80,
-    };
+      mandatory: true,
+    });
   }
 
-  // 3) 📉 Risco alto de reprovação
   if (i.riskLevel === "high") {
-    return {
+    candidates.push({
       type: "recovery",
       title: "Modo recuperação",
       description: "Foque em prática para recuperar desempenho",
       ctaLabel: "Fazer 10 questões",
       href: "/banco-questoes?mode=quick10",
       weight: 70,
-    };
+      mandatory: true,
+    });
   }
 
-  // 4) 🔥 Cobertura baixa
   if (requiredCoveragePct < 50) {
-    return {
+    candidates.push({
       type: "coverage",
       title: "Cobertura insuficiente",
       description: "Você precisa avançar nos conteúdos obrigatórios",
       ctaLabel: "Continuar plano",
       href: "/cronograma",
       weight: 50,
-    };
+    });
   }
 
-  // 5) 🟢 Default — usuário bem
-  return {
+  // Default sempre presente como fallback
+  candidates.push({
     type: "default",
     title: "Continue evoluindo",
     description: "Vamos manter o ritmo com prática",
     ctaLabel: "Fazer questões",
     href: "/banco-questoes",
     weight: 10,
-  };
+  });
+
+  return candidates;
 }
+
+/* ───────────────── V1 — escolha pura (mantida como fallback) ───────────────── */
+
+export function getNextBestAction(
+  i: InterventionInputs
+): InterventionAction | null {
+  const cands = buildInterventionCandidates(i);
+  if (cands.length === 0) return null;
+  // V1 = ordem natural (já é prioridade desc por construção)
+  return cands[0];
+}
+
+/* ───────────────────────────── V2 — adaptativa ────────────────────────────── */
+
+export interface InterventionAdaptiveContext {
+  /** Map<actionType, ajuste calculado>. Vazio se analytics indisponível. */
+  adjustments: Map<string, InterventionAdaptiveAdjustment>;
+  enabled: boolean;
+}
+
+/**
+ * Aplica ajuste adaptativo respeitando travas mandatórias:
+ *   - Se existe candidata `mandatory`, escolhe a maior `finalWeight` apenas
+ *     entre as mandatórias (default nunca pode vencê-las).
+ *   - Caso contrário, escolhe a maior `finalWeight` global.
+ */
+export function pickAdaptiveAction(
+  candidates: InterventionCandidate[],
+  ctx: InterventionAdaptiveContext
+): InterventionAction | null {
+  if (candidates.length === 0) return null;
+
+  const enriched: InterventionCandidate[] = candidates.map((c) => {
+    if (!ctx.enabled) {
+      return { ...c, finalWeight: c.weight, adaptiveDelta: 0, adaptiveReason: "v2-off" };
+    }
+    const adj = ctx.adjustments.get(c.type);
+    if (!adj) {
+      return {
+        ...c,
+        finalWeight: c.weight,
+        adaptiveDelta: 0,
+        adaptiveReason: "no-data",
+      };
+    }
+    return {
+      ...c,
+      finalWeight: c.weight + adj.weightDelta,
+      adaptiveDelta: adj.weightDelta,
+      adaptiveReason: adj.reason,
+    };
+  });
+
+  const mandatory = enriched.filter((c) => c.mandatory);
+  const pool = mandatory.length > 0 ? mandatory : enriched;
+
+  // Ordena por finalWeight desc; em empate, mantém ordem original (estável).
+  const sorted = [...pool].sort(
+    (a, b) => (b.finalWeight ?? b.weight) - (a.finalWeight ?? a.weight)
+  );
+  return sorted[0] ?? null;
+}
+
+/* ──────────────────────────────── Hook React ──────────────────────────────── */
 
 export function useInterventionEngine(): InterventionAction | null {
   const prediction = useApprovalPrediction();
   const { data: impact } = useStudyEngineImpact();
   const { totalDue, isLoading: fsrsLoading } = useFsrsDueCount();
+  const { isEnabled } = useFeatureFlags();
+  const v2Enabled = isEnabled("intervention_engine_v2_enabled");
+  const { data: analytics } = useInterventionAnalytics(7);
 
   return useMemo(() => {
-    // Aguarda inputs mínimos antes de decidir (defensivo).
     const ready = !!impact && !fsrsLoading;
-    return getNextBestAction({
+    const candidates = buildInterventionCandidates({
       questions7d: impact?.questions7d ?? null,
       totalDue: totalDue ?? null,
       riskLevel: prediction?.riskLevel ?? null,
       requiredCoveragePct: impact?.requiredCoveragePct ?? null,
       ready,
     });
+
+    if (candidates.length === 0) return null;
+
+    // Sem V2 ou sem dados → fallback puro V1
+    if (!v2Enabled || !analytics) {
+      return pickAdaptiveAction(candidates, {
+        adjustments: new Map(),
+        enabled: false,
+      });
+    }
+
+    const adjustments = new Map<string, InterventionAdaptiveAdjustment>();
+    for (const m of analytics.byType) {
+      adjustments.set(
+        m.type,
+        computeInterventionAdjustment({
+          type: m.type,
+          exposed: m.exposed,
+          clicked: m.clicked,
+          resolved: m.resolved,
+          ctr: m.ctr,
+          conversionRate: m.conversionRate,
+        })
+      );
+    }
+
+    return pickAdaptiveAction(candidates, { adjustments, enabled: true });
   }, [
     impact,
     totalDue,
     fsrsLoading,
     prediction?.riskLevel,
+    v2Enabled,
+    analytics,
   ]);
 }
