@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
+import { trackAlertEvent } from "@/lib/alertTelemetry";
 import type {
   AlertOrchestratorItem,
   AlertSource,
@@ -83,6 +84,7 @@ export default function RiskAlertsCard() {
           <Link
             key={a.id}
             to={a.actionHref}
+            onClick={() => trackAlertEvent({ alert: a, eventType: "clicked" })}
             className="block hover:opacity-80 transition-opacity"
           >
             {inner}
