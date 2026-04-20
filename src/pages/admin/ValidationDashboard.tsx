@@ -13,6 +13,7 @@ import AlertOrchestratorAnalytics from "@/components/admin/AlertOrchestratorAnal
 import AlertConversionPanel from "@/components/admin/AlertConversionPanel";
 import AlertCorrelationPanel from "@/components/admin/AlertCorrelationPanel";
 import InterventionAnalyticsPanel from "@/components/admin/InterventionAnalyticsPanel";
+import InterventionObservabilityPanel from "@/components/admin/InterventionObservabilityPanel";
 import {
   Users,
   Activity,
@@ -353,6 +354,9 @@ export default function ValidationDashboard() {
 
       {/* Intervention Engine — métricas das próximas ações sugeridas */}
       <InterventionAnalyticsPanel />
+
+      {/* Fase 7 — Observabilidade em produção real */}
+      <InterventionObservabilityPanel />
 
       {/* Alert Orchestrator — métricas, conversão, correlação e inspeção interna */}
       <AlertOrchestratorAnalytics />

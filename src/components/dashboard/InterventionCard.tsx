@@ -31,6 +31,10 @@ import {
 import { trackAlertEvent } from "@/lib/alertTelemetry";
 import { useAuth } from "@/hooks/useAuth";
 import { clearPenaltyForType } from "@/lib/interventionPenaltyUpdater";
+import {
+  getWinningReason,
+  DECISION_VERSION,
+} from "@/lib/interventionDecisionReason";
 
 const TYPE_ICON: Record<InterventionType, React.ComponentType<{ className?: string }>> = {
   "min-mission": Rocket,
@@ -61,9 +65,43 @@ export default function InterventionCard() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  // Decisão consolidada — calculada uma vez por render.
+  const decisionMeta = action
+    ? (() => {
+        const mandatory = !!action.mandatory;
+        const adaptiveDelta = action.adaptiveDelta ?? 0;
+        const penaltyDelta = action.penaltyDelta ?? 0;
+        const profileDelta = action.profileDelta ?? 0;
+        const penaltyApplied = !!action.penaltyApplied;
+        const wonBy = getWinningReason({
+          mandatory,
+          adaptiveDelta,
+          penaltyDelta,
+          profileDelta,
+          penaltyApplied,
+        });
+        return {
+          actionType: action.type,
+          weight: action.weight,
+          finalWeight: action.finalWeight ?? action.weight,
+          adaptiveDelta,
+          adaptiveReason: action.adaptiveReason ?? "v2-off",
+          penaltyLevel: action.penaltyLevel ?? 0,
+          penaltyDelta,
+          penaltyApplied,
+          profileDelta,
+          profileReason: action.profileReason ?? "v3-off",
+          profileScore: action.profileScore ?? 0,
+          mandatory,
+          wonBy,
+          decisionVersion: DECISION_VERSION,
+        };
+      })()
+    : null;
+
   // Telemetria de exposição — fire-and-forget, deduped por sessão.
   useEffect(() => {
-    if (!action) return;
+    if (!action || !decisionMeta) return;
     trackAlertEvent({
       alert: {
         id: `intervention-${action.type}`,
@@ -72,25 +110,13 @@ export default function InterventionCard() {
         layer: "structural",
         legacyOrigin: "core",
         viaBridge: false,
-        metadata: {
-          actionType: action.type,
-          weight: action.weight,
-          finalWeight: action.finalWeight ?? action.weight,
-          adaptiveDelta: action.adaptiveDelta ?? 0,
-          adaptiveReason: action.adaptiveReason ?? "v2-off",
-          penaltyLevel: action.penaltyLevel ?? 0,
-          penaltyDelta: action.penaltyDelta ?? 0,
-          penaltyApplied: !!action.penaltyApplied,
-          profileDelta: action.profileDelta ?? 0,
-          profileReason: action.profileReason ?? "v3-off",
-          profileScore: action.profileScore ?? 0,
-        },
+        metadata: decisionMeta,
       },
       eventType: "exposed",
     });
-  }, [action]);
+  }, [action, decisionMeta]);
 
-  if (!action) return null;
+  if (!action || !decisionMeta) return null;
 
   const Icon = TYPE_ICON[action.type];
 
@@ -103,36 +129,14 @@ export default function InterventionCard() {
         layer: "structural",
         legacyOrigin: "core",
         viaBridge: false,
-        metadata: {
-          actionType: action.type,
-          weight: action.weight,
-          finalWeight: action.finalWeight ?? action.weight,
-          adaptiveDelta: action.adaptiveDelta ?? 0,
-          adaptiveReason: action.adaptiveReason ?? "v2-off",
-          penaltyLevel: action.penaltyLevel ?? 0,
-          penaltyDelta: action.penaltyDelta ?? 0,
-          penaltyApplied: !!action.penaltyApplied,
-          profileDelta: action.profileDelta ?? 0,
-          profileReason: action.profileReason ?? "v3-off",
-          profileScore: action.profileScore ?? 0,
-        },
+        metadata: decisionMeta,
       },
       eventType: "clicked",
       extra: {
-        actionType: action.type,
+        ...decisionMeta,
         href: action.href,
-        finalWeight: action.finalWeight ?? action.weight,
-        adaptiveDelta: action.adaptiveDelta ?? 0,
-        adaptiveReason: action.adaptiveReason ?? "v2-off",
-        penaltyLevel: action.penaltyLevel ?? 0,
-        penaltyDelta: action.penaltyDelta ?? 0,
-        penaltyApplied: !!action.penaltyApplied,
-        profileDelta: action.profileDelta ?? 0,
-        profileReason: action.profileReason ?? "v3-off",
-        profileScore: action.profileScore ?? 0,
       },
     });
-    // Reset imediato — clique zera a penalidade desse tipo (fire-and-forget).
     if (user?.id) {
       void clearPenaltyForType(user.id, action.type);
     }
