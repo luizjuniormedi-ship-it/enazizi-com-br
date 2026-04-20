@@ -172,3 +172,42 @@ export function approvalBadgeBg(risk: ApprovalRisk): string {
     high: "bg-destructive/10 border-destructive/30 text-destructive",
   }[risk];
 }
+
+/**
+ * Derive a short, action-oriented "current focus" line from the prediction.
+ * Used by Hero / ProgressOverview to tell the student where energy must go now.
+ */
+export function getApprovalFocus(input: {
+  riskLevel: ApprovalRisk;
+  trend: ApprovalTrend;
+  daysToExam: number | null;
+}): { focus: string; urgentCopy: string | null } {
+  const { riskLevel, trend, daysToExam } = input;
+  const isFinalStretch = daysToExam !== null && daysToExam < 30;
+
+  if (riskLevel === "high") {
+    return {
+      focus: "Foco atual: recuperar volume e revisão",
+      urgentCopy: isFinalStretch
+        ? "Reta final crítica. Cada sessão conta agora."
+        : "Sua aprovação está em risco. Vamos corrigir agora.",
+    };
+  }
+  if (trend === "down") {
+    return {
+      focus: "Foco atual: recuperar consistência e revisar erros",
+      urgentCopy: "Seu desempenho caiu. Vamos corrigir agora.",
+    };
+  }
+  if (riskLevel === "medium") {
+    return {
+      focus: "Foco atual: consolidar cobertura e ritmo",
+      urgentCopy: null,
+    };
+  }
+  // low
+  return {
+    focus: "Foco atual: manter ritmo e refinar pontos fracos",
+    urgentCopy: null,
+  };
+}

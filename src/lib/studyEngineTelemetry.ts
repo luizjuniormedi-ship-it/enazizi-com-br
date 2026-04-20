@@ -28,17 +28,26 @@ export interface StudyEngineTelemetryInput {
   dailyQuestionTarget?: number | null;
   paceStatus?: "ok" | "behind" | "ahead" | "on_track" | null;
   examMultiplier?: number | null;
+  /** Snapshot da Aprovação Preditiva — alimenta o motor de prioridade. */
+  approval?: {
+    score: number;
+    trend: "up" | "down" | "stable";
+    risk: "low" | "medium" | "high";
+  } | null;
   recommendations: RecommendationLike[];
 }
 
 const SOURCE_MODULE = "study-engine-v3";
 const DECISION_TYPE = "engine_snapshot";
 
-// Selos visuais usados pelos boosts no studyEngine.ts (ver bloco V3)
+// Selos visuais usados pelos boosts no studyEngine.ts (ver bloco V3+V3.2)
 const COVERAGE_TAG = "🎯";
 const GOAL_TAG = "📊";
 const PACE_TAG = "📈";
 const EXAM_TAG = "⏱️";
+const APPROVAL_HIGH_TAG = "🚨";
+const APPROVAL_DOWN_TAG = "📉";
+const APPROVAL_LOW_TAG = "🟢";
 
 function detectBoosts(reason: string | undefined) {
   const r = reason || "";
@@ -46,6 +55,9 @@ function detectBoosts(reason: string | undefined) {
     boosted_by_coverage: r.includes(COVERAGE_TAG),
     boosted_by_goal: r.includes(GOAL_TAG) || r.includes(PACE_TAG),
     boosted_by_exam_pressure: r.includes(EXAM_TAG),
+    boosted_by_approval_risk: r.includes(APPROVAL_HIGH_TAG),
+    boosted_by_approval_down: r.includes(APPROVAL_DOWN_TAG),
+    boosted_by_approval_low: r.includes(APPROVAL_LOW_TAG),
   };
 }
 
@@ -64,9 +76,19 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
         if (r.boosted_by_coverage) acc.coverageBoosts++;
         if (r.boosted_by_goal) acc.goalBoosts++;
         if (r.boosted_by_exam_pressure) acc.examPressureBoosts++;
+        if (r.boosted_by_approval_risk) acc.approvalRiskBoosts++;
+        if (r.boosted_by_approval_down) acc.approvalDownBoosts++;
+        if (r.boosted_by_approval_low) acc.approvalLowBoosts++;
         return acc;
       },
-      { coverageBoosts: 0, goalBoosts: 0, examPressureBoosts: 0 }
+      {
+        coverageBoosts: 0,
+        goalBoosts: 0,
+        examPressureBoosts: 0,
+        approvalRiskBoosts: 0,
+        approvalDownBoosts: 0,
+        approvalLowBoosts: 0,
+      }
     );
 
     await supabase.from("assistant_decisions").insert([{
@@ -84,12 +106,16 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
         daily_question_target: input.dailyQuestionTarget ?? null,
         pace_status: input.paceStatus ?? null,
         exam_multiplier: input.examMultiplier ?? null,
+        approval_score: input.approval?.score ?? null,
+        approval_trend: input.approval?.trend ?? null,
+        approval_risk: input.approval?.risk ?? null,
       } as any,
       decision_output: {
-        engine_version: "v3",
+        engine_version: "v3.2",
         ...getCalibrationSnapshot(),
         top_recommendations: top,
         boost_totals: totals,
+        boosted_by_approval_risk: totals.approvalRiskBoosts > 0,
       } as any,
     }]);
   } catch (e) {

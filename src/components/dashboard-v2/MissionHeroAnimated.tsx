@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Rocket, Clock, RefreshCw, ChevronDown, AlertTriangle, Shield, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { StudyNextRecommendation, AdaptiveState } from "@/hooks/useStudyNext";
 import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
-import { approvalToneClass } from "@/engines/approvalEngine";
+import { approvalToneClass, getApprovalFocus } from "@/engines/approvalEngine";
 
 const TYPE_CONFIG: Record<string, { label: string; icon: string; cta?: string }> = {
   review: { label: "Revisão", icon: "🔄" },
@@ -27,12 +27,28 @@ export default function MissionHeroAnimated({ recommendation, adaptiveState, onS
   const cfg = TYPE_CONFIG[recommendation.type] || TYPE_CONFIG.free_study;
   const prediction = useApprovalPrediction();
 
+  // Tone shift por risco preditivo (sutil, não alarmista)
+  const isHighRisk = prediction?.hasEnoughData && prediction.riskLevel === "high";
+  const isDownTrend = prediction?.hasEnoughData && prediction.trend === "down";
+  const heroBorder = isHighRisk
+    ? "border-destructive/30 bg-gradient-to-br from-destructive/10 via-background to-destructive/5"
+    : isDownTrend
+    ? "border-amber-500/30 bg-gradient-to-br from-amber-500/10 via-background to-amber-500/5"
+    : "border-primary/20 bg-gradient-to-br from-primary/10 via-background to-primary/5";
+  const focus = prediction?.hasEnoughData
+    ? getApprovalFocus({
+        riskLevel: prediction.riskLevel,
+        trend: prediction.trend,
+        daysToExam: prediction.daysToExam,
+      })
+    : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-background to-primary/5 shadow-lg"
+      className={`relative overflow-hidden rounded-2xl border shadow-lg ${heroBorder}`}
     >
       {/* Subtle animated glow */}
       <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
@@ -88,6 +104,14 @@ export default function MissionHeroAnimated({ recommendation, adaptiveState, onS
                 )}
                 <span className="text-muted-foreground hidden sm:inline">· {prediction.message}</span>
               </motion.div>
+            )}
+
+            {/* Foco atual derivado da Aprovação Preditiva */}
+            {focus && (
+              <p className="text-xs sm:text-sm text-muted-foreground italic">
+                {focus.urgentCopy ? `${focus.urgentCopy} ` : ""}
+                <span className="not-italic font-medium text-foreground/80">{focus.focus}</span>
+              </p>
             )}
 
             {/* Tags */}

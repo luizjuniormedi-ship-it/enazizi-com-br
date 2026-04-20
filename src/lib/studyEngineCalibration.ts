@@ -56,6 +56,26 @@ export interface StudyEngineCalibration {
     /** Janela de médio prazo em dias. */
     midTermDays: number;
   };
+
+  /**
+   * Aprovação preditiva — boosts/penalidades aplicados quando o
+   * approvalEngine sinaliza risco, queda de tendência ou folga.
+   * Tudo opcional/defensivo: se o sinal não vier, nenhum boost é aplicado.
+   */
+  approvalRisk: {
+    /** +pts em recs de questão quando riskLevel === "high". */
+    highRiskQuestionBoost: number;
+    /** +pts em recs de revisão (review/fsrs/flashcard/error) quando riskLevel === "high". */
+    highRiskReviewBoost: number;
+    /** -pts em recs de conteúdo novo quando riskLevel === "high". */
+    highRiskNewContentPenalty: number;
+    /** +pts em recs de revisão quando trend === "down". */
+    downTrendReviewBoost: number;
+    /** +pts em recs de error_review quando trend === "down". */
+    downTrendErrorBoost: number;
+    /** +pts em recs de cobertura/conteúdo novo quando riskLevel === "low". */
+    lowRiskCoverageBoost: number;
+  };
 }
 
 const BALANCED: StudyEngineCalibration = {
@@ -81,6 +101,14 @@ const BALANCED: StudyEngineCalibration = {
     finalStretchDays: 30,
     midTermDays: 60,
   },
+  approvalRisk: {
+    highRiskQuestionBoost: 14,
+    highRiskReviewBoost: 16,
+    highRiskNewContentPenalty: 10,
+    downTrendReviewBoost: 10,
+    downTrendErrorBoost: 12,
+    lowRiskCoverageBoost: 6,
+  },
 };
 
 const CONSERVATIVE: StudyEngineCalibration = {
@@ -100,6 +128,14 @@ const CONSERVATIVE: StudyEngineCalibration = {
     lowCoverageAdjustment: 6,
     highErrorAdjustment: 6,
     behindGoalAdjustment: 6,
+  },
+  approvalRisk: {
+    highRiskQuestionBoost: 10,
+    highRiskReviewBoost: 11,
+    highRiskNewContentPenalty: 7,
+    downTrendReviewBoost: 7,
+    downTrendErrorBoost: 8,
+    lowRiskCoverageBoost: 4,
   },
 };
 
@@ -121,6 +157,14 @@ const AGGRESSIVE: StudyEngineCalibration = {
     highErrorAdjustment: 14,
     behindGoalAdjustment: 14,
   },
+  approvalRisk: {
+    highRiskQuestionBoost: 18,
+    highRiskReviewBoost: 21,
+    highRiskNewContentPenalty: 13,
+    downTrendReviewBoost: 13,
+    downTrendErrorBoost: 16,
+    lowRiskCoverageBoost: 8,
+  },
 };
 
 const PRESETS: Record<CalibrationMode, StudyEngineCalibration> = {
@@ -133,7 +177,7 @@ const PRESETS: Record<CalibrationMode, StudyEngineCalibration> = {
 export const STUDY_ENGINE_CALIBRATION_MODE: CalibrationMode = "balanced";
 
 /** Versão semântica — incrementar quando alterar pesos para auditoria. */
-export const STUDY_ENGINE_CALIBRATION_VERSION = "v1.0.0";
+export const STUDY_ENGINE_CALIBRATION_VERSION = "v1.1.0";
 
 /** Pesos efetivos do motor (resultado do modo ativo). */
 export const STUDY_ENGINE_CALIBRATION: StudyEngineCalibration =
@@ -152,6 +196,7 @@ export function getCalibrationSnapshot() {
       examPressure: { ...STUDY_ENGINE_CALIBRATION.examPressure },
       questionDistribution: { ...STUDY_ENGINE_CALIBRATION.questionDistribution },
       thresholds: { ...STUDY_ENGINE_CALIBRATION.thresholds },
+      approvalRisk: { ...STUDY_ENGINE_CALIBRATION.approvalRisk },
     },
   };
 }

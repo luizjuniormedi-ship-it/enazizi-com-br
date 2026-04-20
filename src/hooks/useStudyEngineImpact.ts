@@ -23,6 +23,9 @@ export interface EngineImpact {
     coverageBoosts: number;
     goalBoosts: number;
     examPressureBoosts: number;
+    approvalRiskBoosts: number;
+    approvalDownBoosts: number;
+    approvalLowBoosts: number;
   };
   topActionTypes: Array<{ type: string; count: number }>;
   recentSnapshots: Array<{
@@ -32,6 +35,9 @@ export interface EngineImpact {
       coverageBoosts: number;
       goalBoosts: number;
       examPressureBoosts: number;
+      approvalRiskBoosts: number;
+      approvalDownBoosts: number;
+      approvalLowBoosts: number;
     };
   }>;
   status: ImpactStatus;
@@ -119,7 +125,14 @@ export const useStudyEngineImpact = () => {
         : 0;
 
       // Agregação dos snapshots recentes
-      const adjustments = { coverageBoosts: 0, goalBoosts: 0, examPressureBoosts: 0 };
+      const adjustments = {
+        coverageBoosts: 0,
+        goalBoosts: 0,
+        examPressureBoosts: 0,
+        approvalRiskBoosts: 0,
+        approvalDownBoosts: 0,
+        approvalLowBoosts: 0,
+      };
       const typeCounter: Record<string, number> = {};
       const recentSnapshots: EngineImpact["recentSnapshots"] = [];
 
@@ -129,6 +142,9 @@ export const useStudyEngineImpact = () => {
         adjustments.coverageBoosts += totals.coverageBoosts ?? 0;
         adjustments.goalBoosts += totals.goalBoosts ?? 0;
         adjustments.examPressureBoosts += totals.examPressureBoosts ?? 0;
+        adjustments.approvalRiskBoosts += totals.approvalRiskBoosts ?? 0;
+        adjustments.approvalDownBoosts += totals.approvalDownBoosts ?? 0;
+        adjustments.approvalLowBoosts += totals.approvalLowBoosts ?? 0;
         const top = out.top_recommendations ?? [];
         for (const rec of top) {
           const t = rec.type || "unknown";
@@ -141,6 +157,9 @@ export const useStudyEngineImpact = () => {
             coverageBoosts: totals.coverageBoosts ?? 0,
             goalBoosts: totals.goalBoosts ?? 0,
             examPressureBoosts: totals.examPressureBoosts ?? 0,
+            approvalRiskBoosts: totals.approvalRiskBoosts ?? 0,
+            approvalDownBoosts: totals.approvalDownBoosts ?? 0,
+            approvalLowBoosts: totals.approvalLowBoosts ?? 0,
           },
         });
       }
@@ -151,7 +170,12 @@ export const useStudyEngineImpact = () => {
         .map(([type, count]) => ({ type, count }));
 
       const totalBoosts =
-        adjustments.coverageBoosts + adjustments.goalBoosts + adjustments.examPressureBoosts;
+        adjustments.coverageBoosts +
+        adjustments.goalBoosts +
+        adjustments.examPressureBoosts +
+        adjustments.approvalRiskBoosts +
+        adjustments.approvalDownBoosts +
+        adjustments.approvalLowBoosts;
 
       let status: ImpactStatus;
       if (snapshotsRes.length === 0) status = "insufficient_data";
