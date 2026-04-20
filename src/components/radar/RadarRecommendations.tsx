@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EFFORT_LABEL } from "@/services/trajectory/trajectoryMappers";
 import type { TrajectoryRecommendation, TrajectoryAppliedAction } from "@/types/trajectory";
-import { ArrowRight, CheckCircle2, Clock } from "lucide-react";
+import { ArrowRight, CheckCircle2, Clock, Loader2, Sparkles } from "lucide-react";
+import { useCompleteTrajectoryAction } from "@/hooks/useCompleteTrajectoryAction";
 
 interface Props {
   recommendations: TrajectoryRecommendation[];
@@ -18,12 +19,21 @@ export default function RadarRecommendations({
   onApply,
   applyingId,
 }: Props) {
+  const completeMut = useCompleteTrajectoryAction();
+
   const appliedByRec = new Map<string, TrajectoryAppliedAction>();
   for (const a of appliedActions) {
     if (a.recommendationId && !appliedByRec.has(a.recommendationId)) {
       appliedByRec.set(a.recommendationId, a);
     }
   }
+
+  // Recomendação principal = primeira não aplicada/concluída de maior prioridade
+  const sorted = [...recommendations].sort((a, b) => a.priority - b.priority);
+  const primaryId = sorted.find((r) => {
+    const s = appliedByRec.get(r.id)?.status;
+    return s !== "applied" && s !== "completed";
+  })?.id;
 
   return (
     <Card>
@@ -42,12 +52,29 @@ export default function RadarRecommendations({
           const isLoading = applyingId === rec.id;
           const isApplied = applied?.status === "applied";
           const isPending = applied?.status === "pending_orchestrator";
+          const isCompleted = applied?.status === "completed";
+          const isPrimary = rec.id === primaryId;
+          const isCompleting =
+            completeMut.isPending && completeMut.variables?.appliedActionId === applied?.id;
 
           return (
-            <div key={rec.id} className="rounded-lg border border-border p-3">
+            <div
+              key={rec.id}
+              className={`rounded-lg border p-3 transition ${
+                isPrimary
+                  ? "border-primary/40 bg-primary/5 shadow-sm"
+                  : "border-border"
+              }`}
+            >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
+                    {isPrimary && (
+                      <Badge className="gap-1 bg-primary text-[10px] text-primary-foreground">
+                        <Sparkles className="h-2.5 w-2.5" />
+                        Principal
+                      </Badge>
+                    )}
                     <span className="text-sm font-medium">{rec.title}</span>
                     {rec.badges.map((b) => (
                       <Badge key={b} variant="outline" className="text-[10px]">
@@ -68,11 +95,35 @@ export default function RadarRecommendations({
                 </div>
 
                 <div className="flex flex-col items-end gap-2">
-                  {isApplied ? (
+                  {isCompleted ? (
                     <Badge className="gap-1 bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
                       <CheckCircle2 className="h-3 w-3" />
-                      Aplicada
+                      Concluída
                     </Badge>
+                  ) : isApplied ? (
+                    <>
+                      <Badge variant="secondary" className="gap-1">
+                        <Clock className="h-3 w-3" />
+                        Em execução
+                      </Badge>
+                      {applied?.id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          disabled={isCompleting}
+                          onClick={() =>
+                            completeMut.mutate({ appliedActionId: applied.id })
+                          }
+                        >
+                          {isCompleting ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            "Marcar concluída"
+                          )}
+                        </Button>
+                      )}
+                    </>
                   ) : isPending ? (
                     <Badge variant="secondary" className="gap-1">
                       <Clock className="h-3 w-3" />
@@ -83,6 +134,7 @@ export default function RadarRecommendations({
                       size="sm"
                       onClick={() => onApply(rec)}
                       disabled={isLoading}
+                      variant={isPrimary ? "default" : "outline"}
                     >
                       {isLoading ? "Enviando…" : "Aplicar"}
                       <ArrowRight className="ml-1 h-3.5 w-3.5" />

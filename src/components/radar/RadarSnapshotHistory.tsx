@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { History, ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { useRadarSnapshotHistory } from "@/hooks/useRadarSnapshotHistory";
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 function formatDate(iso: string): string {
   try {
@@ -17,8 +18,25 @@ function formatDate(iso: string): string {
   }
 }
 
+function formatShort(iso: string): string {
+  try {
+    return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  } catch {
+    return iso;
+  }
+}
+
 export default function RadarSnapshotHistory() {
-  const { data, isLoading } = useRadarSnapshotHistory(5);
+  const { data, isLoading } = useRadarSnapshotHistory(10);
+
+  // chart usa ordem cronológica ascendente
+  const chartData = (data ?? [])
+    .slice()
+    .reverse()
+    .map((s) => ({
+      label: formatShort(s.createdAt),
+      score: Math.round(s.overallScore),
+    }));
 
   return (
     <Card>
@@ -31,11 +49,10 @@ export default function RadarSnapshotHistory() {
           </Badge>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-3">
         {isLoading && (
           <>
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-32 w-full" />
             <Skeleton className="h-10 w-full" />
           </>
         )}
@@ -46,9 +63,44 @@ export default function RadarSnapshotHistory() {
           </p>
         )}
 
+        {!isLoading && chartData.length >= 2 && (
+          <div className="h-32 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 10 }}
+                  stroke="hsl(var(--muted-foreground))"
+                />
+                <YAxis
+                  domain={[0, 100]}
+                  tick={{ fontSize: 10 }}
+                  stroke="hsl(var(--muted-foreground))"
+                  width={28}
+                />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 6,
+                    fontSize: 12,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={{ r: 2.5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         {!isLoading &&
           data &&
-          data.map((item, idx) => {
+          data.slice(0, 5).map((item, idx) => {
             const previous = data[idx + 1];
             const delta = previous ? item.overallScore - previous.overallScore : 0;
             const Icon = delta > 0.5 ? ArrowUp : delta < -0.5 ? ArrowDown : Minus;
