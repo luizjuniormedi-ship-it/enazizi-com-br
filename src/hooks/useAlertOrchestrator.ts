@@ -277,5 +277,5 @@ export function useAlertOrchestrator(): AlertOrchestratorResult {
       allAlerts: all,
       getDecision,
     };
-  }, [prediction, core, adaptive, impact, totalDue]);
+  }, [prediction, core, adaptive, impact, totalDue, adaptiveEnabled, analytics.bySource]);
 }
