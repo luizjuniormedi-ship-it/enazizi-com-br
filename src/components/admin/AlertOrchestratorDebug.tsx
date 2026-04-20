@@ -145,10 +145,20 @@ export default function AlertOrchestratorDebug() {
           </table>
         </div>
 
-        <div className="text-[11px] text-muted-foreground leading-relaxed">
-          <strong>Fase 2:</strong> achievements e popups deep agora são gated via{" "}
-          <code>getDecision("achievement")</code> / <code>getDecision("onboarding-popup")</code>.
-          Família <code>Smart*</code> marcada como <code>@deprecated</code> (sem renderização ativa).
+        <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1">
+          <div>
+            <strong>Fase 2:</strong> achievements e popups deep gated via{" "}
+            <code>getDecision("achievement")</code> /{" "}
+            <code>getDecision("onboarding-popup")</code>. Família <code>Smart*</code>{" "}
+            marcada como <code>@deprecated</code> (sem renderização ativa).
+          </div>
+          <div>
+            <strong>Fase 5:</strong> coluna <code>Adaptive Δ</code> exibe ajuste
+            automático de prioridade com base em CTR/fadiga/resolução (gated por{" "}
+            <code>alert_adaptive_ranking_enabled</code>). Pisos de segurança
+            impedem rebaixamento de <code>exam-date</code> e limitam{" "}
+            <code>approval-risk</code>.
+          </div>
         </div>
       </CardContent>
     </Card>
