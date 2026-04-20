@@ -35,6 +35,10 @@ import { useCoreData } from "./useCoreData";
 import { useStudyEngine } from "./useStudyEngine";
 import { useStudyEngineImpact } from "./useStudyEngineImpact";
 import { useFsrsDueCount } from "./useFsrsDueCount";
+import { useAlertAnalytics } from "./useAlertAnalytics";
+import { useFeatureFlags } from "./useFeatureFlags";
+import { buildAdjustmentMap } from "@/lib/alertAdaptiveRanking";
+import { shiftPriority } from "@/lib/alertPriorityUtils";
 
 export interface AlertOrchestratorResult {
   structuralAlerts: AlertOrchestratorItem[];
@@ -52,6 +56,13 @@ export function useAlertOrchestrator(): AlertOrchestratorResult {
   const { adaptive } = useStudyEngine();
   const { data: impact } = useStudyEngineImpact();
   const { totalDue } = useFsrsDueCount();
+  const { isEnabled } = useFeatureFlags();
+  const adaptiveEnabled = isEnabled("alert_adaptive_ranking_enabled");
+  // Janela curta (7d) para reagir rapidamente; só consulta se a flag estiver on.
+  const analytics = useAlertAnalytics({
+    windowDays: 7,
+    scopeToCurrentUser: true,
+  });
 
   return useMemo(() => {
     // 1) Snapshot consolidado para regras puras
