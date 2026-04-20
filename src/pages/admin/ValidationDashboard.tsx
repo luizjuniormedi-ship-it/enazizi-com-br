@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useValidationMetrics } from "@/hooks/useValidationMetrics";
+import AlertOrchestratorDebug from "@/components/admin/AlertOrchestratorDebug";
 import {
   Users,
   Activity,
@@ -345,6 +346,9 @@ export default function ValidationDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Alert Orchestrator — inspeção interna */}
+      <AlertOrchestratorDebug />
     </div>
   );
 }
