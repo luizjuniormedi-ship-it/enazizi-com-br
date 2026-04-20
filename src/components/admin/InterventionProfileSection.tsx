@@ -172,6 +172,15 @@ export default function InterventionProfileSection() {
     .reverse()
     .find((r) => r.expectedDelta < 0) ?? null;
 
+  // Métricas da recalibração (Fase 6 v2)
+  const strongPrefCount = aggregated.filter(
+    (r) => r.expectedReason === "strong-individual-preference"
+  ).length;
+  const strongPrefTypes = aggregated
+    .filter((r) => r.expectedReason === "strong-individual-preference")
+    .map((r) => TYPE_LABEL[r.type] ?? r.type);
+  const highBoostCount = aggregated.filter((r) => r.expectedDelta >= 18).length;
+
   return (
     <Card>
       <CardHeader>
@@ -224,6 +233,32 @@ export default function InterventionProfileSection() {
                     Nenhum tipo rebaixado
                   </span>
                 )}
+              </div>
+            </div>
+
+            {/* Recalibração v2 — sinais fortes de preferência individual */}
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">
+                Sinais fortes de personalização (recalibração v2)
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-muted-foreground">
+                    Tipos com <code>strong-individual-preference</code>
+                  </div>
+                  <div className="font-semibold text-lg">{strongPrefCount}</div>
+                  {strongPrefTypes.length > 0 && (
+                    <div className="text-xs text-muted-foreground mt-0.5">
+                      {strongPrefTypes.join(", ")}
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <div className="text-muted-foreground">
+                    Tipos com <code>profileDelta ≥ +18</code>
+                  </div>
+                  <div className="font-semibold text-lg">{highBoostCount}</div>
+                </div>
               </div>
             </div>
 
