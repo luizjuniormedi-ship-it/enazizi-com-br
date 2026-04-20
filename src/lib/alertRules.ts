@@ -73,6 +73,7 @@ export function buildCandidateAlerts(
       layer: "structural",
       visible: true,
       dedupeKey: "exam-date-missing",
+      legacyOrigin: "core",
     });
   }
 
@@ -91,6 +92,7 @@ export function buildCandidateAlerts(
       layer: "structural",
       visible: true,
       dedupeKey: "recovery-active",
+      legacyOrigin: "core",
     });
   }
 
@@ -110,6 +112,7 @@ export function buildCandidateAlerts(
         actionLabel: "Ver detalhes",
         actionHref: "/dashboard/analytics",
         dedupeKey: "approval-risk",
+        legacyOrigin: "core",
       });
     }
 
@@ -125,6 +128,7 @@ export function buildCandidateAlerts(
         actionLabel: "Ver detalhes",
         actionHref: "/dashboard/analytics",
         dedupeKey: "approval-trend",
+        legacyOrigin: "core",
       });
     }
 
@@ -140,6 +144,7 @@ export function buildCandidateAlerts(
         actionLabel: "Ver detalhes",
         actionHref: "/dashboard/analytics",
         dedupeKey: "coverage-risk",
+        legacyOrigin: "core",
       });
     }
   }
@@ -157,6 +162,7 @@ export function buildCandidateAlerts(
       actionLabel: "Revisar agora",
       actionHref: "/flashcards",
       dedupeKey: "fsrs-backlog",
+      legacyOrigin: "core",
     });
   } else if (input.fsrsDue >= 20) {
     out.push({
@@ -170,6 +176,7 @@ export function buildCandidateAlerts(
       actionLabel: "Revisar",
       actionHref: "/flashcards",
       dedupeKey: "fsrs-backlog",
+      legacyOrigin: "core",
     });
   }
 
@@ -186,6 +193,7 @@ export function buildCandidateAlerts(
       actionLabel: "Praticar",
       actionHref: "/banco-questoes",
       dedupeKey: "inactivity",
+      legacyOrigin: "core",
     });
   }
 
@@ -202,6 +210,7 @@ export function buildCandidateAlerts(
       actionLabel: "Abrir cronograma",
       actionHref: "/cronograma",
       dedupeKey: "tasks-stale",
+      legacyOrigin: "core",
     });
   }
 
@@ -219,6 +228,7 @@ export function buildCandidateAlerts(
       actionLabel: "Começar missão mínima",
       actionHref: "/banco-questoes?mode=quick10",
       dedupeKey: "min-mission",
+      legacyOrigin: "core",
     });
   }
 

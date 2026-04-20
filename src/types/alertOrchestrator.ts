@@ -33,8 +33,24 @@ export type AlertSource =
   | "min-mission"
   | "achievement"
   | "onboarding-popup"
+  | "install-app"
+  | "whats-new"
+  | "feedback-survey"
+  | "system-guide"
+  | "ephemeral-toast"
   // strings adicionais reservadas para integrações futuras
   | (string & {});
+
+/** Origem técnica do alerta — usada apenas pelo painel de debug. */
+export type AlertLegacyOrigin =
+  | "core"
+  | "smart-legacy"
+  | "toast-legacy"
+  | "popup-legacy"
+  | "achievement"
+  | "onboarding"
+  | "bridge-ephemeral"
+  | "bridge-deep";
 
 export interface AlertOrchestratorItem {
   id: string;
@@ -51,6 +67,10 @@ export interface AlertOrchestratorItem {
   dedupeKey?: string;
   /** Se `visible === false`, indica qual regra suprimiu (auditoria). */
   suppressedBy?: string;
+  /** Origem técnica (debug-only). */
+  legacyOrigin?: AlertLegacyOrigin;
+  /** Indica se o alerta entrou via bridge (ephemeral/deep). */
+  viaBridge?: boolean;
   metadata?: Record<string, unknown>;
 }
 

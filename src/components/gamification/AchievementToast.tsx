@@ -1,10 +1,22 @@
+/**
+ * AchievementToast — gated pelo Alert Orchestrator (Fase 2)
+ * ─────────────────────────────────────────────────────────
+ * Achievements são `informational / ephemeral`. Se houver `critical
+ * structural` ativo, o orchestrator suprime para não competir com
+ * alertas de risco. UI permanece idêntica.
+ */
 import { useGamification } from "@/hooks/useGamification";
+import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
 import { X } from "lucide-react";
 
 const AchievementToast = () => {
   const { newAchievement, dismissAchievement } = useGamification();
+  const { getDecision } = useAlertOrchestrator();
 
   if (!newAchievement) return null;
+
+  const decision = getDecision("achievement");
+  if (!decision.visible) return null;
 
   return (
     <div className="fixed top-4 right-4 z-50 animate-slide-down">
