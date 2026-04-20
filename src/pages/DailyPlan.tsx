@@ -24,6 +24,7 @@ import { useMissionMode } from "@/hooks/useMissionMode";
 import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import NextTaskBanner from "@/components/daily-plan/NextTaskBanner";
 
 const reviewTimeEstimates: Record<string, number> = {
   D1: 20, D3: 15, D7: 12, D15: 10, D30: 8,
@@ -67,6 +68,9 @@ const DailyPlan = () => {
   const [assessmentOpen, setAssessmentOpen] = useState(false);
   const [assessmentTopic, setAssessmentTopic] = useState("");
   const [pendingTopicId, setPendingTopicId] = useState<string | null>(null);
+
+  // Auto-encadeamento: última task concluída → mostrar próxima ação
+  const [lastCompletedAt, setLastCompletedAt] = useState<number | null>(null);
 
   // Study Engine recommendations (from Planner + performance data)
   const { data: engineRecs } = useStudyEngine();
@@ -274,6 +278,7 @@ const DailyPlan = () => {
       const next = new Set(completedReviews);
       next.add(reviewId);
       setCompletedReviews(next);
+      setLastCompletedAt(Date.now());
 
       // Update performance context in background
       const review = scheduledReviews.find(r => r.id === reviewId);
@@ -302,6 +307,7 @@ const DailyPlan = () => {
       next.add(pendingTopicId);
       setCompletedTopics(next);
       setPendingTopicId(null);
+      setLastCompletedAt(Date.now());
       toast({ title: "Autoavaliação salva!", description: `Confiança: ${confidence}/5 em ${assessmentTopic}` });
       if (user) {
         updateStudyPerformanceContext(user.id, [{ id: "", tema: assessmentTopic, especialidade: "" }]).catch(() => {});
@@ -335,6 +341,35 @@ const DailyPlan = () => {
 
   const hasContent = scheduledReviews.length > 0 || todayTopics.length > 0 || (engineRecs && engineRecs.length > 0);
 
+  // Próxima ação após uma conclusão (próxima revisão pendente → próximo tópico → primeira recomendação do engine)
+  const nextPendingReview = scheduledReviews.find((r) => !completedReviews.has(r.id));
+  const nextPendingTopic = todayTopics.find((t) => !completedTopics.has(t.id));
+  const firstEngineRec = (engineRecs || [])[0];
+  const nextAction =
+    nextPendingReview
+      ? {
+          label: nextPendingReview.tema,
+          hint: `${nextPendingReview.especialidade} · ~${nextPendingReview.estimatedMinutes}min`,
+          go: () => goToTutor(nextPendingReview.tema, nextPendingReview.especialidade, "review", nextPendingReview.subtopico),
+        }
+      : nextPendingTopic
+      ? {
+          label: nextPendingTopic.tema,
+          hint: `${nextPendingTopic.especialidade} · novo conteúdo`,
+          go: () => goToTutor(nextPendingTopic.tema, nextPendingTopic.especialidade, "new_content", nextPendingTopic.subtopico),
+        }
+      : firstEngineRec
+      ? {
+          label: firstEngineRec.topic,
+          hint: `${firstEngineRec.specialty || ""} · ~${firstEngineRec.estimatedMinutes || 20}min`,
+          go: () => navigate(buildStudyPath(firstEngineRec, "daily-plan")),
+        }
+      : null;
+
+  // Banner aparece por 90s após uma conclusão (lastCompletedAt set)
+  const showNextBanner = lastCompletedAt !== null && nextAction !== null
+    && (Date.now() - lastCompletedAt) < 90_000;
+
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
@@ -347,6 +382,17 @@ const DailyPlan = () => {
           O que o sistema selecionou para você estudar hoje.
         </p>
       </div>
+
+      {/* Banner de auto-encadeamento — aparece logo após concluir uma task */}
+      {showNextBanner && nextAction && (
+        <NextTaskBanner
+          nextLabel={nextAction.label}
+          hint={nextAction.hint}
+          onContinue={nextAction.go}
+          onOpenRadar={() => navigate("/dashboard/radar-trajetoria")}
+          onDismiss={() => setLastCompletedAt(null)}
+        />
+      )}
 
       {/* Progress */}
       {hasContent && (

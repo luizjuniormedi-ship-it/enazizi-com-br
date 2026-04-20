@@ -27,6 +27,7 @@ import WeeklyFocusPanel from "@/components/dashboard-v2/WeeklyFocusPanel";
 import PerformanceEnergyPanel from "@/components/dashboard-v2/PerformanceEnergyPanel";
 import QuickActionsPanel from "@/components/dashboard-v2/QuickActionsPanel";
 import RadarTrajetoriaCard from "@/components/radar/RadarTrajetoriaCard";
+import FsrsReviewCard from "@/components/dashboard/FsrsReviewCard";
 
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
@@ -430,6 +431,12 @@ const Dashboard = () => {
           {/* ═══ BLOCO 2 — Smart Alerts ═══ */}
           <SmartAlerts alerts={smartAlerts} />
 
+          {/* ═══ BLOCO 2.1 — Conexões rápidas (Radar + Flashcards) ═══ */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            {isEnabled("radar_trajetoria_enabled") && <RadarTrajetoriaCard />}
+            <FsrsReviewCard />
+          </div>
+
           {/* ═══ BLOCO 3 — STATUS GRID (4 cards) ═══ */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <ApprovalScoreCard
@@ -475,8 +482,8 @@ const Dashboard = () => {
             hasPendingReviews={(snapshot?.pendingReviews ?? 0) > 0}
           />
 
-          {/* ═══ BLOCO 5.1 — Radar de Trajetória IA (atrás de flag) ═══ */}
-          {isEnabled("radar_trajetoria_enabled") && <RadarTrajetoriaCard />}
+          {/* ═══ BLOCO 5.1 — Radar (já renderizado em 2.1; aqui mantido como fallback se flag desabilitada na seção topo) ═══ */}
+          {/* RadarTrajetoriaCard movido para BLOCO 2.1 para visibilidade */}
 
           {/* ═══ BLOCO 6 — Justification + Alternatives ═══ */}
           {activeRec && (
