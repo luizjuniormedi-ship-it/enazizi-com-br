@@ -1,22 +1,28 @@
 /**
- * GuidedFlowLayer
- * ───────────────
+ * GuidedFlowLayer — Nível 2
+ * ─────────────────────────
  * Camada de orientação inteligente no topo do Dashboard.
  *
  * Modelo Tutor-first + navegação livre:
  *   - Sugere o próximo passo (Tutor / Missão / Revisão / Foco / NBA)
+ *   - Toggle "Modo Foco" (esconde ruído, mantém só guiado)
  *   - NÃO bloqueia navegação
- *   - NÃO esconde nenhum módulo
  *   - NÃO altera schema, RLS ou edge functions
  *
- * Layout responsivo: 1 col (mobile) → 2 cols (md+).
- * StartHere e NextBestAction ocupam linha inteira (full-span).
+ * Ordem visual do topo (especificação Nível 2):
+ *   1. StartHereCard
+ *   2. NextBestActionCard
+ *   3. MissionCard
+ *   4. ReviewCard
+ *   5. GuidedFocusCard
+ *   6. FocusModeEntry
  */
 import StartHereCard from "./guided/StartHereCard";
 import NextBestActionCard from "./guided/NextBestActionCard";
 import MissionCard from "./guided/MissionCard";
 import ReviewCard from "./guided/ReviewCard";
 import GuidedFocusCard from "./guided/GuidedFocusCard";
+import FocusModeEntry from "./guided/FocusModeEntry";
 
 export default function GuidedFlowLayer() {
   return (
@@ -28,6 +34,7 @@ export default function GuidedFlowLayer() {
         <ReviewCard />
         <GuidedFocusCard />
       </div>
+      <FocusModeEntry />
     </section>
   );
 }

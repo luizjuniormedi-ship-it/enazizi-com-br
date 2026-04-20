@@ -1,16 +1,17 @@
 /**
- * MissionCard (Guided)
- * ────────────────────
- * Mostra progresso da missão do dia (daily_plan_tasks via useDashboardData).
- * - Com tasks: barra de progresso + "Continuar missão".
- * - Sem tasks: CTA para gerar plano.
+ * MissionCard (Guided) — Nível 2
+ * ──────────────────────────────
+ * Resume a missão do dia (daily_plan_tasks via useDashboardData).
+ * - Com tasks: progresso, contagem, minutos restantes (estimativa) + "Continuar".
+ * - Sem tasks: CTA "Gerar missão do dia".
  *
- * Reaproveita useDashboardData (sem nova query).
+ * Reusa useDashboardData (sem nova query). Estimativa de minutos restantes
+ * deriva de subjectHours (média por task pendente).
  */
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Target, ArrowRight, Plus } from "lucide-react";
+import { Target, ArrowRight, Plus, Clock } from "lucide-react";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 export default function MissionCard() {
@@ -19,8 +20,12 @@ export default function MissionCard() {
 
   const total = data?.stats.todayTotal ?? 0;
   const done = data?.stats.todayCompleted ?? 0;
+  const remaining = Math.max(0, total - done);
   const hasPlan = data?.stats.hasStudyPlan ?? false;
   const progress = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+
+  // Estimativa simples: 25min por tarefa pendente (média típica de bloco de estudo).
+  const minutesLeft = remaining * 25;
 
   const handleContinue = () => navigate("/dashboard/cronograma?source=guided_mission");
   const handleGenerate = () => navigate("/dashboard/smart-planner?source=guided_mission");
@@ -39,7 +44,7 @@ export default function MissionCard() {
                 {isLoading
                   ? "Carregando…"
                   : total > 0
-                  ? `${done}/${total} tarefas concluídas`
+                  ? `${done}/${total} concluídas`
                   : hasPlan
                   ? "Sem tarefas para hoje"
                   : "Nenhum plano ativo"}
@@ -54,19 +59,27 @@ export default function MissionCard() {
           ) : (
             <Button size="sm" variant="outline" onClick={handleGenerate} className="shrink-0">
               <Plus className="mr-1 h-3.5 w-3.5" />
-              Gerar plano
+              Gerar missão
             </Button>
           )}
         </div>
 
         {total > 0 && (
-          <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full bg-amber-500 transition-all"
-              style={{ width: `${progress}%` }}
-              aria-label={`Progresso ${progress}%`}
-            />
-          </div>
+          <>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full bg-amber-500 transition-all"
+                style={{ width: `${progress}%` }}
+                aria-label={`Progresso ${progress}%`}
+              />
+            </div>
+            {remaining > 0 && (
+              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                <span>~{minutesLeft} min restantes</span>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>

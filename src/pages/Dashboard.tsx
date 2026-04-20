@@ -43,6 +43,7 @@ import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import CognitiveCockpit from "@/components/cockpit/CognitiveCockpit";
 import GuidedFlowLayer from "@/components/dashboard/GuidedFlowLayer";
+import { useFocusMode } from "@/components/dashboard/guided/FocusModeEntry";
 import { AdaptiveMnemonicCard } from "@/components/mnemonic/AdaptiveMnemonicCard";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -71,6 +72,7 @@ interface CompletionHandoff {
 const Dashboard = () => {
   useRevisionNotifier();
   usePrefetch("/dashboard");
+  const [focusMode] = useFocusMode();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
@@ -339,13 +341,13 @@ const Dashboard = () => {
       )}
 
       {/* ═══ COCKPIT COGNITIVO (novo, no topo) ═══ */}
-      {!loopActive && (
+      {!loopActive && !focusMode && (
         <SafeCard name="CognitiveCockpit">
           <CognitiveCockpit />
         </SafeCard>
       )}
 
-      {!loopActive && visibleDashboardMnemonic && (
+      {!loopActive && !focusMode && visibleDashboardMnemonic && (
         <SafeCard name="DashboardMnemonic">
           <AdaptiveMnemonicCard
             mnemonic={visibleDashboardMnemonic}
@@ -373,7 +375,7 @@ const Dashboard = () => {
       )}
 
       {/* ═══ COCKPIT ═══ */}
-      {!loopActive && (
+      {!loopActive && !focusMode && (
         <>
           {/* ── Greeting Bar ── */}
           <motion.div
