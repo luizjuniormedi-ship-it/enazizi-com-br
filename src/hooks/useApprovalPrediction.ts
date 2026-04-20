@@ -40,12 +40,13 @@ function daysUntil(dateISO: string | null | undefined): number | null {
 }
 
 export function useApprovalPrediction(): ApprovalPrediction | null {
+  const { user } = useAuth();
   const { data: core } = useCoreData();
   const { data: impact } = useStudyEngineImpact();
   const { data: coverage } = useCoverageStatus();
   const { data: snapshot } = useAnalyticsSnapshot();
 
-  return useMemo(() => {
+  const prediction = useMemo(() => {
     if (!core || !impact) return null;
 
     // ── Acurácia (últimas 100 tentativas)
