@@ -151,7 +151,7 @@ export default function ContentCoverageAudit() {
           value={kpis.subtopicsWithoutFlashcard}
         />
         <KpiCard
-          icon={<AlertTriangle className="h-5 w-5 text-amber-500" />}
+          icon={<AlertTriangle className="h-5 w-5 text-destructive/70" />}
           label="Tem Q mas sem material"
           value={kpis.subtopicsQuestionsButNoMaterial}
         />
