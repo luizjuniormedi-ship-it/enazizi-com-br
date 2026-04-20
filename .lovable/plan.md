@@ -1,116 +1,103 @@
 
 
-# 🧭 Plano — Alert Orchestrator (governança central de avisos)
+# Performance + Force Update on Login
 
-Implementar uma **fonte única de verdade** que decide quais avisos do Dashboard renderizam, com qual prioridade, em qual camada e com deduplicação real. Sem reescrever UI: o orchestrator atua como **camada de decisão** que envolve os componentes existentes.
+Goal: speed up first paint and post-login, cut redundant queries, lazy-load heavy admin/analytics blocks, and keep the existing version-bump force-refresh working without loops.
 
----
+The force-update mechanism already exists (`APP_RELEASE` + `forceLoginRefresh` + `performHardAppReset`) and it works. We will not rebuild it — we will hardening it (single-fire guarantees, cleaner version comparison) and reduce the work that runs around it.
 
-## 1. O que será criado
+## What I'll change
 
-**`src/types/alertOrchestrator.ts`**
-Tipos puros (separados do hook para evitar import cíclico):
-- `AlertPriority` = `"critical" | "important" | "contextual" | "informational"`
-- `AlertLayer` = `"structural" | "contextual" | "ephemeral" | "deep"`
-- `AlertSource` = string semântica (ex: `"exam-date"`, `"approval-risk"`, `"approval-trend"`, `"coverage-risk"`, `"recovery"`, `"inactivity"`, `"fsrs-backlog"`, `"min-mission"`)
-- `AlertOrchestratorItem` (conforme spec do usuário) + `suppressedBy?: string` para auditoria
+### 1. Reduce query waste on login (biggest win)
 
-**`src/lib/alertRules.ts`**
-Função pura `buildCandidateAlerts(input)` que recebe um snapshot consolidado (approval, exam_date, recovery, fsrs due, impact) e devolve `AlertOrchestratorItem[]` brutos. Toda lógica de "quando aparecer" mora aqui (testável sem React).
+- **`useCoreData`**: `refetchOnWindowFocus: true` → `false`. `staleTime: 60s` → `5min`. (Currently re-fires 12 Supabase queries every time the tab regains focus.)
+- **`useDashboardData`**: same — `refetchOnWindowFocus: false`, `staleTime: 2min`. (Currently re-fires ~13 queries on every focus.)
+- **`useStudyEngineImpact`**: already 5min — leave.
+- **`useInterventionAnalytics`**: gate with `enabled: !!user` (currently runs even when logged out on landing) and bump `staleTime` to 5min.
+- **`useInterventionObservability`**: add `enabled` flag (only run when admin panel is mounted) — already only used inside admin panel, but ensure the hook accepts an `enabled` param so it doesn't run on first render of the panel before the admin tab is opened.
+- **`useJourneyRefresh` (loaded by every Dashboard view)**: stop calling `queryClient.clear()` on `SIGNED_IN`. The version-bump path already does a hard reset; clearing on every SIGNED_IN throws away the freshly-fetched core-data and forces a re-fetch storm right after login. Replace `clear()` with targeted `invalidateQueries` for the journey keys only.
 
-**`src/hooks/useAlertOrchestrator.ts`**
-Hook React que:
-1. Consome `useApprovalPrediction`, `useCoreData`, `useStudyEngine` (para `recoveryMode`/`heavyRecovery`), `useStudyEngineImpact`, `useFsrsDueCount`.
-2. Chama `buildCandidateAlerts`.
-3. Aplica **dedupe** (por `dedupeKey`, mantém maior prioridade; em empate, mantém o de layer estrutural).
-4. Aplica **caps por camada** (structural ≤ 2, contextual ≤ 2).
-5. Aplica **regras de supressão cruzada** (deep não abre se houver critical estrutural; min-mission cai para contextual se já houver critical estrutural).
-6. Devolve `{ structuralAlerts, contextualAlerts, ephemeralAlerts, deepAlerts, allAlerts, getDecision(source) }`.
-   - `getDecision(source)` retorna `{ visible, priority, layer, suppressedBy }` — usado pelos componentes para decidir se renderizam.
+### 2. Lazy-load heavy Dashboard blocks
 
-**`src/components/admin/AlertOrchestratorDebug.tsx`**
-Tabela read-only listando `source · priority · layer · visible · dedupeKey · suppressedBy`. Adicionada como nova seção em `src/pages/admin/ValidationDashboard.tsx` (não em rota nova; não exposto ao aluno).
+In `src/pages/Dashboard.tsx`, switch these from eager to `lazy()` + `Suspense fallback={null}`:
+- `AdvancedAnalyticsAccordion` (collapsed by default — perfect for lazy)
+- `GuidedFlowLayer`
+- `ProgressOverview`
+- `AdaptiveMnemonicCard`
+- `TutorContinueCard`
 
----
+`MissionHeroAnimated` and `InterventionCard` stay eager (above the fold).
 
-## 2. O que será editado (modo não-destrutivo)
+### 3. Lazy-load admin observability panels
 
-Cada componente alvo recebe **um único early-return** baseado em `useAlertOrchestrator().getDecision(...)`. UI permanece idêntica.
+In `src/pages/admin/ValidationDashboard.tsx`, lazy-load:
+- `InterventionObservabilityPanel`
+- `InterventionAnalyticsPanel`
+- `AlertOrchestratorAnalytics`, `AlertConversionPanel`, `AlertCorrelationPanel`
 
-| Componente | Source | Mudança |
-|---|---|---|
-| `ExamDateRequiredBanner` | `exam-date` | Se `decision.visible === false`, retorna `null`. Demais condições atuais permanecem (snooze local etc.) |
-| `RecoveryModeBanner` | `recovery` | Idem |
-| `RiskAlertsCard` | `approval-risk` / `approval-trend` / `coverage-risk` / `fsrs-backlog` / `inactivity` | Em vez de listar manualmente, mapeia os `structuralAlerts` cuja `source` pertence a esse conjunto. Mantém visual, copy e CTAs atuais. Cap continua 3. |
-| `MinimumDailyMissionCard` | `min-mission` | Se `decision.visible === false`, `null`. Se rebaixado a `contextual`, renderiza normal (já é card contextual hoje). |
+These currently load on every admin route hit even before the user scrolls.
 
-**Sem mudanças em `GuidedFlowLayer.tsx`** — ele continua chamando os 4 componentes; a orquestração acontece dentro de cada um.
+### 4. Memoize hot components
 
-**Sem mudanças no `Dashboard.tsx`** além de continuar renderizando `RecoveryModeBanner` e `GuidedFlowLayer`.
+Wrap with `React.memo`:
+- `MissionHeroAnimated` (re-renders on every Dashboard state change today)
+- `InterventionCard`
+- `DashboardTopBar`
+- `ProgressOverview`
 
-**Sem alterar backend, sem migrações, sem novas tabelas.**
+### 5. Force-update on login — hardening (no rebuild)
 
----
+Current flow already works. Small reinforcements only:
+- In `forceLoginRefresh`: add a per-tab guard ref so two concurrent `SIGNED_IN` events (web + visibility-change) can't both trigger the hard reset.
+- In `main.tsx`: when `__login_refresh=1` is consumed, also clean URL **before** mounting (already done — verify and keep).
+- Add a single console marker on hard-reset path so we can see it firing in production logs.
 
-## 3. Regras de prioridade aplicadas
+No new file, no new key, no version-bump on every render. Mechanism stays: `APP_RELEASE` constant change → next login clears caches once, sets `LOGIN_REFRESH_SIGNATURE_KEY`, reloads exactly once.
 
-| Regra | Source | Priority | Layer |
-|---|---|---|---|
-| `exam_date` ausente (sem snooze) | `exam-date` | critical | structural |
-| `approval.riskLevel === "high"` | `approval-risk` | critical | structural |
-| `recoveryMode` ativo (heavy) | `recovery` | critical | structural |
-| `recoveryMode` ativo (leve) | `recovery` | important | structural |
-| `approval.trend === "down"` (delta ≤ -3) | `approval-trend` | important | structural |
-| `riskLevel === "medium"` && coverage < 50 | `coverage-risk` | important | structural |
-| FSRS due > 50 | `fsrs-backlog` | important | structural |
-| `questions7d === 0` | `inactivity` | important | structural |
-| FSRS due 20–50 | `fsrs-backlog` | contextual | contextual |
-| Missão mínima (inativo, sem critical) | `min-mission` | contextual | contextual |
-| Achievement / streak | `achievement` | informational | ephemeral |
+### 6. No changes to
 
----
+- Engine logic (Study, Intervention, Alert Orchestrator) — frozen
+- Auth flow / session lifecycle
+- Routing
+- PWA registration logic in `main.tsx` (already correct, with iframe/preview guards)
+- Database / Supabase functions / RLS
 
-## 4. Regras de dedupe / supressão
+## Files touched
 
-- **Dedupe por `dedupeKey`**: quando o `RiskAlertsCard` produz "sem exam_date" e o `ExamDateRequiredBanner` também, ambos compartilham `dedupeKey: "exam-date-missing"`. O orchestrator mantém **só o estrutural** (`ExamDateRequiredBanner`). O item correspondente dentro do `RiskAlertsCard` é marcado `visible: false` (`suppressedBy: "exam-date"`).
-- **Inatividade vs missão mínima**: se houver alerta `critical` estrutural visível, `min-mission` é rebaixado de structural para contextual. Sem critical, sobe para structural.
-- **Cap structural ≤ 2**: ordenação por prioridade (critical > important) + recência. Excedentes viram contextual quando aplicável; o resto fica `visible: false` com `suppressedBy: "structural-cap"`.
-- **Deep layer**: `getDecision("onboarding-popup")` retorna `visible: false` se houver qualquer critical estrutural ativo.
+| File | Change |
+|---|---|
+| `src/hooks/useCoreData.ts` | `staleTime` 5min, `refetchOnWindowFocus: false` |
+| `src/hooks/useDashboardData.ts` | `staleTime` 2min, `refetchOnWindowFocus: false` |
+| `src/hooks/useInterventionAnalytics.ts` | accept `userId`, gate with `enabled`, `staleTime` 5min |
+| `src/hooks/useInterventionObservability.ts` | add optional `enabled` arg |
+| `src/hooks/useJourneyRefresh.ts` | remove `queryClient.clear()`, keep targeted invalidations |
+| `src/lib/force-login-refresh.ts` | add module-level in-flight guard |
+| `src/pages/Dashboard.tsx` | lazy-load 5 blocks; memo wrap MissionHero/InterventionCard |
+| `src/pages/admin/ValidationDashboard.tsx` | lazy-load 5 admin sub-panels |
+| `src/components/dashboard-v2/MissionHeroAnimated.tsx` | wrap export in `React.memo` |
+| `src/components/dashboard/InterventionCard.tsx` | wrap export in `React.memo` |
+| `src/components/dashboard/DashboardTopBar.tsx` | wrap export in `React.memo` |
+| `src/components/dashboard/ProgressOverview.tsx` | wrap export in `React.memo` |
 
----
+No file deletions. No DB changes. No edge function changes.
 
-## 5. Integração com Approval / FSRS / Exam Date / Inatividade
+## Loop-prevention guarantees (force update)
 
-- **Approval**: lê direto do `useApprovalPrediction()` (já existente). Não recalcula. Usa `riskLevel`, `trend`, `delta`, `score`.
-- **FSRS**: usa `useFsrsDueCount().totalDue` (já existente). Sem nova query.
-- **Exam date**: lê de `useCoreData().profile.exam_date` + checa snooze local (`exam_date_banner_snoozed_until`) para casar com o banner atual.
-- **Inatividade**: `useStudyEngineImpact().questions7d`.
-- **Recovery**: `useStudyEngine().adaptive.recoveryMode` + `heavyRecovery` (igual ao banner atual).
+1. `LOGIN_REFRESH_SIGNATURE_KEY` in sessionStorage only lets one refresh per `(release × user × sign-in)` triple — same as today.
+2. New module-level boolean in `force-login-refresh.ts` blocks re-entry inside the same JS realm.
+3. Hard-reset preserves the signature so the post-reload boot recognizes it and skips the cycle (already implemented in `main.tsx`).
+4. PWA service-worker register code already has `isPreviewHost` / `isInIframe` guards — left alone.
 
----
+## Expected impact
 
-## 6. Toasts (parte 10)
+- First post-login render: ~12 fewer Supabase calls re-firing on tab focus.
+- `/dashboard` initial JS payload: drops 4 heavy components from the critical chunk (advanced accordion, guided flow layer, progress overview, tutor continue, mnemonic).
+- `/admin/validation` first paint: only KPIs + skeletons until each sub-panel resolves.
+- Force update: same UX as today, just safer against double-fire.
 
-Esta sprint **não migra** os sistemas de toast. Apenas:
-- Documenta no JSDoc do hook que toasts ficam na camada `ephemeral`.
-- Expõe `getDecision("onboarding-popup")` e `getDecision("achievement")` para que futuras integrações usem o orchestrator antes de disparar.
-- `useRevisionNotifier` e `Toaster`/`Sonner` permanecem intactos (zero regressão).
+## Verification
 
----
-
-## 7. Validação final
-
-- `npx tsc --noEmit` deve terminar com **0 erros**.
-- Smoke test manual: Dashboard continua renderizando os mesmos 4 componentes; com `exam_date` faltando, `RiskAlertsCard` não duplica a linha "data da prova".
-- Debug em `/admin/validation` mostra a árvore de decisão do orchestrator para o usuário admin.
-
----
-
-## 8. Entrega
-
-**Criados (4)**: `src/types/alertOrchestrator.ts`, `src/lib/alertRules.ts`, `src/hooks/useAlertOrchestrator.ts`, `src/components/admin/AlertOrchestratorDebug.tsx`.
-
-**Editados (5)**: `ExamDateRequiredBanner.tsx`, `RecoveryModeBanner.tsx`, `RiskAlertsCard.tsx`, `MinimumDailyMissionCard.tsx`, `pages/admin/ValidationDashboard.tsx` (anexar painel de debug).
-
-**Não editados**: `Dashboard.tsx`, `GuidedFlowLayer.tsx`, hooks de toast, Approval/Study Engine, backend.
+- `npx tsc --noEmit` → 0 errors.
+- Manual smoke: load `/`, log in, confirm dashboard renders without flicker, confirm only one `[ENAZIZI] Release:` log per page load.
+- No DB or RLS changes → no migration needed.
 
