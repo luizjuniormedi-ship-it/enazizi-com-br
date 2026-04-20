@@ -73,6 +73,7 @@ const Dashboard = () => {
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
   const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
   const [dismissedMnemonicId, setDismissedMnemonicId] = useState<string | null>(null);
+  const [advancedAccordion, setAdvancedAccordion] = useState<string>("");
   const prevLevelRef = useRef<number | null>(null);
   const autostartConsumedRef = useRef(false);
 
@@ -298,7 +299,11 @@ const Dashboard = () => {
                 onStart={handleStart}
                 onRefresh={handleRefresh}
                 onShowAlternatives={() => {
-                  document.getElementById("advanced-analytics")?.scrollIntoView({ behavior: "smooth" });
+                  // Ajuste 5: abre o accordion programaticamente E rola até ele
+                  setAdvancedAccordion("advanced");
+                  requestAnimationFrame(() => {
+                    document.getElementById("advanced-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  });
                 }}
               />
             </SafeCard>
@@ -335,6 +340,8 @@ const Dashboard = () => {
                 alternatives={alternatives}
                 activeRecType={activeRec?.type}
                 onSelectAlternative={handleSelectAlternative}
+                value={advancedAccordion}
+                onValueChange={setAdvancedAccordion}
               />
             </SafeCard>
           </div>
