@@ -1,3 +1,9 @@
+/**
+ * @deprecated [Alert Orchestrator — Fase 2]
+ * Substituído por `RiskAlertsCard` + `useAlertOrchestrator`.
+ * Mantido como legacy (0 imports) para preservar histórico — não usar
+ * em novos lugares. Será removido em uma sprint futura de cleanup.
+ */
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -5,11 +11,7 @@ import { AlertTriangle, Clock, ArrowRight, Play, TrendingDown, Target } from "lu
 import { useDashboardData } from "@/hooks/useDashboardData";
 
 /**
- * Shows at most 1 smart alert based on priority:
- * 1. Exam imminent (≤15 days)
- * 2. Overdue reviews (≥3)
- * 3. Frequency drop (streak broken or low activity)
- * 4. High error count
+ * @deprecated Use `RiskAlertsCard` (governado pelo orchestrator).
  */
 export default function SmartAlertCard() {
   const navigate = useNavigate();
