@@ -27,13 +27,18 @@ export const useQuestionDistribution = () => {
       const [coverage, goal, errorCountRes] = await Promise.all([
         getCoverageStatus(userId).catch(() => null),
         getQuestionGoalStatus(userId, examDate).catch(() => null),
-        supabase
-          .from("error_bank")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", userId)
-          .eq("dominado", false)
-          .then((r) => r.count ?? 0)
-          .catch(() => 0),
+        (async () => {
+          try {
+            const { count } = await supabase
+              .from("error_bank")
+              .select("id", { count: "exact", head: true })
+              .eq("user_id", userId)
+              .eq("dominado", false);
+            return count ?? 0;
+          } catch {
+            return 0;
+          }
+        })(),
       ]);
 
       const daysUntilExam = examDate

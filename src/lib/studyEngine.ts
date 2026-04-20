@@ -1178,7 +1178,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       getQuestionGoalStatus(userId, examDateForDist).catch(() => null),
     ]);
 
-    const errorCountForDist = errorBank?.length ?? 0;
+    const errorCountForDist = errors?.length ?? 0;
 
     const distRes = getQuestionDistribution({
       daysUntilExam: daysUntilExamDist,
