@@ -2614,13 +2614,19 @@ export type Database = {
       flashcards: {
         Row: {
           answer: string
+          content_version: number
           created_at: string
           difficulty: number | null
+          explanation: string | null
+          generation_method: string | null
           id: string
           is_global: boolean
+          metadata: Json
           microtopic_id: string | null
           organization_id: string | null
           question: string
+          reviewed_by_human: boolean
+          source: string | null
           source_map_id: string | null
           specialty_id: string | null
           subtopic_id: string | null
@@ -2629,13 +2635,19 @@ export type Database = {
         }
         Insert: {
           answer: string
+          content_version?: number
           created_at?: string
           difficulty?: number | null
+          explanation?: string | null
+          generation_method?: string | null
           id?: string
           is_global?: boolean
+          metadata?: Json
           microtopic_id?: string | null
           organization_id?: string | null
           question: string
+          reviewed_by_human?: boolean
+          source?: string | null
           source_map_id?: string | null
           specialty_id?: string | null
           subtopic_id?: string | null
@@ -2644,13 +2656,19 @@ export type Database = {
         }
         Update: {
           answer?: string
+          content_version?: number
           created_at?: string
           difficulty?: number | null
+          explanation?: string | null
+          generation_method?: string | null
           id?: string
           is_global?: boolean
+          metadata?: Json
           microtopic_id?: string | null
           organization_id?: string | null
           question?: string
+          reviewed_by_human?: boolean
+          source?: string | null
           source_map_id?: string | null
           specialty_id?: string | null
           subtopic_id?: string | null
@@ -6975,16 +6993,20 @@ export type Database = {
         Row: {
           ativo: boolean
           content: string
+          content_version: number
           created_at: string
           difficulty_level: number | null
+          generation_method: string | null
           id: string
           is_global: boolean
           material_type: string
           metadata: Json
           microtopic_id: string | null
+          reviewed_by_human: boolean
           source: string | null
           specialty_id: string | null
           subtopic_id: string | null
+          summary: string | null
           title: string
           topic_id: string | null
           updated_at: string
@@ -6993,16 +7015,20 @@ export type Database = {
         Insert: {
           ativo?: boolean
           content: string
+          content_version?: number
           created_at?: string
           difficulty_level?: number | null
+          generation_method?: string | null
           id?: string
           is_global?: boolean
           material_type?: string
           metadata?: Json
           microtopic_id?: string | null
+          reviewed_by_human?: boolean
           source?: string | null
           specialty_id?: string | null
           subtopic_id?: string | null
+          summary?: string | null
           title: string
           topic_id?: string | null
           updated_at?: string
@@ -7011,16 +7037,20 @@ export type Database = {
         Update: {
           ativo?: boolean
           content?: string
+          content_version?: number
           created_at?: string
           difficulty_level?: number | null
+          generation_method?: string | null
           id?: string
           is_global?: boolean
           material_type?: string
           metadata?: Json
           microtopic_id?: string | null
+          reviewed_by_human?: boolean
           source?: string | null
           specialty_id?: string | null
           subtopic_id?: string | null
+          summary?: string | null
           title?: string
           topic_id?: string | null
           updated_at?: string
