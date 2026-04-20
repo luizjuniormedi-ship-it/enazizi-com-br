@@ -173,6 +173,7 @@ const App = () => (
                 <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
                 <Route path="mapas-mentais" element={<MindMaps />} />
                 <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
+                <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
 
               </Route>
               {/* Fullscreen mind map viewer — outside DashboardLayout */}
