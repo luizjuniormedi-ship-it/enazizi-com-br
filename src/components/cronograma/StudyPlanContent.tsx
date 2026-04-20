@@ -1,9 +1,13 @@
 /**
- * @legacy-write — Componente compartilhado por SmartPlanner e CronogramaInteligente (aba "Plano").
- * Lê/escreve em study_plans + study_tasks (shape semanal weeklySchedule).
+ * @legacy-write
+ * @deprecated-flow — APOSENTADO na sprint final do Planner.
+ *
+ * Componente do shape semanal (weeklySchedule). Lê e escreve em study_plans + study_tasks (legado).
+ * NÃO é mais montado pelo CronogramaInteligente nem por nenhuma rota ativa do ENAZIZI.
+ *
  * Fonte viva oficial do Planner: daily_plans + daily_plan_tasks (estrutura diária).
- * Mantido em modo de compatibilidade temporária — não migrar sem redesign do shape semanal.
- * Toda nova funcionalidade do Planner deve usar daily_plan_tasks via completeStudyAction.ts.
+ *
+ * NÃO REMONTAR sem redesign do shape semanal para o shape diário.
  */
 import { CalendarDays, Clock, BookOpen, Upload, Loader2, Settings2, Trash2, GraduationCap, Plus, Pencil, Check, FileDown, Bell, BellOff, GripVertical, CheckCircle2, Circle, MessageSquare, Layers, Sparkles, ArrowRight } from "lucide-react";
 import StudyBlockActions from "./StudyBlockActions";
