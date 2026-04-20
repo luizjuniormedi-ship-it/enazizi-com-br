@@ -1560,6 +1560,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       dailyQuestionTarget: dailyTargetLog,
       paceStatus: paceLog,
       examMultiplier: multiplierLog,
+      approval: approvalSignal
+        ? { score: approvalSignal.score, trend: approvalSignal.trend, risk: approvalSignal.riskLevel }
+        : null,
       recommendations: result.slice(0, 5).map((r: any) => ({
         topic: r.topic,
         type: r.type,
