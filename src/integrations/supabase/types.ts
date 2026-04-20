@@ -7289,6 +7289,429 @@ export type Database = {
         }
         Relationships: []
       }
+      trajectory_applied_actions: {
+        Row: {
+          applied_at: string
+          completed_at: string | null
+          created_at: string
+          decision_id: string | null
+          id: string
+          orchestrator_action: string | null
+          outcome: Json | null
+          payload: Json
+          recommendation_id: string | null
+          snapshot_id: string | null
+          status: string
+          target_module: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          applied_at?: string
+          completed_at?: string | null
+          created_at?: string
+          decision_id?: string | null
+          id?: string
+          orchestrator_action?: string | null
+          outcome?: Json | null
+          payload?: Json
+          recommendation_id?: string | null
+          snapshot_id?: string | null
+          status?: string
+          target_module?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          applied_at?: string
+          completed_at?: string | null
+          created_at?: string
+          decision_id?: string | null
+          id?: string
+          orchestrator_action?: string | null
+          outcome?: Json | null
+          payload?: Json
+          recommendation_id?: string | null
+          snapshot_id?: string | null
+          status?: string
+          target_module?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trajectory_applied_actions_recommendation_id_fkey"
+            columns: ["recommendation_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_recommendations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trajectory_applied_actions_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trajectory_opportunities: {
+        Row: {
+          created_at: string
+          description: string | null
+          effort_level: string
+          evidence: Json
+          id: string
+          opportunity_key: string
+          potential_gain: number
+          snapshot_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          effort_level?: string
+          evidence?: Json
+          id?: string
+          opportunity_key: string
+          potential_gain?: number
+          snapshot_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          effort_level?: string
+          evidence?: Json
+          id?: string
+          opportunity_key?: string
+          potential_gain?: number
+          snapshot_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trajectory_opportunities_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trajectory_recommendations: {
+        Row: {
+          badges: string[]
+          created_at: string
+          description: string | null
+          effort_level: string
+          expected_impact: number
+          id: string
+          orchestrator_action: string
+          payload: Json
+          priority: number
+          rationale: string | null
+          recommendation_key: string
+          snapshot_id: string
+          target_module: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          badges?: string[]
+          created_at?: string
+          description?: string | null
+          effort_level?: string
+          expected_impact?: number
+          id?: string
+          orchestrator_action: string
+          payload?: Json
+          priority?: number
+          rationale?: string | null
+          recommendation_key: string
+          snapshot_id: string
+          target_module: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          badges?: string[]
+          created_at?: string
+          description?: string | null
+          effort_level?: string
+          expected_impact?: number
+          id?: string
+          orchestrator_action?: string
+          payload?: Json
+          priority?: number
+          rationale?: string | null
+          recommendation_key?: string
+          snapshot_id?: string
+          target_module?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trajectory_recommendations_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trajectory_risk_factors: {
+        Row: {
+          created_at: string
+          description: string | null
+          evidence: Json
+          id: string
+          impact_score: number
+          risk_key: string
+          severity: string
+          snapshot_id: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          evidence?: Json
+          id?: string
+          impact_score?: number
+          risk_key: string
+          severity?: string
+          snapshot_id: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          evidence?: Json
+          id?: string
+          impact_score?: number
+          risk_key?: string
+          severity?: string
+          snapshot_id?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trajectory_risk_factors_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trajectory_runs: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          engine_version: string
+          error_message: string | null
+          id: string
+          snapshot_id: string | null
+          status: string
+          trigger_source: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          engine_version?: string
+          error_message?: string | null
+          id?: string
+          snapshot_id?: string | null
+          status?: string
+          trigger_source?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          engine_version?: string
+          error_message?: string | null
+          id?: string
+          snapshot_id?: string | null
+          status?: string
+          trigger_source?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_trajectory_runs_snapshot"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trajectory_scenarios: {
+        Row: {
+          assumptions: Json
+          confidence_score: number
+          cost_intensity: number
+          created_at: string
+          delta_overall: number
+          horizon_days: number
+          id: string
+          projected_backlog: number
+          projected_consistency: number
+          projected_execution: number
+          projected_overall: number
+          projected_retention: number
+          rationale: string | null
+          retention_risk: number
+          scenario_type: string
+          snapshot_id: string
+          user_id: string
+        }
+        Insert: {
+          assumptions?: Json
+          confidence_score?: number
+          cost_intensity?: number
+          created_at?: string
+          delta_overall?: number
+          horizon_days: number
+          id?: string
+          projected_backlog?: number
+          projected_consistency?: number
+          projected_execution?: number
+          projected_overall?: number
+          projected_retention?: number
+          rationale?: string | null
+          retention_risk?: number
+          scenario_type: string
+          snapshot_id: string
+          user_id: string
+        }
+        Update: {
+          assumptions?: Json
+          confidence_score?: number
+          cost_intensity?: number
+          created_at?: string
+          delta_overall?: number
+          horizon_days?: number
+          id?: string
+          projected_backlog?: number
+          projected_consistency?: number
+          projected_execution?: number
+          projected_overall?: number
+          projected_retention?: number
+          rationale?: string | null
+          retention_risk?: number
+          scenario_type?: string
+          snapshot_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trajectory_scenarios_snapshot_id_fkey"
+            columns: ["snapshot_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_snapshots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trajectory_snapshots: {
+        Row: {
+          accuracy_last_28d: number | null
+          active_days_last_14d: number
+          backlog_score: number
+          confidence_score: number
+          consistency_score: number
+          created_at: string
+          data_completeness: string
+          error_bank_open_count: number
+          exam_proximity_days: number | null
+          execution_score: number
+          fsrs_due_count: number
+          fsrs_overdue_count: number
+          id: string
+          overall_score: number
+          questions_last_28d: number
+          questions_last_7d: number
+          raw_signals: Json
+          retention_proxy: number | null
+          retention_score: number
+          run_id: string | null
+          simulado_count_last_28d: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy_last_28d?: number | null
+          active_days_last_14d?: number
+          backlog_score?: number
+          confidence_score?: number
+          consistency_score?: number
+          created_at?: string
+          data_completeness?: string
+          error_bank_open_count?: number
+          exam_proximity_days?: number | null
+          execution_score?: number
+          fsrs_due_count?: number
+          fsrs_overdue_count?: number
+          id?: string
+          overall_score?: number
+          questions_last_28d?: number
+          questions_last_7d?: number
+          raw_signals?: Json
+          retention_proxy?: number | null
+          retention_score?: number
+          run_id?: string | null
+          simulado_count_last_28d?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy_last_28d?: number | null
+          active_days_last_14d?: number
+          backlog_score?: number
+          confidence_score?: number
+          consistency_score?: number
+          created_at?: string
+          data_completeness?: string
+          error_bank_open_count?: number
+          exam_proximity_days?: number | null
+          execution_score?: number
+          fsrs_due_count?: number
+          fsrs_overdue_count?: number
+          id?: string
+          overall_score?: number
+          questions_last_28d?: number
+          questions_last_7d?: number
+          raw_signals?: Json
+          retention_proxy?: number | null
+          retention_score?: number
+          run_id?: string | null
+          simulado_count_last_28d?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trajectory_snapshots_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "trajectory_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_context_snapshots: {
         Row: {
           accuracy: number | null
