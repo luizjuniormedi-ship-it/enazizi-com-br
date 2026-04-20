@@ -4,16 +4,12 @@
  * Painel interno de validação do Study Engine V3.2 + Approval Prediction.
  * Apenas leitura. Não altera o sistema.
  */
+import { lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useValidationMetrics } from "@/hooks/useValidationMetrics";
 import AlertOrchestratorDebug from "@/components/admin/AlertOrchestratorDebug";
-import AlertOrchestratorAnalytics from "@/components/admin/AlertOrchestratorAnalytics";
-import AlertConversionPanel from "@/components/admin/AlertConversionPanel";
-import AlertCorrelationPanel from "@/components/admin/AlertCorrelationPanel";
-import InterventionAnalyticsPanel from "@/components/admin/InterventionAnalyticsPanel";
-import InterventionObservabilityPanel from "@/components/admin/InterventionObservabilityPanel";
 import {
   Users,
   Activity,
@@ -24,6 +20,16 @@ import {
   Zap,
   RefreshCw,
 } from "lucide-react";
+
+// Lazy-load heavy admin sub-panels — they each pull their own queries and
+// chart libs, so deferring shrinks the first paint of /admin/validation.
+const AlertOrchestratorAnalytics = lazy(() => import("@/components/admin/AlertOrchestratorAnalytics"));
+const AlertConversionPanel = lazy(() => import("@/components/admin/AlertConversionPanel"));
+const AlertCorrelationPanel = lazy(() => import("@/components/admin/AlertCorrelationPanel"));
+const InterventionAnalyticsPanel = lazy(() => import("@/components/admin/InterventionAnalyticsPanel"));
+const InterventionObservabilityPanel = lazy(() => import("@/components/admin/InterventionObservabilityPanel"));
+
+const PanelFallback = () => <Skeleton className="h-48 w-full" />;
 
 function Stat({
   label,
@@ -353,15 +359,25 @@ export default function ValidationDashboard() {
       </Card>
 
       {/* Intervention Engine — métricas das próximas ações sugeridas */}
-      <InterventionAnalyticsPanel />
+      <Suspense fallback={<PanelFallback />}>
+        <InterventionAnalyticsPanel />
+      </Suspense>
 
       {/* Fase 7 — Observabilidade em produção real */}
-      <InterventionObservabilityPanel />
+      <Suspense fallback={<PanelFallback />}>
+        <InterventionObservabilityPanel />
+      </Suspense>
 
       {/* Alert Orchestrator — métricas, conversão, correlação e inspeção interna */}
-      <AlertOrchestratorAnalytics />
-      <AlertConversionPanel />
-      <AlertCorrelationPanel />
+      <Suspense fallback={<PanelFallback />}>
+        <AlertOrchestratorAnalytics />
+      </Suspense>
+      <Suspense fallback={<PanelFallback />}>
+        <AlertConversionPanel />
+      </Suspense>
+      <Suspense fallback={<PanelFallback />}>
+        <AlertCorrelationPanel />
+      </Suspense>
       <AlertOrchestratorDebug />
     </div>
   );
