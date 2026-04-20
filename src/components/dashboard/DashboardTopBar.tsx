@@ -79,7 +79,7 @@ export default function DashboardTopBar() {
           {paceCfg.label}
         </Badge>
         {streak > 0 && (
-          <Badge variant="outline" className="gap-1 text-[10px] px-1.5 py-0.5 border-orange-500/30 bg-orange-500/10 text-orange-600 dark:text-orange-400">
+          <Badge variant="outline" className="gap-1 text-[10px] px-1.5 py-0.5 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400">
             <Flame className="h-3 w-3" />
             {streak}
           </Badge>

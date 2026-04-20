@@ -1,8 +1,7 @@
-import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { resolveRecommendationAction } from "@/lib/recommendationRouter";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
@@ -12,54 +11,32 @@ import { useStudyLoop } from "@/hooks/useStudyLoop";
 import { useStudySession } from "@/hooks/useStudySession";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
-import { useVisualSkill } from "@/hooks/useVisualSkill";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
 import { supabase } from "@/integrations/supabase/client";
-import { motion } from "framer-motion";
 
 import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
-import ApprovalScoreCard from "@/components/dashboard-v2/ApprovalScoreCard";
-import FocusCard from "@/components/dashboard-v2/FocusCard";
-import DailyProgressCard from "@/components/dashboard-v2/DailyProgressCard";
-import ReadinessCard from "@/components/dashboard-v2/ReadinessCard";
-import SmartAlerts, { type SmartAlert } from "@/components/dashboard-v2/SmartAlerts";
-import WeeklyFocusPanel from "@/components/dashboard-v2/WeeklyFocusPanel";
-import PerformanceEnergyPanel from "@/components/dashboard-v2/PerformanceEnergyPanel";
-import QuickActionsPanel from "@/components/dashboard-v2/QuickActionsPanel";
-import RadarTrajetoriaCard from "@/components/radar/RadarTrajetoriaCard";
-import FsrsReviewCard from "@/components/dashboard/FsrsReviewCard";
-import TutorContinueCard from "@/components/dashboard/TutorContinueCard";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
+import TutorContinueCard from "@/components/dashboard/TutorContinueCard";
+import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
+import ProgressOverview from "@/components/dashboard/ProgressOverview";
+import AdvancedAnalyticsAccordion from "@/components/dashboard/AdvancedAnalyticsAccordion";
+import GuidedFlowLayer from "@/components/dashboard/GuidedFlowLayer";
 
-import MissionJustification from "@/components/mission-control/MissionJustification";
-import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
+import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
-import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
 import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
 import SessionBar from "@/components/study-session/SessionBar";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
-import CognitiveCockpit from "@/components/cockpit/CognitiveCockpit";
-import GuidedFlowLayer from "@/components/dashboard/GuidedFlowLayer";
 import { useFocusMode } from "@/components/dashboard/guided/FocusModeEntry";
 import { AdaptiveMnemonicCard } from "@/components/mnemonic/AdaptiveMnemonicCard";
-import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
 
-import { Badge } from "@/components/ui/badge";
 import { fireCelebration } from "@/lib/celebrations";
 
 const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
-
-const EXAM_LABELS: Record<string, string> = {
-  enare: "ENARE", revalida: "Revalida", usp: "USP", unicamp: "UNICAMP",
-  unifesp: "UNIFESP", "sus-sp": "SUS-SP", "sus-rj": "SUS-RJ", amrigs: "AMRIGS",
-  "ses-df": "SES-DF", "psu-mg": "PSU-MG", hcpa: "HCPA",
-  "santa-casa-sp": "Santa Casa SP", einstein: "Einstein",
-  "sirio-libanes": "Sírio-Libanês", outra: "Outra",
-};
 
 interface CompletionHandoff {
   completedTitle: string;
@@ -67,7 +44,14 @@ interface CompletionHandoff {
 }
 
 /* ═══════════════════════════════════════════════════
-   DASHBOARD — Cockpit do Aluno
+   DASHBOARD — Cockpit do Aluno (versão linear, 8 blocos)
+   Ordem:
+     1. TopBar fixa
+     2. Hero único (missão atual)
+     3. Guided Flow (alertas + 3 ações)
+     4. Progresso unificado
+     5. Tutor (continuar)
+     6. Análises avançadas (accordion fechado)
    ═══════════════════════════════════════════════════ */
 const Dashboard = () => {
   useRevisionNotifier();
@@ -77,13 +61,10 @@ const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { isEnabled, loading: flagsLoading } = useFeatureFlags();
   const { data: coreData } = useCoreData();
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
-  const { data: visualSkill } = useVisualSkill();
   const { data: dashboardMnemonic } = useDashboardMnemonic();
 
-  // Mission engine
   const { data, isLoading: missionLoading, isError, error, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
   const loop = useStudyLoop();
@@ -100,7 +81,6 @@ const Dashboard = () => {
   const alternatives = data?.alternativeActions ?? [];
   const adaptiveState = data?.adaptiveState;
 
-  const streak = coreData?.gamification?.current_streak ?? snapshot?.streak ?? 0;
   const loopActive = loop.phase !== "idle";
 
   useEffect(() => {
@@ -151,7 +131,7 @@ const Dashboard = () => {
     prevLevelRef.current = dashData.metrics.gamificationLevel;
   }, [dashData]);
 
-  // Fresh login: clean up timestamp (no longer redirects to /mission)
+  // Fresh login cleanup
   useEffect(() => {
     localStorage.removeItem("enazizi_last_login_ts");
   }, []);
@@ -230,83 +210,6 @@ const Dashboard = () => {
 
   /* ─── Derived ─── */
   const isNewUser = dashData ? (dashData.metrics.questionsAnswered === 0 && dashData.stats.flashcards === 0) : false;
-  const displayName = dashData?.displayName?.split(" ")[0] || "Doutor(a)";
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
-  const targetExams = dashData?.targetExams || [];
-
-  // Approval score trend
-  const approvalTrend = useMemo(() => {
-    const scores = coreData?.approvalScores || [];
-    if (scores.length < 2) return "stable" as const;
-    const recent = scores[0]?.score ?? 0;
-    const older = scores[1]?.score ?? 0;
-    if (recent - older > 3) return "up" as const;
-    if (recent - older < -3) return "down" as const;
-    return "stable" as const;
-  }, [coreData?.approvalScores]);
-
-  // Smart alerts
-  const smartAlerts = useMemo(() => {
-    const alerts: SmartAlert[] = [];
-    if (visualSkill) {
-      const weakCat = visualSkill.categories.find(c => c.imageType === visualSkill.weakestArea);
-      const strongCat = visualSkill.categories.find(c => c.imageType === visualSkill.strongestArea);
-      if (weakCat?.trend === "declining" && visualSkill.weakestArea) {
-        alerts.push({
-          id: "visual-decline",
-          type: "warning",
-          message: `Seu desempenho em ${visualSkill.weakestArea.toUpperCase()} caiu nos últimos dias`,
-        });
-      }
-      if (strongCat?.trend === "improving" && visualSkill.strongestArea) {
-        alerts.push({
-          id: "visual-improve",
-          type: "success",
-          message: `Você evoluiu em ${visualSkill.strongestArea.toUpperCase()} — continue assim!`,
-        });
-      }
-    }
-    if (snapshot && snapshot.pendingReviews > 10) {
-      alerts.push({
-        id: "pending-reviews",
-        type: "warning",
-        message: `${snapshot.pendingReviews} revisões acumuladas — priorize antes de avançar`,
-      });
-    }
-    return alerts;
-  }, [visualSkill, snapshot]);
-
-  // Focus area
-  const weakestArea = visualSkill?.weakestArea || (adaptiveState?.approvalZone === "critical" ? "Revisão geral" : "");
-  const focusArea = visualSkill?.weakestArea || weakestArea;
-
-  // Weekly questions estimate
-  const questionsThisWeek = useMemo(() => {
-    const attempts = coreData?.practiceAttempts || [];
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return attempts.filter(a => new Date(a.created_at) >= weekAgo).length;
-  }, [coreData?.practiceAttempts]);
-
-  // Days active this week estimate
-  const daysActiveThisWeek = useMemo(() => {
-    const attempts = coreData?.practiceAttempts || [];
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const days = new Set(
-      attempts
-        .filter(a => new Date(a.created_at) >= weekAgo)
-        .map(a => a.created_at.slice(0, 10))
-    );
-    return days.size;
-  }, [coreData?.practiceAttempts]);
-
-  // Last simulado score
-  const lastSimuladoScore = useMemo(() => {
-    const exams = coreData?.examSessions || [];
-    return exams.length > 0 ? Math.round(exams[0].score) : null;
-  }, [coreData?.examSessions]);
 
   // First load
   const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
@@ -326,37 +229,14 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="space-y-5 max-w-5xl mx-auto pb-20 lg:pb-0">
-      {/* Session Bar */}
+    <div className="space-y-4 max-w-4xl mx-auto pb-20 lg:pb-0">
+      {/* Session Bar (durante sessão ativa) */}
       <SessionBar metrics={session.metrics} onEnd={handleEndSession} />
 
-      {/* Achievement toasts */}
+      {/* Achievement toasts (overlay invisível até disparar) */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
-      {/* ═══ GUIDED FLOW (Tutor-first / orientação leve) ═══ */}
-      {!loopActive && (
-        <SafeCard name="GuidedFlowLayer">
-          <GuidedFlowLayer />
-        </SafeCard>
-      )}
-
-      {/* ═══ COCKPIT COGNITIVO (novo, no topo) ═══ */}
-      {!loopActive && !focusMode && (
-        <SafeCard name="CognitiveCockpit">
-          <CognitiveCockpit />
-        </SafeCard>
-      )}
-
-      {!loopActive && !focusMode && visibleDashboardMnemonic && (
-        <SafeCard name="DashboardMnemonic">
-          <AdaptiveMnemonicCard
-            mnemonic={visibleDashboardMnemonic}
-            onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
-          />
-        </SafeCard>
-      )}
-
-      {/* ═══ INLINE STUDY LOOP ═══ */}
+      {/* ═══ INLINE STUDY LOOP — toma a tela quando ativo ═══ */}
       {loopActive && (
         <StudyLoopContainer
           phase={loop.phase}
@@ -374,43 +254,16 @@ const Dashboard = () => {
         />
       )}
 
-      {/* ═══ COCKPIT ═══ */}
+      {/* ═══ DASHBOARD LINEAR (fora do loop e fora do focus mode) ═══ */}
       {!loopActive && !focusMode && (
         <>
-          {/* ── Greeting Bar ── */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}
-            className="flex items-center justify-between px-1"
-          >
-            <div>
-              <p className="text-sm text-muted-foreground">
-                {greeting}, <span className="text-foreground font-semibold">{displayName}</span>
-              </p>
-              {targetExams.length > 0 && (
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {targetExams.map((e: string) => (
-                    <Badge key={e} variant="outline" className="text-[10px] px-1.5 py-0">
-                      {EXAM_LABELS[e] || e}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-            <SafeCard name="XpWidget"><XpWidget /></SafeCard>
-          </motion.div>
+          {/* 1 — TopBar fixa (saudação + status) */}
+          <SafeCard name="DashboardTopBar"><DashboardTopBar /></SafeCard>
 
-          {/* Completion banner */}
-          {handoff && (
-            <MissionCompletionBanner
-              completedTitle={handoff.completedTitle}
-              badges={handoff.badges}
-              onDismiss={dismissBanner}
-            />
-          )}
+          {/* Recovery banner sempre que ativo */}
+          <RecoveryModeBanner />
 
-          {/* Onboarding */}
+          {/* Onboarding inline para usuários totalmente novos */}
           {isNewUser && dashData && (
             <Suspense fallback={null}>
               <SafeCard name="OnboardingNew">
@@ -423,98 +276,68 @@ const Dashboard = () => {
             </Suspense>
           )}
 
-          {/* Error / Empty states */}
+          {/* Erro / vazio */}
           {isError && <MissionControlError error={error} onRetry={handleRefresh} />}
           {!isError && !activeRec && <MissionControlEmpty onGenerate={handleRefresh} />}
 
-          {/* ═══ BLOCO 1 — HERO MISSION ═══ */}
-          {activeRec && (
-            <MissionHeroAnimated
-              recommendation={activeRec}
-              adaptiveState={adaptiveState}
-              onStart={handleStart}
-              onRefresh={handleRefresh}
-              onShowAlternatives={() => {
-                document.getElementById("mc-alternatives")?.scrollIntoView({ behavior: "smooth" });
-              }}
+          {/* Banner de missão concluída */}
+          {handoff && (
+            <MissionCompletionBanner
+              completedTitle={handoff.completedTitle}
+              badges={handoff.badges}
+              onDismiss={dismissBanner}
             />
           )}
 
-          {/* ═══ BLOCO 2 — Smart Alerts + Recovery ═══ */}
-          <RecoveryModeBanner />
-          <SmartAlerts alerts={smartAlerts} />
-
-          {/* ═══ BLOCO 2.1 — Conexões rápidas (Radar + Flashcards) ═══ */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            {isEnabled("radar_trajetoria_enabled") && <RadarTrajetoriaCard />}
-            <FsrsReviewCard />
-          </div>
-
-          {/* ═══ BLOCO 2.2 — Continuar Tutor (motor de conversão) ═══ */}
-          <TutorContinueCard />
-
-          {/* ═══ BLOCO 3 — STATUS GRID (4 cards) ═══ */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <ApprovalScoreCard
-              score={snapshot?.approvalScore ?? 0}
-              trend={approvalTrend}
-            />
-            <FocusCard
-              weakestArea={focusArea}
-              weakestSubtopic={visualSkill?.weakestArea ? `Priorizar: ${visualSkill.weakestArea}` : undefined}
-            />
-            <DailyProgressCard
-              questionsToday={dashData?.stats.questionsToday ?? 0}
-              accuracyToday={dashData?.metrics.accuracy ?? 0}
-              streak={streak}
-              studyMinutes={Math.round((dashData?.stats.totalStudyHours ?? 0) * 60)}
-            />
-            <ReadinessCard
-              simuladosCompleted={dashData?.metrics.simuladosCompleted ?? 0}
-              lastScore={lastSimuladoScore}
-              accuracy={dashData?.metrics.accuracy ?? 0}
-            />
-          </div>
-
-          {/* ═══ BLOCO 4 — FOCO + ENERGIA (2-col) ═══ */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <WeeklyFocusPanel
-              weakestArea={focusArea}
-              pendingReviews={snapshot?.pendingReviews ?? 0}
-              errorsCount={dashData?.metrics.errorsCount ?? 0}
-            />
-            <PerformanceEnergyPanel
-              streak={streak}
-              studyMinutes={Math.round((dashData?.stats.totalStudyHours ?? 0) * 60)}
-              pendingReviews={snapshot?.pendingReviews ?? 0}
-              questionsThisWeek={questionsThisWeek}
-              daysActiveThisWeek={daysActiveThisWeek}
-            />
-          </div>
-
-          {/* ═══ BLOCO 5 — QUICK ACTIONS ═══ */}
-          <QuickActionsPanel
-            hasErrors={(dashData?.metrics.errorsCount ?? 0) > 0}
-            hasPendingReviews={(snapshot?.pendingReviews ?? 0) > 0}
-          />
-
-          {/* ═══ BLOCO 5.1 — Radar (já renderizado em 2.1; aqui mantido como fallback se flag desabilitada na seção topo) ═══ */}
-          {/* RadarTrajetoriaCard movido para BLOCO 2.1 para visibilidade */}
-
-          {/* ═══ BLOCO 6 — Justification + Alternatives ═══ */}
+          {/* 2 — HERO ÚNICO (missão atual) */}
           {activeRec && (
-            <MissionJustification justification={justification} adaptiveState={adaptiveState} />
-          )}
-
-          {alternatives.length > 0 && (
-            <div id="mc-alternatives">
-              <MissionAlternatives
-                alternatives={alternatives.slice(0, 3)}
-                onSelect={handleSelectAlternative}
-                activeType={activeRec?.type || "free_study"}
+            <SafeCard name="MissionHero">
+              <MissionHeroAnimated
+                recommendation={activeRec}
+                adaptiveState={adaptiveState}
+                onStart={handleStart}
+                onRefresh={handleRefresh}
+                onShowAlternatives={() => {
+                  document.getElementById("advanced-analytics")?.scrollIntoView({ behavior: "smooth" });
+                }}
               />
-            </div>
+            </SafeCard>
           )}
+
+          {/* 3 — GUIDED FLOW: alertas + 3 ações */}
+          <SafeCard name="GuidedFlowLayer">
+            <GuidedFlowLayer />
+          </SafeCard>
+
+          {/* Mnemônico adaptativo (condicional) */}
+          {visibleDashboardMnemonic && (
+            <SafeCard name="DashboardMnemonic">
+              <AdaptiveMnemonicCard
+                mnemonic={visibleDashboardMnemonic}
+                onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
+              />
+            </SafeCard>
+          )}
+
+          {/* 4 — PROGRESSO UNIFICADO */}
+          <SafeCard name="ProgressOverview"><ProgressOverview /></SafeCard>
+
+          {/* 5 — TUTOR (continuar) */}
+          <SafeCard name="TutorContinueCard"><TutorContinueCard /></SafeCard>
+
+          {/* 6 — ANÁLISES AVANÇADAS (accordion fechado) */}
+          <div id="advanced-analytics">
+            <SafeCard name="AdvancedAnalytics">
+              <AdvancedAnalyticsAccordion
+                showMissionDetails={!!activeRec}
+                justification={justification}
+                adaptiveState={adaptiveState}
+                alternatives={alternatives}
+                activeRecType={activeRec?.type}
+                onSelectAlternative={handleSelectAlternative}
+              />
+            </SafeCard>
+          </div>
         </>
       )}
     </div>
