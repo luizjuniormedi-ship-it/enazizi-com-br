@@ -15,6 +15,7 @@ import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
 import { supabase } from "@/integrations/supabase/client";
 
 import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
+import InterventionCard from "@/components/dashboard/InterventionCard";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 import TutorContinueCard from "@/components/dashboard/TutorContinueCard";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
@@ -308,6 +309,11 @@ const Dashboard = () => {
               />
             </SafeCard>
           )}
+
+          {/* 2.5 — INTERVENTION CARD (Next Best Action) */}
+          <SafeCard name="InterventionCard">
+            <InterventionCard />
+          </SafeCard>
 
           {/* 3 — GUIDED FLOW: alertas + 3 ações */}
           <SafeCard name="GuidedFlowLayer">
