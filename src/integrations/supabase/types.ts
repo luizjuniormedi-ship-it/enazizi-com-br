@@ -3039,6 +3039,39 @@ export type Database = {
         }
         Relationships: []
       }
+      intervention_penalties: {
+        Row: {
+          created_at: string
+          id: string
+          intervention_type: string
+          last_interaction_at: string
+          penalty_level: number
+          penalty_until: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          intervention_type: string
+          last_interaction_at?: string
+          penalty_level?: number
+          penalty_until?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          intervention_type?: string
+          last_interaction_at?: string
+          penalty_level?: number
+          penalty_until?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lesson_doubts: {
         Row: {
           created_at: string
