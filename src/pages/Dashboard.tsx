@@ -42,6 +42,7 @@ import SessionBar from "@/components/study-session/SessionBar";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import CognitiveCockpit from "@/components/cockpit/CognitiveCockpit";
+import GuidedFlowLayer from "@/components/dashboard/GuidedFlowLayer";
 import { AdaptiveMnemonicCard } from "@/components/mnemonic/AdaptiveMnemonicCard";
 import XpWidget from "@/components/gamification/XpWidget";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -329,6 +330,13 @@ const Dashboard = () => {
 
       {/* Achievement toasts */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
+
+      {/* ═══ GUIDED FLOW (Tutor-first / orientação leve) ═══ */}
+      {!loopActive && (
+        <SafeCard name="GuidedFlowLayer">
+          <GuidedFlowLayer />
+        </SafeCard>
+      )}
 
       {/* ═══ COCKPIT COGNITIVO (novo, no topo) ═══ */}
       {!loopActive && (
