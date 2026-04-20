@@ -136,11 +136,17 @@ async function fetchInterventionAnalytics(
   };
 }
 
-export function useInterventionAnalytics(windowDays = 7) {
+export function useInterventionAnalytics(
+  windowDays = 7,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
   return useQuery({
     queryKey: ["intervention-analytics", windowDays],
     queryFn: () => fetchInterventionAnalytics(windowDays),
-    staleTime: 60_000,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 }

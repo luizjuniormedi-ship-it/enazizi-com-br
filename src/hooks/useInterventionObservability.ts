@@ -414,11 +414,17 @@ async function fetchObservability(
   }
 }
 
-export function useInterventionObservability(window: ObservabilityWindow) {
+export function useInterventionObservability(
+  window: ObservabilityWindow,
+  options?: { enabled?: boolean }
+) {
+  const enabled = options?.enabled ?? true;
   const q = useQuery({
     queryKey: ["intervention-observability", window],
     queryFn: () => fetchObservability(window),
-    staleTime: 60_000,
+    enabled,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
   return {
