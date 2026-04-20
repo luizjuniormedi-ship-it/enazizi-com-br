@@ -34,7 +34,9 @@ export type FlagKey =
   // Intervention Engine V2 — Adaptive Ranking
   | "intervention_engine_v2_enabled"
   // Intervention Engine Fase 5 — Memória de Intervenção (Penalty)
-  | "intervention_penalty_memory_enabled";
+  | "intervention_penalty_memory_enabled"
+  // Intervention Engine Fase 6 — Personalização por Perfil do Aluno
+  | "intervention_profile_personalization_enabled";
 
 export interface SystemFlag {
   flag_key: string;
