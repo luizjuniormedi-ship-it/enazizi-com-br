@@ -102,7 +102,7 @@ export default function ContentCoverageAudit() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Auditoria de domínios, assuntos e subassuntos cobertos pelo acervo de questões e materiais.
-            <span className="ml-1 text-xs">(v1.1 — links + importância)</span>
+            <span className="ml-1 text-xs">(v1.2 — pedagogia + microtopics)</span>
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -110,6 +110,18 @@ export default function ContentCoverageAudit() {
           <Badge variant="outline" className="text-xs">
             <Link2 className="h-3 w-3 mr-1" />
             {kpis.totalLinks} links ({kpis.totalStrongLinks} fortes)
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            <FileText className="h-3 w-3 mr-1" />
+            {kpis.totalMaterials} materiais
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            <Sparkles className="h-3 w-3 mr-1" />
+            {kpis.totalFlashcards} flashcards
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            <GraduationCap className="h-3 w-3 mr-1" />
+            {kpis.totalMicrotopics} microtopics
           </Badge>
         </div>
       </header>
@@ -123,6 +135,25 @@ export default function ContentCoverageAudit() {
           icon={<Flame className="h-5 w-5 text-destructive" />}
           label="Alta importância sem Q"
           value={kpis.highImportanceWithoutQuestions}
+        />
+      </div>
+
+      {/* KPIs pedagógicos Fase 1.2 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <KpiCard
+          icon={<FileText className="h-5 w-5 text-muted-foreground" />}
+          label="Sem material"
+          value={kpis.subtopicsWithoutMaterial}
+        />
+        <KpiCard
+          icon={<Sparkles className="h-5 w-5 text-muted-foreground" />}
+          label="Sem flashcard"
+          value={kpis.subtopicsWithoutFlashcard}
+        />
+        <KpiCard
+          icon={<AlertTriangle className="h-5 w-5 text-amber-500" />}
+          label="Tem Q mas sem material"
+          value={kpis.subtopicsQuestionsButNoMaterial}
         />
       </div>
 
