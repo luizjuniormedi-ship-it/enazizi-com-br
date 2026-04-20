@@ -14,6 +14,7 @@ import { Rocket, ListChecks, BookOpen, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudyEngineImpact } from "@/hooks/useStudyEngineImpact";
 import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
+import { trackAlertEvent } from "@/lib/alertTelemetry";
 
 export default function MinimumDailyMissionCard() {
   const navigate = useNavigate();
@@ -68,7 +69,20 @@ export default function MinimumDailyMissionCard() {
       </div>
 
       <Button
-        onClick={() => navigate("/banco-questoes?mode=quick10")}
+        onClick={() => {
+          trackAlertEvent({
+            alert: {
+              id: "min-mission-card",
+              source: "min-mission",
+              priority: "contextual",
+              layer: "contextual",
+              legacyOrigin: "core",
+              viaBridge: false,
+            },
+            eventType: "clicked",
+          });
+          navigate("/banco-questoes?mode=quick10");
+        }}
         className="w-full gap-2"
         size="sm"
       >

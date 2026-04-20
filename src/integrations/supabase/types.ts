@@ -337,6 +337,54 @@ export type Database = {
         }
         Relationships: []
       }
+      alert_events: {
+        Row: {
+          alert_id: string
+          created_at: string
+          dedupe_key: string | null
+          event_type: string
+          id: string
+          layer: string
+          legacy_origin: string | null
+          metadata: Json
+          priority: string
+          source: string
+          suppressed_by: string | null
+          user_id: string | null
+          via_bridge: boolean
+        }
+        Insert: {
+          alert_id: string
+          created_at?: string
+          dedupe_key?: string | null
+          event_type: string
+          id?: string
+          layer: string
+          legacy_origin?: string | null
+          metadata?: Json
+          priority: string
+          source: string
+          suppressed_by?: string | null
+          user_id?: string | null
+          via_bridge?: boolean
+        }
+        Update: {
+          alert_id?: string
+          created_at?: string
+          dedupe_key?: string | null
+          event_type?: string
+          id?: string
+          layer?: string
+          legacy_origin?: string | null
+          metadata?: Json
+          priority?: string
+          source?: string
+          suppressed_by?: string | null
+          user_id?: string | null
+          via_bridge?: boolean
+        }
+        Relationships: []
+      }
       anamnesis_interactions: {
         Row: {
           category: string | null

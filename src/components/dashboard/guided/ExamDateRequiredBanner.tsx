@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
+import { trackAlertEvent } from "@/lib/alertTelemetry";
 
 const SNOOZE_KEY = "exam_date_banner_snoozed_until";
 
@@ -43,6 +44,16 @@ export default function ExamDateRequiredBanner() {
   // Alert Orchestrator — fonte única de verdade
   if (!getDecision("exam-date").visible) return null;
 
+  const examAlertStub = {
+    id: "exam-date-banner",
+    source: "exam-date" as const,
+    priority: "critical" as const,
+    layer: "structural" as const,
+    dedupeKey: "exam-date-missing",
+    legacyOrigin: "core" as const,
+    viaBridge: false,
+  };
+
   const save = async () => {
     if (!examDate) return;
     setSaving(true);
@@ -53,6 +64,7 @@ export default function ExamDateRequiredBanner() {
         .eq("user_id", user.id);
       if (error) throw error;
       toast({ title: "Data salva", description: "Seu plano será adaptado à proximidade da prova." });
+      trackAlertEvent({ alert: examAlertStub, eventType: "clicked", extra: { action: "save" } });
       queryClient.invalidateQueries({ queryKey: ["core-data"] });
       queryClient.invalidateQueries({ queryKey: ["study-engine-impact"] });
     } catch (err: any) {
@@ -67,6 +79,7 @@ export default function ExamDateRequiredBanner() {
     localStorage.setItem(SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
     setOpen(false);
     setSnoozedTick(Date.now());
+    trackAlertEvent({ alert: examAlertStub, eventType: "dismissed", extra: { action: "snooze_24h" } });
   };
 
   return (
