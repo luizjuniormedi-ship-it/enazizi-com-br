@@ -1227,6 +1227,124 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     console.warn("[StudyEngine] question distribution skipped:", e);
   }
 
+  // ── Approval Risk Signal (V3.2) ───────────────────────────────
+  // Lê o approvalEngine como fonte oficial e aplica boosts/penalidades
+  // por risco de reprovação, tendência de queda e folga (low risk).
+  // Defensivo — se o cálculo falhar, motor segue normal sem bloquear.
+  let approvalSignal: {
+    score: number;
+    trend: "up" | "down" | "stable";
+    riskLevel: "low" | "medium" | "high";
+  } | null = null;
+  try {
+    const { calculateApprovalScore } = await import("./approvalEngine");
+    const { STUDY_ENGINE_CALIBRATION: calApp } = await import("./studyEngineCalibration");
+    const { getCoverageStatus } = await import("./coverageEngine");
+
+    // ── Coleta defensiva dos sinais (fallback seguro)
+    const recent100 = practiceAttempts.slice(0, 100);
+    const accuracy = recent100.length > 0
+      ? (recent100.filter((a: any) => a.correct).length / recent100.length) * 100
+      : 0;
+
+    let coveragePctApp = 0;
+    try {
+      const cov = await getCoverageStatus(userId);
+      coveragePctApp = cov?.requiredCoveragePct ?? 0;
+    } catch {}
+
+    const since7ms = Date.now() - 7 * 86400000;
+    const uniqueDays = new Set(
+      practiceAttempts
+        .filter((a: any) => new Date(a.created_at).getTime() >= since7ms)
+        .map((a: any) => String(a.created_at).slice(0, 10))
+    );
+    const consistency = (uniqueDays.size / 7) * 100;
+
+    const totalRev = pendingReviews.length;
+    const fsrsHealthApp = totalRev > 0
+      ? Math.max(0, 100 - (overdueCount / totalRev) * 100)
+      : 100;
+
+    const since30ms = Date.now() - 30 * 86400000;
+    const questions30dApp = practiceAttempts.filter(
+      (a: any) => new Date(a.created_at).getTime() >= since30ms
+    ).length;
+    const questions7dApp = practiceAttempts.filter(
+      (a: any) => new Date(a.created_at).getTime() >= since7ms
+    ).length;
+
+    const examDateForApp = (profileData as any)?.exam_date || mentorExamDate;
+    const daysToExamApp = examDateForApp
+      ? Math.ceil((new Date(examDateForApp).getTime() - Date.now()) / 86400000)
+      : null;
+
+    // ── Busca previousScore para trend (último snapshot)
+    let previousScore: number | null = null;
+    try {
+      const { data: prevSnap } = await supabase
+        .from("approval_scores")
+        .select("score")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (prevSnap && typeof prevSnap.score === "number") previousScore = prevSnap.score;
+    } catch {}
+
+    const result = calculateApprovalScore({
+      accuracy,
+      coverage: coveragePctApp,
+      consistency,
+      fsrsHealth: fsrsHealthApp,
+      questionsVolume: questions30dApp,
+      questions7d: questions7dApp,
+      fsrsDue: overdueCount,
+      daysToExam: daysToExamApp,
+      previousScore,
+    });
+
+    approvalSignal = {
+      score: result.score,
+      trend: result.trend,
+      riskLevel: result.riskLevel,
+    };
+
+    // ── Aplica boosts/penalidades nas recs
+    const ar = calApp.approvalRisk;
+    for (const rec of recs) {
+      const t = (rec.type || "").toLowerCase();
+      const isQuestion = t === "practice" || t === "simulado" || t.includes("question") || t.includes("simul");
+      const isReview = t === "review" || t.includes("review") || t.includes("revis") || t === "fsrs" || t === "flashcard";
+      const isError = t === "error_review" || t.includes("error") || t.includes("erro");
+      const isNewContent = t === "new" || t === "new_content" || t.includes("new_topic");
+      const isCoverage = isNewContent || t.includes("coverage");
+
+      let touched: "high" | "down" | "low" | null = null;
+
+      if (result.riskLevel === "high") {
+        if (isQuestion) { rec.priority = cap(rec.priority + ar.highRiskQuestionBoost); touched = "high"; }
+        if (isReview)   { rec.priority = cap(rec.priority + ar.highRiskReviewBoost); touched = "high"; }
+        if (isError)    { rec.priority = cap(rec.priority + ar.highRiskReviewBoost); touched = "high"; }
+        if (isNewContent) { rec.priority = cap(rec.priority - ar.highRiskNewContentPenalty); touched = "high"; }
+      }
+      if (result.trend === "down") {
+        if (isReview) { rec.priority = cap(rec.priority + ar.downTrendReviewBoost); touched = touched ?? "down"; }
+        if (isError)  { rec.priority = cap(rec.priority + ar.downTrendErrorBoost); touched = touched ?? "down"; }
+      }
+      if (result.riskLevel === "low") {
+        if (isCoverage) { rec.priority = cap(rec.priority + ar.lowRiskCoverageBoost); touched = touched ?? "low"; }
+      }
+
+      // Selo visual (não duplica)
+      if (touched === "high" && !rec.reason.includes("🚨")) rec.reason = `🚨 ${rec.reason}`;
+      else if (touched === "down" && !rec.reason.includes("📉")) rec.reason = `📉 ${rec.reason}`;
+      else if (touched === "low" && !rec.reason.includes("🟢")) rec.reason = `🟢 ${rec.reason}`;
+    }
+  } catch (e) {
+    console.warn("[StudyEngine] approval risk signal skipped:", e);
+  }
+
   // ── Mentor topic priority boost (dynamic by exam proximity) ────
   if (mentorTopics.length > 0) {
     // Dynamic boost: flat +10, +15 if ≤30 days, +20 if ≤14 days, +25 if ≤7 days
