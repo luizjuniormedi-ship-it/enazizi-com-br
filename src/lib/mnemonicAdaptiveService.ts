@@ -88,18 +88,27 @@ export async function checkMnemonicTrigger(
 
   const totalErrors = errors?.reduce((sum, e) => sum + (e.vezes_errado || 1), 0) || 0;
 
+  // Read accuracy from unified view (read-only). tempo_gasto is not exposed
+  // by the view, so we keep a separate legacy lookup limited to recent rows.
   const { data: perf } = await supabase
+    .from("performance_unified" as any)
+    .select("taxa_acerto, data_registro")
+    .eq("user_id", userId)
+    .order("data_registro", { ascending: false })
+    .limit(5);
+
+  const { data: legacyTime } = await supabase
     .from("desempenho_questoes")
-    .select("taxa_acerto, tempo_gasto")
+    .select("tempo_gasto")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(5);
 
   const avgAccuracy = perf && perf.length > 0
-    ? perf.reduce((s, p) => s + (p.taxa_acerto || 0), 0) / perf.length / 100
+    ? perf.reduce((s: number, p: any) => s + (Number(p.taxa_acerto) || 0), 0) / perf.length / 100
     : 1;
-  const avgTime = perf && perf.length > 0
-    ? perf.reduce((s, p) => s + (p.tempo_gasto || 0), 0) / perf.length
+  const avgTime = legacyTime && legacyTime.length > 0
+    ? legacyTime.reduce((s, p) => s + (p.tempo_gasto || 0), 0) / legacyTime.length
     : 0;
 
   const meetsThreshold =
