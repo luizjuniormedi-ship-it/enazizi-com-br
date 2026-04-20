@@ -6508,6 +6508,42 @@ export type Database = {
         }
         Relationships: []
       }
+      study_goal_monthly: {
+        Row: {
+          completed_questions: number
+          created_at: string
+          distribution_snapshot: Json | null
+          id: string
+          month: number
+          target_questions: number
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          completed_questions?: number
+          created_at?: string
+          distribution_snapshot?: Json | null
+          id?: string
+          month: number
+          target_questions?: number
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          completed_questions?: number
+          created_at?: string
+          distribution_snapshot?: Json | null
+          id?: string
+          month?: number
+          target_questions?: number
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: []
+      }
       study_loop_events: {
         Row: {
           created_at: string
