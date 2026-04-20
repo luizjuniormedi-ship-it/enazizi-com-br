@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { classifyCoverage, type CoverageStatus, type ImportanceLevel } from "@/lib/coverageRules";
+import { classifyCoverage, computeCoverageScore, type CoverageStatus, type ImportanceLevel } from "@/lib/coverageRules";
 
 export interface SubtopicCoverageRow {
   subtopic_id: string;
@@ -76,7 +76,7 @@ interface FullAudit {
  */
 export function useContentCoverageAudit() {
   return useQuery<FullAudit>({
-    queryKey: ["content-coverage-audit", "v1.1"],
+    queryKey: ["content-coverage-audit", "v1.2"],
     queryFn: computeCoverageAudit,
     staleTime: 10 * 60_000,
     gcTime: 30 * 60_000,
