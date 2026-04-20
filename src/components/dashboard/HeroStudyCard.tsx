@@ -202,7 +202,31 @@ export default function HeroStudyCard() {
             <p className="text-xs text-muted-foreground/80 mt-0.5">
               💡 {getHumanReadableReason(topTask)}
             </p>
+
+            {/* ── Status de retorno (streak / última sessão / pendentes) ── */}
+            {(streak > 0 || lastActivityLabel || pendingActions > 0) && (
+              <div className="flex items-center justify-center gap-3 flex-wrap pt-1.5 text-[11px] text-muted-foreground">
+                {streak > 0 && (
+                  <span className="inline-flex items-center gap-1 font-medium">
+                    <Flame className="h-3 w-3 text-primary" />
+                    {streak} {streak === 1 ? "dia" : "dias"} seguidos
+                  </span>
+                )}
+                {lastActivityLabel && (
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Última sessão {lastActivityLabel}
+                  </span>
+                )}
+                {pendingActions > 0 && (
+                  <span className="inline-flex items-center gap-1 font-medium">
+                    {pendingActions} ações pendentes
+                  </span>
+                )}
+              </div>
+            )}
           </div>
+
 
           {/* ── Primary CTA — min 56px height, thumb-friendly ── */}
           <Button
