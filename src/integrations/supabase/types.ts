@@ -8789,6 +8789,20 @@ export type Database = {
           },
         ]
       }
+      performance_unified: {
+        Row: {
+          data_registro: string | null
+          questoes_erradas: number | null
+          questoes_feitas: number | null
+          source: string | null
+          source_id: string | null
+          subtema: string | null
+          taxa_acerto: number | null
+          tema: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       v_mnemonic_latest_results: {
         Row: {
           aprovado: boolean | null
