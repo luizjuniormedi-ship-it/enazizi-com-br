@@ -26,11 +26,23 @@ import {
   AlertTriangle,
   Target,
   Activity,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import {
   useInterventionAnalytics,
   type InterventionMetrics,
 } from "@/hooks/useInterventionAnalytics";
+import { computeInterventionAdjustment } from "@/lib/interventionAdaptiveRanking";
+
+/** Pesos base da V1 — usados apenas para visualização no admin. */
+const BASE_WEIGHT_BY_TYPE: Record<string, number> = {
+  "min-mission": 100,
+  fsrs: 80,
+  recovery: 70,
+  coverage: 50,
+  default: 10,
+};
 
 const TYPE_LABEL: Record<string, string> = {
   "min-mission": "🚨 Missão destrava",
