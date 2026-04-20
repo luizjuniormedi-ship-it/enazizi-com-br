@@ -1159,6 +1159,63 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     console.warn("[StudyEngine] question goal / exam pressure skipped:", e);
   }
 
+  // ── Distribuição estratégica de questões (V3.1) ────────────────
+  // Aplica boosts por categoria conforme a fase do aluno (longo prazo,
+  // médio prazo, reta final) e ajustes adaptativos (cobertura, erros,
+  // atraso na meta). Tudo defensivo — sem quebrar o motor.
+  try {
+    const { getQuestionDistribution } = await import("./questionDistributionEngine");
+    const { getCoverageStatus } = await import("./coverageEngine");
+    const { getQuestionGoalStatus } = await import("./questionGoalEngine");
+
+    const examDateForDist = (profileData as any)?.exam_date || mentorExamDate;
+    const daysUntilExamDist = examDateForDist
+      ? Math.max(0, Math.ceil((new Date(examDateForDist).getTime() - Date.now()) / 86400000))
+      : null;
+
+    const [covStatus, goalStatus] = await Promise.all([
+      getCoverageStatus(userId).catch(() => null),
+      getQuestionGoalStatus(userId, examDateForDist).catch(() => null),
+    ]);
+
+    const errorCountForDist = errorBank?.length ?? 0;
+
+    const distRes = getQuestionDistribution({
+      daysUntilExam: daysUntilExamDist,
+      coveragePct: covStatus?.requiredCoveragePct,
+      errorCount: errorCountForDist,
+      isBehindGoal: goalStatus?.status === "behind",
+    });
+
+    const d = distRes.distribution;
+    // Boosts proporcionais ao peso de cada categoria (escala /4 → 0..~15)
+    const boostFromPct = (pct: number) => Math.round(pct / 4);
+
+    for (const rec of recs) {
+      const t = (rec.type || "").toLowerCase();
+      const isError = t.includes("error") || t.includes("erro") || t === "error_review";
+      const isRevision = t.includes("review") || t.includes("revis") || t === "fsrs" || t === "flashcard";
+      const isCoverage = t === "new" || t === "new_content" || t.includes("new_topic") || t.includes("coverage");
+      const isIncidence = t === "practice" || t === "simulado" || t.includes("question") || t.includes("simul");
+
+      if (isError) rec.priority = cap(rec.priority + boostFromPct(d.error));
+      else if (isRevision) rec.priority = cap(rec.priority + boostFromPct(d.revision));
+      else if (isCoverage) rec.priority = cap(rec.priority + boostFromPct(d.coverage));
+      else if (isIncidence) rec.priority = cap(rec.priority + boostFromPct(d.incidence));
+
+      // Compressão extra na reta final (<30d) já é tratada no bloco V3,
+      // aqui só destacamos com selo visual.
+      if (distRes.phase === "final_stretch" && (isRevision || isError)) {
+        if (!rec.reason.includes("🎯")) {
+          // não duplica o selo já usado pelo coverage gap (também 🎯)
+          // mantemos sem prefixo adicional para evitar ruído
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[StudyEngine] question distribution skipped:", e);
+  }
+
   // ── Mentor topic priority boost (dynamic by exam proximity) ────
   if (mentorTopics.length > 0) {
     // Dynamic boost: flat +10, +15 if ≤30 days, +20 if ≤14 days, +25 if ≤7 days
