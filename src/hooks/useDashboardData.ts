@@ -171,14 +171,16 @@ export const useDashboardData = () => {
         const weekMap: Record<string, { hours: number; timestamp: number }> = {};
         for (const task of tasks) {
           if (!(task as any).completed) continue;
-          const date = new Date((task as any).created_at);
+          // [planner-unification] usar completed_at quando existir; fallback para created_at
+          const refDate = (task as any).completed_at || (task as any).created_at;
+          const date = new Date(refDate);
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           weekStart.setHours(0, 0, 0, 0);
           const key = `${String(weekStart.getDate()).padStart(2, "0")}/${String(weekStart.getMonth() + 1).padStart(2, "0")}`;
-          const taskJson = (task as any).task_json as any;
-          const durationMatch = taskJson?.duration?.match?.(/(\d+(?:\.\d+)?)/);
-          const hours = durationMatch ? parseFloat(durationMatch[1]) : 1;
+          // [planner-unification] estimated_minutes substitui task_json.duration
+          const minutes = (task as any).estimated_minutes ?? 60;
+          const hours = minutes / 60;
           if (!weekMap[key]) weekMap[key] = { hours: 0, timestamp: weekStart.getTime() };
           weekMap[key].hours += hours;
         }
