@@ -52,23 +52,26 @@ const EngineImpactCard = () => {
   const totalBoosts =
     engineAdjustments.coverageBoosts +
     engineAdjustments.goalBoosts +
-    engineAdjustments.examPressureBoosts;
+    engineAdjustments.examPressureBoosts +
+    engineAdjustments.approvalRiskBoosts +
+    engineAdjustments.approvalDownBoosts +
+    engineAdjustments.approvalLowBoosts;
   let calibrationReading = "";
   if (totalBoosts === 0) {
     calibrationReading = "Sem boosts recentes";
   } else {
-    const max = Math.max(
-      engineAdjustments.coverageBoosts,
-      engineAdjustments.goalBoosts,
-      engineAdjustments.examPressureBoosts
-    );
-    const dominant =
-      max === engineAdjustments.examPressureBoosts ? "Reta final dominante"
-      : max === engineAdjustments.coverageBoosts ? "Coverage dominante"
-      : max === engineAdjustments.goalBoosts ? "Meta mensal dominante"
-      : "Motor bem distribuído";
-    const ratio = max / totalBoosts;
-    calibrationReading = ratio < 0.55 ? "Motor bem distribuído" : dominant;
+    const candidates: Array<[string, number]> = [
+      ["Reta final dominante", engineAdjustments.examPressureBoosts],
+      ["Coverage dominante", engineAdjustments.coverageBoosts],
+      ["Meta mensal dominante", engineAdjustments.goalBoosts],
+      ["Risco de aprovação dominante", engineAdjustments.approvalRiskBoosts],
+      ["Tendência de queda dominante", engineAdjustments.approvalDownBoosts],
+      ["Aprovação favorável dominante", engineAdjustments.approvalLowBoosts],
+    ];
+    candidates.sort((a, b) => b[1] - a[1]);
+    const [dominantLabel, dominantVal] = candidates[0];
+    const ratio = dominantVal / totalBoosts;
+    calibrationReading = ratio < 0.45 ? "Motor bem distribuído" : dominantLabel;
   }
 
   // Alertas
@@ -140,7 +143,7 @@ const EngineImpactCard = () => {
       </div>
 
       {/* Bloco 2 — Atuação do motor */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-3 gap-2 mb-2">
         <div className="rounded-md px-2 py-1.5 bg-blue-500/10">
           <div className="text-[10px] text-muted-foreground">🎯 Cobertura</div>
           <div className="text-sm font-bold text-blue-600 dark:text-blue-400">
@@ -157,6 +160,28 @@ const EngineImpactCard = () => {
           <div className="text-[10px] text-muted-foreground">⏱️ Prova</div>
           <div className="text-sm font-bold text-amber-600 dark:text-amber-400">
             {engineAdjustments.examPressureBoosts}
+          </div>
+        </div>
+      </div>
+
+      {/* Bloco 2b — Aprovação preditiva (V3.2) */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded-md px-2 py-1.5 bg-destructive/10">
+          <div className="text-[10px] text-muted-foreground">🚨 Risco</div>
+          <div className="text-sm font-bold text-destructive">
+            {engineAdjustments.approvalRiskBoosts}
+          </div>
+        </div>
+        <div className="rounded-md px-2 py-1.5 bg-orange-500/10">
+          <div className="text-[10px] text-muted-foreground">📉 Tendência</div>
+          <div className="text-sm font-bold text-orange-600 dark:text-orange-400">
+            {engineAdjustments.approvalDownBoosts}
+          </div>
+        </div>
+        <div className="rounded-md px-2 py-1.5 bg-emerald-500/10">
+          <div className="text-[10px] text-muted-foreground">🟢 Aprovação favorável</div>
+          <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+            {engineAdjustments.approvalLowBoosts}
           </div>
         </div>
       </div>
@@ -208,6 +233,7 @@ const EngineImpactCard = () => {
                 <span>{new Date(snap.created_at).toLocaleString("pt-BR")}</span>
                 <span>
                   🎯 {snap.boost_totals.coverageBoosts} · 📊 {snap.boost_totals.goalBoosts} · ⏱️ {snap.boost_totals.examPressureBoosts}
+                  {" · "}🚨 {snap.boost_totals.approvalRiskBoosts} · 📉 {snap.boost_totals.approvalDownBoosts} · 🟢 {snap.boost_totals.approvalLowBoosts}
                 </span>
               </div>
               <div className="space-y-0.5">

@@ -48,6 +48,16 @@ const CalibrationStatusCard = () => {
         <Item label="⏱️ Reta final" value={`×${cal.examPressure.finalStretchMultiplier}`} />
       </div>
 
+      {/* Aprovação preditiva (V3.2) */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+        <Item label="🚨 Risco alto · questões" value={`+${cal.approvalRisk.highRiskQuestionBoost}`} />
+        <Item label="🚨 Risco alto · revisão" value={`+${cal.approvalRisk.highRiskReviewBoost}`} />
+        <Item label="🚨 Risco alto · novo" value={`-${cal.approvalRisk.highRiskNewContentPenalty}`} />
+        <Item label="📉 Queda · revisão" value={`+${cal.approvalRisk.downTrendReviewBoost}`} />
+        <Item label="📉 Queda · erros" value={`+${cal.approvalRisk.downTrendErrorBoost}`} />
+        <Item label="🟢 Risco baixo · cobertura" value={`+${cal.approvalRisk.lowRiskCoverageBoost}`} />
+      </div>
+
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
         <Item label="Cobertura baixa <" value={`${cal.thresholds.lowCoveragePct}%`} />
         <Item label="Backlog pesado >" value={cal.thresholds.heavyBacklog} />
