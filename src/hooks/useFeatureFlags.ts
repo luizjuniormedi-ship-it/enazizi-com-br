@@ -78,6 +78,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   intervention_engine_v2_enabled: true,
   // Intervention Engine Fase 5 — Penalty Memory ON por padrão (fallback seguro embutido)
   intervention_penalty_memory_enabled: true,
+  // Intervention Engine Fase 6 — Personalização por Perfil ON por padrão (fallback seguro embutido)
+  intervention_profile_personalization_enabled: true,
 };
 
 export const useFeatureFlags = () => {
