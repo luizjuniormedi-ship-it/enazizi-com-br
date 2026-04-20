@@ -33,7 +33,7 @@ serve(async (req) => {
       const cached = await getCachedContent(cacheKey, "micro-quiz");
       if (cached) {
         logAiUsage({
-          userId: "system",
+          userId,
           functionName: "micro-quiz",
           modelUsed: MODEL,
           success: true,
@@ -78,7 +78,7 @@ Regras:
     if (!response.ok) {
       const err = await response.text();
       console.error("AI error:", response.status, err.slice(0, 200));
-      logAiUsage({ userId: "system", functionName: "micro-quiz", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite", errorMessage: `status ${response.status}` }).catch(() => {});
+      logAiUsage({ userId, functionName: "micro-quiz", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite", errorMessage: `status ${response.status}` }).catch(() => {});
       throw new Error("AI_ERROR");
     }
 
@@ -86,7 +86,7 @@ Regras:
     const content = data.choices?.[0]?.message?.content || "";
     if (!content || content.trim().length < 10) {
       console.error("micro-quiz: empty or too short AI content:", content?.slice(0, 100));
-      logAiUsage({ userId: "system", functionName: "micro-quiz", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite", errorMessage: "empty_content" }).catch(() => {});
+      logAiUsage({ userId, functionName: "micro-quiz", modelUsed: MODEL, success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite", errorMessage: "empty_content" }).catch(() => {});
       return new Response(JSON.stringify({ questions: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -94,7 +94,7 @@ Regras:
     const parsed = parseAiJson(content);
 
     // Log success + save to cache
-    logAiUsage({ userId: "system", functionName: "micro-quiz", modelUsed: MODEL, success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite" }).catch(() => {});
+    logAiUsage({ userId, functionName: "micro-quiz", modelUsed: MODEL, success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "lite" }).catch(() => {});
     setCachedContent(cacheKey, "micro-quiz", parsed, MODEL, 14).catch(() => {});
 
     return new Response(JSON.stringify(parsed), {
