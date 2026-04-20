@@ -25,7 +25,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Brain, Sparkles } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { AlertCircle, Brain, ChevronDown, Sparkles } from "lucide-react";
 import type { TrajectoryRecommendation } from "@/types/trajectory";
 
 export default function RadarTrajetoriaPage() {
@@ -39,6 +44,7 @@ export default function RadarTrajetoriaPage() {
 
   const [explainOpen, setExplainOpen] = useState(false);
   const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [telemetryOpen, setTelemetryOpen] = useState(false);
 
   const bundle = radar.data;
   const snapshot = bundle?.snapshot ?? null;
@@ -152,11 +158,26 @@ export default function RadarTrajetoriaPage() {
             onApply={handleApply}
             applyingId={applyingId}
           />
-          <div className="grid gap-4 md:grid-cols-2">
-            <RadarLastAppliedCard />
-            <RadarTelemetryCard />
-          </div>
+          <RadarLastAppliedCard />
           <RadarSnapshotHistory />
+
+          <Collapsible open={telemetryOpen} onOpenChange={setTelemetryOpen}>
+            <CollapsibleTrigger asChild>
+              <Button variant="ghost" size="sm" className="w-full justify-between">
+                <span className="text-xs text-muted-foreground">
+                  Telemetria do Radar (últimos 30 dias)
+                </span>
+                <ChevronDown
+                  className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
+                    telemetryOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="mt-2">
+              <RadarTelemetryCard />
+            </CollapsibleContent>
+          </Collapsible>
         </>
       )}
 
