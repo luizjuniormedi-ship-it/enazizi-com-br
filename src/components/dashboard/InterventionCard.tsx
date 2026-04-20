@@ -112,6 +112,9 @@ export default function InterventionCard() {
           penaltyLevel: action.penaltyLevel ?? 0,
           penaltyDelta: action.penaltyDelta ?? 0,
           penaltyApplied: !!action.penaltyApplied,
+          profileDelta: action.profileDelta ?? 0,
+          profileReason: action.profileReason ?? "v3-off",
+          profileScore: action.profileScore ?? 0,
         },
       },
       eventType: "clicked",
@@ -124,6 +127,9 @@ export default function InterventionCard() {
         penaltyLevel: action.penaltyLevel ?? 0,
         penaltyDelta: action.penaltyDelta ?? 0,
         penaltyApplied: !!action.penaltyApplied,
+        profileDelta: action.profileDelta ?? 0,
+        profileReason: action.profileReason ?? "v3-off",
+        profileScore: action.profileScore ?? 0,
       },
     });
     // Reset imediato — clique zera a penalidade desse tipo (fire-and-forget).
