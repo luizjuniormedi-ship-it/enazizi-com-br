@@ -15,7 +15,9 @@ import CronogramaTemasCriticos from "@/components/cronograma/CronogramaTemasCrit
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
 import CronogramaConfiguracoes from "@/components/cronograma/CronogramaConfiguracoes";
 import CronogramaGraficos from "@/components/cronograma/CronogramaGraficos";
-import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
+// [planner-unification-final] StudyPlanContent não é mais montado pelo Cronograma.
+// Componente isolado em modo @deprecated-flow (escreve em study_plans/study_tasks legado).
+// import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 
 /* ======================== TYPES ======================== */
@@ -536,81 +538,26 @@ const CronogramaInteligente = () => {
       )}
 
       {tab === "plano" && (
-        <StudyPlanContent
-          onSyncComplete={async () => { await loadData(); setTab("hoje"); }}
-          onSubjectsGenerated={async (subjects: string[]) => {
-            if (!user) return;
-            const today = new Date().toISOString().split("T")[0];
-
-            // Zerar dados antigos antes de criar novo plano
-            await supabase.from("desempenho_questoes").delete().eq("user_id", user.id);
-            await supabase.from("revisoes").delete().eq("user_id", user.id);
-            await supabase.from("temas_estudados").delete().eq("user_id", user.id);
-            setTemas([]);
-
-            const newSubjects = subjects;
-            if (newSubjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
-
-            // @legacy-read — study_plans.plan_json.topicMap não tem equivalente em daily_plans.
-            // Fallback opcional para enriquecer subtopics; sem ele o fluxo segue (subtopico=null).
-            const { data: latestPlan } = await supabase
-              .from("study_plans")
-              .select("plan_json")
-              .eq("user_id", user.id)
-              .order("updated_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            const topicMap: { topic: string; subtopics: string[] }[] = (latestPlan?.plan_json as any)?.topicMap || [];
-
-            const registeredTemas: { id: string; tema: string; especialidade: string }[] = [];
-            let totalReviews = 0;
-            for (const subject of newSubjects) {
-              const especialidade = (await import("@/lib/mapTopicToSpecialty")).mapTopicToSpecialty(subject) || "Medicina Preventiva";
-              
-              // Find subtopics from topicMap
-              const topicEntry = topicMap.find(t => t.topic.toLowerCase() === subject.toLowerCase());
-              const subtopico = topicEntry?.subtopics?.join(", ") || null;
-
-              const { data, error } = await supabase.from("temas_estudados").insert({
-                user_id: user.id, tema: subject, especialidade,
-                data_estudo: today, fonte: "plano_estudos", dificuldade: "medio",
-                subtopico,
-                observacoes: "Registrado automaticamente pelo Plano de Estudos", status: "ativo",
-              } as any).select().single();
-              if (error || !data) continue;
-              const temaId = (data as any).id;
-              registeredTemas.push({ id: temaId, tema: subject, especialidade });
-              const reviews = generateReviewsByError(today, 0);
-              totalReviews += reviews.length;
-              const reviewRows = reviews.map(r => ({
-                user_id: user.id, tema_id: temaId, tipo_revisao: r.tipo,
-                data_revisao: r.data, status: "pendente", prioridade: 50, risco_esquecimento: "baixo",
-              }));
-              await supabase.from("revisoes").insert(reviewRows as any);
-            }
-
-            let flashcardsCriados = 0;
-            let questoesVinculadas = 0;
-
-            if (registeredTemas.length > 0) {
-              try {
-                const syncResult = await syncTemasToModules(user.id, registeredTemas);
-                flashcardsCriados = syncResult.flashcardsCriados;
-                questoesVinculadas = syncResult.questoesVinculadas;
-              } catch (err) {
-                console.error("Sync error:", err);
-              }
-              await loadData();
-            }
-
-            return {
-              temasRegistrados: registeredTemas.length,
-              flashcardsCriados,
-              questoesVinculadas,
-              revisoesAgendadas: totalReviews,
-            };
-          }}
-        />
+        // [planner-unification-final] StudyPlanContent (shape semanal weeklySchedule) APOSENTADO.
+        // O estado tab="plano" foi mantido apenas para compatibilidade com links antigos.
+        // A entrada na navegação (CronogramaHeader) foi removida.
+        <div className="glass-card p-6 text-center space-y-3">
+          <h3 className="text-lg font-semibold">📋 Plano de Estudos semanal aposentado</h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            O plano semanal foi substituído pelo <strong>Plano do Dia</strong>, gerado e atualizado
+            automaticamente pelo motor adaptativo do ENAZIZI.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Acesse <strong>Plano do Dia</strong> no menu principal para ver suas tarefas de hoje.
+          </p>
+          <button
+            type="button"
+            onClick={() => setTab("hoje")}
+            className="mt-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
+          >
+            Ir para Agenda de Hoje
+          </button>
+        </div>
       )}
     </div>
   );
