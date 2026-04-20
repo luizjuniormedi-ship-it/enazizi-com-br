@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
   Play, Rocket, ArrowRight, Clock, Sparkles,
-  CheckCircle2, ChevronDown, ChevronUp,
+  CheckCircle2, ChevronDown, ChevronUp, Flame,
 } from "lucide-react";
 import { useState } from "react";
 import { useMissionMode } from "@/hooks/useMissionMode";
@@ -81,6 +81,24 @@ export default function HeroStudyCard() {
     : false;
 
   const isRecovery = adaptive?.recoveryMode === true;
+
+  // ── Indicadores de retorno (streak / última sessão / pendentes) ──
+  const streak = dashData?.metrics.gamificationStreak ?? 0;
+  const pendingReviews = dashData?.metrics.pendingRevisoes ?? 0;
+  const errorsCount = dashData?.metrics.errorsCount ?? 0;
+  const pendingActions = pendingReviews + Math.min(errorsCount, 99);
+  const lastActivityLabel = (() => {
+    const ts = (dashData as any)?.lastActivityAt as string | undefined;
+    if (!ts) return null;
+    const diffMs = Date.now() - new Date(ts).getTime();
+    const hours = Math.floor(diffMs / 3_600_000);
+    if (hours < 1) return "agora há pouco";
+    if (hours < 24) return `há ${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days === 1) return "ontem";
+    if (days < 7) return `há ${days} dias`;
+    return null;
+  })();
 
   const { title, subtitle } = isRecovery && !isMissionActive && !isMissionPaused
     ? { title: "Modo recuperação ativo", subtitle: "Priorizando o essencial para você retomar o ritmo" }
