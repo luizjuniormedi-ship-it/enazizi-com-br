@@ -125,8 +125,24 @@ export function trackAlertEvent(input: TrackAlertEventInput): void {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id ?? null;
 
-      // metadata precisa ser Json — serializamos para garantir compatibilidade
-      const mergedMeta = { ...(alert.metadata ?? {}), ...(extra ?? {}) };
+      // metadata precisa ser Json — serializamos para garantir compatibilidade.
+      // Inclui sinais do Adaptive Ranking (Fase 5) quando presentes.
+      const sourceMeta = (alert.metadata ?? {}) as Record<string, unknown>;
+      const adaptiveDelta =
+        typeof sourceMeta.adaptiveDelta === "number"
+          ? sourceMeta.adaptiveDelta
+          : 0;
+      const adaptiveReason =
+        typeof sourceMeta.adaptiveReason === "string"
+          ? sourceMeta.adaptiveReason
+          : null;
+
+      const mergedMeta = {
+        ...sourceMeta,
+        ...(extra ?? {}),
+        adaptive_delta: adaptiveDelta,
+        adaptive_reason: adaptiveReason,
+      };
       const metadataJson = JSON.parse(JSON.stringify(mergedMeta));
 
       await supabase.from("alert_events").insert([

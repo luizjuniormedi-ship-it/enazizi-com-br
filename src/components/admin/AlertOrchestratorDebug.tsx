@@ -75,11 +75,12 @@ export default function AlertOrchestratorDebug() {
         </div>
 
         <div className="border rounded-md overflow-x-auto">
-          <table className="w-full text-xs min-w-[720px]">
+          <table className="w-full text-xs min-w-[820px]">
             <thead className="bg-muted/50">
               <tr className="text-left">
                 <th className="p-2">Source</th>
                 <th className="p-2">Prioridade</th>
+                <th className="p-2">Adaptive Δ</th>
                 <th className="p-2">Camada</th>
                 <th className="p-2">Visível</th>
                 <th className="p-2">Origem</th>
@@ -91,41 +92,73 @@ export default function AlertOrchestratorDebug() {
             <tbody>
               {allAlerts.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="p-4 text-center text-muted-foreground">
+                  <td colSpan={9} className="p-4 text-center text-muted-foreground">
                     Nenhum alerta candidato no momento.
                   </td>
                 </tr>
               )}
-              {allAlerts.map((a) => (
-                <tr key={`${a.id}-${a.suppressedBy ?? "v"}`} className="border-t">
-                  <td className="p-2 font-mono">{a.source}</td>
-                  <td className="p-2">
-                    <Badge variant={PRIORITY_VARIANT[a.priority]}>{a.priority}</Badge>
-                  </td>
-                  <td className="p-2">{a.layer}</td>
-                  <td className="p-2">
-                    {a.visible ? (
-                      <Badge variant="default">sim</Badge>
-                    ) : (
-                      <Badge variant="outline">não</Badge>
-                    )}
-                  </td>
-                  <td className="p-2 text-muted-foreground">{a.legacyOrigin ?? "—"}</td>
-                  <td className="p-2 text-muted-foreground">{a.viaBridge ? "sim" : "—"}</td>
-                  <td className="p-2 font-mono text-muted-foreground">{a.dedupeKey ?? "—"}</td>
-                  <td className="p-2 text-muted-foreground">
-                    {humanizeSuppression(a.suppressedBy)}
-                  </td>
-                </tr>
-              ))}
+              {allAlerts.map((a) => {
+                const meta = (a.metadata ?? {}) as Record<string, unknown>;
+                const delta = typeof meta.adaptiveDelta === "number" ? meta.adaptiveDelta : 0;
+                const reason = typeof meta.adaptiveReason === "string" ? meta.adaptiveReason : null;
+                return (
+                  <tr key={`${a.id}-${a.suppressedBy ?? "v"}`} className="border-t">
+                    <td className="p-2 font-mono">{a.source}</td>
+                    <td className="p-2">
+                      <Badge variant={PRIORITY_VARIANT[a.priority]}>{a.priority}</Badge>
+                    </td>
+                    <td className="p-2">
+                      {delta === 0 ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        <span
+                          title={reason ?? undefined}
+                          className={
+                            delta > 0
+                              ? "font-semibold text-emerald-600 dark:text-emerald-400"
+                              : "font-semibold text-amber-600 dark:text-amber-400"
+                          }
+                        >
+                          {delta > 0 ? `+${delta}` : delta}
+                          {reason ? ` (${reason})` : ""}
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-2">{a.layer}</td>
+                    <td className="p-2">
+                      {a.visible ? (
+                        <Badge variant="default">sim</Badge>
+                      ) : (
+                        <Badge variant="outline">não</Badge>
+                      )}
+                    </td>
+                    <td className="p-2 text-muted-foreground">{a.legacyOrigin ?? "—"}</td>
+                    <td className="p-2 text-muted-foreground">{a.viaBridge ? "sim" : "—"}</td>
+                    <td className="p-2 font-mono text-muted-foreground">{a.dedupeKey ?? "—"}</td>
+                    <td className="p-2 text-muted-foreground">
+                      {humanizeSuppression(a.suppressedBy)}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
-        <div className="text-[11px] text-muted-foreground leading-relaxed">
-          <strong>Fase 2:</strong> achievements e popups deep agora são gated via{" "}
-          <code>getDecision("achievement")</code> / <code>getDecision("onboarding-popup")</code>.
-          Família <code>Smart*</code> marcada como <code>@deprecated</code> (sem renderização ativa).
+        <div className="text-[11px] text-muted-foreground leading-relaxed space-y-1">
+          <div>
+            <strong>Fase 2:</strong> achievements e popups deep gated via{" "}
+            <code>getDecision("achievement")</code> /{" "}
+            <code>getDecision("onboarding-popup")</code>. Família <code>Smart*</code>{" "}
+            marcada como <code>@deprecated</code> (sem renderização ativa).
+          </div>
+          <div>
+            <strong>Fase 5:</strong> coluna <code>Adaptive Δ</code> exibe ajuste
+            automático de prioridade com base em CTR/fadiga/resolução (gated por{" "}
+            <code>alert_adaptive_ranking_enabled</code>). Pisos de segurança
+            impedem rebaixamento de <code>exam-date</code> e limitam{" "}
+            <code>approval-risk</code>.
+          </div>
         </div>
       </CardContent>
     </Card>
