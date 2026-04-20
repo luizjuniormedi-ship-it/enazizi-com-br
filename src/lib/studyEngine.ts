@@ -1090,6 +1090,31 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     console.warn("[StudyEngine] coverage gap signal skipped:", e);
   }
 
+  // ── Monthly question goal signal (volume mínimo garantido) ────
+  // Quando o aluno está atrasado na meta mensal de questões, sobe a prioridade
+  // de qualquer rec do tipo "questões/prática" para forçar volume.
+  // Fonte: getMonthlyGoalStatus — leitura de practice_attempts + study_goal_monthly.
+  try {
+    const { getMonthlyGoalStatus } = await import("./monthlyGoalEngine");
+    const goal = await getMonthlyGoalStatus(userId);
+    if (goal.paceStatus === "behind") {
+      const PACE_BEHIND_BOOST = 8;
+      for (const rec of recs) {
+        const t = (rec.type || "").toLowerCase();
+        const isQuestionType = t.includes("question") || t.includes("practice") ||
+          t.includes("simul") || t.includes("quest");
+        if (isQuestionType) {
+          rec.priority = cap(rec.priority + PACE_BEHIND_BOOST);
+          if (!rec.reason.includes("📈")) {
+            rec.reason = `📈 ${rec.reason}`;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[StudyEngine] monthly goal signal skipped:", e);
+  }
+
   // ── Mentor topic priority boost (dynamic by exam proximity) ────
   if (mentorTopics.length > 0) {
     // Dynamic boost: flat +10, +15 if ≤30 days, +20 if ≤14 days, +25 if ≤7 days
