@@ -131,21 +131,72 @@ async function computeCoverageAudit(): Promise<FullAudit> {
     }
   }
 
-  // 4. Monta linhas + classifica usando importance derivada do enum (não da posição na lista)
+  // 3b. Materiais globais por subtopic (Fase 1.2)
+  const { data: materials } = subIds.length
+    ? await supabase
+        .from("study_materials" as any)
+        .select("subtopic_id")
+        .eq("is_global", true)
+        .eq("ativo", true)
+        .in("subtopic_id", subIds)
+    : { data: [] as any[] };
+
+  const matCountBySub = new Map<string, number>();
+  for (const m of (materials ?? []) as any[]) {
+    if (!m.subtopic_id) continue;
+    matCountBySub.set(m.subtopic_id, (matCountBySub.get(m.subtopic_id) ?? 0) + 1);
+  }
+
+  // 3c. Flashcards globais por subtopic (Fase 1.2)
+  const { data: flashes } = subIds.length
+    ? await supabase
+        .from("flashcards" as any)
+        .select("subtopic_id")
+        .eq("is_global", true)
+        .in("subtopic_id", subIds)
+    : { data: [] as any[] };
+
+  const flashCountBySub = new Map<string, number>();
+  for (const f of (flashes ?? []) as any[]) {
+    if (!f.subtopic_id) continue;
+    flashCountBySub.set(f.subtopic_id, (flashCountBySub.get(f.subtopic_id) ?? 0) + 1);
+  }
+
+  // 3d. Microtopics ativos por subtopic (Fase 1.2)
+  const { data: micros } = subIds.length
+    ? await supabase
+        .from("curriculum_microtopics" as any)
+        .select("subtopic_id")
+        .eq("ativo", true)
+        .in("subtopic_id", subIds)
+    : { data: [] as any[] };
+
+  const microCountBySub = new Map<string, number>();
+  for (const mt of (micros ?? []) as any[]) {
+    microCountBySub.set(mt.subtopic_id, (microCountBySub.get(mt.subtopic_id) ?? 0) + 1);
+  }
+
+  // 4. Monta linhas + classifica usando importance + materials + flashcards reais
   const rows: SubtopicCoverageRow[] = subRows.map((s) => {
     const ws = weightsBySub.get(s.id) ?? [];
     const importance = pickHighestImportance(ws);
     const maxPeso = ws.length ? Math.max(...ws.map((w) => Number(w.peso) || 0)) : 0;
     const qCount = qCountBySub.get(s.id) ?? 0;
     const qStrong = qStrongBySub.get(s.id) ?? 0;
+    const matCount = matCountBySub.get(s.id) ?? 0;
+    const flashCount = flashCountBySub.get(s.id) ?? 0;
+    const microCount = microCountBySub.get(s.id) ?? 0;
     const verdict = classifyCoverage({
-      // Para classificar, usamos preferencialmente questões fortes; se houver poucas
-      // strong mas várias medium, ainda contamos pelo total para não punir injustamente.
       questionsCount: Math.max(qStrong, Math.floor(qCount * 0.7)),
       bancaCoverageCount: ws.length,
-      materialsCount: 0, // placeholder — materiais pedagógicos serão integrados em fase futura
-      flashcardsCount: 0,
+      materialsCount: matCount,
+      flashcardsCount: flashCount,
       importanceLevel: importance,
+    });
+    const score = computeCoverageScore({
+      questionsCount: qCount,
+      materialsCount: matCount,
+      flashcardsCount: flashCount,
     });
     return {
       subtopic_id: s.id,
@@ -157,8 +208,10 @@ async function computeCoverageAudit(): Promise<FullAudit> {
       strong_questions_count: qStrong,
       banca_coverage_count: ws.length,
       max_peso: maxPeso,
-      materials_count: 0,
-      flashcards_count: 0,
+      materials_count: matCount,
+      flashcards_count: flashCount,
+      microtopics_count: microCount,
+      coverage_score: score,
       status: verdict.status,
       rule: verdict.rule,
       reason: verdict.reason,
@@ -173,6 +226,12 @@ async function computeCoverageAudit(): Promise<FullAudit> {
   const topics = new Set(rows.map((r) => `${r.specialty_nome}::${r.topic_nome}`));
   const totalLinks = rows.reduce((acc, r) => acc + r.questions_count, 0);
   const totalStrong = rows.reduce((acc, r) => acc + r.strong_questions_count, 0);
+  const totalMat = rows.reduce((acc, r) => acc + r.materials_count, 0);
+  const totalFlash = rows.reduce((acc, r) => acc + r.flashcards_count, 0);
+  const totalMicro = rows.reduce((acc, r) => acc + r.microtopics_count, 0);
+  const subsNoMat = rows.filter((r) => r.materials_count === 0).length;
+  const subsNoFlash = rows.filter((r) => r.flashcards_count === 0).length;
+  const subsQNoMat = rows.filter((r) => r.questions_count > 0 && r.materials_count === 0).length;
   const highImpZeroQ = rows.filter(
     (r) => (r.importance_level === "muito_cobrado" || r.importance_level === "cobrado") && r.questions_count === 0,
   ).length;
@@ -187,6 +246,12 @@ async function computeCoverageAudit(): Promise<FullAudit> {
     highImportanceWithoutQuestions: highImpZeroQ,
     totalLinks,
     totalStrongLinks: totalStrong,
+    totalMaterials: totalMat,
+    totalFlashcards: totalFlash,
+    totalMicrotopics: totalMicro,
+    subtopicsWithoutMaterial: subsNoMat,
+    subtopicsWithoutFlashcard: subsNoFlash,
+    subtopicsQuestionsButNoMaterial: subsQNoMat,
   };
 
   // 6. Agregação por domínio (especialidade)
