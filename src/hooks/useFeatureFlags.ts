@@ -58,7 +58,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   tutor_blocks_enabled: false,
   tutor_adaptive_context_enabled: false,
   tutor_adaptive_writeback_enabled: false,
-  // Radar de Trajetória IA — ESTÁVEL (produção interna habilitada — Sprint 3 encerrada)
+  // Radar de Trajetória IA — ESTÁVEL (produção interna habilitada).
+  // Defaults aqui devem espelhar `system_flags` no banco. Atualizado na Sprint de Correção.
   radar_trajetoria_enabled: true,
   trajectory_engine_v1_enabled: true,
   trajectory_apply_v1_enabled: true,

@@ -337,6 +337,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // NOTE: performance_unified does not expose tempo_gasto — kept on legacy
     // table to preserve behavior. Returns empty when legacy table is empty.
     safe(() => supabase
+      // @deprecated-source — `desempenho_questoes` é tabela legado (0 escritas em 30d).
+      // Fonte viva: `performance_unified` (já lida em outro ponto deste motor).
+      // Mantida apenas por compatibilidade de leitura adicional.
       .from("desempenho_questoes")
       .select("tempo_gasto, temas_estudados(tema)")
       .eq("user_id", userId)
