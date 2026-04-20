@@ -1,3 +1,8 @@
+/**
+ * @deprecated [Alert Orchestrator — Fase 2]
+ * Substituído por `RiskAlertsCard` + `useAlertOrchestrator`.
+ * Mantido como legacy (0 imports). Não usar.
+ */
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, TrendingUp, Info, X } from "lucide-react";
 import { useState } from "react";

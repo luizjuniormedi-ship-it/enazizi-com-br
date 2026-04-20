@@ -1,3 +1,8 @@
+/**
+ * @deprecated [Alert Orchestrator — Fase 2]
+ * Substituído por `RiskAlertsCard` + `MinimumDailyMissionCard` (orchestrated).
+ * Mantido como legacy (0 imports). Não usar.
+ */
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

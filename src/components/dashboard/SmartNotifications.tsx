@@ -1,3 +1,8 @@
+/**
+ * @deprecated [Alert Orchestrator — Fase 2]
+ * Substituído por `RiskAlertsCard` + `useAlertOrchestrator`.
+ * Mantido como legacy (0 imports). Não usar.
+ */
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
