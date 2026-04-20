@@ -112,4 +112,13 @@ export function useApprovalPrediction(): ApprovalPrediction | null {
       hasEnoughData,
     };
   }, [core, impact, coverage, snapshot]);
+
+  // Telemetria fire-and-forget (debounced no helper)
+  useEffect(() => {
+    if (user?.id && prediction) {
+      logApprovalPrediction(user.id, prediction);
+    }
+  }, [user?.id, prediction?.score, prediction?.trend, prediction?.riskLevel]);
+
+  return prediction;
 }
