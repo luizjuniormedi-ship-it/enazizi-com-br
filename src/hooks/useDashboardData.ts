@@ -45,12 +45,9 @@ export interface DashboardMetrics {
   chatConversations: number;
 }
 
-interface PlanJson {
-  weeklySchedule?: { day: string; tasks: { time: string; subject: string; duration: string; type?: string }[] }[];
-  subjects?: string[];
-  tips?: string;
-  config?: { examDate: string; hoursPerDay: number; daysPerWeek: number };
-}
+// [planner-unification-final] PlanJson removido — Dashboard não lê mais study_plans.
+// hasStudyPlan, subjects, subjectHours, totalStudyHours, todayTotal são derivados de daily_plans/daily_plan_tasks.
+// daysUntilExam é derivado de profiles.exam_date (via coreData).
 
 export const useDashboardData = () => {
   const { user } = useAuth();
@@ -77,20 +74,19 @@ export const useDashboardData = () => {
 
       try {
         // Only queries NOT covered by coreData
+        // [planner-unification-final] study_plans removido das leituras críticas do Dashboard.
         const [
-          flashcardsRes, uploadsRes, tasksRes, plansRes, reviewsRes,
+          flashcardsRes, uploadsRes, tasksRes, dailyPlansRes, reviewsRes,
           discursivasRes, globalFlashRes, globalQuestRes,
           questionsCreatedRes, summariesRes, chroniclesRes,
           imageQuizRes, diagnosticRes,
         ] = await Promise.all([
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          // [planner-unification] Fonte viva: daily_plan_tasks (substitui study_tasks legado).
-          // estimated_minutes substitui task_json.duration; completed_at substitui filtro por created_at.
-          supabase.from("daily_plan_tasks").select("completed, created_at, completed_at, estimated_minutes").eq("user_id", userId),
-          // @legacy-read — study_plans.plan_json contém weeklySchedule semanal sem equivalente em daily_plans (que é diário).
-          // Mantido para preservar a UI atual de hasStudyPlan/subjects/exam_date/weeklySchedule. Não migrar sem redesign de UX.
-          supabase.from("study_plans").select("plan_json").eq("user_id", userId).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
+          // [planner-unification] Fonte viva: daily_plan_tasks. specialty/topic + estimated_minutes alimentam subjects/subjectHours.
+          supabase.from("daily_plan_tasks").select("completed, created_at, completed_at, estimated_minutes, specialty, topic, daily_plan_id").eq("user_id", userId),
+          // [planner-unification-final] Fonte viva: daily_plans. Detecta presença de plano ativo nos últimos 7 dias.
+          supabase.from("daily_plans").select("id, plan_date, total_blocks").eq("user_id", userId).gte("plan_date", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0]).order("plan_date", { ascending: false }).limit(1).maybeSingle(),
           supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
           supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
@@ -188,26 +184,25 @@ export const useDashboardData = () => {
           .sort((a, b) => a[1].timestamp - b[1].timestamp)
           .map(([week, { hours, timestamp }]) => ({ week, hours: Math.round(hours * 10) / 10, timestamp }));
 
-        const plan = plansRes.data?.plan_json as PlanJson | null;
-        const hasStudyPlan = plan !== null && !!plan?.weeklySchedule;
-        const subjects = plan?.subjects || [];
+        // [planner-unification-final] hasStudyPlan agora vem de daily_plans (fonte viva).
+        const hasStudyPlan = !!dailyPlansRes.data;
+
+        // [planner-unification-final] subjects + subjectHours derivados de daily_plan_tasks (specialty/topic + estimated_minutes).
         const subjectHours: Record<string, number> = {};
         let totalStudyHours = 0;
-
-        if (plan?.weeklySchedule) {
-          for (const day of plan.weeklySchedule) {
-            for (const task of day.tasks) {
-              const match = task.duration.match(/(\d+(?:\.\d+)?)/);
-              const hours = match ? parseFloat(match[1]) : 1;
-              subjectHours[task.subject] = (subjectHours[task.subject] || 0) + hours;
-              totalStudyHours += hours;
-            }
-          }
+        for (const t of tasks as any[]) {
+          const subject = (t.specialty || t.topic || "").toString().trim();
+          if (!subject) continue;
+          const hours = ((t.estimated_minutes ?? 60) as number) / 60;
+          subjectHours[subject] = (subjectHours[subject] || 0) + hours;
+          totalStudyHours += hours;
         }
+        const subjects = Object.keys(subjectHours);
 
+        // [planner-unification-final] daysUntilExam vem de profiles.exam_date (coreData).
         let daysUntilExam: number | null = null;
-        if (plan?.config?.examDate) {
-          const diff = new Date(plan.config.examDate).getTime() - Date.now();
+        if (cd.profile.exam_date) {
+          const diff = new Date(cd.profile.exam_date).getTime() - Date.now();
           if (diff > 0) daysUntilExam = Math.ceil(diff / (1000 * 60 * 60 * 24));
         }
 
@@ -216,16 +211,15 @@ export const useDashboardData = () => {
           next: r.next_review,
         }));
 
-        const DAY_MAP: Record<string, number> = { Dom: 0, Seg: 1, Ter: 2, Qua: 3, Qui: 4, Sex: 5, "Sáb": 6, Sab: 6 };
-        const todayDow = new Date().getDay();
-        const todaySchedule = plan?.weeklySchedule?.find((d) => DAY_MAP[d.day] === todayDow);
-        const todayTotal = todaySchedule?.tasks.length || 0;
-        const completedToday = tasks.filter((t: any) => {
-          if (!t.completed) return false;
-          const d = new Date(t.created_at);
-          const now = new Date();
-          return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
-        });
+        // [planner-unification-final] todayTotal/todayCompleted vêm de daily_plan_tasks do plano de hoje.
+        const todayPlanId = dailyPlansRes.data?.plan_date === new Date().toISOString().split("T")[0]
+          ? dailyPlansRes.data.id
+          : null;
+        const todayTasks = todayPlanId
+          ? (tasks as any[]).filter((t) => t.daily_plan_id === todayPlanId)
+          : [];
+        const todayTotal = todayTasks.length || (dailyPlansRes.data?.total_blocks ?? 0);
+        const completedToday = todayTasks.filter((t: any) => t.completed);
 
         const stats: DashboardStats = {
           flashcards: flashcardsRes.count || 0,

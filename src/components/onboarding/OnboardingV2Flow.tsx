@@ -94,21 +94,9 @@ export default function OnboardingV2Flow({ onComplete, onSkip }: Props) {
 
       await supabase.from("profiles").update(updates as any).eq("user_id", user.id);
 
-      // Trigger automatic study plan generation
-      if (targetExams.length > 0) {
-        try {
-          await supabase.functions.invoke("generate-study-plan", {
-            body: {
-              targetExam: targetExams[0],
-              targetExams,
-              examDate: examDate || null,
-              dailyHours: parseFloat(dailyHours) || 4,
-            },
-          });
-        } catch {
-          // Plan generation is best-effort — Study Engine will compensate
-        }
-      }
+      // [planner-unification-final] generate-study-plan APOSENTADA do onboarding.
+      // Edge function é @deprecated-flow (escreve em study_plans legado, shape semanal weeklySchedule).
+      // O Planner oficial (daily_plans/daily_plan_tasks) é alimentado sob demanda pelo planner-orchestrator-v1.
 
       localStorage.setItem("enazizi_v2_welcome_seen", "true");
       localStorage.setItem("enazizi_v2_onboarding_done", "true");

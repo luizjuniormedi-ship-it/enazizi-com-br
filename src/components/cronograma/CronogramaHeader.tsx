@@ -18,7 +18,9 @@ const TABS: { key: TabCronograma; label: string }[] = [
   { key: "novo", label: "➕ Novo Tema" },
   { key: "temas", label: "📚 Temas" },
   { key: "criticos", label: "⚠️ Críticos" },
-  { key: "plano", label: "📋 Plano de Estudos" },
+  // [planner-unification-final] Aba "📋 Plano de Estudos" removida da navegação.
+  // StudyPlanContent (shape semanal weeklySchedule) está aposentado — fonte viva oficial é daily_plans/daily_plan_tasks.
+  // O componente StudyPlanContent é mantido em modo @deprecated-flow para retrocompatibilidade.
   { key: "historico", label: "📜 Histórico" },
   { key: "graficos", label: "📈 Gráficos" },
   { key: "config", label: "⚙️ Config" },
