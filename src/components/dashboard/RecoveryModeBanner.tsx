@@ -1,9 +1,11 @@
+import { useEffect, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Shield, TrendingUp } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
+import { trackAlertEvent } from "@/lib/alertTelemetry";
 
 const PHASE_COLORS: Record<number, string> = {
   1: "text-destructive bg-destructive/10",
@@ -22,10 +24,33 @@ const PHASE_MESSAGES: Record<number, string> = {
 export default function RecoveryModeBanner() {
   const { adaptive } = useStudyEngine();
   const { getDecision } = useAlertOrchestrator();
+  const trackedRef = useRef(false);
 
-  if (!adaptive?.recoveryMode) return null;
+  const recoveryActive = !!adaptive?.recoveryMode;
+  const decisionVisible = recoveryActive && getDecision("recovery").visible;
+
+  // Telemetria de exposição (1× por sessão de visibilidade)
+  useEffect(() => {
+    if (!decisionVisible || trackedRef.current) return;
+    trackedRef.current = true;
+    const heavyActive = !!adaptive?.heavyRecovery?.active;
+    trackAlertEvent({
+      alert: {
+        id: heavyActive ? "recovery-heavy-banner" : "recovery-banner",
+        source: "recovery",
+        priority: heavyActive ? "critical" : "important",
+        layer: "structural",
+        legacyOrigin: "core",
+        viaBridge: false,
+      },
+      eventType: "clicked",
+      extra: { phase: adaptive?.heavyRecovery?.phase ?? null, autoExposureSignal: true },
+    });
+  }, [decisionVisible, adaptive]);
+
+  if (!recoveryActive) return null;
   // Alert Orchestrator — respeita decisão central
-  if (!getDecision("recovery").visible) return null;
+  if (!decisionVisible) return null;
 
   const hr = adaptive.heavyRecovery;
 

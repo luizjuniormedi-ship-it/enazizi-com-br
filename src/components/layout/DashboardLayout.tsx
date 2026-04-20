@@ -4,6 +4,7 @@ import { usePresenceHeartbeat } from "@/hooks/usePresenceHeartbeat";
 import { useJourneyRefresh } from "@/hooks/useJourneyRefresh";
 import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import { useAlertTelemetry } from "@/hooks/useAlertTelemetry";
+import { useAlertResolutionTracker } from "@/hooks/useAlertResolutionTracker";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
@@ -250,6 +251,8 @@ const DashboardLayout = () => {
   // Alert Orchestrator — telemetria automática (Fase 4)
   // Registra exposições e supressões em `alert_events` (fire-and-forget).
   useAlertTelemetry();
+  // Resolution tracker — registra `resolved` quando estado do usuário melhora
+  useAlertResolutionTracker();
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
   const studyCtx = useStudyContext();

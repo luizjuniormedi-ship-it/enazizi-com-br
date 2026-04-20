@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { useValidationMetrics } from "@/hooks/useValidationMetrics";
 import AlertOrchestratorDebug from "@/components/admin/AlertOrchestratorDebug";
 import AlertOrchestratorAnalytics from "@/components/admin/AlertOrchestratorAnalytics";
+import AlertConversionPanel from "@/components/admin/AlertConversionPanel";
+import AlertCorrelationPanel from "@/components/admin/AlertCorrelationPanel";
 import {
   Users,
   Activity,
@@ -348,8 +350,10 @@ export default function ValidationDashboard() {
         </CardContent>
       </Card>
 
-      {/* Alert Orchestrator — métricas, fadiga e inspeção interna */}
+      {/* Alert Orchestrator — métricas, conversão, correlação e inspeção interna */}
       <AlertOrchestratorAnalytics />
+      <AlertConversionPanel />
+      <AlertCorrelationPanel />
       <AlertOrchestratorDebug />
     </div>
   );
