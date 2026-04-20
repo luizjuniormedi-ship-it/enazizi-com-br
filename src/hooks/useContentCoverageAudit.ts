@@ -9,7 +9,9 @@ export interface SubtopicCoverageRow {
   specialty_nome: string;
   importance_level: ImportanceLevel;
   questions_count: number;
+  strong_questions_count: number; // links com confidence ≥ 0.85
   banca_coverage_count: number;
+  max_peso: number; // maior peso entre as bancas para este subtopic
   materials_count: number;
   flashcards_count: number;
   status: CoverageStatus;
@@ -25,6 +27,10 @@ export interface CoverageKPIs {
   pctComplete: number;
   pctCritical: number;
   pctMissing: number;
+  // Novos KPIs Fase 1.1
+  highImportanceWithoutQuestions: number; // muito_cobrado/cobrado com 0 Q
+  totalLinks: number;
+  totalStrongLinks: number;
 }
 
 export interface CoverageByDomain {
@@ -56,12 +62,12 @@ interface FullAudit {
 /**
  * useContentCoverageAudit
  * Computa, em runtime, o estado de cobertura completo do acervo.
- * Sem persistir snapshot ainda — leitura direta + agregação leve.
+ * Fase 1.1: agora consome question_topic_links populados + importance_level.
  * staleTime alto (10 min): cobertura muda lentamente.
  */
 export function useContentCoverageAudit() {
   return useQuery<FullAudit>({
-    queryKey: ["content-coverage-audit"],
+    queryKey: ["content-coverage-audit", "v1.1"],
     queryFn: computeCoverageAudit,
     staleTime: 10 * 60_000,
     gcTime: 30 * 60_000,
@@ -71,7 +77,7 @@ export function useContentCoverageAudit() {
 }
 
 async function computeCoverageAudit(): Promise<FullAudit> {
-  // 1. Carrega hierarquia (especialidades → tópicos → subtópicos)
+  // 1. Hierarquia (especialidades → tópicos → subtópicos)
   const { data: subtopics } = await supabase
     .from("curriculum_subtopics" as any)
     .select(`
@@ -83,11 +89,11 @@ async function computeCoverageAudit(): Promise<FullAudit> {
   const subRows = (subtopics ?? []) as any[];
   const subIds = subRows.map((s) => s.id);
 
-  // 2. Pesos/incidência por subtopic+banca
+  // 2. Pesos/incidência por subtopic+banca (agora com importance_level populado)
   const { data: weights } = subIds.length
     ? await supabase
         .from("curriculum_weights" as any)
-        .select("subtopic_id, banca, importance_level, peso")
+        .select("subtopic_id, banca, importance_level, peso, frequency_score, incidence_weight")
         .in("subtopic_id", subIds)
     : { data: [] as any[] };
 
@@ -98,26 +104,35 @@ async function computeCoverageAudit(): Promise<FullAudit> {
     weightsBySub.set(w.subtopic_id, arr);
   }
 
-  // 3. Contagem de questões via tabela de junção
+  // 3. Contagem real de questões via question_topic_links (Fase 1.1)
   const { data: links } = subIds.length
     ? await supabase
         .from("question_topic_links" as any)
-        .select("subtopic_id")
+        .select("subtopic_id, match_confidence")
         .in("subtopic_id", subIds)
     : { data: [] as any[] };
 
   const qCountBySub = new Map<string, number>();
+  const qStrongBySub = new Map<string, number>();
   for (const l of (links ?? []) as any[]) {
     if (!l.subtopic_id) continue;
     qCountBySub.set(l.subtopic_id, (qCountBySub.get(l.subtopic_id) ?? 0) + 1);
+    if (l.match_confidence >= 0.85) {
+      qStrongBySub.set(l.subtopic_id, (qStrongBySub.get(l.subtopic_id) ?? 0) + 1);
+    }
   }
 
-  // 4. Monta linhas + classifica
+  // 4. Monta linhas + classifica usando importance derivada do enum (não da posição na lista)
   const rows: SubtopicCoverageRow[] = subRows.map((s) => {
     const ws = weightsBySub.get(s.id) ?? [];
     const importance = pickHighestImportance(ws);
+    const maxPeso = ws.length ? Math.max(...ws.map((w) => Number(w.peso) || 0)) : 0;
+    const qCount = qCountBySub.get(s.id) ?? 0;
+    const qStrong = qStrongBySub.get(s.id) ?? 0;
     const verdict = classifyCoverage({
-      questionsCount: qCountBySub.get(s.id) ?? 0,
+      // Para classificar, usamos preferencialmente questões fortes; se houver poucas
+      // strong mas várias medium, ainda contamos pelo total para não punir injustamente.
+      questionsCount: Math.max(qStrong, Math.floor(qCount * 0.7)),
       bancaCoverageCount: ws.length,
       materialsCount: 0, // placeholder — materiais pedagógicos serão integrados em fase futura
       flashcardsCount: 0,
@@ -129,8 +144,10 @@ async function computeCoverageAudit(): Promise<FullAudit> {
       topic_nome: s.curriculum_topics?.nome ?? "—",
       specialty_nome: s.curriculum_topics?.curriculum_specialties?.nome ?? "—",
       importance_level: importance,
-      questions_count: qCountBySub.get(s.id) ?? 0,
+      questions_count: qCount,
+      strong_questions_count: qStrong,
       banca_coverage_count: ws.length,
+      max_peso: maxPeso,
       materials_count: 0,
       flashcards_count: 0,
       status: verdict.status,
@@ -145,6 +162,11 @@ async function computeCoverageAudit(): Promise<FullAudit> {
   const total = Math.max(rows.length, 1);
   const specialties = new Set(rows.map((r) => r.specialty_nome));
   const topics = new Set(rows.map((r) => `${r.specialty_nome}::${r.topic_nome}`));
+  const totalLinks = rows.reduce((acc, r) => acc + r.questions_count, 0);
+  const totalStrong = rows.reduce((acc, r) => acc + r.strong_questions_count, 0);
+  const highImpZeroQ = rows.filter(
+    (r) => (r.importance_level === "muito_cobrado" || r.importance_level === "cobrado") && r.questions_count === 0,
+  ).length;
   const kpis: CoverageKPIs = {
     totalSpecialties: specialties.size,
     totalTopics: topics.size,
@@ -153,6 +175,9 @@ async function computeCoverageAudit(): Promise<FullAudit> {
     pctComplete: Math.round((byStatus.complete / total) * 100),
     pctCritical: Math.round((byStatus.critical / total) * 100),
     pctMissing: Math.round((byStatus.missing / total) * 100),
+    highImportanceWithoutQuestions: highImpZeroQ,
+    totalLinks,
+    totalStrongLinks: totalStrong,
   };
 
   // 6. Agregação por domínio (especialidade)
@@ -187,21 +212,28 @@ async function computeCoverageAudit(): Promise<FullAudit> {
     pctCovered: Math.round((v.withQ.size / Math.max(v.mapped.size, 1)) * 100),
   })).sort((a, b) => a.pctCovered - b.pctCovered);
 
-  // 8. Top lacunas críticas (limit 50)
+  // 8. Top lacunas críticas (limit 50) — agora prioriza muito_cobrado sem questões
   const criticalGaps = rows
     .filter((r) => r.status === "critical" || r.status === "missing")
-    .sort((a, b) => importanceRank(b.importance_level) - importanceRank(a.importance_level))
+    .sort((a, b) => importanceRank(b.importance_level) - importanceRank(a.importance_level) || b.max_peso - a.max_peso)
     .slice(0, 50);
 
   return { rows, kpis, byDomain, byBanca, criticalGaps };
 }
 
 function pickHighestImportance(weights: any[]): ImportanceLevel {
+  // Agora preferimos o enum textual já populado; se ausente, derivamos de peso.
   const order: ImportanceLevel[] = ["muito_cobrado", "cobrado", "pouco_cobrado", "raro"];
   for (const level of order) {
     if (weights.some((w) => w.importance_level === level)) return level;
   }
-  return null;
+  // Fallback: maior peso → enum
+  if (!weights.length) return null;
+  const maxPeso = Math.max(...weights.map((w) => Number(w.peso) || 0));
+  if (maxPeso >= 9) return "muito_cobrado";
+  if (maxPeso >= 7) return "cobrado";
+  if (maxPeso >= 5) return "pouco_cobrado";
+  return "raro";
 }
 
 function importanceRank(level: ImportanceLevel): number {

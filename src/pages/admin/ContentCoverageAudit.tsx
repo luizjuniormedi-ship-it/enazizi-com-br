@@ -1,9 +1,10 @@
 /**
  * /admin/coverage
  * ───────────────
- * Painel de auditoria de Cobertura Completa do acervo.
- * Lê em tempo real curriculum_subtopics + curriculum_weights + question_topic_links
- * e classifica cada subtopic em complete / partial / critical / missing.
+ * Painel de auditoria de Cobertura Completa do acervo (Fase 1.1).
+ * Lê em tempo real curriculum_subtopics + curriculum_weights (com importance) +
+ * question_topic_links (Tier 1 strong + Tier 2 medium) e classifica cada
+ * subtopic em complete / partial / critical / missing.
  */
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,19 +14,37 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useContentCoverageAudit } from "@/hooks/useContentCoverageAudit";
-import { statusBadgeVariant, statusLabel, type CoverageStatus } from "@/lib/coverageRules";
-import { AlertTriangle, BookOpen, Layers, ListChecks, ScanSearch } from "lucide-react";
+import { statusBadgeVariant, statusLabel, type CoverageStatus, type ImportanceLevel } from "@/lib/coverageRules";
+import { AlertTriangle, BookOpen, Layers, ListChecks, ScanSearch, Flame, Link2 } from "lucide-react";
+
+type ImportanceFilter = "all" | "muito_cobrado" | "cobrado" | "pouco_cobrado" | "raro";
+
+const IMPORTANCE_LABEL: Record<NonNullable<ImportanceLevel>, string> = {
+  muito_cobrado: "Muito cobrado",
+  cobrado: "Cobrado",
+  pouco_cobrado: "Pouco cobrado",
+  raro: "Raro",
+};
+
+function importanceBadgeVariant(level: ImportanceLevel): "default" | "secondary" | "outline" | "destructive" {
+  if (level === "muito_cobrado") return "destructive";
+  if (level === "cobrado") return "default";
+  if (level === "pouco_cobrado") return "secondary";
+  return "outline";
+}
 
 export default function ContentCoverageAudit() {
   const { data, isLoading, error } = useContentCoverageAudit();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<CoverageStatus | "all">("all");
+  const [importanceFilter, setImportanceFilter] = useState<ImportanceFilter>("all");
 
   const filteredRows = useMemo(() => {
     if (!data) return [];
     const q = search.trim().toLowerCase();
     return data.rows.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
+      if (importanceFilter !== "all" && r.importance_level !== importanceFilter) return false;
       if (!q) return true;
       return (
         r.subtopic_nome.toLowerCase().includes(q) ||
@@ -33,7 +52,21 @@ export default function ContentCoverageAudit() {
         r.specialty_nome.toLowerCase().includes(q)
       );
     });
-  }, [data, search, statusFilter]);
+  }, [data, search, statusFilter, importanceFilter]);
+
+  // Lista destacada: muito_cobrado/cobrado sem questões
+  const highImpZeroQ = useMemo(
+    () =>
+      data?.rows
+        .filter(
+          (r) =>
+            (r.importance_level === "muito_cobrado" || r.importance_level === "cobrado") &&
+            r.questions_count === 0,
+        )
+        .sort((a, b) => b.max_peso - a.max_peso)
+        .slice(0, 30) ?? [],
+    [data],
+  );
 
   if (isLoading) {
     return (
@@ -69,9 +102,16 @@ export default function ContentCoverageAudit() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Auditoria de domínios, assuntos e subassuntos cobertos pelo acervo de questões e materiais.
+            <span className="ml-1 text-xs">(v1.1 — links + importância)</span>
           </p>
         </div>
-        <Badge variant="outline" className="text-xs">{kpis.totalSubtopics} subtópicos analisados</Badge>
+        <div className="flex gap-2 flex-wrap">
+          <Badge variant="outline" className="text-xs">{kpis.totalSubtopics} subtópicos</Badge>
+          <Badge variant="outline" className="text-xs">
+            <Link2 className="h-3 w-3 mr-1" />
+            {kpis.totalLinks} links ({kpis.totalStrongLinks} fortes)
+          </Badge>
+        </div>
       </header>
 
       {/* KPIs */}
@@ -79,7 +119,11 @@ export default function ContentCoverageAudit() {
         <KpiCard icon={<Layers className="h-5 w-5" />} label="Especialidades" value={kpis.totalSpecialties} />
         <KpiCard icon={<BookOpen className="h-5 w-5" />} label="Assuntos" value={kpis.totalTopics} />
         <KpiCard icon={<ListChecks className="h-5 w-5" />} label="Subassuntos" value={kpis.totalSubtopics} />
-        <KpiCard icon={<AlertTriangle className="h-5 w-5 text-destructive" />} label="Críticos + Ausentes" value={kpis.byStatus.critical + kpis.byStatus.missing} />
+        <KpiCard
+          icon={<Flame className="h-5 w-5 text-destructive" />}
+          label="Alta importância sem Q"
+          value={kpis.highImportanceWithoutQuestions}
+        />
       </div>
 
       {/* Status global */}
@@ -94,9 +138,10 @@ export default function ContentCoverageAudit() {
       </Card>
 
       <Tabs defaultValue="domains">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="domains">Por Domínio</TabsTrigger>
           <TabsTrigger value="bancas">Por Banca</TabsTrigger>
+          <TabsTrigger value="hot">🔥 Muito cobrado sem Q</TabsTrigger>
           <TabsTrigger value="gaps">Lacunas Críticas</TabsTrigger>
           <TabsTrigger value="all">Todos os Subassuntos</TabsTrigger>
         </TabsList>
@@ -173,6 +218,47 @@ export default function ContentCoverageAudit() {
           </Card>
         </TabsContent>
 
+        {/* Nova aba — Fase 1.1 */}
+        <TabsContent value="hot" className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Flame className="h-4 w-4 text-destructive" />
+                Top {highImpZeroQ.length} subtópicos muito cobrados SEM questões
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {highImpZeroQ.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  🎉 Nenhum subtópico de alta importância está sem questões linkadas.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {highImpZeroQ.map((r) => (
+                    <li key={r.subtopic_id} className="flex items-start justify-between gap-3 p-3 rounded border bg-card">
+                      <div className="min-w-0">
+                        <div className="font-medium text-sm">{r.subtopic_nome}</div>
+                        <div className="text-xs text-muted-foreground">{r.specialty_nome} · {r.topic_nome}</div>
+                        <div className="text-xs mt-1 text-muted-foreground">
+                          Peso máx: <strong>{r.max_peso}</strong> · Bancas mapeadas: {r.banca_coverage_count}
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <Badge variant={importanceBadgeVariant(r.importance_level)} className="text-[10px]">
+                          {r.importance_level ? IMPORTANCE_LABEL[r.importance_level] : "—"}
+                        </Badge>
+                        <Badge variant={statusBadgeVariant(r.status)} className="text-[10px]">
+                          {statusLabel(r.status)}
+                        </Badge>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="gaps" className="mt-4">
           <Card>
             <CardHeader>
@@ -196,7 +282,9 @@ export default function ContentCoverageAudit() {
                       <div className="flex flex-col items-end gap-1 shrink-0">
                         <Badge variant={statusBadgeVariant(r.status)}>{statusLabel(r.status)}</Badge>
                         {r.importance_level && (
-                          <span className="text-[10px] text-muted-foreground">{r.importance_level}</span>
+                          <Badge variant={importanceBadgeVariant(r.importance_level)} className="text-[10px]">
+                            {IMPORTANCE_LABEL[r.importance_level]}
+                          </Badge>
                         )}
                       </div>
                     </li>
@@ -215,14 +303,25 @@ export default function ContentCoverageAudit() {
               onChange={(e) => setSearch(e.target.value)}
               className="max-w-sm"
             />
-            <div className="flex gap-1">
+            <div className="flex gap-1 flex-wrap">
               {(["all", "complete", "partial", "critical", "missing"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
                   className={`text-xs px-2 py-1 rounded border ${statusFilter === s ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
                 >
-                  {s === "all" ? "Todos" : statusLabel(s as CoverageStatus)}
+                  {s === "all" ? "Todos status" : statusLabel(s as CoverageStatus)}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 flex-wrap">
+              {(["all", "muito_cobrado", "cobrado", "pouco_cobrado", "raro"] as const).map((i) => (
+                <button
+                  key={i}
+                  onClick={() => setImportanceFilter(i)}
+                  className={`text-xs px-2 py-1 rounded border ${importanceFilter === i ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                >
+                  {i === "all" ? "Toda importância" : IMPORTANCE_LABEL[i]}
                 </button>
               ))}
             </div>
@@ -237,7 +336,8 @@ export default function ContentCoverageAudit() {
                       <th className="text-left py-2 px-3">Subassunto</th>
                       <th className="text-left">Assunto</th>
                       <th className="text-left">Especialidade</th>
-                      <th className="text-right">Q</th>
+                      <th className="text-left">Importância</th>
+                      <th className="text-right">Q (forte/total)</th>
                       <th className="text-right">Bancas</th>
                       <th className="text-left">Status</th>
                     </tr>
@@ -248,7 +348,21 @@ export default function ContentCoverageAudit() {
                         <td className="py-2 px-3 font-medium">{r.subtopic_nome}</td>
                         <td className="text-muted-foreground">{r.topic_nome}</td>
                         <td className="text-muted-foreground">{r.specialty_nome}</td>
-                        <td className="text-right">{r.questions_count}</td>
+                        <td>
+                          {r.importance_level ? (
+                            <Badge variant={importanceBadgeVariant(r.importance_level)} className="text-[10px]">
+                              {IMPORTANCE_LABEL[r.importance_level]}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
+                        <td className="text-right tabular-nums">
+                          <span className={r.strong_questions_count > 0 ? "" : "text-muted-foreground"}>
+                            {r.strong_questions_count}
+                          </span>
+                          <span className="text-muted-foreground">/{r.questions_count}</span>
+                        </td>
                         <td className="text-right">{r.banca_coverage_count}</td>
                         <td><Badge variant={statusBadgeVariant(r.status)}>{statusLabel(r.status)}</Badge></td>
                       </tr>

@@ -1193,6 +1193,13 @@ export type Database = {
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "content_coverage_audit_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
         ]
       }
       content_gap_reports: {
@@ -1402,6 +1409,13 @@ export type Database = {
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "curriculum_microtopics_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
         ]
       }
       curriculum_prerequisites: {
@@ -1432,11 +1446,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "curriculum_prerequisites_prerequisite_subtopic_id_fkey"
+            columns: ["prerequisite_subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
             foreignKeyName: "curriculum_prerequisites_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_prerequisites_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
           },
         ]
       }
@@ -1608,6 +1636,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_weights_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
           },
         ]
       }
@@ -5850,6 +5885,13 @@ export type Database = {
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "question_topic_links_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
         ]
       }
       question_topic_map: {
@@ -5900,6 +5942,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_topic_map_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "question_topic_map_topic_id_fkey"
@@ -9194,6 +9243,16 @@ export type Database = {
           total_resultados: number | null
           ultimo_resultado_em: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      v_subtopic_question_density: {
+        Row: {
+          questions_count: number | null
+          specialty_nome: string | null
+          subtopic_id: string | null
+          subtopic_nome: string | null
+          topic_nome: string | null
         }
         Relationships: []
       }
