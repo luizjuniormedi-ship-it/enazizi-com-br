@@ -556,18 +556,17 @@ serve(async (req) => {
         : examProximityDays < 60 ? 1.3
         : 1.0;
 
+      const hasCriticalGaps = errors.length > 0 || reviews.length > 0;
       const top5 = candidates.slice(0, 5).map((c) => {
-        // Heuristic boost detection from priority delta vs. base type score.
-        // Edge doesn't have access to client engines, so we infer from context.
-        const isQuestion = c.type === "free_study" || c.type === "image_quiz";
+        // Heuristic boost detection — edge can't compute the full coverage engine,
+        // but it can flag the same signals the client engine reads.
         const isReview = c.type === "review" || c.type === "error_review";
         return {
           topic: (c.contextPayload as any)?.topic ?? c.title,
           type: c.type,
           base_priority: c.priorityScore,
           final_priority: c.priorityScore,
-          // Boost flags based on real edge signals available here:
-          boosted_by_coverage: criticalGapsCount(errors, reviews) && isReview,
+          boosted_by_coverage: hasCriticalGaps && isReview,
           boosted_by_goal: false, // computed client-side; edge cannot see monthly goal
           boosted_by_exam_pressure: examProximityDays !== null && examProximityDays < 30,
         };
