@@ -9,6 +9,9 @@ import RadarHero from "@/components/radar/RadarHero";
 import RadarSnapshotCard from "@/components/radar/RadarSnapshotCard";
 import RadarScenarioComparator from "@/components/radar/RadarScenarioComparator";
 import RadarRecommendations from "@/components/radar/RadarRecommendations";
+import RadarRiskList from "@/components/radar/RadarRiskList";
+import RadarOpportunityList from "@/components/radar/RadarOpportunityList";
+import RadarSnapshotHistory from "@/components/radar/RadarSnapshotHistory";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -137,12 +140,17 @@ export default function RadarTrajetoriaPage() {
         <>
           <RadarSnapshotCard snapshot={snapshot} />
           <RadarScenarioComparator scenarios={bundle?.scenarios ?? []} />
+          <div className="grid gap-4 md:grid-cols-2">
+            <RadarRiskList risks={bundle?.risks ?? []} />
+            <RadarOpportunityList opportunities={bundle?.opportunities ?? []} />
+          </div>
           <RadarRecommendations
             recommendations={bundle?.recommendations ?? []}
             appliedActions={bundle?.appliedActions ?? []}
             onApply={handleApply}
             applyingId={applyingId}
           />
+          <RadarSnapshotHistory />
         </>
       )}
 
