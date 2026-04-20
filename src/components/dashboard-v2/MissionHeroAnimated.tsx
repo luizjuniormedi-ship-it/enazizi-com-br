@@ -67,6 +67,29 @@ export default function MissionHeroAnimated({ recommendation, adaptiveState, onS
               {recommendation.description}
             </motion.p>
 
+            {/* Linha preditiva de aprovação */}
+            {prediction && prediction.hasEnoughData && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="flex items-center gap-2 text-xs sm:text-sm flex-wrap"
+              >
+                <span className={`font-bold ${approvalToneClass(prediction.riskLevel)}`}>
+                  🔥 Chance de aprovação: {prediction.score}%
+                </span>
+                {prediction.delta !== null && (
+                  <span className={`inline-flex items-center gap-0.5 tabular-nums ${approvalToneClass(prediction.riskLevel)}`}>
+                    {prediction.trend === "up" && <TrendingUp className="h-3 w-3" />}
+                    {prediction.trend === "down" && <TrendingDown className="h-3 w-3" />}
+                    {prediction.trend === "stable" && <Minus className="h-3 w-3" />}
+                    {prediction.delta > 0 ? "+" : ""}{prediction.delta}
+                  </span>
+                )}
+                <span className="text-muted-foreground hidden sm:inline">· {prediction.message}</span>
+              </motion.div>
+            )}
+
             {/* Tags */}
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="text-xs bg-primary/15 text-primary border-0">
