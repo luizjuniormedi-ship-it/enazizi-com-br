@@ -75,8 +75,10 @@ export default function ProgressOverview() {
   const { data: coverage } = useCoverageStatus();
   const { data: goal } = useMonthlyGoal();
   const { data: core } = useCoreData();
+  const prediction = useApprovalPrediction();
 
-  const approvalScore = snap?.approvalScore ?? 0;
+  // Score preditivo > snapshot legado (fallback se sem dados)
+  const approvalScore = prediction?.score ?? snap?.approvalScore ?? 0;
   const approvalTone: MetricProps["tone"] =
     approvalScore >= 70 ? "success" :
     approvalScore >= 50 ? "primary" :
