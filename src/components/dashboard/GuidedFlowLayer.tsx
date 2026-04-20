@@ -1,21 +1,20 @@
 /**
  * GuidedFlowLayer — versão enxuta (Dashboard reestruturado)
  * ──────────────────────────────────────────────────────────
- * Mantém APENAS o que dispara ação imediata:
+ * Mantém APENAS o que dispara ação imediata. Fluxo:
  *   1. ExamDateRequiredBanner (condicional)
- *   2. RiskAlertsCard (alertas críticos)
- *   3. MinimumDailyMissionCard (reativação para inativos)
- *   4. NextBestActionCard (próximo passo único)
- *   5. MissionCard (missão do dia)
- *   6. ReviewCard (só se houver revisões — ele mesmo já trata "tudo em dia")
+ *   2. RiskAlertsCard
+ *   3. MinimumDailyMissionCard
+ *   4. NextBestActionCard (escondido se duplicar Mission/Review)
+ *   5. MissionCard (Plano do dia) | ReviewCard (esconde se 0 due)
  *
- * Cards REMOVIDOS desta camada (movidos para AdvancedAnalyticsAccordion ou deletados):
- *   • StartHereCard (redundante com Hero)
- *   • GuidedFocusCard (duplicava FocusCard)
- *   • CoverageCard, MonthlyGoalCard, QuestionsGoalCard (fundidos em ProgressOverview)
- *   • QuestionStrategyCard, EngineImpactCard, CalibrationStatusCard (movidos p/ accordion)
- *   • FocusModeEntry (movido p/ TopBar futuramente)
+ * Ajuste fino UX:
+ *   • CTA dominante = só o Hero. NBA → secondary, Mission/Review → outline.
+ *   • Deduplicação: NBA não renderiza se aponta para o mesmo destino que
+ *     o MissionCard ou ReviewCard já mostram visíveis no fold.
  */
+import { useFsrsDueCount } from "@/hooks/useFsrsDueCount";
+import { useDashboardData } from "@/hooks/useDashboardData";
 import ExamDateRequiredBanner from "./guided/ExamDateRequiredBanner";
 import RiskAlertsCard from "./guided/RiskAlertsCard";
 import MinimumDailyMissionCard from "./guided/MinimumDailyMissionCard";
@@ -24,6 +23,18 @@ import MissionCard from "./guided/MissionCard";
 import ReviewCard from "./guided/ReviewCard";
 
 export default function GuidedFlowLayer() {
+  const { totalDue } = useFsrsDueCount();
+  const { data: dash } = useDashboardData();
+  const todayPending = Math.max(
+    0,
+    (dash?.stats.todayTotal ?? 0) - (dash?.stats.todayCompleted ?? 0)
+  );
+
+  // Paths atualmente cobertos por Mission/Review visíveis — usados para deduplicar o NBA
+  const excludePaths: string[] = [];
+  if (totalDue > 0) excludePaths.push("/dashboard/revisoes");
+  if (todayPending > 0) excludePaths.push("/dashboard/cronograma");
+
   return (
     <section aria-label="Ações guiadas" className="space-y-3">
       {/* Inputs críticos faltando */}
@@ -35,8 +46,9 @@ export default function GuidedFlowLayer() {
       {/* Reativação para usuários inativos */}
       <MinimumDailyMissionCard />
 
-      {/* As 3 ações principais — únicas que iniciam estudo */}
-      <NextBestActionCard />
+      {/* Atalho rápido — só aparece se não duplicar ação visível abaixo */}
+      <NextBestActionCard excludePaths={excludePaths} />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <MissionCard />
         <ReviewCard />

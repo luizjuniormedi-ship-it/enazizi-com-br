@@ -37,6 +37,9 @@ interface Props {
   alternatives?: StudyNextRecommendation[];
   activeRecType?: string;
   onSelectAlternative?: (alt: StudyNextRecommendation) => void;
+  /** Estado controlado do accordion (para abrir programaticamente via Hero "Alternativas"). */
+  value?: string;
+  onValueChange?: (value: string) => void;
 }
 
 export default function AdvancedAnalyticsAccordion({
@@ -46,10 +49,12 @@ export default function AdvancedAnalyticsAccordion({
   alternatives,
   activeRecType,
   onSelectAlternative,
+  value,
+  onValueChange,
 }: Props) {
   return (
     <Card className="overflow-hidden border-border/60">
-      <Accordion type="single" collapsible>
+      <Accordion type="single" collapsible value={value} onValueChange={onValueChange}>
         <AccordionItem value="advanced" className="border-0">
           <AccordionTrigger className="px-5 py-3 hover:no-underline">
             <div className="flex items-center gap-2">

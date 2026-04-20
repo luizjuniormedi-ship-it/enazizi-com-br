@@ -26,7 +26,13 @@ type Action = {
   to: string;
 };
 
-export default function NextBestActionCard() {
+interface NextBestActionCardProps {
+  /** Lista de paths já cobertos por outros cards visíveis no Dashboard.
+   *  Se o NBA apontar para um deles, o card é ocultado (evita duplicação de ação). */
+  excludePaths?: string[];
+}
+
+export default function NextBestActionCard({ excludePaths = [] }: NextBestActionCardProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { totalDue } = useFsrsDueCount();
@@ -64,7 +70,7 @@ export default function NextBestActionCard() {
   const action: Action = useMemo(() => {
     if (totalDue > 0) {
       return {
-        label: "Próximo passo",
+        label: "Atalho rápido",
         description: `${totalDue} ${totalDue === 1 ? "revisão pronta" : "revisões prontas"} agora`,
         cta: "Revisar",
         to: "/dashboard/revisoes?source=guided_nba",
@@ -72,7 +78,7 @@ export default function NextBestActionCard() {
     }
     if (todayPending > 0) {
       return {
-        label: "Próximo passo",
+        label: "Atalho rápido",
         description: `${todayPending} ${todayPending === 1 ? "tarefa pendente" : "tarefas pendentes"} hoje`,
         cta: "Continuar missão",
         to: "/dashboard/cronograma?source=guided_nba",
@@ -80,19 +86,24 @@ export default function NextBestActionCard() {
     }
     if (hasRecentError) {
       return {
-        label: "Próximo passo",
+        label: "Atalho rápido",
         description: "Reforçar pontos fracos recentes",
         cta: "Treinar agora",
         to: "/dashboard/banco-erros?source=guided_nba",
       };
     }
     return {
-      label: "Próximo passo",
+      label: "Atalho rápido",
       description: "Sem pendências — peça uma orientação ao Tutor",
       cta: "Falar com Tutor",
       to: "/dashboard/chatgpt?source=guided_nba",
     };
   }, [totalDue, todayPending, hasRecentError]);
+
+  // Ajuste 2: deduplicação — se o destino do NBA já está coberto por outro card, esconde
+  const actionBasePath = action.to.split("?")[0];
+  const isDuplicate = excludePaths.some((p) => p.split("?")[0] === actionBasePath);
+  if (isDuplicate) return null;
 
   return (
     <Card className="overflow-hidden border-emerald-500/30 bg-emerald-500/5">
@@ -106,7 +117,7 @@ export default function NextBestActionCard() {
             <p className="text-xs text-muted-foreground truncate">{action.description}</p>
           </div>
         </div>
-        <Button size="sm" onClick={() => navigate(action.to)} className="shrink-0">
+        <Button size="sm" variant="secondary" onClick={() => navigate(action.to)} className="shrink-0">
           {action.cta}
           <ArrowRight className="ml-1 h-3.5 w-3.5" />
         </Button>

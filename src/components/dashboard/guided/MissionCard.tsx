@@ -39,7 +39,7 @@ export default function MissionCard() {
               <Target className="h-4 w-4" />
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-semibold">Missão do dia</p>
+              <p className="text-sm font-semibold">Plano do dia</p>
               <p className="text-xs text-muted-foreground">
                 {isLoading
                   ? "Carregando…"
@@ -52,7 +52,7 @@ export default function MissionCard() {
             </div>
           </div>
           {total > 0 ? (
-            <Button size="sm" variant="default" onClick={handleContinue} className="shrink-0">
+            <Button size="sm" variant="outline" onClick={handleContinue} className="shrink-0">
               Continuar
               <ArrowRight className="ml-1 h-3.5 w-3.5" />
             </Button>
