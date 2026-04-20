@@ -15,6 +15,7 @@ import { useCoreData } from "@/hooks/useCoreData";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
 
 const SNOOZE_KEY = "exam_date_banner_snoozed_until";
 
@@ -23,6 +24,7 @@ export default function ExamDateRequiredBanner() {
   const { data: coreData, isLoading } = useCoreData();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { getDecision } = useAlertOrchestrator();
   const [examDate, setExamDate] = useState("");
   const [saving, setSaving] = useState(false);
   const [open, setOpen] = useState(false);
@@ -37,6 +39,9 @@ export default function ExamDateRequiredBanner() {
   // Snooze leve — 24h após "ainda não sei", ainda assim volta a aparecer depois
   const snoozedUntil = Number(localStorage.getItem(SNOOZE_KEY) || 0);
   if (snoozedUntil > Date.now() && snoozedTick > 0) return null;
+
+  // Alert Orchestrator — fonte única de verdade
+  if (!getDecision("exam-date").visible) return null;
 
   const save = async () => {
     if (!examDate) return;

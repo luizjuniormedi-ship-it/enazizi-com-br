@@ -13,10 +13,12 @@ import { useNavigate } from "react-router-dom";
 import { Rocket, ListChecks, BookOpen, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudyEngineImpact } from "@/hooks/useStudyEngineImpact";
+import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
 
 export default function MinimumDailyMissionCard() {
   const navigate = useNavigate();
   const { data, isLoading } = useStudyEngineImpact();
+  const { getDecision } = useAlertOrchestrator();
 
   if (isLoading || !data) return null;
 
@@ -26,6 +28,9 @@ export default function MinimumDailyMissionCard() {
     data.tasksCompleted7d === 0;
 
   if (!lowActivity) return null;
+
+  // Alert Orchestrator — pode rebaixar/suprimir quando há critical estrutural
+  if (!getDecision("min-mission").visible) return null;
 
   const hasGap = data.criticalGapsCount > 0;
 
