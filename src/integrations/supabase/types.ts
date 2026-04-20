@@ -2615,37 +2615,56 @@ export type Database = {
         Row: {
           answer: string
           created_at: string
+          difficulty: number | null
           id: string
           is_global: boolean
+          microtopic_id: string | null
           organization_id: string | null
           question: string
           source_map_id: string | null
+          specialty_id: string | null
+          subtopic_id: string | null
           topic: string | null
           user_id: string
         }
         Insert: {
           answer: string
           created_at?: string
+          difficulty?: number | null
           id?: string
           is_global?: boolean
+          microtopic_id?: string | null
           organization_id?: string | null
           question: string
           source_map_id?: string | null
+          specialty_id?: string | null
+          subtopic_id?: string | null
           topic?: string | null
           user_id: string
         }
         Update: {
           answer?: string
           created_at?: string
+          difficulty?: number | null
           id?: string
           is_global?: boolean
+          microtopic_id?: string | null
           organization_id?: string | null
           question?: string
           source_map_id?: string | null
+          specialty_id?: string | null
+          subtopic_id?: string | null
           topic?: string | null
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "flashcards_microtopic_id_fkey"
+            columns: ["microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "flashcards_organization_id_fkey"
             columns: ["organization_id"]
@@ -2659,6 +2678,27 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "mental_maps"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcards_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcards_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcards_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
           },
         ]
       }
@@ -6930,6 +6970,99 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      study_materials: {
+        Row: {
+          ativo: boolean
+          content: string
+          created_at: string
+          difficulty_level: number | null
+          id: string
+          is_global: boolean
+          material_type: string
+          metadata: Json
+          microtopic_id: string | null
+          source: string | null
+          specialty_id: string | null
+          subtopic_id: string | null
+          title: string
+          topic_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          content: string
+          created_at?: string
+          difficulty_level?: number | null
+          id?: string
+          is_global?: boolean
+          material_type?: string
+          metadata?: Json
+          microtopic_id?: string | null
+          source?: string | null
+          specialty_id?: string | null
+          subtopic_id?: string | null
+          title: string
+          topic_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          content?: string
+          created_at?: string
+          difficulty_level?: number | null
+          id?: string
+          is_global?: boolean
+          material_type?: string
+          metadata?: Json
+          microtopic_id?: string | null
+          source?: string | null
+          specialty_id?: string | null
+          subtopic_id?: string | null
+          title?: string
+          topic_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_materials_microtopic_id_fkey"
+            columns: ["microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_materials_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_materials_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_materials_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "study_materials_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       study_performance: {
         Row: {

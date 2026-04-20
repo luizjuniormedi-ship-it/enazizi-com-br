@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useContentCoverageAudit } from "@/hooks/useContentCoverageAudit";
 import { statusBadgeVariant, statusLabel, type CoverageStatus, type ImportanceLevel } from "@/lib/coverageRules";
-import { AlertTriangle, BookOpen, Layers, ListChecks, ScanSearch, Flame, Link2 } from "lucide-react";
+import { AlertTriangle, BookOpen, Layers, ListChecks, ScanSearch, Flame, Link2, FileText, Sparkles, GraduationCap } from "lucide-react";
 
 type ImportanceFilter = "all" | "muito_cobrado" | "cobrado" | "pouco_cobrado" | "raro";
 
@@ -102,7 +102,7 @@ export default function ContentCoverageAudit() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Auditoria de domínios, assuntos e subassuntos cobertos pelo acervo de questões e materiais.
-            <span className="ml-1 text-xs">(v1.1 — links + importância)</span>
+            <span className="ml-1 text-xs">(v1.2 — pedagogia + microtopics)</span>
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -110,6 +110,18 @@ export default function ContentCoverageAudit() {
           <Badge variant="outline" className="text-xs">
             <Link2 className="h-3 w-3 mr-1" />
             {kpis.totalLinks} links ({kpis.totalStrongLinks} fortes)
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            <FileText className="h-3 w-3 mr-1" />
+            {kpis.totalMaterials} materiais
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            <Sparkles className="h-3 w-3 mr-1" />
+            {kpis.totalFlashcards} flashcards
+          </Badge>
+          <Badge variant="outline" className="text-xs">
+            <GraduationCap className="h-3 w-3 mr-1" />
+            {kpis.totalMicrotopics} microtopics
           </Badge>
         </div>
       </header>
@@ -123,6 +135,25 @@ export default function ContentCoverageAudit() {
           icon={<Flame className="h-5 w-5 text-destructive" />}
           label="Alta importância sem Q"
           value={kpis.highImportanceWithoutQuestions}
+        />
+      </div>
+
+      {/* KPIs pedagógicos Fase 1.2 */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <KpiCard
+          icon={<FileText className="h-5 w-5 text-muted-foreground" />}
+          label="Sem material"
+          value={kpis.subtopicsWithoutMaterial}
+        />
+        <KpiCard
+          icon={<Sparkles className="h-5 w-5 text-muted-foreground" />}
+          label="Sem flashcard"
+          value={kpis.subtopicsWithoutFlashcard}
+        />
+        <KpiCard
+          icon={<AlertTriangle className="h-5 w-5 text-destructive/70" />}
+          label="Tem Q mas sem material"
+          value={kpis.subtopicsQuestionsButNoMaterial}
         />
       </div>
 
@@ -338,6 +369,9 @@ export default function ContentCoverageAudit() {
                       <th className="text-left">Especialidade</th>
                       <th className="text-left">Importância</th>
                       <th className="text-right">Q (forte/total)</th>
+                      <th className="text-right">Mat</th>
+                      <th className="text-right">Flash</th>
+                      <th className="text-right">Score</th>
                       <th className="text-right">Bancas</th>
                       <th className="text-left">Status</th>
                     </tr>
@@ -363,6 +397,9 @@ export default function ContentCoverageAudit() {
                           </span>
                           <span className="text-muted-foreground">/{r.questions_count}</span>
                         </td>
+                        <td className={`text-right tabular-nums ${r.materials_count === 0 ? "text-muted-foreground" : ""}`}>{r.materials_count}</td>
+                        <td className={`text-right tabular-nums ${r.flashcards_count === 0 ? "text-muted-foreground" : ""}`}>{r.flashcards_count}</td>
+                        <td className="text-right tabular-nums font-medium">{r.coverage_score}</td>
                         <td className="text-right">{r.banca_coverage_count}</td>
                         <td><Badge variant={statusBadgeVariant(r.status)}>{statusLabel(r.status)}</Badge></td>
                       </tr>
