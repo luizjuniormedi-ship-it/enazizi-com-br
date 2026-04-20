@@ -28,7 +28,9 @@ export type FlagKey =
   | "radar_trajetoria_enabled"
   | "trajectory_engine_v1_enabled"
   | "trajectory_apply_v1_enabled"
-  | "trajectory_explain_v1_enabled";
+  | "trajectory_explain_v1_enabled"
+  // Alert Orchestrator — Fase 5 (Adaptive Ranking)
+  | "alert_adaptive_ranking_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -64,6 +66,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   trajectory_engine_v1_enabled: true,
   trajectory_apply_v1_enabled: true,
   trajectory_explain_v1_enabled: true,
+  // Alert Orchestrator Fase 5 — adaptive ranking opt-in (default false até validação)
+  alert_adaptive_ranking_enabled: false,
 };
 
 export const useFeatureFlags = () => {
