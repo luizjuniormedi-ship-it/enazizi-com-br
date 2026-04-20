@@ -89,9 +89,11 @@ const DailyPlan = () => {
           .eq("status", "pendente")
           .lte("data_revisao", today)
           .order("prioridade", { ascending: false }),
+        // Unified view (read-only): exposes tema (text), not tema_id.
+        // We map tema → tema_id below using todayTemasRes for compatibility.
         supabase
-          .from("desempenho_questoes")
-          .select("tema_id, questoes_feitas, taxa_acerto")
+          .from("performance_unified" as any)
+          .select("tema, questoes_feitas, taxa_acerto")
           .eq("user_id", user.id),
         supabase
           .from("temas_estudados")
@@ -108,13 +110,20 @@ const DailyPlan = () => {
       const userDailyMinutes = Math.round((profileRes.data?.daily_study_hours || 4) * 60);
       setDailyMinutes(userDailyMinutes);
 
-      // Build mastery map
+      // Build mastery map (keyed by tema_id for downstream compatibility).
+      // performance_unified returns `tema` (text); resolve tema_id via temas_estudados.
       const mMap = new Map<string, { correctRate: number; reviewsDone: number }>();
+      const temaTextToId = new Map<string, string>();
+      for (const t of (todayTemasRes.data || [])) {
+        if (t.tema) temaTextToId.set(t.tema.toLowerCase(), t.id);
+      }
       if (attemptsRes.data) {
-        for (const d of attemptsRes.data) {
-          const existing = mMap.get(d.tema_id) || { correctRate: 0, reviewsDone: 0 };
+        for (const d of attemptsRes.data as any[]) {
+          const tId = d.tema ? temaTextToId.get(String(d.tema).toLowerCase()) : null;
+          if (!tId) continue;
+          const existing = mMap.get(tId) || { correctRate: 0, reviewsDone: 0 };
           existing.correctRate = Number(d.taxa_acerto) / 100;
-          mMap.set(d.tema_id, existing);
+          mMap.set(tId, existing);
         }
       }
 

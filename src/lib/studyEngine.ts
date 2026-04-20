@@ -279,12 +279,23 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .eq("dominado", false)
       .order("vezes_errado", { ascending: false })
       .limit(20), "error_bank"),
-    safe(() => supabase
-      .from("desempenho_questoes")
-      .select("tema_id, taxa_acerto, questoes_feitas, temas_estudados(tema, especialidade)")
+    // Performance unified view (read-only): combines error_bank + simulado + fsrs.
+    // Reshaped to keep backward-compatible structure with `temas_estudados` join.
+    safe<any[]>(() => supabase
+      .from("performance_unified" as any)
+      .select("tema, subtema, taxa_acerto, questoes_feitas")
       .eq("user_id", userId)
       .order("taxa_acerto", { ascending: true })
-      .limit(20), "desempenho"),
+      .limit(20)
+      .then((res: any) => ({
+        error: res.error,
+        data: (res.data || []).map((r: any) => ({
+          tema_id: null,
+          taxa_acerto: r.taxa_acerto,
+          questoes_feitas: r.questoes_feitas,
+          temas_estudados: { tema: r.tema, especialidade: r.subtema || "Geral" },
+        })) as any[],
+      })), "desempenho"),
     // temas_estudados — engine needs extra fields (data_estudo, status, dificuldade) not in coreData
     safe(() => supabase
       .from("temas_estudados")
@@ -316,6 +327,8 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .order("created_at", { ascending: false })
       .limit(10), "practical_exams"),
     // Response time per topic (for priority boost)
+    // NOTE: performance_unified does not expose tempo_gasto — kept on legacy
+    // table to preserve behavior. Returns empty when legacy table is empty.
     safe(() => supabase
       .from("desempenho_questoes")
       .select("tempo_gasto, temas_estudados(tema)")

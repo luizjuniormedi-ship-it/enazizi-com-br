@@ -39,10 +39,11 @@ async function collectSignals(db: ReturnType<typeof getServiceClient>, userId: s
   const d28 = new Date(now.getTime() - 28 * 24 * 3600 * 1000).toISOString();
   const nowIso = now.toISOString();
 
-  // Volume de questões (desempenho_questoes é a fonte primária do ENAZIZI)
+  // Volume de questões — performance_unified (view read-only) consolida
+  // error_bank + simulado_question_analytics + fsrs_review_log para refletir o uso real.
   const desempenho28 = await safeQuery<any[]>(
     db,
-    (c) => c.from("desempenho_questoes")
+    (c) => c.from("performance_unified")
       .select("data_registro, questoes_feitas, questoes_erradas, taxa_acerto")
       .eq("user_id", userId)
       .gte("data_registro", d28),

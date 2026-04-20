@@ -17,7 +17,7 @@ export interface TopicEvolution {
 
 /**
  * Computes per-topic evolution status by comparing recent vs older performance.
- * Uses desempenho_questoes + error_bank + revisoes for a stable signal.
+ * Uses performance_unified (read-only view) + error_bank + revisoes for a stable signal.
  * Requires ≥3 attempts to avoid noise from single questions.
  */
 export function useTopicEvolution() {
@@ -31,11 +31,11 @@ export function useTopicEvolution() {
     queryFn: async (): Promise<TopicEvolution[]> => {
       const userId = user!.id;
 
-      // Fetch performance records ordered by date
+      // Fetch performance records ordered by date (unified view)
       const [perfRes, errorRes, reviewRes] = await Promise.all([
         supabase
-          .from("desempenho_questoes")
-          .select("tema_id, taxa_acerto, questoes_feitas, data_registro, temas_estudados(tema, especialidade)")
+          .from("performance_unified" as any)
+          .select("tema, subtema, taxa_acerto, questoes_feitas, data_registro")
           .eq("user_id", userId)
           .order("data_registro", { ascending: true })
           .limit(500),
@@ -56,14 +56,14 @@ export function useTopicEvolution() {
       const errors = (errorRes.data || []) as any[];
       const reviews = (reviewRes.data || []) as any[];
 
-      // Group performance by topic
+      // Group performance by topic (unified view exposes tema/subtema directly)
       const topicPerf: Record<string, { accuracies: number[]; specialty: string }> = {};
       for (const p of perfData) {
-        const tema = p.temas_estudados?.tema;
-        const spec = p.temas_estudados?.especialidade || "Geral";
+        const tema = p.tema;
+        const spec = p.subtema || "Geral";
         if (!tema) continue;
         if (!topicPerf[tema]) topicPerf[tema] = { accuracies: [], specialty: spec };
-        topicPerf[tema].accuracies.push(p.taxa_acerto);
+        topicPerf[tema].accuracies.push(Number(p.taxa_acerto) || 0);
       }
 
       // Error map
