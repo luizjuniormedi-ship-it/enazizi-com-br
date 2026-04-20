@@ -12,6 +12,8 @@ import RadarRecommendations from "@/components/radar/RadarRecommendations";
 import RadarRiskList from "@/components/radar/RadarRiskList";
 import RadarOpportunityList from "@/components/radar/RadarOpportunityList";
 import RadarSnapshotHistory from "@/components/radar/RadarSnapshotHistory";
+import RadarLastAppliedCard from "@/components/radar/RadarLastAppliedCard";
+import RadarTelemetryCard from "@/components/radar/RadarTelemetryCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -150,6 +152,10 @@ export default function RadarTrajetoriaPage() {
             onApply={handleApply}
             applyingId={applyingId}
           />
+          <div className="grid gap-4 md:grid-cols-2">
+            <RadarLastAppliedCard />
+            <RadarTelemetryCard />
+          </div>
           <RadarSnapshotHistory />
         </>
       )}

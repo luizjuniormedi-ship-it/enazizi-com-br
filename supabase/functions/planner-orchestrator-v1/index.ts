@@ -278,6 +278,9 @@ serve(async (req) => {
     actionType: action.actionType,
     estimatedMinutes: minutes,
     priorityLabel: priorityLabel(action.priority),
+    // Campo de vínculo usado pelo trigger SQL `tg_close_trajectory_action_on_task_complete`
+    // para localizar a applied_action via payload.plannerResponse.taskId
+    linkedTaskId: task.id,
   });
 });
 
