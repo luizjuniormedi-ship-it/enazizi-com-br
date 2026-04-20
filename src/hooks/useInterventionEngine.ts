@@ -17,10 +17,15 @@ import { useFsrsDueCount } from "./useFsrsDueCount";
 import { useInterventionAnalytics } from "./useInterventionAnalytics";
 import { useFeatureFlags } from "./useFeatureFlags";
 import { useInterventionPenalty } from "./useInterventionPenalty";
+import { useInterventionProfile } from "./useInterventionProfile";
 import {
   computeInterventionAdjustment,
   type InterventionAdaptiveAdjustment,
 } from "@/lib/interventionAdaptiveRanking";
+import {
+  computeProfileAdjustment,
+  type InterventionProfileAdjustment,
+} from "@/lib/interventionProfileRanking";
 
 export type InterventionType =
   | "min-mission"
