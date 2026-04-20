@@ -45,6 +45,7 @@ import {
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useExamReadiness } from "@/hooks/useExamReadiness";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useRadarPlannerOverlay } from "@/hooks/useRadarPlannerOverlay";
 
 const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, dificuldade: 0.15, confianca: 0.15 };
 
@@ -76,6 +77,7 @@ const SmartPlanner = () => {
   const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
 
   const { data: engineRecs, adaptive } = useStudyEngine();
+  const { getHint: getRadarHint } = useRadarPlannerOverlay();
 
   const loadData = useCallback(async () => {
     if (!user) return;
