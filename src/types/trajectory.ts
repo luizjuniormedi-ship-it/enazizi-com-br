@@ -129,7 +129,12 @@ export interface TrajectoryRecommendation {
 // ─────────────────────────────────────────────────────────────────────────────
 // Aplicação / runs
 // ─────────────────────────────────────────────────────────────────────────────
-export type AppliedActionStatus = "proposed" | "applied" | "cancelled" | "completed";
+export type AppliedActionStatus =
+  | "proposed"
+  | "pending_orchestrator"
+  | "applied"
+  | "cancelled"
+  | "completed";
 
 export interface TrajectoryAppliedAction {
   id: string;
@@ -178,7 +183,23 @@ export interface TrajectoryApplyResponse {
   success: boolean;
   appliedActionId: string;
   decisionId: string | null;
+  status?: AppliedActionStatus;
+  plannerInvoked?: boolean;
+  plannerError?: string | null;
+  duplicate?: boolean;
+  message?: string;
   navigateTo?: string;
+  standardizedPayload?: {
+    actionType: "review" | "questions" | "theory" | "simulado";
+    topic: string | null;
+    estimatedMinutes: number;
+    priority: number;
+    origin: "radar_trajetoria";
+    snapshotId: string | null;
+    recommendationId: string;
+    rationale: string | null;
+    raw: Record<string, unknown>;
+  };
   error?: string;
 }
 
