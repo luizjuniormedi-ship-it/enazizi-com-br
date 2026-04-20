@@ -37,13 +37,17 @@ import { computeInterventionAdjustment } from "@/lib/interventionAdaptiveRanking
 import PenaltySystemSection from "./PenaltySystemSection";
 import InterventionProfileSection from "./InterventionProfileSection";
 
-/** Pesos base da V1 — usados apenas para visualização no admin. */
+/**
+ * Pesos base da V1 — usados apenas para visualização no admin.
+ * Sincronizado com `useInterventionEngine.ts` (Fase 6 — recalibração).
+ * Spread reduzido para permitir mobilidade real do profile/adaptive.
+ */
 const BASE_WEIGHT_BY_TYPE: Record<string, number> = {
   "min-mission": 100,
-  fsrs: 80,
-  recovery: 70,
-  coverage: 50,
-  default: 10,
+  fsrs: 82,
+  recovery: 74,
+  coverage: 68,
+  default: 40,
 };
 
 const TYPE_LABEL: Record<string, string> = {
