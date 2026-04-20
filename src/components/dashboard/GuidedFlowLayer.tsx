@@ -1,60 +1,46 @@
 /**
- * GuidedFlowLayer — Nível 2
- * ─────────────────────────
- * Camada de orientação inteligente no topo do Dashboard.
+ * GuidedFlowLayer — versão enxuta (Dashboard reestruturado)
+ * ──────────────────────────────────────────────────────────
+ * Mantém APENAS o que dispara ação imediata:
+ *   1. ExamDateRequiredBanner (condicional)
+ *   2. RiskAlertsCard (alertas críticos)
+ *   3. MinimumDailyMissionCard (reativação para inativos)
+ *   4. NextBestActionCard (próximo passo único)
+ *   5. MissionCard (missão do dia)
+ *   6. ReviewCard (só se houver revisões — ele mesmo já trata "tudo em dia")
  *
- * Modelo Tutor-first + navegação livre:
- *   - Sugere o próximo passo (Tutor / Missão / Revisão / Foco / NBA)
- *   - Toggle "Modo Foco" (esconde ruído, mantém só guiado)
- *   - NÃO bloqueia navegação
- *   - NÃO altera schema, RLS ou edge functions
- *
- * Ordem visual do topo (especificação Nível 2):
- *   1. StartHereCard
- *   2. NextBestActionCard
- *   3. MissionCard
- *   4. ReviewCard
- *   5. GuidedFocusCard
- *   6. FocusModeEntry
+ * Cards REMOVIDOS desta camada (movidos para AdvancedAnalyticsAccordion ou deletados):
+ *   • StartHereCard (redundante com Hero)
+ *   • GuidedFocusCard (duplicava FocusCard)
+ *   • CoverageCard, MonthlyGoalCard, QuestionsGoalCard (fundidos em ProgressOverview)
+ *   • QuestionStrategyCard, EngineImpactCard, CalibrationStatusCard (movidos p/ accordion)
+ *   • FocusModeEntry (movido p/ TopBar futuramente)
  */
-import StartHereCard from "./guided/StartHereCard";
+import ExamDateRequiredBanner from "./guided/ExamDateRequiredBanner";
+import RiskAlertsCard from "./guided/RiskAlertsCard";
+import MinimumDailyMissionCard from "./guided/MinimumDailyMissionCard";
 import NextBestActionCard from "./guided/NextBestActionCard";
 import MissionCard from "./guided/MissionCard";
 import ReviewCard from "./guided/ReviewCard";
-import GuidedFocusCard from "./guided/GuidedFocusCard";
-import CoverageCard from "./guided/CoverageCard";
-import MonthlyGoalCard from "./guided/MonthlyGoalCard";
-import QuestionsGoalCard from "./guided/QuestionsGoalCard";
-import QuestionStrategyCard from "./guided/QuestionStrategyCard";
-import EngineImpactCard from "./guided/EngineImpactCard";
-import CalibrationStatusCard from "./guided/CalibrationStatusCard";
-import FocusModeEntry from "./guided/FocusModeEntry";
-import MinimumDailyMissionCard from "./guided/MinimumDailyMissionCard";
-import ExamDateRequiredBanner from "./guided/ExamDateRequiredBanner";
-import RiskAlertsCard from "./guided/RiskAlertsCard";
 
 export default function GuidedFlowLayer() {
   return (
-    <section aria-label="Orientação inteligente" className="space-y-3">
-      {/* Reativação prioritária — só renderiza quando há sinal */}
+    <section aria-label="Ações guiadas" className="space-y-3">
+      {/* Inputs críticos faltando */}
       <ExamDateRequiredBanner />
-      <MinimumDailyMissionCard />
+
+      {/* Alertas de risco (máx 3) */}
       <RiskAlertsCard />
 
-      <StartHereCard />
+      {/* Reativação para usuários inativos */}
+      <MinimumDailyMissionCard />
+
+      {/* As 3 ações principais — únicas que iniciam estudo */}
       <NextBestActionCard />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <MissionCard />
         <ReviewCard />
-        <GuidedFocusCard />
-        <CoverageCard />
-        <MonthlyGoalCard />
-        <QuestionsGoalCard />
-        <QuestionStrategyCard />
-        <EngineImpactCard />
-        <CalibrationStatusCard />
       </div>
-      <FocusModeEntry />
     </section>
   );
 }
