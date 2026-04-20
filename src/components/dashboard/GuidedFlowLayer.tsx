@@ -29,10 +29,18 @@ import QuestionStrategyCard from "./guided/QuestionStrategyCard";
 import EngineImpactCard from "./guided/EngineImpactCard";
 import CalibrationStatusCard from "./guided/CalibrationStatusCard";
 import FocusModeEntry from "./guided/FocusModeEntry";
+import MinimumDailyMissionCard from "./guided/MinimumDailyMissionCard";
+import ExamDateRequiredBanner from "./guided/ExamDateRequiredBanner";
+import RiskAlertsCard from "./guided/RiskAlertsCard";
 
 export default function GuidedFlowLayer() {
   return (
     <section aria-label="Orientação inteligente" className="space-y-3">
+      {/* Reativação prioritária — só renderiza quando há sinal */}
+      <ExamDateRequiredBanner />
+      <MinimumDailyMissionCard />
+      <RiskAlertsCard />
+
       <StartHereCard />
       <NextBestActionCard />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
