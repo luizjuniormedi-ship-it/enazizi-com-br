@@ -38,6 +38,7 @@ export type AlertSource =
   | "feedback-survey"
   | "system-guide"
   | "ephemeral-toast"
+  | "intervention"
   // strings adicionais reservadas para integrações futuras
   | (string & {});
 
