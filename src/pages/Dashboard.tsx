@@ -17,11 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
 import InterventionCard from "@/components/dashboard/InterventionCard";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
-import TutorContinueCard from "@/components/dashboard/TutorContinueCard";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
-import ProgressOverview from "@/components/dashboard/ProgressOverview";
-import AdvancedAnalyticsAccordion from "@/components/dashboard/AdvancedAnalyticsAccordion";
-import GuidedFlowLayer from "@/components/dashboard/GuidedFlowLayer";
 
 import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
@@ -32,11 +28,18 @@ import SessionBar from "@/components/study-session/SessionBar";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import { useFocusMode } from "@/components/dashboard/guided/FocusModeEntry";
-import { AdaptiveMnemonicCard } from "@/components/mnemonic/AdaptiveMnemonicCard";
 import AchievementToast from "@/components/gamification/AchievementToast";
 
 import { fireCelebration } from "@/lib/celebrations";
 
+// Lazy-load heavy / below-the-fold blocks to shrink the critical bundle.
+const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
+const TutorContinueCard = lazy(() => import("@/components/dashboard/TutorContinueCard"));
+const AdvancedAnalyticsAccordion = lazy(() => import("@/components/dashboard/AdvancedAnalyticsAccordion"));
+const GuidedFlowLayer = lazy(() => import("@/components/dashboard/GuidedFlowLayer"));
+const AdaptiveMnemonicCard = lazy(() =>
+  import("@/components/mnemonic/AdaptiveMnemonicCard").then((m) => ({ default: m.AdaptiveMnemonicCard }))
+);
 const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
 
 interface CompletionHandoff {
@@ -317,38 +320,52 @@ const Dashboard = () => {
 
           {/* 3 — GUIDED FLOW: alertas + 3 ações */}
           <SafeCard name="GuidedFlowLayer">
-            <GuidedFlowLayer />
+            <Suspense fallback={null}>
+              <GuidedFlowLayer />
+            </Suspense>
           </SafeCard>
 
           {/* Mnemônico adaptativo (condicional) */}
           {visibleDashboardMnemonic && (
             <SafeCard name="DashboardMnemonic">
-              <AdaptiveMnemonicCard
-                mnemonic={visibleDashboardMnemonic}
-                onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
-              />
+              <Suspense fallback={null}>
+                <AdaptiveMnemonicCard
+                  mnemonic={visibleDashboardMnemonic}
+                  onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
+                />
+              </Suspense>
             </SafeCard>
           )}
 
           {/* 4 — PROGRESSO UNIFICADO */}
-          <SafeCard name="ProgressOverview"><ProgressOverview /></SafeCard>
+          <SafeCard name="ProgressOverview">
+            <Suspense fallback={null}>
+              <ProgressOverview />
+            </Suspense>
+          </SafeCard>
 
           {/* 5 — TUTOR (continuar) */}
-          <SafeCard name="TutorContinueCard"><TutorContinueCard /></SafeCard>
+          <SafeCard name="TutorContinueCard">
+            <Suspense fallback={null}>
+              <TutorContinueCard />
+            </Suspense>
+          </SafeCard>
 
           {/* 6 — ANÁLISES AVANÇADAS (accordion fechado) */}
           <div id="advanced-analytics">
             <SafeCard name="AdvancedAnalytics">
-              <AdvancedAnalyticsAccordion
-                showMissionDetails={!!activeRec}
-                justification={justification}
-                adaptiveState={adaptiveState}
-                alternatives={alternatives}
-                activeRecType={activeRec?.type}
-                onSelectAlternative={handleSelectAlternative}
-                value={advancedAccordion}
-                onValueChange={setAdvancedAccordion}
-              />
+              <Suspense fallback={null}>
+                <AdvancedAnalyticsAccordion
+                  showMissionDetails={!!activeRec}
+                  justification={justification}
+                  adaptiveState={adaptiveState}
+                  alternatives={alternatives}
+                  activeRecType={activeRec?.type}
+                  onSelectAlternative={handleSelectAlternative}
+                  value={advancedAccordion}
+                  onValueChange={setAdvancedAccordion}
+                />
+              </Suspense>
             </SafeCard>
           </div>
         </>

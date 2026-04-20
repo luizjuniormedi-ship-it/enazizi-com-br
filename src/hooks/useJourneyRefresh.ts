@@ -60,13 +60,12 @@ export function useJourneyRefresh() {
           }
         });
 
-        // On SIGNED_IN: full cache reset (new session = fresh data everywhere)
-        // On TOKEN_REFRESHED: just invalidate (avoid wiping in-flight UI state)
-        if (event === "SIGNED_IN") {
-          queryClient.clear();
-        } else {
-          invalidateAll();
-        }
+        // Both SIGNED_IN and TOKEN_REFRESHED: targeted invalidation only.
+        // The version-bump path (forceLoginRefresh) handles full hard-reset
+        // when APP_RELEASE changes. Calling queryClient.clear() here would
+        // discard the freshly-warmed core-data and force a refetch storm
+        // immediately after every login.
+        invalidateAll();
       }
     });
 
