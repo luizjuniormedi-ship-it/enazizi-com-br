@@ -73,10 +73,12 @@ export function computeAdaptiveAdjustment(m: AdaptiveInput): AdaptiveAdjustment 
     return { priorityDelta: +1, reason: "high-resolution" };
   }
 
-  // 🔻 IGNORADO
-  if (impressions >= 10 && clicks === 0 && dismissals >= 0) {
+  // 🔻 IGNORADO (alta exposição, zero cliques)
+  if (impressions >= 10 && clicks === 0) {
     return { priorityDelta: -1, reason: "ignored" };
   }
+  // dismissals reservado para futura regra de "high-dismiss"
+  void dismissals;
 
   return { priorityDelta: 0, reason: "neutral" };
 }
