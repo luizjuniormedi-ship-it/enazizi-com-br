@@ -107,7 +107,7 @@ export default function MissionHeroAnimated({ recommendation, adaptiveState, onS
           <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-muted-foreground hover:text-foreground" onClick={onRefresh} title="Atualizar missão">
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="hidden sm:flex gap-1 text-muted-foreground rounded-xl" onClick={onShowAlternatives}>
+          <Button variant="ghost" size="sm" className="flex gap-1 text-muted-foreground rounded-xl" onClick={onShowAlternatives}>
             Alternativas <ChevronDown className="h-3.5 w-3.5" />
           </Button>
         </motion.div>
