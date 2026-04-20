@@ -23,7 +23,12 @@ export type FlagKey =
   | "tutor_v2_enabled"
   | "tutor_blocks_enabled"
   | "tutor_adaptive_context_enabled"
-  | "tutor_adaptive_writeback_enabled";
+  | "tutor_adaptive_writeback_enabled"
+  // Radar de Trajetória IA — Sprint 1 (todas opt-in, default false)
+  | "radar_trajetoria_enabled"
+  | "trajectory_engine_v1_enabled"
+  | "trajectory_apply_v1_enabled"
+  | "trajectory_explain_v1_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -53,6 +58,11 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   tutor_blocks_enabled: false,
   tutor_adaptive_context_enabled: false,
   tutor_adaptive_writeback_enabled: false,
+  // Radar de Trajetória IA — defaults seguros: tudo desligado por padrão
+  radar_trajetoria_enabled: false,
+  trajectory_engine_v1_enabled: false,
+  trajectory_apply_v1_enabled: false,
+  trajectory_explain_v1_enabled: false,
 };
 
 export const useFeatureFlags = () => {

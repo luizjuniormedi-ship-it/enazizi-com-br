@@ -26,6 +26,7 @@ import SmartAlerts, { type SmartAlert } from "@/components/dashboard-v2/SmartAle
 import WeeklyFocusPanel from "@/components/dashboard-v2/WeeklyFocusPanel";
 import PerformanceEnergyPanel from "@/components/dashboard-v2/PerformanceEnergyPanel";
 import QuickActionsPanel from "@/components/dashboard-v2/QuickActionsPanel";
+import RadarTrajetoriaCard from "@/components/radar/RadarTrajetoriaCard";
 
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
@@ -473,6 +474,9 @@ const Dashboard = () => {
             hasErrors={(dashData?.metrics.errorsCount ?? 0) > 0}
             hasPendingReviews={(snapshot?.pendingReviews ?? 0) > 0}
           />
+
+          {/* ═══ BLOCO 5.1 — Radar de Trajetória IA (atrás de flag) ═══ */}
+          {isEnabled("radar_trajetoria_enabled") && <RadarTrajetoriaCard />}
 
           {/* ═══ BLOCO 6 — Justification + Alternatives ═══ */}
           {activeRec && (

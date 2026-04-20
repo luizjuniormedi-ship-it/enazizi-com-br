@@ -41,6 +41,7 @@ const Analytics = lazyWithRetry(() => import("./pages/Analytics"), "Analytics");
 const Admin = lazyWithRetry(() => import("./pages/Admin"), "Admin");
 const Profile = lazyWithRetry(() => import("./pages/Profile"), "Profile");
 const DailyPlan = lazyWithRetry(() => import("./pages/DailyPlan"), "DailyPlan");
+const RadarTrajetoriaPage = lazyWithRetry(() => import("./pages/RadarTrajetoriaPage"), "RadarTrajetoriaPage");
 const PerformancePredictor = lazyWithRetry(() => import("./pages/PerformancePredictor"), "PerformancePredictor");
 const Diagnostic = lazyWithRetry(() => import("./pages/Diagnostic"), "Diagnostic");
 const ExamSimulator = lazyWithRetry(() => import("./pages/ExamSimulator"), "ExamSimulator");
@@ -172,6 +173,7 @@ const App = () => (
                 <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
                 <Route path="mapas-mentais" element={<MindMaps />} />
                 <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
+                <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
 
               </Route>
               {/* Fullscreen mind map viewer — outside DashboardLayout */}
