@@ -1065,8 +1065,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   // Fonte: getCoverageStatus(userId) — leitura de curriculum_matrix + temas_estudados.
   try {
     const { getCoverageStatus } = await import("./coverageEngine");
+    const { STUDY_ENGINE_CALIBRATION } = await import("./studyEngineCalibration");
     const coverage = await getCoverageStatus(userId);
-    const COVERAGE_GAP_BOOST = 12;
+    const COVERAGE_GAP_BOOST = STUDY_ENGINE_CALIBRATION.coverageGapBoost;
     if (coverage.criticalGaps.length > 0) {
       const gapNames = new Set(
         coverage.criticalGaps.flatMap((g) => [
@@ -1096,9 +1097,10 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   // Fonte: getMonthlyGoalStatus — leitura de practice_attempts + study_goal_monthly.
   try {
     const { getMonthlyGoalStatus } = await import("./monthlyGoalEngine");
+    const { STUDY_ENGINE_CALIBRATION } = await import("./studyEngineCalibration");
     const goal = await getMonthlyGoalStatus(userId);
     if (goal.paceStatus === "behind") {
-      const PACE_BEHIND_BOOST = 8;
+      const PACE_BEHIND_BOOST = STUDY_ENGINE_CALIBRATION.monthlyGoalBoost;
       for (const rec of recs) {
         const t = (rec.type || "").toLowerCase();
         const isQuestionType = t.includes("question") || t.includes("practice") ||
@@ -1121,9 +1123,11 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   try {
     const { getQuestionGoalStatus } = await import("./questionGoalEngine");
     const { getExamPressure } = await import("./examPressureEngine");
+    const { STUDY_ENGINE_CALIBRATION } = await import("./studyEngineCalibration");
     const examDateForV3 = (profileData as any)?.exam_date || mentorExamDate;
     const goal = await getQuestionGoalStatus(userId, examDateForV3);
     const exam = getExamPressure(examDateForV3);
+    const cal = STUDY_ENGINE_CALIBRATION;
 
     for (const rec of recs) {
       const t = (rec.type || "").toLowerCase();
@@ -1137,11 +1141,11 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
       // (a) Volume: backlog rolante 30d
       if (goal.status === "behind" && isQuestionType) {
-        rec.priority = cap(rec.priority + 20);
+        rec.priority = cap(rec.priority + cal.questionGoalBehindBoost);
         if (!rec.reason.includes("📊")) rec.reason = `📊 ${rec.reason}`;
       }
-      if (goal.backlog > 500 && isQuestionType) {
-        rec.priority = cap(rec.priority + 10);
+      if (goal.backlog > cal.thresholds.heavyBacklog && isQuestionType) {
+        rec.priority = cap(rec.priority + cal.monthlyGoalHeavyBacklogBoost);
       }
 
       // (b) Pressão da prova → multiplica prioridade
@@ -1150,8 +1154,13 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       }
 
       // (c) Conteúdo novo perto da prova → reduz
-      if (exam.days !== null && exam.days >= 0 && exam.days < 30 && isNewContent) {
-        rec.priority = cap(rec.priority - 15);
+      if (
+        exam.days !== null &&
+        exam.days >= 0 &&
+        exam.days < cal.thresholds.finalStretchDays &&
+        isNewContent
+      ) {
+        rec.priority = cap(rec.priority - cal.examPressure.newContentPenaltyUnder30Days);
         if (!rec.reason.includes("⏱️")) rec.reason = `⏱️ ${rec.reason}`;
       }
     }
@@ -1188,8 +1197,10 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     });
 
     const d = distRes.distribution;
-    // Boosts proporcionais ao peso de cada categoria (escala /4 → 0..~15)
-    const boostFromPct = (pct: number) => Math.round(pct / 4);
+    const { STUDY_ENGINE_CALIBRATION: calDist } = await import("./studyEngineCalibration");
+    const divisor = calDist.questionDistribution.boostScaleDivisor || 4;
+    // Boosts proporcionais ao peso de cada categoria
+    const boostFromPct = (pct: number) => Math.round(pct / divisor);
 
     for (const rec of recs) {
       const t = (rec.type || "").toLowerCase();
