@@ -341,6 +341,35 @@ const DailyPlan = () => {
 
   const hasContent = scheduledReviews.length > 0 || todayTopics.length > 0 || (engineRecs && engineRecs.length > 0);
 
+  // Próxima ação após uma conclusão (próxima revisão pendente → próximo tópico → primeira recomendação do engine)
+  const nextPendingReview = scheduledReviews.find((r) => !completedReviews.has(r.id));
+  const nextPendingTopic = todayTopics.find((t) => !completedTopics.has(t.id));
+  const firstEngineRec = (engineRecs || [])[0];
+  const nextAction =
+    nextPendingReview
+      ? {
+          label: nextPendingReview.tema,
+          hint: `${nextPendingReview.especialidade} · ~${nextPendingReview.estimatedMinutes}min`,
+          go: () => goToTutor(nextPendingReview.tema, nextPendingReview.especialidade, "review", nextPendingReview.subtopico),
+        }
+      : nextPendingTopic
+      ? {
+          label: nextPendingTopic.tema,
+          hint: `${nextPendingTopic.especialidade} · novo conteúdo`,
+          go: () => goToTutor(nextPendingTopic.tema, nextPendingTopic.especialidade, "new_content", nextPendingTopic.subtopico),
+        }
+      : firstEngineRec
+      ? {
+          label: firstEngineRec.topic,
+          hint: `${firstEngineRec.specialty || ""} · ~${firstEngineRec.estimatedMinutes || 20}min`,
+          go: () => navigate(buildStudyPath(firstEngineRec, "daily-plan")),
+        }
+      : null;
+
+  // Banner aparece por 90s após uma conclusão (lastCompletedAt set)
+  const showNextBanner = lastCompletedAt !== null && nextAction !== null
+    && (Date.now() - lastCompletedAt) < 90_000;
+
   return (
     <div className="space-y-5 animate-fade-in">
       {/* Header */}
@@ -353,6 +382,17 @@ const DailyPlan = () => {
           O que o sistema selecionou para você estudar hoje.
         </p>
       </div>
+
+      {/* Banner de auto-encadeamento — aparece logo após concluir uma task */}
+      {showNextBanner && nextAction && (
+        <NextTaskBanner
+          nextLabel={nextAction.label}
+          hint={nextAction.hint}
+          onContinue={nextAction.go}
+          onOpenRadar={() => navigate("/dashboard/radar-trajetoria")}
+          onDismiss={() => setLastCompletedAt(null)}
+        />
+      )}
 
       {/* Progress */}
       {hasContent && (
