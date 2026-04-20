@@ -1132,6 +1132,69 @@ export type Database = {
         }
         Relationships: []
       }
+      content_coverage_audit: {
+        Row: {
+          banca_coverage_count: number
+          computed_at: string
+          details: Json
+          flashcards_count: number
+          id: string
+          importance_level: string | null
+          materials_count: number
+          microtopic_id: string | null
+          questions_count: number
+          rule_applied: string | null
+          scope_level: string
+          status: string
+          subtopic_id: string | null
+        }
+        Insert: {
+          banca_coverage_count?: number
+          computed_at?: string
+          details?: Json
+          flashcards_count?: number
+          id?: string
+          importance_level?: string | null
+          materials_count?: number
+          microtopic_id?: string | null
+          questions_count?: number
+          rule_applied?: string | null
+          scope_level: string
+          status: string
+          subtopic_id?: string | null
+        }
+        Update: {
+          banca_coverage_count?: number
+          computed_at?: string
+          details?: Json
+          flashcards_count?: number
+          id?: string
+          importance_level?: string | null
+          materials_count?: number
+          microtopic_id?: string | null
+          questions_count?: number
+          rule_applied?: string | null
+          scope_level?: string
+          status?: string
+          subtopic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_coverage_audit_microtopic_id_fkey"
+            columns: ["microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "content_coverage_audit_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       content_gap_reports: {
         Row: {
           computed_at: string
@@ -1293,6 +1356,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      curriculum_microtopics: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string | null
+          id: string
+          metadata: Json
+          nome: string
+          ordem: number
+          slug: string | null
+          subtopic_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json
+          nome: string
+          ordem?: number
+          slug?: string | null
+          subtopic_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          metadata?: Json
+          nome?: string
+          ordem?: number
+          slug?: string | null
+          subtopic_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_microtopics_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       curriculum_prerequisites: {
         Row: {
@@ -1461,21 +1571,33 @@ export type Database = {
         Row: {
           banca: string
           created_at: string
+          frequency_score: number | null
           id: string
+          importance_level: string | null
+          incidence_weight: number | null
+          notes: string | null
           peso: number
           subtopic_id: string
         }
         Insert: {
           banca: string
           created_at?: string
+          frequency_score?: number | null
           id?: string
+          importance_level?: string | null
+          incidence_weight?: number | null
+          notes?: string | null
           peso?: number
           subtopic_id: string
         }
         Update: {
           banca?: string
           created_at?: string
+          frequency_score?: number | null
           id?: string
+          importance_level?: string | null
+          incidence_weight?: number | null
+          notes?: string | null
           peso?: number
           subtopic_id?: string
         }
@@ -5681,6 +5803,54 @@ export type Database = {
           status?: string
         }
         Relationships: []
+      }
+      question_topic_links: {
+        Row: {
+          created_at: string
+          id: string
+          match_confidence: number | null
+          match_method: string | null
+          microtopic_id: string | null
+          question_id: string
+          question_source: string
+          subtopic_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          match_method?: string | null
+          microtopic_id?: string | null
+          question_id: string
+          question_source: string
+          subtopic_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          match_confidence?: number | null
+          match_method?: string | null
+          microtopic_id?: string | null
+          question_id?: string
+          question_source?: string
+          subtopic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_topic_links_microtopic_id_fkey"
+            columns: ["microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_topic_links_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       question_topic_map: {
         Row: {
