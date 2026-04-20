@@ -1059,6 +1059,37 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     }
   }
 
+  // ── Coverage gap signal (garantia de cobertura curricular) ────
+  // Boost adicional para temas REQUIRED (alta prioridade/incidência) que o aluno
+  // ainda não estudou. Não cria recs novos — só reforça os existentes que casam.
+  // Fonte: getCoverageStatus(userId) — leitura de curriculum_matrix + temas_estudados.
+  try {
+    const { getCoverageStatus } = await import("./coverageEngine");
+    const coverage = await getCoverageStatus(userId);
+    const COVERAGE_GAP_BOOST = 12;
+    if (coverage.criticalGaps.length > 0) {
+      const gapNames = new Set(
+        coverage.criticalGaps.flatMap((g) => [
+          (g.subtema || "").toLowerCase(),
+          (g.tema || "").toLowerCase(),
+        ]).filter(Boolean)
+      );
+      for (const rec of recs) {
+        const t = (rec.topic || "").toLowerCase();
+        const matches = gapNames.has(t) ||
+          [...gapNames].some((g) => g.length >= 6 && (g.includes(t.slice(0, 10)) || t.includes(g.slice(0, 10))));
+        if (matches) {
+          rec.priority = cap(rec.priority + COVERAGE_GAP_BOOST);
+          if (!rec.reason.includes("🎯")) {
+            rec.reason = `🎯 ${rec.reason}`;
+          }
+        }
+      }
+    }
+  } catch (e) {
+    console.warn("[StudyEngine] coverage gap signal skipped:", e);
+  }
+
   // ── Mentor topic priority boost (dynamic by exam proximity) ────
   if (mentorTopics.length > 0) {
     // Dynamic boost: flat +10, +15 if ≤30 days, +20 if ≤14 days, +25 if ≤7 days
