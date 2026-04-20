@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ interface Props {
   onShowAlternatives: () => void;
 }
 
-export default function MissionHeroAnimated({ recommendation, adaptiveState, onStart, onRefresh, onShowAlternatives }: Props) {
+function MissionHeroAnimated({ recommendation, adaptiveState, onStart, onRefresh, onShowAlternatives }: Props) {
   const cfg = TYPE_CONFIG[recommendation.type] || TYPE_CONFIG.free_study;
   const prediction = useApprovalPrediction();
 
@@ -165,3 +166,5 @@ export default function MissionHeroAnimated({ recommendation, adaptiveState, onS
     </motion.div>
   );
 }
+
+export default memo(MissionHeroAnimated);

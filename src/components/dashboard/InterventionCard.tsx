@@ -12,7 +12,7 @@
  * próxima ação, não um alerta. Aparece sempre (com tipo `default` no caso
  * de tudo bem).
  */
-import { useEffect } from "react";
+import { memo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,7 +60,7 @@ const TYPE_ICON_COLOR: Record<InterventionType, string> = {
   default: "text-emerald-600 dark:text-emerald-400",
 };
 
-export default function InterventionCard() {
+function InterventionCard() {
   const action = useInterventionEngine();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -178,3 +178,5 @@ export default function InterventionCard() {
     </Card>
   );
 }
+
+export default memo(InterventionCard);

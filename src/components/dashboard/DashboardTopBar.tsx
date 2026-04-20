@@ -10,7 +10,7 @@
  * NÃO substitui nenhum hook ou query existente — apenas consome
  * useCoreData, useMonthlyGoal e useAnalyticsSnapshot já carregados.
  */
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Flame, Calendar, TrendingUp, AlertTriangle, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useCoreData } from "@/hooks/useCoreData";
@@ -30,7 +30,7 @@ function daysBetween(target: string): number {
   return Math.max(0, Math.ceil((t - now) / (1000 * 60 * 60 * 24)));
 }
 
-export default function DashboardTopBar() {
+function DashboardTopBar() {
   const { data: core } = useCoreData();
   const { data: goal } = useMonthlyGoal();
   const { data: snap } = useAnalyticsSnapshot();
@@ -91,3 +91,5 @@ export default function DashboardTopBar() {
     </div>
   );
 }
+
+export default memo(DashboardTopBar);

@@ -10,7 +10,7 @@
  * Reusa hooks existentes (sem nova query):
  *   useAnalyticsSnapshot · useCoverageStatus · useMonthlyGoal · useDashboardData · useCoreData
  */
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -69,7 +69,7 @@ function Metric({ icon: Icon, label, value, pct, tone, caption }: MetricProps) {
   );
 }
 
-export default function ProgressOverview() {
+function ProgressOverview() {
   const navigate = useNavigate();
   const { data: snap } = useAnalyticsSnapshot();
   const { data: coverage } = useCoverageStatus();
@@ -222,3 +222,5 @@ export default function ProgressOverview() {
     </Card>
   );
 }
+
+export default memo(ProgressOverview);
