@@ -143,6 +143,31 @@ export default function ProgressOverview() {
           </Button>
         </div>
 
+        {/* Banner Preditivo de Aprovação */}
+        {prediction && prediction.hasEnoughData && (
+          <div className={`rounded-lg border px-3 py-2 flex items-center justify-between gap-2 ${approvalBadgeBg(prediction.riskLevel)}`}>
+            <div className="flex items-center gap-2 min-w-0">
+              <Target className="h-4 w-4 flex-shrink-0" />
+              <div className="min-w-0">
+                <p className="text-xs font-bold leading-tight">
+                  Chance de aprovação: {prediction.score}%
+                </p>
+                <p className="text-[10px] opacity-80 leading-tight truncate">
+                  {prediction.message}
+                </p>
+              </div>
+            </div>
+            {prediction.delta !== null && (
+              <div className="flex items-center gap-0.5 text-xs font-semibold tabular-nums flex-shrink-0">
+                {prediction.trend === "up" && <TrendingUp className="h-3 w-3" />}
+                {prediction.trend === "down" && <TrendingDown className="h-3 w-3" />}
+                {prediction.trend === "stable" && <Minus className="h-3 w-3" />}
+                {prediction.delta > 0 ? "+" : ""}{prediction.delta}
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-2">
           <Metric
             icon={Target}
@@ -150,7 +175,11 @@ export default function ProgressOverview() {
             value={`${approvalScore}%`}
             pct={approvalScore}
             tone={approvalTone}
-            caption={snap?.phase ? `Fase: ${snap.phase}` : undefined}
+            caption={
+              prediction?.daysToExam != null
+                ? `${prediction.daysToExam}d até a prova`
+                : snap?.phase ? `Fase: ${snap.phase}` : undefined
+            }
           />
           <Metric
             icon={ShieldCheck}
