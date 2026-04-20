@@ -1,8 +1,14 @@
 /**
- * @legacy-write — Edge function que gera plano semanal e persiste em study_plans (shape weeklySchedule).
+ * @legacy-write
+ * @deprecated-flow — APOSENTADA na sprint final do Planner.
+ *
+ * Esta edge function escreve em study_plans (shape semanal weeklySchedule).
+ * Não é mais chamada pelo onboarding nem por nenhum fluxo principal do ENAZIZI.
+ *
  * Fonte viva oficial do Planner: daily_plans + daily_plan_tasks (diário, gerado por planner-orchestrator-v1).
- * Mantida para retrocompatibilidade da UX semanal de StudyPlan/StudyPlanContent.
- * Não migrar sem redesign do gerador para o shape diário.
+ * Mantida apenas para retrocompatibilidade da UX semanal de StudyPlan/StudyPlanContent (ambos isolados).
+ *
+ * NÃO REATIVAR sem redesign completo do gerador para o shape diário.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
