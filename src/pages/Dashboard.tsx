@@ -475,6 +475,9 @@ const Dashboard = () => {
             hasPendingReviews={(snapshot?.pendingReviews ?? 0) > 0}
           />
 
+          {/* ═══ BLOCO 5.1 — Radar de Trajetória IA (atrás de flag) ═══ */}
+          {isEnabled("radar_trajetoria_enabled") && <RadarTrajetoriaCard />}
+
           {/* ═══ BLOCO 6 — Justification + Alternatives ═══ */}
           {activeRec && (
             <MissionJustification justification={justification} adaptiveState={adaptiveState} />
