@@ -19,6 +19,9 @@ export default function ReviewCard() {
   const { totalDue, isLoading } = useFsrsDueCount();
   const navigate = useNavigate();
 
+  // Ajuste 3: esconder quando não há revisões pendentes (remove ruído verde decorativo)
+  if (!isLoading && totalDue === 0) return null;
+
   const isUrgent = totalDue >= 10;
   const isEmpty = totalDue === 0;
 
@@ -70,7 +73,7 @@ export default function ReviewCard() {
         {!isEmpty && (
           <Button
             size="sm"
-            variant={isUrgent ? "destructive" : "default"}
+            variant={isUrgent ? "destructive" : "outline"}
             onClick={() => navigate("/dashboard/revisoes?source=guided_review")}
             className="shrink-0"
           >
