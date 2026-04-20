@@ -175,6 +175,11 @@ export interface InterventionAdaptiveContext {
   /** Map<actionType, weightDelta da Fase 5>. Vazio se desligada/sem dados. */
   penalties?: Map<string, { level: number; weightDelta: number }>;
   penaltyEnabled?: boolean;
+  /** Map<actionType, ajuste por perfil individual (Fase 6)>. */
+  profileAdjustments?: Map<string, InterventionProfileAdjustment>;
+  /** Map<actionType, profileScore (Fase 6) — só p/ telemetria>. */
+  profileScores?: Map<string, number>;
+  profileEnabled?: boolean;
 }
 
 /**
@@ -182,7 +187,8 @@ export interface InterventionAdaptiveContext {
  *   - Se existe candidata `mandatory`, escolhe a maior `finalWeight` apenas
  *     entre as mandatórias (default nunca pode vencê-las).
  *   - Caso contrário, escolhe a maior `finalWeight` global.
- *   - Penalidade (Fase 5) é aplicada APENAS em candidatas não mandatórias.
+ *   - Penalidade (Fase 5) e personalização (Fase 6) são aplicadas APENAS
+ *     em candidatas não mandatórias.
  */
 export function pickAdaptiveAction(
   candidates: InterventionCandidate[],
@@ -207,14 +213,28 @@ export function pickAdaptiveAction(
     const penaltyDelta = penalty?.weightDelta ?? 0;
     const penaltyApplied = penaltyDelta !== 0;
 
+    // Fase 6 — personalização por perfil (NUNCA aplica em mandatory)
+    const profile =
+      ctx.profileEnabled && !c.mandatory
+        ? ctx.profileAdjustments?.get(c.type)
+        : undefined;
+    const profileDelta = profile?.weightDelta ?? 0;
+    const profileReason = ctx.profileEnabled
+      ? (profile?.reason ?? (c.mandatory ? "mandatory-bypass" : "no-data"))
+      : "v3-off";
+    const profileScore = ctx.profileScores?.get(c.type) ?? 0;
+
     return {
       ...c,
-      finalWeight: c.weight + adaptiveDelta + penaltyDelta,
+      finalWeight: c.weight + adaptiveDelta + penaltyDelta + profileDelta,
       adaptiveDelta,
       adaptiveReason,
       penaltyLevel,
       penaltyDelta,
       penaltyApplied,
+      profileDelta,
+      profileReason,
+      profileScore,
     };
   });
 
