@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Rocket, Clock, RefreshCw, ChevronDown, AlertTriangle, Shield } from "lucide-react";
+import { Rocket, Clock, RefreshCw, ChevronDown, AlertTriangle, Shield, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { StudyNextRecommendation, AdaptiveState } from "@/hooks/useStudyNext";
+import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
+import { approvalToneClass } from "@/engines/approvalEngine";
 
 const TYPE_CONFIG: Record<string, { label: string; icon: string; cta?: string }> = {
   review: { label: "Revisão", icon: "🔄" },
@@ -23,6 +25,7 @@ interface Props {
 
 export default function MissionHeroAnimated({ recommendation, adaptiveState, onStart, onRefresh, onShowAlternatives }: Props) {
   const cfg = TYPE_CONFIG[recommendation.type] || TYPE_CONFIG.free_study;
+  const prediction = useApprovalPrediction();
 
   return (
     <motion.div
@@ -63,6 +66,29 @@ export default function MissionHeroAnimated({ recommendation, adaptiveState, onS
             >
               {recommendation.description}
             </motion.p>
+
+            {/* Linha preditiva de aprovação */}
+            {prediction && prediction.hasEnoughData && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="flex items-center gap-2 text-xs sm:text-sm flex-wrap"
+              >
+                <span className={`font-bold ${approvalToneClass(prediction.riskLevel)}`}>
+                  🔥 Chance de aprovação: {prediction.score}%
+                </span>
+                {prediction.delta !== null && (
+                  <span className={`inline-flex items-center gap-0.5 tabular-nums ${approvalToneClass(prediction.riskLevel)}`}>
+                    {prediction.trend === "up" && <TrendingUp className="h-3 w-3" />}
+                    {prediction.trend === "down" && <TrendingDown className="h-3 w-3" />}
+                    {prediction.trend === "stable" && <Minus className="h-3 w-3" />}
+                    {prediction.delta > 0 ? "+" : ""}{prediction.delta}
+                  </span>
+                )}
+                <span className="text-muted-foreground hidden sm:inline">· {prediction.message}</span>
+              </motion.div>
+            )}
 
             {/* Tags */}
             <div className="flex items-center gap-2 flex-wrap">

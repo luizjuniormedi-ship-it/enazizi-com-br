@@ -7,10 +7,11 @@
  *   - revisões FSRS pendentes (>50)
  *   - 0 tarefas concluídas na semana
  */
-import { AlertTriangle, Flame, CalendarX } from "lucide-react";
+import { AlertTriangle, Flame, CalendarX, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useStudyEngineImpact } from "@/hooks/useStudyEngineImpact";
 import { useCoreData } from "@/hooks/useCoreData";
+import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,6 +27,7 @@ export default function RiskAlertsCard() {
   const { user } = useAuth();
   const { data: impact } = useStudyEngineImpact();
   const { data: coreData } = useCoreData();
+  const prediction = useApprovalPrediction();
 
   // Pending FSRS reviews (cheap count query)
   const { data: pendingReviews = 0 } = useQuery({
@@ -45,6 +47,26 @@ export default function RiskAlertsCard() {
   if (!impact || !coreData) return null;
 
   const alerts: AlertItem[] = [];
+
+  // Alertas preditivos (prioridade máxima)
+  if (prediction && prediction.hasEnoughData) {
+    if (prediction.score < 40) {
+      alerts.push({
+        icon: AlertTriangle,
+        text: `⚠️ Risco alto de reprovação (${prediction.score}%)`,
+        to: "/dashboard/analytics",
+        tone: "danger",
+      });
+    }
+    if (prediction.trend === "down" && prediction.delta !== null && prediction.delta <= -3) {
+      alerts.push({
+        icon: TrendingDown,
+        text: `📉 Sua chance caiu ${Math.abs(prediction.delta)} pts esta semana`,
+        to: "/dashboard/analytics",
+        tone: "warn",
+      });
+    }
+  }
 
   if (impact.questions7d === 0) {
     alerts.push({
