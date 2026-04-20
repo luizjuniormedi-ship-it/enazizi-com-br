@@ -3,6 +3,7 @@ import { Shield, TrendingUp } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { useAlertOrchestrator } from "@/hooks/useAlertOrchestrator";
 
 const PHASE_COLORS: Record<number, string> = {
   1: "text-destructive bg-destructive/10",
@@ -20,8 +21,11 @@ const PHASE_MESSAGES: Record<number, string> = {
 
 export default function RecoveryModeBanner() {
   const { adaptive } = useStudyEngine();
+  const { getDecision } = useAlertOrchestrator();
 
   if (!adaptive?.recoveryMode) return null;
+  // Alert Orchestrator — respeita decisão central
+  if (!getDecision("recovery").visible) return null;
 
   const hr = adaptive.heavyRecovery;
 
