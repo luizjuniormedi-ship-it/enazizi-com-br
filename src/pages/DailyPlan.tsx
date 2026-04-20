@@ -24,6 +24,7 @@ import { useMissionMode } from "@/hooks/useMissionMode";
 import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import NextTaskBanner from "@/components/daily-plan/NextTaskBanner";
 
 const reviewTimeEstimates: Record<string, number> = {
   D1: 20, D3: 15, D7: 12, D15: 10, D30: 8,
@@ -67,6 +68,9 @@ const DailyPlan = () => {
   const [assessmentOpen, setAssessmentOpen] = useState(false);
   const [assessmentTopic, setAssessmentTopic] = useState("");
   const [pendingTopicId, setPendingTopicId] = useState<string | null>(null);
+
+  // Auto-encadeamento: última task concluída → mostrar próxima ação
+  const [lastCompletedAt, setLastCompletedAt] = useState<number | null>(null);
 
   // Study Engine recommendations (from Planner + performance data)
   const { data: engineRecs } = useStudyEngine();
