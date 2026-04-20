@@ -68,6 +68,14 @@ export const useStudyEngineImpact = () => {
       const since7 = sinceDaysISO(7);
       const since14 = sinceDaysISO(14);
 
+      // Helpers defensivos — Supabase retorna PromiseLike, então envolvemos em Promise
+      const safeCount = async (q: any): Promise<number> => {
+        try { const r = await q; return r.count ?? 0; } catch { return 0; }
+      };
+      const safeData = async <T,>(q: any, fb: T): Promise<T> => {
+        try { const r = await q; return (r.data ?? fb) as T; } catch { return fb; }
+      };
+
       const [
         q7,
         q30,
@@ -76,39 +84,34 @@ export const useStudyEngineImpact = () => {
         tasks7,
         tasksDone7,
         tasksDonePrev7,
+        tasksCreatedPrev7,
         snapshotsRes,
       ] = await Promise.all([
-        supabase.from("practice_attempts").select("id", { count: "exact", head: true })
-          .eq("user_id", userId).gte("created_at", since7).then(r => r.count ?? 0).catch(() => 0),
+        safeCount(supabase.from("practice_attempts").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).gte("created_at", since7)),
         getQuestionGoalStatus(userId, examDate).then(r => r.questions_30d).catch(() => 0),
-        supabase.from("practice_attempts").select("id", { count: "exact", head: true })
-          .eq("user_id", userId).gte("created_at", since14).lt("created_at", since7).then(r => r.count ?? 0).catch(() => 0),
+        safeCount(supabase.from("practice_attempts").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).gte("created_at", since14).lt("created_at", since7)),
         getCoverageStatus(userId).catch(() => null),
-        supabase.from("daily_plan_tasks").select("id", { count: "exact", head: true })
-          .eq("user_id", userId).gte("created_at", since7).then(r => r.count ?? 0).catch(() => 0),
-        supabase.from("daily_plan_tasks").select("id", { count: "exact", head: true })
-          .eq("user_id", userId).eq("completed", true).gte("created_at", since7).then(r => r.count ?? 0).catch(() => 0),
-        supabase.from("daily_plan_tasks").select("id", { count: "exact", head: true })
-          .eq("user_id", userId).eq("completed", true).gte("created_at", since14).lt("created_at", since7).then(r => r.count ?? 0).catch(() => 0),
-        supabase.from("assistant_decisions")
-          .select("created_at, decision_output")
-          .eq("user_id", userId)
-          .eq("source_module", "study-engine-v3")
-          .eq("decision_type", "engine_snapshot")
-          .order("created_at", { ascending: false })
-          .limit(10)
-          .then(r => r.data ?? [])
-          .catch(() => [] as any[]),
+        safeCount(supabase.from("daily_plan_tasks").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).gte("created_at", since7)),
+        safeCount(supabase.from("daily_plan_tasks").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).eq("completed", true).gte("created_at", since7)),
+        safeCount(supabase.from("daily_plan_tasks").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).eq("completed", true).gte("created_at", since14).lt("created_at", since7)),
+        safeCount(supabase.from("daily_plan_tasks").select("id", { count: "exact", head: true })
+          .eq("user_id", userId).gte("created_at", since14).lt("created_at", since7)),
+        safeData<any[]>(
+          supabase.from("assistant_decisions")
+            .select("created_at, decision_output")
+            .eq("user_id", userId)
+            .eq("source_module", "study-engine-v3")
+            .eq("decision_type", "engine_snapshot")
+            .order("created_at", { ascending: false })
+            .limit(10),
+          []
+        ),
       ]);
-
-      const tasksCreatedPrev7 = await supabase
-        .from("daily_plan_tasks")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .gte("created_at", since14)
-        .lt("created_at", since7)
-        .then(r => r.count ?? 0)
-        .catch(() => 0);
 
       const completionRate7d = tasks7 > 0 ? Math.round((tasksDone7 / tasks7) * 100) : 0;
       const completionRatePrev7d = tasksCreatedPrev7 > 0

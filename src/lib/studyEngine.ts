@@ -1391,6 +1391,57 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     }));
   }
 
+  // ── Telemetria fire-and-forget do snapshot do motor (V3) ──────
+  try {
+    const { logStudyEngineDecision } = await import("./studyEngineTelemetry");
+    const examDateForLog = (profileData as any)?.exam_date || mentorExamDate;
+    const daysToExamLog = examDateForLog
+      ? Math.max(0, Math.ceil((new Date(examDateForLog).getTime() - Date.now()) / 86400000))
+      : null;
+    let coveragePctLog: number | null = null;
+    let monthlyQ30Log: number | null = null;
+    let backlogLog: number | null = null;
+    let dailyTargetLog: number | null = null;
+    let paceLog: "ok" | "behind" | null = null;
+    let multiplierLog: number | null = null;
+    try {
+      const { getCoverageStatus } = await import("./coverageEngine");
+      const cov = await getCoverageStatus(userId);
+      coveragePctLog = cov?.requiredCoveragePct ?? null;
+    } catch {}
+    try {
+      const { getQuestionGoalStatus } = await import("./questionGoalEngine");
+      const g = await getQuestionGoalStatus(userId, examDateForLog);
+      monthlyQ30Log = g.questions_30d;
+      backlogLog = g.backlog;
+      dailyTargetLog = g.daily_target;
+      paceLog = g.status;
+    } catch {}
+    try {
+      const { getExamPressure } = await import("./examPressureEngine");
+      multiplierLog = getExamPressure(examDateForLog).multiplier;
+    } catch {}
+    void logStudyEngineDecision({
+      userId,
+      examDate: examDateForLog,
+      daysToExam: daysToExamLog,
+      coveragePct: coveragePctLog,
+      monthlyQuestions30d: monthlyQ30Log,
+      monthlyBacklog: backlogLog,
+      dailyQuestionTarget: dailyTargetLog,
+      paceStatus: paceLog,
+      examMultiplier: multiplierLog,
+      recommendations: result.slice(0, 5).map((r: any) => ({
+        topic: r.topic,
+        type: r.type,
+        priority: r.priority,
+        reason: r.reason,
+      })),
+    });
+  } catch (e) {
+    console.warn("[StudyEngine] telemetry skipped:", e);
+  }
+
   return { recommendations: result, adaptive };
  } catch (err) {
   console.error("[StudyEngine] Error generating recommendations:", err);

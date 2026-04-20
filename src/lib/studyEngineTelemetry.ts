@@ -68,14 +68,14 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
       { coverageBoosts: 0, goalBoosts: 0, examPressureBoosts: 0 }
     );
 
-    await supabase.from("assistant_decisions").insert({
+    await supabase.from("assistant_decisions").insert([{
       user_id: input.userId,
       source_module: SOURCE_MODULE,
       decision_type: DECISION_TYPE,
       justification: "Study Engine V3 snapshot",
       confidence_score: null,
       input_snapshot: {
-        exam_date: input.examDate ?? null,
+        exam_date: input.examDate ? String(input.examDate) : null,
         days_to_exam: input.daysToExam ?? null,
         coverage_pct: input.coveragePct ?? null,
         monthly_questions_30d: input.monthlyQuestions30d ?? null,
@@ -83,13 +83,13 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
         daily_question_target: input.dailyQuestionTarget ?? null,
         pace_status: input.paceStatus ?? null,
         exam_multiplier: input.examMultiplier ?? null,
-      },
+      } as any,
       decision_output: {
         engine_version: "v3",
         top_recommendations: top,
         boost_totals: totals,
-      },
-    });
+      } as any,
+    }]);
   } catch (e) {
     console.warn("[studyEngineTelemetry] log skipped:", e);
   }
