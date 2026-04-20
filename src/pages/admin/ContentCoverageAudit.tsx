@@ -369,6 +369,9 @@ export default function ContentCoverageAudit() {
                       <th className="text-left">Especialidade</th>
                       <th className="text-left">Importância</th>
                       <th className="text-right">Q (forte/total)</th>
+                      <th className="text-right">Mat</th>
+                      <th className="text-right">Flash</th>
+                      <th className="text-right">Score</th>
                       <th className="text-right">Bancas</th>
                       <th className="text-left">Status</th>
                     </tr>
@@ -394,6 +397,9 @@ export default function ContentCoverageAudit() {
                           </span>
                           <span className="text-muted-foreground">/{r.questions_count}</span>
                         </td>
+                        <td className={`text-right tabular-nums ${r.materials_count === 0 ? "text-muted-foreground" : ""}`}>{r.materials_count}</td>
+                        <td className={`text-right tabular-nums ${r.flashcards_count === 0 ? "text-muted-foreground" : ""}`}>{r.flashcards_count}</td>
+                        <td className="text-right tabular-nums font-medium">{r.coverage_score}</td>
                         <td className="text-right">{r.banca_coverage_count}</td>
                         <td><Badge variant={statusBadgeVariant(r.status)}>{statusLabel(r.status)}</Badge></td>
                       </tr>
