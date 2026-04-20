@@ -7,7 +7,7 @@
  * Reusa: useCoreData, useStudyEngineImpact, useCoverageStatus, useAnalyticsSnapshot.
  * Trend é calculado comparando com o snapshot anterior salvo em approval_scores.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   calculateApprovalScore,
   calculateTrend,
@@ -18,6 +18,8 @@ import { useCoreData } from "./useCoreData";
 import { useStudyEngineImpact } from "./useStudyEngineImpact";
 import { useCoverageStatus } from "./useCoverageStatus";
 import { useAnalyticsSnapshot } from "./useAnalyticsSnapshot";
+import { useAuth } from "./useAuth";
+import { logApprovalPrediction } from "@/lib/approvalTelemetry";
 
 export interface ApprovalPrediction extends ApprovalEngineResult {
   trend: ApprovalTrend;
@@ -38,12 +40,13 @@ function daysUntil(dateISO: string | null | undefined): number | null {
 }
 
 export function useApprovalPrediction(): ApprovalPrediction | null {
+  const { user } = useAuth();
   const { data: core } = useCoreData();
   const { data: impact } = useStudyEngineImpact();
   const { data: coverage } = useCoverageStatus();
   const { data: snapshot } = useAnalyticsSnapshot();
 
-  return useMemo(() => {
+  const prediction = useMemo(() => {
     if (!core || !impact) return null;
 
     // ── Acurácia (últimas 100 tentativas)
@@ -109,4 +112,13 @@ export function useApprovalPrediction(): ApprovalPrediction | null {
       hasEnoughData,
     };
   }, [core, impact, coverage, snapshot]);
+
+  // Telemetria fire-and-forget (debounced no helper)
+  useEffect(() => {
+    if (user?.id && prediction) {
+      logApprovalPrediction(user.id, prediction);
+    }
+  }, [user?.id, prediction?.score, prediction?.trend, prediction?.riskLevel]);
+
+  return prediction;
 }
