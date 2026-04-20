@@ -183,7 +183,23 @@ export interface TrajectoryApplyResponse {
   success: boolean;
   appliedActionId: string;
   decisionId: string | null;
+  status?: AppliedActionStatus;
+  plannerInvoked?: boolean;
+  plannerError?: string | null;
+  duplicate?: boolean;
+  message?: string;
   navigateTo?: string;
+  standardizedPayload?: {
+    actionType: "review" | "questions" | "theory" | "simulado";
+    topic: string | null;
+    estimatedMinutes: number;
+    priority: number;
+    origin: "radar_trajetoria";
+    snapshotId: string | null;
+    recommendationId: string;
+    rationale: string | null;
+    raw: Record<string, unknown>;
+  };
   error?: string;
 }
 
