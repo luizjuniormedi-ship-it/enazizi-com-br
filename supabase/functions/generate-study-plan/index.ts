@@ -1,3 +1,9 @@
+/**
+ * @legacy-write — Edge function que gera plano semanal e persiste em study_plans (shape weeklySchedule).
+ * Fonte viva oficial do Planner: daily_plans + daily_plan_tasks (diário, gerado por planner-orchestrator-v1).
+ * Mantida para retrocompatibilidade da UX semanal de StudyPlan/StudyPlanContent.
+ * Não migrar sem redesign do gerador para o shape diário.
+ */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";

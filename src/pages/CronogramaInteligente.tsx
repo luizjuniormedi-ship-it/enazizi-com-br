@@ -551,7 +551,8 @@ const CronogramaInteligente = () => {
             const newSubjects = subjects;
             if (newSubjects.length === 0) return { temasRegistrados: 0, flashcardsCriados: 0, questoesVinculadas: 0, revisoesAgendadas: 0 };
 
-            // Fetch topicMap from the latest study plan for subtopic data
+            // @legacy-read — study_plans.plan_json.topicMap não tem equivalente em daily_plans.
+            // Fallback opcional para enriquecer subtopics; sem ele o fluxo segue (subtopico=null).
             const { data: latestPlan } = await supabase
               .from("study_plans")
               .select("plan_json")
