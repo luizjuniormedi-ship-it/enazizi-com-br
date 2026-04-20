@@ -2,10 +2,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   RefreshCw, BookOpen, Brain, Target, AlertTriangle,
-  Play, CheckCircle2, Clock, Flame, Zap
+  Play, CheckCircle2, Clock, Flame, Zap, Radar
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export type TaskCategory = "critical_review" | "near_review" | "light_review" | "error_active" | "new_content" | "practice" | "simulado";
+
+/**
+ * Hint leve do Radar de Trajetória que pode "decorar" uma task do Planner.
+ * Apenas visual — não altera persistência. Carrega rastreabilidade
+ * (recommendationId) para auditoria.
+ */
+export interface RadarTaskHint {
+  label: string;
+  rationale: string;
+  priorityDelta: -1 | 0 | 1;
+  recommendationId: string;
+  recommendationKey: string;
+}
 
 interface Props {
   title: string;
@@ -20,6 +34,8 @@ interface Props {
   fsrsState?: "critical" | "near" | "light";
   errorCount?: number;
   done?: boolean;
+  /** Overlay opcional vindo de useRadarPlannerOverlay. */
+  radarHint?: RadarTaskHint | null;
   onAction: () => void;
   onDone?: () => void;
 }
