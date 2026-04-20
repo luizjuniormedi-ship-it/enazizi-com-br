@@ -127,15 +127,41 @@ export function useAlertOrchestrator(): AlertOrchestratorResult {
       }
     }
 
+    // 2.5) ADAPTIVE RANKING (Fase 5) — ajusta prioridade com base em
+    //      performance histórica (CTR, fadiga, resolução). 100% defensivo:
+    //      só atua se a feature flag estiver ON e a fonte tiver delta != 0.
+    //      Pisos de segurança em `applySafetyFloor` impedem rebaixamento
+    //      excessivo de exam-date / approval-risk / recovery / fsrs-backlog.
+    const adjustmentMap = adaptiveEnabled
+      ? buildAdjustmentMap(analytics.bySource)
+      : new Map<string, { delta: number; reason: string; clamped: boolean }>();
+
+    const adaptive_applied = deduped.map((a) => {
+      const adj = adjustmentMap.get(String(a.source));
+      if (!adj || adj.delta === 0) return a;
+      const newPriority = shiftPriority(a.priority, adj.delta);
+      if (newPriority === a.priority) return a;
+      return {
+        ...a,
+        priority: newPriority,
+        metadata: {
+          ...(a.metadata ?? {}),
+          adaptiveDelta: adj.delta,
+          adaptiveReason: adj.reason,
+          adaptivePriorityFrom: a.priority,
+        },
+      };
+    });
+
     // 3) Supressão cruzada: se há qualquer critical estrutural,
     //    rebaixa min-mission de contextual→contextual (já é) e mantém,
     //    mas garante que NUNCA suba para structural. Também marca
     //    deep como suprimido.
-    const hasCriticalStructural = deduped.some(
+    const hasCriticalStructural = adaptive_applied.some(
       (a) => a.priority === "critical" && a.layer === "structural"
     );
 
-    const adjusted = deduped.map((a) => {
+    const adjusted = adaptive_applied.map((a) => {
       // min-mission nunca é structural; já entra como contextual.
       // Aqui apenas reforçamos o invariante.
       if (a.source === "min-mission" && hasCriticalStructural) {
