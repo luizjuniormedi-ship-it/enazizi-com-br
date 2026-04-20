@@ -7,10 +7,11 @@
  *   - revisões FSRS pendentes (>50)
  *   - 0 tarefas concluídas na semana
  */
-import { AlertTriangle, Flame, CalendarX } from "lucide-react";
+import { AlertTriangle, Flame, CalendarX, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useStudyEngineImpact } from "@/hooks/useStudyEngineImpact";
 import { useCoreData } from "@/hooks/useCoreData";
+import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
