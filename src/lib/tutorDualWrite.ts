@@ -84,7 +84,10 @@ async function resolveSessionId(
       return id;
     }
     return null;
-  } catch {
+  } catch (e: any) {
+    if (typeof console !== "undefined") {
+      console.warn("[tutorDualWrite] resolveSessionId exception:", e?.message ?? e);
+    }
     return null;
   }
 }
