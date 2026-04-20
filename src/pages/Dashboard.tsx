@@ -29,6 +29,7 @@ import QuickActionsPanel from "@/components/dashboard-v2/QuickActionsPanel";
 import RadarTrajetoriaCard from "@/components/radar/RadarTrajetoriaCard";
 import FsrsReviewCard from "@/components/dashboard/FsrsReviewCard";
 import TutorContinueCard from "@/components/dashboard/TutorContinueCard";
+import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
@@ -429,7 +430,8 @@ const Dashboard = () => {
             />
           )}
 
-          {/* ═══ BLOCO 2 — Smart Alerts ═══ */}
+          {/* ═══ BLOCO 2 — Smart Alerts + Recovery ═══ */}
+          <RecoveryModeBanner />
           <SmartAlerts alerts={smartAlerts} />
 
           {/* ═══ BLOCO 2.1 — Conexões rápidas (Radar + Flashcards) ═══ */}
