@@ -45,6 +45,7 @@ import {
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useExamReadiness } from "@/hooks/useExamReadiness";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
+import { useRadarPlannerOverlay } from "@/hooks/useRadarPlannerOverlay";
 
 const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, dificuldade: 0.15, confianca: 0.15 };
 
@@ -76,6 +77,7 @@ const SmartPlanner = () => {
   const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
 
   const { data: engineRecs, adaptive } = useStudyEngine();
+  const { getHint: getRadarHint } = useRadarPlannerOverlay();
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -233,8 +235,15 @@ const SmartPlanner = () => {
       });
     });
 
-    // Sort by priority desc
-    tasks.sort((a, b) => b.priority - a.priority);
+    // Sort by priority desc; aplicamos um pequeno bônus visual com priorityDelta do Radar (±1).
+    // NÃO altera persistência, apenas ordem do array em memória.
+    tasks.sort((a, b) => {
+      const aHint = getRadarHint(a.title);
+      const bHint = getRadarHint(b.title);
+      const aBoost = aHint?.priorityDelta ?? 0;
+      const bBoost = bHint?.priorityDelta ?? 0;
+      return (b.priority + bBoost) - (a.priority + aBoost);
+    });
     return tasks;
   };
 
@@ -504,6 +513,7 @@ const SmartPlanner = () => {
                   priority={task.priority}
                   overdue={task.overdue}
                   errorCount={task.errorCount}
+                  radarHint={getRadarHint(task.title)}
                   onAction={() => navigate(task.targetPath)}
                 />
               ))}

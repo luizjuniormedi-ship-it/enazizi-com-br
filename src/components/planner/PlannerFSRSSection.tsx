@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw, CheckCircle2, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 interface FsrsCard {
   id: string;
@@ -40,15 +42,25 @@ function categorizeCards(cards: FsrsCard[]) {
 }
 
 export default function PlannerFSRSSection({ cards }: Props) {
+  const navigate = useNavigate();
   const { critical, near, light } = categorizeCards(cards);
 
   if (cards.length === 0) return null;
 
+  const hasUrgent = critical.length > 0 || near.length > 0;
+
   return (
-    <div className="rounded-lg border border-border/60 p-3 space-y-2">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium flex items-center gap-1.5">
-        <RefreshCw className="h-3 w-3" /> Motor de Revisão (FSRS)
-      </p>
+    <div className="rounded-lg border border-border/60 p-3 space-y-3">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium flex items-center gap-1.5">
+          <RefreshCw className="h-3 w-3" /> Motor de Revisão (FSRS)
+        </p>
+        {hasUrgent && (
+          <Badge variant="outline" className="text-[9px] border-primary/40 text-primary">
+            Revisão FSRS sugerida
+          </Badge>
+        )}
+      </div>
 
       <div className="grid grid-cols-3 gap-2">
         <div className="text-center p-2 rounded-lg bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800">
@@ -72,6 +84,20 @@ export default function PlannerFSRSSection({ cards }: Props) {
           <p className="text-[8px] text-muted-foreground">Sob controle</p>
         </div>
       </div>
+
+      {hasUrgent && (
+        <Button
+          size="sm"
+          variant={critical.length > 0 ? "default" : "outline"}
+          className="w-full h-8 text-xs gap-1.5"
+          onClick={() => navigate("/dashboard/flashcards?auto=1&fsrs=1&source=planner_fsrs")}
+        >
+          {critical.length > 0
+            ? `Revisar agora (${critical.length} crítico${critical.length === 1 ? "" : "s"})`
+            : `Adiantar próximas (${near.length})`}
+          <ArrowRight className="h-3 w-3" />
+        </Button>
+      )}
     </div>
   );
 }

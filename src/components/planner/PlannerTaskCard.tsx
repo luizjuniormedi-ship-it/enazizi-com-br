@@ -2,10 +2,24 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   RefreshCw, BookOpen, Brain, Target, AlertTriangle,
-  Play, CheckCircle2, Clock, Flame, Zap
+  Play, CheckCircle2, Clock, Flame, Zap, Radar
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export type TaskCategory = "critical_review" | "near_review" | "light_review" | "error_active" | "new_content" | "practice" | "simulado";
+
+/**
+ * Hint leve do Radar de Trajetória que pode "decorar" uma task do Planner.
+ * Apenas visual — não altera persistência. Carrega rastreabilidade
+ * (recommendationId) para auditoria.
+ */
+export interface RadarTaskHint {
+  label: string;
+  rationale: string;
+  priorityDelta: -1 | 0 | 1;
+  recommendationId: string;
+  recommendationKey: string;
+}
 
 interface Props {
   title: string;
@@ -20,6 +34,8 @@ interface Props {
   fsrsState?: "critical" | "near" | "light";
   errorCount?: number;
   done?: boolean;
+  /** Overlay opcional vindo de useRadarPlannerOverlay. */
+  radarHint?: RadarTaskHint | null;
   onAction: () => void;
   onDone?: () => void;
 }
@@ -85,9 +101,10 @@ const CATEGORY_CONFIG: Record<TaskCategory, {
 export default function PlannerTaskCard({
   title, specialty, subtopic, category, reason, impact,
   estimatedMinutes, priority, overdue, fsrsState, errorCount,
-  done, onAction, onDone,
+  done, radarHint, onAction, onDone,
 }: Props) {
   const config = CATEGORY_CONFIG[category];
+  const showRadar = !!radarHint && !done;
 
   return (
     <div className={`rounded-xl border ${done ? "opacity-50 border-border/40" : config.borderColor} ${done ? "" : config.bgColor} p-3 transition-all`}>
@@ -106,6 +123,27 @@ export default function PlannerTaskCard({
             )}
             {errorCount && errorCount >= 3 && !done && (
               <Badge variant="destructive" className="text-[8px] px-1 py-0">{errorCount}x erros</Badge>
+            )}
+            {showRadar && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="text-[8px] px-1 py-0 border-primary/40 text-primary gap-1 cursor-help"
+                      data-recommendation-id={radarHint!.recommendationId}
+                    >
+                      <Radar className="h-2.5 w-2.5" />
+                      {radarHint!.label}
+                      {radarHint!.priorityDelta > 0 && <span aria-hidden>↑</span>}
+                      {radarHint!.priorityDelta < 0 && <span aria-hidden>↓</span>}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[260px] text-xs">
+                    {radarHint!.rationale}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">

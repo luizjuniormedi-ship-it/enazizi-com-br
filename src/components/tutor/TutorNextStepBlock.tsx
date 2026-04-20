@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ListPlus, FileQuestion, Layers, ArrowRight } from "lucide-react";
+import { ListPlus, FileQuestion, Layers, ArrowRight, RefreshCw } from "lucide-react";
+import { useFsrsDueCount } from "@/hooks/useFsrsDueCount";
 
 interface Props {
   /** Tópico atual da sessão para passar como contexto. */
@@ -13,12 +14,21 @@ interface Props {
 
 /**
  * Bloco fixo de próximos passos exibido no rodapé da conversa do Tutor.
- * Não interfere no fluxo do chat: apenas oferece 3 atalhos de continuidade.
+ * Não interfere no fluxo do chat: apenas oferece atalhos de continuidade.
  *
  * Aparece somente após o usuário ter conversado (mensagens > 1).
+ *
+ * Adaptativo:
+ * - Se houver cards FSRS vencidos do TEMA atual → CTA principal vira
+ *   "Reforçar com revisão" (FSRS), e o restante vira secundário.
+ * - Caso contrário → fluxo padrão (Praticar 5 questões / Planner / Flashcards).
  */
 export default function TutorNextStepBlock({ topic, specialty, onAddToPlanner }: Props) {
   const navigate = useNavigate();
+  const { dueByTopic, totalDue } = useFsrsDueCount();
+  const dueHere = topic ? dueByTopic(topic) : 0;
+  // Promove revisão quando há cards do tema OU backlog global ≥ 3
+  const fsrsPromoted = dueHere > 0 || totalDue >= 3;
 
   const buildParams = (extra: Record<string, string>) => {
     const p = new URLSearchParams();
@@ -43,6 +53,10 @@ export default function TutorNextStepBlock({ topic, specialty, onAddToPlanner }:
     navigate(`/dashboard/flashcards?${buildParams({ taskType: "review", auto: "1" })}`);
   };
 
+  const goReviewFsrs = () => {
+    navigate(`/dashboard/flashcards?${buildParams({ taskType: "review", auto: "1", fsrs: "1" })}`);
+  };
+
   const goPlanner = () => {
     if (onAddToPlanner) {
       onAddToPlanner();
@@ -65,17 +79,36 @@ export default function TutorNextStepBlock({ topic, specialty, onAddToPlanner }:
             · {topic}
           </span>
         )}
+        {fsrsPromoted && (
+          <span className="ml-auto text-[10px] text-primary font-medium">
+            {dueHere > 0
+              ? `${dueHere} revisão${dueHere === 1 ? "" : "ões"} deste tema`
+              : `${totalDue} revisões pendentes`}
+          </span>
+        )}
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-        <Button
-          variant="default"
-          size="sm"
-          className="gap-1.5 justify-start sm:justify-center"
-          onClick={goPractice}
-        >
-          <FileQuestion className="h-3.5 w-3.5" />
-          <span className="text-xs">Praticar 5 questões</span>
-        </Button>
+        {fsrsPromoted ? (
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1.5 justify-start sm:justify-center"
+            onClick={goReviewFsrs}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            <span className="text-xs">Reforçar com revisão</span>
+          </Button>
+        ) : (
+          <Button
+            variant="default"
+            size="sm"
+            className="gap-1.5 justify-start sm:justify-center"
+            onClick={goPractice}
+          >
+            <FileQuestion className="h-3.5 w-3.5" />
+            <span className="text-xs">Praticar 5 questões</span>
+          </Button>
+        )}
         <Button
           variant="outline"
           size="sm"
@@ -89,10 +122,19 @@ export default function TutorNextStepBlock({ topic, specialty, onAddToPlanner }:
           variant="outline"
           size="sm"
           className="gap-1.5 justify-start sm:justify-center"
-          onClick={goFlashcards}
+          onClick={fsrsPromoted ? goPractice : goFlashcards}
         >
-          <Layers className="h-3.5 w-3.5" />
-          <span className="text-xs">Gerar flashcards</span>
+          {fsrsPromoted ? (
+            <>
+              <FileQuestion className="h-3.5 w-3.5" />
+              <span className="text-xs">Praticar questões</span>
+            </>
+          ) : (
+            <>
+              <Layers className="h-3.5 w-3.5" />
+              <span className="text-xs">Gerar flashcards</span>
+            </>
+          )}
         </Button>
       </div>
     </div>
