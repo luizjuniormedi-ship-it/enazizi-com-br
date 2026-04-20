@@ -30,6 +30,7 @@ import TutorStartScreen from "@/components/tutor/TutorStartScreen";
 import TutorStepTracker from "@/components/tutor/TutorStepTracker";
 import TutorMessageList from "@/components/tutor/TutorMessageList";
 import TutorInputBar from "@/components/tutor/TutorInputBar";
+import TutorNextStepBlock from "@/components/tutor/TutorNextStepBlock";
 import { useSpeechToText } from "@/hooks/tutor/useSpeechToText";
 
 const ChatGPT = () => {
@@ -681,6 +682,14 @@ const ChatGPT = () => {
           )}
 
           <TutorMessageList ref={scrollRef} messages={messages} isLoading={isLoading} onCopy={copyToClipboard} />
+
+          {/* Próximo passo fixo — só após o usuário ter trocado mensagens */}
+          {messages.length > 1 && !isLoading && (
+            <TutorNextStepBlock
+              topic={currentTopic || topic || null}
+              specialty={searchParams.get("sc_specialty") || searchParams.get("specialty") || null}
+            />
+          )}
 
           <TutorInputBar
             input={input} setInput={setInput} isLoading={isLoading}
