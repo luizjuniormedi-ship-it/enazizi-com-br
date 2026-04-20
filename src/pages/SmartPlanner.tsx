@@ -235,8 +235,15 @@ const SmartPlanner = () => {
       });
     });
 
-    // Sort by priority desc
-    tasks.sort((a, b) => b.priority - a.priority);
+    // Sort by priority desc; aplicamos um pequeno bônus visual com priorityDelta do Radar (±1).
+    // NÃO altera persistência, apenas ordem do array em memória.
+    tasks.sort((a, b) => {
+      const aHint = getRadarHint(a.title);
+      const bHint = getRadarHint(b.title);
+      const aBoost = aHint?.priorityDelta ?? 0;
+      const bBoost = bHint?.priorityDelta ?? 0;
+      return (b.priority + bBoost) - (a.priority + aBoost);
+    });
     return tasks;
   };
 
@@ -506,6 +513,7 @@ const SmartPlanner = () => {
                   priority={task.priority}
                   overdue={task.overdue}
                   errorCount={task.errorCount}
+                  radarHint={getRadarHint(task.title)}
                   onAction={() => navigate(task.targetPath)}
                 />
               ))}
