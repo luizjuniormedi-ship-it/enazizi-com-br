@@ -12,6 +12,7 @@ import AlertOrchestratorDebug from "@/components/admin/AlertOrchestratorDebug";
 import AlertOrchestratorAnalytics from "@/components/admin/AlertOrchestratorAnalytics";
 import AlertConversionPanel from "@/components/admin/AlertConversionPanel";
 import AlertCorrelationPanel from "@/components/admin/AlertCorrelationPanel";
+import InterventionAnalyticsPanel from "@/components/admin/InterventionAnalyticsPanel";
 import {
   Users,
   Activity,
@@ -349,6 +350,9 @@ export default function ValidationDashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Intervention Engine — métricas das próximas ações sugeridas */}
+      <InterventionAnalyticsPanel />
 
       {/* Alert Orchestrator — métricas, conversão, correlação e inspeção interna */}
       <AlertOrchestratorAnalytics />
