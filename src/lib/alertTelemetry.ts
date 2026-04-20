@@ -27,7 +27,8 @@ export type AlertEventType =
   | "dismissed"
   | "suppressed"
   | "auto_hidden"
-  | "expired";
+  | "expired"
+  | "resolved";
 
 export interface TrackAlertEventInput {
   alert: Pick<
