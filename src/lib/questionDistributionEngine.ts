@@ -42,18 +42,21 @@ export interface DistributionResult {
   phase: "long_term" | "mid_term" | "final_stretch";
 }
 
+import { STUDY_ENGINE_CALIBRATION } from "./studyEngineCalibration";
+
 function baseDistribution(daysUntilExam: number | null | undefined): {
   dist: Distribution;
   phase: DistributionResult["phase"];
 } {
-  if (daysUntilExam !== null && daysUntilExam !== undefined && daysUntilExam <= 30) {
+  const T = STUDY_ENGINE_CALIBRATION.thresholds;
+  if (daysUntilExam !== null && daysUntilExam !== undefined && daysUntilExam <= T.finalStretchDays) {
     // Reta final: muita revisão + erro, pouco conteúdo novo
     return {
       dist: { coverage: 10, error: 35, revision: 35, incidence: 20 },
       phase: "final_stretch",
     };
   }
-  if (daysUntilExam !== null && daysUntilExam !== undefined && daysUntilExam <= 60) {
+  if (daysUntilExam !== null && daysUntilExam !== undefined && daysUntilExam <= T.midTermDays) {
     // Médio prazo: equilíbrio
     return {
       dist: { coverage: 25, error: 30, revision: 25, incidence: 20 },
@@ -96,19 +99,22 @@ export function getQuestionDistribution(
   const adjusted: Distribution = { ...base };
 
   const reasons: string[] = [];
+  const cal = STUDY_ENGINE_CALIBRATION;
+  const T = cal.thresholds;
+  const QD = cal.questionDistribution;
 
   // Ajustes dinâmicos
-  if (coveragePct !== undefined && coveragePct < 50) {
-    adjusted.coverage += 10;
-    adjusted.error = Math.max(0, adjusted.error - 5);
-    reasons.push("cobertura baixa (<50%)");
+  if (coveragePct !== undefined && coveragePct < T.lowCoveragePct) {
+    adjusted.coverage += QD.lowCoverageAdjustment;
+    adjusted.error = Math.max(0, adjusted.error - Math.round(QD.lowCoverageAdjustment / 2));
+    reasons.push(`cobertura baixa (<${T.lowCoveragePct}%)`);
   }
-  if (errorCount > 50) {
-    adjusted.error += 10;
+  if (errorCount > T.highErrorCount) {
+    adjusted.error += QD.highErrorAdjustment;
     reasons.push("muitos erros pendentes");
   }
   if (isBehindGoal) {
-    adjusted.incidence += 10;
+    adjusted.incidence += QD.behindGoalAdjustment;
     reasons.push("atrasado na meta");
   }
 

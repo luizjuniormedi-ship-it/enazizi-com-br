@@ -8,6 +8,7 @@
  * falha é apenas logada como warning.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { getCalibrationSnapshot } from "./studyEngineCalibration";
 
 export interface RecommendationLike {
   topic?: string;
@@ -86,6 +87,7 @@ export async function logStudyEngineDecision(input: StudyEngineTelemetryInput): 
       } as any,
       decision_output: {
         engine_version: "v3",
+        ...getCalibrationSnapshot(),
         top_recommendations: top,
         boost_totals: totals,
       } as any,
