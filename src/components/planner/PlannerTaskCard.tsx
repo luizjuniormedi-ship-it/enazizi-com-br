@@ -101,9 +101,10 @@ const CATEGORY_CONFIG: Record<TaskCategory, {
 export default function PlannerTaskCard({
   title, specialty, subtopic, category, reason, impact,
   estimatedMinutes, priority, overdue, fsrsState, errorCount,
-  done, onAction, onDone,
+  done, radarHint, onAction, onDone,
 }: Props) {
   const config = CATEGORY_CONFIG[category];
+  const showRadar = !!radarHint && !done;
 
   return (
     <div className={`rounded-xl border ${done ? "opacity-50 border-border/40" : config.borderColor} ${done ? "" : config.bgColor} p-3 transition-all`}>
@@ -122,6 +123,27 @@ export default function PlannerTaskCard({
             )}
             {errorCount && errorCount >= 3 && !done && (
               <Badge variant="destructive" className="text-[8px] px-1 py-0">{errorCount}x erros</Badge>
+            )}
+            {showRadar && (
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="text-[8px] px-1 py-0 border-primary/40 text-primary gap-1 cursor-help"
+                      data-recommendation-id={radarHint!.recommendationId}
+                    >
+                      <Radar className="h-2.5 w-2.5" />
+                      {radarHint!.label}
+                      {radarHint!.priorityDelta > 0 && <span aria-hidden>↑</span>}
+                      {radarHint!.priorityDelta < 0 && <span aria-hidden>↓</span>}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-[260px] text-xs">
+                    {radarHint!.rationale}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
