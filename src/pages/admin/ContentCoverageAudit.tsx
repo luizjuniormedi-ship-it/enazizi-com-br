@@ -15,7 +15,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { useContentCoverageAudit } from "@/hooks/useContentCoverageAudit";
 import { statusBadgeVariant, statusLabel, type CoverageStatus, type ImportanceLevel } from "@/lib/coverageRules";
-import { AlertTriangle, BookOpen, Layers, ListChecks, ScanSearch, Flame, Link2 } from "lucide-react";
+import { AlertTriangle, BookOpen, Layers, ListChecks, ScanSearch, Flame, Link2, FileText, Sparkles, GraduationCap } from "lucide-react";
 
 type ImportanceFilter = "all" | "muito_cobrado" | "cobrado" | "pouco_cobrado" | "raro";
 
