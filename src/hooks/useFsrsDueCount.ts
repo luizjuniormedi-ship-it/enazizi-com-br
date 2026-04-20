@@ -62,12 +62,12 @@ export function useFsrsDueCount(): FsrsDueResult {
       if (flashRefIds.length > 0) {
         const { data: flashRows } = await supabase
           .from("flashcards")
-          .select("id, tema")
+          .select("id, topic")
           .in("id", flashRefIds);
 
         const refToTopic = new Map<string, string>();
-        for (const f of flashRows || []) {
-          if (f?.tema) refToTopic.set(f.id as string, normalizeTopic(f.tema as string));
+        for (const f of (flashRows || []) as Array<{ id: string; topic: string | null }>) {
+          if (f?.topic) refToTopic.set(f.id, normalizeTopic(f.topic));
         }
         for (const c of cards) {
           if (c.card_type !== "flashcard") continue;
