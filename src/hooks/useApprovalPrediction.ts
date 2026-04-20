@@ -7,7 +7,7 @@
  * Reusa: useCoreData, useStudyEngineImpact, useCoverageStatus, useAnalyticsSnapshot.
  * Trend é calculado comparando com o snapshot anterior salvo em approval_scores.
  */
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import {
   calculateApprovalScore,
   calculateTrend,
@@ -18,6 +18,8 @@ import { useCoreData } from "./useCoreData";
 import { useStudyEngineImpact } from "./useStudyEngineImpact";
 import { useCoverageStatus } from "./useCoverageStatus";
 import { useAnalyticsSnapshot } from "./useAnalyticsSnapshot";
+import { useAuth } from "./useAuth";
+import { logApprovalPrediction } from "@/lib/approvalTelemetry";
 
 export interface ApprovalPrediction extends ApprovalEngineResult {
   trend: ApprovalTrend;
