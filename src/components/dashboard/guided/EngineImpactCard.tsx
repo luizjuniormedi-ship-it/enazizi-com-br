@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStudyEngineImpact, type Trend } from "@/hooks/useStudyEngineImpact";
+import { getCalibrationLabel, STUDY_ENGINE_CALIBRATION_MODE } from "@/lib/studyEngineCalibration";
 
 const TrendIcon = ({ trend }: { trend: Trend }) => {
   if (trend === "improving") return <TrendingUp className="h-3 w-3 text-green-500" />;
@@ -29,9 +30,13 @@ const EngineImpactCard = () => {
 
   // Diagnóstico curto
   const diagnostics: string[] = [];
-  if (engineAdjustments.goalBoosts > 0)
+  if (engineAdjustments.goalBoosts > 0 && questions7d < 50)
+    diagnostics.push("Meta está influenciando o motor, mas não a execução");
+  else if (engineAdjustments.goalBoosts > 0)
     diagnostics.push("Motor puxando mais questões por atraso de meta");
-  if (engineAdjustments.coverageBoosts > 0)
+  if (engineAdjustments.coverageBoosts === 0 && recentSnapshots.length >= 3 && criticalGapsCount > 0)
+    diagnostics.push("Boost de cobertura sem efeito observável");
+  else if (engineAdjustments.coverageBoosts > 0)
     diagnostics.push("Motor puxando cobertura por gaps obrigatórios");
   if (engineAdjustments.examPressureBoosts > 0)
     diagnostics.push("Reta final: revisão e questões dominando");
@@ -39,6 +44,29 @@ const EngineImpactCard = () => {
     diagnostics.push("O motor ainda não gerou impacto observável nas prioridades recentes");
   if (status === "insufficient_data")
     diagnostics.push("Sem snapshots suficientes — execute o motor algumas vezes para coletar dados");
+
+  // Leitura da calibração — qual sinal está dominando
+  const totalBoosts =
+    engineAdjustments.coverageBoosts +
+    engineAdjustments.goalBoosts +
+    engineAdjustments.examPressureBoosts;
+  let calibrationReading = "";
+  if (totalBoosts === 0) {
+    calibrationReading = "Sem boosts recentes";
+  } else {
+    const max = Math.max(
+      engineAdjustments.coverageBoosts,
+      engineAdjustments.goalBoosts,
+      engineAdjustments.examPressureBoosts
+    );
+    const dominant =
+      max === engineAdjustments.examPressureBoosts ? "Reta final dominante"
+      : max === engineAdjustments.coverageBoosts ? "Coverage dominante"
+      : max === engineAdjustments.goalBoosts ? "Meta mensal dominante"
+      : "Motor bem distribuído";
+    const ratio = max / totalBoosts;
+    calibrationReading = ratio < 0.55 ? "Motor bem distribuído" : dominant;
+  }
 
   // Alertas
   const alerts: string[] = [];
@@ -136,6 +164,12 @@ const EngineImpactCard = () => {
           🧭 {diagnostics[0]}
         </div>
       )}
+
+      {/* Leitura da calibração */}
+      <div className="text-[11px] text-muted-foreground mb-3 flex items-center justify-between gap-2 border-t border-border/50 pt-2">
+        <span>⚙️ {calibrationReading}</span>
+        <span className="opacity-70">{getCalibrationLabel(STUDY_ENGINE_CALIBRATION_MODE)}</span>
+      </div>
 
       {/* Alertas */}
       {alerts.length > 0 && (
