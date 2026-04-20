@@ -88,12 +88,15 @@ export async function checkMnemonicTrigger(
 
   const totalErrors = errors?.reduce((sum, e) => sum + (e.vezes_errado || 1), 0) || 0;
 
-  // Read accuracy from unified view (read-only). tempo_gasto is not exposed
+  // Read accuracy from unified view (read-only). Only 'simulado' source carries
+  // a real measured 0-100 accuracy — 'error_bank' is hardcoded to 0 (would
+  // always trigger), 'fsrs' uses tema='fsrs' literal. tempo_gasto is not exposed
   // by the view, so we keep a separate legacy lookup limited to recent rows.
   const { data: perf } = await supabase
     .from("performance_unified" as any)
     .select("taxa_acerto, data_registro")
     .eq("user_id", userId)
+    .eq("source", "simulado")
     .order("data_registro", { ascending: false })
     .limit(5);
 
@@ -104,8 +107,12 @@ export async function checkMnemonicTrigger(
     .order("created_at", { ascending: false })
     .limit(5);
 
+  // Default avgAccuracy=1 (neutral, no trigger) when no real samples exist.
   const avgAccuracy = perf && perf.length > 0
-    ? perf.reduce((s: number, p: any) => s + (Number(p.taxa_acerto) || 0), 0) / perf.length / 100
+    ? perf.reduce((s: number, p: any) => {
+        const v = Number(p.taxa_acerto);
+        return s + (Number.isFinite(v) ? v : 0);
+      }, 0) / perf.length / 100
     : 1;
   const avgTime = legacyTime && legacyTime.length > 0
     ? legacyTime.reduce((s, p) => s + (p.tempo_gasto || 0), 0) / legacyTime.length
