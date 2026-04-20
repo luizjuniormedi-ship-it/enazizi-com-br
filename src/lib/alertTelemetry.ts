@@ -124,21 +124,25 @@ export function trackAlertEvent(input: TrackAlertEventInput): void {
       const { data: userData } = await supabase.auth.getUser();
       const userId = userData?.user?.id ?? null;
 
-      const payload = {
-        user_id: userId,
-        alert_id: alert.id,
-        source: String(alert.source),
-        priority: alert.priority as AlertPriority,
-        layer: alert.layer as AlertLayer,
-        event_type: eventType,
-        dedupe_key: alert.dedupeKey ?? null,
-        suppressed_by: alert.suppressedBy ?? null,
-        legacy_origin: alert.legacyOrigin ?? null,
-        via_bridge: !!alert.viaBridge,
-        metadata: { ...(alert.metadata ?? {}), ...(extra ?? {}) },
-      };
+      // metadata precisa ser Json — serializamos para garantir compatibilidade
+      const mergedMeta = { ...(alert.metadata ?? {}), ...(extra ?? {}) };
+      const metadataJson = JSON.parse(JSON.stringify(mergedMeta));
 
-      await supabase.from("alert_events").insert([payload]);
+      await supabase.from("alert_events").insert([
+        {
+          user_id: userId,
+          alert_id: alert.id,
+          source: String(alert.source),
+          priority: alert.priority as AlertPriority,
+          layer: alert.layer as AlertLayer,
+          event_type: eventType,
+          dedupe_key: alert.dedupeKey ?? null,
+          suppressed_by: alert.suppressedBy ?? null,
+          legacy_origin: alert.legacyOrigin ?? null,
+          via_bridge: !!alert.viaBridge,
+          metadata: metadataJson,
+        },
+      ]);
     } catch {
       // Silencioso — telemetria nunca pode quebrar UX
     }
