@@ -32,11 +32,15 @@ export function useTopicEvolution() {
       const userId = user!.id;
 
       // Fetch performance records ordered by date (unified view)
+      // IMPORTANT: only 'simulado' source carries a real measured accuracy per topic.
+      // 'fsrs' rows use tema='fsrs' literal and 'error_bank' rows have taxa_acerto=0
+      // hardcoded — both would poison topic-level evolution grouping.
       const [perfRes, errorRes, reviewRes] = await Promise.all([
         supabase
           .from("performance_unified" as any)
-          .select("tema, subtema, taxa_acerto, questoes_feitas, data_registro")
+          .select("tema, subtema, taxa_acerto, questoes_feitas, data_registro, source")
           .eq("user_id", userId)
+          .eq("source", "simulado")
           .order("data_registro", { ascending: true })
           .limit(500),
         supabase
@@ -56,14 +60,17 @@ export function useTopicEvolution() {
       const errors = (errorRes.data || []) as any[];
       const reviews = (reviewRes.data || []) as any[];
 
-      // Group performance by topic (unified view exposes tema/subtema directly)
+      // Group performance by topic (unified view exposes tema/subtema directly).
+      // Defensive guards: skip non-clinical sentinel values from the view.
       const topicPerf: Record<string, { accuracies: number[]; specialty: string }> = {};
       for (const p of perfData) {
         const tema = p.tema;
         const spec = p.subtema || "Geral";
-        if (!tema) continue;
+        if (!tema || tema === "fsrs" || tema === "desconhecido") continue;
+        const acc = Number(p.taxa_acerto);
+        if (!Number.isFinite(acc)) continue;
         if (!topicPerf[tema]) topicPerf[tema] = { accuracies: [], specialty: spec };
-        topicPerf[tema].accuracies.push(Number(p.taxa_acerto) || 0);
+        topicPerf[tema].accuracies.push(acc);
       }
 
       // Error map

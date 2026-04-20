@@ -280,21 +280,28 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .order("vezes_errado", { ascending: false })
       .limit(20), "error_bank"),
     // Performance unified view (read-only): combines error_bank + simulado + fsrs.
+    // IMPORTANT — semantic filtering at source:
+    //   • 'fsrs' rows have tema='fsrs' literal (no clinical topic) → exclude
+    //   • 'error_bank' rows have taxa_acerto=0 hardcoded (not a measured rate) → exclude from "weak topics"
+    //   • Only 'simulado' rows carry a real 0-100 accuracy signal per topic
     // Reshaped to keep backward-compatible structure with `temas_estudados` join.
     safe<any[]>(() => supabase
       .from("performance_unified" as any)
-      .select("tema, subtema, taxa_acerto, questoes_feitas")
+      .select("tema, subtema, taxa_acerto, questoes_feitas, source")
       .eq("user_id", userId)
+      .eq("source", "simulado")
       .order("taxa_acerto", { ascending: true })
       .limit(20)
       .then((res: any) => ({
         error: res.error,
-        data: (res.data || []).map((r: any) => ({
-          tema_id: null,
-          taxa_acerto: r.taxa_acerto,
-          questoes_feitas: r.questoes_feitas,
-          temas_estudados: { tema: r.tema, especialidade: r.subtema || "Geral" },
-        })) as any[],
+        data: (res.data || [])
+          .filter((r: any) => r.tema && r.tema !== "fsrs" && r.tema !== "desconhecido")
+          .map((r: any) => ({
+            tema_id: null,
+            taxa_acerto: Number(r.taxa_acerto) || 0,
+            questoes_feitas: r.questoes_feitas || 1,
+            temas_estudados: { tema: r.tema, especialidade: r.subtema || "Geral" },
+          })) as any[],
       })), "desempenho"),
     // temas_estudados — engine needs extra fields (data_estudo, status, dificuldade) not in coreData
     safe(() => supabase
