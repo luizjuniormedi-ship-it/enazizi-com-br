@@ -23,7 +23,12 @@ export type FlagKey =
   | "tutor_v2_enabled"
   | "tutor_blocks_enabled"
   | "tutor_adaptive_context_enabled"
-  | "tutor_adaptive_writeback_enabled";
+  | "tutor_adaptive_writeback_enabled"
+  // Radar de Trajetória IA — Sprint 1 (todas opt-in, default false)
+  | "radar_trajetoria_enabled"
+  | "trajectory_engine_v1_enabled"
+  | "trajectory_apply_v1_enabled"
+  | "trajectory_explain_v1_enabled";
 
 export interface SystemFlag {
   flag_key: string;
