@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useValidationMetrics } from "@/hooks/useValidationMetrics";
 import AlertOrchestratorDebug from "@/components/admin/AlertOrchestratorDebug";
+import AlertOrchestratorAnalytics from "@/components/admin/AlertOrchestratorAnalytics";
 import {
   Users,
   Activity,
@@ -347,7 +348,8 @@ export default function ValidationDashboard() {
         </CardContent>
       </Card>
 
-      {/* Alert Orchestrator — inspeção interna */}
+      {/* Alert Orchestrator — métricas, fadiga e inspeção interna */}
+      <AlertOrchestratorAnalytics />
       <AlertOrchestratorDebug />
     </div>
   );

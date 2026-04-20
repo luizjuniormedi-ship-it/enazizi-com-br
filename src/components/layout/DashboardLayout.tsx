@@ -246,6 +246,9 @@ const DashboardLayout = () => {
   usePresenceHeartbeat();
   useJourneyRefresh();
   useLandscapeTablet();
+  // Alert Orchestrator — telemetria automática (Fase 4)
+  // Registra exposições e supressões em `alert_events` (fire-and-forget).
+  useAlertTelemetry();
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
   const studyCtx = useStudyContext();

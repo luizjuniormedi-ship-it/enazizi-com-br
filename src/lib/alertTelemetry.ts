@@ -138,7 +138,7 @@ export function trackAlertEvent(input: TrackAlertEventInput): void {
         metadata: { ...(alert.metadata ?? {}), ...(extra ?? {}) },
       };
 
-      await supabase.from("alert_events").insert(payload);
+      await supabase.from("alert_events").insert([payload]);
     } catch {
       // Silencioso — telemetria nunca pode quebrar UX
     }
