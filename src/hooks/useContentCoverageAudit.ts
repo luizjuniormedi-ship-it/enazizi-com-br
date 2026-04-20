@@ -14,6 +14,8 @@ export interface SubtopicCoverageRow {
   max_peso: number; // maior peso entre as bancas para este subtopic
   materials_count: number;
   flashcards_count: number;
+  microtopics_count: number;
+  coverage_score: number; // 0–100, indicador pedagógico (Fase 1.2)
   status: CoverageStatus;
   rule: string;
   reason: string;
@@ -27,10 +29,17 @@ export interface CoverageKPIs {
   pctComplete: number;
   pctCritical: number;
   pctMissing: number;
-  // Novos KPIs Fase 1.1
+  // KPIs Fase 1.1
   highImportanceWithoutQuestions: number; // muito_cobrado/cobrado com 0 Q
   totalLinks: number;
   totalStrongLinks: number;
+  // KPIs Fase 1.2 (pedagogia)
+  totalMaterials: number;
+  totalFlashcards: number;
+  totalMicrotopics: number;
+  subtopicsWithoutMaterial: number;
+  subtopicsWithoutFlashcard: number;
+  subtopicsQuestionsButNoMaterial: number; // tem Q mas sem material → gap pedagógico
 }
 
 export interface CoverageByDomain {
