@@ -129,7 +129,12 @@ export interface TrajectoryRecommendation {
 // ─────────────────────────────────────────────────────────────────────────────
 // Aplicação / runs
 // ─────────────────────────────────────────────────────────────────────────────
-export type AppliedActionStatus = "proposed" | "applied" | "cancelled" | "completed";
+export type AppliedActionStatus =
+  | "proposed"
+  | "pending_orchestrator"
+  | "applied"
+  | "cancelled"
+  | "completed";
 
 export interface TrajectoryAppliedAction {
   id: string;
