@@ -53,7 +53,7 @@ export default function TutorContinueCard() {
           .from("chat_conversations")
           .select("id, title, updated_at, agent_type")
           .eq("user_id", user.id)
-          .eq("agent_type", "tutor")
+          .eq("agent_type", "chatgpt-agent")
           .gte("updated_at", sevenDaysAgoIso)
           .order("updated_at", { ascending: false })
           .limit(1)

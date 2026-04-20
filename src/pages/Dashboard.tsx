@@ -28,6 +28,7 @@ import PerformanceEnergyPanel from "@/components/dashboard-v2/PerformanceEnergyP
 import QuickActionsPanel from "@/components/dashboard-v2/QuickActionsPanel";
 import RadarTrajetoriaCard from "@/components/radar/RadarTrajetoriaCard";
 import FsrsReviewCard from "@/components/dashboard/FsrsReviewCard";
+import TutorContinueCard from "@/components/dashboard/TutorContinueCard";
 
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
@@ -436,6 +437,9 @@ const Dashboard = () => {
             {isEnabled("radar_trajetoria_enabled") && <RadarTrajetoriaCard />}
             <FsrsReviewCard />
           </div>
+
+          {/* ═══ BLOCO 2.2 — Continuar Tutor (motor de conversão) ═══ */}
+          <TutorContinueCard />
 
           {/* ═══ BLOCO 3 — STATUS GRID (4 cards) ═══ */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
