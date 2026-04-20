@@ -26,6 +26,7 @@ import SmartAlerts, { type SmartAlert } from "@/components/dashboard-v2/SmartAle
 import WeeklyFocusPanel from "@/components/dashboard-v2/WeeklyFocusPanel";
 import PerformanceEnergyPanel from "@/components/dashboard-v2/PerformanceEnergyPanel";
 import QuickActionsPanel from "@/components/dashboard-v2/QuickActionsPanel";
+import RadarTrajetoriaCard from "@/components/radar/RadarTrajetoriaCard";
 
 import MissionJustification from "@/components/mission-control/MissionJustification";
 import MissionAlternatives from "@/components/mission-control/MissionAlternatives";
