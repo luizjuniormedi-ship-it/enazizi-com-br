@@ -23,7 +23,7 @@ import { useCoverageStatus } from "@/hooks/useCoverageStatus";
 import { useMonthlyGoal } from "@/hooks/useMonthlyGoal";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
-import { approvalBadgeBg } from "@/engines/approvalEngine";
+import { approvalBadgeBg, getApprovalFocus } from "@/engines/approvalEngine";
 import { TrendingDown, Minus } from "lucide-react";
 
 interface MetricProps {

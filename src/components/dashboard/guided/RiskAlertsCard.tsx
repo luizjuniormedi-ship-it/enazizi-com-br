@@ -53,7 +53,7 @@ export default function RiskAlertsCard() {
     if (prediction.score < 40) {
       alerts.push({
         icon: AlertTriangle,
-        text: `⚠️ Risco alto de reprovação (${prediction.score}%)`,
+        text: `⚠️ Com esse ritmo atual, sua aprovação está em risco (${prediction.score}%)`,
         to: "/dashboard/analytics",
         tone: "danger",
       });
@@ -61,7 +61,18 @@ export default function RiskAlertsCard() {
     if (prediction.trend === "down" && prediction.delta !== null && prediction.delta <= -3) {
       alerts.push({
         icon: TrendingDown,
-        text: `📉 Sua chance caiu ${Math.abs(prediction.delta)} pts esta semana`,
+        text: `📉 Seu desempenho está caindo nesta semana (${prediction.delta} pts)`,
+        to: "/dashboard/analytics",
+        tone: "warn",
+      });
+    }
+    if (
+      prediction.riskLevel === "medium" &&
+      (impact?.requiredCoveragePct ?? 100) < 50
+    ) {
+      alerts.push({
+        icon: Flame,
+        text: `🔥 Cobertura obrigatória insuficiente (${impact?.requiredCoveragePct ?? 0}%)`,
         to: "/dashboard/analytics",
         tone: "warn",
       });
