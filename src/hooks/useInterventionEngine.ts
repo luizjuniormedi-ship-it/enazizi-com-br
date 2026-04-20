@@ -56,6 +56,12 @@ export interface InterventionAction {
   penaltyDelta?: number;
   /** Indica se a penalidade foi efetivamente aplicada (Fase 5). */
   penaltyApplied?: boolean;
+  /** Delta de personalização (Fase 6). 0 quando bypass por mandatory ou sem dados. */
+  profileDelta?: number;
+  /** Razão textual do ajuste por perfil (Fase 6). */
+  profileReason?: string;
+  /** Score de afinidade do usuário com o tipo (Fase 6). */
+  profileScore?: number;
 }
 
 export interface InterventionCandidate extends InterventionAction {}
