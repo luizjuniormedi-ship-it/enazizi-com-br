@@ -60,13 +60,15 @@ export function computeInterventionAdjustment(
   }
 
   // 2) Alta performance (CTR e conversão fortes)
+  //    Recalibrado: 15 → 12 para deixar mais espaço à personalização (Fase 6).
   if (ctr >= 0.2 && conv >= 0.15) {
-    return { weightDelta: clamp(15), reason: "high-performance" };
+    return { weightDelta: clamp(12), reason: "high-performance" };
   }
 
   // 3) Boa conversão isolada
+  //    Recalibrado: 10 → 8 para deixar mais espaço à personalização (Fase 6).
   if (conv >= 0.25) {
-    return { weightDelta: clamp(10), reason: "high-conversion" };
+    return { weightDelta: clamp(8), reason: "high-conversion" };
   }
 
   // 4) CTR fraco com amostra mínima de 10

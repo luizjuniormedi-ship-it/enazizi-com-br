@@ -95,6 +95,10 @@ export function buildInterventionCandidates(
 
   const candidates: InterventionCandidate[] = [];
 
+  // Pesos base recalibrados (spread reduzido para permitir virada por perfil):
+  //   min-mission=100 (mandatory inatividade), fsrs=82, recovery=74,
+  //   coverage=68, default=40. Hierarquia preservada; mandatory continua
+  //   protegido na seleção (default nunca vence mandatory).
   if (questions7d === 0) {
     candidates.push({
       type: "min-mission",
@@ -114,7 +118,7 @@ export function buildInterventionCandidates(
       description: `Você tem ${totalDue} revisões críticas`,
       ctaLabel: "Revisar agora",
       href: "/flashcards",
-      weight: 80,
+      weight: 82,
       mandatory: true,
     });
   }
@@ -126,7 +130,7 @@ export function buildInterventionCandidates(
       description: "Foque em prática para recuperar desempenho",
       ctaLabel: "Fazer 10 questões",
       href: "/banco-questoes?mode=quick10",
-      weight: 70,
+      weight: 74,
       mandatory: true,
     });
   }
@@ -138,18 +142,18 @@ export function buildInterventionCandidates(
       description: "Você precisa avançar nos conteúdos obrigatórios",
       ctaLabel: "Continuar plano",
       href: "/cronograma",
-      weight: 50,
+      weight: 68,
     });
   }
 
-  // Default sempre presente como fallback
+  // Default sempre presente como fallback (recalibrado 10 → 40)
   candidates.push({
     type: "default",
     title: "Continue evoluindo",
     description: "Vamos manter o ritmo com prática",
     ctaLabel: "Fazer questões",
     href: "/banco-questoes",
-    weight: 10,
+    weight: 40,
   });
 
   return candidates;
