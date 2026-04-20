@@ -30,6 +30,9 @@ const EngineImpactCard = () => {
 
   // Diagnóstico curto
   const diagnostics: string[] = [];
+  if (recentSnapshots.length === 0) {
+    diagnostics.push("Telemetria do motor ainda não está chegando do edge principal");
+  }
   if (engineAdjustments.goalBoosts > 0 && questions7d < 50)
     diagnostics.push("Meta está influenciando o motor, mas não a execução");
   else if (engineAdjustments.goalBoosts > 0)
@@ -42,8 +45,8 @@ const EngineImpactCard = () => {
     diagnostics.push("Reta final: revisão e questões dominando");
   if (diagnostics.length === 0 && status === "inactive")
     diagnostics.push("O motor ainda não gerou impacto observável nas prioridades recentes");
-  if (status === "insufficient_data")
-    diagnostics.push("Sem snapshots suficientes — execute o motor algumas vezes para coletar dados");
+  if (status === "insufficient_data" && recentSnapshots.length === 0)
+    diagnostics.push("Use o Tutor ou pratique questões — cada decisão registra um snapshot");
 
   // Leitura da calibração — qual sinal está dominando
   const totalBoosts =

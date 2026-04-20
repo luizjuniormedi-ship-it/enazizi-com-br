@@ -546,6 +546,72 @@ serve(async (req) => {
       confidence_score: recommendation.priorityScore,
     });
 
+    // ── Engine V3 snapshot — fire-and-forget for impact observability ──
+    // Persists in assistant_decisions with source_module='study-engine-v3'
+    // so useStudyEngineImpact can read real boost data from the edge.
+    try {
+      const examMultiplier = examProximityDays === null
+        ? 1.0
+        : examProximityDays < 30 ? 1.6
+        : examProximityDays < 60 ? 1.3
+        : 1.0;
+
+      const hasCriticalGaps = errors.length > 0 || reviews.length > 0;
+      const top5 = candidates.slice(0, 5).map((c) => {
+        // Heuristic boost detection — edge can't compute the full coverage engine,
+        // but it can flag the same signals the client engine reads.
+        const isReview = c.type === "review" || c.type === "error_review";
+        return {
+          topic: (c.contextPayload as any)?.topic ?? c.title,
+          type: c.type,
+          base_priority: c.priorityScore,
+          final_priority: c.priorityScore,
+          boosted_by_coverage: hasCriticalGaps && isReview,
+          boosted_by_goal: false, // computed client-side; edge cannot see monthly goal
+          boosted_by_exam_pressure: examProximityDays !== null && examProximityDays < 30,
+        };
+      });
+
+      const totals = top5.reduce(
+        (acc, r) => {
+          if (r.boosted_by_coverage) acc.coverageBoosts++;
+          if (r.boosted_by_goal) acc.goalBoosts++;
+          if (r.boosted_by_exam_pressure) acc.examPressureBoosts++;
+          return acc;
+        },
+        { coverageBoosts: 0, goalBoosts: 0, examPressureBoosts: 0 }
+      );
+
+      // Don't await — fire-and-forget so we never block the response.
+      db.from("assistant_decisions").insert([{
+        user_id: userId,
+        source_module: "study-engine-v3",
+        decision_type: "engine_snapshot",
+        justification: "Study Engine V3 edge snapshot",
+        confidence_score: null,
+        input_snapshot: {
+          exam_date: profile?.exam_date ?? null,
+          days_to_exam: examProximityDays,
+          coverage_pct: null, // computed client-side
+          monthly_questions_30d: null,
+          monthly_backlog: null,
+          daily_question_target: null,
+          pace_status: null,
+          exam_multiplier: examMultiplier,
+        },
+        decision_output: {
+          engine_version: "v3",
+          source: "edge",
+          top_recommendations: top5,
+          boost_totals: totals,
+        },
+      }]).then(({ error }) => {
+        if (error) console.warn("[study-next] V3 snapshot insert failed:", error.message);
+      });
+    } catch (e) {
+      console.warn("[study-next] V3 snapshot skipped:", e);
+    }
+
     return jsonResponse({
       success: true,
       recommendation,
