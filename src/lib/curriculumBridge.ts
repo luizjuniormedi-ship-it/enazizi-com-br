@@ -59,15 +59,18 @@ export async function fetchCurriculumForEngine(
     const { data: subtopics, error } = await supabase
       .from("curriculum_subtopics" as any)
       .select(`
+        id,
         nome,
         prioridade_base,
         incidencia_geral,
         dificuldade_base,
         topic_id,
         curriculum_topics!inner (
+          id,
           nome,
           specialty_id,
           curriculum_specialties!inner (
+            id,
             nome
           )
         )
@@ -107,6 +110,9 @@ export async function fetchCurriculumForEngine(
       incidencia_geral: s.incidencia_geral || "media",
       dificuldade_base: s.dificuldade_base || 3,
       bancaPeso: weightMap[s.id] || 5,
+      subtopicId: s.id ?? null,
+      topicId: s.curriculum_topics?.id ?? s.topic_id ?? null,
+      specialtyId: s.curriculum_topics?.curriculum_specialties?.id ?? null,
     }));
   } catch {
     // Fallback to curriculum_matrix (legacy)
