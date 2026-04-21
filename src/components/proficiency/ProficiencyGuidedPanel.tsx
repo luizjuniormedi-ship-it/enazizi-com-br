@@ -12,6 +12,7 @@ import {
   BookOpen,
   Brain,
   Repeat,
+  History,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,11 @@ import {
   useUpdateProficiencyTaskStatus,
   type ProficiencyDailyTask,
 } from "@/hooks/useProficiencyPlanner";
+import {
+  useProficiencyRecalculations,
+  useRecalcProficiencyProgress,
+  type ProficiencyRecalculation,
+} from "@/hooks/useProficiencyReplan";
 
 /**
  * Painel central da Proficiência Guiada (Fase 3).
