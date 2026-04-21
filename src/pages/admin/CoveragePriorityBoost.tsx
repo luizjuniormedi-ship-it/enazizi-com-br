@@ -239,6 +239,88 @@ export default function CoveragePriorityBoostPanel() {
         </CardContent>
       </Card>
 
+      {/* Saúde estrutural por fonte (Fase 1.6) */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Saúde estrutural por fonte (Fase 1.6)
+              {health && (
+                <Badge variant={healthVariant(health.overallBadge)} className="ml-2">
+                  {healthLabel(health.overallBadge)} · {health.overallPctSubtopic}%
+                </Badge>
+              )}
+            </CardTitle>
+            <Button size="sm" variant="outline" onClick={runBackfill} disabled={running || healthLoading}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-2 ${running ? "animate-spin" : ""}`} />
+              {running ? "Executando…" : "Re-rodar backfill"}
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!health ? (
+            <p className="text-sm text-muted-foreground">Carregando saúde estrutural…</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b text-xs text-muted-foreground">
+                  <tr>
+                    <th className="text-left py-2 px-2">Fonte</th>
+                    <th className="text-right py-2 px-2">Total</th>
+                    <th className="text-right py-2 px-2">% subtopic_id</th>
+                    <th className="text-right py-2 px-2">% topic_id</th>
+                    <th className="text-left py-2 px-2">Saúde</th>
+                    <th className="text-left py-2 px-2">Observação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {health.sources.map((s) => (
+                    <tr key={s.table} className="border-b hover:bg-muted/40">
+                      <td className="py-2 px-2 font-medium">
+                        {s.label}
+                        <div className="text-xs text-muted-foreground font-mono">{s.table}</div>
+                      </td>
+                      <td className="py-2 px-2 text-right">{s.total}</td>
+                      <td className="py-2 px-2 text-right">
+                        {s.pctSubtopic >= 0 ? `${s.pctSubtopic}%` : "—"}
+                      </td>
+                      <td className="py-2 px-2 text-right">
+                        {s.pctTopic >= 0 ? `${s.pctTopic}%` : "—"}
+                      </td>
+                      <td className="py-2 px-2">
+                        <Badge variant={healthVariant(s.badge)} className="text-xs">
+                          {healthLabel(s.badge)}
+                        </Badge>
+                      </td>
+                      <td className="py-2 px-2 text-xs text-muted-foreground max-w-[320px]">
+                        {s.note ?? (s.status === "structured" ? "Colunas estruturais ativas." : "Parcialmente estruturada.")}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {health.unmatchedSamples.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    Top {health.unmatchedSamples.length} registros sem match estrutural (amostra)
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {health.unmatchedSamples.slice(0, 12).map((u) => (
+                      <div key={u.id} className="text-xs px-2 py-1.5 rounded border bg-muted/30">
+                        <span className="font-mono text-muted-foreground">{u.table}</span>
+                        {" · "}
+                        <span>{u.tema || u.subtopico || u.especialidade || "(sem nome)"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Distribuição por nível */}
       <Card>
         <CardHeader><CardTitle className="text-base">Distribuição por nível de boost</CardTitle></CardHeader>
