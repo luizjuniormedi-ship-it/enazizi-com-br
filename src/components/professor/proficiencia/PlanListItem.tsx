@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Pause, Play, CheckCircle2, Trash2, Plus } from "lucide-react";
+import { CalendarDays, Pause, Play, CheckCircle2, Trash2, Plus, BarChart3 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -11,6 +11,7 @@ import {
   useDeleteProfessorPlan,
 } from "@/hooks/useProfessorPlans";
 import AddSubtopicsDialog from "./AddSubtopicsDialog";
+import PlanAnalyticsDialog from "./PlanAnalyticsDialog";
 
 interface Props {
   plan: ProfessorPlan;
@@ -32,6 +33,7 @@ const PlanListItem = ({ plan }: Props) => {
   const statusMut = useUpdatePlanStatus();
   const delMut = useDeleteProfessorPlan();
   const [addOpen, setAddOpen] = useState(false);
+  const [analyticsOpen, setAnalyticsOpen] = useState(false);
 
   const daysLeft = plan.exam_date
     ? Math.ceil((new Date(plan.exam_date).getTime() - Date.now()) / 86400000)
@@ -72,6 +74,14 @@ const PlanListItem = ({ plan }: Props) => {
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setAnalyticsOpen(true)}
+              title="Ver relatório"
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
             {plan.status === "active" && (
               <Button
                 size="sm"
@@ -126,6 +136,7 @@ const PlanListItem = ({ plan }: Props) => {
       </CardContent>
 
       <AddSubtopicsDialog open={addOpen} onOpenChange={setAddOpen} planId={plan.id} />
+      <PlanAnalyticsDialog open={analyticsOpen} onOpenChange={setAnalyticsOpen} plan={plan} />
     </Card>
   );
 };
