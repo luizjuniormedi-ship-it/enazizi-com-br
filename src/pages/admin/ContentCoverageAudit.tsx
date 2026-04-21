@@ -102,7 +102,7 @@ export default function ContentCoverageAudit() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Auditoria de domínios, assuntos e subassuntos cobertos pelo acervo de questões e materiais.
-            <span className="ml-1 text-xs">(v1.2 — pedagogia + microtopics)</span>
+            <span className="ml-1 text-xs">(v1.3 — conteúdo curado top-20)</span>
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
