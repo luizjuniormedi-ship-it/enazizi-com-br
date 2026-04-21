@@ -12,6 +12,7 @@ import {
   BookOpen,
   Brain,
   Repeat,
+  History,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +26,11 @@ import {
   useUpdateProficiencyTaskStatus,
   type ProficiencyDailyTask,
 } from "@/hooks/useProficiencyPlanner";
+import {
+  useProficiencyRecalculations,
+  useRecalcProficiencyProgress,
+  type ProficiencyRecalculation,
+} from "@/hooks/useProficiencyReplan";
 
 /**
  * Painel central da Proficiência Guiada (Fase 3).
@@ -55,7 +61,10 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
   const weekQ = useProficiencyWeekTasks(plan.id, undefined, 14);
   const generate = useGenerateProficiencyPlan();
   const updateStatus = useUpdateProficiencyTaskStatus();
+  const recalcsQ = useProficiencyRecalculations(plan.id, 3);
+  const recalcProgress = useRecalcProficiencyProgress();
   const triggeredRef = useRef(false);
+  const progressRecalcRef = useRef(false);
 
   const weekTasks = weekQ.data ?? [];
   const dailyTasks = dailyQ.data ?? [];
@@ -78,12 +87,24 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
     generate,
   ]);
 
+  // Recálculo automático de progresso (1x por mount) — pode disparar replan missed_goal.
+  useEffect(() => {
+    if (progressRecalcRef.current) return;
+    if (weekQ.isLoading || dailyQ.isLoading) return;
+    if (weekTasks.length === 0 && dailyTasks.length === 0) return;
+    progressRecalcRef.current = true;
+    recalcProgress.mutate({ planId: plan.id });
+  }, [plan.id, weekQ.isLoading, dailyQ.isLoading, weekTasks.length, dailyTasks.length, recalcProgress]);
+
   const grouped = useMemo(() => groupByDate(weekTasks), [weekTasks]);
   const todayIso = new Date().toISOString().slice(0, 10);
+  const recalcs = recalcsQ.data ?? [];
 
   return (
     <div className="space-y-4">
       <PlanHeader plan={plan} onRegenerate={() => generate.mutate(plan.id)} regenerating={generate.isPending} />
+
+      {recalcs.length > 0 && <RecalculationsBlock recalcs={recalcs} />}
 
       <ProgressBlock plan={plan} />
 
@@ -103,6 +124,48 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
     </div>
   );
 }
+
+/* -------------------------- Recalculations -------------------------- */
+function RecalculationsBlock({ recalcs }: { recalcs: ProficiencyRecalculation[] }) {
+  const labelFor = (t: string) => {
+    if (t === "missed_goal") return { label: "Plano recalculado por atraso semanal", tone: "amber" as const };
+    if (t === "teacher_update") return { label: "Plano atualizado pelo professor", tone: "primary" as const };
+    if (t === "auto") return { label: "Recálculo automático", tone: "muted" as const };
+    return { label: "Recálculo manual", tone: "muted" as const };
+  };
+  return (
+    <Card className="border-primary/20 bg-muted/30">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-2">
+          <History className="h-4 w-4 text-primary" /> Recálculos recentes
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-1.5">
+        {recalcs.map((r) => {
+          const { label, tone } = labelFor(r.recalculation_type);
+          return (
+            <div
+              key={r.id}
+              className={`flex items-center justify-between text-xs rounded-md border px-2.5 py-1.5 ${
+                tone === "amber"
+                  ? "border-amber-500/30 bg-amber-500/5"
+                  : tone === "primary"
+                    ? "border-primary/30 bg-primary/5"
+                    : "border-border bg-card"
+              }`}
+            >
+              <span className="font-medium truncate">{label}</span>
+              <span className="text-muted-foreground shrink-0 ml-2">
+                {new Date(r.created_at).toLocaleDateString("pt-BR")}
+              </span>
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
+
 
 /* -------------------------- Header -------------------------- */
 function PlanHeader({

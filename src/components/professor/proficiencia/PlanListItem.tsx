@@ -1,7 +1,8 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CalendarDays, Pause, Play, CheckCircle2, Trash2 } from "lucide-react";
+import { CalendarDays, Pause, Play, CheckCircle2, Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
@@ -9,6 +10,7 @@ import {
   useUpdatePlanStatus,
   useDeleteProfessorPlan,
 } from "@/hooks/useProfessorPlans";
+import AddSubtopicsDialog from "./AddSubtopicsDialog";
 
 interface Props {
   plan: ProfessorPlan;
@@ -29,6 +31,7 @@ const statusLabel = {
 const PlanListItem = ({ plan }: Props) => {
   const statusMut = useUpdatePlanStatus();
   const delMut = useDeleteProfessorPlan();
+  const [addOpen, setAddOpen] = useState(false);
 
   const daysLeft = plan.exam_date
     ? Math.ceil((new Date(plan.exam_date).getTime() - Date.now()) / 86400000)
@@ -69,6 +72,17 @@ const PlanListItem = ({ plan }: Props) => {
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {plan.status === "active" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAddOpen(true)}
+                title="Adicionar subtemas"
+                className="text-primary hover:text-primary"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            )}
             {plan.status === "active" ? (
               <Button
                 size="sm"
@@ -110,6 +124,8 @@ const PlanListItem = ({ plan }: Props) => {
           </div>
         </div>
       </CardContent>
+
+      <AddSubtopicsDialog open={addOpen} onOpenChange={setAddOpen} planId={plan.id} />
     </Card>
   );
 };
