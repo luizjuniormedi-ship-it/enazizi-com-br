@@ -5,6 +5,7 @@ import { useCoreData } from "./useCoreData";
 import { useFeatureFlags } from "./useFeatureFlags";
 import { setFsrsEnabled } from "@/lib/fsrsAutoCreate";
 import { generateRecommendations, type StudyRecommendation, type EngineResult, type AdaptiveState } from "@/lib/studyEngine";
+import { logBoostEvents } from "@/lib/coverageBoostTelemetry";
 
 export type { StudyRecommendation, AdaptiveState };
 
@@ -37,6 +38,16 @@ export const useStudyEngine = () => {
   const engineResult = query.data;
   const recommendations = engineResult?.recommendations;
   const adaptive = engineResult?.adaptive;
+
+  // Telemetria persistente Fase 1.7: grava eventos de boost de forma assíncrona,
+  // sem bloquear o render. Dedup por sessão impede duplicatas em refetches.
+  useEffect(() => {
+    if (!user?.id || !recommendations || recommendations.length === 0) return;
+    if (!coveragePriorityBoostEnabled) return;
+    const boosted = recommendations.filter((r) => (r.coverageBoostApplied ?? 0) > 0);
+    if (boosted.length === 0) return;
+    void logBoostEvents(user.id, boosted);
+  }, [user?.id, recommendations, coveragePriorityBoostEnabled]);
 
   return {
     ...query,

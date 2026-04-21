@@ -42,7 +42,7 @@ export function useCoverageBoostTelemetry() {
           console.warn("[useCoverageBoostTelemetry]", error.message);
           return EMPTY;
         }
-        const rows = (data ?? []) as Array<{
+        const rows = ((data ?? []) as unknown) as Array<{
           subtopic: string | null;
           specialty: string | null;
           coverage_boost_match_method: string | null;
