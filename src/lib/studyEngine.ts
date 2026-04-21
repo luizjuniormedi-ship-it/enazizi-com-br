@@ -1116,13 +1116,15 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     console.warn("[StudyEngine] coverage gap signal skipped:", e);
   }
 
-  // ── Coverage → Study Engine Bridge (Fase 1.4) ─────────────────
+  // ── Coverage → Study Engine Bridge (Fase 1.4 + 1.5) ───────────
   // Camada complementar: usa a auditoria pedagógica (status + importance +
   // gap pedagógico + gap de questões + incidência) para empurrar levemente
   // assuntos muito cobrados e mal cobertos. Aplicação:
   //   bonus = round(boostScore * 0.15)
   // Defensivo: feature flag, try/catch total, dados ausentes → skip.
   // Mandatory rules (recovery, FSRS, missões mínimas) já foram aplicadas antes.
+  // Fase 1.5: matching em 3 níveis (subtopic_id → topic_id → name) com
+  // contadores de método de match expostos em window para o painel admin.
   if (coveragePriorityBoostEnabled) {
     try {
       const [{ supabase: sb }, boostMod] = await Promise.all([
@@ -1132,10 +1134,10 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       const { computeCoverageBoost, appliedBoostFromScore } = boostMod;
       const { classifyCoverage } = await import("./coverageRules");
 
-      // Carrega tudo em 4 queries enxutas (reusa as mesmas tabelas do audit).
+      // Carrega tudo em queries enxutas (reusa as mesmas tabelas do audit).
       const [{ data: subRows }, { data: weights }, { data: links }, { data: mats }, { data: flashes }] =
         await Promise.all([
-          sb.from("curriculum_subtopics" as any).select("id, nome, ativo").eq("ativo", true),
+          sb.from("curriculum_subtopics" as any).select("id, nome, ativo, topic_id").eq("ativo", true),
           sb.from("curriculum_weights" as any).select("subtopic_id, banca, importance_level, peso"),
           sb.from("question_topic_links" as any).select("subtopic_id, match_confidence"),
           sb.from("study_materials" as any).select("subtopic_id").eq("is_global", true).eq("ativo", true),
@@ -1169,9 +1171,16 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
         fBy.set(f.subtopic_id, (fBy.get(f.subtopic_id) ?? 0) + 1);
       }
 
-      // Map por nome lowercase → boost result (matching defensivo).
-      const boostByName = new Map<string, ReturnType<typeof computeCoverageBoost>>();
+      // Mapas estruturais (Fase 1.5):
+      //   byId         → chave principal: subtopic_id
+      //   byTopicId    → fallback estrutural: agrega o maior boost por topic
+      //   byName       → fallback textual legado (lowercase)
+      type BoostEntry = ReturnType<typeof computeCoverageBoost>;
+      const byId = new Map<string, BoostEntry>();
+      const byTopicId = new Map<string, BoostEntry>();
+      const byName = new Map<string, BoostEntry>();
       const importanceOrder = ["muito_cobrado", "cobrado", "pouco_cobrado", "raro"] as const;
+
       for (const s of (subRows ?? []) as any[]) {
         const ws = wBy.get(s.id) ?? [];
         let importance: any = null;
@@ -1200,34 +1209,72 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
           bancaCoverageCount: ws.length,
         });
         if (result.boostScore <= 0) continue;
+        // Estrutural por subtopic_id
+        byId.set(s.id, result);
+        // Agrega no topic_id mantendo o maior boost
+        if (s.topic_id) {
+          const prev = byTopicId.get(s.topic_id);
+          if (!prev || result.boostScore > prev.boostScore) {
+            byTopicId.set(s.topic_id, result);
+          }
+        }
+        // Textual (legado)
         const key = String(s.nome || "").trim().toLowerCase();
-        if (key) boostByName.set(key, result);
+        if (key) byName.set(key, result);
       }
 
-      if (boostByName.size > 0) {
+      if (byId.size > 0 || byName.size > 0) {
         let touched = 0;
+        const matchStats = { subtopic_id: 0, topic_id: 0, name: 0, none: 0 };
         for (const rec of recs) {
-          const t = (rec.topic || "").toLowerCase().trim();
-          const sub = (rec.subtopic || "").toLowerCase().trim();
-          // Match defensivo: subtopic exato → topic exato → contains
-          let entry = (sub && boostByName.get(sub)) || boostByName.get(t);
-          if (!entry && t.length >= 6) {
-            for (const [k, v] of boostByName) {
-              if (k.includes(t.slice(0, 10)) || t.includes(k.slice(0, 10))) {
-                entry = v;
-                break;
+          let entry: BoostEntry | undefined;
+          let method: "subtopic_id" | "topic_id" | "name" | "none" = "none";
+
+          // 1) Match estrutural por subtopic_id (preferido)
+          if (rec.subtopicId && byId.has(rec.subtopicId)) {
+            entry = byId.get(rec.subtopicId);
+            method = "subtopic_id";
+          }
+          // 2) Match estrutural por topic_id
+          else if (rec.topicId && byTopicId.has(rec.topicId)) {
+            entry = byTopicId.get(rec.topicId);
+            method = "topic_id";
+          }
+          // 3) Fallback textual legado
+          else {
+            const t = (rec.topic || "").toLowerCase().trim();
+            const sub = (rec.subtopic || "").toLowerCase().trim();
+            entry = (sub && byName.get(sub)) || byName.get(t);
+            if (!entry && t.length >= 6) {
+              for (const [k, v] of byName) {
+                if (k.includes(t.slice(0, 10)) || t.includes(k.slice(0, 10))) {
+                  entry = v;
+                  break;
+                }
               }
             }
+            if (entry) method = "name";
           }
-          if (!entry) continue;
+
+          if (!entry) {
+            matchStats.none++;
+            rec.coverageBoostMatchMethod = "none";
+            continue;
+          }
           const applied = appliedBoostFromScore(entry.boostScore);
-          if (applied <= 0) continue;
+          if (applied <= 0) {
+            matchStats.none++;
+            rec.coverageBoostMatchMethod = "none";
+            continue;
+          }
           rec.priority = cap(rec.priority + applied);
           rec.coverageBoostApplied = applied;
           rec.coverageBoostScore = entry.boostScore;
           rec.coverageBoostLevel = entry.boostLevel;
           rec.coverageBoostReason = entry.boostReason;
           rec.coverageBoostBreakdown = entry.boostBreakdown;
+          rec.coverageBoostMatchMethod = method;
+          matchStats[method]++;
           touched++;
           if (entry.boostLevel === "critical" || entry.boostLevel === "high") {
             if (!rec.reason.includes("⚡")) {
@@ -1236,8 +1283,18 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
           }
         }
         if (touched > 0) {
-          console.log(`[StudyEngine] coverage boost applied to ${touched} recs`);
+          console.log(
+            `[StudyEngine] coverage boost: ${touched} recs touched — by_subtopic_id=${matchStats.subtopic_id}, by_topic_id=${matchStats.topic_id}, by_name=${matchStats.name}, no_match=${matchStats.none}`,
+          );
         }
+        // Expor stats para o painel admin (read-only)
+        try {
+          (globalThis as any).__coverageBoostMatchStats = {
+            ...matchStats,
+            touched,
+            timestamp: Date.now(),
+          };
+        } catch { /* noop */ }
       }
     } catch (e) {
       console.warn("[StudyEngine] coverage priority boost skipped:", e);
