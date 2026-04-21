@@ -127,8 +127,10 @@ export function useUpdateProficiencyTaskStatus() {
   const { toast } = useToast();
   return useMutation({
     mutationFn: async ({ taskId, status }: { taskId: string; status: ProficiencyTaskStatus }) => {
-      const update: Record<string, unknown> = { status };
-      if (status === "completed") update.completed_at = new Date().toISOString();
+      const update = {
+        status,
+        ...(status === "completed" ? { completed_at: new Date().toISOString() } : {}),
+      };
       const { error } = await supabase
         .from("professor_plan_daily_tasks")
         .update(update)
