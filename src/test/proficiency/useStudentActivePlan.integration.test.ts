@@ -12,14 +12,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import { createSupabaseMock } from "../__mocks__/supabaseMock";
+import { mock } from "@/test/__mocks__/supabaseMockSingleton";
 
-const { mock } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { createSupabaseMock } = require("../__mocks__/supabaseMock");
-  return { mock: createSupabaseMock() };
+vi.mock("@/integrations/supabase/client", async () => {
+  const { mock } = await import("@/test/__mocks__/supabaseMockSingleton");
+  return { supabase: mock.supabase };
 });
-vi.mock("@/integrations/supabase/client", () => ({ supabase: mock.supabase }));
 
 import { useStudentActivePlan } from "@/hooks/useStudentActivePlan";
 
