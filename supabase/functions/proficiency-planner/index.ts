@@ -295,7 +295,7 @@ serve(async (req) => {
           topic_id: s.curriculum_subtopics?.topic_id ?? null,
           sort_order: s.sort_order ?? i,
         },
-        source: "planner",
+        source: taskSource,
         status: "pending",
       });
       if (dayCursor >= studyDates.length) break;
@@ -310,7 +310,7 @@ serve(async (req) => {
           topic_id: s.curriculum_subtopics?.topic_id ?? null,
           target_count: 10,
         },
-        source: "planner",
+        source: taskSource,
         status: "pending",
       });
       reviewBacklog.push({ subtopicId: s.subtopic_id, nome });
@@ -336,7 +336,7 @@ serve(async (req) => {
           subtopic_name: r.nome,
           fsrs_assist: true,
         },
-        source: "planner",
+        source: taskSource,
         status: "pending",
       });
     }
