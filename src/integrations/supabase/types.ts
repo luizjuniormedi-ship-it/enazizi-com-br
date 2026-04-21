@@ -1244,6 +1244,78 @@ export type Database = {
         }
         Relationships: []
       }
+      coverage_boost_events: {
+        Row: {
+          boost_breakdown: Json
+          clicked: boolean
+          clicked_at: string | null
+          coverage_boost_applied: number
+          coverage_boost_level: string | null
+          coverage_boost_match_method: string | null
+          coverage_boost_reason: string | null
+          coverage_boost_score: number
+          created_at: string
+          executed: boolean
+          executed_at: string | null
+          id: string
+          recommendation_id: string | null
+          recommendation_type: string | null
+          specialty: string | null
+          specialty_id: string | null
+          subtopic: string | null
+          subtopic_id: string | null
+          topic: string | null
+          topic_id: string | null
+          user_id: string
+        }
+        Insert: {
+          boost_breakdown?: Json
+          clicked?: boolean
+          clicked_at?: string | null
+          coverage_boost_applied?: number
+          coverage_boost_level?: string | null
+          coverage_boost_match_method?: string | null
+          coverage_boost_reason?: string | null
+          coverage_boost_score?: number
+          created_at?: string
+          executed?: boolean
+          executed_at?: string | null
+          id?: string
+          recommendation_id?: string | null
+          recommendation_type?: string | null
+          specialty?: string | null
+          specialty_id?: string | null
+          subtopic?: string | null
+          subtopic_id?: string | null
+          topic?: string | null
+          topic_id?: string | null
+          user_id: string
+        }
+        Update: {
+          boost_breakdown?: Json
+          clicked?: boolean
+          clicked_at?: string | null
+          coverage_boost_applied?: number
+          coverage_boost_level?: string | null
+          coverage_boost_match_method?: string | null
+          coverage_boost_reason?: string | null
+          coverage_boost_score?: number
+          created_at?: string
+          executed?: boolean
+          executed_at?: string | null
+          id?: string
+          recommendation_id?: string | null
+          recommendation_type?: string | null
+          specialty?: string | null
+          specialty_id?: string | null
+          subtopic?: string | null
+          subtopic_id?: string | null
+          topic?: string | null
+          topic_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cronograma_config: {
         Row: {
           created_at: string | null
