@@ -43,6 +43,7 @@ export default function CoveragePriorityBoostPanel() {
   const { entries, stats, loading } = useCoveragePriorityMap();
   const { data: audit } = useContentCoverageAudit();
   const { data: health, refetch: refetchHealth, isFetching: healthLoading } = useStructuralCoverageHealth();
+  const { data: telemetry } = useCoverageBoostTelemetry();
   const { isEnabled } = useFeatureFlags();
   const flagEnabled = isEnabled("coverage_priority_boost_enabled");
   const [search, setSearch] = useState("");
