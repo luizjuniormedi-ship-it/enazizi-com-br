@@ -76,7 +76,7 @@ interface FullAudit {
  */
 export function useContentCoverageAudit() {
   return useQuery<FullAudit>({
-    queryKey: ["content-coverage-audit", "v1.2"],
+    queryKey: ["content-coverage-audit", "v1.3"],
     queryFn: computeCoverageAudit,
     staleTime: 10 * 60_000,
     gcTime: 30 * 60_000,
