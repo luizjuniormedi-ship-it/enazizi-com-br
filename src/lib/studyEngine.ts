@@ -634,6 +634,27 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     recs.push(rec);
   };
 
+  // Fase 1.6 — índice tema→IDs estruturais a partir de temas_estudados (já com colunas novas)
+  // Usado para enriquecer recs de review/weak topics quando a fonte legada não tinha ID.
+  const temasArr = (temasData || []) as any[];
+  const temaIdIndex = new Map<string, { subtopicId?: string | null; topicId?: string | null; specialtyId?: string | null }>();
+  for (const t of temasArr) {
+    if (!t?.tema) continue;
+    const k = String(t.tema).trim().toLowerCase();
+    const prev = temaIdIndex.get(k);
+    // Prefere o registro que mais IDs tiver
+    const score = (x?: string | null) => (x ? 1 : 0);
+    const newScore = score(t.subtopic_id) + score(t.topic_id) + score(t.specialty_id);
+    const prevScore = prev ? score(prev.subtopicId) + score(prev.topicId) + score(prev.specialtyId) : -1;
+    if (newScore > prevScore) {
+      temaIdIndex.set(k, {
+        subtopicId: t.subtopic_id ?? null,
+        topicId: t.topic_id ?? null,
+        specialtyId: t.specialty_id ?? null,
+      });
+    }
+  }
+
   // Group pending reviews by tema name
   const reviewsByTema = new Map<string, { reviews: any[]; spec: string }>();
   for (const rev of pendingReviews) {
@@ -686,8 +707,12 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
     const countLabel = pendingCount > 1 ? ` (${pendingCount} pendentes)` : "";
 
-    // Debug: log canonical ID injection
-    console.log("[StudyEngine] Review rec:", { tema, oldestId: oldest.id, fsrsCardId: fsrsCard?.id, pendingCount });
+    // Fase 1.6 — IDs estruturais: 1º via join direto, 2º fallback no índice de temas_estudados
+    const fromJoin = oldest.temas_estudados || {};
+    const fromIndex = temaIdIndex.get(tema.trim().toLowerCase()) || {};
+    const subtopicId = fromJoin.subtopic_id ?? fromIndex.subtopicId ?? null;
+    const topicId = fromJoin.topic_id ?? fromIndex.topicId ?? null;
+    const specialtyId = fromJoin.specialty_id ?? fromIndex.specialtyId ?? null;
 
     addRec({
       id: id("rev", revIdx),
@@ -711,6 +736,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       pendingCount,
       pendingReviewIds,
       nextReviewDate,
+      subtopicId,
+      topicId,
+      specialtyId,
     });
     revIdx++;
   }
