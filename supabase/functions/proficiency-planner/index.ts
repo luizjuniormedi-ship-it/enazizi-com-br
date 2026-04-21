@@ -4,21 +4,15 @@
  * Gerador DETERMINÍSTICO (sem IA) que distribui os subtopic_id estruturados
  * de um professor_plan ao longo das semanas até exam_date, conforme intensidade.
  *
- * NÃO duplica o planner principal (planner-orchestrator-v1) — atua em uma
- * tabela separada (professor_plan_daily_tasks) e é acionado APENAS quando o
- * aluno tem plano de Proficiência ativo. A jornada normal continua intocada.
+ * Fase 4: agora aceita `reason` opcional e registra evento em
+ * `professor_plan_recalculations` quando recalcula a partir de um gatilho
+ * (missed_goal, teacher_update, manual). Também atualiza
+ * `professor_plan_progress` com contagens reais (completed/pending/overdue).
  *
  * Regras:
- *  - Apenas o aluno-alvo do plano pode acionar (RLS valida via target).
- *  - Idempotente: usa (plan_id, user_id, planned_date, subtopic_id) como
- *    chave lógica de dedupe; tarefas existentes desse dia NÃO são apagadas.
+ *  - Idempotente: dedupe por (planned_date, task_type, subtopic_id).
  *  - Nunca mexe no passado (planned_date >= today).
- *  - Intensidade controla tarefas/dia:
- *      leve     = 2/dia, 4 dias/semana
- *      moderado = 3/dia, 5 dias/semana
- *      intenso  = 4/dia, 6 dias/semana
- *  - A cada subtema gera 3 tarefas: theory → questions → review (D+3).
- *  - Se exam_date passou ou está a < 1 dia, retorna erro.
+ *  - Tarefas completed/skipped continuam intocadas (somente ADD).
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -30,10 +24,11 @@ const corsHeaders = {
 };
 
 type Intensity = "leve" | "moderado" | "intenso";
+type RecalcType = "manual" | "missed_goal" | "teacher_update" | "auto";
 
 interface IntensityProfile {
   tasksPerDay: number;
-  daysPerWeek: number; // dias úteis de estudo (resto é folga/buffer)
+  daysPerWeek: number;
 }
 
 const INTENSITY: Record<Intensity, IntensityProfile> = {
@@ -44,8 +39,12 @@ const INTENSITY: Record<Intensity, IntensityProfile> = {
 
 interface RequestBody {
   planId: string;
-  /** Quando true, força regenerar do hoje em diante (não apaga histórico) */
-  rebuild?: boolean;
+  /** Para qual aluno gerar. Se omitido, usa o usuário autenticado (uso pelo aluno). */
+  targetUserId?: string;
+  /** Motivo do recálculo (registrado em professor_plan_recalculations). */
+  reason?: RecalcType;
+  /** Texto adicional explicativo do motivo. */
+  reasonText?: string;
 }
 
 interface SubtopicRow {
@@ -64,21 +63,16 @@ function addDays(base: Date, n: number): Date {
   return d;
 }
 
-/**
- * Gera lista de datas de estudo entre [startDate, examDate], pulando 7 - daysPerWeek
- * dias por semana (folga). Inclui startDate se for dia útil.
- */
 function buildStudyDates(start: Date, exam: Date, daysPerWeek: number): Date[] {
   const dates: Date[] = [];
-  const restDays = 7 - daysPerWeek; // ex: 2 dias de folga
+  const restDays = 7 - daysPerWeek;
   let cursor = new Date(start);
   while (cursor.getTime() <= exam.getTime()) {
-    // Folga em sábado/domingo (6, 0) primeiro; se restDays > 2, também sexta.
     const dow = cursor.getUTCDay();
     const restSet = new Set<number>();
-    if (restDays >= 1) restSet.add(0); // domingo
-    if (restDays >= 2) restSet.add(6); // sábado
-    if (restDays >= 3) restSet.add(5); // sexta
+    if (restDays >= 1) restSet.add(0);
+    if (restDays >= 2) restSet.add(6);
+    if (restDays >= 3) restSet.add(5);
     if (!restSet.has(dow)) dates.push(new Date(cursor));
     cursor = addDays(cursor, 1);
   }
@@ -138,21 +132,45 @@ serve(async (req) => {
       );
     }
 
-    // Validar que o usuário é alvo (target direto OU via classe)
-    const { data: isTarget } = await admin.rpc("user_is_target_of_plan", {
-      _user_id: user.id,
-      _plan_id: plan.id,
-    });
     const isOwner = plan.created_by === user.id;
-    if (!isTarget && !isOwner) {
-      return new Response(JSON.stringify({ error: "Usuário não é alvo do plano" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+    // Resolver target user
+    const targetUserId = body.targetUserId ?? user.id;
+
+    // Se o caller é dono (professor) e indicou outro target, validar que o target é alvo do plano.
+    // Caso contrário, exigir que o caller seja alvo.
+    if (targetUserId !== user.id) {
+      if (!isOwner) {
+        return new Response(JSON.stringify({ error: "Apenas o dono pode replanejar para outros" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: tgtIs } = await admin.rpc("user_is_target_of_plan", {
+        _user_id: targetUserId,
+        _plan_id: plan.id,
       });
+      if (!tgtIs) {
+        return new Response(JSON.stringify({ error: "targetUserId não é alvo do plano" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else {
+      const { data: callerIs } = await admin.rpc("user_is_target_of_plan", {
+        _user_id: user.id,
+        _plan_id: plan.id,
+      });
+      if (!callerIs && !isOwner) {
+        return new Response(JSON.stringify({ error: "Usuário não é alvo do plano" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     if (!plan.exam_date) {
-      return new Response(JSON.stringify({ error: "Plano sem exam_date — não dá para gerar cronograma" }), {
+      return new Response(JSON.stringify({ error: "Plano sem exam_date" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -192,7 +210,41 @@ serve(async (req) => {
       });
     }
 
-    // Gerar tarefas: para cada subtema → theory + questions + review (D+3)
+    /**
+     * Carregar tarefas existentes (futuras + concluídas no passado) para:
+     *  - dedupe estrito de novas inserções (preserva o futuro já planejado)
+     *  - identificar quais subtemas JÁ têm cobertura (theory ou questions) e
+     *    dessa forma redistribuir só os subtemas ainda sem cobertura futura.
+     */
+    const { data: existingAll } = await admin
+      .from("professor_plan_daily_tasks")
+      .select("id, planned_date, task_type, task_payload, status")
+      .eq("plan_id", plan.id)
+      .eq("user_id", targetUserId);
+
+    const existingFutureKeys = new Set<string>();
+    const subtopicsWithFutureTheory = new Set<string>();
+    const subtopicsWithCompletedTheory = new Set<string>();
+    const todayIso = isoDate(today);
+    for (const t of existingAll || []) {
+      const sid = (t as any).task_payload?.subtopic_id ?? "";
+      if (t.planned_date >= todayIso) {
+        existingFutureKeys.add(`${t.planned_date}|${t.task_type}|${sid}`);
+        if (t.task_type === "theory") subtopicsWithFutureTheory.add(sid);
+      }
+      if ((t.status === "completed") && t.task_type === "theory") {
+        subtopicsWithCompletedTheory.add(sid);
+      }
+    }
+
+    // Determinar quais subtemas ainda PRECISAM ser distribuídos no futuro
+    // (sem cobertura futura E sem theory completa no passado).
+    const pending = subtopics.filter(
+      (s) =>
+        !subtopicsWithFutureTheory.has(s.subtopic_id) &&
+        !subtopicsWithCompletedTheory.has(s.subtopic_id),
+    );
+
     type Task = {
       plan_id: string;
       user_id: string;
@@ -204,10 +256,9 @@ serve(async (req) => {
     };
     const tasksQueue: Task[] = [];
 
-    // Primeiro distribui theory + questions sequencialmente nos dias
     let dayCursor = 0;
     let slotInDay = 0;
-    const reviewBacklog: { subtopicId: string; nome: string; reviewIndex: number }[] = [];
+    const reviewBacklog: { subtopicId: string; nome: string }[] = [];
 
     const pushTask = (task: Task) => {
       tasksQueue.push(task);
@@ -218,15 +269,14 @@ serve(async (req) => {
       }
     };
 
-    for (let i = 0; i < subtopics.length; i++) {
-      const s = subtopics[i];
+    for (let i = 0; i < pending.length; i++) {
+      const s = pending[i];
       if (dayCursor >= studyDates.length) break;
       const nome = s.curriculum_subtopics?.nome ?? "Subtema";
 
-      // theory
       pushTask({
         plan_id: plan.id,
-        user_id: user.id,
+        user_id: targetUserId,
         planned_date: isoDate(studyDates[dayCursor]),
         task_type: "theory",
         task_payload: {
@@ -239,10 +289,9 @@ serve(async (req) => {
         status: "pending",
       });
       if (dayCursor >= studyDates.length) break;
-      // questions
       pushTask({
         plan_id: plan.id,
-        user_id: user.id,
+        user_id: targetUserId,
         planned_date: isoDate(studyDates[dayCursor]),
         task_type: "questions",
         task_payload: {
@@ -254,14 +303,12 @@ serve(async (req) => {
         source: "planner",
         status: "pending",
       });
-      reviewBacklog.push({ subtopicId: s.subtopic_id, nome, reviewIndex: i });
+      reviewBacklog.push({ subtopicId: s.subtopic_id, nome });
     }
 
-    // Agora distribui revisões D+3 (encaixe oportunístico nos dias que tiverem espaço)
-    // Estratégia simples: cada review aparece 3 dias depois do dia em que o subtema foi estudado.
+    // Revisões D+3 (somente para os subtemas novos distribuídos agora)
     const finalTasks: Task[] = [...tasksQueue];
     for (const r of reviewBacklog) {
-      // Encontrar o dia em que esse subtema teve theory
       const theoryDay = tasksQueue.find(
         (t) => t.task_type === "theory" && (t.task_payload as any).subtopic_id === r.subtopicId,
       );
@@ -271,7 +318,7 @@ serve(async (req) => {
       if (reviewDate.getTime() > examDate.getTime()) continue;
       finalTasks.push({
         plan_id: plan.id,
-        user_id: user.id,
+        user_id: targetUserId,
         planned_date: isoDate(reviewDate),
         task_type: "review",
         task_payload: {
@@ -284,26 +331,15 @@ serve(async (req) => {
       });
     }
 
-    // Carregar tarefas existentes futuras (>= today) para dedupe
-    const { data: existing } = await admin
-      .from("professor_plan_daily_tasks")
-      .select("id, planned_date, task_type, task_payload")
-      .eq("plan_id", plan.id)
-      .eq("user_id", user.id)
-      .gte("planned_date", isoDate(today));
-    const existingKeys = new Set(
-      (existing || []).map((t: any) =>
-        `${t.planned_date}|${t.task_type}|${(t.task_payload?.subtopic_id ?? "")}`,
-      ),
-    );
-
     const toInsert = finalTasks.filter(
-      (t) => !existingKeys.has(`${t.planned_date}|${t.task_type}|${(t.task_payload as any).subtopic_id ?? ""}`),
+      (t) =>
+        !existingFutureKeys.has(
+          `${t.planned_date}|${t.task_type}|${(t.task_payload as any).subtopic_id ?? ""}`,
+        ),
     );
 
     let insertedCount = 0;
     if (toInsert.length > 0) {
-      // Batch insert (chunks de 200)
       const CHUNK = 200;
       for (let i = 0; i < toInsert.length; i += CHUNK) {
         const slice = toInsert.slice(i, i + CHUNK);
@@ -313,46 +349,93 @@ serve(async (req) => {
       }
     }
 
-    // Atualizar/criar progress row
-    const totalTasks = finalTasks.length;
-    const { error: progErr } = await admin
-      .from("professor_plan_progress")
-      .upsert(
-        {
-          plan_id: plan.id,
-          user_id: user.id,
-          progress_percent: 0,
-          current_week: 1,
-          weekly_goal_status: "partial",
-          completed_tasks: 0,
-          pending_tasks: totalTasks,
-          overdue_tasks: 0,
-          last_activity_at: new Date().toISOString(),
+    // Recalcular progress real
+    const { data: allAfter } = await admin
+      .from("professor_plan_daily_tasks")
+      .select("status, planned_date")
+      .eq("plan_id", plan.id)
+      .eq("user_id", targetUserId);
+
+    const all = allAfter || [];
+    const completedCount = all.filter((t) => t.status === "completed").length;
+    const overdueCount = all.filter(
+      (t) => t.status === "pending" && t.planned_date < todayIso,
+    ).length;
+    const pendingCount = all.filter((t) => t.status === "pending").length;
+    const totalCount = all.length;
+    const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+    await admin.from("professor_plan_progress").upsert(
+      {
+        plan_id: plan.id,
+        user_id: targetUserId,
+        progress_percent: progressPercent,
+        current_week: 1,
+        weekly_goal_status: "partial",
+        completed_tasks: completedCount,
+        pending_tasks: pendingCount,
+        overdue_tasks: overdueCount,
+        last_activity_at: new Date().toISOString(),
+      },
+      { onConflict: "plan_id,user_id", ignoreDuplicates: false },
+    );
+
+    // Registrar evento de recálculo (apenas quando há motivo explícito ou houve mudança real)
+    const reason: RecalcType = body.reason ?? "manual";
+    if (insertedCount > 0 || body.reason) {
+      await admin.from("professor_plan_recalculations").insert({
+        plan_id: plan.id,
+        user_id: targetUserId,
+        recalculation_type: reason,
+        reason: body.reasonText ?? defaultReasonText(reason),
+        metadata: {
+          inserted_tasks: insertedCount,
+          pending_subtopics: pending.length,
+          total_subtopics: subtopics.length,
+          days_until_exam: daysUntil,
         },
-        { onConflict: "plan_id,user_id", ignoreDuplicates: false },
-      );
-    if (progErr) console.warn("progress upsert warn:", progErr.message);
+        created_by: user.id,
+      });
+    }
 
     return new Response(
       JSON.stringify({
         ok: true,
         planId: plan.id,
+        targetUserId,
         examDate: plan.exam_date,
         daysUntil,
         intensity: plan.intensity,
         studyDays: studyDates.length,
         subtopicsCount: subtopics.length,
+        pendingSubtopics: pending.length,
         generatedTasks: finalTasks.length,
         insertedTasks: insertedCount,
         skippedDuplicates: finalTasks.length - insertedCount,
+        recalculationLogged: insertedCount > 0 || !!body.reason,
+        reason,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (err: any) {
-    console.error("proficiency-planner error:", err);
-    return new Response(JSON.stringify({ error: err.message ?? String(err) }), {
+  } catch (err) {
+    const e = err as Error;
+    console.error("proficiency-planner error:", e);
+    return new Response(JSON.stringify({ error: e.message ?? String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
 });
+
+function defaultReasonText(reason: RecalcType): string {
+  switch (reason) {
+    case "missed_goal":
+      return "Plano recalculado por meta semanal não cumprida";
+    case "teacher_update":
+      return "Plano atualizado pelo professor";
+    case "auto":
+      return "Recálculo automático do sistema";
+    default:
+      return "Recálculo manual";
+  }
+}
