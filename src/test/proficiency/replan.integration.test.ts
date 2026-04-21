@@ -15,10 +15,14 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { createSupabaseMock } from "../__mocks__/supabaseMock";
 
-const mock = createSupabaseMock();
+const { mock } = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { createSupabaseMock } = require("../__mocks__/supabaseMock");
+  return { mock: createSupabaseMock() };
+});
 vi.mock("@/integrations/supabase/client", () => ({ supabase: mock.supabase }));
 vi.mock("@/hooks/use-toast", () => ({
-  useToast: () => ({ toast: vi.fn() }),
+  useToast: () => ({ toast: () => {} }),
 }));
 
 import { useCreateProfessorPlan } from "@/hooks/useProfessorPlans";
