@@ -13,6 +13,7 @@ import VideoRoom from "@/components/professor/VideoRoom";
 import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
 import MentorThemePlans from "@/components/professor/MentorThemePlans";
 import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalExams";
+import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficiencyPlans";
 
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
@@ -214,6 +215,7 @@ const ProfessorDashboard = () => {
             <TabsTrigger value="bi" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📈 BI</TabsTrigger>
             <TabsTrigger value="mentoria" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📋 Mentoria</TabsTrigger>
             <TabsTrigger value="osce" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🩺 OSCE</TabsTrigger>
+            <TabsTrigger value="proficiencia" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🎯 Proficiência</TabsTrigger>
           </TabsList>
         </div>
 
@@ -285,6 +287,10 @@ const ProfessorDashboard = () => {
 
         <TabsContent value="osce" className="mt-4">
           <ProfessorPracticalExams />
+        </TabsContent>
+
+        <TabsContent value="proficiencia" className="mt-4">
+          <ProfessorProficiencyPlans />
         </TabsContent>
       </Tabs>
 
