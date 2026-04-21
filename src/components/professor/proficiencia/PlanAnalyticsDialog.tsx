@@ -119,12 +119,14 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
       "aluno",
       "email",
       "origem",
+      "turma",
       "progresso_percent",
       "weekly_goal_status",
       "completed_tasks",
       "pending_tasks",
       "overdue_tasks",
       "recalc_count",
+      "inativo",
       "last_activity_at",
     ];
     const escape = (v: unknown) => {
@@ -136,13 +138,15 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
         plan.name,
         s.display_name ?? "",
         s.email ?? "",
-        s.source === "direct" ? "direto" : "turma",
+        s.source === "direct" ? "Direto" : "Turma",
+        s.class_label ?? "",
         Math.round(s.progress_percent),
         s.weekly_goal_status ?? "",
         s.completed_tasks,
         s.pending_tasks,
         s.overdue_tasks,
         s.recalc_count,
+        s.is_inactive ? "sim" : "nao",
         s.last_activity_at ?? "",
       ]
         .map(escape)
@@ -308,14 +312,23 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
                         >
                           <TableCell>
                             <div className="min-w-0">
-                              <div className="font-medium truncate">
+                              <div className="font-medium truncate flex items-center gap-1.5">
                                 {s.display_name ?? "Aluno"}
+                                {s.is_inactive && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] py-0 bg-slate-500/10 text-slate-700 dark:text-slate-300"
+                                    title="Sem atividade nos últimos 3 dias"
+                                  >
+                                    inativo
+                                  </Badge>
+                                )}
                               </div>
                               <div className="text-xs text-muted-foreground truncate">
                                 {s.email ?? ""}
                                 {s.source === "class" && (
                                   <Badge variant="outline" className="ml-2 text-[10px] py-0">
-                                    turma
+                                    {s.class_label ? `turma · ${s.class_label}` : "turma"}
                                   </Badge>
                                 )}
                               </div>

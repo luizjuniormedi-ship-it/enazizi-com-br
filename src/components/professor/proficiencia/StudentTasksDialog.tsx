@@ -142,6 +142,7 @@ const StudentTasksDialog = ({
                   <TableHead className="w-[110px]">Data</TableHead>
                   <TableHead className="w-[110px]">Tipo</TableHead>
                   <TableHead>Subtema</TableHead>
+                  <TableHead className="w-[120px]">Origem</TableHead>
                   <TableHead className="w-[120px]">Status</TableHead>
                   <TableHead className="w-[160px]">Concluída em</TableHead>
                 </TableRow>
@@ -152,6 +153,14 @@ const StudentTasksDialog = ({
                     label: t.status,
                     cls: "bg-muted text-muted-foreground",
                   };
+                  const originLabel =
+                    t.source === "replan_missed_goal"
+                      ? "Replan · meta"
+                      : t.source === "replan_teacher_update"
+                        ? "Replan · prof."
+                        : t.source === "planner_auto"
+                          ? "Auto"
+                          : "Planner";
                   return (
                     <TableRow key={t.id}>
                       <TableCell className="text-xs">
@@ -166,6 +175,11 @@ const StudentTasksDialog = ({
                         {t.subtopic_name ?? (
                           <span className="text-muted-foreground italic">sem subtema</span>
                         )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-[10px]">
+                          {originLabel}
+                        </Badge>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className={sb.cls}>

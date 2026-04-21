@@ -245,13 +245,23 @@ serve(async (req) => {
         !subtopicsWithCompletedTheory.has(s.subtopic_id),
     );
 
+    // Hardening Fase 6.1: source diferencia planner inicial vs replan.
+    const SOURCE_MAP: Record<RecalcType, string> = {
+      manual: "planner",
+      auto: "planner_auto",
+      missed_goal: "replan_missed_goal",
+      teacher_update: "replan_teacher_update",
+    };
+    const reasonForSource: RecalcType = body.reason ?? "manual";
+    const taskSource = SOURCE_MAP[reasonForSource] ?? "planner";
+
     type Task = {
       plan_id: string;
       user_id: string;
       planned_date: string;
       task_type: "theory" | "questions" | "review";
       task_payload: Record<string, unknown>;
-      source: "planner";
+      source: string;
       status: "pending";
     };
     const tasksQueue: Task[] = [];
