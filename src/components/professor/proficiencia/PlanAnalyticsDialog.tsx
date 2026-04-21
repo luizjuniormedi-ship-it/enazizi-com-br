@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,11 +36,13 @@ import {
   Search,
   RefreshCcw,
   TrendingUp,
+  Download,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { usePlanAnalytics, type PlanAnalyticsStudentRow } from "@/hooks/useProficiencyAnalytics";
 import type { ProfessorPlan } from "@/hooks/useProfessorPlans";
+import StudentTasksDialog from "./StudentTasksDialog";
 
 interface Props {
   open: boolean;
