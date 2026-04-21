@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useCoveragePriorityMap } from "@/hooks/useCoveragePriorityMap";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import {
@@ -21,7 +22,10 @@ import {
 } from "@/lib/coveragePriorityBoost";
 import { statusBadgeVariant, statusLabel } from "@/lib/coverageRules";
 import { useContentCoverageAudit } from "@/hooks/useContentCoverageAudit";
-import { Zap, AlertTriangle, BookOpen, FlaskConical, ListChecks, Link2, Type, HelpCircle } from "lucide-react";
+import { useStructuralCoverageHealth, badgeVariant as healthVariant, badgeLabel as healthLabel } from "@/hooks/useStructuralCoverageHealth";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Zap, AlertTriangle, BookOpen, FlaskConical, ListChecks, Link2, Type, HelpCircle, Database, RefreshCw } from "lucide-react";
 
 interface MatchStats {
   subtopic_id: number;
@@ -37,10 +41,33 @@ const LEVEL_ORDER: CoverageBoostLevel[] = ["critical", "high", "medium", "low", 
 export default function CoveragePriorityBoostPanel() {
   const { entries, stats, loading } = useCoveragePriorityMap();
   const { data: audit } = useContentCoverageAudit();
+  const { data: health, refetch: refetchHealth, isFetching: healthLoading } = useStructuralCoverageHealth();
   const { isEnabled } = useFeatureFlags();
   const flagEnabled = isEnabled("coverage_priority_boost_enabled");
   const [search, setSearch] = useState("");
   const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
+  const [running, setRunning] = useState(false);
+
+  const runBackfill = async () => {
+    setRunning(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("backfill-temas-estudados-ids");
+      if (error) throw error;
+      const r = (data as any)?.report;
+      if (r) {
+        toast.success(
+          `Backfill concluído: +${r.filledBySubtopicExact + r.filledBySubtopicViaTema} subtopic, +${r.filledByTopicViaTema} topic. ${r.remainingUnmatched} sem match.`
+        );
+      } else {
+        toast.success("Backfill executado.");
+      }
+      await refetchHealth();
+    } catch (e: any) {
+      toast.error(`Falha no backfill: ${e?.message ?? "erro desconhecido"}`);
+    } finally {
+      setRunning(false);
+    }
+  };
 
   // Lê stats de match expostas pelo Study Engine (Fase 1.5).
   // Atualiza a cada 2s — leve e read-only. Nunca lança.

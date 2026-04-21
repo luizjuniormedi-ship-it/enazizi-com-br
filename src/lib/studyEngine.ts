@@ -283,9 +283,10 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // Only query these if coreData not provided
     ...conditionalResults
   ] = await Promise.all([
+    // Fase 1.6 — puxa IDs estruturais via join em temas_estudados
     safe(() => supabase
       .from("revisoes")
-      .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade)")
+      .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade, subtopic_id, topic_id, specialty_id)")
       .eq("user_id", userId)
       .eq("status", "pendente")
       .lte("data_revisao", new Date().toISOString().slice(0, 10))
@@ -323,9 +324,10 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
           })) as any[],
       })), "desempenho"),
     // temas_estudados — engine needs extra fields (data_estudo, status, dificuldade) not in coreData
+    // Fase 1.6 — também traz IDs estruturais para encadear nas recs de weak topics
     safe(() => supabase
       .from("temas_estudados")
-      .select("id, tema, especialidade, data_estudo, status, dificuldade")
+      .select("id, tema, especialidade, data_estudo, status, dificuldade, subtopic_id, topic_id, specialty_id")
       .eq("user_id", userId)
       .order("data_estudo", { ascending: false })
       .limit(50), "temas"),
@@ -632,6 +634,27 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     recs.push(rec);
   };
 
+  // Fase 1.6 — índice tema→IDs estruturais a partir de temas_estudados (já com colunas novas)
+  // Usado para enriquecer recs de review/weak topics quando a fonte legada não tinha ID.
+  const temasArr = (temasData || []) as any[];
+  const temaIdIndex = new Map<string, { subtopicId?: string | null; topicId?: string | null; specialtyId?: string | null }>();
+  for (const t of temasArr) {
+    if (!t?.tema) continue;
+    const k = String(t.tema).trim().toLowerCase();
+    const prev = temaIdIndex.get(k);
+    // Prefere o registro que mais IDs tiver
+    const score = (x?: string | null) => (x ? 1 : 0);
+    const newScore = score(t.subtopic_id) + score(t.topic_id) + score(t.specialty_id);
+    const prevScore = prev ? score(prev.subtopicId) + score(prev.topicId) + score(prev.specialtyId) : -1;
+    if (newScore > prevScore) {
+      temaIdIndex.set(k, {
+        subtopicId: t.subtopic_id ?? null,
+        topicId: t.topic_id ?? null,
+        specialtyId: t.specialty_id ?? null,
+      });
+    }
+  }
+
   // Group pending reviews by tema name
   const reviewsByTema = new Map<string, { reviews: any[]; spec: string }>();
   for (const rev of pendingReviews) {
@@ -684,8 +707,12 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
     const countLabel = pendingCount > 1 ? ` (${pendingCount} pendentes)` : "";
 
-    // Debug: log canonical ID injection
-    console.log("[StudyEngine] Review rec:", { tema, oldestId: oldest.id, fsrsCardId: fsrsCard?.id, pendingCount });
+    // Fase 1.6 — IDs estruturais: 1º via join direto, 2º fallback no índice de temas_estudados
+    const fromJoin = oldest.temas_estudados || {};
+    const fromIndex = temaIdIndex.get(tema.trim().toLowerCase()) || {};
+    const subtopicId = fromJoin.subtopic_id ?? fromIndex.subtopicId ?? null;
+    const topicId = fromJoin.topic_id ?? fromIndex.topicId ?? null;
+    const specialtyId = fromJoin.specialty_id ?? fromIndex.specialtyId ?? null;
 
     addRec({
       id: id("rev", revIdx),
@@ -709,6 +736,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       pendingCount,
       pendingReviewIds,
       nextReviewDate,
+      subtopicId,
+      topicId,
+      specialtyId,
     });
     revIdx++;
   }
@@ -730,6 +760,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // Debug: log canonical ID injection for errors
     console.log("[StudyEngine] Error rec:", { tema: err.tema, errorId: err.id });
 
+    // Fase 1.6 — error_bank não tem IDs estruturais; tenta via índice de temas_estudados
+    const errIds = temaIdIndex.get(String(err.tema || "").trim().toLowerCase()) || {};
+
     addRec({
       id: id("err", i),
       type: "error_review",
@@ -749,6 +782,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       sourceTable: "error_bank",
       sourceRecordId: err.id,
       errorBankId: err.id,
+      subtopicId: errIds.subtopicId ?? null,
+      topicId: errIds.topicId ?? null,
+      specialtyId: errIds.specialtyId ?? null,
     });
   }
 
@@ -758,6 +794,8 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     const w = weakTopics[i];
     const tema = w.temas_estudados?.tema || "Tema";
     const spec = w.temas_estudados?.especialidade || "Geral";
+    // Fase 1.6 — IDs estruturais via índice tema→IDs montado a partir de temas_estudados
+    const ids = temaIdIndex.get(tema.trim().toLowerCase()) || {};
     addRec({
       id: id("weak", i),
       type: "practice",
@@ -771,6 +809,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       objective: "reinforcement",
       difficulty: w.taxa_acerto < 40 ? "facil" : "intermediario",
       _groupKey: `practice:${tema}`,
+      subtopicId: ids.subtopicId ?? null,
+      topicId: ids.topicId ?? null,
+      specialtyId: ids.specialtyId ?? null,
     });
   }
 
