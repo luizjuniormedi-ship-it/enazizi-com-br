@@ -5330,6 +5330,293 @@ export type Database = {
           },
         ]
       }
+      professor_plan_daily_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          plan_id: string
+          planned_date: string
+          source: string
+          status: string
+          task_payload: Json
+          task_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          plan_id: string
+          planned_date: string
+          source?: string
+          status?: string
+          task_payload?: Json
+          task_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          plan_id?: string
+          planned_date?: string
+          source?: string
+          status?: string
+          task_payload?: Json
+          task_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_plan_daily_tasks_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "professor_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professor_plan_linked_resources: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          resource_id: string
+          resource_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          resource_id: string
+          resource_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          resource_id?: string
+          resource_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_plan_linked_resources_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "professor_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professor_plan_progress: {
+        Row: {
+          completed_tasks: number
+          current_week: number
+          id: string
+          last_activity_at: string | null
+          overdue_tasks: number
+          pending_tasks: number
+          plan_id: string
+          progress_percent: number
+          updated_at: string
+          user_id: string
+          weekly_goal_status: string
+        }
+        Insert: {
+          completed_tasks?: number
+          current_week?: number
+          id?: string
+          last_activity_at?: string | null
+          overdue_tasks?: number
+          pending_tasks?: number
+          plan_id: string
+          progress_percent?: number
+          updated_at?: string
+          user_id: string
+          weekly_goal_status?: string
+        }
+        Update: {
+          completed_tasks?: number
+          current_week?: number
+          id?: string
+          last_activity_at?: string | null
+          overdue_tasks?: number
+          pending_tasks?: number
+          plan_id?: string
+          progress_percent?: number
+          updated_at?: string
+          user_id?: string
+          weekly_goal_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_plan_progress_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "professor_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professor_plan_recalculations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json
+          plan_id: string
+          reason: string | null
+          recalculation_type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          plan_id: string
+          reason?: string | null
+          recalculation_type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json
+          plan_id?: string
+          reason?: string | null
+          recalculation_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_plan_recalculations_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "professor_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professor_plan_subtopics: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          sort_order: number | null
+          subtopic_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          sort_order?: number | null
+          subtopic_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          sort_order?: number | null
+          subtopic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_plan_subtopics_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "professor_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professor_plan_subtopics_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professor_plan_subtopics_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+        ]
+      }
+      professor_plan_targets: {
+        Row: {
+          class_id: string | null
+          created_at: string
+          id: string
+          plan_id: string
+          user_id: string | null
+        }
+        Insert: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          plan_id: string
+          user_id?: string | null
+        }
+        Update: {
+          class_id?: string | null
+          created_at?: string
+          id?: string
+          plan_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_plan_targets_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "professor_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professor_plans: {
+        Row: {
+          created_at: string
+          created_by: string
+          exam_date: string | null
+          id: string
+          intensity: string
+          name: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          exam_date?: string | null
+          id?: string
+          intensity?: string
+          name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          exam_date?: string | null
+          id?: string
+          intensity?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           approved_at: string | null
@@ -9635,6 +9922,10 @@ export type Database = {
         Args: { _plan_id: string; _user_id: string }
         Returns: boolean
       }
+      professor_owns_plan: {
+        Args: { _plan_id: string; _user_id: string }
+        Returns: boolean
+      }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
@@ -9662,6 +9953,10 @@ export type Database = {
       user_institution_id: { Args: { _user_id: string }; Returns: string }
       user_is_institution_staff: {
         Args: { _user_id: string }
+        Returns: boolean
+      }
+      user_is_target_of_plan: {
+        Args: { _plan_id: string; _user_id: string }
         Returns: boolean
       }
       users_share_institution: {
