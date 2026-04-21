@@ -967,7 +967,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
     const curriculumItems = await fetchCurriculumForEngine(primaryBanca, 6, 80);
 
-    const curriculumGaps: { topic: string; specialty: string; subtema: string; bancaPeso: number; prioridade: number; incidencia: string }[] = [];
+    const curriculumGaps: { topic: string; specialty: string; subtema: string; bancaPeso: number; prioridade: number; incidencia: string; subtopicId?: string | null; topicId?: string | null; specialtyId?: string | null }[] = [];
     for (const item of curriculumItems) {
       const subLower = (item.subtema || "").toLowerCase();
       const temaLower = (item.tema || "").toLowerCase();
@@ -982,6 +982,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
           bancaPeso: item.bancaPeso,
           prioridade: item.prioridade_base,
           incidencia: item.incidencia_geral,
+          subtopicId: item.subtopicId ?? null,
+          topicId: item.topicId ?? null,
+          specialtyId: item.specialtyId ?? null,
         });
       }
     }
@@ -1006,6 +1009,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
         estimatedMinutes: 25,
         objective: "new_content",
         _groupKey: `curriculum:${gap.topic}`,
+        subtopicId: gap.subtopicId ?? null,
+        topicId: gap.topicId ?? null,
+        specialtyId: gap.specialtyId ?? null,
       });
     }
   }
