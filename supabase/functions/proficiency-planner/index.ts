@@ -365,13 +365,24 @@ serve(async (req) => {
     const totalCount = all.length;
     const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
+    // Atualizar APENAS contagens — current_week e weekly_goal_status são
+    // de responsabilidade exclusiva da edge `proficiency-progress-recalc`,
+    // que tem o contexto temporal correto. Não sobrescrevemos aqui para
+    // evitar regressão visual no painel do aluno após replanejamento.
+    const { data: existingProgress } = await admin
+      .from("professor_plan_progress")
+      .select("current_week, weekly_goal_status")
+      .eq("plan_id", plan.id)
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+
     await admin.from("professor_plan_progress").upsert(
       {
         plan_id: plan.id,
         user_id: targetUserId,
         progress_percent: progressPercent,
-        current_week: 1,
-        weekly_goal_status: "partial",
+        current_week: existingProgress?.current_week ?? 1,
+        weekly_goal_status: existingProgress?.weekly_goal_status ?? "partial",
         completed_tasks: completedCount,
         pending_tasks: pendingCount,
         overdue_tasks: overdueCount,
