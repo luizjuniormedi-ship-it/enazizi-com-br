@@ -43,7 +43,7 @@ export default function CoveragePriorityBoostPanel() {
   const { entries, stats, loading } = useCoveragePriorityMap();
   const { data: audit } = useContentCoverageAudit();
   const { data: health, refetch: refetchHealth, isFetching: healthLoading } = useStructuralCoverageHealth();
-  const { data: telemetry } = useCoverageBoostTelemetry();
+  const { data: telemetry, refetch: refetchTelemetry } = useCoverageBoostTelemetry();
   const { isEnabled } = useFeatureFlags();
   const flagEnabled = isEnabled("coverage_priority_boost_enabled");
   const [search, setSearch] = useState("");
@@ -63,8 +63,10 @@ export default function CoveragePriorityBoostPanel() {
       } else {
         toast.success("Backfill executado.");
       }
-      await refetchHealth();
+      // Refresh estrutural + telemetria histórica em paralelo
+      await Promise.all([refetchHealth(), refetchTelemetry()]);
     } catch (e: any) {
+      console.error("[CoveragePriorityBoost] backfill error:", e);
       toast.error(`Falha no backfill: ${e?.message ?? "erro desconhecido"}`);
     } finally {
       setRunning(false);
@@ -417,6 +419,53 @@ export default function CoveragePriorityBoostPanel() {
                   </div>
                 </div>
               </div>
+
+              {/* Amostras recentes (Fase 1.7) */}
+              {telemetry.recentSamples.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">
+                    Amostras recentes (últimos {telemetry.recentSamples.length} eventos)
+                  </p>
+                  <div className="overflow-x-auto max-h-[420px] border rounded-md">
+                    <table className="w-full text-xs">
+                      <thead className="border-b text-muted-foreground sticky top-0 bg-background">
+                        <tr>
+                          <th className="text-left py-1.5 px-2">Quando</th>
+                          <th className="text-left py-1.5 px-2">Topic</th>
+                          <th className="text-left py-1.5 px-2">Subtopic</th>
+                          <th className="text-left py-1.5 px-2">Match</th>
+                          <th className="text-right py-1.5 px-2">Score</th>
+                          <th className="text-right py-1.5 px-2">+Aplicado</th>
+                          <th className="text-center py-1.5 px-2">Click</th>
+                          <th className="text-center py-1.5 px-2">Exec.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {telemetry.recentSamples.map((s) => (
+                          <tr key={s.id} className="border-b hover:bg-muted/40">
+                            <td className="py-1 px-2 text-muted-foreground whitespace-nowrap">
+                              {new Date(s.createdAt).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                            </td>
+                            <td className="py-1 px-2 truncate max-w-[140px]" title={s.topic ?? ""}>{s.topic ?? "—"}</td>
+                            <td className="py-1 px-2 truncate max-w-[160px]" title={s.subtopic ?? ""}>{s.subtopic ?? "—"}</td>
+                            <td className="py-1 px-2">
+                              <Badge variant="outline" className="text-[10px]">{s.matchMethod ?? "none"}</Badge>
+                            </td>
+                            <td className="py-1 px-2 text-right font-semibold">{s.boostScore}</td>
+                            <td className="py-1 px-2 text-right text-primary">+{s.boostApplied}</td>
+                            <td className="py-1 px-2 text-center">
+                              {s.clicked ? <Badge variant="default" className="text-[10px]">sim</Badge> : <span className="text-muted-foreground">—</span>}
+                            </td>
+                            <td className="py-1 px-2 text-center">
+                              {s.executed ? <Badge variant="default" className="text-[10px]">sim</Badge> : <span className="text-muted-foreground">—</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               <p className="text-xs text-muted-foreground">
                 Quanto maior a fração estrutural (subtopic_id + topic_id), menor a dependência de matching textual.

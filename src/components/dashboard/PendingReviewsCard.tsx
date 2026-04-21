@@ -5,9 +5,12 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, AlertTriangle, ChevronRight, Clock } from "lucide-react";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
+import { useAuth } from "@/hooks/useAuth";
+import { markRecommendationClicked } from "@/lib/coverageBoostTelemetry";
 
 export default function PendingReviewsCard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: recommendations } = useStudyEngine();
 
   const reviews = (recommendations || []).filter(
@@ -46,7 +49,10 @@ export default function PendingReviewsCard() {
           <div
             key={rev.id}
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors group"
-            onClick={() => navigate(buildStudyPath(rev))}
+            onClick={() => {
+              if (user?.id) void markRecommendationClicked(user.id, rev.id);
+              navigate(buildStudyPath(rev));
+            }}
           >
             {rev.priority >= 85 && (
               <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />

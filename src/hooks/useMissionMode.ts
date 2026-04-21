@@ -3,6 +3,7 @@ import { useStudyEngine, type StudyRecommendation } from "./useStudyEngine";
 import { useAuth } from "./useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { completeStudyAction, type StudyActionType } from "@/lib/completeStudyAction";
+import { markRecommendationExecuted } from "@/lib/coverageBoostTelemetry";
 
 export type MissionStatus = "idle" | "active" | "paused" | "completed";
 
@@ -243,6 +244,11 @@ export function useMissionMode() {
           errorBankId: (task as any).errorBankId,
           dailyPlanTaskId: (task as any).dailyPlanTaskId,
         });
+
+        // Telemetria Fase 1.7 — proxy seguro de execução: a conclusão da tarefa
+        // dentro da missão é o sinal canônico mais confiável de "executed".
+        // Fire-and-forget, tolerante a falhas, não bloqueia o fluxo.
+        void markRecommendationExecuted(user.id, task.id);
 
         import("@/lib/activityLogger").then(({ logActivity }) => {
           logActivity(user.id, "task_completed", {
