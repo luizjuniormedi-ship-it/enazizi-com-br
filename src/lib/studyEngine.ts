@@ -788,6 +788,8 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     const w = weakTopics[i];
     const tema = w.temas_estudados?.tema || "Tema";
     const spec = w.temas_estudados?.especialidade || "Geral";
+    // Fase 1.6 — IDs estruturais via índice tema→IDs montado a partir de temas_estudados
+    const ids = temaIdIndex.get(tema.trim().toLowerCase()) || {};
     addRec({
       id: id("weak", i),
       type: "practice",
@@ -801,6 +803,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       objective: "reinforcement",
       difficulty: w.taxa_acerto < 40 ? "facil" : "intermediario",
       _groupKey: `practice:${tema}`,
+      subtopicId: ids.subtopicId ?? null,
+      topicId: ids.topicId ?? null,
+      specialtyId: ids.specialtyId ?? null,
     });
   }
 
