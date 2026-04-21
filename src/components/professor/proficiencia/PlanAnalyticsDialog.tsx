@@ -85,6 +85,7 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedStudent, setSelectedStudent] = useState<PlanAnalyticsStudentRow | null>(null);
 
   const { data, isLoading } = usePlanAnalytics(open ? plan?.id ?? null : null);
 
@@ -110,6 +111,55 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
       return true;
     });
   }, [data, search, classFilter, statusFilter]);
+
+  const handleExportCsv = () => {
+    if (!plan) return;
+    const headers = [
+      "plano",
+      "aluno",
+      "email",
+      "origem",
+      "progresso_percent",
+      "weekly_goal_status",
+      "completed_tasks",
+      "pending_tasks",
+      "overdue_tasks",
+      "recalc_count",
+      "last_activity_at",
+    ];
+    const escape = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = filteredStudents.map((s) =>
+      [
+        plan.name,
+        s.display_name ?? "",
+        s.email ?? "",
+        s.source === "direct" ? "direto" : "turma",
+        Math.round(s.progress_percent),
+        s.weekly_goal_status ?? "",
+        s.completed_tasks,
+        s.pending_tasks,
+        s.overdue_tasks,
+        s.recalc_count,
+        s.last_activity_at ?? "",
+      ]
+        .map(escape)
+        .join(","),
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safeName = plan.name.replace(/[^a-z0-9-_]+/gi, "_").toLowerCase();
+    a.download = `proficiencia_${safeName}_${format(new Date(), "yyyyMMdd_HHmm")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
