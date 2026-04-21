@@ -43,7 +43,7 @@ export default function CoveragePriorityBoostPanel() {
   const { entries, stats, loading } = useCoveragePriorityMap();
   const { data: audit } = useContentCoverageAudit();
   const { data: health, refetch: refetchHealth, isFetching: healthLoading } = useStructuralCoverageHealth();
-  const { data: telemetry } = useCoverageBoostTelemetry();
+  const { data: telemetry, refetch: refetchTelemetry } = useCoverageBoostTelemetry();
   const { isEnabled } = useFeatureFlags();
   const flagEnabled = isEnabled("coverage_priority_boost_enabled");
   const [search, setSearch] = useState("");
@@ -63,8 +63,10 @@ export default function CoveragePriorityBoostPanel() {
       } else {
         toast.success("Backfill executado.");
       }
-      await refetchHealth();
+      // Refresh estrutural + telemetria histórica em paralelo
+      await Promise.all([refetchHealth(), refetchTelemetry()]);
     } catch (e: any) {
+      console.error("[CoveragePriorityBoost] backfill error:", e);
       toast.error(`Falha no backfill: ${e?.message ?? "erro desconhecido"}`);
     } finally {
       setRunning(false);
