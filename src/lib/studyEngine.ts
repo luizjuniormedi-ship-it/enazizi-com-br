@@ -760,6 +760,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // Debug: log canonical ID injection for errors
     console.log("[StudyEngine] Error rec:", { tema: err.tema, errorId: err.id });
 
+    // Fase 1.6 — error_bank não tem IDs estruturais; tenta via índice de temas_estudados
+    const errIds = temaIdIndex.get(String(err.tema || "").trim().toLowerCase()) || {};
+
     addRec({
       id: id("err", i),
       type: "error_review",
@@ -779,6 +782,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       sourceTable: "error_bank",
       sourceRecordId: err.id,
       errorBankId: err.id,
+      subtopicId: errIds.subtopicId ?? null,
+      topicId: errIds.topicId ?? null,
+      specialtyId: errIds.specialtyId ?? null,
     });
   }
 
