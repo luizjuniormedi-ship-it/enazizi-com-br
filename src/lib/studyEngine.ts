@@ -283,9 +283,10 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     // Only query these if coreData not provided
     ...conditionalResults
   ] = await Promise.all([
+    // Fase 1.6 — puxa IDs estruturais via join em temas_estudados
     safe(() => supabase
       .from("revisoes")
-      .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade)")
+      .select("id, tema_id, data_revisao, status, prioridade, risco_esquecimento, temas_estudados(tema, especialidade, subtopic_id, topic_id, specialty_id)")
       .eq("user_id", userId)
       .eq("status", "pendente")
       .lte("data_revisao", new Date().toISOString().slice(0, 10))
@@ -323,9 +324,10 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
           })) as any[],
       })), "desempenho"),
     // temas_estudados — engine needs extra fields (data_estudo, status, dificuldade) not in coreData
+    // Fase 1.6 — também traz IDs estruturais para encadear nas recs de weak topics
     safe(() => supabase
       .from("temas_estudados")
-      .select("id, tema, especialidade, data_estudo, status, dificuldade")
+      .select("id, tema, especialidade, data_estudo, status, dificuldade, subtopic_id, topic_id, specialty_id")
       .eq("user_id", userId)
       .order("data_estudo", { ascending: false })
       .limit(50), "temas"),
