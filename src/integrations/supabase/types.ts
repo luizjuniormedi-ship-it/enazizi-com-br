@@ -7795,9 +7795,13 @@ export type Database = {
           fonte: string | null
           id: string
           observacoes: string | null
+          specialty_id: string | null
           status: string | null
+          subtopic_id: string | null
+          subtopic_match_method: string | null
           subtopico: string | null
           tema: string
+          topic_id: string | null
           updated_at: string
           user_id: string
         }
@@ -7810,9 +7814,13 @@ export type Database = {
           fonte?: string | null
           id?: string
           observacoes?: string | null
+          specialty_id?: string | null
           status?: string | null
+          subtopic_id?: string | null
+          subtopic_match_method?: string | null
           subtopico?: string | null
           tema: string
+          topic_id?: string | null
           updated_at?: string
           user_id: string
         }
@@ -7825,13 +7833,46 @@ export type Database = {
           fonte?: string | null
           id?: string
           observacoes?: string | null
+          specialty_id?: string | null
           status?: string | null
+          subtopic_id?: string | null
+          subtopic_match_method?: string | null
           subtopico?: string | null
           tema?: string
+          topic_id?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "temas_estudados_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temas_estudados_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temas_estudados_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "temas_estudados_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trajectory_applied_actions: {
         Row: {
