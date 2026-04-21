@@ -165,13 +165,27 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Relatório do plano — {plan?.name ?? ""}
-          </DialogTitle>
-          <DialogDescription>
-            Acompanhamento agregado e por aluno. Dados calculados a partir do progresso vivo do plano.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Relatório do plano — {plan?.name ?? ""}
+              </DialogTitle>
+              <DialogDescription>
+                Acompanhamento agregado e por aluno. Dados calculados a partir do progresso vivo do plano.
+              </DialogDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={!data || filteredStudents.length === 0}
+              className="shrink-0 gap-2"
+              title="Exportar CSV (respeita filtros aplicados)"
+            >
+              <Download className="h-4 w-4" /> Exportar CSV
+            </Button>
+          </div>
         </DialogHeader>
 
         {isLoading || !data ? (
@@ -286,7 +300,12 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
                     {filteredStudents.map((s) => {
                       const wb = s.weekly_goal_status ? weeklyBadge[s.weekly_goal_status] : null;
                       return (
-                        <TableRow key={s.user_id}>
+                        <TableRow
+                          key={s.user_id}
+                          className="cursor-pointer"
+                          onClick={() => setSelectedStudent(s)}
+                          title="Ver tarefas do aluno"
+                        >
                           <TableCell>
                             <div className="min-w-0">
                               <div className="font-medium truncate">
@@ -352,6 +371,15 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
           </div>
         )}
       </DialogContent>
+
+      <StudentTasksDialog
+        open={!!selectedStudent}
+        onOpenChange={(v) => !v && setSelectedStudent(null)}
+        planId={plan?.id ?? null}
+        planName={plan?.name}
+        userId={selectedStudent?.user_id ?? null}
+        studentName={selectedStudent?.display_name ?? selectedStudent?.email ?? null}
+      />
     </Dialog>
   );
 };
