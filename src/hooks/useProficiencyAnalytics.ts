@@ -17,6 +17,7 @@ export interface PlanAnalyticsSummary {
   avgProgress: number;
   onTrackCount: number;
   lateCount: number;
+  inactiveCount: number;
   completedTasks: number;
   pendingTasks: number;
   overdueTasks: number;
@@ -24,6 +25,9 @@ export interface PlanAnalyticsSummary {
   missedGoalRecalcs: number;
   teacherUpdateRecalcs: number;
 }
+
+/** Considera aluno inativo se não há atividade nos últimos N dias. */
+export const INACTIVE_THRESHOLD_DAYS = 3;
 
 export interface PlanAnalyticsStudentRow {
   user_id: string;
@@ -39,6 +43,8 @@ export interface PlanAnalyticsStudentRow {
   recalc_count: number;
   source: "direct" | "class";
   class_id?: string | null;
+  class_label?: string | null;
+  is_inactive: boolean;
 }
 
 export interface PlanAnalyticsResult {
@@ -114,6 +120,7 @@ export function usePlanAnalytics(planId: string | null) {
             avgProgress: 0,
             onTrackCount: 0,
             lateCount: 0,
+            inactiveCount: 0,
             completedTasks: 0,
             pendingTasks: 0,
             overdueTasks: 0,
@@ -160,9 +167,16 @@ export function usePlanAnalytics(planId: string | null) {
         if (r.user_id) recalcByUser.set(r.user_id, (recalcByUser.get(r.user_id) ?? 0) + 1);
       });
 
+      const inactiveCutoff = Date.now() - INACTIVE_THRESHOLD_DAYS * 86400000;
+      const classLabelMap = new Map(classes.map((c) => [c.id, c.label]));
+
       const students: PlanAnalyticsStudentRow[] = userIds.map((uid) => {
         const prog = progressMap.get(uid);
         const prof = profileMap.get(uid);
+        const lastActivity = prog?.last_activity_at ?? null;
+        const lastTs = lastActivity ? new Date(lastActivity).getTime() : null;
+        const isInactive = !lastTs || lastTs < inactiveCutoff;
+        const cid = userClassMap.get(uid) ?? null;
         return {
           user_id: uid,
           display_name: prof?.display_name ?? null,
@@ -173,10 +187,12 @@ export function usePlanAnalytics(planId: string | null) {
           completed_tasks: Number(prog?.completed_tasks ?? 0),
           pending_tasks: Number(prog?.pending_tasks ?? 0),
           overdue_tasks: Number(prog?.overdue_tasks ?? 0),
-          last_activity_at: prog?.last_activity_at ?? null,
+          last_activity_at: lastActivity,
           recalc_count: recalcByUser.get(uid) ?? 0,
           source: directIds.has(uid) ? "direct" : "class",
-          class_id: userClassMap.get(uid) ?? null,
+          class_id: cid,
+          class_label: cid ? classLabelMap.get(cid) ?? null : null,
+          is_inactive: isInactive,
         };
       });
 
@@ -193,6 +209,7 @@ export function usePlanAnalytics(planId: string | null) {
       const lateCount = students.filter(
         (s) => s.overdue_tasks > 0 || s.weekly_goal_status === "missed",
       ).length;
+      const inactiveCount = students.filter((s) => s.is_inactive).length;
       const completedTasks = students.reduce((s, x) => s + x.completed_tasks, 0);
       const pendingTasks = students.reduce((s, x) => s + x.pending_tasks, 0);
       const overdueTasks = students.reduce((s, x) => s + x.overdue_tasks, 0);
@@ -203,6 +220,7 @@ export function usePlanAnalytics(planId: string | null) {
           avgProgress,
           onTrackCount,
           lateCount,
+          inactiveCount,
           completedTasks,
           pendingTasks,
           overdueTasks,

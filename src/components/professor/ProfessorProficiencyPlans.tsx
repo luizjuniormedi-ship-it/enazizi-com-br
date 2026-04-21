@@ -5,6 +5,7 @@ import { Plus, Loader2, Target } from "lucide-react";
 import { useProfessorPlansList } from "@/hooks/useProfessorPlans";
 import CreatePlanDialog from "./proficiencia/CreatePlanDialog";
 import PlanListItem from "./proficiencia/PlanListItem";
+import { PlanIdsProvider } from "./proficiencia/PlanRiskBadges";
 
 /**
  * Proficiência Guiada — Painel do Professor (Fase 1).
@@ -51,11 +52,13 @@ const ProfessorProficiencyPlans = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {plans.map((p) => (
-            <PlanListItem key={p.id} plan={p} />
-          ))}
-        </div>
+        <PlanIdsProvider ids={plans.filter((p) => p.status === "active").map((p) => p.id)}>
+          <div className="space-y-3">
+            {plans.map((p) => (
+              <PlanListItem key={p.id} plan={p} />
+            ))}
+          </div>
+        </PlanIdsProvider>
       )}
 
       <CreatePlanDialog open={showCreate} onOpenChange={setShowCreate} />
