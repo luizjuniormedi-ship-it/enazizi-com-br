@@ -17,6 +17,7 @@ export interface PlanAnalyticsSummary {
   avgProgress: number;
   onTrackCount: number;
   lateCount: number;
+  inactiveCount: number;
   completedTasks: number;
   pendingTasks: number;
   overdueTasks: number;
@@ -24,6 +25,9 @@ export interface PlanAnalyticsSummary {
   missedGoalRecalcs: number;
   teacherUpdateRecalcs: number;
 }
+
+/** Considera aluno inativo se não há atividade nos últimos N dias. */
+export const INACTIVE_THRESHOLD_DAYS = 3;
 
 export interface PlanAnalyticsStudentRow {
   user_id: string;
@@ -39,6 +43,8 @@ export interface PlanAnalyticsStudentRow {
   recalc_count: number;
   source: "direct" | "class";
   class_id?: string | null;
+  class_label?: string | null;
+  is_inactive: boolean;
 }
 
 export interface PlanAnalyticsResult {
