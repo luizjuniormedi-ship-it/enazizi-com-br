@@ -31,6 +31,7 @@ import {
   useRecalcProficiencyProgress,
   type ProficiencyRecalculation,
 } from "@/hooks/useProficiencyReplan";
+import ProficiencyAlertsBlock from "./ProficiencyAlertsBlock";
 
 /**
  * Painel central da Proficiência Guiada (Fase 3).
@@ -103,6 +104,8 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
   return (
     <div className="space-y-4">
       <PlanHeader plan={plan} onRegenerate={() => generate.mutate(plan.id)} regenerating={generate.isPending} />
+
+      <ProficiencyAlertsBlock plan={plan} recalcs={recalcs} />
 
       {recalcs.length > 0 && <RecalculationsBlock recalcs={recalcs} />}
 
