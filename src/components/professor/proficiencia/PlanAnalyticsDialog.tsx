@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -35,11 +36,13 @@ import {
   Search,
   RefreshCcw,
   TrendingUp,
+  Download,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { usePlanAnalytics, type PlanAnalyticsStudentRow } from "@/hooks/useProficiencyAnalytics";
 import type { ProfessorPlan } from "@/hooks/useProfessorPlans";
+import StudentTasksDialog from "./StudentTasksDialog";
 
 interface Props {
   open: boolean;
@@ -82,6 +85,7 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [selectedStudent, setSelectedStudent] = useState<PlanAnalyticsStudentRow | null>(null);
 
   const { data, isLoading } = usePlanAnalytics(open ? plan?.id ?? null : null);
 
@@ -108,17 +112,80 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
     });
   }, [data, search, classFilter, statusFilter]);
 
+  const handleExportCsv = () => {
+    if (!plan) return;
+    const headers = [
+      "plano",
+      "aluno",
+      "email",
+      "origem",
+      "progresso_percent",
+      "weekly_goal_status",
+      "completed_tasks",
+      "pending_tasks",
+      "overdue_tasks",
+      "recalc_count",
+      "last_activity_at",
+    ];
+    const escape = (v: unknown) => {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const rows = filteredStudents.map((s) =>
+      [
+        plan.name,
+        s.display_name ?? "",
+        s.email ?? "",
+        s.source === "direct" ? "direto" : "turma",
+        Math.round(s.progress_percent),
+        s.weekly_goal_status ?? "",
+        s.completed_tasks,
+        s.pending_tasks,
+        s.overdue_tasks,
+        s.recalc_count,
+        s.last_activity_at ?? "",
+      ]
+        .map(escape)
+        .join(","),
+    );
+    const csv = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    const safeName = plan.name.replace(/[^a-z0-9-_]+/gi, "_").toLowerCase();
+    a.download = `proficiencia_${safeName}_${format(new Date(), "yyyyMMdd_HHmm")}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            Relatório do plano — {plan?.name ?? ""}
-          </DialogTitle>
-          <DialogDescription>
-            Acompanhamento agregado e por aluno. Dados calculados a partir do progresso vivo do plano.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <DialogTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Relatório do plano — {plan?.name ?? ""}
+              </DialogTitle>
+              <DialogDescription>
+                Acompanhamento agregado e por aluno. Dados calculados a partir do progresso vivo do plano.
+              </DialogDescription>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportCsv}
+              disabled={!data || filteredStudents.length === 0}
+              className="shrink-0 gap-2"
+              title="Exportar CSV (respeita filtros aplicados)"
+            >
+              <Download className="h-4 w-4" /> Exportar CSV
+            </Button>
+          </div>
         </DialogHeader>
 
         {isLoading || !data ? (
@@ -233,7 +300,12 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
                     {filteredStudents.map((s) => {
                       const wb = s.weekly_goal_status ? weeklyBadge[s.weekly_goal_status] : null;
                       return (
-                        <TableRow key={s.user_id}>
+                        <TableRow
+                          key={s.user_id}
+                          className="cursor-pointer"
+                          onClick={() => setSelectedStudent(s)}
+                          title="Ver tarefas do aluno"
+                        >
                           <TableCell>
                             <div className="min-w-0">
                               <div className="font-medium truncate">
@@ -299,6 +371,15 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
           </div>
         )}
       </DialogContent>
+
+      <StudentTasksDialog
+        open={!!selectedStudent}
+        onOpenChange={(v) => !v && setSelectedStudent(null)}
+        planId={plan?.id ?? null}
+        planName={plan?.name}
+        userId={selectedStudent?.user_id ?? null}
+        studentName={selectedStudent?.display_name ?? selectedStudent?.email ?? null}
+      />
     </Dialog>
   );
 };
