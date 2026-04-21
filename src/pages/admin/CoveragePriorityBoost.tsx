@@ -160,6 +160,58 @@ export default function CoveragePriorityBoostPanel() {
         </Card>
       </div>
 
+      {/* Match Method Stats (Fase 1.5) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Link2 className="h-4 w-4" />
+            Resolução do boost por método (Fase 1.5)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {matchStats ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border bg-primary/5">
+                <div className="flex items-center gap-2">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  <span className="text-sm">por subtopic_id</span>
+                </div>
+                <Badge variant="default">{matchStats.subtopic_id}</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border">
+                <div className="flex items-center gap-2">
+                  <Link2 className="h-4 w-4" />
+                  <span className="text-sm">por topic_id</span>
+                </div>
+                <Badge variant="secondary">{matchStats.topic_id}</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border">
+                <div className="flex items-center gap-2">
+                  <Type className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">por nome (legado)</span>
+                </div>
+                <Badge variant="outline">{matchStats.name}</Badge>
+              </div>
+              <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-md border">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">sem match</span>
+                </div>
+                <Badge variant="outline">{matchStats.none}</Badge>
+              </div>
+              <div className="md:col-span-4 text-xs text-muted-foreground pt-1">
+                Total de recs com boost aplicado: <span className="font-semibold">{matchStats.touched}</span>.
+                Quanto maior a fração estrutural (subtopic_id + topic_id), menor a dependência de matching textual.
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Aguardando primeira execução do Study Engine após o login para coletar estatísticas de match…
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Distribuição por nível */}
       <Card>
         <CardHeader><CardTitle className="text-base">Distribuição por nível de boost</CardTitle></CardHeader>
