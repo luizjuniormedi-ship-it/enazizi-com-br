@@ -12,6 +12,7 @@ import {
 } from "@/hooks/useProfessorPlans";
 import AddSubtopicsDialog from "./AddSubtopicsDialog";
 import PlanAnalyticsDialog from "./PlanAnalyticsDialog";
+import PlanRiskBadges from "./PlanRiskBadges";
 
 interface Props {
   plan: ProfessorPlan;
@@ -72,6 +73,7 @@ const PlanListItem = ({ plan }: Props) => {
             {plan.notes && (
               <p className="text-xs text-muted-foreground line-clamp-2">{plan.notes}</p>
             )}
+            {plan.status === "active" && <PlanRiskBadges planId={plan.id} />}
           </div>
           <div className="flex items-center gap-1 shrink-0">
             <Button
