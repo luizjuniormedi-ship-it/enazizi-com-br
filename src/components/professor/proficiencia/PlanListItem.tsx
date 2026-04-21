@@ -72,6 +72,17 @@ const PlanListItem = ({ plan }: Props) => {
             )}
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {plan.status === "active" && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setAddOpen(true)}
+                title="Adicionar subtemas"
+                className="text-primary hover:text-primary"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            )}
             {plan.status === "active" ? (
               <Button
                 size="sm"
@@ -113,6 +124,8 @@ const PlanListItem = ({ plan }: Props) => {
           </div>
         </div>
       </CardContent>
+
+      <AddSubtopicsDialog open={addOpen} onOpenChange={setAddOpen} planId={plan.id} />
     </Card>
   );
 };
