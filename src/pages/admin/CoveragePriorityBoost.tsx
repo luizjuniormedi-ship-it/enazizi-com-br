@@ -23,9 +23,10 @@ import {
 import { statusBadgeVariant, statusLabel } from "@/lib/coverageRules";
 import { useContentCoverageAudit } from "@/hooks/useContentCoverageAudit";
 import { useStructuralCoverageHealth, badgeVariant as healthVariant, badgeLabel as healthLabel } from "@/hooks/useStructuralCoverageHealth";
+import { useCoverageBoostTelemetry } from "@/hooks/useCoverageBoostTelemetry";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Zap, AlertTriangle, BookOpen, FlaskConical, ListChecks, Link2, Type, HelpCircle, Database, RefreshCw } from "lucide-react";
+import { Zap, AlertTriangle, BookOpen, FlaskConical, ListChecks, Link2, Type, HelpCircle, Database, RefreshCw, Activity, MousePointerClick, CheckCircle2 } from "lucide-react";
 
 interface MatchStats {
   subtopic_id: number;
