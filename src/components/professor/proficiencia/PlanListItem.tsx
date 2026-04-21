@@ -31,6 +31,7 @@ const statusLabel = {
 const PlanListItem = ({ plan }: Props) => {
   const statusMut = useUpdatePlanStatus();
   const delMut = useDeleteProfessorPlan();
+  const [addOpen, setAddOpen] = useState(false);
 
   const daysLeft = plan.exam_date
     ? Math.ceil((new Date(plan.exam_date).getTime() - Date.now()) / 86400000)
