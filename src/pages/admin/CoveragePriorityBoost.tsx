@@ -323,6 +323,110 @@ export default function CoveragePriorityBoostPanel() {
         </CardContent>
       </Card>
 
+      {/* Telemetria histórica (Fase 1.7) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Telemetria histórica do boost (últimos 30 dias)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!telemetry || telemetry.total === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              Ainda não há eventos de boost gravados. Assim que um aluno autenticado executar o Study Engine
+              com o boost ativo, a telemetria começará a popular esta seção.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="px-3 py-2 rounded-md border">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5"><Zap className="h-3.5 w-3.5" />Boosts aplicados</div>
+                  <div className="text-2xl font-bold mt-1">{telemetry.total}</div>
+                </div>
+                <div className="px-3 py-2 rounded-md border">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5"><MousePointerClick className="h-3.5 w-3.5" />% clicado</div>
+                  <div className="text-2xl font-bold mt-1">{telemetry.pctClicked}%</div>
+                  <div className="text-xs text-muted-foreground">{telemetry.clicked} eventos</div>
+                </div>
+                <div className="px-3 py-2 rounded-md border">
+                  <div className="text-xs text-muted-foreground flex items-center gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" />% executado</div>
+                  <div className="text-2xl font-bold mt-1 text-primary">{telemetry.pctExecuted}%</div>
+                  <div className="text-xs text-muted-foreground">{telemetry.executed} eventos</div>
+                </div>
+                <div className="px-3 py-2 rounded-md border">
+                  <div className="text-xs text-muted-foreground">% por método</div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {telemetry.byMethod.slice(0, 4).map((m) => (
+                      <Badge key={m.method} variant="outline" className="text-[10px]">
+                        {m.method}: {m.pct}%
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Top subtopics por volume</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="border-b text-muted-foreground">
+                        <tr>
+                          <th className="text-left py-1.5 px-2">Subtopic</th>
+                          <th className="text-right py-1.5 px-2">Boosts</th>
+                          <th className="text-right py-1.5 px-2">Exec.</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {telemetry.topByVolume.map((s) => (
+                          <tr key={s.subtopic} className="border-b">
+                            <td className="py-1 px-2 truncate max-w-[180px]" title={s.subtopic}>{s.subtopic}</td>
+                            <td className="py-1 px-2 text-right">{s.total}</td>
+                            <td className="py-1 px-2 text-right">{s.executed}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">Top conversão (executed/boosted, mín. 3)</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="border-b text-muted-foreground">
+                        <tr>
+                          <th className="text-left py-1.5 px-2">Subtopic</th>
+                          <th className="text-right py-1.5 px-2">Conv.</th>
+                          <th className="text-right py-1.5 px-2">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {telemetry.topByConversion.map((s) => (
+                          <tr key={s.subtopic} className="border-b">
+                            <td className="py-1 px-2 truncate max-w-[180px]" title={s.subtopic}>{s.subtopic}</td>
+                            <td className="py-1 px-2 text-right text-primary font-semibold">{s.conversion}%</td>
+                            <td className="py-1 px-2 text-right">{s.total}</td>
+                          </tr>
+                        ))}
+                        {telemetry.topByConversion.length === 0 && (
+                          <tr><td colSpan={3} className="py-3 text-center text-muted-foreground">Volume insuficiente para conversão.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Quanto maior a fração estrutural (subtopic_id + topic_id), menor a dependência de matching textual.
+                A coluna executed reflete o uso real da recomendação pelo aluno.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Distribuição por nível */}
       <Card>
         <CardHeader><CardTitle className="text-base">Distribuição por nível de boost</CardTitle></CardHeader>
