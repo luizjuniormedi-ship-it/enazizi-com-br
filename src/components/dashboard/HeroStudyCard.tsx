@@ -13,6 +13,8 @@ import { useSafeCta } from "@/hooks/useSafeCta";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
+import { useAuth } from "@/hooks/useAuth";
+import { markRecommendationClicked } from "@/lib/coverageBoostTelemetry";
 
 /* ── Dynamic Title Logic ── */
 function getDynamicTitle(
@@ -62,6 +64,7 @@ function DayPlanRow({ task, onTap }: { task: StudyRecommendation; onTap: () => v
 
 export default function HeroStudyCard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { loading: starting, execute: safeCta } = useSafeCta();
   const {
     state, progress, totalMinutes, completedMinutes,
@@ -284,7 +287,10 @@ export default function HeroStudyCard() {
               <DayPlanRow
                 key={task.id}
                 task={task}
-                onTap={() => navigate(buildStudyPath(task, "daily-plan"))}
+                onTap={() => {
+                  if (user?.id) void markRecommendationClicked(user.id, task.id);
+                  navigate(buildStudyPath(task, "daily-plan"));
+                }}
               />
             ))}
           </div>
@@ -309,7 +315,10 @@ export default function HeroStudyCard() {
                     <DayPlanRow
                       key={task.id}
                       task={task}
-                      onTap={() => navigate(buildStudyPath(task, "daily-plan"))}
+                      onTap={() => {
+                        if (user?.id) void markRecommendationClicked(user.id, task.id);
+                        navigate(buildStudyPath(task, "daily-plan"));
+                      }}
                     />
                   ))}
                   {tasks.length > 8 && (

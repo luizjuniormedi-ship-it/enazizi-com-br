@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { type StudyRecommendation } from "@/lib/studyEngine";
+import { markRecommendationClicked } from "@/lib/coverageBoostTelemetry";
 
 /**
  * Shows "Next up" prompt after completing a task to maintain continuous flow.
@@ -20,6 +21,7 @@ interface Props {
 
 export default function ContinuousFlowPrompt({ completedTask, nextTask, onContinue, onStop }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   if (!nextTask) {
     return (
@@ -59,6 +61,7 @@ export default function ContinuousFlowPrompt({ completedTask, nextTask, onContin
             className="flex-1 gap-1.5"
             size="sm"
             onClick={() => {
+              if (user?.id) void markRecommendationClicked(user.id, nextTask.id);
               onContinue();
               navigate(buildStudyPath(nextTask));
             }}

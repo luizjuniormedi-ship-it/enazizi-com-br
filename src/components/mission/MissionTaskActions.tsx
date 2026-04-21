@@ -6,6 +6,8 @@ import { Play, CheckCircle2, SkipForward, Clock } from "lucide-react";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
 import type { StudyRecommendation } from "@/hooks/useStudyEngine";
+import { useAuth } from "@/hooks/useAuth";
+import { markRecommendationClicked } from "@/lib/coverageBoostTelemetry";
 
 interface Props {
   task: StudyRecommendation;
@@ -25,6 +27,7 @@ const TYPE_ICONS: Record<string, string> = {
 
 export default function MissionTaskActions({ task, onComplete, onSkip }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const pendingCount = (task as any).pendingCount as number | undefined;
   const hasPending = pendingCount && pendingCount > 1;
 
@@ -69,7 +72,11 @@ export default function MissionTaskActions({ task, onComplete, onSkip }: Props) 
         <Button
           className="w-full gap-2 text-base h-14"
           size="lg"
-          onClick={() => navigate(buildStudyPath(task, "mission"))}
+          onClick={() => {
+            // Telemetria Fase 1.7: marca como clicado (fire-and-forget, tolerante a falhas).
+            if (user?.id) void markRecommendationClicked(user.id, task.id);
+            navigate(buildStudyPath(task, "mission"));
+          }}
         >
           <Play className="h-5 w-5" />
           Iniciar Atividade
