@@ -17,11 +17,22 @@ export interface CoverageBoostTelemetryStats {
   topByVolume: Array<{ subtopic: string; specialty: string; total: number; executed: number }>;
   topByConversion: Array<{ subtopic: string; specialty: string; total: number; executed: number; conversion: number }>;
   recent7Days: Array<{ day: string; count: number }>;
+  recentSamples: Array<{
+    id: string;
+    topic: string | null;
+    subtopic: string | null;
+    matchMethod: string | null;
+    boostScore: number;
+    boostApplied: number;
+    clicked: boolean;
+    executed: boolean;
+    createdAt: string;
+  }>;
 }
 
 const EMPTY: CoverageBoostTelemetryStats = {
   total: 0, clicked: 0, executed: 0, pctClicked: 0, pctExecuted: 0,
-  byMethod: [], topByVolume: [], topByConversion: [], recent7Days: [],
+  byMethod: [], topByVolume: [], topByConversion: [], recent7Days: [], recentSamples: [],
 };
 
 export function useCoverageBoostTelemetry() {
@@ -35,17 +46,22 @@ export function useCoverageBoostTelemetry() {
         const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         const { data, error } = await supabase
           .from("coverage_boost_events" as any)
-          .select("subtopic, specialty, coverage_boost_match_method, clicked, executed, created_at")
+          .select("id, topic, subtopic, specialty, coverage_boost_match_method, coverage_boost_score, coverage_boost_applied, clicked, executed, created_at")
           .gte("created_at", since)
+          .order("created_at", { ascending: false })
           .limit(5000);
         if (error) {
           console.warn("[useCoverageBoostTelemetry]", error.message);
           return EMPTY;
         }
         const rows = ((data ?? []) as unknown) as Array<{
+          id: string;
+          topic: string | null;
           subtopic: string | null;
           specialty: string | null;
           coverage_boost_match_method: string | null;
+          coverage_boost_score: number;
+          coverage_boost_applied: number;
           clicked: boolean;
           executed: boolean;
           created_at: string;
@@ -99,6 +115,18 @@ export function useCoverageBoostTelemetry() {
         }
         const recent7Days = Array.from(dayMap.entries()).map(([day, count]) => ({ day, count }));
 
+        const recentSamples = rows.slice(0, 30).map((r) => ({
+          id: r.id,
+          topic: r.topic,
+          subtopic: r.subtopic,
+          matchMethod: r.coverage_boost_match_method,
+          boostScore: r.coverage_boost_score ?? 0,
+          boostApplied: r.coverage_boost_applied ?? 0,
+          clicked: !!r.clicked,
+          executed: !!r.executed,
+          createdAt: r.created_at,
+        }));
+
         return {
           total,
           clicked,
@@ -109,6 +137,7 @@ export function useCoverageBoostTelemetry() {
           topByVolume,
           topByConversion,
           recent7Days,
+          recentSamples,
         };
       } catch (e) {
         console.warn("[useCoverageBoostTelemetry] unexpected:", e);
