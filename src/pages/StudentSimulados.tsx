@@ -481,6 +481,9 @@ const StudentSimulados = () => {
           <p className="text-muted-foreground text-sm">Simulados e plantões atribuídos pelo seu professor.</p>
         </div>
 
+        {/* Proficiência Guiada (Fase 3) — só aparece quando há plano ativo do professor */}
+        <ProficiencyGuidedPanel />
+
         <Tabs defaultValue={searchParams.get("tab") === "temas" ? "temas" : searchParams.get("tab") === "erros" ? "erros" : "simulados"}>
           <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="simulados">📝 Simulados ({assigned.length})</TabsTrigger>
