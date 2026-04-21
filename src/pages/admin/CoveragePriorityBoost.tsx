@@ -40,6 +40,21 @@ export default function CoveragePriorityBoostPanel() {
   const { isEnabled } = useFeatureFlags();
   const flagEnabled = isEnabled("coverage_priority_boost_enabled");
   const [search, setSearch] = useState("");
+  const [matchStats, setMatchStats] = useState<MatchStats | null>(null);
+
+  // Lê stats de match expostas pelo Study Engine (Fase 1.5).
+  // Atualiza a cada 2s — leve e read-only. Nunca lança.
+  useEffect(() => {
+    const tick = () => {
+      try {
+        const s = (globalThis as any).__coverageBoostMatchStats;
+        if (s && typeof s === "object") setMatchStats(s as MatchStats);
+      } catch { /* noop */ }
+    };
+    tick();
+    const id = setInterval(tick, 2000);
+    return () => clearInterval(id);
+  }, []);
 
   // Junta entry de boost com row da auditoria (para mostrar status/contagens)
   const enriched = useMemo(() => {
