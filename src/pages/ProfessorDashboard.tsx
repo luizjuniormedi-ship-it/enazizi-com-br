@@ -22,7 +22,6 @@ import type { ResultsDialogState } from "@/components/professor/SimuladoResultsD
 const ProfessorBIPanel = lazy(() => import("@/components/professor/ProfessorBIPanel"));
 const CreateSimuladoDialog = lazy(() => import("@/components/professor/CreateSimuladoDialog"));
 const SimuladoResultsDialog = lazy(() => import("@/components/professor/SimuladoResultsDialog"));
-const ProfessorProficiencyPanel = lazy(() => import("@/components/professor/proficiency/ProfessorProficiencyPanel"));
 
 /**
  * ProfessorDashboard — orquestrador de layout.
@@ -212,7 +211,6 @@ const ProfessorDashboard = () => {
             <TabsTrigger value="temas" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📖 Temas</TabsTrigger>
             <TabsTrigger value="alunos" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">👤 Aluno</TabsTrigger>
             <TabsTrigger value="analytics" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📊 Turma</TabsTrigger>
-            <TabsTrigger value="proficiencia" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🎯 Proficiência</TabsTrigger>
             <TabsTrigger value="bi" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📈 BI</TabsTrigger>
             <TabsTrigger value="mentoria" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📋 Mentoria</TabsTrigger>
             <TabsTrigger value="osce" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🩺 OSCE</TabsTrigger>
@@ -278,12 +276,6 @@ const ProfessorDashboard = () => {
         <TabsContent value="bi" className="mt-4">
           <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
             <ProfessorBIPanel callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
-
-        <TabsContent value="proficiencia" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <ProfessorProficiencyPanel callAPI={callAPI} />
           </Suspense>
         </TabsContent>
 
