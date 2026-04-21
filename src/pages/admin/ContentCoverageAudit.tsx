@@ -371,15 +371,28 @@ export default function ContentCoverageAudit() {
                       <th className="text-right">Q (forte/total)</th>
                       <th className="text-right">Mat</th>
                       <th className="text-right">Flash</th>
+                      <th className="text-left">Curadoria</th>
                       <th className="text-right">Score</th>
                       <th className="text-right">Bancas</th>
                       <th className="text-left">Status</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRows.map((r) => (
-                      <tr key={r.subtopic_id} className="border-b hover:bg-muted/40">
-                        <td className="py-2 px-3 font-medium">{r.subtopic_nome}</td>
+                    {filteredRows.map((r) => {
+                      const totalPed = r.materials_count + r.flashcards_count;
+                      const totalCurated = r.curated_materials_count + r.curated_flashcards_count;
+                      let curatedBadge: { label: string; variant: "default" | "secondary" | "outline" | "destructive" } | null = null;
+                      if (totalPed === 0) curatedBadge = { label: "sem pedagogia", variant: "outline" };
+                      else if (totalCurated > 0 && totalCurated === totalPed) curatedBadge = { label: "curated", variant: "default" };
+                      else if (totalCurated > 0) curatedBadge = { label: "misto", variant: "secondary" };
+                      else curatedBadge = { label: "template only", variant: "outline" };
+                      const improved = totalCurated > 0 && (r.status === "complete" || r.status === "partial");
+                      return (
+                      <tr key={r.subtopic_id} className={`border-b hover:bg-muted/40 ${improved ? "bg-primary/5" : ""}`}>
+                        <td className="py-2 px-3 font-medium">
+                          {r.subtopic_nome}
+                          {improved && <span className="ml-2 text-[10px] text-primary">↑ melhorou</span>}
+                        </td>
                         <td className="text-muted-foreground">{r.topic_nome}</td>
                         <td className="text-muted-foreground">{r.specialty_nome}</td>
                         <td>
@@ -397,13 +410,25 @@ export default function ContentCoverageAudit() {
                           </span>
                           <span className="text-muted-foreground">/{r.questions_count}</span>
                         </td>
-                        <td className={`text-right tabular-nums ${r.materials_count === 0 ? "text-muted-foreground" : ""}`}>{r.materials_count}</td>
-                        <td className={`text-right tabular-nums ${r.flashcards_count === 0 ? "text-muted-foreground" : ""}`}>{r.flashcards_count}</td>
+                        <td className={`text-right tabular-nums ${r.materials_count === 0 ? "text-muted-foreground" : ""}`}>
+                          {r.materials_count}
+                          {r.curated_materials_count > 0 && <span className="text-[10px] text-primary ml-1">({r.curated_materials_count}c)</span>}
+                        </td>
+                        <td className={`text-right tabular-nums ${r.flashcards_count === 0 ? "text-muted-foreground" : ""}`}>
+                          {r.flashcards_count}
+                          {r.curated_flashcards_count > 0 && <span className="text-[10px] text-primary ml-1">({r.curated_flashcards_count}c)</span>}
+                        </td>
+                        <td>
+                          {curatedBadge && (
+                            <Badge variant={curatedBadge.variant} className="text-[10px]">{curatedBadge.label}</Badge>
+                          )}
+                        </td>
                         <td className="text-right tabular-nums font-medium">{r.coverage_score}</td>
                         <td className="text-right">{r.banca_coverage_count}</td>
                         <td><Badge variant={statusBadgeVariant(r.status)}>{statusLabel(r.status)}</Badge></td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
