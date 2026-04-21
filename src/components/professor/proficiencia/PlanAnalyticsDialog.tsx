@@ -43,6 +43,7 @@ import { ptBR } from "date-fns/locale";
 import { usePlanAnalytics, type PlanAnalyticsStudentRow } from "@/hooks/useProficiencyAnalytics";
 import type { ProfessorPlan } from "@/hooks/useProfessorPlans";
 import StudentTasksDialog from "./StudentTasksDialog";
+import { buildPlanCsvWithBom } from "./csvExport";
 
 interface Props {
   open: boolean;
@@ -114,46 +115,8 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
 
   const handleExportCsv = () => {
     if (!plan) return;
-    const headers = [
-      "plano",
-      "aluno",
-      "email",
-      "origem",
-      "turma",
-      "progresso_percent",
-      "weekly_goal_status",
-      "completed_tasks",
-      "pending_tasks",
-      "overdue_tasks",
-      "recalc_count",
-      "inativo",
-      "last_activity_at",
-    ];
-    const escape = (v: unknown) => {
-      const s = v === null || v === undefined ? "" : String(v);
-      return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const rows = filteredStudents.map((s) =>
-      [
-        plan.name,
-        s.display_name ?? "",
-        s.email ?? "",
-        s.source === "direct" ? "Direto" : "Turma",
-        s.class_label ?? "",
-        Math.round(s.progress_percent),
-        s.weekly_goal_status ?? "",
-        s.completed_tasks,
-        s.pending_tasks,
-        s.overdue_tasks,
-        s.recalc_count,
-        s.is_inactive ? "sim" : "nao",
-        s.last_activity_at ?? "",
-      ]
-        .map(escape)
-        .join(","),
-    );
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const csv = buildPlanCsvWithBom(plan.name, filteredStudents);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
