@@ -1977,6 +1977,376 @@ REGRAS:
         return ok({ suggestions });
       }
 
+      // ─────────────────────────────────────────────────────────────────────
+      // FASE 1 — MÓDULO DO PROFESSOR / PROFICIÊNCIA (read-only)
+      // Reaproveita performance_by_topic + ranking_snapshots + class_members.
+      // Não toca no Study Engine. Não escreve nada.
+      // ─────────────────────────────────────────────────────────────────────
+
+      // Helper interno: resolve o universo de alunos do professor.
+      // Prioriza class_members (turmas onde o professor é membro com role professor/owner),
+      // com fallback para a faculdade do professor (compatibilidade com fluxo atual).
+      // Admin vê todos.
+      // ─────────────────────────────────────────────────────────────────────
+
+      case "get_proficiency_heatmap": {
+        const { class_id } = params as { class_id?: string };
+
+        // 1) Resolver alunos no escopo do professor
+        let studentIds: string[] = [];
+        let scopeLabel: string = "all";
+
+        if (class_id) {
+          // Validar que o professor pertence à turma (a menos que seja admin)
+          if (!isAdmin) {
+            const { data: membership } = await sb
+              .from("class_members")
+              .select("id")
+              .eq("class_id", class_id)
+              .eq("user_id", user.id)
+              .eq("is_active", true)
+              .in("role", ["professor", "owner", "coordinator"])
+              .limit(1);
+            if (!membership || membership.length === 0) {
+              return new Response(
+                JSON.stringify({ error: "Sem acesso a esta turma" }),
+                { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+              );
+            }
+          }
+          const { data: members } = await sb
+            .from("class_members")
+            .select("user_id")
+            .eq("class_id", class_id)
+            .eq("is_active", true)
+            .eq("role", "student");
+          studentIds = (members || []).map((m: any) => m.user_id);
+          scopeLabel = `class:${class_id}`;
+        } else {
+          // Fallback faculdade (compatibilidade com fluxo atual do professor)
+          let q = sb.from("profiles").select("user_id").eq("status", "active").in("user_type", ["estudante", "medico"]);
+          if (!isAdmin && professorFaculdade) q = q.eq("faculdade", professorFaculdade);
+          const { data: profs } = await q;
+          studentIds = (profs || []).map((p: any) => p.user_id);
+          scopeLabel = professorFaculdade ? `faculdade:${professorFaculdade}` : "all";
+        }
+
+        if (studentIds.length === 0) {
+          return ok({ heatmap: [], totals: { students: 0, subtopics: 0, critical: 0, warning: 0, healthy: 0 }, scope: scopeLabel });
+        }
+
+        // 2) Carregar performance_by_topic agregada
+        const { data: rows } = await sb
+          .from("performance_by_topic")
+          .select("user_id, specialty, topic, subtopic, total_questions, accuracy")
+          .in("user_id", studentIds);
+
+        // 3) Agregar por specialty/topic/subtopic
+        type Bucket = {
+          specialty: string;
+          topic: string | null;
+          subtopic: string | null;
+          accSum: number;
+          accCount: number;
+          students: Set<string>;
+          critical: number; // alunos com accuracy<0.5
+          totalQ: number;
+        };
+        const buckets = new Map<string, Bucket>();
+        for (const r of rows || []) {
+          const key = `${r.specialty || "—"}||${r.topic || "—"}||${r.subtopic || "—"}`;
+          let b = buckets.get(key);
+          if (!b) {
+            b = {
+              specialty: r.specialty || "—",
+              topic: r.topic,
+              subtopic: r.subtopic,
+              accSum: 0,
+              accCount: 0,
+              students: new Set(),
+              critical: 0,
+              totalQ: 0,
+            };
+            buckets.set(key, b);
+          }
+          const acc = Number(r.accuracy || 0);
+          b.accSum += acc;
+          b.accCount += 1;
+          b.students.add(r.user_id);
+          b.totalQ += r.total_questions || 0;
+          if (acc < 0.5) b.critical += 1;
+        }
+
+        const heatmap = Array.from(buckets.values()).map((b) => {
+          const avg = b.accCount > 0 ? b.accSum / b.accCount : 0;
+          // Semáforo: <50% red, <70% yellow, else green. Sem dados (totalQ=0) → gray
+          let semaforo: "green" | "yellow" | "red" | "gray" = "gray";
+          if (b.totalQ > 0) {
+            if (avg < 0.5) semaforo = "red";
+            else if (avg < 0.7) semaforo = "yellow";
+            else semaforo = "green";
+          }
+          return {
+            specialty: b.specialty,
+            topic: b.topic,
+            subtopic: b.subtopic,
+            avg_accuracy: Math.round(avg * 100),
+            students_count: b.students.size,
+            critical_students: b.critical,
+            total_questions: b.totalQ,
+            semaforo,
+          };
+        }).sort((a, b) => {
+          if (a.specialty !== b.specialty) return a.specialty.localeCompare(b.specialty);
+          if ((a.topic || "") !== (b.topic || "")) return (a.topic || "").localeCompare(b.topic || "");
+          return (a.subtopic || "").localeCompare(b.subtopic || "");
+        });
+
+        const totals = {
+          students: studentIds.length,
+          subtopics: heatmap.length,
+          critical: heatmap.filter((h) => h.semaforo === "red").length,
+          warning: heatmap.filter((h) => h.semaforo === "yellow").length,
+          healthy: heatmap.filter((h) => h.semaforo === "green").length,
+        };
+
+        return ok({ heatmap, totals, scope: scopeLabel });
+      }
+
+      case "get_risk_ranking": {
+        const { class_id, limit = 50 } = params as { class_id?: string; limit?: number };
+
+        // Resolve escopo
+        let studentIds: string[] = [];
+        if (class_id) {
+          if (!isAdmin) {
+            const { data: membership } = await sb
+              .from("class_members")
+              .select("id")
+              .eq("class_id", class_id)
+              .eq("user_id", user.id)
+              .eq("is_active", true)
+              .in("role", ["professor", "owner", "coordinator"])
+              .limit(1);
+            if (!membership || membership.length === 0) {
+              return new Response(
+                JSON.stringify({ error: "Sem acesso a esta turma" }),
+                { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+              );
+            }
+          }
+          const { data: members } = await sb
+            .from("class_members")
+            .select("user_id")
+            .eq("class_id", class_id)
+            .eq("is_active", true)
+            .eq("role", "student");
+          studentIds = (members || []).map((m: any) => m.user_id);
+        } else {
+          let q = sb.from("profiles").select("user_id").eq("status", "active").in("user_type", ["estudante", "medico"]);
+          if (!isAdmin && professorFaculdade) q = q.eq("faculdade", professorFaculdade);
+          const { data: profs } = await q;
+          studentIds = (profs || []).map((p: any) => p.user_id);
+        }
+
+        if (studentIds.length === 0) return ok({ ranking: [], total: 0 });
+
+        // Pegar último snapshot
+        const { data: lastDateRow } = await sb
+          .from("ranking_snapshots")
+          .select("snapshot_date")
+          .order("snapshot_date", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const lastDate = lastDateRow?.snapshot_date;
+
+        let snapshots: any[] = [];
+        if (lastDate) {
+          const { data } = await sb
+            .from("ranking_snapshots")
+            .select("user_id, performance_score, evolution_score, consistency_score, practical_score, performance_rank, performance_rank_delta, percentile, snapshot_date")
+            .eq("snapshot_date", lastDate)
+            .in("user_id", studentIds);
+          snapshots = data || [];
+        }
+
+        const { data: profs } = await sb
+          .from("profiles")
+          .select("user_id, display_name, email, faculdade, periodo")
+          .in("user_id", studentIds);
+        const profMap = new Map((profs || []).map((p: any) => [p.user_id, p]));
+
+        // Construir ranking de risco para TODOS os alunos do escopo,
+        // mesmo aqueles sem snapshot (entram com score baixo / sem dados).
+        const ranking = studentIds.map((sid) => {
+          const snap = snapshots.find((s: any) => s.user_id === sid);
+          const prof = profMap.get(sid) || ({} as any);
+          const performance = Number(snap?.performance_score ?? 0);
+          const consistency = Number(snap?.consistency_score ?? 0);
+          const evolution = Number(snap?.evolution_score ?? 0);
+          const practical = Number(snap?.practical_score ?? 0);
+
+          // Risk score: inverso ponderado da proficiência (0-100, maior = mais risco).
+          // Sem dados (sem snapshot) → 75 (alto risco por invisibilidade).
+          let risk: number;
+          if (!snap) {
+            risk = 75;
+          } else {
+            const composite = (performance * 0.45) + (consistency * 0.25) + (evolution * 0.20) + (practical * 0.10);
+            risk = Math.round(Math.max(0, Math.min(100, 100 - composite)));
+          }
+
+          let faixa: "baixo" | "medio" | "alto" | "critico";
+          if (risk >= 75) faixa = "critico";
+          else if (risk >= 55) faixa = "alto";
+          else if (risk >= 35) faixa = "medio";
+          else faixa = "baixo";
+
+          return {
+            student_id: sid,
+            display_name: prof.display_name || prof.email || "Aluno",
+            faculdade: prof.faculdade || null,
+            periodo: prof.periodo || null,
+            performance_score: Math.round(performance),
+            consistency_score: Math.round(consistency),
+            evolution_score: Math.round(evolution),
+            practical_score: Math.round(practical),
+            performance_rank: snap?.performance_rank ?? null,
+            performance_rank_delta: snap?.performance_rank_delta ?? null,
+            percentile: snap?.percentile ?? null,
+            risk_score: risk,
+            faixa,
+            has_snapshot: !!snap,
+          };
+        }).sort((a, b) => b.risk_score - a.risk_score).slice(0, Math.min(limit, 200));
+
+        return ok({ ranking, total: studentIds.length, snapshot_date: lastDate || null });
+      }
+
+      case "get_student_proficiency_detail": {
+        const { student_id } = params as { student_id?: string };
+        if (!student_id) throw new Error("student_id obrigatório");
+
+        // Validar acesso: o aluno deve estar no escopo do professor
+        // (a menos que admin). Reaproveita o mesmo critério (class_members ou faculdade).
+        if (!isAdmin) {
+          const { data: shared } = await sb
+            .from("class_members")
+            .select("class_id, role, user_id")
+            .eq("user_id", user.id)
+            .eq("is_active", true)
+            .in("role", ["professor", "owner", "coordinator"]);
+          const profClassIds = (shared || []).map((r: any) => r.class_id);
+
+          let inScope = false;
+          if (profClassIds.length > 0) {
+            const { data: studentMember } = await sb
+              .from("class_members")
+              .select("id")
+              .eq("user_id", student_id)
+              .eq("is_active", true)
+              .in("class_id", profClassIds)
+              .limit(1);
+            inScope = !!(studentMember && studentMember.length > 0);
+          }
+          if (!inScope && professorFaculdade) {
+            const { data: studentProfile } = await sb
+              .from("profiles")
+              .select("faculdade")
+              .eq("user_id", student_id)
+              .maybeSingle();
+            if (studentProfile?.faculdade === professorFaculdade) inScope = true;
+          }
+          if (!inScope) {
+            return new Response(
+              JSON.stringify({ error: "Sem acesso a este aluno" }),
+              { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+            );
+          }
+        }
+
+        const [{ data: profile }, { data: perfRows }, { data: simResults }, { data: snap }] = await Promise.all([
+          sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, target_specialty, exam_date").eq("user_id", student_id).maybeSingle(),
+          sb.from("performance_by_topic").select("specialty, topic, subtopic, total_questions, correct_questions, accuracy, last_activity_at").eq("user_id", student_id),
+          sb.from("teacher_simulado_results").select("simulado_id, status, score, completed_at").eq("student_id", student_id).order("completed_at", { ascending: false, nullsFirst: false }).limit(10),
+          sb.from("ranking_snapshots").select("performance_score, evolution_score, consistency_score, practical_score, performance_rank, percentile, snapshot_date").eq("user_id", student_id).order("snapshot_date", { ascending: false }).limit(1).maybeSingle(),
+        ]);
+
+        const rows = perfRows || [];
+
+        // Agregar por especialidade
+        const specMap = new Map<string, { totalQ: number; correctQ: number; subs: number }>();
+        // Agregar por tema
+        const topicMap = new Map<string, { specialty: string; topic: string; totalQ: number; correctQ: number }>();
+        // Lista de subtemas
+        const subtopics: Array<{ specialty: string; topic: string | null; subtopic: string | null; total_questions: number; accuracy: number; last_activity_at: string | null }> = [];
+
+        for (const r of rows) {
+          const sp = r.specialty || "—";
+          const ss = specMap.get(sp) || { totalQ: 0, correctQ: 0, subs: 0 };
+          ss.totalQ += r.total_questions || 0;
+          ss.correctQ += r.correct_questions || 0;
+          ss.subs += 1;
+          specMap.set(sp, ss);
+
+          const tk = `${sp}||${r.topic || "—"}`;
+          const tt = topicMap.get(tk) || { specialty: sp, topic: r.topic || "—", totalQ: 0, correctQ: 0 };
+          tt.totalQ += r.total_questions || 0;
+          tt.correctQ += r.correct_questions || 0;
+          topicMap.set(tk, tt);
+
+          subtopics.push({
+            specialty: sp,
+            topic: r.topic,
+            subtopic: r.subtopic,
+            total_questions: r.total_questions || 0,
+            accuracy: Math.round(Number(r.accuracy || 0) * 100),
+            last_activity_at: r.last_activity_at,
+          });
+        }
+
+        const bySpecialty = Array.from(specMap.entries()).map(([specialty, v]) => ({
+          specialty,
+          accuracy: v.totalQ > 0 ? Math.round((v.correctQ / v.totalQ) * 100) : 0,
+          total_questions: v.totalQ,
+          subtopics_count: v.subs,
+        })).sort((a, b) => b.total_questions - a.total_questions);
+
+        const byTopic = Array.from(topicMap.values()).map((t) => ({
+          specialty: t.specialty,
+          topic: t.topic,
+          accuracy: t.totalQ > 0 ? Math.round((t.correctQ / t.totalQ) * 100) : 0,
+          total_questions: t.totalQ,
+        })).sort((a, b) => a.accuracy - b.accuracy);
+
+        const subtopicsRanked = subtopics.filter((s) => s.total_questions >= 3);
+        const weakSubtopics = [...subtopicsRanked].sort((a, b) => a.accuracy - b.accuracy).slice(0, 10);
+        const strongSubtopics = [...subtopicsRanked].sort((a, b) => b.accuracy - a.accuracy).slice(0, 10);
+
+        const completedSims = (simResults || []).filter((s: any) => s.status === "completed");
+        const simAvg = completedSims.length > 0
+          ? Math.round(completedSims.reduce((acc: number, s: any) => acc + Number(s.score || 0), 0) / completedSims.length)
+          : 0;
+
+        return ok({
+          profile: profile || null,
+          ranking_snapshot: snap || null,
+          summary: {
+            total_subtopics: subtopics.length,
+            total_questions: subtopics.reduce((s, x) => s + x.total_questions, 0),
+            weak_count: subtopics.filter((s) => s.accuracy < 50 && s.total_questions >= 3).length,
+            strong_count: subtopics.filter((s) => s.accuracy >= 70 && s.total_questions >= 3).length,
+            simulados_completed: completedSims.length,
+            simulados_avg: simAvg,
+          },
+          by_specialty: bySpecialty,
+          by_topic: byTopic,
+          weak_subtopics: weakSubtopics,
+          strong_subtopics: strongSubtopics,
+          recent_simulados: simResults || [],
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
