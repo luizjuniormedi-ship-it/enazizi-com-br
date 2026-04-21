@@ -47,6 +47,18 @@ export interface StudyRecommendation {
   pendingReviewIds?: string[];
   /** Next scheduled review date after current */
   nextReviewDate?: string;
+  /** Coverage → Study Engine Bridge (Fase 1.4): explicabilidade do boost */
+  coverageBoostApplied?: number;
+  coverageBoostScore?: number;
+  coverageBoostLevel?: "none" | "low" | "medium" | "high" | "critical";
+  coverageBoostReason?: string;
+  coverageBoostBreakdown?: {
+    statusBoost: number;
+    importanceBoost: number;
+    incidenceBoost: number;
+    pedagogyGapBoost: number;
+    questionGapBoost: number;
+  };
 }
 
 /** Heavy recovery phase (30-day progressive plan) */
@@ -131,6 +143,7 @@ interface EngineInput {
   coreData?: CoreDataResult;
   recoveryEnabled?: boolean; // feature flag — false = skip DB persistence
   fsrsEnabled?: boolean;     // feature flag — false = use legacy review queue
+  coveragePriorityBoostEnabled?: boolean; // Fase 1.4 — false = skip coverage→engine bridge
 }
 
 function id(prefix: string, idx: number) {
@@ -234,7 +247,7 @@ function buildFocusReason(weights: PlanWeights, overdueCount: number, lockStatus
 }
 
 // ── main engine ────────────────────────────────────────────────
-export async function generateRecommendations({ userId, coreData, recoveryEnabled = true, fsrsEnabled = true }: EngineInput): Promise<EngineResult> {
+export async function generateRecommendations({ userId, coreData, recoveryEnabled = true, fsrsEnabled = true, coveragePriorityBoostEnabled = true }: EngineInput): Promise<EngineResult> {
  try {
   const recs: StudyRecommendation[] = [];
   const cd = coreData; // optional pre-fetched data from useCoreData
@@ -1089,6 +1102,134 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     }
   } catch (e) {
     console.warn("[StudyEngine] coverage gap signal skipped:", e);
+  }
+
+  // ── Coverage → Study Engine Bridge (Fase 1.4) ─────────────────
+  // Camada complementar: usa a auditoria pedagógica (status + importance +
+  // gap pedagógico + gap de questões + incidência) para empurrar levemente
+  // assuntos muito cobrados e mal cobertos. Aplicação:
+  //   bonus = round(boostScore * 0.15)
+  // Defensivo: feature flag, try/catch total, dados ausentes → skip.
+  // Mandatory rules (recovery, FSRS, missões mínimas) já foram aplicadas antes.
+  if (coveragePriorityBoostEnabled) {
+    try {
+      const [{ supabase: sb }, boostMod] = await Promise.all([
+        import("@/integrations/supabase/client"),
+        import("./coveragePriorityBoost"),
+      ]);
+      const { computeCoverageBoost, appliedBoostFromScore } = boostMod;
+      const { classifyCoverage } = await import("./coverageRules");
+
+      // Carrega tudo em 4 queries enxutas (reusa as mesmas tabelas do audit).
+      const [{ data: subRows }, { data: weights }, { data: links }, { data: mats }, { data: flashes }] =
+        await Promise.all([
+          sb.from("curriculum_subtopics" as any).select("id, nome, ativo").eq("ativo", true),
+          sb.from("curriculum_weights" as any).select("subtopic_id, banca, importance_level, peso"),
+          sb.from("question_topic_links" as any).select("subtopic_id, match_confidence"),
+          sb.from("study_materials" as any).select("subtopic_id").eq("is_global", true).eq("ativo", true),
+          sb.from("flashcards" as any).select("subtopic_id").eq("is_global", true),
+        ]);
+
+      const wBy = new Map<string, any[]>();
+      for (const w of (weights ?? []) as any[]) {
+        if (!w?.subtopic_id) continue;
+        const arr = wBy.get(w.subtopic_id) ?? [];
+        arr.push(w);
+        wBy.set(w.subtopic_id, arr);
+      }
+      const qBy = new Map<string, number>();
+      const qStrongBy = new Map<string, number>();
+      for (const l of (links ?? []) as any[]) {
+        if (!l?.subtopic_id) continue;
+        qBy.set(l.subtopic_id, (qBy.get(l.subtopic_id) ?? 0) + 1);
+        if (Number(l.match_confidence) >= 0.85) {
+          qStrongBy.set(l.subtopic_id, (qStrongBy.get(l.subtopic_id) ?? 0) + 1);
+        }
+      }
+      const mBy = new Map<string, number>();
+      for (const m of (mats ?? []) as any[]) {
+        if (!m?.subtopic_id) continue;
+        mBy.set(m.subtopic_id, (mBy.get(m.subtopic_id) ?? 0) + 1);
+      }
+      const fBy = new Map<string, number>();
+      for (const f of (flashes ?? []) as any[]) {
+        if (!f?.subtopic_id) continue;
+        fBy.set(f.subtopic_id, (fBy.get(f.subtopic_id) ?? 0) + 1);
+      }
+
+      // Map por nome lowercase → boost result (matching defensivo).
+      const boostByName = new Map<string, ReturnType<typeof computeCoverageBoost>>();
+      const importanceOrder = ["muito_cobrado", "cobrado", "pouco_cobrado", "raro"] as const;
+      for (const s of (subRows ?? []) as any[]) {
+        const ws = wBy.get(s.id) ?? [];
+        let importance: any = null;
+        for (const lvl of importanceOrder) {
+          if (ws.some((w: any) => w.importance_level === lvl)) { importance = lvl; break; }
+        }
+        const qCount = qBy.get(s.id) ?? 0;
+        const qStrong = qStrongBy.get(s.id) ?? 0;
+        const matCount = mBy.get(s.id) ?? 0;
+        const flashCount = fBy.get(s.id) ?? 0;
+        const verdict = classifyCoverage({
+          questionsCount: Math.max(qStrong, Math.floor(qCount * 0.7)),
+          bancaCoverageCount: ws.length,
+          materialsCount: matCount,
+          flashcardsCount: flashCount,
+          importanceLevel: importance,
+        });
+        const result = computeCoverageBoost({
+          status: verdict.status,
+          importanceLevel: importance,
+          questionsCount: qCount,
+          strongQuestionsCount: qStrong,
+          materialsCount: matCount,
+          flashcardsCount: flashCount,
+          microtopicsCount: 0,
+          bancaCoverageCount: ws.length,
+        });
+        if (result.boostScore <= 0) continue;
+        const key = String(s.nome || "").trim().toLowerCase();
+        if (key) boostByName.set(key, result);
+      }
+
+      if (boostByName.size > 0) {
+        let touched = 0;
+        for (const rec of recs) {
+          const t = (rec.topic || "").toLowerCase().trim();
+          const sub = (rec.subtopic || "").toLowerCase().trim();
+          // Match defensivo: subtopic exato → topic exato → contains
+          let entry = (sub && boostByName.get(sub)) || boostByName.get(t);
+          if (!entry && t.length >= 6) {
+            for (const [k, v] of boostByName) {
+              if (k.includes(t.slice(0, 10)) || t.includes(k.slice(0, 10))) {
+                entry = v;
+                break;
+              }
+            }
+          }
+          if (!entry) continue;
+          const applied = appliedBoostFromScore(entry.boostScore);
+          if (applied <= 0) continue;
+          rec.priority = cap(rec.priority + applied);
+          rec.coverageBoostApplied = applied;
+          rec.coverageBoostScore = entry.boostScore;
+          rec.coverageBoostLevel = entry.boostLevel;
+          rec.coverageBoostReason = entry.boostReason;
+          rec.coverageBoostBreakdown = entry.boostBreakdown;
+          touched++;
+          if (entry.boostLevel === "critical" || entry.boostLevel === "high") {
+            if (!rec.reason.includes("⚡")) {
+              rec.reason = `⚡ ${rec.reason}`;
+            }
+          }
+        }
+        if (touched > 0) {
+          console.log(`[StudyEngine] coverage boost applied to ${touched} recs`);
+        }
+      }
+    } catch (e) {
+      console.warn("[StudyEngine] coverage priority boost skipped:", e);
+    }
   }
 
   // ── Monthly question goal signal (volume mínimo garantido) ────
