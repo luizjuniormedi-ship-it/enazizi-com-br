@@ -36,7 +36,9 @@ export type FlagKey =
   // Intervention Engine Fase 5 — Memória de Intervenção (Penalty)
   | "intervention_penalty_memory_enabled"
   // Intervention Engine Fase 6 — Personalização por Perfil do Aluno
-  | "intervention_profile_personalization_enabled";
+  | "intervention_profile_personalization_enabled"
+  // Coverage → Study Engine Bridge (Fase 1.4)
+  | "coverage_priority_boost_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -80,6 +82,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   intervention_penalty_memory_enabled: true,
   // Intervention Engine Fase 6 — Personalização por Perfil ON por padrão (fallback seguro embutido)
   intervention_profile_personalization_enabled: true,
+  // Coverage → Study Engine Bridge — ON por padrão, fallback total embutido
+  coverage_priority_boost_enabled: true,
 };
 
 export const useFeatureFlags = () => {
