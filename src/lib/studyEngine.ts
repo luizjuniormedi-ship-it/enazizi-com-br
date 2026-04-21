@@ -59,6 +59,12 @@ export interface StudyRecommendation {
     pedagogyGapBoost: number;
     questionGapBoost: number;
   };
+  /** Fase 1.5 — vínculo estrutural (preferido sobre matching textual). */
+  subtopicId?: string | null;
+  topicId?: string | null;
+  specialtyId?: string | null;
+  /** Como o coverage boost casou esta recomendação. */
+  coverageBoostMatchMethod?: "subtopic_id" | "topic_id" | "name" | "none";
 }
 
 /** Heavy recovery phase (30-day progressive plan) */

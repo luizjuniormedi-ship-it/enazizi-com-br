@@ -19,6 +19,10 @@ export interface NormalizedCurriculumItem {
   incidencia_geral: string;
   dificuldade_base: number;
   bancaPeso: number;
+  /** Fase 1.5 — IDs estruturais (presentes quando vindo das tabelas normalizadas). */
+  subtopicId?: string | null;
+  topicId?: string | null;
+  specialtyId?: string | null;
 }
 
 const BANCA_NAME_MAP: Record<string, string> = {
