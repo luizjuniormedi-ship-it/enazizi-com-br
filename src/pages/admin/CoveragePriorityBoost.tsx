@@ -6,7 +6,7 @@
  * boost, distribuição por nível/especialidade, top-20 com maior boost, principais
  * motivos. Read-only — apenas leitura sobre a auditoria já existente.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +21,16 @@ import {
 } from "@/lib/coveragePriorityBoost";
 import { statusBadgeVariant, statusLabel } from "@/lib/coverageRules";
 import { useContentCoverageAudit } from "@/hooks/useContentCoverageAudit";
-import { Zap, AlertTriangle, BookOpen, FlaskConical, ListChecks } from "lucide-react";
+import { Zap, AlertTriangle, BookOpen, FlaskConical, ListChecks, Link2, Type, HelpCircle } from "lucide-react";
+
+interface MatchStats {
+  subtopic_id: number;
+  topic_id: number;
+  name: number;
+  none: number;
+  touched: number;
+  timestamp: number;
+}
 
 const LEVEL_ORDER: CoverageBoostLevel[] = ["critical", "high", "medium", "low", "none"];
 
