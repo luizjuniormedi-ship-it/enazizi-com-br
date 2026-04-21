@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePendingProficiency } from "@/hooks/usePendingProficiency";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
+import ProficiencyGuidedPanel from "@/components/proficiency/ProficiencyGuidedPanel";
 
 interface SimuladoResult {
   id: string;
@@ -479,6 +480,9 @@ const StudentSimulados = () => {
           </h1>
           <p className="text-muted-foreground text-sm">Simulados e plantões atribuídos pelo seu professor.</p>
         </div>
+
+        {/* Proficiência Guiada (Fase 3) — só aparece quando há plano ativo do professor */}
+        <ProficiencyGuidedPanel />
 
         <Tabs defaultValue={searchParams.get("tab") === "temas" ? "temas" : searchParams.get("tab") === "erros" ? "erros" : "simulados"}>
           <TabsList className="flex-wrap h-auto gap-1">
