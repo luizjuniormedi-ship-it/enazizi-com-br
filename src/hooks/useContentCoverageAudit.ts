@@ -16,6 +16,8 @@ export interface SubtopicCoverageRow {
   flashcards_count: number;
   microtopics_count: number;
   coverage_score: number; // 0–100, indicador pedagógico (Fase 1.2)
+  curated_materials_count: number; // Fase 1.3: materiais com source='ai_seed' ou reviewed_by_human
+  curated_flashcards_count: number; // Fase 1.3
   status: CoverageStatus;
   rule: string;
   reason: string;
@@ -76,7 +78,7 @@ interface FullAudit {
  */
 export function useContentCoverageAudit() {
   return useQuery<FullAudit>({
-    queryKey: ["content-coverage-audit", "v1.2"],
+    queryKey: ["content-coverage-audit", "v1.3"],
     queryFn: computeCoverageAudit,
     staleTime: 10 * 60_000,
     gcTime: 30 * 60_000,
@@ -131,35 +133,43 @@ async function computeCoverageAudit(): Promise<FullAudit> {
     }
   }
 
-  // 3b. Materiais globais por subtopic (Fase 1.2)
+  // 3b. Materiais globais por subtopic (Fase 1.2 + 1.3 curated tracking)
   const { data: materials } = subIds.length
     ? await supabase
         .from("study_materials" as any)
-        .select("subtopic_id")
+        .select("subtopic_id, source, reviewed_by_human")
         .eq("is_global", true)
         .eq("ativo", true)
         .in("subtopic_id", subIds)
     : { data: [] as any[] };
 
   const matCountBySub = new Map<string, number>();
+  const matCuratedBySub = new Map<string, number>();
   for (const m of (materials ?? []) as any[]) {
     if (!m.subtopic_id) continue;
     matCountBySub.set(m.subtopic_id, (matCountBySub.get(m.subtopic_id) ?? 0) + 1);
+    if (m.source === "ai_seed" || m.reviewed_by_human === true) {
+      matCuratedBySub.set(m.subtopic_id, (matCuratedBySub.get(m.subtopic_id) ?? 0) + 1);
+    }
   }
 
-  // 3c. Flashcards globais por subtopic (Fase 1.2)
+  // 3c. Flashcards globais por subtopic (Fase 1.2 + 1.3 curated tracking)
   const { data: flashes } = subIds.length
     ? await supabase
         .from("flashcards" as any)
-        .select("subtopic_id")
+        .select("subtopic_id, source, reviewed_by_human")
         .eq("is_global", true)
         .in("subtopic_id", subIds)
     : { data: [] as any[] };
 
   const flashCountBySub = new Map<string, number>();
+  const flashCuratedBySub = new Map<string, number>();
   for (const f of (flashes ?? []) as any[]) {
     if (!f.subtopic_id) continue;
     flashCountBySub.set(f.subtopic_id, (flashCountBySub.get(f.subtopic_id) ?? 0) + 1);
+    if (f.source === "ai_seed" || f.reviewed_by_human === true) {
+      flashCuratedBySub.set(f.subtopic_id, (flashCuratedBySub.get(f.subtopic_id) ?? 0) + 1);
+    }
   }
 
   // 3d. Microtopics ativos por subtopic (Fase 1.2)
@@ -212,6 +222,8 @@ async function computeCoverageAudit(): Promise<FullAudit> {
       flashcards_count: flashCount,
       microtopics_count: microCount,
       coverage_score: score,
+      curated_materials_count: matCuratedBySub.get(s.id) ?? 0,
+      curated_flashcards_count: flashCuratedBySub.get(s.id) ?? 0,
       status: verdict.status,
       rule: verdict.rule,
       reason: verdict.reason,
