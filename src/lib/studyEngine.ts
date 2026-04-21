@@ -47,6 +47,18 @@ export interface StudyRecommendation {
   pendingReviewIds?: string[];
   /** Next scheduled review date after current */
   nextReviewDate?: string;
+  /** Coverage → Study Engine Bridge (Fase 1.4): explicabilidade do boost */
+  coverageBoostApplied?: number;
+  coverageBoostScore?: number;
+  coverageBoostLevel?: "none" | "low" | "medium" | "high" | "critical";
+  coverageBoostReason?: string;
+  coverageBoostBreakdown?: {
+    statusBoost: number;
+    importanceBoost: number;
+    incidenceBoost: number;
+    pedagogyGapBoost: number;
+    questionGapBoost: number;
+  };
 }
 
 /** Heavy recovery phase (30-day progressive plan) */
@@ -131,6 +143,7 @@ interface EngineInput {
   coreData?: CoreDataResult;
   recoveryEnabled?: boolean; // feature flag — false = skip DB persistence
   fsrsEnabled?: boolean;     // feature flag — false = use legacy review queue
+  coveragePriorityBoostEnabled?: boolean; // Fase 1.4 — false = skip coverage→engine bridge
 }
 
 function id(prefix: string, idx: number) {
@@ -234,7 +247,7 @@ function buildFocusReason(weights: PlanWeights, overdueCount: number, lockStatus
 }
 
 // ── main engine ────────────────────────────────────────────────
-export async function generateRecommendations({ userId, coreData, recoveryEnabled = true, fsrsEnabled = true }: EngineInput): Promise<EngineResult> {
+export async function generateRecommendations({ userId, coreData, recoveryEnabled = true, fsrsEnabled = true, coveragePriorityBoostEnabled = true }: EngineInput): Promise<EngineResult> {
  try {
   const recs: StudyRecommendation[] = [];
   const cd = coreData; // optional pre-fetched data from useCoreData
