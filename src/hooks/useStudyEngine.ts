@@ -14,16 +14,18 @@ export const useStudyEngine = () => {
   const { isEnabled } = useFeatureFlags();
   const recoveryEnabled = isEnabled("new_recovery_enabled");
   const fsrsEnabled = isEnabled("new_fsrs_flow_enabled");
+  const coveragePriorityBoostEnabled = isEnabled("coverage_priority_boost_enabled");
 
   // Sync module-level FSRS toggle so fire-and-forget calls respect the flag
   useEffect(() => { setFsrsEnabled(fsrsEnabled); }, [fsrsEnabled]);
   const query = useQuery({
-    queryKey: ["study-engine", user?.id, !!coreData, recoveryEnabled, fsrsEnabled],
+    queryKey: ["study-engine", user?.id, !!coreData, recoveryEnabled, fsrsEnabled, coveragePriorityBoostEnabled],
     queryFn: () => generateRecommendations({
       userId: user!.id,
       coreData: coreData || undefined,
       recoveryEnabled,
       fsrsEnabled,
+      coveragePriorityBoostEnabled,
     }),
     enabled: !!user && !!coreData,
     staleTime: 2 * 60 * 1000,
