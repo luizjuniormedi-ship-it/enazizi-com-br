@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePendingProficiency } from "@/hooks/usePendingProficiency";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
+import ProficiencyGuidedPanel from "@/components/proficiency/ProficiencyGuidedPanel";
 
 interface SimuladoResult {
   id: string;
