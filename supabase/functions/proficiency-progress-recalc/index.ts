@@ -28,7 +28,16 @@ interface RequestBody {
   planId: string;
   /** Quando true, desabilita o trigger automático de replanning. */
   skipReplan?: boolean;
+  /** Quando true, ignora o cooldown server-side (uso administrativo). */
+  force?: boolean;
 }
+
+/**
+ * Cooldown server-side: 5 min por (plan_id,user_id).
+ * Fonte: `professor_plan_progress.updated_at` (já atualizado a cada execução).
+ * Multi-tab safe: sem novas tabelas, idempotente, server-authoritative.
+ */
+const RECALC_COOLDOWN_MS = 5 * 60 * 1000;
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
