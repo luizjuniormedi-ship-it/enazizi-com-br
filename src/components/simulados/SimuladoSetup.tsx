@@ -302,6 +302,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
 
+  // Distribuição dinâmica baseada em curriculum_weights (com fallback automático)
+  const showDynamicPreview = mode === "prova_real" || mode === "tri";
+  const { data: dynamicDistribution, isLoading: dynamicLoading } = useExamDistribution(
+    showDynamicPreview ? realExamBoard : null,
+    selectedProfile.totalQuestions,
+  );
+
   const handleStart = () => {
     if (mode === "adaptativo") {
       const count = customCount ? parseInt(customCount) : questionCount;
