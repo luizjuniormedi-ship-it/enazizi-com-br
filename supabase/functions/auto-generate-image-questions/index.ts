@@ -188,7 +188,7 @@ serve(async (req) => {
         message: `Run ${id} auto-failed: sem progresso por ${STALE_RUN_MINUTES} minutos`,
         details: { auto_failed: true, stale_minutes: STALE_RUN_MINUTES },
       }));
-      await sb.from("pipeline_alerts").insert(staleAlerts).catch(() => {});
+      try { await sb.from("pipeline_alerts").insert(staleAlerts); } catch (err) { console.warn("[auto-gen] stale alerts insert failed:", err); }
 
       console.log(`[auto-gen] Auto-failed ${ids.length} stale runs`);
     }
@@ -294,7 +294,7 @@ serve(async (req) => {
         totalFailed++;
         processedAssets++;
         results.push({ asset: asset.asset_code, error: `url_suspicious:${urlCheck.reason}` });
-        await sb.from("question_generation_runs").update({ processed_assets: processedAssets, failed_assets: totalFailed }).eq("id", runId).catch(() => {});
+        try { await sb.from("question_generation_runs").update({ processed_assets: processedAssets, failed_assets: totalFailed }).eq("id", runId); } catch (err) { console.warn("[auto-gen] heartbeat update failed (url_suspicious):", err); }
         continue;
       }
 
@@ -304,7 +304,7 @@ serve(async (req) => {
         totalFailed++;
         processedAssets++;
         results.push({ asset: asset.asset_code, error: `vision_gate:${visionCheck.reason}` });
-        await sb.from("question_generation_runs").update({ processed_assets: processedAssets, failed_assets: totalFailed }).eq("id", runId).catch(() => {});
+        try { await sb.from("question_generation_runs").update({ processed_assets: processedAssets, failed_assets: totalFailed }).eq("id", runId); } catch (err) { console.warn("[auto-gen] heartbeat update failed (vision_gate):", err); }
         continue;
       }
 
@@ -462,10 +462,14 @@ Retorne APENAS um JSON array válido (sem markdown):
         results.push({ asset: asset.asset_code, error: (e as Error).message });
 
         // Update progress even on failure
-        await sb.from("question_generation_runs").update({
-          processed_assets: processedAssets,
-          failed_assets: totalFailed,
-        }).eq("id", runId).catch(() => {});
+        try {
+          await sb.from("question_generation_runs").update({
+            processed_assets: processedAssets,
+            failed_assets: totalFailed,
+          }).eq("id", runId);
+        } catch (err) {
+          console.warn("[auto-gen] failure heartbeat update failed:", err);
+        }
       }
     }
 
@@ -513,7 +517,7 @@ Retorne APENAS um JSON array válido (sem markdown):
 
     if (alerts.length > 0) {
       const rows = alerts.map(a => ({ ...a, run_id: runId }));
-      await sb.from("pipeline_alerts").insert(rows).catch(e => console.warn("[auto-gen] Alert insert error:", e));
+      try { await sb.from("pipeline_alerts").insert(rows); } catch (err) { console.warn("[auto-gen] Alert insert error:", err); }
     }
 
     console.log(`[auto-gen] Done: ${totalGenerated} generated, ${totalFailed} failed in ${durationMs}ms, ${alerts.length} alerts`);
@@ -532,11 +536,15 @@ Retorne APENAS um JSON array válido (sem markdown):
     console.error("[auto-gen] FATAL:", e);
 
     if (runId) {
-      await sb.from("question_generation_runs").update({
-        status: "failed",
-        finished_at: new Date().toISOString(),
-        notes: `FATAL: ${(e as Error).message?.slice(0, 200)}`,
-      }).eq("id", runId).catch(() => {});
+      try {
+        await sb.from("question_generation_runs").update({
+          status: "failed",
+          finished_at: new Date().toISOString(),
+          notes: `FATAL: ${(e as Error).message?.slice(0, 200)}`,
+        }).eq("id", runId);
+      } catch (err) {
+        console.warn("[auto-gen] FATAL run update failed:", err);
+      }
     }
 
     return errorResponse((e as Error).message);
