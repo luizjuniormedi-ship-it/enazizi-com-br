@@ -18,6 +18,10 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       devOptions: { enabled: false },
       registerType: "autoUpdate",
+      // CRITICAL iOS FIX: prevents Safari from serving a cached sw.js for up to 24h.
+      // Combined with skipWaiting + clientsClaim + controllerchange-reload, this
+      // guarantees a fresh bundle on the next app open / focus.
+      injectRegister: null,
       includeAssets: ["favicon.ico", "pwa-icon-192.png", "pwa-icon-512.png"],
       workbox: {
         skipWaiting: true,
