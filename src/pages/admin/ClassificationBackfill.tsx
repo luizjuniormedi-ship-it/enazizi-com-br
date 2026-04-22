@@ -300,14 +300,22 @@ export default function ClassificationBackfill() {
                 <p className="text-sm text-muted-foreground">Execute um lote para ver o resultado aqui.</p>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid gap-3 md:grid-cols-4">
-                    <Stat label="Processadas" value={lastResult.total_processed} icon={<ClipboardList className="h-4 w-4" />} />
-                    <Stat label="Aplicadas" value={lastResult.total_applied} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
-                    <Stat label="Para revisão" value={lastResult.total_queued_review} icon={<AlertTriangle className="h-4 w-4 text-destructive" />} />
-                    <Stat label="Ignoradas" value={lastResult.total_skipped} />
+                  {lastResult.dry_run && (
+                    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs">
+                      Resultado de <strong>DRY-RUN</strong> (run_id <code>{lastResult.run_id}</code>) — nenhum
+                      <code> specialty_id</code> foi gravado nas questões. Os números abaixo são apenas a simulação do que <em>seria</em> aplicado.
+                    </div>
+                  )}
+                  <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
+                    <Stat label="Total processado" value={lastResult.total_processed} icon={<ClipboardList className="h-4 w-4" />} />
+                    <Stat label="Por exact_text" value={lastResult.method_breakdown?.exact_text ?? 0} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
+                    <Stat label="Por heurística" value={lastResult.method_breakdown?.heuristic ?? 0} />
+                    <Stat label="Iria p/ fila" value={lastResult.total_queued_review} icon={<AlertTriangle className="h-4 w-4 text-destructive" />} />
+                    <Stat label="Sem match (skip)" value={lastResult.total_skipped} />
+                    <Stat label="Aplicáveis (≥0.7)" value={lastResult.total_applied} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
                   </div>
-                  <div className="text-sm">
-                    <strong>Por método:</strong>{" "}
+                  <div className="text-xs text-muted-foreground">
+                    <strong>Breakdown por método (raw):</strong>{" "}
                     {Object.entries(lastResult.method_breakdown).map(([k, v]) => (
                       <Badge key={k} variant="secondary" className="mr-1">{k}: {v}</Badge>
                     ))}
