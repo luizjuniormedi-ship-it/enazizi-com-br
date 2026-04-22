@@ -593,11 +593,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 </Select>
               </div>
 
-              {/* Topic distribution preview */}
+              {/* Topic distribution preview (dynamic from curriculum_weights, with static fallback) */}
               <div>
                 <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
-                <TopicDistributionPreview
-                  items={calculateTopicDistribution(selectedProfile, selectedProfile.totalQuestions)}
+                <DynamicDistributionPreview
+                  data={dynamicDistribution}
+                  isLoading={dynamicLoading}
                   total={selectedProfile.totalQuestions}
                   barColorClass="bg-amber-500"
                 />
@@ -636,11 +637,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 </Select>
               </div>
 
-              {/* Topic distribution preview */}
+              {/* Topic distribution preview (dynamic from curriculum_weights, with static fallback) */}
               <div>
                 <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
-                <TopicDistributionPreview
-                  items={calculateTopicDistribution(selectedProfile, selectedProfile.totalQuestions)}
+                <DynamicDistributionPreview
+                  data={dynamicDistribution}
+                  isLoading={dynamicLoading}
                   total={selectedProfile.totalQuestions}
                   barColorClass="bg-violet-500"
                 />
