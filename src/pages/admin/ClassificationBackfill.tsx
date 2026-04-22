@@ -255,7 +255,7 @@ export default function ClassificationBackfill() {
               )}
             </Button>
             {dryRun && (
-              <Badge variant="outline" className="border-yellow-500 text-yellow-700 dark:text-yellow-300">
+              <Badge variant="outline" className="border-destructive text-destructive">
                 Modo simulação ativo
               </Badge>
             )}
@@ -279,8 +279,8 @@ export default function ClassificationBackfill() {
                 <div className="space-y-4">
                   <div className="grid gap-3 md:grid-cols-4">
                     <Stat label="Processadas" value={lastResult.total_processed} icon={<ClipboardList className="h-4 w-4" />} />
-                    <Stat label="Aplicadas" value={lastResult.total_applied} icon={<CheckCircle2 className="h-4 w-4 text-green-500" />} />
-                    <Stat label="Para revisão" value={lastResult.total_queued_review} icon={<AlertTriangle className="h-4 w-4 text-yellow-500" />} />
+                    <Stat label="Aplicadas" value={lastResult.total_applied} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
+                    <Stat label="Para revisão" value={lastResult.total_queued_review} icon={<AlertTriangle className="h-4 w-4 text-destructive" />} />
                     <Stat label="Ignoradas" value={lastResult.total_skipped} />
                   </div>
                   <div className="text-sm">
