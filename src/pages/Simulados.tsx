@@ -620,6 +620,8 @@ const Simulados = () => {
       const bankCount = Math.min(bankQuestions.length, config.count);
       const selectedFromBank = bankQuestions.slice(0, bankCount);
       let deficit = config.count - selectedFromBank.length;
+      // Sprint 6 — pool real selecionado por filtro textual (topic.ilike)
+      __selMix.pool_textual += selectedFromBank.length;
 
       // ── Step 2.5: Inject image questions (adaptive or default 20%) ──
       let imageSimQuestions: SimQuestion[] = [];
@@ -629,6 +631,7 @@ const Simulados = () => {
         const { slots, fallbackCount } = calculateImageSlots(config.count, IMAGE_PERCENT, imgDist);
         if (fallbackCount > 0) {
           console.info(`[Simulados] ${fallbackCount} questões de imagem substituídas por fallback textual`);
+          __selMix.fallback += fallbackCount;
         }
         if (slots.length > 0) {
           setLoadingProgress("Buscando questões com imagem...");
@@ -649,6 +652,7 @@ const Simulados = () => {
             };
           });
           deficit = Math.max(0, deficit - imageSimQuestions.length);
+          __selMix.image_pipeline += imageSimQuestions.length;
         }
       } catch (imgErr) {
         console.warn("[Simulados] Fallback: sem questões de imagem", imgErr);
@@ -659,6 +663,7 @@ const Simulados = () => {
 
       // ── Step 3: Generate remaining via AI if needed ──
       let allQuestions: SimQuestion[] = [...selectedFromBank, ...imageSimQuestions];
+      const __preAiCount = allQuestions.length;
 
       if (deficit > 0) {
         const requestCount = Math.ceil(deficit * 1.8);
@@ -717,9 +722,28 @@ const Simulados = () => {
       // Deduplicate
       allQuestions = deduplicateQuestions(allQuestions);
 
+      // Sprint 6 — quanto entrou via IA (após dedup, post-pool/imagem)
+      __selMix.ai_generated = Math.max(0, allQuestions.length - __preAiCount);
+
+      const __finishAndLog = (final: number, extra?: Record<string, unknown>) => {
+        void logSimuladoSelection({
+          mode: config.mode, banca: config.examBoard ?? null,
+          requested_count: config.count, final_count: final,
+          source_pool_textual: __selMix.pool_textual,
+          source_pool_structural: __selMix.pool_structural,
+          source_image_pipeline: __selMix.image_pipeline,
+          source_ai_generated: __selMix.ai_generated,
+          source_fallback: __selMix.fallback,
+          granular_eligible: false, granular_fallback_reason: __granularReason,
+          duration_ms: Math.round(performance.now() - __selT0),
+          metadata: { dynamic_distribution_source: __dynamicSource, ...(extra ?? {}) },
+        });
+      };
+
       if (allQuestions.length === 0) {
         toast({ title: "Erro ao gerar questões. Tente novamente.", variant: "destructive" });
         setPhase("setup");
+        __finishAndLog(0, { error: "zero_questions" });
         return;
       }
 
@@ -730,10 +754,12 @@ const Simulados = () => {
         setQuestions(finalQuestions);
         setPartialCount(finalQuestions.length);
         setPhase("partial");
+        __finishAndLog(finalQuestions.length, { partial: true });
         return;
       }
 
       setLoadingPercent(100);
+      __finishAndLog(finalQuestions.length);
       startExamWithQuestions(finalQuestions, config);
     } catch (err: any) {
       toast({ title: "Erro ao gerar simulado", description: err.message, variant: "destructive" });
