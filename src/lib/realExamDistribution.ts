@@ -190,15 +190,41 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
 };
 
 /**
+ * Resultado da prévia visual da distribuição de temas.
+ *
+ * Os campos `topic` e `count` são os mesmos do retorno antigo — totalmente
+ * compatíveis com consumidores existentes (ex.: `Simulados.tsx`).
+ *
+ * Os campos novos (`percent` e `subtopics`) são apenas para a UI e podem ser
+ * ignorados sem efeito colateral.
+ */
+export interface TopicDistributionItem {
+  topic: string;
+  count: number;
+  /** Percentual do tema dentro da prova (0–100), arredondado. */
+  percent: number;
+  /**
+   * Quebra opcional em subáreas, presente apenas quando o perfil definir
+   * `subtopics` para o tema. Apenas informativa — NÃO usada pelo gerador.
+   */
+  subtopics?: { name: string; count: number; percent: number }[];
+}
+
+/**
  * Calcula quantas questões de cada tema gerar, proporcional ao total solicitado.
+ *
+ * Quando o tema tiver `subtopics` definidos no perfil, o resultado também
+ * inclui a quebra proporcional em subáreas (com `count` e `percent` próprios).
+ * Essa quebra é apenas informativa para a UI e NÃO altera o gerador atual.
  */
 export function calculateTopicDistribution(
   profile: ExamProfile,
   totalQuestions: number
-): { topic: string; count: number }[] {
+): TopicDistributionItem[] {
   const raw = profile.topicWeights.map(tw => ({
     topic: tw.topic,
     count: Math.round((tw.weight / 100) * totalQuestions),
+    subtopicsSrc: tw.subtopics,
   }));
 
   // Ajusta para total exato
@@ -210,7 +236,35 @@ export function calculateTopicDistribution(
     raw[0].count += diff;
   }
 
-  return raw.filter(r => r.count > 0);
+  return raw
+    .filter(r => r.count > 0)
+    .map<TopicDistributionItem>(r => {
+      const percent = Math.round((r.count / totalQuestions) * 100);
+      let subtopics: TopicDistributionItem["subtopics"];
+
+      if (r.subtopicsSrc && r.subtopicsSrc.length > 0 && r.count > 0) {
+        const subRaw = r.subtopicsSrc.map(s => ({
+          name: s.name,
+          count: Math.round((s.weight / 100) * r.count),
+        }));
+        // Garante que a soma dos subtopics bata com o count do tema
+        const subSum = subRaw.reduce((s, x) => s + x.count, 0);
+        const subDiff = r.count - subSum;
+        if (subDiff !== 0 && subRaw.length > 0) {
+          subRaw.sort((a, b) => b.count - a.count);
+          subRaw[0].count += subDiff;
+        }
+        subtopics = subRaw
+          .filter(s => s.count > 0)
+          .map(s => ({
+            name: s.name,
+            count: s.count,
+            percent: Math.round((s.count / totalQuestions) * 100),
+          }));
+      }
+
+      return { topic: r.topic, count: r.count, percent, subtopics };
+    });
 }
 
 /**
