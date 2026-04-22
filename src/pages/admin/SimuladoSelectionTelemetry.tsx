@@ -253,11 +253,16 @@ export default function SimuladoSelectionTelemetry() {
                     <TableHead>Granular?</TableHead>
                     <TableHead>Razão fallback</TableHead>
                     <TableHead className="text-right">ms</TableHead>
+                    <TableHead className="w-8"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {runs.map((r) => (
-                    <TableRow key={r.id}>
+                    <TableRow
+                      key={r.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => navigate(`/admin/simulado-selection/${r.id}`)}
+                    >
                       <TableCell className="whitespace-nowrap text-xs">
                         {new Date(r.created_at).toLocaleString("pt-BR")}
                       </TableCell>
@@ -286,6 +291,9 @@ export default function SimuladoSelectionTelemetry() {
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">
                         {r.duration_ms ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </TableCell>
                     </TableRow>
                   ))}
