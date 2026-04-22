@@ -1197,6 +1197,13 @@ export type Database = {
             foreignKeyName: "content_coverage_audit_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "content_coverage_audit_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
             referencedRelation: "v_subtopic_question_density"
             referencedColumns: ["subtopic_id"]
           },
@@ -1485,6 +1492,13 @@ export type Database = {
             foreignKeyName: "curriculum_microtopics_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "curriculum_microtopics_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
             referencedRelation: "v_subtopic_question_density"
             referencedColumns: ["subtopic_id"]
           },
@@ -1521,6 +1535,13 @@ export type Database = {
             foreignKeyName: "curriculum_prerequisites_prerequisite_subtopic_id_fkey"
             columns: ["prerequisite_subtopic_id"]
             isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "curriculum_prerequisites_prerequisite_subtopic_id_fkey"
+            columns: ["prerequisite_subtopic_id"]
+            isOneToOne: false
             referencedRelation: "v_subtopic_question_density"
             referencedColumns: ["subtopic_id"]
           },
@@ -1530,6 +1551,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_prerequisites_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "curriculum_prerequisites_subtopic_id_fkey"
@@ -1630,6 +1658,13 @@ export type Database = {
             referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "curriculum_subtopics_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
         ]
       }
       curriculum_topics: {
@@ -1664,6 +1699,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_specialties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_topics_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
           },
         ]
       }
@@ -1708,6 +1750,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_weights_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "curriculum_weights_subtopic_id_fkey"
@@ -2777,11 +2826,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "flashcards_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "flashcards_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flashcards_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "flashcards_subtopic_id_fkey"
@@ -5544,6 +5607,13 @@ export type Database = {
             foreignKeyName: "professor_plan_subtopics_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "professor_plan_subtopics_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
             referencedRelation: "v_subtopic_question_density"
             referencedColumns: ["subtopic_id"]
           },
@@ -6218,11 +6288,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "question_classification_queue_suggested_specialty_id_fkey"
+            columns: ["suggested_specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "question_classification_queue_suggested_subtopic_id_fkey"
             columns: ["suggested_subtopic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_queue_suggested_subtopic_id_fkey"
+            columns: ["suggested_subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "question_classification_queue_suggested_subtopic_id_fkey"
@@ -6237,6 +6321,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_queue_suggested_topic_id_fkey"
+            columns: ["suggested_topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -6472,6 +6563,13 @@ export type Database = {
             foreignKeyName: "question_topic_links_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "question_topic_links_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
             referencedRelation: "v_subtopic_question_density"
             referencedColumns: ["subtopic_id"]
           },
@@ -6530,6 +6628,13 @@ export type Database = {
             foreignKeyName: "question_topic_map_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "question_topic_map_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
             referencedRelation: "v_subtopic_question_density"
             referencedColumns: ["subtopic_id"]
           },
@@ -6539,6 +6644,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_topic_map_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -6725,11 +6837,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "questions_bank_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "questions_bank_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "questions_bank_subtopic_id_fkey"
@@ -6744,6 +6870,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -6991,11 +7124,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "real_exam_questions_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "real_exam_questions_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "real_exam_questions_subtopic_id_fkey"
@@ -7010,6 +7157,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -7716,11 +7870,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "study_materials_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "study_materials_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_materials_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "study_materials_subtopic_id_fkey"
@@ -7735,6 +7903,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_materials_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -8496,11 +8671,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "temas_estudados_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
             foreignKeyName: "temas_estudados_subtopic_id_fkey"
             columns: ["subtopic_id"]
             isOneToOne: false
             referencedRelation: "curriculum_subtopics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temas_estudados_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
           },
           {
             foreignKeyName: "temas_estudados_subtopic_id_fkey"
@@ -8515,6 +8704,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "temas_estudados_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
           },
         ]
       }
@@ -10032,6 +10228,22 @@ export type Database = {
         }
         Relationships: []
       }
+      v_curriculum_coverage_by_banca: {
+        Row: {
+          banca: string | null
+          frequency_score: number | null
+          has_weight: boolean | null
+          importance_level: string | null
+          peso: number | null
+          specialty_id: string | null
+          specialty_nome: string | null
+          subtopic_id: string | null
+          subtopic_nome: string | null
+          topic_id: string | null
+          topic_nome: string | null
+        }
+        Relationships: []
+      }
       v_mnemonic_latest_results: {
         Row: {
           aprovado: boolean | null
@@ -10114,6 +10326,25 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      get_banca_coverage_report: {
+        Args: never
+        Returns: {
+          banca: string
+          microtopics_total: number
+          pct_specialties: number
+          pct_subtopics: number
+          pct_topics: number
+          peso_medio: number
+          specialties_cobertas: number
+          specialties_total: number
+          status: string
+          subtopics_cobertos: number
+          subtopics_total: number
+          top_gaps_specialties: Json
+          topics_cobertos: number
+          topics_total: number
+        }[]
       }
       get_classmate_profile: {
         Args: { _target_user_id: string }
