@@ -73,6 +73,7 @@ const CoveragePriorityBoost = lazyWithRetry(() => import("./pages/admin/Coverage
 const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
 const CurriculumCoverage = lazyWithRetry(() => import("./pages/admin/CurriculumCoverage"), "CurriculumCoverage");
 const GranularGeneratorMonitor = lazyWithRetry(() => import("./pages/admin/GranularGeneratorMonitor"), "GranularGeneratorMonitor");
+const GeneratorTelemetry = lazyWithRetry(() => import("./pages/admin/GeneratorTelemetry"), "GeneratorTelemetry");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
 const MissionControlPage = lazyWithRetry(() => import("./pages/MissionControlPage"), "MissionControlPage");
 const MissionEntry = lazyWithRetry(() => import("./pages/MissionEntry"), "MissionEntry");
@@ -197,6 +198,7 @@ const App = () => (
                 <Route path="classification" element={<ClassificationBackfill />} />
                 <Route path="curriculum-coverage" element={<CurriculumCoverage />} />
                 <Route path="granular-generator" element={<GranularGeneratorMonitor />} />
+                <Route path="generator-telemetry" element={<GeneratorTelemetry />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
