@@ -10303,6 +10303,19 @@ export type Database = {
         }
         Relationships: []
       }
+      v_banca_question_coverage: {
+        Row: {
+          banca: string | null
+          classificadas_specialty: number | null
+          classificadas_subtopic: number | null
+          classificadas_topic: number | null
+          de_questions_bank: number | null
+          de_real_exam: number | null
+          pct_classificadas: number | null
+          total_questoes: number | null
+        }
+        Relationships: []
+      }
       v_curriculum_coverage_by_banca: {
         Row: {
           banca: string | null
@@ -10439,6 +10452,27 @@ export type Database = {
           top_gaps_specialties: Json
           topics_cobertos: number
           topics_total: number
+        }[]
+      }
+      get_banca_generator_readiness: {
+        Args: never
+        Returns: {
+          banca: string
+          curriculum_status: string
+          generator_status: string
+          generator_status_reason: string
+          highlight: boolean
+          pct_questoes_classificadas: number
+          pct_subtopics: number
+          questions_status: string
+          questoes_classificadas: number
+          specialties_cobertas: number
+          specialties_total: number
+          subtopics_cobertos: number
+          subtopics_total: number
+          topics_cobertos: number
+          topics_total: number
+          total_questoes: number
         }[]
       }
       get_classmate_profile: {
