@@ -123,6 +123,11 @@ const collectDiagnostics = async () => {
     userAgent: navigator.userAgent,
   };
 
+  console.log(`${LOG_PREFIX} browser=${browser} standalone=${standalone}`);
+  console.log(
+    `${LOG_PREFIX} release=${APP_RELEASE} stored=${diagnostics.storedRelease ?? "none"} ` +
+      `swRegs=${registrationsCount} waiting=${waitingCount} controller=${hasController} caches=${cacheCount}`,
+  );
   console.log(`${LOG_PREFIX} diagnostics`, diagnostics);
   return diagnostics;
 };
