@@ -83,6 +83,7 @@ const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryP
 const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
 const MindMapFullscreen = lazyWithRetry(() => import("./pages/MindMapFullscreen"), "MindMapFullscreen");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
+const ProficiencyPilotPage = lazyWithRetry(() => import("./pages/ProficiencyPilotPage"), "ProficiencyPilotPage");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 
@@ -193,6 +194,7 @@ const App = () => (
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
+                <Route path="proficiencia/piloto" element={<ProficiencyPilotPage />} />
               </Route>
               <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
