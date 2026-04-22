@@ -6423,6 +6423,7 @@ export type Database = {
           image_url: string | null
           is_global: boolean | null
           language: string | null
+          microtopic_id: string | null
           options: Json | null
           organization_id: string | null
           original_question_id: string | null
@@ -6434,9 +6435,12 @@ export type Database = {
           source_map_id: string | null
           source_type: string | null
           source_url: string | null
+          specialty_id: string | null
           statement: string
           subtopic: string | null
+          subtopic_id: string | null
           topic: string | null
+          topic_id: string | null
           user_id: string
         }
         Insert: {
@@ -6449,6 +6453,7 @@ export type Database = {
           image_url?: string | null
           is_global?: boolean | null
           language?: string | null
+          microtopic_id?: string | null
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
@@ -6460,9 +6465,12 @@ export type Database = {
           source_map_id?: string | null
           source_type?: string | null
           source_url?: string | null
+          specialty_id?: string | null
           statement: string
           subtopic?: string | null
+          subtopic_id?: string | null
           topic?: string | null
+          topic_id?: string | null
           user_id: string
         }
         Update: {
@@ -6475,6 +6483,7 @@ export type Database = {
           image_url?: string | null
           is_global?: boolean | null
           language?: string | null
+          microtopic_id?: string | null
           options?: Json | null
           organization_id?: string | null
           original_question_id?: string | null
@@ -6486,9 +6495,12 @@ export type Database = {
           source_map_id?: string | null
           source_type?: string | null
           source_url?: string | null
+          specialty_id?: string | null
           statement?: string
           subtopic?: string | null
+          subtopic_id?: string | null
           topic?: string | null
+          topic_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -6497,6 +6509,13 @@ export type Database = {
             columns: ["exam_bank_id"]
             isOneToOne: false
             referencedRelation: "exam_banks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_microtopic_id_fkey"
+            columns: ["microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
             referencedColumns: ["id"]
           },
           {
@@ -6518,6 +6537,34 @@ export type Database = {
             columns: ["source_map_id"]
             isOneToOne: false
             referencedRelation: "mental_maps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "questions_bank_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "questions_bank_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
             referencedColumns: ["id"]
           },
         ]
@@ -6679,13 +6726,17 @@ export type Database = {
           explanation: string | null
           id: string
           is_active: boolean
+          microtopic_id: string | null
           options: Json
           quality_score: number
           source_url: string
+          specialty_id: string | null
           statement: string
           statement_hash: string
           subtopic: string | null
+          subtopic_id: string | null
           topic: string
+          topic_id: string | null
           updated_at: string
         }
         Insert: {
@@ -6698,13 +6749,17 @@ export type Database = {
           explanation?: string | null
           id?: string
           is_active?: boolean
+          microtopic_id?: string | null
           options?: Json
           quality_score?: number
           source_url: string
+          specialty_id?: string | null
           statement: string
           statement_hash: string
           subtopic?: string | null
+          subtopic_id?: string | null
           topic: string
+          topic_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -6717,16 +6772,56 @@ export type Database = {
           explanation?: string | null
           id?: string
           is_active?: boolean
+          microtopic_id?: string | null
           options?: Json
           quality_score?: number
           source_url?: string
+          specialty_id?: string | null
           statement?: string
           statement_hash?: string
           subtopic?: string | null
+          subtopic_id?: string | null
           topic?: string
+          topic_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "real_exam_questions_microtopic_id_fkey"
+            columns: ["microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "real_exam_questions_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recovery_events: {
         Row: {
