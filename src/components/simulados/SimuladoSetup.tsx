@@ -39,7 +39,7 @@ const EXAM_BOARDS = [
 export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
 interface SimuladoSetupProps {
-  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string; imagePercent?: number }) => void;
+  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string; imagePercent?: number; dynamicDistribution?: ExamDistributionTree }) => void;
   onResumeSession: () => void;
   onDiscardSession: () => void;
   onRetryErrors: (sessionId: string) => void;
@@ -328,6 +328,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         mode,
         examBoard: realExamBoard,
         realExamProfile: realExamBoard,
+        // Repassa a árvore dinâmica quando disponível — gerador prefere
+        // batches por `topic` para mais granularidade. Se vier fallback,
+        // o gerador mantém o comportamento atual baseado em EXAM_PROFILES.
+        dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
+          ? dynamicDistribution
+          : undefined,
       });
       return;
     }
