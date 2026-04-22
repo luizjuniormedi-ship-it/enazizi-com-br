@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
-import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
+import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots, type TopicDistributionItem } from "@/lib/realExamDistribution";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 import { ALL_SPECIALTIES as ALL_TOPICS, SPECIALTY_CYCLES } from "@/constants/specialties";
 import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
