@@ -70,6 +70,7 @@ const AdminOrchestratorInsights = lazyWithRetry(() => import("./pages/AdminOrche
 const ValidationDashboard = lazyWithRetry(() => import("./pages/admin/ValidationDashboard"), "ValidationDashboard");
 const ContentCoverageAudit = lazyWithRetry(() => import("./pages/admin/ContentCoverageAudit"), "ContentCoverageAudit");
 const CoveragePriorityBoost = lazyWithRetry(() => import("./pages/admin/CoveragePriorityBoost"), "CoveragePriorityBoost");
+const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
 const MissionControlPage = lazyWithRetry(() => import("./pages/MissionControlPage"), "MissionControlPage");
 const MissionEntry = lazyWithRetry(() => import("./pages/MissionEntry"), "MissionEntry");
@@ -191,6 +192,7 @@ const App = () => (
                 <Route path="validation" element={<ValidationDashboard />} />
                 <Route path="coverage" element={<ContentCoverageAudit />} />
                 <Route path="coverage-boost" element={<CoveragePriorityBoost />} />
+                <Route path="classification" element={<ClassificationBackfill />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
