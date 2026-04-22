@@ -514,6 +514,7 @@ const Simulados = () => {
               return { statement: sim.statement, options: sim.options, correct: sim.correct_index, topic: sim.topic, explanation: sim.explanation, image_url: sim.image_url, image_type: sim.image_type, _isImageQuestion: sim._isImageQuestion, _imageQuestionId: sim._imageQuestionId, _editorialGrade: sim._editorialGrade } as SimQuestion;
             });
             allQuestions.push(...imgSim);
+            __selMix.image_pipeline += imgSim.length;
           }
         } catch { /* fallback sem imagem */ }
 
@@ -522,9 +523,21 @@ const Simulados = () => {
         allQuestions = deduplicateQuestions(allQuestions);
         const finalQuestions = allQuestions.slice(0, config.count).sort(() => Math.random() - 0.5);
 
+        // Sprint 6 — telemetria: prova_real/TRI é 100% IA + (eventualmente) imagens
+        __selMix.ai_generated = Math.max(0, finalQuestions.length - __selMix.image_pipeline);
+
         if (finalQuestions.length === 0) {
           toast({ title: "Erro ao gerar prova real. Tente novamente.", variant: "destructive" });
           setPhase("setup");
+          void logSimuladoSelection({
+            mode: config.mode, banca: config.examBoard ?? null,
+            requested_count: config.count, final_count: 0,
+            source_ai_generated: __selMix.ai_generated,
+            source_image_pipeline: __selMix.image_pipeline,
+            granular_eligible: false, granular_fallback_reason: __granularReason,
+            duration_ms: Math.round(performance.now() - __selT0),
+            metadata: { dynamic_distribution_source: __dynamicSource, error: "zero_questions" },
+          });
           return;
         }
 
@@ -532,10 +545,28 @@ const Simulados = () => {
           setQuestions(finalQuestions);
           setPartialCount(finalQuestions.length);
           setPhase("partial");
+          void logSimuladoSelection({
+            mode: config.mode, banca: config.examBoard ?? null,
+            requested_count: config.count, final_count: finalQuestions.length,
+            source_ai_generated: __selMix.ai_generated,
+            source_image_pipeline: __selMix.image_pipeline,
+            granular_eligible: false, granular_fallback_reason: __granularReason,
+            duration_ms: Math.round(performance.now() - __selT0),
+            metadata: { dynamic_distribution_source: __dynamicSource, partial: true },
+          });
           return;
         }
 
         setLoadingPercent(100);
+        void logSimuladoSelection({
+          mode: config.mode, banca: config.examBoard ?? null,
+          requested_count: config.count, final_count: finalQuestions.length,
+          source_ai_generated: __selMix.ai_generated,
+          source_image_pipeline: __selMix.image_pipeline,
+          granular_eligible: false, granular_fallback_reason: __granularReason,
+          duration_ms: Math.round(performance.now() - __selT0),
+          metadata: { dynamic_distribution_source: __dynamicSource },
+        });
         startExamWithQuestions(finalQuestions, config);
         return;
       }
