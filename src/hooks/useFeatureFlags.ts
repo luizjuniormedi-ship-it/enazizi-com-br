@@ -38,7 +38,9 @@ export type FlagKey =
   // Intervention Engine Fase 6 — Personalização por Perfil do Aluno
   | "intervention_profile_personalization_enabled"
   // Coverage → Study Engine Bridge (Fase 1.4)
-  | "coverage_priority_boost_enabled";
+  | "coverage_priority_boost_enabled"
+  // Sprint 4 — Gerador granular de simulados (opt-in, default false)
+  | "granular_generator_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -84,6 +86,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   intervention_profile_personalization_enabled: true,
   // Coverage → Study Engine Bridge — ON por padrão, fallback total embutido
   coverage_priority_boost_enabled: true,
+  // Sprint 4 — Gerador granular: OFF por padrão (segurança máxima)
+  granular_generator_enabled: false,
 };
 
 export const useFeatureFlags = () => {
