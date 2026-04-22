@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { RefreshCw, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { forceAppUpdate, type ForceUpdateStage } from "@/lib/force-app-update";
 
@@ -27,17 +28,20 @@ export const ForceUpdateButton = ({
     if (busy) return;
     setBusy(true);
     setStatusLabel("Atualizando aplicativo…");
+    const toastId = toast.loading("Atualizando aplicativo…");
 
     try {
       await forceAppUpdate({
         onStage: (_stage: ForceUpdateStage, label) => {
           setStatusLabel(label);
+          toast.loading(label, { id: toastId });
         },
       });
       onAfterClick?.();
     } catch (error) {
       console.error("[ForceUpdateButton] failed", error);
       setStatusLabel("Falha — tente novamente");
+      toast.error("Falha ao atualizar — tente novamente", { id: toastId });
       setBusy(false);
     }
   };

@@ -123,6 +123,11 @@ const collectDiagnostics = async () => {
     userAgent: navigator.userAgent,
   };
 
+  console.log(`${LOG_PREFIX} browser=${browser} standalone=${standalone}`);
+  console.log(
+    `${LOG_PREFIX} release=${APP_RELEASE} stored=${diagnostics.storedRelease ?? "none"} ` +
+      `swRegs=${registrationsCount} waiting=${waitingCount} controller=${hasController} caches=${cacheCount}`,
+  );
   console.log(`${LOG_PREFIX} diagnostics`, diagnostics);
   return diagnostics;
 };
@@ -187,9 +192,34 @@ export const forceAppUpdate = async (
   await collectDiagnostics().catch(() => undefined);
 
   announce(options, "clearing-caches");
-  await clearAllCacheStorage().catch((error) =>
-    console.warn(`${LOG_PREFIX} clearAllCacheStorage failed`, error),
-  );
+  let cachesRemoved = 0;
+  try {
+    if ("caches" in window) {
+      const names = await caches.keys();
+      const results = await Promise.allSettled(
+        names.map((name) => caches.delete(name)),
+      );
+      cachesRemoved = results.filter(
+        (r) => r.status === "fulfilled" && r.value === true,
+      ).length;
+    }
+  } catch (error) {
+    console.warn(`${LOG_PREFIX} clearAllCacheStorage failed`, error);
+    await clearAllCacheStorage().catch(() => undefined);
+  }
+  console.log(`${LOG_PREFIX} caches removed=${cachesRemoved}`);
+
+  // log "waiting worker found" se aplicável
+  if ("serviceWorker" in navigator) {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      if (regs.some((r) => r.waiting)) {
+        console.log(`${LOG_PREFIX} waiting worker found`);
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   await updateServiceWorkers(options);
 
