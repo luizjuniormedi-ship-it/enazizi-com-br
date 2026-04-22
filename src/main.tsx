@@ -72,9 +72,6 @@ const registerProductionServiceWorker = () => {
 
   const updateSW = registerSW({
     immediate: true,
-    // updateViaCache: 'none' tells the browser to NEVER use HTTP cache for sw.js.
-    // Critical for iOS Safari which otherwise pins the SW script for ~24h.
-    updateViaCache: "none" as never,
     onNeedRefresh() {
       console.log("[PWA] Nova versão disponível, ativando agora…");
       // Triggers SKIP_WAITING → controllerchange → reload above.
