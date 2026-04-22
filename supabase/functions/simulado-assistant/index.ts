@@ -5,6 +5,9 @@ import {
   jsonOk, jsonError, smartFallback, handleAiError,
   logGeneratedContent, contentHash,
 } from "../_shared/ai-phase2-helpers.ts";
+import {
+  planGranularOrFallback, renderPlanForPrompt, logGeneratorRun,
+} from "../_shared/granular-generator-helpers.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -65,11 +68,18 @@ serve(async (req) => {
     if (approvalScore < 40) difficultyHint = "maioria fácil e intermediário";
     else if (approvalScore > 75) difficultyHint = "maioria intermediário e difícil";
 
-    const system = `Você é um professor de medicina montando um simulado personalizado para prova de residência.
+    // ───── Sprint 4: try granular pipeline first (safe, opt-in) ─────
+    const t0 = Date.now();
+    let pipelineUsed: "granular" | "legacy" = "legacy";
+    let fallbackReason: string | null = null;
+    let bancaStatus: string | null = null;
+    let topicDistribution: unknown = {};
+
+    let system = `Você é um professor de medicina montando um simulado personalizado para prova de residência.
 Retorne JSON com "questions": array de objetos com: "question", "options" (5 A-E), "correctAnswer", "explanation", "difficulty", "topic".
 Português do Brasil. Estilo de prova real.${examProfile ? ` Banca: ${examProfile}.` : ""}`;
 
-    const prompt = `Monte ${questionCount} questões.
+    let prompt = `Monte ${questionCount} questões.
 DISTRIBUIÇÃO:
 - ${weakCount} TEMAS FRACOS: ${weakTopics.length ? weakTopics.join(", ") : "clínica médica geral"}
 - ${reviewCount} REVISÃO: ${reviewTopics.length ? reviewTopics.join(", ") : "temas variados"}
@@ -77,20 +87,98 @@ DISTRIBUIÇÃO:
 DIFICULDADE: ${difficultyHint}
 APPROVAL: ${approvalScore}/100`;
 
-    const raw = await callHeavyAI(system, prompt, 8192);
-    const parsed = parseAiJsonSafe(raw);
-    const questions = Array.isArray(parsed.questions) ? parsed.questions : Array.isArray(parsed) ? parsed : [];
+    try {
+      const decision = await planGranularOrFallback({
+        banca: examProfile,
+        totalQuestions: questionCount,
+        specialtyHints: weakTopics,
+      });
+      if (decision.eligible) {
+        pipelineUsed = "granular";
+        bancaStatus = decision.plan.banca_status;
+        topicDistribution = decision.plan.shares;
+        // Granular prompt overrides distribution lines, keeps difficulty + approval
+        prompt = `Monte ${questionCount} questões seguindo EXATAMENTE a distribuição abaixo (granularidade=topic).
+${renderPlanForPrompt(decision.plan)}
+DIFICULDADE: ${difficultyHint}
+APPROVAL: ${approvalScore}/100
+REGRA: cada questão deve declarar no campo "topic" o nome do topic correspondente da distribuição.`;
+      } else {
+        fallbackReason = decision.reason;
+        bancaStatus = (decision as any).banca_status ?? null;
+      }
+    } catch (e) {
+      fallbackReason = `granular_planner_threw:${(e as Error).message}`;
+    }
 
-    const result = { questions, distribution: { weakTopics: weakCount, strongTopics: mixedCount, reviewTopics: reviewCount } };
+    let raw: string;
+    let questions: unknown[] = [];
+    let runStatus: "success" | "fallback" | "error" = "success";
+    let runError: string | null = null;
 
-    // Cache with 12h TTL (0.5 days)
+    try {
+      raw = await callHeavyAI(system, prompt, 8192);
+      const parsed = parseAiJsonSafe(raw);
+      questions = Array.isArray(parsed.questions) ? parsed.questions : Array.isArray(parsed) ? parsed : [];
+    } catch (genErr) {
+      // If granular generation itself failed, retry once with the legacy prompt
+      if (pipelineUsed === "granular") {
+        runStatus = "fallback";
+        fallbackReason = `granular_generation_failed:${(genErr as Error).message}`;
+        pipelineUsed = "legacy";
+        prompt = `Monte ${questionCount} questões.
+DISTRIBUIÇÃO:
+- ${weakCount} TEMAS FRACOS: ${weakTopics.length ? weakTopics.join(", ") : "clínica médica geral"}
+- ${reviewCount} REVISÃO: ${reviewTopics.length ? reviewTopics.join(", ") : "temas variados"}
+- ${mixedCount} MISTAS
+DIFICULDADE: ${difficultyHint}
+APPROVAL: ${approvalScore}/100`;
+        raw = await callHeavyAI(system, prompt, 8192);
+        const parsed = parseAiJsonSafe(raw);
+        questions = Array.isArray(parsed.questions) ? parsed.questions : Array.isArray(parsed) ? parsed : [];
+      } else {
+        runStatus = "error";
+        runError = (genErr as Error).message;
+        throw genErr;
+      }
+    }
+
+    const result = {
+      questions,
+      distribution: { weakTopics: weakCount, strongTopics: mixedCount, reviewTopics: reviewCount },
+    };
+
+    // Cache with 12h TTL
     await setCache(cached.key, "adaptive_simulado", result, 0.5);
 
     const hash = await contentHash(JSON.stringify(weakTopics) + questionCount);
     logGeneratedContent({ userId, contentType: "adaptive_simulado", theme: "simulado", contentHash: hash, requestPayload: cacheParams, responsePayload: { questionCount: questions.length }, sourceEndpoint: "simulado-assistant", cacheHit: false, costUnits: ACTION_COSTS.adaptive_simulado });
 
-    return jsonOk({ ...result, source: "ai" });
+    logGeneratorRun({
+      user_id: userId,
+      endpoint: "simulado-assistant",
+      pipeline_used: pipelineUsed,
+      banca: examProfile ?? null,
+      banca_status: bancaStatus,
+      requested_specialties: weakTopics,
+      requested_count: questionCount,
+      generated_count: questions.length,
+      topic_distribution: topicDistribution,
+      fallback_triggered: pipelineUsed === "legacy" && Boolean(fallbackReason),
+      fallback_reason: fallbackReason,
+      duration_ms: Date.now() - t0,
+      status: runStatus,
+      error_message: runError,
+    });
+
+    return jsonOk({ ...result, source: "ai", pipeline: pipelineUsed });
   } catch (e) {
+    logGeneratorRun({
+      endpoint: "simulado-assistant",
+      pipeline_used: "legacy",
+      status: "error",
+      error_message: (e as Error).message,
+    });
     return handleAiError(e, "simulado-assistant");
   }
 });
