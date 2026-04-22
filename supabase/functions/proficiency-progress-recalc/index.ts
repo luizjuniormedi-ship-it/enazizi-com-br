@@ -98,6 +98,35 @@ serve(async (req) => {
       });
     }
 
+    // ─── COOLDOWN CHECK (server-side, multi-tab safe) ───
+    if (!body.force) {
+      const { data: existing } = await admin
+        .from("professor_plan_progress")
+        .select("updated_at")
+        .eq("plan_id", body.planId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (existing?.updated_at) {
+        const elapsed = Date.now() - new Date(existing.updated_at).getTime();
+        if (elapsed < RECALC_COOLDOWN_MS) {
+          const remainingS = Math.ceil((RECALC_COOLDOWN_MS - elapsed) / 1000);
+          console.log(
+            `[recalc] skipped by cooldown plan=${body.planId} user=${user.id} remaining=${remainingS}s`,
+          );
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              skipped: true,
+              reason: "cooldown",
+              cooldownRemainingSeconds: remainingS,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+    }
+    console.log(`[recalc] executed plan=${body.planId} user=${user.id}`);
+
     const today = new Date(isoDate(new Date()));
     const todayIso = isoDate(today);
     const weekStart = startOfWeekUTC(today);
