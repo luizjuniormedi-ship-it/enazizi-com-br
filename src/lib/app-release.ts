@@ -1,6 +1,6 @@
 import type { Session } from "@supabase/supabase-js";
 
-export const APP_RELEASE = "2026-04-20-v20";
+export const APP_RELEASE = "2026-04-22-v21";
 export const RELEASE_KEY = "enazizi_release";
 export const RELEASE_QUERY_KEY = "__app_release";
 export const CACHE_BUST_QUERY_KEY = "__r";
