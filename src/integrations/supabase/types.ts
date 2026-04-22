@@ -6131,6 +6131,172 @@ export type Database = {
         }
         Relationships: []
       }
+      question_classification_queue: {
+        Row: {
+          classification_method: string
+          confidence_score: number
+          created_at: string
+          id: string
+          original_subtopic: string | null
+          original_topic: string | null
+          question_id: string
+          reason: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          run_id: string | null
+          status: string
+          suggested_microtopic_id: string | null
+          suggested_specialty_id: string | null
+          suggested_subtopic_id: string | null
+          suggested_topic_id: string | null
+          table_source: string
+          updated_at: string
+        }
+        Insert: {
+          classification_method: string
+          confidence_score: number
+          created_at?: string
+          id?: string
+          original_subtopic?: string | null
+          original_topic?: string | null
+          question_id: string
+          reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_id?: string | null
+          status?: string
+          suggested_microtopic_id?: string | null
+          suggested_specialty_id?: string | null
+          suggested_subtopic_id?: string | null
+          suggested_topic_id?: string | null
+          table_source: string
+          updated_at?: string
+        }
+        Update: {
+          classification_method?: string
+          confidence_score?: number
+          created_at?: string
+          id?: string
+          original_subtopic?: string | null
+          original_topic?: string | null
+          question_id?: string
+          reason?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          run_id?: string | null
+          status?: string
+          suggested_microtopic_id?: string | null
+          suggested_specialty_id?: string | null
+          suggested_subtopic_id?: string | null
+          suggested_topic_id?: string | null
+          table_source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_classification_queue_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "question_classification_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_queue_suggested_microtopic_id_fkey"
+            columns: ["suggested_microtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_microtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_queue_suggested_specialty_id_fkey"
+            columns: ["suggested_specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_queue_suggested_subtopic_id_fkey"
+            columns: ["suggested_subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "question_classification_queue_suggested_subtopic_id_fkey"
+            columns: ["suggested_subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "question_classification_queue_suggested_topic_id_fkey"
+            columns: ["suggested_topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      question_classification_runs: {
+        Row: {
+          batch_size: number
+          created_at: string
+          dry_run: boolean
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          method_breakdown: Json
+          notes: string | null
+          started_at: string
+          status: string
+          table_source: string
+          total_applied: number
+          total_processed: number
+          total_queued_review: number
+          total_skipped: number
+          triggered_by: string | null
+        }
+        Insert: {
+          batch_size: number
+          created_at?: string
+          dry_run?: boolean
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          method_breakdown?: Json
+          notes?: string | null
+          started_at?: string
+          status?: string
+          table_source: string
+          total_applied?: number
+          total_processed?: number
+          total_queued_review?: number
+          total_skipped?: number
+          triggered_by?: string | null
+        }
+        Update: {
+          batch_size?: number
+          created_at?: string
+          dry_run?: boolean
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          method_breakdown?: Json
+          notes?: string | null
+          started_at?: string
+          status?: string
+          table_source?: string
+          total_applied?: number
+          total_processed?: number
+          total_queued_review?: number
+          total_skipped?: number
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
       question_generation_run_items: {
         Row: {
           asset_code: string | null
@@ -6414,6 +6580,10 @@ export type Database = {
       }
       questions_bank: {
         Row: {
+          classification_confidence: number | null
+          classification_method: string | null
+          classification_reviewed_by_human: boolean
+          classified_at: string | null
           correct_index: number | null
           created_at: string
           difficulty: number | null
@@ -6444,6 +6614,10 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean
+          classified_at?: string | null
           correct_index?: number | null
           created_at?: string
           difficulty?: number | null
@@ -6474,6 +6648,10 @@ export type Database = {
           user_id: string
         }
         Update: {
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean
+          classified_at?: string | null
           correct_index?: number | null
           created_at?: string
           difficulty?: number | null
@@ -6718,6 +6896,10 @@ export type Database = {
       real_exam_questions: {
         Row: {
           answer_source: string
+          classification_confidence: number | null
+          classification_method: string | null
+          classification_reviewed_by_human: boolean
+          classified_at: string | null
           confidence_score: number
           correct_index: number | null
           created_at: string
@@ -6741,6 +6923,10 @@ export type Database = {
         }
         Insert: {
           answer_source?: string
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean
+          classified_at?: string | null
           confidence_score?: number
           correct_index?: number | null
           created_at?: string
@@ -6764,6 +6950,10 @@ export type Database = {
         }
         Update: {
           answer_source?: string
+          classification_confidence?: number | null
+          classification_method?: string | null
+          classification_reviewed_by_human?: boolean
+          classified_at?: string | null
           confidence_score?: number
           correct_index?: number | null
           created_at?: string

@@ -1,0 +1,482 @@
+// Sprint 2 — Backfill incremental de classificação hierárquica
+// Pipeline: exact_text -> heuristic -> ai (somente quando habilitado)
+// Aplicação automática só com confiança alta. Restante vai para fila de revisão.
+
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+// Thresholds (regras de segurança do Sprint 2)
+const APPLY_THRESHOLD = 0.9; // >= aplica direto
+const REVIEW_THRESHOLD = 0.7; // entre 0.7 e 0.9 -> aplica + manda revisão; abaixo -> só fila
+
+type TableSource = "questions_bank" | "real_exam_questions";
+
+interface Specialty {
+  id: string;
+  nome: string;
+  norm: string;
+  tokens: Set<string>;
+}
+interface Topic {
+  id: string;
+  nome: string;
+  specialty_id: string;
+  norm: string;
+}
+interface Subtopic {
+  id: string;
+  nome: string;
+  topic_id: string;
+  norm: string;
+}
+
+interface ClassificationResult {
+  specialty_id: string | null;
+  topic_id: string | null;
+  subtopic_id: string | null;
+  microtopic_id: string | null;
+  confidence: number;
+  method: "exact_text" | "heuristic" | "ai";
+  reason: string;
+}
+
+function normalize(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function tokens(s: string): Set<string> {
+  return new Set(
+    normalize(s)
+      .split(" ")
+      .filter((t) => t.length >= 4),
+  );
+}
+
+// Sinônimos comuns: maps texto livre -> nome canônico de specialty
+const SPECIALTY_SYNONYMS: Record<string, string> = {
+  "clinica medica": "Clínica Médica",
+  "ginecologia e obstetricia": "Ginecologia e Obstetrícia",
+  ginecologia: "Ginecologia e Obstetrícia",
+  obstetricia: "Ginecologia e Obstetrícia",
+  "cirurgia geral": "Cirurgia",
+  emergencia: "Medicina de Emergência",
+  "medicina de emergencia": "Medicina de Emergência",
+  "terapia intensiva": "Medicina Intensiva",
+  cti: "Medicina Intensiva",
+  uti: "Medicina Intensiva",
+  "medicina preventiva": "Medicina Preventiva e Social",
+  preventiva: "Medicina Preventiva e Social",
+  "saude publica": "Medicina Preventiva e Social",
+};
+
+function classifyDeterministic(
+  rowTopic: string | null,
+  rowSubtopic: string | null,
+  specialties: Specialty[],
+  topics: Topic[],
+  subtopics: Subtopic[],
+): ClassificationResult {
+  const normTopic = normalize(rowTopic);
+  const normSub = normalize(rowSubtopic);
+
+  if (!normTopic && !normSub) {
+    return {
+      specialty_id: null,
+      topic_id: null,
+      subtopic_id: null,
+      microtopic_id: null,
+      confidence: 0,
+      method: "heuristic",
+      reason: "sem topic e sem subtopic",
+    };
+  }
+
+  // 1) match exato em specialty (canonical OU sinônimo)
+  let matchedSpecialty: Specialty | undefined;
+  let exactSpecialty = false;
+
+  if (normTopic) {
+    const canonical = SPECIALTY_SYNONYMS[normTopic];
+    matchedSpecialty = specialties.find(
+      (s) =>
+        s.norm === normTopic ||
+        (canonical && s.nome === canonical),
+    );
+    if (matchedSpecialty) exactSpecialty = true;
+  }
+
+  // 2) heurística: subset de tokens
+  let heuristicScore = 0;
+  if (!matchedSpecialty && normTopic) {
+    const topicTokens = tokens(normTopic);
+    let best: { spec: Specialty; score: number } | null = null;
+    for (const sp of specialties) {
+      const inter = [...topicTokens].filter((t) => sp.tokens.has(t)).length;
+      if (inter === 0) continue;
+      const score = inter / Math.max(topicTokens.size, sp.tokens.size, 1);
+      if (!best || score > best.score) best = { spec: sp, score };
+    }
+    if (best && best.score >= 0.5) {
+      matchedSpecialty = best.spec;
+      heuristicScore = best.score;
+    }
+  }
+
+  if (!matchedSpecialty) {
+    return {
+      specialty_id: null,
+      topic_id: null,
+      subtopic_id: null,
+      microtopic_id: null,
+      confidence: 0,
+      method: "heuristic",
+      reason: `nenhuma specialty bateu com topic="${rowTopic}"`,
+    };
+  }
+
+  // 3) tentar topic dentro da specialty (subtopic textual da questão -> nome de topic curricular)
+  let matchedTopic: Topic | undefined;
+  let topicConfidence = 0;
+  if (normSub) {
+    const candTopics = topics.filter(
+      (t) => t.specialty_id === matchedSpecialty!.id,
+    );
+    matchedTopic = candTopics.find((t) => t.norm === normSub);
+    if (matchedTopic) {
+      topicConfidence = 1;
+    } else {
+      // heurística: subset de tokens
+      const subTokens = tokens(normSub);
+      let best: { topic: Topic; score: number } | null = null;
+      for (const t of candTopics) {
+        const tTokens = tokens(t.nome);
+        const inter = [...subTokens].filter((tk) => tTokens.has(tk)).length;
+        if (inter === 0) continue;
+        const score = inter / Math.max(subTokens.size, tTokens.size, 1);
+        if (!best || score > best.score) best = { topic: t, score };
+      }
+      if (best && best.score >= 0.6) {
+        matchedTopic = best.topic;
+        topicConfidence = best.score * 0.85; // penaliza
+      }
+    }
+  }
+
+  // 4) tentar subtopic dentro do topic
+  let matchedSubtopic: Subtopic | undefined;
+  if (matchedTopic && normSub) {
+    matchedSubtopic = subtopics.find(
+      (s) => s.topic_id === matchedTopic!.id && s.norm === normSub,
+    );
+  }
+
+  // Confidence: especialidade exata = 0.95; heurística = score * 0.85
+  let confidence: number;
+  let method: "exact_text" | "heuristic";
+  let reason: string;
+
+  if (exactSpecialty) {
+    confidence = 0.95;
+    method = "exact_text";
+    reason = `topic="${rowTopic}" → specialty="${matchedSpecialty.nome}" (exato)`;
+  } else {
+    confidence = Math.min(0.85, heuristicScore * 0.85);
+    method = "heuristic";
+    reason = `topic="${rowTopic}" → specialty="${matchedSpecialty.nome}" (heurística, score=${heuristicScore.toFixed(2)})`;
+  }
+
+  // boost se também bateu topic
+  if (matchedTopic && topicConfidence >= 0.85) {
+    confidence = Math.min(0.98, confidence + 0.03);
+    reason += `; topic="${matchedTopic.nome}"`;
+  } else if (matchedTopic) {
+    reason += `; topic="${matchedTopic.nome}" (parcial)`;
+  }
+
+  return {
+    specialty_id: matchedSpecialty.id,
+    topic_id: matchedTopic?.id ?? null,
+    subtopic_id: matchedSubtopic?.id ?? null,
+    microtopic_id: null,
+    confidence,
+    method,
+    reason,
+  };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Validação do chamador: precisa ser admin
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "missing auth" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userErr } = await userClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: "invalid user" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const { data: roleRow } = await admin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id)
+      .eq("role", "admin")
+      .maybeSingle();
+    if (!roleRow) {
+      return new Response(JSON.stringify({ error: "admin only" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const body = await req.json().catch(() => ({}));
+    const tableSource: TableSource = body.table_source === "real_exam_questions"
+      ? "real_exam_questions"
+      : "questions_bank";
+    const batchSize = Math.min(Math.max(parseInt(body.batch_size ?? 100, 10), 10), 500);
+    const dryRun: boolean = body.dry_run === true;
+
+    // 1) Carregar currículo (cache em memória do invocador)
+    const { data: specsRaw } = await admin
+      .from("curriculum_specialties")
+      .select("id, nome")
+      .eq("ativo", true);
+    const { data: topicsRaw } = await admin
+      .from("curriculum_topics")
+      .select("id, nome, specialty_id")
+      .eq("ativo", true);
+    const { data: subtopicsRaw } = await admin
+      .from("curriculum_subtopics")
+      .select("id, nome, topic_id")
+      .eq("ativo", true);
+
+    const specialties: Specialty[] = (specsRaw ?? []).map((s: any) => ({
+      id: s.id,
+      nome: s.nome,
+      norm: normalize(s.nome),
+      tokens: tokens(s.nome),
+    }));
+    const topics: Topic[] = (topicsRaw ?? []).map((t: any) => ({
+      id: t.id,
+      nome: t.nome,
+      specialty_id: t.specialty_id,
+      norm: normalize(t.nome),
+    }));
+    const subtopics: Subtopic[] = (subtopicsRaw ?? []).map((s: any) => ({
+      id: s.id,
+      nome: s.nome,
+      topic_id: s.topic_id,
+      norm: normalize(s.nome),
+    }));
+
+    // 2) Criar registro do run
+    const { data: run, error: runErr } = await admin
+      .from("question_classification_runs")
+      .insert({
+        table_source: tableSource,
+        batch_size: batchSize,
+        dry_run: dryRun,
+        status: "running",
+        triggered_by: userData.user.id,
+      })
+      .select()
+      .single();
+    if (runErr || !run) throw new Error(`failed to create run: ${runErr?.message}`);
+
+    // 3) Buscar lote NÃO classificado ainda (specialty_id IS NULL)
+    const selectCols = "id, topic, subtopic, classification_confidence";
+    const { data: rows, error: rowsErr } = await admin
+      .from(tableSource)
+      .select(selectCols)
+      .is("specialty_id", null)
+      .limit(batchSize);
+    if (rowsErr) throw new Error(`failed to fetch rows: ${rowsErr.message}`);
+
+    const breakdown = { exact_text: 0, heuristic: 0, ai: 0 };
+    let applied = 0;
+    let queuedReview = 0;
+    let skipped = 0;
+    const sampleAmbiguous: any[] = [];
+
+    for (const row of rows ?? []) {
+      const result = classifyDeterministic(
+        row.topic,
+        row.subtopic,
+        specialties,
+        topics,
+        subtopics,
+      );
+
+      // Idempotência: respeita confiança maior já existente
+      const existingConf = (row as any).classification_confidence ?? 0;
+      if (existingConf && existingConf > result.confidence) {
+        skipped++;
+        continue;
+      }
+
+      if (!result.specialty_id || result.confidence < REVIEW_THRESHOLD) {
+        // muito baixo: só vai para fila (se houver alguma sugestão), senão skip
+        if (result.specialty_id) {
+          if (!dryRun) {
+            await admin
+              .from("question_classification_queue")
+              .upsert(
+                {
+                  run_id: run.id,
+                  table_source: tableSource,
+                  question_id: row.id,
+                  original_topic: row.topic,
+                  original_subtopic: row.subtopic,
+                  suggested_specialty_id: result.specialty_id,
+                  suggested_topic_id: result.topic_id,
+                  suggested_subtopic_id: result.subtopic_id,
+                  suggested_microtopic_id: result.microtopic_id,
+                  classification_method: result.method,
+                  confidence_score: result.confidence,
+                  reason: result.reason,
+                  status: "pending",
+                },
+                { onConflict: "table_source,question_id", ignoreDuplicates: false },
+              );
+          }
+          queuedReview++;
+          if (sampleAmbiguous.length < 10) {
+            sampleAmbiguous.push({
+              question_id: row.id,
+              topic: row.topic,
+              subtopic: row.subtopic,
+              suggestion: result,
+            });
+          }
+        } else {
+          skipped++;
+          if (sampleAmbiguous.length < 10) {
+            sampleAmbiguous.push({
+              question_id: row.id,
+              topic: row.topic,
+              subtopic: row.subtopic,
+              reason: result.reason,
+            });
+          }
+        }
+        continue;
+      }
+
+      // confiança média/alta
+      breakdown[result.method]++;
+
+      if (!dryRun) {
+        await admin
+          .from(tableSource)
+          .update({
+            specialty_id: result.specialty_id,
+            topic_id: result.topic_id,
+            subtopic_id: result.subtopic_id,
+            microtopic_id: result.microtopic_id,
+            classification_confidence: result.confidence,
+            classification_method: result.method,
+            classified_at: new Date().toISOString(),
+          })
+          .eq("id", row.id);
+
+        if (result.confidence < APPLY_THRESHOLD) {
+          // 0.7 - 0.9: aplica + envia para revisão
+          await admin
+            .from("question_classification_queue")
+            .upsert(
+              {
+                run_id: run.id,
+                table_source: tableSource,
+                question_id: row.id,
+                original_topic: row.topic,
+                original_subtopic: row.subtopic,
+                suggested_specialty_id: result.specialty_id,
+                suggested_topic_id: result.topic_id,
+                suggested_subtopic_id: result.subtopic_id,
+                suggested_microtopic_id: result.microtopic_id,
+                classification_method: result.method,
+                confidence_score: result.confidence,
+                reason: result.reason + " (aplicado, aguarda revisão)",
+                status: "pending",
+              },
+              { onConflict: "table_source,question_id", ignoreDuplicates: false },
+            );
+          queuedReview++;
+        }
+      }
+      applied++;
+    }
+
+    await admin
+      .from("question_classification_runs")
+      .update({
+        status: "completed",
+        finished_at: new Date().toISOString(),
+        total_processed: (rows ?? []).length,
+        total_applied: applied,
+        total_queued_review: queuedReview,
+        total_skipped: skipped,
+        method_breakdown: breakdown,
+        notes: dryRun ? "dry-run; nada foi gravado" : null,
+      })
+      .eq("id", run.id);
+
+    return new Response(
+      JSON.stringify({
+        run_id: run.id,
+        table_source: tableSource,
+        batch_size: batchSize,
+        dry_run: dryRun,
+        total_processed: (rows ?? []).length,
+        total_applied: applied,
+        total_queued_review: queuedReview,
+        total_skipped: skipped,
+        method_breakdown: breakdown,
+        sample_ambiguous: sampleAmbiguous,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  } catch (e) {
+    console.error("classify-question-hierarchy error:", e);
+    return new Response(
+      JSON.stringify({ error: e instanceof Error ? e.message : String(e) }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
+  }
+});
