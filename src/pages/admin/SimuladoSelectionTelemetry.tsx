@@ -60,6 +60,7 @@ const REASON_COLORS: Record<string, string> = {
 };
 
 export default function SimuladoSelectionTelemetry() {
+  const navigate = useNavigate();
   const [days, setDays] = useState(7);
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<Overview | null>(null);
