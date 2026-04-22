@@ -7560,6 +7560,78 @@ export type Database = {
           },
         ]
       }
+      simulado_selection_runs: {
+        Row: {
+          banca: string | null
+          classification_pct_specialty: number | null
+          classification_pct_subtopic: number | null
+          classification_pct_topic: number | null
+          created_at: string
+          duration_ms: number | null
+          endpoint: string
+          final_count: number | null
+          granular_eligible: boolean
+          granular_fallback_reason: string | null
+          id: string
+          metadata: Json
+          mode: string | null
+          requested_count: number | null
+          source_ai_generated: number
+          source_fallback: number
+          source_image_pipeline: number
+          source_pool_structural: number
+          source_pool_textual: number
+          user_id: string | null
+          user_profile: string | null
+        }
+        Insert: {
+          banca?: string | null
+          classification_pct_specialty?: number | null
+          classification_pct_subtopic?: number | null
+          classification_pct_topic?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          endpoint?: string
+          final_count?: number | null
+          granular_eligible?: boolean
+          granular_fallback_reason?: string | null
+          id?: string
+          metadata?: Json
+          mode?: string | null
+          requested_count?: number | null
+          source_ai_generated?: number
+          source_fallback?: number
+          source_image_pipeline?: number
+          source_pool_structural?: number
+          source_pool_textual?: number
+          user_id?: string | null
+          user_profile?: string | null
+        }
+        Update: {
+          banca?: string | null
+          classification_pct_specialty?: number | null
+          classification_pct_subtopic?: number | null
+          classification_pct_topic?: number | null
+          created_at?: string
+          duration_ms?: number | null
+          endpoint?: string
+          final_count?: number | null
+          granular_eligible?: boolean
+          granular_fallback_reason?: string | null
+          id?: string
+          metadata?: Json
+          mode?: string | null
+          requested_count?: number | null
+          source_ai_generated?: number
+          source_fallback?: number
+          source_image_pipeline?: number
+          source_pool_structural?: number
+          source_pool_textual?: number
+          user_id?: string | null
+          user_profile?: string | null
+        }
+        Relationships: []
+      }
       simulation_history: {
         Row: {
           correct_diagnosis: string | null
@@ -10541,6 +10613,33 @@ export type Database = {
           practical_score: number
           snapshot_date: string
           user_id: string
+        }[]
+      }
+      get_simulado_selection_overview: {
+        Args: { _days?: number }
+        Returns: {
+          avg_ai: number
+          avg_fallback: number
+          avg_image: number
+          avg_structural: number
+          avg_textual: number
+          by_banca: Json
+          by_mode: Json
+          granular_eligible_pct: number
+          top_fallback_reasons: Json
+          total_runs: number
+        }[]
+      }
+      granular_classification_readiness: {
+        Args: never
+        Returns: {
+          pct_specialty: number
+          pct_subtopic: number
+          pct_topic: number
+          total_questions: number
+          with_specialty_id: number
+          with_subtopic_id: number
+          with_topic_id: number
         }[]
       }
       has_role: {
