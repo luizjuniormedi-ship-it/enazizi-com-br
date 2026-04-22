@@ -136,22 +136,43 @@ export function useAddPlanSubtopics() {
       }
       const allUserIds = Array.from(new Set([...directIds, ...classUserIds]));
 
-      // Disparar replan teacher_update para cada aluno (em paralelo)
-      const results = await Promise.allSettled(
-        allUserIds.map((uid) =>
-          supabase.functions.invoke("proficiency-planner", {
-            body: {
-              planId,
-              targetUserId: uid,
-              reason: "teacher_update",
-              reasonText: `Professor adicionou ${fresh.length} novo(s) subtema(s)`,
-            },
-          }),
-        ),
+      // Disparar replan teacher_update em CHUNKS de 10 alunos para evitar
+      // burst limit de invocações de edge function. Logs estruturados por chunk.
+      const CHUNK_SIZE = 10;
+      const totalChunks = Math.ceil(allUserIds.length / CHUNK_SIZE) || 1;
+      let replanned = 0;
+      let failed = 0;
+      const teacherUpdateStart = Date.now();
+      for (let i = 0; i < allUserIds.length; i += CHUNK_SIZE) {
+        const chunk = allUserIds.slice(i, i + CHUNK_SIZE);
+        const chunkIdx = Math.floor(i / CHUNK_SIZE) + 1;
+        const results = await Promise.allSettled(
+          chunk.map((uid) =>
+            supabase.functions.invoke("proficiency-planner", {
+              body: {
+                planId,
+                targetUserId: uid,
+                reason: "teacher_update",
+                reasonText: `Professor adicionou ${fresh.length} novo(s) subtema(s)`,
+              },
+            }),
+          ),
+        );
+        const ok = results.filter((r) => r.status === "fulfilled").length;
+        const ko = results.length - ok;
+        replanned += ok;
+        failed += ko;
+        // eslint-disable-next-line no-console
+        console.log(
+          `[teacher_update] chunk ${chunkIdx}/${totalChunks} completed ok=${ok} failed=${ko} planId=${planId}`,
+        );
+      }
+      // eslint-disable-next-line no-console
+      console.log(
+        `[teacher_update] done planId=${planId} students=${allUserIds.length} replanned=${replanned} failed=${failed} durationMs=${Date.now() - teacherUpdateStart}`,
       );
-      const replanned = results.filter((r) => r.status === "fulfilled").length;
 
-      return { added: fresh.length, replanned };
+      return { added: fresh.length, replanned, failed };
     },
     onSuccess: (r) => {
       qc.invalidateQueries({ queryKey: ["professor_plans"] });

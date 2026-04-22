@@ -211,6 +211,44 @@ serve(async (req) => {
     }
 
     /**
+     * ─── LOCK LEVE POR (plan_id, targetUserId) ───
+     * Estratégia sem schema novo: usar `professor_plan_progress.updated_at`
+     * como heartbeat. Se foi atualizado nos últimos 10s por OUTRA execução
+     * concorrente, abortamos para evitar duplo trabalho (multi-tab).
+     * A idempotência por (planned_date, task_type, subtopic_id) continua
+     * sendo a garantia final contra duplicação.
+     */
+    const PLANNER_LOCK_WINDOW_MS = 10_000;
+    const { data: lockRow } = await admin
+      .from("professor_plan_progress")
+      .select("updated_at")
+      .eq("plan_id", plan.id)
+      .eq("user_id", targetUserId)
+      .maybeSingle();
+    if (lockRow?.updated_at) {
+      const sinceMs = Date.now() - new Date(lockRow.updated_at).getTime();
+      if (sinceMs < PLANNER_LOCK_WINDOW_MS && !body.reason) {
+        console.log(
+          `[planner] lock skipped plan=${plan.id} user=${targetUserId} sinceMs=${sinceMs}`,
+        );
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            skipped: true,
+            reason: "lock",
+            insertedTasks: 0,
+            skippedDuplicates: 0,
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
+    const plannerStartedAt = Date.now();
+    console.log(
+      `[planner] lock acquired plan=${plan.id} user=${targetUserId} reason=${body.reason ?? "manual"}`,
+    );
+
+    /**
      * Carregar tarefas existentes (futuras + concluídas no passado) para:
      *  - dedupe estrito de novas inserções (preserva o futuro já planejado)
      *  - identificar quais subtemas JÁ têm cobertura (theory ou questions) e
@@ -419,6 +457,11 @@ serve(async (req) => {
       });
     }
 
+    const durationMs = Date.now() - plannerStartedAt;
+    console.log(
+      `[planner] lock released plan=${plan.id} user=${targetUserId} inserted=${insertedCount} dedupeHits=${finalTasks.length - insertedCount} durationMs=${durationMs}`,
+    );
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -434,6 +477,7 @@ serve(async (req) => {
         insertedTasks: insertedCount,
         skippedDuplicates: finalTasks.length - insertedCount,
         recalculationLogged: insertedCount > 0 || !!body.reason,
+        durationMs,
         reason,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },

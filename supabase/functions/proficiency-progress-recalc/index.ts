@@ -28,7 +28,16 @@ interface RequestBody {
   planId: string;
   /** Quando true, desabilita o trigger automático de replanning. */
   skipReplan?: boolean;
+  /** Quando true, ignora o cooldown server-side (uso administrativo). */
+  force?: boolean;
 }
+
+/**
+ * Cooldown server-side: 5 min por (plan_id,user_id).
+ * Fonte: `professor_plan_progress.updated_at` (já atualizado a cada execução).
+ * Multi-tab safe: sem novas tabelas, idempotente, server-authoritative.
+ */
+const RECALC_COOLDOWN_MS = 5 * 60 * 1000;
 
 function isoDate(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -88,6 +97,35 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // ─── COOLDOWN CHECK (server-side, multi-tab safe) ───
+    if (!body.force) {
+      const { data: existing } = await admin
+        .from("professor_plan_progress")
+        .select("updated_at")
+        .eq("plan_id", body.planId)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (existing?.updated_at) {
+        const elapsed = Date.now() - new Date(existing.updated_at).getTime();
+        if (elapsed < RECALC_COOLDOWN_MS) {
+          const remainingS = Math.ceil((RECALC_COOLDOWN_MS - elapsed) / 1000);
+          console.log(
+            `[recalc] skipped by cooldown plan=${body.planId} user=${user.id} remaining=${remainingS}s`,
+          );
+          return new Response(
+            JSON.stringify({
+              ok: true,
+              skipped: true,
+              reason: "cooldown",
+              cooldownRemainingSeconds: remainingS,
+            }),
+            { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+      }
+    }
+    console.log(`[recalc] executed plan=${body.planId} user=${user.id}`);
 
     const today = new Date(isoDate(new Date()));
     const todayIso = isoDate(today);
