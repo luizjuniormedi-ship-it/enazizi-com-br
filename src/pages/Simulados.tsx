@@ -9,6 +9,7 @@ import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
+import type { ExamDistributionTree } from "@/lib/examDistributionFromCurriculum";
 import { selectImageQuestions, imageQuestionToSimQuestion, calculateImageSlots } from "@/lib/imageQuestionPipeline";
 import { generateAdaptiveBlueprint, type AdaptiveBlueprint } from "@/lib/adaptiveModalityEngine";
 import { useAdaptiveSimulado, type AdaptiveMeta } from "@/hooks/useAdaptiveSimulado";
@@ -318,7 +319,7 @@ const Simulados = () => {
     setAdaptivePreviewLoading(false);
   }, [user?.id, adaptive]);
 
-  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => {
+  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string; imagePercent?: number; dynamicDistribution?: ExamDistributionTree }) => {
     // ── Adaptive mode: delegate to edge function ──
     if (config.mode === "adaptativo") {
       setMode("adaptativo");
@@ -398,21 +399,53 @@ const Simulados = () => {
       // ── Prova Real / TRI: generate per-topic with real distribution ──
       if ((config.mode === "prova_real" || config.mode === "tri") && config.realExamProfile) {
         const profile = EXAM_PROFILES[config.realExamProfile] || EXAM_PROFILES.GERAL;
-        const topicDist = calculateTopicDistribution(profile, config.count);
         const diffSlots = calculateDifficultySlots(profile, config.count);
 
-        let allQuestions: SimQuestion[] = [];
-        const totalTopics = topicDist.length;
+        // Monta lista plana de batches priorizando topic > specialty (Fase 4 — Opção B).
+        // Se a árvore dinâmica veio do banco, gera por TOPIC (mais granular).
+        // Caso contrário, mantém o comportamento atual (por specialty/macro tema).
+        type BatchUnit = { label: string; specificTopic?: string; count: number };
+        let batchUnits: BatchUnit[] = [];
 
-        for (let ti = 0; ti < totalTopics; ti++) {
-          const { topic, count: topicCount } = topicDist[ti];
-          setLoadingProgress(`Gerando ${topicCount} questões de ${topic}... (${ti + 1}/${totalTopics})`);
-          setLoadingPercent(Math.round(((ti) / totalTopics) * 85));
+        if (config.dynamicDistribution && config.dynamicDistribution.source === "curriculum_weights") {
+          for (const spec of config.dynamicDistribution.specialties) {
+            for (const top of spec.topics) {
+              if (top.estimatedQuestions <= 0) continue;
+              // Para grupos virtuais (Clínica Médica), o topicName já vem
+              // como "Cardiologia — Síndrome Coronariana Aguda". Usamos a
+              // specialty real como label e o topic como foco específico.
+              const realSpecialty = spec.isVirtualGroup
+                ? top.topicName.split(" — ")[0]
+                : spec.specialtyName;
+              const focus = spec.isVirtualGroup
+                ? top.topicName.split(" — ").slice(1).join(" — ") || top.topicName
+                : top.topicName;
+              batchUnits.push({
+                label: `${realSpecialty} > ${focus}`,
+                specificTopic: focus,
+                count: top.estimatedQuestions,
+              });
+            }
+          }
+          console.info(`[Simulados] Distribuição dinâmica: ${batchUnits.length} batches por topic`);
+        } else {
+          const topicDist = calculateTopicDistribution(profile, config.count);
+          batchUnits = topicDist.map((t) => ({ label: t.topic, count: t.count }));
+          console.info(`[Simulados] Distribuição estática: ${batchUnits.length} batches por specialty`);
+        }
+
+        let allQuestions: SimQuestion[] = [];
+        const totalUnits = batchUnits.length;
+
+        for (let ti = 0; ti < totalUnits; ti++) {
+          const unit = batchUnits[ti];
+          setLoadingProgress(`Gerando ${unit.count} questões de ${unit.label}... (${ti + 1}/${totalUnits})`);
+          setLoadingPercent(Math.round(((ti) / totalUnits) * 85));
 
           // Determine difficulty for this batch proportionally
-          const easyForTopic = Math.round((diffSlots.easy / config.count) * topicCount);
-          const hardForTopic = Math.round((diffSlots.hard / config.count) * topicCount);
-          const mediumForTopic = topicCount - easyForTopic - hardForTopic;
+          const easyForTopic = Math.round((diffSlots.easy / config.count) * unit.count);
+          const hardForTopic = Math.round((diffSlots.hard / config.count) * unit.count);
+          const mediumForTopic = unit.count - easyForTopic - hardForTopic;
 
           // Generate per difficulty slot for this topic
           const topicSlots = [
@@ -421,11 +454,15 @@ const Simulados = () => {
             { diff: "dificil", n: hardForTopic },
           ].filter(s => s.n > 0);
 
+          // Para batches dinâmicos, usamos o nome da specialty real como
+          // "topic" do prompt e o tópico/subtema como foco específico.
+          const promptTopics = [unit.label.split(" > ")[0]];
+
           for (const slot of topicSlots) {
             try {
               const batch = await generateBatch(
-                [topic], slot.n, slot.diff, accessToken,
-                undefined, config.examBoard,
+                promptTopics, slot.n, slot.diff, accessToken,
+                unit.specificTopic, config.examBoard,
                 allQuestions.map(q => q.statement.slice(0, 120)),
               );
               // Tag each question with its generated difficulty for TRI
