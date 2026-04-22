@@ -104,7 +104,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     cutoffEstimate: 65,
     difficultyMix: { easy: 25, medium: 50, hard: 25 },
     topicWeights: [
-      { topic: "Clínica Médica", weight: 20 },
+      { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 18 },
       { topic: "Pediatria", weight: 12 },
       { topic: "Ginecologia e Obstetrícia", weight: 12 },
@@ -126,7 +126,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     cutoffEstimate: 60,
     difficultyMix: { easy: 30, medium: 50, hard: 20 },
     topicWeights: [
-      { topic: "Clínica Médica", weight: 22 },
+      { topic: "Clínica Médica", weight: 22, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 12 },
       { topic: "Pediatria", weight: 12 },
       { topic: "Ginecologia e Obstetrícia", weight: 12 },
@@ -149,7 +149,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     cutoffEstimate: 55,
     difficultyMix: { easy: 30, medium: 50, hard: 20 },
     topicWeights: [
-      { topic: "Clínica Médica", weight: 20 },
+      { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 12 },
       { topic: "Pediatria", weight: 12 },
       { topic: "Ginecologia e Obstetrícia", weight: 12 },
@@ -172,7 +172,7 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     cutoffEstimate: 60,
     difficultyMix: { easy: 30, medium: 50, hard: 20 },
     topicWeights: [
-      { topic: "Clínica Médica", weight: 20 },
+      { topic: "Clínica Médica", weight: 20, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 15 },
       { topic: "Pediatria", weight: 12 },
       { topic: "Ginecologia e Obstetrícia", weight: 12 },
