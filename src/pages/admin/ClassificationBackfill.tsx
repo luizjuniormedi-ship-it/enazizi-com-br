@@ -221,11 +221,20 @@ export default function ClassificationBackfill() {
         </Card>
       </div>
 
+      {dryRun && (
+        <div className="rounded-md border-2 border-destructive bg-destructive/10 p-3 text-sm">
+          <strong>⚠️ DRY-RUN ATIVO</strong> — nenhuma linha em <code>questions_bank</code> /
+          <code> real_exam_questions</code> será alterada. Apenas o run em
+          <code> question_classification_runs</code> é gravado para auditoria.
+          Desligue o switch abaixo somente após validar a amostra.
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><PlayCircle className="h-5 w-5" /> Executar lote</CardTitle>
           <CardDescription>
-            Recomendado: comece com <strong>dry-run</strong> de 100 questões para validar o impacto.
+            Recomendado: comece com <strong>DRY-RUN</strong> em <code>questions_bank</code>, batch <code>100</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -263,13 +272,15 @@ export default function ClassificationBackfill() {
               {runBatch.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Executando…</>
               ) : (
-                <><PlayCircle className="mr-2 h-4 w-4" /> Executar lote</>
+                <><PlayCircle className="mr-2 h-4 w-4" /> {dryRun ? "Executar DRY-RUN" : "Executar lote real"}</>
               )}
             </Button>
-            {dryRun && (
+            {dryRun ? (
               <Badge variant="outline" className="border-destructive text-destructive">
-                Modo simulação ativo
+                Modo simulação — zero gravação em questões
               </Badge>
+            ) : (
+              <Badge variant="destructive">⚠️ Gravação real ligada</Badge>
             )}
           </div>
         </CardContent>
