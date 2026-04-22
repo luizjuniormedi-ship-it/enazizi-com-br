@@ -127,7 +127,153 @@ const TopicDistributionPreview = ({
   );
 };
 
-const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId, adaptiveMeta, adaptiveLoading, onFetchAdaptivePreview }: SimuladoSetupProps) => {
+/**
+ * Prévia dinâmica baseada em `curriculum_weights` (3 níveis: specialty →
+ * topic → subtopic). Mostra um badge de fonte ("Distribuição dinâmica" ou
+ * "Fallback estático"). Quando carregando, exibe um placeholder leve.
+ */
+const DynamicDistributionPreview = ({
+  data,
+  isLoading,
+  total,
+  barColorClass,
+}: {
+  data: ExamDistributionTree | undefined;
+  isLoading: boolean;
+  total: number;
+  barColorClass: string;
+}) => {
+  if (isLoading || !data) {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Calculando distribuição...
+      </div>
+    );
+  }
+
+  const isDynamic = data.source === "curriculum_weights";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between">
+        <span
+          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+            isDynamic
+              ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+              : "bg-muted text-muted-foreground"
+          }`}
+          title={
+            isDynamic
+              ? `Pesos reais da banca ${data.debug.bancaUsed} (${data.debug.rawWeightsCount} pesos)`
+              : "Esta banca ainda não tem pesos curriculares cadastrados"
+          }
+        >
+          {isDynamic ? "● Distribuição dinâmica" : "○ Fallback estático"}
+        </span>
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {data.specialties.length} áreas · {data.totalQuestions}q
+        </span>
+      </div>
+
+      <div className="space-y-1">
+        {data.specialties.map((spec) => {
+          const hasTopics = spec.topics.length > 0;
+          const specPercent = total > 0 ? Math.round((spec.estimatedQuestions / total) * 100) : 0;
+
+          const headerRow = (
+            <div className="flex items-center justify-between text-sm w-full">
+              <span className="text-muted-foreground text-left flex items-center gap-1.5">
+                {spec.specialtyName}
+                {spec.isVirtualGroup && (
+                  <span
+                    className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground"
+                    title="Agrupamento virtual de subespecialidades clínicas"
+                  >
+                    grupo
+                  </span>
+                )}
+              </span>
+              <div className="flex items-center gap-2">
+                <div className="w-24 h-2 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${barColorClass}`}
+                    style={{ width: `${specPercent}%` }}
+                  />
+                </div>
+                <span className="text-xs font-medium w-16 text-right tabular-nums">
+                  {spec.estimatedQuestions}q ({specPercent}%)
+                </span>
+              </div>
+            </div>
+          );
+
+          if (!hasTopics) {
+            return (
+              <div key={spec.specialtyName} className="px-1 py-1">
+                {headerRow}
+              </div>
+            );
+          }
+
+          return (
+            <Accordion
+              key={spec.specialtyName}
+              type="single"
+              collapsible
+              className="border-b-0"
+            >
+              <AccordionItem value={spec.specialtyName} className="border-b-0">
+                <AccordionTrigger className="py-1 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                  {headerRow}
+                </AccordionTrigger>
+                <AccordionContent className="pb-2">
+                  <ul className="ml-3 mt-1 space-y-1.5 border-l border-border pl-3">
+                    {spec.topics.map((topic) => {
+                      const hasSubs = topic.subtopics.length > 0;
+                      const topicPercent =
+                        total > 0
+                          ? Math.round((topic.estimatedQuestions / total) * 100)
+                          : 0;
+
+                      return (
+                        <li key={topic.topicId ?? topic.topicName} className="text-xs">
+                          <div className="flex items-center justify-between text-muted-foreground">
+                            <span className="font-medium text-foreground/80">
+                              {topic.topicName}
+                            </span>
+                            <span className="font-medium tabular-nums">
+                              {topic.estimatedQuestions}q ({topicPercent}%)
+                            </span>
+                          </div>
+                          {hasSubs && (
+                            <ul className="ml-2 mt-1 space-y-0.5 border-l border-border/50 pl-2">
+                              {topic.subtopics.map((sub) => (
+                                <li
+                                  key={sub.subtopicId ?? sub.subtopicName}
+                                  className="flex items-center justify-between text-[11px] text-muted-foreground/80"
+                                >
+                                  <span>{sub.subtopicName}</span>
+                                  <span className="tabular-nums">
+                                    {sub.estimatedQuestions}q
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
   const studyCtx = useStudyContext();
   const [tab, setTab] = useState<"novo" | "historico">("novo");
   const [selectedTopics, setSelectedTopics] = useState<string[]>(() => {
