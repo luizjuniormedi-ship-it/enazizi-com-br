@@ -9905,6 +9905,29 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_student_facets_for_professor: {
+        Args: never
+        Returns: {
+          faculdades: string[]
+          periodos: number[]
+        }[]
+      }
+      list_students_for_professor: {
+        Args: {
+          _faculdade?: string
+          _limit?: number
+          _periodo?: number
+          _search?: string
+        }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          email: string
+          faculdade: string
+          periodo: number
+          user_id: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
