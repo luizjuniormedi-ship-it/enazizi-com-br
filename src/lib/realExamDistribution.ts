@@ -3,9 +3,22 @@
  * Baseado em análise de provas ENARE, USP-SP, UNIFESP, SUS-SP (2020-2025).
  */
 
+export interface SubtopicWeight {
+  /** Nome da subárea (ex.: "Cardiologia") */
+  name: string;
+  /** Peso relativo dentro do tema pai (0–100, somando 100 entre os subtopics do mesmo tema) */
+  weight: number;
+}
+
 export interface TopicWeight {
   topic: string;
   weight: number; // percentual 0-100
+  /**
+   * Subdivisão opcional do tema em subáreas (drill-down apenas visual).
+   * Se presente, os pesos internos devem somar 100 (proporção dentro do tema).
+   * Não é usado pelo gerador de prova — apenas pela prévia visual.
+   */
+  subtopics?: SubtopicWeight[];
 }
 
 export interface ExamProfile {
@@ -16,6 +29,27 @@ export interface ExamProfile {
   topicWeights: TopicWeight[];
   difficultyMix: { easy: number; medium: number; hard: number }; // percentuais
 }
+
+/**
+ * Subdivisão padrão de "Clínica Médica" em subáreas, com pesos plausíveis
+ * baseados na incidência observada nas provas de residência (ENARE, USP-SP,
+ * UNIFESP, SUS-SP). Total = 100. Reaproveitada por todos os perfis.
+ *
+ * IMPORTANTE: esta tabela é apenas para a PRÉVIA VISUAL da distribuição.
+ * O gerador de prova (`src/pages/Simulados.tsx`) continua tratando
+ * "Clínica Médica" como um único tema macro nesta fase.
+ */
+const CLINICA_MEDICA_SUBTOPICS: SubtopicWeight[] = [
+  { name: "Cardiologia", weight: 22 },
+  { name: "Pneumologia", weight: 14 },
+  { name: "Gastroenterologia", weight: 12 },
+  { name: "Endocrinologia", weight: 12 },
+  { name: "Nefrologia", weight: 10 },
+  { name: "Infectologia", weight: 10 },
+  { name: "Hematologia", weight: 8 },
+  { name: "Reumatologia", weight: 6 },
+  { name: "Neurologia", weight: 6 },
+];
 
 /** Perfis de provas reais de residência */
 export const EXAM_PROFILES: Record<string, ExamProfile> = {
