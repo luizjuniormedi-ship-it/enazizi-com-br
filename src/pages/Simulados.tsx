@@ -26,6 +26,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useStudyContext } from "@/lib/studyContext";
+import { logSimuladoSelection } from "@/lib/simuladoSelectionTelemetry";
 
 function getSourcePriority(source: string | null | undefined): number {
   if (!source) return 3;
@@ -320,6 +321,23 @@ const Simulados = () => {
   }, [user?.id, adaptive]);
 
   const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string; imagePercent?: number; dynamicDistribution?: ExamDistributionTree }) => {
+    // ── Sprint 6 — Telemetria de seleção ──
+    const __selT0 = performance.now();
+    const __selMix = {
+      pool_textual: 0,
+      pool_structural: 0,
+      image_pipeline: 0,
+      ai_generated: 0,
+      fallback: 0,
+    };
+    const __dynamicSource = config.dynamicDistribution?.source ?? null;
+    const __granularReason: import("@/lib/simuladoSelectionTelemetry").GranularFallbackReason =
+      __dynamicSource === "curriculum_weights"
+        ? "questions_not_classified"   // distribuição dinâmica monta prompts mas pool ainda é textual
+        : config.examBoard
+          ? "banca_nao_pronta"
+          : "no_banca_provided";
+
     // ── Adaptive mode: delegate to edge function ──
     if (config.mode === "adaptativo") {
       setMode("adaptativo");
