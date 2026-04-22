@@ -265,6 +265,12 @@ Deno.serve(async (req) => {
       : "questions_bank";
     const batchSize = Math.min(Math.max(parseInt(body.batch_size ?? 100, 10), 10), 500);
     const dryRun: boolean = body.dry_run === true;
+    console.info("[classify-hierarchy] start", {
+      user: userData.user.id,
+      tableSource,
+      batchSize,
+      dryRun,
+    });
 
     // 1) Carregar currículo (cache em memória do invocador)
     const { data: specsRaw } = await admin
