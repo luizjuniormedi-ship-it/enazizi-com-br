@@ -58,7 +58,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function MiniBar({ value, total }: { value: number; total: number }) {
   const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-  const tone = pct >= 80 ? "bg-primary" : pct >= 40 ? "bg-amber-500" : "bg-destructive";
+  const tone = pct >= 80 ? "bg-primary" : pct >= 40 ? "bg-secondary" : "bg-destructive";
   return (
     <div className="space-y-1">
       <div className="text-xs tabular-nums">{value}/{total} <span className="text-muted-foreground">({pct}%)</span></div>
