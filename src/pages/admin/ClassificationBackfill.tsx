@@ -99,17 +99,29 @@ export default function ClassificationBackfill() {
 
   const runBatch = useMutation({
     mutationFn: async () => {
+      const payload = { table_source: tableSource, batch_size: batchSize, dry_run: dryRun };
+      // [obs] log explícito antes de chamar a edge function
+      console.info("[classification-backfill] invoke", payload);
+      const t0 = performance.now();
       const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
-        body: { table_source: tableSource, batch_size: batchSize, dry_run: dryRun },
+        body: payload,
       });
-      if (error) throw new Error(error.message);
-      if ((data as any)?.error) throw new Error((data as any).error);
+      const elapsed = Math.round(performance.now() - t0);
+      if (error) {
+        console.error("[classification-backfill] error", { elapsed, error });
+        throw new Error(error.message);
+      }
+      if ((data as any)?.error) {
+        console.error("[classification-backfill] server-error", { elapsed, data });
+        throw new Error((data as any).error);
+      }
+      console.info("[classification-backfill] result", { elapsed_ms: elapsed, ...data });
       return data as RunResult;
     },
     onSuccess: (data) => {
       setLastResult(data);
       toast.success(
-        `${dryRun ? "Dry-run" : "Lote"} concluído: ${data.total_applied} aplicadas, ${data.total_queued_review} para revisão, ${data.total_skipped} ignoradas.`,
+        `${dryRun ? "DRY-RUN" : "Lote real"} OK: ${data.total_applied} aplicáveis, ${data.total_queued_review} fila, ${data.total_skipped} sem match.`,
       );
       qc.invalidateQueries({ queryKey: ["classification-progress"] });
       qc.invalidateQueries({ queryKey: ["classification-queue"] });
