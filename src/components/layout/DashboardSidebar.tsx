@@ -18,6 +18,7 @@ import { useInstitution } from "@/hooks/useInstitution";
 import enazizi from "@/assets/enazizi-mascot.png";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
+import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -387,7 +388,8 @@ const DashboardSidebar = () => {
       {/* Footer */}
       <div className="border-t border-sidebar-border flex-shrink-0">
         {!isStudyActive && <StudyTimer />}
-        <div className={cn(isStudyActive ? "p-1.5" : "px-3 pb-3")}>
+        <div className={cn(isStudyActive ? "p-1.5 space-y-1" : "px-3 pb-3 space-y-1")}>
+          <ForceUpdateButton variant="sidebar" collapsed={isStudyActive} />
           <button
             onClick={handleSignOut}
             title="Sair"
