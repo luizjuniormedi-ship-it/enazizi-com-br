@@ -57,17 +57,41 @@ const mountApp = () => {
 };
 
 const registerProductionServiceWorker = () => {
+  // CRITICAL iOS FIX: when the new SW takes control (clientsClaim), force a
+  // full page reload so the standalone PWA picks up the fresh bundle without
+  // requiring the user to kill the app from the multitask switcher.
+  let reloadingForNewSW = false;
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      if (reloadingForNewSW) return;
+      reloadingForNewSW = true;
+      console.log("[PWA] Novo Service Worker assumiu controle. Recarregando…");
+      window.location.reload();
+    });
+  }
+
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      console.log("[PWA] Nova versão disponível, atualizando agora...");
+      console.log("[PWA] Nova versão disponível, ativando agora…");
+      // Triggers SKIP_WAITING → controllerchange → reload above.
       updateSW(true);
     },
     onOfflineReady() {
       console.log("[PWA] App pronto para uso offline.");
     },
-    onRegisteredSW(_swUrl, registration) {
+    onRegisteredSW(swUrl, registration) {
       if (!registration) return;
+
+      // CRITICAL iOS FIX: Safari aggressively caches sw.js (default
+      // updateViaCache is "imports", which still allows HTTP cache for the
+      // top-level script). Re-register with "none" so registration.update()
+      // always hits the network and the new SW is detected immediately.
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register(swUrl, { scope: "/", updateViaCache: "none" })
+          .catch(() => {});
+      }
 
       const checkForUpdates = () => {
         registration.update().catch(() => {});
