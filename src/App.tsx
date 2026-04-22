@@ -204,6 +204,7 @@ const App = () => (
                 <Route path="generator-telemetry" element={<GeneratorTelemetry />} />
                 <Route path="banca-readiness" element={<BancaReadiness />} />
                 <Route path="simulado-selection" element={<SimuladoSelectionTelemetry />} />
+                <Route path="simulado-selection/:id" element={<SimuladoSelectionRunDetail />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
