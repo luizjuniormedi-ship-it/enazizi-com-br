@@ -80,11 +80,19 @@ const registerProductionServiceWorker = () => {
     onOfflineReady() {
       console.log("[PWA] App pronto para uso offline.");
     },
-    onRegisteredSW(_swUrl, registration) {
+    onRegisteredSW(swUrl, registration) {
       if (!registration) return;
 
-      // Force the browser to bypass HTTP cache when fetching sw.js itself —
-      // Safari iOS otherwise caches the SW script for up to 24h.
+      // CRITICAL iOS FIX: Safari aggressively caches sw.js (default
+      // updateViaCache is "imports", which still allows HTTP cache for the
+      // top-level script). Re-register with "none" so registration.update()
+      // always hits the network and the new SW is detected immediately.
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register(swUrl, { scope: "/", updateViaCache: "none" })
+          .catch(() => {});
+      }
+
       const checkForUpdates = () => {
         registration.update().catch(() => {});
 
