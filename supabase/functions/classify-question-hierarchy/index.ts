@@ -457,6 +457,17 @@ Deno.serve(async (req) => {
       })
       .eq("id", run.id);
 
+    console.info("[classify-hierarchy] done", {
+      run_id: run.id,
+      dryRun,
+      processed: (rows ?? []).length,
+      applied,
+      queuedReview,
+      skipped,
+      breakdown,
+      wrote_to_questions_table: !dryRun,
+    });
+
     return new Response(
       JSON.stringify({
         run_id: run.id,
