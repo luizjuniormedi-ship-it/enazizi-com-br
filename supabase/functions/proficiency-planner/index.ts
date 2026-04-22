@@ -457,6 +457,11 @@ serve(async (req) => {
       });
     }
 
+    const durationMs = Date.now() - plannerStartedAt;
+    console.log(
+      `[planner] lock released plan=${plan.id} user=${targetUserId} inserted=${insertedCount} dedupeHits=${finalTasks.length - insertedCount} durationMs=${durationMs}`,
+    );
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -472,6 +477,7 @@ serve(async (req) => {
         insertedTasks: insertedCount,
         skippedDuplicates: finalTasks.length - insertedCount,
         recalculationLogged: insertedCount > 0 || !!body.reason,
+        durationMs,
         reason,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
