@@ -1,4 +1,4 @@
-/* ENAZIZI v2.2 */
+/* ENAZIZI v2.3 */
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
