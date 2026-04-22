@@ -1,20 +1,32 @@
-import { useState, useMemo } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { useState } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Search, X, ChevronRight, ChevronDown } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2 } from "lucide-react";
 import {
   useCreateProfessorPlan,
-  useCurriculumTree,
-  useStudentsSearch,
   type PlanIntensity,
 } from "@/hooks/useProfessorPlans";
+import StudentInstitutionPicker from "./StudentInstitutionPicker";
+import SubtopicTreePicker from "./SubtopicTreePicker";
+import SubtopicFreeTextResolver from "./SubtopicFreeTextResolver";
 
 interface Props {
   open: boolean;
@@ -26,14 +38,13 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
   const [examDate, setExamDate] = useState("");
   const [intensity, setIntensity] = useState<PlanIntensity>("moderado");
   const [notes, setNotes] = useState("");
-  const [studentQuery, setStudentQuery] = useState("");
-  const [selectedStudents, setSelectedStudents] = useState<{ id: string; name: string }[]>([]);
-  const [selectedSubtopics, setSelectedSubtopics] = useState<Set<string>>(new Set());
-  const [expandedSpecialties, setExpandedSpecialties] = useState<Set<string>>(new Set());
-  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
+  const [selectedStudents, setSelectedStudents] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [selectedSubtopics, setSelectedSubtopics] = useState<Set<string>>(
+    new Set()
+  );
 
-  const { data: tree, isLoading: loadingTree } = useCurriculumTree();
-  const { data: studentResults } = useStudentsSearch(studentQuery);
   const createMutation = useCreateProfessorPlan();
 
   const canSubmit =
@@ -46,11 +57,8 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
     setExamDate("");
     setIntensity("moderado");
     setNotes("");
-    setStudentQuery("");
     setSelectedStudents([]);
     setSelectedSubtopics(new Set());
-    setExpandedSpecialties(new Set());
-    setExpandedTopics(new Set());
   };
 
   const handleSubmit = async () => {
@@ -67,29 +75,15 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
     onOpenChange(false);
   };
 
-  const addStudent = (id: string, displayName: string) => {
-    if (selectedStudents.find((s) => s.id === id)) return;
-    setSelectedStudents([...selectedStudents, { id, name: displayName }]);
-    setStudentQuery("");
-  };
-
-  const removeStudent = (id: string) => {
-    setSelectedStudents(selectedStudents.filter((s) => s.id !== id));
-  };
-
-  const toggleSpec = (id: string) => {
-    const next = new Set(expandedSpecialties);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setExpandedSpecialties(next);
-  };
-  const toggleTopic = (id: string) => {
-    const next = new Set(expandedTopics);
-    next.has(id) ? next.delete(id) : next.add(id);
-    setExpandedTopics(next);
-  };
   const toggleSub = (id: string) => {
     const next = new Set(selectedSubtopics);
     next.has(id) ? next.delete(id) : next.add(id);
+    setSelectedSubtopics(next);
+  };
+
+  const addSubs = (ids: string[]) => {
+    const next = new Set(selectedSubtopics);
+    ids.forEach((id) => next.add(id));
     setSelectedSubtopics(next);
   };
 
@@ -125,8 +119,13 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
             </div>
             <div className="space-y-2">
               <Label>Intensidade</Label>
-              <Select value={intensity} onValueChange={(v) => setIntensity(v as PlanIntensity)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={intensity}
+                onValueChange={(v) => setIntensity(v as PlanIntensity)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="leve">Leve</SelectItem>
                   <SelectItem value="moderado">Moderado</SelectItem>
@@ -149,108 +148,63 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
           {/* Alunos */}
           <div className="space-y-2">
             <Label>Alunos *</Label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                className="pl-9"
-                placeholder="Buscar aluno por nome ou email"
-                value={studentQuery}
-                onChange={(e) => setStudentQuery(e.target.value)}
-              />
-              {studentResults && studentResults.length > 0 && studentQuery && (
-                <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto rounded-lg border border-border bg-popover shadow-lg">
-                  {studentResults.map((s: any) => (
-                    <button
-                      key={s.user_id}
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex flex-col"
-                      onClick={() => addStudent(s.user_id, s.display_name || s.email)}
-                    >
-                      <span className="font-medium">{s.display_name || "Sem nome"}</span>
-                      <span className="text-xs text-muted-foreground">{s.email}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-            {selectedStudents.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {selectedStudents.map((s) => (
-                  <Badge key={s.id} variant="secondary" className="gap-1">
-                    {s.name}
-                    <button onClick={() => removeStudent(s.id)} className="ml-1 hover:text-destructive">
-                      <X className="h-3 w-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
+            <StudentInstitutionPicker
+              selected={selectedStudents}
+              onChange={setSelectedStudents}
+            />
           </div>
 
           {/* Subtemas */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label>Subtemas estruturais * <span className="text-xs text-muted-foreground">(usa subtopic_id)</span></Label>
-              <Badge variant="outline">{subCount} selecionado{subCount === 1 ? "" : "s"}</Badge>
+              <Label>
+                Subtemas estruturais *{" "}
+                <span className="text-xs text-muted-foreground">
+                  (vincula a `subtopic_id` real do currículo)
+                </span>
+              </Label>
+              <Badge variant="outline">
+                {subCount} selecionado{subCount === 1 ? "" : "s"}
+              </Badge>
             </div>
-            <ScrollArea className="h-72 rounded-lg border border-border p-2">
-              {loadingTree ? (
-                <div className="flex items-center justify-center h-full">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {tree?.map((spec: any) => {
-                    const specOpen = expandedSpecialties.has(spec.id);
-                    return (
-                      <div key={spec.id}>
-                        <button
-                          type="button"
-                          onClick={() => toggleSpec(spec.id)}
-                          className="w-full flex items-center gap-2 text-sm font-medium py-1.5 px-2 rounded hover:bg-accent"
-                        >
-                          {specOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                          <span>{spec.nome}</span>
-                        </button>
-                        {specOpen && spec.curriculum_topics?.map((t: any) => {
-                          const topicOpen = expandedTopics.has(t.id);
-                          return (
-                            <div key={t.id} className="ml-5">
-                              <button
-                                type="button"
-                                onClick={() => toggleTopic(t.id)}
-                                className="w-full flex items-center gap-2 text-sm py-1 px-2 rounded hover:bg-accent text-muted-foreground"
-                              >
-                                {topicOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
-                                <span>{t.nome}</span>
-                              </button>
-                              {topicOpen && t.curriculum_subtopics?.filter((s: any) => s.ativo).map((s: any) => (
-                                <label key={s.id} className="flex items-center gap-2 ml-5 py-1 px-2 rounded hover:bg-accent cursor-pointer">
-                                  <Checkbox
-                                    checked={selectedSubtopics.has(s.id)}
-                                    onCheckedChange={() => toggleSub(s.id)}
-                                  />
-                                  <span className="text-sm">{s.nome}</span>
-                                </label>
-                              ))}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </ScrollArea>
+            <Tabs defaultValue="tree">
+              <TabsList>
+                <TabsTrigger value="tree">Árvore do currículo</TabsTrigger>
+                <TabsTrigger value="free">Digitar / Upload</TabsTrigger>
+              </TabsList>
+              <TabsContent value="tree" className="mt-3">
+                <SubtopicTreePicker
+                  selectedIds={selectedSubtopics}
+                  onToggle={toggleSub}
+                />
+              </TabsContent>
+              <TabsContent value="free" className="mt-3">
+                <SubtopicFreeTextResolver
+                  selectedIds={selectedSubtopics}
+                  onAddIds={addSubs}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button variant="ghost" onClick={() => { reset(); onOpenChange(false); }}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              reset();
+              onOpenChange(false);
+            }}
+          >
             Cancelar
           </Button>
-          <Button disabled={!canSubmit || createMutation.isPending} onClick={handleSubmit}>
-            {createMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+          <Button
+            disabled={!canSubmit || createMutation.isPending}
+            onClick={handleSubmit}
+          >
+            {createMutation.isPending && (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            )}
             Criar plano
           </Button>
         </DialogFooter>
