@@ -3126,8 +3126,11 @@ export type Database = {
       }
       granular_generator_runs: {
         Row: {
+          ab_bucket: string | null
           banca: string | null
           banca_status: string | null
+          batch_count: number | null
+          batch_error_rate: number | null
           created_at: string
           duration_ms: number | null
           endpoint: string
@@ -3135,6 +3138,7 @@ export type Database = {
           fallback_reason: string | null
           fallback_triggered: boolean
           generated_count: number | null
+          generation_mode: string | null
           id: string
           metadata: Json | null
           pipeline_used: string
@@ -3143,10 +3147,14 @@ export type Database = {
           status: string
           topic_distribution: Json | null
           user_id: string | null
+          user_profile: string | null
         }
         Insert: {
+          ab_bucket?: string | null
           banca?: string | null
           banca_status?: string | null
+          batch_count?: number | null
+          batch_error_rate?: number | null
           created_at?: string
           duration_ms?: number | null
           endpoint: string
@@ -3154,6 +3162,7 @@ export type Database = {
           fallback_reason?: string | null
           fallback_triggered?: boolean
           generated_count?: number | null
+          generation_mode?: string | null
           id?: string
           metadata?: Json | null
           pipeline_used: string
@@ -3162,10 +3171,14 @@ export type Database = {
           status?: string
           topic_distribution?: Json | null
           user_id?: string | null
+          user_profile?: string | null
         }
         Update: {
+          ab_bucket?: string | null
           banca?: string | null
           banca_status?: string | null
+          batch_count?: number | null
+          batch_error_rate?: number | null
           created_at?: string
           duration_ms?: number | null
           endpoint?: string
@@ -3173,6 +3186,7 @@ export type Database = {
           fallback_reason?: string | null
           fallback_triggered?: boolean
           generated_count?: number | null
+          generation_mode?: string | null
           id?: string
           metadata?: Json | null
           pipeline_used?: string
@@ -3181,6 +3195,7 @@ export type Database = {
           status?: string
           topic_distribution?: Json | null
           user_id?: string | null
+          user_profile?: string | null
         }
         Relationships: []
       }
@@ -10301,6 +10316,26 @@ export type Database = {
           subtopic_nome: string | null
           topic_id: string | null
           topic_nome: string | null
+        }
+        Relationships: []
+      }
+      v_generator_telemetry_summary: {
+        Row: {
+          ab_bucket: string | null
+          avg_batch_error_rate: number | null
+          avg_duration_ms: number | null
+          banca: string | null
+          error_rate_pct: number | null
+          error_runs: number | null
+          fallback_rate_pct: number | null
+          fallback_runs: number | null
+          generation_mode: string | null
+          last_run_at: string | null
+          pipeline_used: string | null
+          success_runs: number | null
+          total_questions_generated: number | null
+          total_runs: number | null
+          user_profile: string | null
         }
         Relationships: []
       }

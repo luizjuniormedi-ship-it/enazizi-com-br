@@ -6,8 +6,9 @@ import {
   logGeneratedContent, contentHash,
 } from "../_shared/ai-phase2-helpers.ts";
 import {
-  planGranularOrFallback, renderPlanForPrompt, logGeneratorRun,
+  planGranularOrFallback, renderPlanForPrompt,
 } from "../_shared/granular-generator-helpers.ts";
+import { recordGenerationRun, assignAbBucket } from "../_shared/generation-telemetry.ts";
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -154,7 +155,16 @@ APPROVAL: ${approvalScore}/100`;
     const hash = await contentHash(JSON.stringify(weakTopics) + questionCount);
     logGeneratedContent({ userId, contentType: "adaptive_simulado", theme: "simulado", contentHash: hash, requestPayload: cacheParams, responsePayload: { questionCount: questions.length }, sourceEndpoint: "simulado-assistant", cacheHit: false, costUnits: ACTION_COSTS.adaptive_simulado });
 
-    logGeneratorRun({
+    // ── Telemetria estruturada (Sprint 5) ──
+    const userProfile =
+      approvalScore < 40 ? "iniciante" :
+      approvalScore < 70 ? "intermediario" : "avancado";
+    const generated = Array.isArray(questions) ? questions.length : 0;
+    const batchErrorRate = questionCount > 0
+      ? Math.max(0, 1 - generated / questionCount)
+      : 0;
+
+    recordGenerationRun({
       user_id: userId,
       endpoint: "simulado-assistant",
       pipeline_used: pipelineUsed,
@@ -162,22 +172,30 @@ APPROVAL: ${approvalScore}/100`;
       banca_status: bancaStatus,
       requested_specialties: weakTopics,
       requested_count: questionCount,
-      generated_count: questions.length,
+      generated_count: generated,
       topic_distribution: topicDistribution,
       fallback_triggered: pipelineUsed === "legacy" && Boolean(fallbackReason),
       fallback_reason: fallbackReason,
       duration_ms: Date.now() - t0,
       status: runStatus,
       error_message: runError,
+      user_profile: userProfile,
+      generation_mode: "simulado_adaptive",
+      batch_count: 1,
+      batch_error_rate: Number(batchErrorRate.toFixed(4)),
+      ab_bucket: assignAbBucket(userId),
     });
 
     return jsonOk({ ...result, source: "ai", pipeline: pipelineUsed });
   } catch (e) {
-    logGeneratorRun({
+    recordGenerationRun({
       endpoint: "simulado-assistant",
       pipeline_used: "legacy",
       status: "error",
       error_message: (e as Error).message,
+      generation_mode: "simulado_adaptive",
+      batch_count: 1,
+      batch_error_rate: 1,
     });
     return handleAiError(e, "simulado-assistant");
   }
