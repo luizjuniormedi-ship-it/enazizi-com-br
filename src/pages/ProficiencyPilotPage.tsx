@@ -129,7 +129,7 @@ export default function ProficiencyPilotPage() {
                   Plano turma: <code>{seed.data.planoTurma.name}</code>
                 </div>
                 {seed.data.warnings.length > 0 && (
-                  <ul className="list-disc list-inside text-amber-600 dark:text-amber-400">
+                  <ul className="list-disc list-inside text-muted-foreground">
                     {seed.data.warnings.map((w, i) => (
                       <li key={i}>{w}</li>
                     ))}
@@ -316,9 +316,9 @@ function Stat({
     tone === "danger"
       ? "border-destructive/50 bg-destructive/10"
       : tone === "warn"
-        ? "border-amber-500/50 bg-amber-500/10"
+        ? "border-muted-foreground/40 bg-muted/40"
         : tone === "ok"
-          ? "border-emerald-500/40 bg-emerald-500/5"
+          ? "border-primary/40 bg-primary/5"
           : "";
   return (
     <div className={`rounded-lg border p-3 ${toneCls}`}>
