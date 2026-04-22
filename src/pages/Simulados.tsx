@@ -377,6 +377,16 @@ const Simulados = () => {
         }
 
         setLoadingPercent(100);
+        // Telemetria: motor adaptativo terceiriza para edge function
+        __selMix.ai_generated = adaptiveQs.length;
+        void logSimuladoSelection({
+          mode: "adaptativo", banca: config.examBoard ?? null,
+          requested_count: config.count, final_count: adaptiveQs.length,
+          source_ai_generated: __selMix.ai_generated,
+          granular_eligible: false, granular_fallback_reason: "no_attempt",
+          duration_ms: Math.round(performance.now() - __selT0),
+          metadata: { delegated_to: "generate-adaptive-simulado" },
+        });
         startExamWithQuestions(adaptiveQs, config);
         return;
       } catch {
