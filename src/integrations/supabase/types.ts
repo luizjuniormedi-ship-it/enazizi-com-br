@@ -3124,6 +3124,66 @@ export type Database = {
         }
         Relationships: []
       }
+      granular_generator_runs: {
+        Row: {
+          banca: string | null
+          banca_status: string | null
+          created_at: string
+          duration_ms: number | null
+          endpoint: string
+          error_message: string | null
+          fallback_reason: string | null
+          fallback_triggered: boolean
+          generated_count: number | null
+          id: string
+          metadata: Json | null
+          pipeline_used: string
+          requested_count: number | null
+          requested_specialties: string[] | null
+          status: string
+          topic_distribution: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          banca?: string | null
+          banca_status?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          endpoint: string
+          error_message?: string | null
+          fallback_reason?: string | null
+          fallback_triggered?: boolean
+          generated_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pipeline_used: string
+          requested_count?: number | null
+          requested_specialties?: string[] | null
+          status?: string
+          topic_distribution?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          banca?: string | null
+          banca_status?: string | null
+          created_at?: string
+          duration_ms?: number | null
+          endpoint?: string
+          error_message?: string | null
+          fallback_reason?: string | null
+          fallback_triggered?: boolean
+          generated_count?: number | null
+          id?: string
+          metadata?: Json | null
+          pipeline_used?: string
+          requested_count?: number | null
+          requested_specialties?: string[] | null
+          status?: string
+          topic_distribution?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       image_curation_log: {
         Row: {
           asset_code: string | null
