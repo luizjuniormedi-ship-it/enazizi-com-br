@@ -196,6 +196,10 @@ const App = () => (
                 <Route index element={<ProfessorDashboard />} />
                 <Route path="proficiencia/piloto" element={<ProficiencyPilotPage />} />
               </Route>
+              {/* Alias: /dashboard/proficiencia/piloto → mesma página, mesma guarda de professor/admin */}
+              <Route path="/dashboard/proficiencia/piloto" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
+                <Route index element={<ProficiencyPilotPage />} />
+              </Route>
               <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
