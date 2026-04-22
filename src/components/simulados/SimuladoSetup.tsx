@@ -10,6 +10,9 @@ import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import SimuladoHistory from "./SimuladoHistory";
 import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots, type TopicDistributionItem } from "@/lib/realExamDistribution";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useExamDistribution } from "@/hooks/useExamDistribution";
+import type { ExamDistributionTree } from "@/lib/examDistributionFromCurriculum";
+import { Loader2 } from "lucide-react";
 
 import { ALL_SPECIALTIES as ALL_TOPICS, SPECIALTY_CYCLES } from "@/constants/specialties";
 import { SPECIALTY_SUBTOPICS } from "@/constants/subtopics";
