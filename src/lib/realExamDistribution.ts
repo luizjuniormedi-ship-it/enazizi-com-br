@@ -76,12 +76,13 @@ export const EXAM_PROFILES: Record<string, ExamProfile> = {
     ],
   },
   "USP-SP": {
+    name: "USP-SP",
     totalQuestions: 100,
     timeMinutes: 300,
     cutoffEstimate: 68,
     difficultyMix: { easy: 20, medium: 45, hard: 35 },
     topicWeights: [
-      { topic: "Clínica Médica", weight: 22 },
+      { topic: "Clínica Médica", weight: 22, subtopics: CLINICA_MEDICA_SUBTOPICS },
       { topic: "Cirurgia", weight: 18 },
       { topic: "Pediatria", weight: 12 },
       { topic: "Ginecologia e Obstetrícia", weight: 12 },
