@@ -183,7 +183,7 @@ export default function BancaReadiness() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Star className="h-5 w-5 text-amber-500" /> Bancas em destaque
+            <Star className="h-5 w-5 text-primary" /> Bancas em destaque
           </CardTitle>
           <CardDescription>
             ENARE · USP · UNIFESP · SUS-SP · UNICAMP · REVALIDA · GERAL
