@@ -9,6 +9,7 @@ import { NON_MEDICAL_CONTENT_REGEX } from "@/lib/medicalValidation";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { filterValidQuestions } from "@/lib/aiOutputValidation";
 import { EXAM_PROFILES, calculateTopicDistribution, calculateDifficultySlots } from "@/lib/realExamDistribution";
+import type { ExamDistributionTree } from "@/lib/examDistributionFromCurriculum";
 import { selectImageQuestions, imageQuestionToSimQuestion, calculateImageSlots } from "@/lib/imageQuestionPipeline";
 import { generateAdaptiveBlueprint, type AdaptiveBlueprint } from "@/lib/adaptiveModalityEngine";
 import { useAdaptiveSimulado, type AdaptiveMeta } from "@/hooks/useAdaptiveSimulado";
@@ -318,7 +319,7 @@ const Simulados = () => {
     setAdaptivePreviewLoading(false);
   }, [user?.id, adaptive]);
 
-  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string }) => {
+  const handleStart = async (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string; imagePercent?: number; dynamicDistribution?: ExamDistributionTree }) => {
     // ── Adaptive mode: delegate to edge function ──
     if (config.mode === "adaptativo") {
       setMode("adaptativo");
