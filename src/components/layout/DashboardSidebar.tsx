@@ -18,6 +18,7 @@ import { useInstitution } from "@/hooks/useInstitution";
 import enazizi from "@/assets/enazizi-mascot.png";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
+import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";

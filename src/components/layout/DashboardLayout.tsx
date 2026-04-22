@@ -34,6 +34,7 @@ import TutorDrawer from "@/components/tutor/TutorDrawer";
 import ProficiencyGate from "@/components/dashboard/ProficiencyGate";
 import { useInvisibleMnemonic } from "@/hooks/useInvisibleMnemonic";
 import { InvisibleMnemonicOverlay } from "@/components/mnemonic/InvisibleMnemonicOverlay";
+import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
 import { useStudyContext } from "@/lib/studyContext";
 
 interface MobileNavGroup {
@@ -230,6 +231,7 @@ const MobileNav = () => {
                   <Building2 className="h-4 w-4" /> Painel Institucional
                 </Link>
               )}
+              <ForceUpdateButton variant="menu" onAfterClick={() => setOpen(false)} />
               <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full">
                 <LogOut className="h-4 w-4" /> Sair
               </button>
