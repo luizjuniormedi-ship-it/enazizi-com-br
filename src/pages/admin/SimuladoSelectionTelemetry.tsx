@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, RefreshCw, Database, Sparkles, Image, AlertTriangle } from "lucide-react";
+import { Loader2, RefreshCw, Database, Sparkles, Image, AlertTriangle, ChevronRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface Overview {
@@ -59,6 +60,7 @@ const REASON_COLORS: Record<string, string> = {
 };
 
 export default function SimuladoSelectionTelemetry() {
+  const navigate = useNavigate();
   const [days, setDays] = useState(7);
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -251,11 +253,16 @@ export default function SimuladoSelectionTelemetry() {
                     <TableHead>Granular?</TableHead>
                     <TableHead>Razão fallback</TableHead>
                     <TableHead className="text-right">ms</TableHead>
+                    <TableHead className="w-8"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {runs.map((r) => (
-                    <TableRow key={r.id}>
+                    <TableRow
+                      key={r.id}
+                      className="cursor-pointer hover:bg-muted/50 transition-colors"
+                      onClick={() => navigate(`/admin/simulado-selection/${r.id}`)}
+                    >
                       <TableCell className="whitespace-nowrap text-xs">
                         {new Date(r.created_at).toLocaleString("pt-BR")}
                       </TableCell>
@@ -284,6 +291,9 @@ export default function SimuladoSelectionTelemetry() {
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">
                         {r.duration_ms ?? "—"}
+                      </TableCell>
+                      <TableCell>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </TableCell>
                     </TableRow>
                   ))}

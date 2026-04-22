@@ -76,6 +76,7 @@ const GranularGeneratorMonitor = lazyWithRetry(() => import("./pages/admin/Granu
 const GeneratorTelemetry = lazyWithRetry(() => import("./pages/admin/GeneratorTelemetry"), "GeneratorTelemetry");
 const BancaReadiness = lazyWithRetry(() => import("./pages/admin/BancaReadiness"), "BancaReadiness");
 const SimuladoSelectionTelemetry = lazyWithRetry(() => import("./pages/admin/SimuladoSelectionTelemetry"), "SimuladoSelectionTelemetry");
+const SimuladoSelectionRunDetail = lazyWithRetry(() => import("./pages/admin/SimuladoSelectionRunDetail"), "SimuladoSelectionRunDetail");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
 const MissionControlPage = lazyWithRetry(() => import("./pages/MissionControlPage"), "MissionControlPage");
 const MissionEntry = lazyWithRetry(() => import("./pages/MissionEntry"), "MissionEntry");
@@ -203,6 +204,7 @@ const App = () => (
                 <Route path="generator-telemetry" element={<GeneratorTelemetry />} />
                 <Route path="banca-readiness" element={<BancaReadiness />} />
                 <Route path="simulado-selection" element={<SimuladoSelectionTelemetry />} />
+                <Route path="simulado-selection/:id" element={<SimuladoSelectionRunDetail />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
