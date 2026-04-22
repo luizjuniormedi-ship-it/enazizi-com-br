@@ -387,7 +387,8 @@ const DashboardSidebar = () => {
       {/* Footer */}
       <div className="border-t border-sidebar-border flex-shrink-0">
         {!isStudyActive && <StudyTimer />}
-        <div className={cn(isStudyActive ? "p-1.5" : "px-3 pb-3")}>
+        <div className={cn(isStudyActive ? "p-1.5 space-y-1" : "px-3 pb-3 space-y-1")}>
+          <ForceUpdateButton variant="sidebar" collapsed={isStudyActive} />
           <button
             onClick={handleSignOut}
             title="Sair"
