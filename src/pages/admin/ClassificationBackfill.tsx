@@ -99,17 +99,29 @@ export default function ClassificationBackfill() {
 
   const runBatch = useMutation({
     mutationFn: async () => {
+      const payload = { table_source: tableSource, batch_size: batchSize, dry_run: dryRun };
+      // [obs] log explícito antes de chamar a edge function
+      console.info("[classification-backfill] invoke", payload);
+      const t0 = performance.now();
       const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
-        body: { table_source: tableSource, batch_size: batchSize, dry_run: dryRun },
+        body: payload,
       });
-      if (error) throw new Error(error.message);
-      if ((data as any)?.error) throw new Error((data as any).error);
+      const elapsed = Math.round(performance.now() - t0);
+      if (error) {
+        console.error("[classification-backfill] error", { elapsed, error });
+        throw new Error(error.message);
+      }
+      if ((data as any)?.error) {
+        console.error("[classification-backfill] server-error", { elapsed, data });
+        throw new Error((data as any).error);
+      }
+      console.info("[classification-backfill] result", { elapsed_ms: elapsed, ...data });
       return data as RunResult;
     },
     onSuccess: (data) => {
       setLastResult(data);
       toast.success(
-        `${dryRun ? "Dry-run" : "Lote"} concluído: ${data.total_applied} aplicadas, ${data.total_queued_review} para revisão, ${data.total_skipped} ignoradas.`,
+        `${dryRun ? "DRY-RUN" : "Lote real"} OK: ${data.total_applied} aplicáveis, ${data.total_queued_review} fila, ${data.total_skipped} sem match.`,
       );
       qc.invalidateQueries({ queryKey: ["classification-progress"] });
       qc.invalidateQueries({ queryKey: ["classification-queue"] });
@@ -209,11 +221,20 @@ export default function ClassificationBackfill() {
         </Card>
       </div>
 
+      {dryRun && (
+        <div className="rounded-md border-2 border-destructive bg-destructive/10 p-3 text-sm">
+          <strong>⚠️ DRY-RUN ATIVO</strong> — nenhuma linha em <code>questions_bank</code> /
+          <code> real_exam_questions</code> será alterada. Apenas o run em
+          <code> question_classification_runs</code> é gravado para auditoria.
+          Desligue o switch abaixo somente após validar a amostra.
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><PlayCircle className="h-5 w-5" /> Executar lote</CardTitle>
           <CardDescription>
-            Recomendado: comece com <strong>dry-run</strong> de 100 questões para validar o impacto.
+            Recomendado: comece com <strong>DRY-RUN</strong> em <code>questions_bank</code>, batch <code>100</code>.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -251,13 +272,15 @@ export default function ClassificationBackfill() {
               {runBatch.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Executando…</>
               ) : (
-                <><PlayCircle className="mr-2 h-4 w-4" /> Executar lote</>
+                <><PlayCircle className="mr-2 h-4 w-4" /> {dryRun ? "Executar DRY-RUN" : "Executar lote real"}</>
               )}
             </Button>
-            {dryRun && (
+            {dryRun ? (
               <Badge variant="outline" className="border-destructive text-destructive">
-                Modo simulação ativo
+                Modo simulação — zero gravação em questões
               </Badge>
+            ) : (
+              <Badge variant="destructive">⚠️ Gravação real ligada</Badge>
             )}
           </div>
         </CardContent>
@@ -277,14 +300,22 @@ export default function ClassificationBackfill() {
                 <p className="text-sm text-muted-foreground">Execute um lote para ver o resultado aqui.</p>
               ) : (
                 <div className="space-y-4">
-                  <div className="grid gap-3 md:grid-cols-4">
-                    <Stat label="Processadas" value={lastResult.total_processed} icon={<ClipboardList className="h-4 w-4" />} />
-                    <Stat label="Aplicadas" value={lastResult.total_applied} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
-                    <Stat label="Para revisão" value={lastResult.total_queued_review} icon={<AlertTriangle className="h-4 w-4 text-destructive" />} />
-                    <Stat label="Ignoradas" value={lastResult.total_skipped} />
+                  {lastResult.dry_run && (
+                    <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs">
+                      Resultado de <strong>DRY-RUN</strong> (run_id <code>{lastResult.run_id}</code>) — nenhum
+                      <code> specialty_id</code> foi gravado nas questões. Os números abaixo são apenas a simulação do que <em>seria</em> aplicado.
+                    </div>
+                  )}
+                  <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-6">
+                    <Stat label="Total processado" value={lastResult.total_processed} icon={<ClipboardList className="h-4 w-4" />} />
+                    <Stat label="Por exact_text" value={lastResult.method_breakdown?.exact_text ?? 0} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
+                    <Stat label="Por heurística" value={lastResult.method_breakdown?.heuristic ?? 0} />
+                    <Stat label="Iria p/ fila" value={lastResult.total_queued_review} icon={<AlertTriangle className="h-4 w-4 text-destructive" />} />
+                    <Stat label="Sem match (skip)" value={lastResult.total_skipped} />
+                    <Stat label="Aplicáveis (≥0.7)" value={lastResult.total_applied} icon={<CheckCircle2 className="h-4 w-4 text-primary" />} />
                   </div>
-                  <div className="text-sm">
-                    <strong>Por método:</strong>{" "}
+                  <div className="text-xs text-muted-foreground">
+                    <strong>Breakdown por método (raw):</strong>{" "}
                     {Object.entries(lastResult.method_breakdown).map(([k, v]) => (
                       <Badge key={k} variant="secondary" className="mr-1">{k}: {v}</Badge>
                     ))}

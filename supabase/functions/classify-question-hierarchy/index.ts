@@ -265,6 +265,12 @@ Deno.serve(async (req) => {
       : "questions_bank";
     const batchSize = Math.min(Math.max(parseInt(body.batch_size ?? 100, 10), 10), 500);
     const dryRun: boolean = body.dry_run === true;
+    console.info("[classify-hierarchy] start", {
+      user: userData.user.id,
+      tableSource,
+      batchSize,
+      dryRun,
+    });
 
     // 1) Carregar currículo (cache em memória do invocador)
     const { data: specsRaw } = await admin
@@ -450,6 +456,17 @@ Deno.serve(async (req) => {
         notes: dryRun ? "dry-run; nada foi gravado" : null,
       })
       .eq("id", run.id);
+
+    console.info("[classify-hierarchy] done", {
+      run_id: run.id,
+      dryRun,
+      processed: (rows ?? []).length,
+      applied,
+      queuedReview,
+      skipped,
+      breakdown,
+      wrote_to_questions_table: !dryRun,
+    });
 
     return new Response(
       JSON.stringify({
