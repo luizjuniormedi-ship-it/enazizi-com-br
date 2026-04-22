@@ -48,6 +48,82 @@ interface SimuladoSetupProps {
   onFetchAdaptivePreview?: () => void;
 }
 
+/**
+ * Prévia visual da distribuição de temas (com drill-down opcional em subáreas).
+ * Apenas informativo — não altera a geração da prova.
+ */
+const TopicDistributionPreview = ({
+  items,
+  total,
+  barColorClass,
+}: {
+  items: TopicDistributionItem[];
+  total: number;
+  barColorClass: string;
+}) => {
+  return (
+    <div className="space-y-2">
+      {items.map((item) => {
+        const hasSubtopics = !!item.subtopics && item.subtopics.length > 0;
+        const row = (
+          <div className="flex items-center justify-between text-sm w-full">
+            <span className="text-muted-foreground text-left">{item.topic}</span>
+            <div className="flex items-center gap-2">
+              <div className="w-24 h-2 rounded-full bg-secondary overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${barColorClass}`}
+                  style={{ width: `${(item.count / total) * 100}%` }}
+                />
+              </div>
+              <span className="text-xs font-medium w-16 text-right">
+                {item.count}q ({item.percent}%)
+              </span>
+            </div>
+          </div>
+        );
+
+        if (!hasSubtopics) {
+          return (
+            <div key={item.topic} className="px-1">
+              {row}
+            </div>
+          );
+        }
+
+        return (
+          <Accordion
+            key={item.topic}
+            type="single"
+            collapsible
+            className="border-b-0"
+          >
+            <AccordionItem value={item.topic} className="border-b-0">
+              <AccordionTrigger className="py-1 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                {row}
+              </AccordionTrigger>
+              <AccordionContent className="pb-2">
+                <ul className="ml-3 mt-1 space-y-1 border-l border-border pl-3">
+                  {item.subtopics!.map((s) => (
+                    <li
+                      key={s.name}
+                      className="flex items-center justify-between text-xs text-muted-foreground"
+                    >
+                      <span>{s.name}</span>
+                      <span className="font-medium tabular-nums">
+                        {s.count}q ({s.percent}%)
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        );
+      })}
+    </div>
+  );
+};
+
 const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId, adaptiveMeta, adaptiveLoading, onFetchAdaptivePreview }: SimuladoSetupProps) => {
   const studyCtx = useStudyContext();
   const [tab, setTab] = useState<"novo" | "historico">("novo");
