@@ -3,7 +3,7 @@
  * Provides cache lookup, storage, and key generation for all AI modules.
  */
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 
 function getSupabaseAdmin() {
   return createClient(
