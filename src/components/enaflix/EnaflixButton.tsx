@@ -60,7 +60,7 @@ export function EnaflixButton({ className, variant = "default" }: Props) {
         {/* Vignette inferior para profundidade */}
         <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/25 to-transparent" />
         {/* Shine cinematográfico no hover */}
-        <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1100ms] ease-out bg-gradient-to-r from-transparent via-white/45 to-transparent" />
+        <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform [transition-duration:1100ms] ease-out bg-gradient-to-r from-transparent via-white/45 to-transparent" />
       </span>
       {/* Borda interna sutil */}
       <span
