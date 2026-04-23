@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
+import { CinematicHero } from "@/components/cinematic";
 
 interface RankingEntry {
   user_id: string;
@@ -109,16 +110,18 @@ const Rankings = () => {
   const userIdx = currentRanking.findIndex((r) => r.user_id === user?.id);
 
   return (
-    <div className="p-4 space-y-5 max-w-2xl mx-auto">
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Crown className="h-6 w-6 text-amber-500" />
-          Rankings
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Seu progresso comparado com a turma
-        </p>
-      </div>
+    <div className="p-4 space-y-5 max-w-2xl mx-auto animate-fade-in">
+      <CinematicHero
+        module="ranking"
+        eyebrow={
+          <>
+            <Crown className="h-3.5 w-3.5" />
+            Liga ENAZIZI
+          </>
+        }
+        title="Rankings"
+        subtitle="Sua trajetória ao lado dos melhores — constância, evolução, desempenho e prática clínica."
+      />
 
       {/* Personal Progress Card */}
       {userEntry && (

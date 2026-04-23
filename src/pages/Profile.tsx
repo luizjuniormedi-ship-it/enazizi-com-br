@@ -17,6 +17,7 @@ import { useDashboardInvalidation } from "@/hooks/useDashboardInvalidation";
 import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import { cn } from "@/lib/utils";
+import { CinematicHero } from "@/components/cinematic";
 
 const EXAM_OPTIONS = [
   { value: "enare", label: "ENARE" },
@@ -208,13 +209,17 @@ const Profile = () => {
 
   return (
     <div className="max-w-lg mx-auto space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <User className="h-6 w-6 text-primary" />
-          Meu Perfil
-        </h1>
-        <p className="text-muted-foreground">Gerencie suas informações pessoais.</p>
-      </div>
+      <CinematicHero
+        module="dashboard"
+        eyebrow={
+          <>
+            <User className="h-3.5 w-3.5" />
+            Sua identidade ENAZIZI
+          </>
+        }
+        title="Meu Perfil"
+        subtitle="Personalize sua jornada — alvo, faculdade, ritmo de estudos e bancas."
+      />
 
       {/* Avatar */}
       <div className="glass-card p-6 flex flex-col items-center gap-4">
