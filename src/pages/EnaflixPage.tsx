@@ -1,24 +1,24 @@
 /**
- * EnaflixPage — Hub visual fullscreen estilo Netflix do ENAZIZI.
+ * EnaflixPage — Modo cinematográfico de descoberta inteligente.
  *
- * Acessível via /enaflix (rota protegida, fora do DashboardLayout para ocupar
- * a tela inteira sem sidebar/topbar).
+ * Estrutura (Netflix/Apple TV style):
+ * 1. Topbar OVERLAY flutuante (transparente no topo, sólida ao rolar)
+ * 2. Billboard hero full-bleed dominante (recomendação IA)
+ * 3. Fileiras horizontais emergindo do gradiente do hero
+ * 4. Busca em modo "drawer" sobre tudo (não ocupa espaço fixo)
  *
- * - Categoriza ENAFLIX_MODULES em fileiras horizontais
- * - Adiciona seções dinâmicas (Continuar, Mais usados, Recomendados)
- * - Filtra por busca em tempo real
- * - Respeita roles (admin/professor)
- * - Volta para /dashboard via botão "Voltar"
+ * Sem sidebar, sem header sólido, sem caixas administrativas.
  */
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, X } from "lucide-react";
 
 import { ENAFLIX_MODULES, type EnaflixModule } from "@/data/enaflix/enaflixModules";
 import { ENAFLIX_CATEGORIES } from "@/data/enaflix/enaflixCategories";
-import { EnaflixHero } from "@/components/enaflix/EnaflixHero";
+import { EnaflixOverlayNav } from "@/components/enaflix/EnaflixOverlayNav";
+import { EnaflixBillboard } from "@/components/enaflix/EnaflixBillboard";
 import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
+import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
@@ -33,19 +33,22 @@ function normalize(s: string) {
 export default function EnaflixPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [searchOpen, setSearchOpen] = useState(false);
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
 
   useEffect(() => {
     const prev = document.title;
-    document.title = "ENAFLIX — Hub visual do ENAZIZI";
+    document.title = "ENAFLIX — streaming inteligente do ENAZIZI";
+    // Body bg cinematográfico para garantir continuidade visual
+    document.body.style.backgroundColor = "#0a0a12";
     return () => {
       document.title = prev;
+      document.body.style.backgroundColor = "";
     };
   }, []);
 
-  // Filtra módulos por role
   const visibleModules = useMemo<EnaflixModule[]>(() => {
     return ENAFLIX_MODULES.filter((m) => {
       if (m.enabled === false) return false;
@@ -55,27 +58,19 @@ export default function EnaflixPage() {
     });
   }, [isAdmin, isProfessor]);
 
-  // Aplica busca
   const filteredModules = useMemo(() => {
     const q = normalize(query.trim());
     if (!q) return visibleModules;
     return visibleModules.filter((m) => {
-      const haystack = [
-        m.title,
-        m.description,
-        m.category,
-        ...(m.keywords ?? []),
-      ]
+      const haystack = [m.title, m.description, m.category, ...(m.keywords ?? [])]
         .map(normalize)
         .join(" ");
       return haystack.includes(q);
     });
   }, [visibleModules, query]);
 
-  // Quando há busca, mostramos apenas o grid de resultados (sem fileiras)
   const isSearching = query.trim().length > 0;
 
-  // Mapas auxiliares para seções dinâmicas
   const moduleById = useMemo(() => {
     const map = new Map<string, EnaflixModule>();
     visibleModules.forEach((m) => map.set(m.id, m));
@@ -93,10 +88,25 @@ export default function EnaflixPage() {
   );
 
   const recommendedModules = useMemo(() => {
-    // Heurística leve: featured + ainda não muito visitados
     const visitedSet = new Set(popularIds.slice(0, 3));
     return visibleModules.filter((m) => m.featured && !visitedSet.has(m.id)).slice(0, 10);
   }, [visibleModules, popularIds]);
+
+  // Pick para o billboard: primeiro item recente OU primeiro recomendado OU sessão de estudo
+  const billboardModule = useMemo<EnaflixModule | undefined>(() => {
+    return (
+      continueModules[0] ??
+      recommendedModules[0] ??
+      visibleModules.find((m) => m.id === "sessao-estudo") ??
+      visibleModules[0]
+    );
+  }, [continueModules, recommendedModules, visibleModules]);
+
+  const billboardEyebrow = useMemo(() => {
+    if (continueModules[0]) return "Continuar de onde parou";
+    if (recommendedModules[0]) return "Recomendado pela IA";
+    return "Em destaque hoje";
+  }, [continueModules, recommendedModules]);
 
   const handleNavigate = useCallback(
     (m: EnaflixModule) => {
@@ -113,104 +123,107 @@ export default function EnaflixPage() {
     }
   };
 
+  const handleSearchToggle = () => {
+    setSearchOpen((v) => {
+      const next = !v;
+      if (!next) setQuery("");
+      return next;
+    });
+  };
+
   return (
     <div className="min-h-[100dvh] bg-[#0a0a12] text-white relative overflow-x-hidden">
-      {/* Background ambient */}
-      <div
-        aria-hidden
-        className="fixed inset-0 bg-[radial-gradient(ellipse_at_top,_hsl(var(--primary)/0.15),_transparent_60%)] pointer-events-none"
-      />
-      <div
-        aria-hidden
-        className="fixed inset-0 bg-[linear-gradient(180deg,_transparent_0%,_#0a0a12_85%)] pointer-events-none"
+      {/* Topbar OVERLAY — flutua sobre tudo, conteúdo passa por baixo */}
+      <EnaflixOverlayNav
+        onClose={handleClose}
+        onSearchClick={handleSearchToggle}
+        searchActive={searchOpen}
       />
 
-      {/* Top actions */}
-      <div className="sticky top-0 z-30 backdrop-blur-md bg-[#0a0a12]/80 border-b border-white/5">
-        <div className="flex items-center justify-between px-4 sm:px-6 lg:px-10 py-3">
-          <button
-            type="button"
-            onClick={handleClose}
-            className="inline-flex items-center gap-2 text-sm text-white/70 hover:text-white transition-colors rounded-lg px-2 py-1.5 hover:bg-white/5"
-            aria-label="Voltar ao modo normal"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Voltar ao modo normal</span>
-            <span className="sm:hidden">Voltar</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleClose}
-            className="h-9 w-9 rounded-full bg-white/5 hover:bg-white/15 flex items-center justify-center transition-colors"
-            aria-label="Fechar Enaflix"
-          >
-            <X className="h-4 w-4" />
-          </button>
+      {/* Drawer de busca cinematográfico (abre sob a topbar) */}
+      {searchOpen && (
+        <div className="fixed top-16 inset-x-0 z-40 bg-[#0a0a12]/95 backdrop-blur-xl border-b border-white/5 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.8)] animate-fade-in">
+          <div className="px-4 sm:px-8 lg:px-14 py-5">
+            <EnaflixSearchBar
+              value={query}
+              onChange={setQuery}
+              placeholder="Buscar simulados, flashcards, anamnese, ECG..."
+              autoFocus
+            />
+            {query && (
+              <p className="text-xs text-white/50 mt-3">
+                {filteredModules.length === 0
+                  ? "Nenhum módulo encontrado."
+                  : `${filteredModules.length} ${
+                      filteredModules.length === 1 ? "módulo" : "módulos"
+                    }`}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
-      <div className="relative z-10">
-        <EnaflixHero
-          query={query}
-          onQueryChange={setQuery}
-          resultCount={isSearching ? filteredModules.length : undefined}
-        />
-
-        <div className="space-y-8 sm:space-y-10 pb-20 pt-2">
-          {isSearching ? (
-            <SearchResultsGrid
-              modules={filteredModules}
+      {/* CONTEÚDO PRINCIPAL — começa no topo (y=0), passando por trás da topbar */}
+      {isSearching ? (
+        <main className="pt-24 pb-20">
+          <SearchResultsGrid modules={filteredModules} onNavigate={handleNavigate} />
+        </main>
+      ) : (
+        <main>
+          {/* Hero billboard cinematográfico (full-bleed, começa em y=0) */}
+          {billboardModule && (
+            <EnaflixBillboard
+              module={billboardModule}
+              eyebrow={billboardEyebrow}
               onNavigate={handleNavigate}
             />
-          ) : (
-            <>
-              {/* Seções dinâmicas */}
-              {continueModules.length > 0 && (
-                <EnaflixSectionRow
-                  title="Continuar de onde parou"
-                  subtitle="Retome sua jornada"
-                  modules={continueModules}
-                  onNavigate={handleNavigate}
-                />
-              )}
-              {popularModules.length > 1 && (
-                <EnaflixSectionRow
-                  title="Mais usados"
-                  subtitle="Os queridinhos do seu dia a dia"
-                  modules={popularModules}
-                  onNavigate={handleNavigate}
-                />
-              )}
-              {recommendedModules.length > 0 && (
-                <EnaflixSectionRow
-                  title="Recomendados para você"
-                  subtitle="Sugestões inteligentes do ENAZIZI"
-                  modules={recommendedModules}
-                  onNavigate={handleNavigate}
-                />
-              )}
-
-              {/* Categorias estáticas */}
-              {ENAFLIX_CATEGORIES.filter((c) => !c.dynamic).map((cat) => {
-                if (cat.requires === "admin" && !isAdmin) return null;
-                if (cat.requires === "professor" && !isProfessor && !isAdmin) return null;
-                const items = visibleModules.filter((m) => m.category === cat.id);
-                if (items.length < (cat.minItems ?? 1)) return null;
-                return (
-                  <EnaflixSectionRow
-                    key={cat.id}
-                    title={cat.title}
-                    subtitle={cat.subtitle}
-                    modules={items}
-                    onNavigate={handleNavigate}
-                  />
-                );
-              })}
-            </>
           )}
-        </div>
-      </div>
+
+          {/* Fileiras emergindo do gradiente do billboard */}
+          <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
+            {continueModules.length > 0 && (
+              <EnaflixSectionRow
+                title="Continuar de onde parou"
+                subtitle="Retome sua jornada"
+                modules={continueModules}
+                onNavigate={handleNavigate}
+              />
+            )}
+            {popularModules.length > 1 && (
+              <EnaflixSectionRow
+                title="Mais usados"
+                subtitle="Os queridinhos do seu dia a dia"
+                modules={popularModules}
+                onNavigate={handleNavigate}
+              />
+            )}
+            {recommendedModules.length > 0 && (
+              <EnaflixSectionRow
+                title="Recomendados pela IA"
+                subtitle="Sugestões inteligentes do ENAZIZI"
+                modules={recommendedModules}
+                onNavigate={handleNavigate}
+              />
+            )}
+
+            {ENAFLIX_CATEGORIES.filter((c) => !c.dynamic).map((cat) => {
+              if (cat.requires === "admin" && !isAdmin) return null;
+              if (cat.requires === "professor" && !isProfessor && !isAdmin) return null;
+              const items = visibleModules.filter((m) => m.category === cat.id);
+              if (items.length < (cat.minItems ?? 1)) return null;
+              return (
+                <EnaflixSectionRow
+                  key={cat.id}
+                  title={cat.title}
+                  subtitle={cat.subtitle}
+                  modules={items}
+                  onNavigate={handleNavigate}
+                />
+              );
+            })}
+          </div>
+        </main>
+      )}
     </div>
   );
 }
@@ -224,7 +237,7 @@ function SearchResultsGrid({
 }) {
   if (!modules.length) {
     return (
-      <div className="px-4 sm:px-6 lg:px-10 py-16 text-center">
+      <div className="px-4 sm:px-8 lg:px-14 py-16 text-center">
         <p className="text-white/60 text-sm">
           Nada encontrado. Tente outro termo (ex: "flashcards", "anamnese", "ECG").
         </p>
@@ -232,7 +245,7 @@ function SearchResultsGrid({
     );
   }
   return (
-    <div className="px-4 sm:px-6 lg:px-10">
+    <div className="px-4 sm:px-8 lg:px-14">
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 sm:gap-4">
         {modules.map((m) => (
           <EnaflixModuleCard key={m.id} module={m} onNavigate={onNavigate} />
