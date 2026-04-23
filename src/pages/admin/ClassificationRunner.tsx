@@ -292,6 +292,31 @@ export default function ClassificationRunner() {
   const ready = !!user && isAdmin && !rolesLoading && !!session;
   const evaluation = useMemo(() => evaluate(result), [result]);
 
+  // ── Persistir "last good dry-run" sempre que verdict for healthy ─
+  useEffect(() => {
+    if (
+      result &&
+      result.dry_run &&
+      evaluation.verdict === "healthy" &&
+      result.run_id
+    ) {
+      const payload = {
+        runId: result.run_id as string,
+        verdict: evaluation.verdict,
+        timestamp: snapshotTs ?? new Date().toISOString(),
+        tableSource: (result.table_source as string) ?? tableSource,
+        batchSize,
+        metrics: evaluation.metrics,
+      };
+      try {
+        localStorage.setItem(LAST_GOOD_DRY_RUN_KEY, JSON.stringify(payload));
+        setLastGoodDryRun(payload);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [result, evaluation, snapshotTs, tableSource, batchSize]);
+
   // ── Reidratar localStorage ──────────────────────────────────────
   useEffect(() => {
     try {
