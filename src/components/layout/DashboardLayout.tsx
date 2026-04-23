@@ -40,139 +40,76 @@ import { EnaflixButton } from "@/components/enaflix/EnaflixButton";
 import { EnaflixBackButton } from "@/components/enaflix/EnaflixBackButton";
 import { useScrolled } from "@/hooks/useScrolled";
 
-interface MobileNavGroup {
-  title: string;
-  items: { to: string; label: string; moduleKey: string }[];
+/* ─────────────── Mobile sheet — espelho da sidebar minimalista ───────────────
+ * 4 áreas alinhadas com desktop:
+ *   1. Foco agora     — Hoje + Estudar agora
+ *   2. Núcleo         — Revisões, Simulados, Erros, Progresso
+ *   3. Explorar       — ENAFLIX (CTA único, silencioso)
+ *   4. Conta          — Perfil, Professor/Admin/Institucional, Sair
+ * Sem emoji. Sem 30 itens. Tudo o que sumiu daqui está no /enaflix.
+ */
+interface MobileNavItem {
+  to: string;
+  label: string;
+  moduleKey?: string;
+  icon: React.ElementType;
 }
 
-const mobileNavGroups: MobileNavGroup[] = [
-  {
-    title: "Principal",
-    items: [
-      { to: "/dashboard", label: "🚀 Dashboard", moduleKey: "dashboard" },
-      { to: "/dashboard?autostart=true&source=sidebar", label: "⚡ Começar Agora", moduleKey: "dashboard" },
-    ],
-  },
-  {
-    title: "Avaliação",
-    items: [
-      { to: "/dashboard/simulados", label: "📝 Simulados", moduleKey: "simulados" },
-      { to: "/dashboard/image-quiz", label: "🖼️ Questões com Imagem", moduleKey: "image-quiz" },
-      { to: "/dashboard/gerador-questoes", label: "💡 Gerador Questões", moduleKey: "questoes" },
-      { to: "/dashboard/discursivas", label: "✍️ Discursivas", moduleKey: "discursivas" },
-      { to: "/dashboard/prova-pratica", label: "🩺 Prova Prática", moduleKey: "prova-pratica" },
-    ],
-  },
-  {
-    title: "Treino & Revisão",
-    items: [
-      { to: "/dashboard/flashcards", label: "🃏 Flashcards", moduleKey: "flashcards" },
-      { to: "/dashboard/gerar-flashcards", label: "⚡ Gerador Flashcards", moduleKey: "gerar-flashcards" },
-      { to: "/dashboard/mnemonic-studio-v2", label: "🧠 Mnemônico", moduleKey: "mnemonico" },
-      { to: "/dashboard/banco-erros", label: "🚨 Banco de Erros", moduleKey: "banco-erros" },
-      { to: "/dashboard/sessao-estudo", label: "📖 Sessão de Estudo", moduleKey: "sessao-estudo" },
-    ],
-  },
-  {
-    title: "Clínica & Simulação",
-    items: [
-      { to: "/dashboard/anamnese", label: "🩺 Anamnese", moduleKey: "anamnese" },
-      { to: "/dashboard/plantao", label: "🚨 Plantão", moduleKey: "plantao" },
-      { to: "/dashboard/simulacao-clinica", label: "🏥 Simulação Clínica", moduleKey: "simulacao-clinica" },
-      { to: "/dashboard/entrevista", label: "🎤 Entrevista", moduleKey: "entrevista" },
-    ],
-  },
-  {
-    title: "Conteúdo & Estudo",
-    items: [
-      { to: "/dashboard/chatgpt", label: "✨ Tutor IA", moduleKey: "chatgpt" },
-      { to: "/dashboard/resumos", label: "📖 Resumos", moduleKey: "resumos" },
-      { to: "/dashboard/apostilas", label: "📚 Apostilas", moduleKey: "apostilas" },
-      { to: "/dashboard/cronicas", label: "📖 Crônicas Médicas", moduleKey: "cronicas" },
-      { to: "/dashboard/mapas-mentais", label: "🧠 Mapas Mentais", moduleKey: "mapas-mentais" },
-      { to: "/dashboard/mentor", label: "🤖 Mentor IA", moduleKey: "mentor" },
-      { to: "/dashboard/revisor", label: "📋 Revisor Médico", moduleKey: "revisor" },
-    ],
-  },
-  {
-    title: "Progresso & Estratégia",
-    items: [
-      { to: "/dashboard/analytics", label: "📊 Analytics", moduleKey: "analytics" },
-      { to: "/dashboard/mapa-dominio", label: "🗺️ Mapa de Evolução", moduleKey: "mapa-dominio" },
-      { to: "/dashboard/predictor", label: "📈 Previsão", moduleKey: "predictor" },
-      { to: "/dashboard/proficiencia", label: "🎓 Proficiência", moduleKey: "proficiencia" },
-      { to: "/dashboard/diagnostico", label: "🩺 Nivelamento", moduleKey: "diagnostico" },
-      { to: "/dashboard/planner", label: "📅 Plano Estratégico", moduleKey: "planner" },
-      { to: "/dashboard/coach", label: "💪 Coach", moduleKey: "coach" },
-    ],
-  },
-  {
-    title: "Gamificação",
-    items: [
-      { to: "/dashboard/conquistas", label: "🏆 Conquistas", moduleKey: "conquistas" },
-      { to: "/dashboard/rankings", label: "👑 Rankings", moduleKey: "rankings" },
-      { to: "/dashboard/missao", label: "🎯 Modo Missão", moduleKey: "missao" },
-    ],
-  },
-  {
-    title: "Conta",
-    items: [
-      { to: "/dashboard/perfil", label: "👤 Meu Perfil", moduleKey: "perfil" },
-    ],
-  },
+const MOBILE_FOCUS_ITEMS: MobileNavItem[] = [
+  { to: "/dashboard", label: "Hoje", icon: Target },
+  { to: "/dashboard/sessao-estudo", label: "Estudar agora", moduleKey: "sessao-estudo", icon: Sparkles },
 ];
 
-const MobileNavGroupSection = ({
-  group,
+const MOBILE_CORE_ITEMS: MobileNavItem[] = [
+  { to: "/dashboard/sessao-estudo?focus=reviews", label: "Revisões", moduleKey: "sessao-estudo", icon: Clock },
+  { to: "/dashboard/simulados", label: "Simulados", moduleKey: "simulados", icon: FileText },
+  { to: "/dashboard/banco-erros", label: "Banco de Erros", moduleKey: "banco-erros", icon: AlertTriangle },
+  { to: "/dashboard/analytics", label: "Progresso", moduleKey: "analytics", icon: TrendingUp },
+];
+
+const MobileSection = ({
+  title,
+  items,
   location,
   setOpen,
   isModuleEnabled,
-  isAdmin,
 }: {
-  group: MobileNavGroup;
+  title: string;
+  items: MobileNavItem[];
   location: ReturnType<typeof useLocation>;
   setOpen: (v: boolean) => void;
   isModuleEnabled: (key: string) => boolean;
-  isAdmin: boolean;
 }) => {
-  const filteredItems = group.items.filter((item) => {
-    if (item.moduleKey === "perfil") return true;
-    return isModuleEnabled(item.moduleKey);
-  });
-
-  const hasActive = filteredItems.some((item) => location.pathname === item.to);
-  const [isOpen, setIsOpen] = useState(hasActive || group.title === "Principal");
-
-  if (filteredItems.length === 0) return null;
-
+  const filtered = items.filter((i) => !i.moduleKey || isModuleEnabled(i.moduleKey));
+  if (filtered.length === 0) return null;
   return (
-    <div>
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center justify-between w-full px-3 py-2 text-xs font-semibold uppercase tracking-wider",
-          hasActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
-        )}
-      >
-        {group.title}
-        <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", isOpen ? "" : "-rotate-90")} />
-      </button>
-      {isOpen &&
-        filteredItems.map((item) => (
+    <div className="space-y-0.5">
+      <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">
+        {title}
+      </div>
+      {filtered.map((item) => {
+        const [path, search] = item.to.split("?");
+        const active =
+          location.pathname === path &&
+          (!search || location.search.includes(search));
+        const Icon = item.icon;
+        return (
           <Link
             key={item.to}
             to={item.to}
             onClick={() => setOpen(false)}
             className={cn(
-              "block px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
-              location.pathname === item.to
+              "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+              active
                 ? "bg-sidebar-accent text-sidebar-primary"
-                : "text-sidebar-foreground/70"
+                : "text-sidebar-foreground/75 hover:bg-sidebar-accent/40 hover:text-sidebar-foreground",
             )}
           >
-            {item.label}
+            <Icon className="h-4 w-4 flex-shrink-0" />
+            <span className="truncate">{item.label}</span>
           </Link>
-        ))}
+        );
+      })}
     </div>
   );
 };
@@ -192,55 +129,141 @@ const MobileNav = () => {
     navigate("/");
   };
 
+  const onEnaflix = location.pathname.startsWith("/enaflix");
+
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <button className="landscape-tablet:hidden lg:hidden p-2"><Menu className="h-6 w-6" /></button>
+        <button className="landscape-tablet:hidden lg:hidden p-2" aria-label="Abrir menu">
+          <Menu className="h-6 w-6" />
+        </button>
       </SheetTrigger>
       <SheetContent side="left" className="bg-sidebar border-sidebar-border w-72 p-0 flex flex-col">
         <VisuallyHidden>
           <SheetTitle>Menu de navegação</SheetTitle>
           <SheetDescription>Navegação principal do ENAZIZI</SheetDescription>
         </VisuallyHidden>
-        <div className="p-6 border-b border-sidebar-border flex-shrink-0">
+
+        <div className="p-5 border-b border-sidebar-border flex-shrink-0">
           <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
             <img src={enazizi} alt="ENAZIZI" className="h-7 w-7 rounded-lg object-cover" />
-            <span className="font-bold">ENAZIZI</span>
+            <span className="font-bold tracking-[0.14em] text-[14px]">ENAZIZI</span>
           </Link>
         </div>
+
         <ScrollArea className="flex-1 min-h-0">
-          <nav className="px-3 py-2 space-y-2">
-            {mobileNavGroups.map((group) => (
-              <MobileNavGroupSection key={group.title} group={group} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} isAdmin={!adminLoading && isAdmin} />
-            ))}
-            <div className="pt-3 mt-3 border-t border-sidebar-border space-y-1">
+          <nav className="px-3 py-3 space-y-3">
+            <MobileSection title="Foco agora" items={MOBILE_FOCUS_ITEMS} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
+            <MobileSection title="Núcleo" items={MOBILE_CORE_ITEMS} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
+
+            {/* Explorar — ENAFLIX único, silencioso */}
+            <div className="space-y-0.5">
+              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">
+                Explorar
+              </div>
+              <Link
+                to="/enaflix"
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                  onEnaflix
+                    ? "bg-sidebar-accent text-sidebar-foreground"
+                    : "text-sidebar-foreground/85 hover:bg-sidebar-accent/40",
+                )}
+              >
+                <Clapperboard className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">ENAFLIX</span>
+                <ChevronDown className="ml-auto h-4 w-4 -rotate-90 opacity-40" />
+              </Link>
+              <p className="px-3 pt-1 text-[11px] text-muted-foreground/55 leading-snug">
+                Hub visual: flashcards, mnemônicos, anamnese, OSCE, mapas, analytics e mais.
+              </p>
+            </div>
+
+            {/* Conta */}
+            <div className="pt-3 mt-2 border-t border-sidebar-border space-y-0.5">
+              <div className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">
+                Conta
+              </div>
+              <Link
+                to="/dashboard/perfil"
+                onClick={() => setOpen(false)}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                  location.pathname === "/dashboard/perfil"
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                )}
+              >
+                <User className="h-4 w-4" /> Meu Perfil
+              </Link>
               {(isProfessor || isAdmin) && (
-                <Link to="/professor" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/professor" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
+                <Link
+                  to="/professor"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                    location.pathname === "/professor"
+                      ? "bg-sidebar-accent text-sidebar-primary"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                  )}
+                >
                   <GraduationCap className="h-4 w-4" /> Painel Professor
                 </Link>
               )}
-              {isAdmin && (
+              {!adminLoading && isAdmin && (
                 <>
-                  <Link to="/admin" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/admin" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
+                  <Link
+                    to="/admin"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
                     <Shield className="h-4 w-4" /> Admin
                   </Link>
-                  <Link to="/admin/ceo" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/admin/ceo" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
+                  <Link
+                    to="/admin/ceo"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/ceo"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
                     <BarChart3 className="h-4 w-4" /> Painel CEO
                   </Link>
                 </>
               )}
               {isInstitutionalStaff && (
-                <Link to="/institucional" onClick={() => setOpen(false)} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors", location.pathname === "/institucional" ? "bg-sidebar-accent text-sidebar-primary" : "text-sidebar-foreground/70")}>
-                  <Building2 className="h-4 w-4" /> Painel Institucional
+                <Link
+                  to="/institucional"
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                    location.pathname === "/institucional"
+                      ? "bg-sidebar-accent text-sidebar-primary"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                  )}
+                >
+                  <Building2 className="h-4 w-4" /> Institucional
                 </Link>
               )}
               <ForceUpdateButton variant="menu" onAfterClick={() => setOpen(false)} />
-              <button onClick={handleSignOut} className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-sidebar-foreground/70 hover:bg-sidebar-accent/50 transition-colors w-full">
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] text-sidebar-foreground/70 hover:bg-sidebar-accent/40 transition-colors w-full"
+              >
                 <LogOut className="h-4 w-4" /> Sair
               </button>
             </div>
           </nav>
         </ScrollArea>
+
         <div className="border-t border-sidebar-border flex-shrink-0">
           <StudyTimer />
         </div>
