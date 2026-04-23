@@ -13,7 +13,6 @@
 import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
   Target, ShieldCheck, TrendingUp, Award, ArrowRight,
@@ -23,51 +22,11 @@ import { useCoverageStatus } from "@/hooks/useCoverageStatus";
 import { useMonthlyGoal } from "@/hooks/useMonthlyGoal";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
-import { approvalBadgeBg, getApprovalFocus } from "@/engines/approvalEngine";
+import { approvalBadgeBg } from "@/engines/approvalEngine";
 import { TrendingDown, Minus } from "lucide-react";
+import { CinematicMetricHalo } from "@/components/cinematic";
 
-interface MetricProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  pct?: number;
-  tone: "primary" | "success" | "warn" | "danger" | "muted";
-  caption?: string;
-}
-
-function Metric({ icon: Icon, label, value, pct, tone, caption }: MetricProps) {
-  const toneCls = {
-    primary: "text-primary",
-    success: "text-emerald-600 dark:text-emerald-400",
-    warn: "text-amber-600 dark:text-amber-400",
-    danger: "text-destructive",
-    muted: "text-muted-foreground",
-  }[tone];
-
-  const barCls = {
-    primary: "",
-    success: "[&>div]:bg-emerald-500",
-    warn: "[&>div]:bg-amber-500",
-    danger: "[&>div]:bg-destructive",
-    muted: "[&>div]:bg-muted-foreground",
-  }[tone];
-
-  return (
-    <div className="rounded-xl border border-border/50 bg-muted/20 p-3 space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Icon className={`h-3.5 w-3.5 ${toneCls} flex-shrink-0`} />
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate">
-            {label}
-          </span>
-        </div>
-        <span className={`text-base font-bold tabular-nums ${toneCls}`}>{value}</span>
-      </div>
-      {typeof pct === "number" && <Progress value={pct} className={`h-1 ${barCls}`} />}
-      {caption && <p className="text-[10px] text-muted-foreground truncate">{caption}</p>}
-    </div>
-  );
-}
+type Tone = "primary" | "success" | "warn" | "danger" | "muted";
 
 function ProgressOverview() {
   const navigate = useNavigate();
