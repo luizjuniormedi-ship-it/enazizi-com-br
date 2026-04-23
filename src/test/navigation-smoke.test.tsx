@@ -74,10 +74,10 @@ describe("Navigation smoke — App routes (estática)", () => {
   const appSrc = readFileSync(resolve(process.cwd(), "src/App.tsx"), "utf8");
 
   it.each([
-    ["/dashboard", "Visão Geral"],
-    ["/dashboard/sessao-estudo", "Estudar (Operational Hub)"],
-    ["/enaflix", "ENAFLIX"],
-  ])("rota %s (%s) está registrada em App.tsx", (path) => {
-    expect(appSrc).toContain(`path="${path}"`);
+    ['path="/dashboard"', "Visão Geral (layout)"],
+    ['path="sessao-estudo"', "Estudar (rota filha do dashboard)"],
+    ['path="/enaflix"', "ENAFLIX"],
+  ])("rota %s (%s) está registrada em App.tsx", (needle) => {
+    expect(appSrc).toContain(needle);
   });
 });
