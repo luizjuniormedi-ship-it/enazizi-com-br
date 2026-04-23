@@ -992,7 +992,351 @@ export default function ClassificationRunner() {
         </>
       )}
 
-      {/* Queue resumida */}
+      {/* ════════ EXECUÇÃO REAL (com guardrails) ════════ */}
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <Flame className="h-5 w-5" />
+            Execução real
+          </CardTitle>
+          <CardDescription>
+            Aplica a classificação no banco. Só é liberado quando todos os guardrails passam.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Operação irreversível sem rollback manual</AlertTitle>
+            <AlertDescription>
+              Esta ação grava <code>specialty_id / topic_id / subtopic_id</code> no banco e adiciona
+              itens à fila de revisão. Use apenas após dry-run aprovado.
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-2 text-sm">
+            <div className="font-medium">Checklist de guardrails:</div>
+            <ul className="space-y-1">
+              {guardrails.checks.map((c, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  {c.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Lock className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className={c.ok ? "" : "text-muted-foreground"}>{c.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {!lastDryRun && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Nenhum dry-run válido encontrado</AlertTitle>
+              <AlertDescription>Execute um dry-run primeiro.</AlertDescription>
+            </Alert>
+          )}
+          {lastDryRun && !dryRunHealthy && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Último dry-run não atende critérios mínimos</AlertTitle>
+              <AlertDescription>
+                Veredito: <Badge variant="outline">{lastDryRunVerdict?.verdict ?? "—"}</Badge>
+              </AlertDescription>
+            </Alert>
+          )}
+          {lastDryRun && !dryRunFresh && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Dry-run expirado — execute novamente</AlertTitle>
+              <AlertDescription>
+                Última execução há {Math.round(dryRunAgeMs / 60000)} min (limite 120 min).
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {realParams && (
+            <div className="text-sm grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded border bg-background">
+              <div>
+                <div className="text-xs text-muted-foreground">Tabela alvo</div>
+                <div className="font-mono">{realParams.table_source}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Lote</div>
+                <div>{realParams.batch_size}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Dry-run referência</div>
+                <div className="text-xs">
+                  {lastDryRun ? new Date(lastDryRun.finished_at ?? lastDryRun.started_at).toLocaleString() : "—"}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Button
+            variant="destructive"
+            size="lg"
+            disabled={!guardrails.passed || realRunning}
+            onClick={() => setConfirmOpen(true)}
+          >
+            {realRunning ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
+              </>
+            ) : (
+              <>
+                <Flame className="h-4 w-4 mr-2" />
+                Executar primeiro lote real
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Modal de confirmação forte */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Flame className="h-5 w-5" /> Confirmar execução real
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <span className="text-muted-foreground">Tabela:</span>
+                  <span className="font-mono">{realParams?.table_source}</span>
+                  <span className="text-muted-foreground">Batch:</span>
+                  <span>{realParams?.batch_size}</span>
+                  <span className="text-muted-foreground">Dry-run ref.:</span>
+                  <span className="text-xs">
+                    {lastDryRun
+                      ? new Date(lastDryRun.finished_at ?? lastDryRun.started_at).toLocaleString()
+                      : "—"}
+                  </span>
+                </div>
+                {lastDryRunVerdict && (
+                  <div className="grid grid-cols-4 gap-2 p-2 rounded border text-center text-xs">
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.total}</div>
+                      <div className="text-muted-foreground">proc.</div>
+                    </div>
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.exactPct}%</div>
+                      <div className="text-muted-foreground">exact</div>
+                    </div>
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.queuePct}%</div>
+                      <div className="text-muted-foreground">fila</div>
+                    </div>
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.skipPct}%</div>
+                      <div className="text-muted-foreground">skip</div>
+                    </div>
+                  </div>
+                )}
+                <div>
+                  Verdict:{" "}
+                  <Badge className="bg-primary text-primary-foreground">
+                    {lastDryRunVerdict?.verdict ?? "—"}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="confirm-phrase" className="text-xs">
+                    Para confirmar, digite: <code className="font-bold">{CONFIRM_PHRASE}</code>
+                  </Label>
+                  <Input
+                    id="confirm-phrase"
+                    value={confirmPhrase}
+                    onChange={(e) => setConfirmPhrase(e.target.value)}
+                    placeholder={CONFIRM_PHRASE}
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={realRunning}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={confirmPhrase !== CONFIRM_PHRASE || realRunning}
+              onClick={(e) => {
+                e.preventDefault();
+                void executeRealBatch();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {realRunning ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
+                </>
+              ) : (
+                <>Confirmar e executar</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Impacto do lote real */}
+      {lastRealRunMeta && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Impacto do lote real
+            </CardTitle>
+            <CardDescription>
+              Run {lastRealRunMeta.runId?.slice(0, 8) ?? "—"} ·{" "}
+              {new Date(lastRealRunMeta.startedAt).toLocaleString()} →{" "}
+              {new Date(lastRealRunMeta.finishedAt).toLocaleTimeString()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_processed ?? 0}</div>
+                <div className="text-xs text-muted-foreground">processadas</div>
+              </div>
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_applied ?? 0}</div>
+                <div className="text-xs text-muted-foreground">aplicadas</div>
+              </div>
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_queued_review ?? 0}</div>
+                <div className="text-xs text-muted-foreground">para revisão</div>
+              </div>
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_skipped ?? 0}</div>
+                <div className="text-xs text-muted-foreground">skipped</div>
+              </div>
+            </div>
+            {delta && (
+              <>
+                <Separator />
+                <div>
+                  <Label className="text-xs text-muted-foreground">Delta no banco (snapshot antes vs depois)</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 text-sm">
+                    <Badge variant="outline">+{delta.specialty} specialty_id</Badge>
+                    <Badge variant="outline">+{delta.topic} topic_id</Badge>
+                    <Badge variant="outline">+{delta.subtopic} subtopic_id</Badge>
+                    <Badge variant="outline">{delta.queue >= 0 ? "+" : ""}{delta.queue} queue</Badge>
+                  </div>
+                </div>
+              </>
+            )}
+            {coverage && (
+              <>
+                <Separator />
+                <div>
+                  <Label className="text-xs text-muted-foreground">Cobertura atual do banco</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                    <div className="p-2 rounded border bg-background">
+                      <div className="font-bold">{coverage.specialty}%</div>
+                      <div className="text-xs text-muted-foreground">specialty_id</div>
+                    </div>
+                    <div className="p-2 rounded border bg-background">
+                      <div className="font-bold">{coverage.topic}%</div>
+                      <div className="text-xs text-muted-foreground">topic_id</div>
+                    </div>
+                    <div className="p-2 rounded border bg-background">
+                      <div className="font-bold">{coverage.subtopic}%</div>
+                      <div className="text-xs text-muted-foreground">subtopic_id</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Rollback helper */}
+      {rollbackSql && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Rollback helper
+            </CardTitle>
+            <CardDescription>
+              SQL pronto para reverter o lote real. <strong>NÃO executa automaticamente.</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={copyRollback}>
+                <Copy className="h-4 w-4 mr-2" /> Copiar SQL
+              </Button>
+            </div>
+            <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-72">{rollbackSql}</pre>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Histórico de lotes reais */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Flame className="h-5 w-5" />
+            Últimos lotes reais
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {realRunsHistory.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum lote real executado ainda.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>quando</TableHead>
+                    <TableHead>tabela</TableHead>
+                    <TableHead className="text-right">lote</TableHead>
+                    <TableHead className="text-right">proc.</TableHead>
+                    <TableHead className="text-right">apl.</TableHead>
+                    <TableHead className="text-right">fila</TableHead>
+                    <TableHead className="text-right">skip</TableHead>
+                    <TableHead>verdict</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {realRunsHistory.map((r) => {
+                    const v = evaluate({
+                      total_processed: r.total_processed ?? undefined,
+                      total_applied: r.total_applied ?? undefined,
+                      total_queued_review: r.total_queued_review ?? undefined,
+                      total_skipped: r.total_skipped ?? undefined,
+                      method_breakdown: r.method_breakdown ?? undefined,
+                    }).verdict;
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="text-xs">
+                          {new Date(r.started_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-xs">{r.table_source}</TableCell>
+                        <TableCell className="text-right text-xs">{r.batch_size}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_processed ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_applied ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_queued_review ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_skipped ?? 0}</TableCell>
+                        <TableCell className="text-xs">
+                          {v === "healthy" && <Badge className="bg-primary text-primary-foreground">healthy</Badge>}
+                          {v === "borderline" && <Badge variant="secondary">borderline</Badge>}
+                          {v === "rejected" && <Badge variant="destructive">rejected</Badge>}
+                          {!v && <Badge variant="outline">—</Badge>}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
