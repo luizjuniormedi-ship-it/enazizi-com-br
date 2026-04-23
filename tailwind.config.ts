@@ -101,6 +101,14 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-8px)" },
         },
+        "pulse-slow": {
+          "0%, 100%": { opacity: "0.45" },
+          "50%": { opacity: "0.85" },
+        },
+        "enaflix-shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -108,6 +116,8 @@ export default {
         "fade-in": "fade-in 0.6s ease-out forwards",
         "slide-in-left": "slide-in-left 0.4s ease-out forwards",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
+        "pulse-slow": "pulse-slow 2.8s ease-in-out infinite",
+        "enaflix-shimmer": "enaflix-shimmer 6s linear infinite",
         float: "float 6s ease-in-out infinite",
       },
     },

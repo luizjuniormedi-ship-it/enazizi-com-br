@@ -37,6 +37,7 @@ import { InvisibleMnemonicOverlay } from "@/components/mnemonic/InvisibleMnemoni
 import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
 import { useStudyContext } from "@/lib/studyContext";
 import { EnaflixButton } from "@/components/enaflix/EnaflixButton";
+import { useScrolled } from "@/hooks/useScrolled";
 
 interface MobileNavGroup {
   title: string;
