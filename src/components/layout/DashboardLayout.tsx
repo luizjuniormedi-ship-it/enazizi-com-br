@@ -383,37 +383,6 @@ const DashboardLayout = () => {
             <span className="font-bold text-[15px] tracking-[0.18em]">ENAZIZI</span>
           </Link>
 
-          {/* Navegação curta de seções (peso leve, sem cinematic) */}
-          <nav className="hidden xl:flex items-center gap-0.5" aria-label="Navegação principal">
-            {[
-              { to: "/dashboard", label: "Início" },
-              { to: "/dashboard/sessao-estudo", label: "Estudar" },
-              { to: "/dashboard/sessao-estudo?focus=reviews", label: "Revisões" },
-              { to: "/dashboard/simulados", label: "Simulados" },
-              { to: "/dashboard/banco-erros", label: "Erros" },
-              { to: "/dashboard/analytics", label: "Progresso" },
-            ].map((item) => {
-              const [path, search] = item.to.split("?");
-              const active =
-                location.pathname === path &&
-                (!search || location.search.includes(search));
-              return (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  className={cn(
-                    "relative px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-200",
-                    active
-                      ? "text-foreground bg-muted/50"
-                      : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/30",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-          </nav>
-
           {/* === DIREITA: ações secundárias (ghost, peso uniforme) === */}
           <div className="ml-auto flex items-center gap-1">
             <GlobalSearch variant="pill" />
