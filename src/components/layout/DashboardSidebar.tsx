@@ -61,11 +61,11 @@ interface PinnedItem {
 /* ─────────────── Atalhos de execução (sub-itens de Estudar) ─────────────── */
 const PINNED_ITEMS: PinnedItem[] = [
   {
-    to: "/dashboard/sessao-estudo?focus=reviews",
-    moduleKey: "sessao-estudo",
+    to: "/dashboard/flashcards",
+    moduleKey: "flashcards",
     icon: RotateCcw,
     label: "Revisões",
-    description: "Revisões pendentes (FSRS) e cards vencidos",
+    description: "Flashcards FSRS — cards vencidos e pendentes",
   },
   {
     to: "/dashboard/simulados",
