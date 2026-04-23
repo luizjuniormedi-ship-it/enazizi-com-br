@@ -157,9 +157,12 @@ async function fetchQuestions(
 
 const MedicalImageQuiz = () => {
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const { pendingSession, checked, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "image-quiz" });
+
+  const [isDeletingQuestion, setIsDeletingQuestion] = useState(false);
 
   const adaptiveImageType = searchParams.get("imageType") || searchParams.get("type") || null;
   const adaptiveDifficulty = searchParams.get("difficulty") || null;
