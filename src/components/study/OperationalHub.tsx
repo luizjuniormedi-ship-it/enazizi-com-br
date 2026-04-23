@@ -163,29 +163,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
           </div>
         </Section>
 
-        {/* ÁREA 3 — PROGRESSO */}
-        <Section title="Progresso" icon={TrendingUp}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <ProgressCard
-              icon={BarChart3}
-              label="Acerto geral"
-              value={`${accuracy}%`}
-              onClick={() => navigate("/analytics")}
-            />
-            <ProgressCard
-              icon={Award}
-              label="XP"
-              value={metrics?.gamificationXp ?? 0}
-              onClick={() => navigate("/dashboard/rankings")}
-            />
-            <ProgressCard
-              icon={TrendingUp}
-              label="Nível"
-              value={metrics?.gamificationLevel ?? 1}
-              onClick={() => navigate("/analytics")}
-            />
-          </div>
-        </Section>
+        {/* PROGRESSO panorâmico vive em /dashboard (Visão Geral) — não duplicar aqui */}
 
         {/* ÁREA 4 — ORGANIZAÇÃO */}
         <Section title="Organização" icon={CalendarRange}>
