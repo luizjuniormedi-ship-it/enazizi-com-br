@@ -36,6 +36,7 @@ import { useInvisibleMnemonic } from "@/hooks/useInvisibleMnemonic";
 import { InvisibleMnemonicOverlay } from "@/components/mnemonic/InvisibleMnemonicOverlay";
 import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
 import { useStudyContext } from "@/lib/studyContext";
+import { EnaflixButton } from "@/components/enaflix/EnaflixButton";
 
 interface MobileNavGroup {
   title: string;
@@ -281,6 +282,7 @@ const DashboardLayout = () => {
           <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
           <span className="font-bold text-sm truncate">ENAZIZI</span>
           <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+            <EnaflixButton variant="compact" />
             <GlobalSearch />
             <NotificationBell />
             <button onClick={toggleTheme} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" aria-label="Alternar tema">
@@ -291,6 +293,7 @@ const DashboardLayout = () => {
       )}
       {!isMissionLocked && (
         <div className="hidden landscape-tablet:flex lg:flex h-12 border-b border-border items-center justify-end px-4 gap-2 flex-shrink-0">
+          <EnaflixButton />
           <GlobalSearch />
           <NotificationBell />
           <button onClick={toggleTheme} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm" aria-label="Alternar tema">

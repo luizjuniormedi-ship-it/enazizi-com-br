@@ -93,6 +93,7 @@ const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
 const MindMapFullscreen = lazyWithRetry(() => import("./pages/MindMapFullscreen"), "MindMapFullscreen");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
 const ProficiencyPilotPage = lazyWithRetry(() => import("./pages/ProficiencyPilotPage"), "ProficiencyPilotPage");
+const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixPage");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 
@@ -245,6 +246,7 @@ const App = () => (
               </Route>
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/enaflix" element={<ProtectedRoute><EnaflixPage /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
