@@ -227,7 +227,7 @@ export default function ClassificationRunner() {
           </div>
           <div className="pt-2">
             {ready ? (
-              <Badge className="bg-green-600 hover:bg-green-700">✅ pronto para executar</Badge>
+              <Badge className="bg-primary text-primary-foreground">✅ pronto para executar</Badge>
             ) : !user ? (
               <Badge variant="destructive">❌ sem login</Badge>
             ) : !isAdmin ? (
