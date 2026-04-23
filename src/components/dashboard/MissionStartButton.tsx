@@ -1,14 +1,18 @@
 import { useEffect, useRef } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useMissionMode } from "@/hooks/useMissionMode";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Rocket, Play, Loader2, ArrowRight } from "lucide-react";
 import { useSafeCta } from "@/hooks/useSafeCta";
+import { useAuth } from "@/hooks/useAuth";
+import { trackStudyAction, type EntryPoint } from "@/lib/behavioralTelemetry";
 
 export default function MissionStartButton() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const { loading: starting, execute: safeCta } = useSafeCta();
   const {
@@ -16,6 +20,10 @@ export default function MissionStartButton() {
     engineLoading, hasTasks, startMission, resumeMission,
   } = useMissionMode();
   const autostartFired = useRef(false);
+
+  // Sprint 4 — entry_point inferido da rota onde o botão renderiza.
+  // /dashboard => visao_geral, qualquer outra => other.
+  const entryPoint: EntryPoint = location.pathname === "/dashboard" ? "visao_geral" : "other";
 
   // Autostart from MissionEntry via ?autostart=mission
   useEffect(() => {
