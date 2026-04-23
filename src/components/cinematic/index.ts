@@ -5,3 +5,6 @@ export { CinematicMetricHalo } from "./CinematicMetricHalo";
 export { CinematicSkeleton } from "./CinematicSkeleton";
 export { CinematicPageLoader, CinematicPulse } from "./CinematicPageLoader";
 export { CinematicSuspense } from "./CinematicSuspense";
+export { AmbientAtmosphere } from "./AmbientAtmosphere";
+export { AmbientPersistenceLayer } from "./AmbientPersistenceLayer";
+export { useModuleAtmosphere, routeToModule } from "./useModuleAtmosphere";
