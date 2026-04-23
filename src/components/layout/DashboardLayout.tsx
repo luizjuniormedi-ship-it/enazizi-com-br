@@ -37,6 +37,7 @@ import { InvisibleMnemonicOverlay } from "@/components/mnemonic/InvisibleMnemoni
 import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
 import { useStudyContext } from "@/lib/studyContext";
 import { EnaflixButton } from "@/components/enaflix/EnaflixButton";
+import { EnaflixBackButton } from "@/components/enaflix/EnaflixBackButton";
 import { useScrolled } from "@/hooks/useScrolled";
 
 interface MobileNavGroup {
@@ -432,6 +433,8 @@ const DashboardLayout = () => {
     </div>
     {/* F4 — Contextual Tutor IA drawer (global, openable from any module) */}
     <TutorDrawer />
+    {/* ENAFLIX — botão flutuante de retorno ao hub (só aparece se origem foi ENAFLIX) */}
+    <EnaflixBackButton />
   </div>
   </SessionMemoryProvider>
   );
