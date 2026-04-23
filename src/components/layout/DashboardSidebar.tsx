@@ -58,7 +58,7 @@ interface PinnedItem {
   description: string;
 }
 
-/* ─────────────── Atalhos pinados (núcleo operacional) ─────────────── */
+/* ─────────────── Atalhos de execução (sub-itens de Estudar) ─────────────── */
 const PINNED_ITEMS: PinnedItem[] = [
   {
     to: "/dashboard/sessao-estudo?focus=reviews",
@@ -66,13 +66,6 @@ const PINNED_ITEMS: PinnedItem[] = [
     icon: RotateCcw,
     label: "Revisões",
     description: "Revisões pendentes (FSRS) e cards vencidos",
-  },
-  {
-    to: "/dashboard/sessao-estudo",
-    moduleKey: "sessao-estudo",
-    icon: Clock,
-    label: "Sessão de Estudo",
-    description: "Ciclo guiado: ensinar, testar, corrigir, reforçar",
   },
   {
     to: "/dashboard/simulados",
@@ -87,13 +80,6 @@ const PINNED_ITEMS: PinnedItem[] = [
     icon: AlertTriangle,
     label: "Banco de Erros",
     description: "Domine os temas onde mais erra",
-  },
-  {
-    to: "/dashboard/analytics",
-    moduleKey: "analytics",
-    icon: TrendingUp,
-    label: "Progresso",
-    description: "Desempenho, evolução e chance de aprovação",
   },
 ];
 
