@@ -1365,6 +1365,98 @@ export type Database = {
         }
         Relationships: []
       }
+      curriculum_aliases: {
+        Row: {
+          active: boolean
+          alias: string
+          created_at: string
+          id: string
+          normalized_alias: string
+          notes: string | null
+          source: string
+          specialty_id: string | null
+          subtopic_id: string | null
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          alias: string
+          created_at?: string
+          id?: string
+          normalized_alias: string
+          notes?: string | null
+          source?: string
+          specialty_id?: string | null
+          subtopic_id?: string | null
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          alias?: string
+          created_at?: string
+          id?: string
+          normalized_alias?: string
+          notes?: string | null
+          source?: string
+          specialty_id?: string | null
+          subtopic_id?: string | null
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "curriculum_aliases_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_specialties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_aliases_specialty_id_fkey"
+            columns: ["specialty_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["specialty_id"]
+          },
+          {
+            foreignKeyName: "curriculum_aliases_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_subtopics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_aliases_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "curriculum_aliases_subtopic_id_fkey"
+            columns: ["subtopic_id"]
+            isOneToOne: false
+            referencedRelation: "v_subtopic_question_density"
+            referencedColumns: ["subtopic_id"]
+          },
+          {
+            foreignKeyName: "curriculum_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "curriculum_topics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "curriculum_aliases_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "v_curriculum_coverage_by_banca"
+            referencedColumns: ["topic_id"]
+          },
+        ]
+      }
       curriculum_matrix: {
         Row: {
           ativo: boolean
