@@ -830,13 +830,21 @@ const StudySession = () => {
           </div>
         </div>
 
-        {/* Phase Progress Bar */}
+        {/* Phase Progress — versão enxuta: progresso + chips menores e silenciosos */}
         {phase !== "start" && phase !== "style-select" && (
           <div className="px-4 py-1.5 border-b border-border">
-            <Progress value={progressPercent} className="h-1.5" />
-            <div className="flex gap-1 mt-1.5 overflow-x-auto pb-0.5">
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                {PHASE_META[phase].shortLabel}
+                <span className="text-muted-foreground/50 font-normal ml-1.5">
+                  · etapa {currentIdx + 1} de {FLOW_PHASES.length}
+                </span>
+              </span>
+              <span className="text-[11px] text-muted-foreground/70">{progressPercent}%</span>
+            </div>
+            <Progress value={progressPercent} className="h-1" />
+            <div className="flex gap-0.5 mt-1.5 overflow-x-auto pb-0.5 opacity-80 hover:opacity-100 transition-opacity">
               {FLOW_PHASES.map((p, i) => {
-                const meta = PHASE_META[p];
                 const isActive = p === phase;
                 const isDone = i < currentIdx;
                 const isNext = i === currentIdx + 1;
@@ -847,18 +855,18 @@ const StudySession = () => {
                       if ((isDone || isNext) && !isLoading) goToPhase(p);
                     }}
                     disabled={!isDone && !isNext && !isActive}
-                    className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap transition-all ${
+                    title={PHASE_META[p].label}
+                    aria-label={PHASE_META[p].label}
+                    className={`h-1.5 rounded-full transition-all ${
                       isActive
-                        ? "bg-primary text-primary-foreground font-bold"
+                        ? "bg-primary w-6"
                         : isDone
-                        ? "bg-secondary text-secondary-foreground cursor-pointer hover:bg-secondary/80"
+                        ? "bg-primary/50 w-3 cursor-pointer hover:bg-primary/70"
                         : isNext
-                        ? "bg-secondary/50 text-muted-foreground cursor-pointer hover:bg-secondary/80 border border-primary/30"
-                        : "bg-secondary/30 text-muted-foreground/50 cursor-not-allowed"
+                        ? "bg-muted-foreground/30 w-3 cursor-pointer hover:bg-muted-foreground/50"
+                        : "bg-muted-foreground/15 w-3 cursor-not-allowed"
                     }`}
-                  >
-                    {meta.shortLabel}
-                  </button>
+                  />
                 );
               })}
             </div>
