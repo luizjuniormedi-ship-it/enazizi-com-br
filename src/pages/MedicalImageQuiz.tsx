@@ -381,6 +381,41 @@ const MedicalImageQuiz = () => {
     setStartTime(Date.now());
   };
 
+  // ── Admin: excluir questão ruim do banco (apenas admins) ──
+  const handleAdminDeleteQuestion = async () => {
+    if (!isAdmin || !currentQuestion?.id) return;
+    setIsDeletingQuestion(true);
+    try {
+      const { error } = await supabase
+        .from("medical_image_questions")
+        .delete()
+        .eq("id", currentQuestion.id);
+      if (error) throw error;
+
+      toast.success("Questão excluída do banco");
+
+      // Invalida caches para refletir remoção
+      queryClient.invalidateQueries({ queryKey: ["image-quiz-questions"] });
+      queryClient.invalidateQueries({ queryKey: ["image-quiz-type-counts"] });
+      queryClient.invalidateQueries({ queryKey: ["image-quiz-stats"] });
+
+      // Remove do array local e avança para próxima questão sem quebrar a sessão
+      setQuestions((prev) => {
+        const next = prev.filter((q) => q.id !== currentQuestion.id);
+        return next;
+      });
+      setSelectedAnswer(null);
+      setShowExplanation(false);
+      setCurrentIndex((i) => Math.min(i, Math.max(0, questions.length - 2)));
+      setStartTime(Date.now());
+    } catch (err: any) {
+      console.error("[ImageQuiz] delete failed:", err);
+      toast.error("Falha ao excluir: " + (err?.message || "tente novamente"));
+    } finally {
+      setIsDeletingQuestion(false);
+    }
+  };
+
   const shuffleAndStart = useCallback(() => {
     setQuizMode("quiz");
     setCurrentIndex(0);
