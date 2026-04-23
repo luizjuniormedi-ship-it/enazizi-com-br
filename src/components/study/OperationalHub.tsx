@@ -67,40 +67,14 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
           </p>
         </header>
 
-        {/* ÁREA 1 — HOJE */}
-        <Section title="Hoje" icon={Target}>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard
-              icon={Clock}
-              label="Revisões vencidas"
-              value={pendingReviews}
-              tone={pendingReviews > 0 ? "urgent" : "neutral"}
-              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
-            />
-            <StatCard
-              icon={ListChecks}
-              label="Tarefas do dia"
-              value={`${todayCompleted}/${todayTotal || "—"}`}
-              tone="neutral"
-              onClick={() => navigate("/dashboard/daily-plan")}
-            />
-            <StatCard
-              icon={Flame}
-              label="Sequência"
-              value={streak > 0 ? `${streak}d` : "—"}
-              tone={streak >= 3 ? "good" : "neutral"}
-            />
-            <StatCard
-              icon={CalendarDays}
-              label="Dias até banca"
-              value={daysUntilExam ?? "—"}
-              tone={daysUntilExam !== null && daysUntilExam <= 30 ? "urgent" : "neutral"}
-            />
-          </div>
-        </Section>
+        {/*
+         * Ordem mobile: EXECUÇÃO primeiro (ação > ansiedade), HOJE depois.
+         * Ordem ≥sm: HOJE primeiro (panorâmico), EXECUÇÃO depois.
+         * Conseguimos isso com `order-*` sem duplicar markup.
+         */}
 
         {/* ÁREA 2 — EXECUÇÃO */}
-        <Section title="Execução" icon={Play} subtitle="Comece agora">
+        <Section title="Execução" icon={Play} subtitle="Comece agora" className="order-1 sm:order-2">
           {/* Quick start: tópico livre */}
           <div className="rounded-lg border border-border bg-card p-4 space-y-3">
             <div className="flex items-center gap-2 text-sm font-medium">
@@ -159,6 +133,75 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               title="Tutor IA"
               description="Tirar dúvida agora"
               onClick={() => navigate("/dashboard/chatgpt")}
+            />
+          </div>
+        </Section>
+
+        {/* ÁREA 1 — HOJE
+            Em mobile: linha condensada (sem cards gigantes que geram ansiedade no fold).
+            Em ≥sm: grid de StatCards original. */}
+        <Section title="Hoje" icon={Target} className="order-2 sm:order-1">
+          {/* Mobile: linha contextual discreta */}
+          <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+              className={cn(
+                "tabular-nums hover:text-foreground transition-colors",
+                pendingReviews > 0 ? "text-foreground" : ""
+              )}
+            >
+              <span className="font-semibold">{pendingReviews}</span> revisões
+            </button>
+            <span className="opacity-40">·</span>
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/daily-plan")}
+              className="tabular-nums hover:text-foreground transition-colors"
+            >
+              <span className="font-semibold">{todayCompleted}/{todayTotal || "—"}</span> hoje
+            </button>
+            <span className="opacity-40">·</span>
+            <span className="tabular-nums">
+              <span className="font-semibold">{streak > 0 ? `${streak}d` : "—"}</span> streak
+            </span>
+            {daysUntilExam !== null && (
+              <>
+                <span className="opacity-40">·</span>
+                <span className="tabular-nums">
+                  <span className={cn("font-semibold", daysUntilExam <= 30 && "text-foreground")}>{daysUntilExam}d</span> banca
+                </span>
+              </>
+            )}
+          </div>
+
+          {/* ≥sm: grid original */}
+          <div className="hidden sm:grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard
+              icon={Clock}
+              label="Revisões vencidas"
+              value={pendingReviews}
+              tone={pendingReviews > 0 ? "urgent" : "neutral"}
+              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+            />
+            <StatCard
+              icon={ListChecks}
+              label="Tarefas do dia"
+              value={`${todayCompleted}/${todayTotal || "—"}`}
+              tone="neutral"
+              onClick={() => navigate("/dashboard/daily-plan")}
+            />
+            <StatCard
+              icon={Flame}
+              label="Sequência"
+              value={streak > 0 ? `${streak}d` : "—"}
+              tone={streak >= 3 ? "good" : "neutral"}
+            />
+            <StatCard
+              icon={CalendarDays}
+              label="Dias até banca"
+              value={daysUntilExam ?? "—"}
+              tone={daysUntilExam !== null && daysUntilExam <= 30 ? "urgent" : "neutral"}
             />
           </div>
         </Section>
