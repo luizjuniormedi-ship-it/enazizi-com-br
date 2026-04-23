@@ -381,6 +381,24 @@ Deno.serve(async (req) => {
       norm: normalize(s.nome),
     }));
 
+    // 1b) Carregar aliases curriculares ativos
+    const { data: aliasRaw } = await admin
+      .from("curriculum_aliases")
+      .select("normalized_alias, specialty_id, topic_id, subtopic_id")
+      .eq("active", true);
+    const aliases = new Map<string, AliasRow>();
+    for (const a of aliasRaw ?? []) {
+      if (a?.normalized_alias) {
+        aliases.set(a.normalized_alias, {
+          normalized_alias: a.normalized_alias,
+          specialty_id: a.specialty_id ?? null,
+          topic_id: a.topic_id ?? null,
+          subtopic_id: a.subtopic_id ?? null,
+        });
+      }
+    }
+    console.info("[classify-hierarchy] aliases loaded", { count: aliases.size });
+
     // 2) Criar registro do run
     const { data: run, error: runErr } = await admin
       .from("question_classification_runs")
