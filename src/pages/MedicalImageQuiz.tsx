@@ -394,19 +394,17 @@ const MedicalImageQuiz = () => {
 
       toast.success("Questão excluída do banco");
 
-      // Invalida caches para refletir remoção
+      // Invalida caches para refletir remoção (refetch do quiz)
       queryClient.invalidateQueries({ queryKey: ["image-quiz-questions"] });
       queryClient.invalidateQueries({ queryKey: ["image-quiz-type-counts"] });
       queryClient.invalidateQueries({ queryKey: ["image-quiz-stats"] });
 
-      // Remove do array local e avança para próxima questão sem quebrar a sessão
-      setQuestions((prev) => {
-        const next = prev.filter((q) => q.id !== currentQuestion.id);
-        return next;
-      });
+      // Avança visualmente para a próxima questão (refetch substitui o array)
       setSelectedAnswer(null);
       setShowExplanation(false);
-      setCurrentIndex((i) => Math.min(i, Math.max(0, questions.length - 2)));
+      if (currentIndex < questions.length - 1) {
+        setCurrentIndex((i) => i + 1);
+      }
       setStartTime(Date.now());
     } catch (err: any) {
       console.error("[ImageQuiz] delete failed:", err);
