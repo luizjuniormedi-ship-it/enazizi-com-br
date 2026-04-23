@@ -190,15 +190,18 @@ function evaluate(result: RunResult | null) {
     return {
       verdict: null as Verdict,
       reasons: [] as string[],
-      metrics: { exactPct: 0, heuristicPct: 0, queuePct: 0, skipPct: 0, total: 0 },
+      metrics: { exactPct: 0, aliasPct: 0, deterministicPct: 0, heuristicPct: 0, queuePct: 0, skipPct: 0, total: 0 },
     };
   }
   const total = result.total_processed ?? 0;
   const exact = result.method_breakdown?.exact_text ?? 0;
+  const alias = result.method_breakdown?.alias_exact ?? 0;
   const heuristic = result.method_breakdown?.heuristic ?? 0;
   const skip = result.total_skipped ?? 0;
   const queue = result.total_queued_review ?? 0;
   const exactPct = pct(exact, total);
+  const aliasPct = pct(alias, total);
+  const deterministicPct = pct(exact + alias, total);
   const heuristicPct = pct(heuristic, total);
   const skipPct = pct(skip, total);
   const queuePct = pct(queue, total);
@@ -210,32 +213,33 @@ function evaluate(result: RunResult | null) {
     verdict = "rejected";
     reasons.push("total_processed = 0");
   }
-  if (exactPct < 80) {
-    if (exactPct >= 60) {
+  // Meta: exact_text + alias_exact >= 85% (alias-first layer)
+  if (deterministicPct < 85) {
+    if (deterministicPct >= 65) {
       verdict = verdict === "rejected" ? verdict : "borderline";
-      reasons.push(`exact_text ${exactPct}% (esperado ≥ 80%)`);
+      reasons.push(`exact + alias ${deterministicPct}% (esperado ≥ 85%)`);
     } else {
       verdict = "rejected";
-      reasons.push(`exact_text ${exactPct}% muito baixo`);
+      reasons.push(`exact + alias ${deterministicPct}% muito baixo`);
     }
   }
-  if (skipPct >= 10) {
-    if (skipPct < 20) {
+  if (skipPct >= 5) {
+    if (skipPct < 15) {
       verdict = verdict === "rejected" ? verdict : "borderline";
-      reasons.push(`skipped ${skipPct}% (esperado < 10%)`);
+      reasons.push(`skipped ${skipPct}% (esperado < 5%)`);
     } else {
       verdict = "rejected";
       reasons.push(`skipped ${skipPct}% acima do limite`);
     }
   }
-  if (queuePct > 30) {
+  if (queuePct > 10) {
     verdict = verdict === "rejected" ? verdict : "borderline";
-    reasons.push(`fila de revisão ${queuePct}% (alta)`);
+    reasons.push(`fila de revisão ${queuePct}% (esperado < 10%)`);
   }
 
   if (verdict === "healthy") reasons.push("Distribuição dentro dos thresholds esperados");
 
-  return { verdict, reasons, metrics: { exactPct, heuristicPct, skipPct, queuePct, total } };
+  return { verdict, reasons, metrics: { exactPct, aliasPct, deterministicPct, heuristicPct, skipPct, queuePct, total } };
 }
 
 export default function ClassificationRunner() {
