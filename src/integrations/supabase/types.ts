@@ -10642,6 +10642,16 @@ export type Database = {
         }
         Relationships: []
       }
+      v_abandoned_sessions: {
+        Row: {
+          day: string | null
+          entry_route: string | null
+          started_at: string | null
+          user_id: string | null
+          viewport: string | null
+        }
+        Relationships: []
+      }
       v_alias_coverage: {
         Row: {
           alias_key: string | null
@@ -10717,6 +10727,31 @@ export type Database = {
         }
         Relationships: []
       }
+      v_hesitation_by_entry_point: {
+        Row: {
+          avg_clicks_before: number | null
+          avg_route_changes_before: number | null
+          avg_seconds_to_action: number | null
+          entry_point: string | null
+          median_seconds_to_action: number | null
+          sessions: number | null
+          viewport: string | null
+        }
+        Relationships: []
+      }
+      v_hesitation_by_route: {
+        Row: {
+          avg_clicks_before: number | null
+          avg_route_changes_before: number | null
+          avg_seconds_to_action: number | null
+          median_seconds_to_action: number | null
+          route: string | null
+          sessions: number | null
+          since: string | null
+          viewport: string | null
+        }
+        Relationships: []
+      }
       v_mnemonic_latest_results: {
         Row: {
           aprovado: boolean | null
@@ -10776,6 +10811,54 @@ export type Database = {
           total_resultados: number | null
           ultimo_resultado_em: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      v_navigation_loops: {
+        Row: {
+          created_at: string | null
+          day: string | null
+          entry_point: string | null
+          final_route: string | null
+          pre_action_clicks: number | null
+          pre_action_route_changes: number | null
+          seconds_to_action: number | null
+          user_id: string | null
+          viewport: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          day?: never
+          entry_point?: string | null
+          final_route?: string | null
+          pre_action_clicks?: number | null
+          pre_action_route_changes?: number | null
+          seconds_to_action?: never
+          user_id?: string | null
+          viewport?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          day?: never
+          entry_point?: string | null
+          final_route?: string | null
+          pre_action_clicks?: number | null
+          pre_action_route_changes?: number | null
+          seconds_to_action?: never
+          user_id?: string | null
+          viewport?: string | null
+        }
+        Relationships: []
+      }
+      v_route_efficiency_ranking: {
+        Row: {
+          avg_clicks: number | null
+          avg_route_changes: number | null
+          entry_point: string | null
+          friction_score: number | null
+          median_seconds: number | null
+          route: string | null
+          sessions: number | null
         }
         Relationships: []
       }
