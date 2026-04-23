@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { MapSuggestionsBar } from "@/components/mind-maps/MapSuggestions";
+import { CinematicEmptyState } from "@/components/cinematic";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cirurgia Geral", "Pediatria", "Ginecologia e Obstetrícia",
@@ -312,11 +313,11 @@ export default function MindMaps() {
             </Button>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center py-16">
-            <Search className="h-10 w-10 text-muted-foreground/20 mb-4" />
-            <p className="text-sm font-medium">Nenhum mapa encontrado</p>
-            <p className="text-xs text-muted-foreground mt-1">Ajuste os filtros ou gere um novo mapa.</p>
-          </div>
+          <CinematicEmptyState
+            module="planner"
+            title="Nenhum mapa encontrado"
+            description="Ajuste os filtros ou gere um novo mapa para continuar explorando."
+          />
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((map: any) => {

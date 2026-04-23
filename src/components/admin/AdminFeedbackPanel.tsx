@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CinematicEmptyState } from "@/components/cinematic";
 
 interface FeedbackRow {
   id: string;
@@ -185,7 +186,11 @@ const AdminFeedbackPanel = () => {
           <MessageSquareText className="h-4 w-4" /> Avaliações Recentes
         </h3>
         {feedbacks.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">Nenhum feedback recebido ainda.</p>
+          <CinematicEmptyState
+            module="admin"
+            title="Nenhum feedback recebido ainda"
+            description="Quando os usuários enviarem avaliações, elas aparecerão aqui."
+          />
         ) : (
           feedbacks.map((f) => (
             <Card key={f.id} className="overflow-hidden">

@@ -1,38 +1,41 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useNavigate } from "react-router-dom";
 import { Sparkles } from "lucide-react";
 import { hapticLight } from "@/lib/haptics";
+import { CinematicEmptyState, type CinematicModule } from "@/components/cinematic";
+import { MagneticButton } from "@/components/cinematic";
 
 interface ModuleEmptyStateProps {
-  icon: string;
+  /** Ícone emoji legacy — preservado para compat, mas não exibido (substituído pelo EnaziziSymbol) */
+  icon?: string;
   title: string;
   description: string;
-  steps: string[];
+  steps?: string[];
   actionLabel: string;
   actionPath?: string;
   onAction?: () => void;
+  /** Legacy — mapeado para módulo cinematográfico */
   illustration?: "study" | "quiz" | "review" | "clinical" | "achievement";
+  /** Override direto: força um módulo específico */
+  module?: CinematicModule;
 }
 
-const ILLUSTRATIONS: Record<string, string> = {
-  study: "📖",
-  quiz: "🧠",
-  review: "🔄",
-  clinical: "🩺",
-  achievement: "🏆",
+/**
+ * Mapeamento legacy → módulos cinematográficos.
+ * Mantém retrocompatibilidade: cada illustration vira um módulo com hue próprio.
+ */
+const ILLUSTRATION_TO_MODULE: Record<string, CinematicModule> = {
+  study: "tutor",
+  quiz: "flashcard",
+  review: "simulado",
+  clinical: "professor",
+  achievement: "ranking",
 };
 
-const GRADIENT_PAIRS: Record<string, string> = {
-  study: "from-blue-500/8 to-indigo-500/5",
-  quiz: "from-amber-500/8 to-orange-500/5",
-  review: "from-emerald-500/8 to-teal-500/5",
-  clinical: "from-rose-500/8 to-pink-500/5",
-  achievement: "from-purple-500/8 to-violet-500/5",
-};
-
+/**
+ * ModuleEmptyState — wrapper sobre CinematicEmptyState.
+ * Mantém 100% da API antiga. Internamente migrado para o sistema cinematográfico Pixar.
+ */
 const ModuleEmptyState = ({
-  icon,
   title,
   description,
   steps,
@@ -40,6 +43,7 @@ const ModuleEmptyState = ({
   actionPath,
   onAction,
   illustration = "study",
+  module,
 }: ModuleEmptyStateProps) => {
   const navigate = useNavigate();
 
@@ -49,45 +53,46 @@ const ModuleEmptyState = ({
     if (actionPath) navigate(actionPath);
   };
 
-  const grad = GRADIENT_PAIRS[illustration] || GRADIENT_PAIRS.study;
-  const bigIcon = ILLUSTRATIONS[illustration] || "📖";
+  const resolvedModule = module ?? ILLUSTRATION_TO_MODULE[illustration] ?? "tutor";
 
   return (
-    <Card className={`border-dashed border-2 border-primary/20 bg-gradient-to-br ${grad} via-background overflow-hidden`}>
-      <CardContent className="p-8 flex flex-col items-center text-center space-y-5 relative">
-        {/* Decorative background icon */}
-        <div className="absolute -top-4 -right-4 text-[120px] opacity-[0.04] pointer-events-none select-none leading-none">
-          {bigIcon}
-        </div>
-
-        {/* Main icon with subtle animation */}
-        <div className="relative">
-          <span className="text-5xl block animate-bounce" style={{ animationDuration: "3s" }}>{icon}</span>
-        </div>
-
-        <div className="space-y-1.5">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <p className="text-sm text-muted-foreground max-w-md">{description}</p>
-        </div>
-
-        <div className="w-full max-w-sm text-left space-y-2.5 bg-muted/30 rounded-lg p-4 backdrop-blur-sm">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Como começar</p>
-          {steps.map((step, i) => (
-            <div key={i} className="flex items-start gap-2.5">
-              <span className="flex-shrink-0 h-5 w-5 rounded-full bg-primary/15 text-primary text-xs font-bold flex items-center justify-center mt-0.5">
-                {i + 1}
+    <CinematicEmptyState
+      module={resolvedModule}
+      title={title}
+      symbolVariant="neural"
+      description={
+        <span className="block space-y-4">
+          <span className="block">{description}</span>
+          {steps && steps.length > 0 && (
+            <span className="mt-4 block text-left max-w-sm mx-auto rounded-xl bg-background/40 backdrop-blur-md border border-border/40 p-4 space-y-2.5">
+              <span className="block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                Como começar
               </span>
-              <p className="text-sm text-muted-foreground leading-relaxed">{step}</p>
-            </div>
-          ))}
-        </div>
-
-        <Button onClick={handleAction} size="lg" className="gap-2 mt-2 shadow-lg shadow-primary/20">
+              {steps.map((step, i) => (
+                <span key={i} className="flex items-start gap-2.5">
+                  <span
+                    className="flex-shrink-0 h-5 w-5 rounded-full text-xs font-bold flex items-center justify-center mt-0.5"
+                    style={{
+                      background: "hsl(var(--module-hue) / 0.18)",
+                      color: "hsl(var(--module-hue))",
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <span className="text-sm text-muted-foreground leading-relaxed">{step}</span>
+                </span>
+              ))}
+            </span>
+          )}
+        </span>
+      }
+      action={
+        <MagneticButton module={resolvedModule} size="lg" onClick={handleAction} className="gap-2">
           <Sparkles className="h-4 w-4" />
           {actionLabel}
-        </Button>
-      </CardContent>
-    </Card>
+        </MagneticButton>
+      }
+    />
   );
 };
 
