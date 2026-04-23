@@ -56,16 +56,16 @@ interface MobileNavItem {
   icon: React.ElementType;
 }
 
-const MOBILE_FOCUS_ITEMS: MobileNavItem[] = [
-  { to: "/dashboard", label: "Hoje", icon: Target },
-  { to: "/dashboard/sessao-estudo", label: "Estudar agora", moduleKey: "sessao-estudo", icon: Sparkles },
+// Visão Geral = panorama (entender). Estudar = execução (fazer).
+const MOBILE_PANORAMA_ITEMS: MobileNavItem[] = [
+  { to: "/dashboard", label: "Visão Geral", icon: Target },
 ];
 
-const MOBILE_CORE_ITEMS: MobileNavItem[] = [
+const MOBILE_EXECUTION_ITEMS: MobileNavItem[] = [
+  { to: "/dashboard/sessao-estudo", label: "Estudar", moduleKey: "sessao-estudo", icon: Sparkles },
   { to: "/dashboard/sessao-estudo?focus=reviews", label: "Revisões", moduleKey: "sessao-estudo", icon: Clock },
   { to: "/dashboard/simulados", label: "Simulados", moduleKey: "simulados", icon: FileText },
   { to: "/dashboard/banco-erros", label: "Banco de Erros", moduleKey: "banco-erros", icon: AlertTriangle },
-  { to: "/dashboard/analytics", label: "Progresso", moduleKey: "analytics", icon: TrendingUp },
 ];
 
 const MobileSection = ({
@@ -154,8 +154,8 @@ const MobileNav = () => {
 
         <ScrollArea className="flex-1 min-h-0">
           <nav className="px-3 py-3 space-y-3">
-            <MobileSection title="Foco agora" items={MOBILE_FOCUS_ITEMS} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
-            <MobileSection title="Núcleo" items={MOBILE_CORE_ITEMS} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
+            <MobileSection title="Panorama" items={MOBILE_PANORAMA_ITEMS} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
+            <MobileSection title="Estudar" items={MOBILE_EXECUTION_ITEMS} location={location} setOpen={setOpen} isModuleEnabled={isModuleEnabled} />
 
             {/* Explorar — ENAFLIX único, silencioso */}
             <div className="space-y-0.5">

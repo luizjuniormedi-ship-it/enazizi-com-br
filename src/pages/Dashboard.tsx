@@ -3,19 +3,15 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
-import { resolveRecommendationAction } from "@/lib/recommendationRouter";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { usePrefetch } from "@/hooks/usePrefetch";
 import { useCoreData } from "@/hooks/useCoreData";
-import { useStudyLoop } from "@/hooks/useStudyLoop";
-import { useStudySession } from "@/hooks/useStudySession";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
 import { supabase } from "@/integrations/supabase/client";
 
 import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
-import InterventionCard from "@/components/dashboard/InterventionCard";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 
@@ -23,9 +19,6 @@ import MissionCompletionBanner from "@/components/mission-control/MissionComplet
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
-import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
-import SessionBar from "@/components/study-session/SessionBar";
-import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import { useFocusMode } from "@/components/dashboard/guided/FocusModeEntry";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -36,7 +29,6 @@ import { fireCelebration } from "@/lib/celebrations";
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const TutorContinueCard = lazy(() => import("@/components/dashboard/TutorContinueCard"));
 const AdvancedAnalyticsAccordion = lazy(() => import("@/components/dashboard/AdvancedAnalyticsAccordion"));
-const GuidedFlowLayer = lazy(() => import("@/components/dashboard/GuidedFlowLayer"));
 const AdaptiveMnemonicCard = lazy(() =>
   import("@/components/mnemonic/AdaptiveMnemonicCard").then((m) => ({ default: m.AdaptiveMnemonicCard }))
 );
@@ -48,11 +40,13 @@ interface CompletionHandoff {
 }
 
 /* ═══════════════════════════════════════════════════
-   DASHBOARD — Cockpit do Aluno (versão linear, 8 blocos)
-   Ordem:
-     1. TopBar fixa
-     2. Hero único (missão atual)
-     3. Guided Flow (alertas + 3 ações)
+   VISÃO GERAL — Panorama silencioso (entender, não executar)
+   Função: orientar o aluno sobre o estado do dia.
+   Execução vive em /dashboard/sessao-estudo (cockpit Estudar).
+   Blocos:
+     1. TopBar (saudação + status)
+     2. Hero contextual (recomendação atual — CTA leva ao Estudar)
+     3. Mnemônico adaptativo (condicional)
      4. Progresso unificado
      5. Tutor (continuar)
      6. Análises avançadas (accordion fechado)
@@ -71,8 +65,6 @@ const Dashboard = () => {
 
   const { data, isLoading: missionLoading, isError, error, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
-  const loop = useStudyLoop();
-  const session = useStudySession();
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
   const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
@@ -86,8 +78,6 @@ const Dashboard = () => {
   const alternatives = data?.alternativeActions ?? [];
   const adaptiveState = data?.adaptiveState;
 
-  const loopActive = loop.phase !== "idle";
-
   useEffect(() => {
     setDismissedMnemonicId(null);
   }, [dashboardMnemonic?.link.id]);
@@ -97,13 +87,12 @@ const Dashboard = () => {
       ? dashboardMnemonic
       : null;
 
-  // ─── AUTOSTART ───
+  // ─── AUTOSTART → redireciona para o cockpit Estudar (execução pertence lá) ───
   useEffect(() => {
     if (autostartConsumedRef.current) return;
     if (missionLoading || !data) return;
     const autostart = searchParams.get("autostart");
     if (autostart !== "true") return;
-    if (!activeRec) return;
 
     autostartConsumedRef.current = true;
     const source = searchParams.get("source") || "manual";
@@ -112,20 +101,8 @@ const Dashboard = () => {
     newParams.delete("source");
     setSearchParams(newParams, { replace: true });
 
-    if (!session.metrics.active) session.startSession(source);
-    const action = resolveRecommendationAction(activeRec);
-    if (action.mode === "navigate") navigate(action.path);
-    else loop.startMission(activeRec);
-  }, [missionLoading, data, activeRec, searchParams, setSearchParams, session, loop, navigate]);
-
-  // Track loop results
-  const prevPhaseRef = useRef(loop.phase);
-  useEffect(() => {
-    if (prevPhaseRef.current === "feedback" && loop.phase !== "feedback" && loop.result && session.metrics.active) {
-      session.recordAction(loop.result.correct ?? false, loop.context?.theme);
-    }
-    prevPhaseRef.current = loop.phase;
-  }, [loop.phase, loop.result, loop.context, session]);
+    navigate(`/dashboard/sessao-estudo?autostart=true&source=${encodeURIComponent(source)}`);
+  }, [missionLoading, data, searchParams, setSearchParams, navigate]);
 
   // Celebrations
   useEffect(() => {
@@ -167,14 +144,6 @@ const Dashboard = () => {
   }, [user?.id, queryClient]);
 
   /* ─── Handlers ─── */
-  const handleStart = useCallback(() => {
-    if (!activeRec) return;
-    if (!session.metrics.active) session.startSession("manual");
-    const action = resolveRecommendationAction(activeRec);
-    if (action.mode === "navigate") navigate(action.path);
-    else loop.startMission(activeRec);
-  }, [activeRec, loop, session, navigate]);
-
   const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
     setOverrideRec(alt);
   }, []);
@@ -183,33 +152,6 @@ const Dashboard = () => {
     setOverrideRec(null);
     refresh();
   }, [refresh]);
-
-  const handleLoopClose = useCallback(() => {
-    const wasComplete = loop.phase === "complete";
-    const completedTitle = loop.context?.recommendation.title ?? "";
-    const badges = loop.result?.completionBadges;
-    loop.resetLoop();
-    if (wasComplete) {
-      setHandoff({ completedTitle, badges });
-      setOverrideRec(null);
-      refresh();
-    }
-  }, [loop, refresh]);
-
-  const handleEndSession = useCallback(() => {
-    if (loopActive) loop.resetLoop();
-    session.endSession();
-  }, [loopActive, loop, session]);
-
-  const handleContinueAfterSummary = useCallback(() => {
-    session.dismissSummary();
-    session.startSession("continue");
-    if (activeRec) loop.startMission(activeRec);
-  }, [session, activeRec, loop]);
-
-  const handleDismissSummary = useCallback(() => {
-    session.dismissSummary();
-  }, [session]);
 
   const dismissBanner = useCallback(() => setHandoff(null), []);
 
@@ -220,47 +162,13 @@ const Dashboard = () => {
   const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
   if (initialLoading) return <MissionControlSkeleton />;
 
-  // Session Summary
-  if (session.summary) {
-    return (
-      <div className="max-w-2xl mx-auto pt-8 px-3 animate-fade-in">
-        <SessionSummary
-          summary={session.summary}
-          onContinue={handleContinueAfterSummary}
-          onDismiss={handleDismissSummary}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-20 lg:pb-0">
-      {/* Session Bar (durante sessão ativa) */}
-      <SessionBar metrics={session.metrics} onEnd={handleEndSession} />
-
       {/* Achievement toasts (overlay invisível até disparar) */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
-      {/* ═══ INLINE STUDY LOOP — toma a tela quando ativo ═══ */}
-      {loopActive && (
-        <StudyLoopContainer
-          phase={loop.phase}
-          context={loop.context}
-          result={loop.result}
-          loading={loop.loading}
-          error={loop.error}
-          onBeginExecution={loop.beginExecution}
-          onSubmitAnswer={loop.submitAnswer}
-          onCompleteReview={loop.completeReview}
-          onContinue={loop.continueLoop}
-          onQuickAction={loop.runQuickAction}
-          onRetry={loop.retry}
-          onClose={handleLoopClose}
-        />
-      )}
-
-      {/* ═══ DASHBOARD LINEAR (fora do loop e fora do focus mode) ═══ */}
-      {!loopActive && !focusMode && (
+      {/* ═══ VISÃO GERAL — panorama silencioso (entender, não executar) ═══ */}
+      {!focusMode && (
         <>
           {/* 1 — TopBar fixa (saudação + status) */}
           <SafeCard name="DashboardTopBar"><DashboardTopBar /></SafeCard>
@@ -294,16 +202,15 @@ const Dashboard = () => {
             />
           )}
 
-          {/* 2 — HERO ÚNICO (missão atual) */}
+          {/* 2 — HERO CONTEXTUAL (missão atual — apenas resumo, execução vai para /Estudar) */}
           {activeRec && (
             <SafeCard name="MissionHero">
               <MissionHeroAnimated
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
-                onStart={handleStart}
+                onStart={() => navigate("/dashboard/sessao-estudo")}
                 onRefresh={handleRefresh}
                 onShowAlternatives={() => {
-                  // Ajuste 5: abre o accordion programaticamente E rola até ele
                   setAdvancedAccordion("advanced");
                   requestAnimationFrame(() => {
                     document.getElementById("advanced-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -312,18 +219,6 @@ const Dashboard = () => {
               />
             </SafeCard>
           )}
-
-          {/* 2.5 — INTERVENTION CARD (Next Best Action) */}
-          <SafeCard name="InterventionCard">
-            <InterventionCard />
-          </SafeCard>
-
-          {/* 3 — GUIDED FLOW: alertas + 3 ações */}
-          <SafeCard name="GuidedFlowLayer">
-            <Suspense fallback={null}>
-              <GuidedFlowLayer />
-            </Suspense>
-          </SafeCard>
 
           {/* Mnemônico adaptativo (condicional) */}
           {visibleDashboardMnemonic && (

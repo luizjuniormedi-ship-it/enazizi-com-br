@@ -58,7 +58,7 @@ interface PinnedItem {
   description: string;
 }
 
-/* ─────────────── Atalhos pinados (núcleo operacional) ─────────────── */
+/* ─────────────── Atalhos de execução (sub-itens de Estudar) ─────────────── */
 const PINNED_ITEMS: PinnedItem[] = [
   {
     to: "/dashboard/sessao-estudo?focus=reviews",
@@ -66,13 +66,6 @@ const PINNED_ITEMS: PinnedItem[] = [
     icon: RotateCcw,
     label: "Revisões",
     description: "Revisões pendentes (FSRS) e cards vencidos",
-  },
-  {
-    to: "/dashboard/sessao-estudo",
-    moduleKey: "sessao-estudo",
-    icon: Clock,
-    label: "Sessão de Estudo",
-    description: "Ciclo guiado: ensinar, testar, corrigir, reforçar",
   },
   {
     to: "/dashboard/simulados",
@@ -87,13 +80,6 @@ const PINNED_ITEMS: PinnedItem[] = [
     icon: AlertTriangle,
     label: "Banco de Erros",
     description: "Domine os temas onde mais erra",
-  },
-  {
-    to: "/dashboard/analytics",
-    moduleKey: "analytics",
-    icon: TrendingUp,
-    label: "Progresso",
-    description: "Desempenho, evolução e chance de aprovação",
   },
 ];
 
@@ -337,28 +323,48 @@ const DashboardSidebar = () => {
           </Link>
         </div>
 
-        {/* Navegação minimalista */}
+        {/* Navegação minimalista — duas mentalidades distintas */}
         <ScrollArea className="flex-1 min-h-0">
           <nav className="px-3 py-1 space-y-0.5">
-            {/* ─── 1. Foco Agora ─── */}
-            <SectionLabel>Foco agora</SectionLabel>
+            {/* ─── 1. PANORAMA (entender) ─── */}
+            <SectionLabel>Panorama</SectionLabel>
 
             <SidebarLink
               to="/dashboard"
               icon={PlayCircle}
-              label={hasMissionToday ? "Continuar missão" : "Hoje"}
-              description="Sua missão prioritária do dia"
+              label="Visão Geral"
+              description="Panorama do dia: progresso, ritmo, contexto e orientação"
               active={location.pathname === "/dashboard"}
             />
+
+            {/* ─── 2. ESTUDAR (executar) ─── */}
+            <SectionLabel>Estudar</SectionLabel>
+
             <SidebarLink
               to="/dashboard/sessao-estudo"
               icon={Sparkles}
               label="Estudar agora"
-              description="Inicie um ciclo de estudo guiado pela IA"
-              active={location.pathname === "/dashboard/sessao-estudo"}
+              description="Cockpit operacional: iniciar sessão, revisões, foco"
+              active={location.pathname === "/dashboard/sessao-estudo" && !location.search}
             />
+            {pinned.map((item) => {
+              const active =
+                location.pathname + (location.search || "") === item.to ||
+                (location.pathname === item.to.split("?")[0] && item.to.includes(location.search) && location.search);
+              return (
+                <SidebarLink
+                  key={item.to}
+                  to={item.to}
+                  icon={item.icon}
+                  label={item.label}
+                  description={item.description}
+                  active={!!active}
+                  variant="muted"
+                />
+              );
+            })}
 
-            {/* ─── 2. Hub ENAFLIX (silencioso — produto premium não grita) ─── */}
+            {/* ─── 3. EXPLORAR (descobrir) ─── */}
             <SectionLabel>Explorar</SectionLabel>
 
             <Tooltip delayDuration={300}>
@@ -386,24 +392,6 @@ const DashboardSidebar = () => {
                 </p>
               </TooltipContent>
             </Tooltip>
-
-            {/* ─── 3. Atalhos pinados ─── */}
-            <SectionLabel>Atalhos</SectionLabel>
-
-            {pinned.map((item) => {
-              const active = location.pathname === item.to;
-              return (
-                <SidebarLink
-                  key={item.to}
-                  to={item.to}
-                  icon={item.icon}
-                  label={item.label}
-                  description={item.description}
-                  active={active}
-                  variant="muted"
-                />
-              );
-            })}
 
             {/* ─── 4. Utilidades + Admin ─── */}
             <div className="pt-3 mt-2 border-t border-sidebar-border space-y-0.5">
