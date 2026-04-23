@@ -16,7 +16,7 @@ import PreserveQueryNavigate from "@/components/routing/PreserveQueryNavigate";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import { CinematicPageLoader } from "@/components/cinematic";
+import { CinematicPageLoader, AmbientPersistenceLayer, useModuleAtmosphere } from "@/components/cinematic";
 
 // Eager-load shell layout (always needed)
 import DashboardLayout from "./components/layout/DashboardLayout";
@@ -101,7 +101,11 @@ const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "Rese
 
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
-const PageLoader = () => <CinematicPageLoader module="dashboard" />;
+/** Loader sensível à rota: escolhe o módulo cinematográfico atual. */
+const PageLoader = () => {
+  const module = useModuleAtmosphere();
+  return <CinematicPageLoader module={module} />;
+};
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -123,6 +127,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AmbientPersistenceLayer />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/" element={<Index />} />
