@@ -16,7 +16,7 @@ import PreserveQueryNavigate from "@/components/routing/PreserveQueryNavigate";
 import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import { CinematicPageLoader, AmbientPersistenceLayer, useModuleAtmosphere } from "@/components/cinematic";
+import { CinematicPageLoader, AmbientPersistenceLayer, useModuleAtmosphere, CinematicRouteTransition } from "@/components/cinematic";
 
 // Eager-load shell layout (always needed)
 import DashboardLayout from "./components/layout/DashboardLayout";
@@ -128,8 +128,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AmbientPersistenceLayer />
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
+          <CinematicRouteTransition>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
               <Route path="/" element={<Index />} />
                <Route path="/login" element={<Login />} />
                <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
