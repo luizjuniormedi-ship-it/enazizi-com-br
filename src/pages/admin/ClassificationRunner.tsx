@@ -31,6 +31,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Loader2,
   Play,
   ShieldCheck,
@@ -41,10 +51,27 @@ import {
   RotateCcw,
   History,
   Database,
+  Flame,
+  Copy,
+  Lock,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  captureSnapshot,
+  computeDelta,
+  buildRollbackSql,
+  loadPreSnapshot,
+  loadPostSnapshot,
+  savePreSnapshot,
+  savePostSnapshot,
+  type ClassificationSnapshot,
+  type SnapshotDelta,
+} from "@/lib/classificationSnapshot";
 
 const STORAGE_KEY = "classification_runner:last_result";
+const DRY_RUN_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 horas
+const CONFIRM_PHRASE = "EXECUTAR LOTE REAL";
 
 type TableSource = "questions_bank" | "real_exam_questions";
 
