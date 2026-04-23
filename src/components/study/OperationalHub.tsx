@@ -158,7 +158,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
           <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <button
               type="button"
-              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+              onClick={() => trackAndGo("start_review", "/dashboard/sessao-estudo?focus=reviews&auto=1", { pendingReviews })}
               className={cn(
                 "tabular-nums hover:text-foreground transition-colors",
                 pendingReviews > 0 ? "text-foreground" : ""
@@ -195,7 +195,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               label="Revisões vencidas"
               value={pendingReviews}
               tone={pendingReviews > 0 ? "urgent" : "neutral"}
-              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+              onClick={() => trackAndGo("start_review", "/dashboard/sessao-estudo?focus=reviews&auto=1", { pendingReviews })}
             />
             <StatCard
               icon={ListChecks}
