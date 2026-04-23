@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { ENAFLIX_MODULES, type EnaflixModule } from "@/data/enaflix/enaflixModules";
 import { ENAFLIX_CATEGORIES } from "@/data/enaflix/enaflixCategories";
 import { EnaflixOverlayNav } from "@/components/enaflix/EnaflixOverlayNav";
-import { EnaflixBillboard } from "@/components/enaflix/EnaflixBillboard";
+import { EnaflixBillboardRotator } from "@/components/enaflix/EnaflixBillboardRotator";
 import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
@@ -93,21 +93,37 @@ export default function EnaflixPage() {
     return visibleModules.filter((m) => m.featured && !visitedSet.has(m.id)).slice(0, 10);
   }, [visibleModules, popularIds]);
 
-  // Pick para o billboard: primeiro item recente OU primeiro recomendado OU sessão de estudo
-  const billboardModule = useMemo<EnaflixModule | undefined>(() => {
-    return (
-      continueModules[0] ??
-      recommendedModules[0] ??
-      visibleModules.find((m) => m.id === "sessao-estudo") ??
-      visibleModules[0]
-    );
-  }, [continueModules, recommendedModules, visibleModules]);
+  // Vitrine rotativa: até 4 destaques cinematográficos com narrativa diferente.
+  // Cada slide carrega seu próprio eyebrow (contexto emocional).
+  const billboardSlides = useMemo<Array<{ module: EnaflixModule; eyebrow: string }>>(() => {
+    const slides: Array<{ module: EnaflixModule; eyebrow: string }> = [];
+    const seen = new Set<string>();
 
-  const billboardEyebrow = useMemo(() => {
-    if (continueModules[0]) return "Continuar de onde parou";
-    if (recommendedModules[0]) return "Recomendado pela IA";
-    return "Em destaque hoje";
-  }, [continueModules, recommendedModules]);
+    const push = (m: EnaflixModule | undefined, eyebrow: string) => {
+      if (!m || seen.has(m.id)) return;
+      seen.add(m.id);
+      slides.push({ module: m, eyebrow });
+    };
+
+    // 1. Continuar de onde parou (se existe)
+    push(continueModules[0], "Continuar de onde parou");
+    // 2. Recomendação IA
+    push(recommendedModules[0], "Recomendado pela IA");
+    // 3. Sessão de estudo (centro pedagógico)
+    push(
+      visibleModules.find((m) => m.id === "sessao-estudo"),
+      "Centro pedagógico",
+    );
+    // 4. Destaque popular (se houver mais de um popular distinto)
+    push(popularModules[0], "Mais usado por você");
+
+    // Fallback: se nada acima rendeu nada, pega o primeiro visível
+    if (slides.length === 0 && visibleModules[0]) {
+      push(visibleModules[0], "Em destaque hoje");
+    }
+
+    return slides.slice(0, 4);
+  }, [continueModules, recommendedModules, popularModules, visibleModules]);
 
   const handleNavigate = useCallback(
     (m: EnaflixModule) => {
@@ -185,11 +201,10 @@ export default function EnaflixPage() {
         </main>
       ) : (
         <main>
-          {/* Hero billboard cinematográfico (full-bleed, começa em y=0) */}
-          {billboardModule && (
-            <EnaflixBillboard
-              module={billboardModule}
-              eyebrow={billboardEyebrow}
+          {/* Vitrine cinematográfica rotativa (até 4 destaques) */}
+          {billboardSlides.length > 0 && (
+            <EnaflixBillboardRotator
+              modules={billboardSlides}
               onNavigate={handleNavigate}
             />
           )}
