@@ -102,7 +102,9 @@ const StudySession = () => {
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Painel de Desempenho fechado por padrão — abre como drawer sob demanda.
+  // Reduz a poluição visual e dá foco total ao conteúdo da sessão.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
   const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
@@ -654,122 +656,130 @@ const StudySession = () => {
   const acuracyPercent = performance.totalQuestions > 0
     ? Math.round((performance.correctAnswers / performance.totalQuestions) * 100) : 0;
 
-  const content = (
-    <div className={`flex animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background" : "h-[calc(100vh-4rem)]"}`}>
-      {/* Left Sidebar — Performance Panel */}
-      <aside className={`${sidebarOpen ? "w-72" : "w-0"} transition-all duration-300 overflow-hidden border-r border-border flex-shrink-0 bg-card/50`}>
-        <div className="w-72 h-full overflow-y-auto p-4 space-y-4">
-          {/* Performance Summary */}
-          <div className="space-y-3">
-            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-              <BarChart3 className="h-4 w-4 text-primary" />
-              Painel de Desempenho
-            </h3>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="rounded-lg bg-secondary/50 p-3 text-center">
-                <div className="text-lg font-bold text-foreground">{performance.totalQuestions}</div>
-                <div className="text-[10px] text-muted-foreground">Questões</div>
-              </div>
-              <div className="rounded-lg bg-secondary/50 p-3 text-center">
-                <div className="text-lg font-bold text-foreground">{acuracyPercent}%</div>
-                <div className="text-[10px] text-muted-foreground">Acerto</div>
-              </div>
-              <div className="rounded-lg bg-secondary/50 p-3 text-center">
-                <div className="text-lg font-bold text-foreground">{performance.level}</div>
-                <div className="text-[10px] text-muted-foreground">Nível</div>
-              </div>
-              <div className="rounded-lg bg-secondary/50 p-3 text-center">
-                <div className="text-lg font-bold text-primary">{performance.readiness}%</div>
-                <div className="text-[10px] text-muted-foreground">Preparo</div>
-              </div>
-            </div>
+  // Painel de Desempenho como conteúdo reusável (renderizado dentro de Sheet)
+  const performancePanel = (
+    <div className="h-full overflow-y-auto p-4 space-y-4">
+      {/* Performance Summary */}
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+          <BarChart3 className="h-4 w-4 text-primary" />
+          Painel de Desempenho
+        </h3>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-lg bg-secondary/50 p-3 text-center">
+            <div className="text-lg font-bold text-foreground">{performance.totalQuestions}</div>
+            <div className="text-[10px] text-muted-foreground">Questões</div>
           </div>
-
-          {/* Specialty Map */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-              <Target className="h-4 w-4 text-primary" />
-              Domínio por Especialidade
-            </h3>
-            <div className="space-y-1.5">
-              {performance.specialties.map((s) => {
-                const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
-                return (
-                  <div key={s.name}>
-                    <div className="flex justify-between text-[11px] mb-0.5">
-                      <span className="text-muted-foreground truncate">{s.name}</span>
-                      <span className="text-foreground font-medium">{pct}%</span>
-                    </div>
-                    <div className="h-1.5 rounded-full bg-secondary">
-                      <div
-                        className="h-full rounded-full bg-primary transition-all"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="rounded-lg bg-secondary/50 p-3 text-center">
+            <div className="text-lg font-bold text-foreground">{acuracyPercent}%</div>
+            <div className="text-[10px] text-muted-foreground">Acerto</div>
           </div>
-
-          {/* Weak Topics */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-              <AlertTriangle className="h-4 w-4 text-destructive" />
-              Temas Fracos
-            </h3>
-            {performance.weakTopics.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {performance.weakTopics.map((t) => (
-                  <Badge key={t} variant="destructive" className="text-[10px]">{t}</Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[11px] text-muted-foreground">Nenhum tema fraco identificado ainda.</p>
-            )}
+          <div className="rounded-lg bg-secondary/50 p-3 text-center">
+            <div className="text-lg font-bold text-foreground">{performance.level}</div>
+            <div className="text-[10px] text-muted-foreground">Nível</div>
           </div>
-
-          {/* Studied Topics */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
-              <BookOpen className="h-4 w-4 text-primary" />
-              Temas Estudados
-            </h3>
-            {performance.studiedTopics.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {performance.studiedTopics.map((t) => (
-                  <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[11px] text-muted-foreground">Comece a estudar para ver o progresso.</p>
-            )}
+          <div className="rounded-lg bg-secondary/50 p-3 text-center">
+            <div className="text-lg font-bold text-primary">{performance.readiness}%</div>
+            <div className="text-[10px] text-muted-foreground">Preparo</div>
           </div>
         </div>
-      </aside>
+      </div>
 
-      {/* Main Content */}
+      {/* Specialty Map */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+          <Target className="h-4 w-4 text-primary" />
+          Domínio por Especialidade
+        </h3>
+        <div className="space-y-1.5">
+          {performance.specialties.map((s) => {
+            const pct = s.total > 0 ? Math.round((s.score / s.total) * 100) : 0;
+            return (
+              <div key={s.name}>
+                <div className="flex justify-between text-[11px] mb-0.5">
+                  <span className="text-muted-foreground truncate">{s.name}</span>
+                  <span className="text-foreground font-medium">{pct}%</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Weak Topics */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          Temas Fracos
+        </h3>
+        {performance.weakTopics.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {performance.weakTopics.map((t) => (
+              <Badge key={t} variant="destructive" className="text-[10px]">{t}</Badge>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">Nenhum tema fraco identificado ainda.</p>
+        )}
+      </div>
+
+      {/* Studied Topics */}
+      <div className="space-y-2">
+        <h3 className="text-sm font-bold flex items-center gap-2 text-foreground">
+          <BookOpen className="h-4 w-4 text-primary" />
+          Temas Estudados
+        </h3>
+        {performance.studiedTopics.length > 0 ? (
+          <div className="flex flex-wrap gap-1">
+            {performance.studiedTopics.map((t) => (
+              <Badge key={t} variant="secondary" className="text-[10px]">{t}</Badge>
+            ))}
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">Comece a estudar para ver o progresso.</p>
+        )}
+      </div>
+    </div>
+  );
+
+  const content = (
+    <div className={`flex animate-fade-in ${isFullscreen ? "fixed inset-0 z-[100] bg-background" : "h-[calc(100vh-4rem)]"}`}>
+      {/* Painel de Desempenho — drawer (não rouba largura do conteúdo principal) */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent side="left" className="w-full sm:max-w-xs p-0">
+          {performancePanel}
+        </SheetContent>
+      </Sheet>
+
+      {/* Main Content — agora ocupa 100% da largura */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-border">
-          <div className="flex items-center gap-3">
+        {/* Top Bar — enxuta: sem logo ENAZIZI duplicado, ações agrupadas */}
+        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
+          <div className="flex items-center gap-2 min-w-0">
             <Button
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
+              onClick={() => setSidebarOpen(true)}
+              title="Painel de Desempenho"
             >
               <BarChart3 className="h-4 w-4" />
             </Button>
-            <div className="flex items-center gap-2">
-              <GraduationCap className="h-5 w-5 text-primary" />
-              <h1 className="text-base font-bold">ENAZIZI</h1>
-              {topic && (
-                <Badge variant="secondary" className="text-xs">{topic}</Badge>
-              )}
-            </div>
+            <GraduationCap className="h-4 w-4 text-primary flex-shrink-0" />
+            <h1 className="text-sm font-semibold text-muted-foreground truncate">
+              Sessão de Estudo
+            </h1>
+            {topic && (
+              <Badge variant="secondary" className="text-xs truncate max-w-[140px]">{topic}</Badge>
+            )}
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {phase !== "start" && phase !== "style-select" && topic && (
               <Sheet>
                 <SheetTrigger asChild>
@@ -820,13 +830,21 @@ const StudySession = () => {
           </div>
         </div>
 
-        {/* Phase Progress Bar */}
+        {/* Phase Progress — versão enxuta: progresso + chips menores e silenciosos */}
         {phase !== "start" && phase !== "style-select" && (
           <div className="px-4 py-1.5 border-b border-border">
-            <Progress value={progressPercent} className="h-1.5" />
-            <div className="flex gap-1 mt-1.5 overflow-x-auto pb-0.5">
+            <div className="flex items-center justify-between gap-3 mb-1">
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                {PHASE_META[phase].shortLabel}
+                <span className="text-muted-foreground/50 font-normal ml-1.5">
+                  · etapa {currentIdx + 1} de {FLOW_PHASES.length}
+                </span>
+              </span>
+              <span className="text-[11px] text-muted-foreground/70">{progressPercent}%</span>
+            </div>
+            <Progress value={progressPercent} className="h-1" />
+            <div className="flex gap-0.5 mt-1.5 overflow-x-auto pb-0.5 opacity-80 hover:opacity-100 transition-opacity">
               {FLOW_PHASES.map((p, i) => {
-                const meta = PHASE_META[p];
                 const isActive = p === phase;
                 const isDone = i < currentIdx;
                 const isNext = i === currentIdx + 1;
@@ -837,18 +855,18 @@ const StudySession = () => {
                       if ((isDone || isNext) && !isLoading) goToPhase(p);
                     }}
                     disabled={!isDone && !isNext && !isActive}
-                    className={`text-[10px] px-2 py-0.5 rounded-full whitespace-nowrap transition-all ${
+                    title={PHASE_META[p].label}
+                    aria-label={PHASE_META[p].label}
+                    className={`h-1.5 rounded-full transition-all ${
                       isActive
-                        ? "bg-primary text-primary-foreground font-bold"
+                        ? "bg-primary w-6"
                         : isDone
-                        ? "bg-secondary text-secondary-foreground cursor-pointer hover:bg-secondary/80"
+                        ? "bg-primary/50 w-3 cursor-pointer hover:bg-primary/70"
                         : isNext
-                        ? "bg-secondary/50 text-muted-foreground cursor-pointer hover:bg-secondary/80 border border-primary/30"
-                        : "bg-secondary/30 text-muted-foreground/50 cursor-not-allowed"
+                        ? "bg-muted-foreground/30 w-3 cursor-pointer hover:bg-muted-foreground/50"
+                        : "bg-muted-foreground/15 w-3 cursor-not-allowed"
                     }`}
-                  >
-                    {meta.shortLabel}
-                  </button>
+                  />
                 );
               })}
             </div>
