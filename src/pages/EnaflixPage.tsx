@@ -37,6 +37,14 @@ export default function EnaflixPage() {
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
 
+  useEffect(() => {
+    const prev = document.title;
+    document.title = "ENAFLIX — Hub visual do ENAZIZI";
+    return () => {
+      document.title = prev;
+    };
+  }, []);
+
   // Filtra módulos por role
   const visibleModules = useMemo<EnaflixModule[]>(() => {
     return ENAFLIX_MODULES.filter((m) => {
@@ -107,14 +115,6 @@ export default function EnaflixPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#0a0a12] text-white relative overflow-x-hidden">
-      <Helmet>
-        <title>ENAFLIX — Hub visual do ENAZIZI</title>
-        <meta
-          name="description"
-          content="Catálogo visual de todos os módulos do ENAZIZI: simulados, flashcards, mnemônicos, IA, simulações clínicas e mais."
-        />
-      </Helmet>
-
       {/* Background ambient */}
       <div
         aria-hidden
