@@ -19,7 +19,6 @@ import MissionCompletionBanner from "@/components/mission-control/MissionComplet
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
-import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import { useFocusMode } from "@/components/dashboard/guided/FocusModeEntry";
 import AchievementToast from "@/components/gamification/AchievementToast";
@@ -41,11 +40,13 @@ interface CompletionHandoff {
 }
 
 /* ═══════════════════════════════════════════════════
-   DASHBOARD — Cockpit do Aluno (versão linear, 8 blocos)
-   Ordem:
-     1. TopBar fixa
-     2. Hero único (missão atual)
-     3. Guided Flow (alertas + 3 ações)
+   VISÃO GERAL — Panorama silencioso (entender, não executar)
+   Função: orientar o aluno sobre o estado do dia.
+   Execução vive em /dashboard/sessao-estudo (cockpit Estudar).
+   Blocos:
+     1. TopBar (saudação + status)
+     2. Hero contextual (recomendação atual — CTA leva ao Estudar)
+     3. Mnemônico adaptativo (condicional)
      4. Progresso unificado
      5. Tutor (continuar)
      6. Análises avançadas (accordion fechado)
