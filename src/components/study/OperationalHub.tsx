@@ -53,7 +53,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-8">
         {/* Header silencioso */}
         <header className="space-y-1">
           <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
