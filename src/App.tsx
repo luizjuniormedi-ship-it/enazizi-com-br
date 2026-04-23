@@ -72,6 +72,7 @@ const ContentCoverageAudit = lazyWithRetry(() => import("./pages/admin/ContentCo
 const CoveragePriorityBoost = lazyWithRetry(() => import("./pages/admin/CoveragePriorityBoost"), "CoveragePriorityBoost");
 const ClassificationBackfill = lazyWithRetry(() => import("./pages/admin/ClassificationBackfill"), "ClassificationBackfill");
 const ClassificationRunner = lazyWithRetry(() => import("./pages/admin/ClassificationRunner"), "ClassificationRunner");
+const ClassificationHealthDashboard = lazyWithRetry(() => import("./pages/admin/ClassificationHealthDashboard"), "ClassificationHealthDashboard");
 const CurriculumCoverage = lazyWithRetry(() => import("./pages/admin/CurriculumCoverage"), "CurriculumCoverage");
 const GranularGeneratorMonitor = lazyWithRetry(() => import("./pages/admin/GranularGeneratorMonitor"), "GranularGeneratorMonitor");
 const GeneratorTelemetry = lazyWithRetry(() => import("./pages/admin/GeneratorTelemetry"), "GeneratorTelemetry");
