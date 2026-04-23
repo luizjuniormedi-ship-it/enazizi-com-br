@@ -140,9 +140,11 @@ export default function EnaflixPage() {
         searchActive={searchOpen}
       />
 
-      {/* Drawer de busca cinematográfico (abre sob a topbar) */}
+      {/* Drawer de busca cinematográfico (slide + blur) */}
       {searchOpen && (
-        <div className="fixed top-16 inset-x-0 z-40 bg-[#0a0a12]/95 backdrop-blur-xl border-b border-white/5 shadow-[0_12px_32px_-12px_rgba(0,0,0,0.8)] animate-fade-in">
+        <div
+          className="fixed top-16 inset-x-0 z-40 bg-[#0a0a12]/95 backdrop-blur-xl border-b border-white/5 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.85)] animate-drawer-in"
+        >
           <div className="px-4 sm:px-8 lg:px-14 py-5">
             <EnaflixSearchBar
               value={query}
@@ -151,7 +153,10 @@ export default function EnaflixPage() {
               autoFocus
             />
             {query && (
-              <p className="text-xs text-white/50 mt-3">
+              <p
+                className="text-xs text-white/50 mt-3 opacity-0 animate-text-reveal"
+                style={{ animationDelay: "200ms" }}
+              >
                 {filteredModules.length === 0
                   ? "Nenhum módulo encontrado."
                   : `${filteredModules.length} ${

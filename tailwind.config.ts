@@ -109,6 +109,35 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        /* === Cinematic motion (ENAFLIX) === */
+        "hero-zoom-in": {
+          from: { opacity: "0", transform: "scale(1.06)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        "text-reveal": {
+          from: { opacity: "0", transform: "translateY(18px)", filter: "blur(6px)" },
+          to: { opacity: "1", transform: "translateY(0)", filter: "blur(0)" },
+        },
+        "row-reveal": {
+          from: { opacity: "0", transform: "translateY(24px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        "shine-sweep": {
+          "0%": { transform: "translateX(-120%) skewX(-12deg)" },
+          "100%": { transform: "translateX(220%) skewX(-12deg)" },
+        },
+        breathe: {
+          "0%, 100%": { opacity: "0.55", transform: "scale(1)" },
+          "50%": { opacity: "0.9", transform: "scale(1.04)" },
+        },
+        "ambient-pulse": {
+          "0%, 100%": { opacity: "0.35" },
+          "50%": { opacity: "0.7" },
+        },
+        "drawer-in": {
+          from: { opacity: "0", transform: "translateY(-12px)", filter: "blur(8px)" },
+          to: { opacity: "1", transform: "translateY(0)", filter: "blur(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -119,6 +148,14 @@ export default {
         "pulse-slow": "pulse-slow 2.8s ease-in-out infinite",
         "enaflix-shimmer": "enaflix-shimmer 6s linear infinite",
         float: "float 6s ease-in-out infinite",
+        /* === Cinematic motion (ENAFLIX) === */
+        "hero-zoom-in": "hero-zoom-in 1400ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "text-reveal": "text-reveal 900ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "row-reveal": "row-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
+        "shine-sweep": "shine-sweep 1400ms cubic-bezier(0.22, 1, 0.36, 1)",
+        breathe: "breathe 6s ease-in-out infinite",
+        "ambient-pulse": "ambient-pulse 5s ease-in-out infinite",
+        "drawer-in": "drawer-in 480ms cubic-bezier(0.22, 1, 0.36, 1) forwards",
       },
     },
   },

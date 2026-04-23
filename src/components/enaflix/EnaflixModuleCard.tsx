@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,11 +17,14 @@ interface Props {
 }
 
 /**
- * CartoonModuleCard — card cartoon premium com:
- * - idle float contínuo da arte (animation-delay aleatório por id)
- * - hover tilt 3D + zoom suave + glow rico
- * - fallback elegante para ícone Lucide quando não há ilustração
- * - badges, lock, role-aware
+ * EnaflixModuleCard — cartão cartoon premium com vida cinematográfica.
+ *
+ * Vida adicionada:
+ * - Tilt 3D sutil (max 6deg) reagindo ao mouse no desktop
+ * - Hover lift + zoom + shine sweep elegante
+ * - Idle float contínuo na arte (com delay determinístico por id)
+ * - Tudo em transform/opacity (GPU) — sem reflow
+ * - Tilt desativado em pointer:coarse e prefers-reduced-motion
  */
 export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "default" }: Props) {
   const navigate = useNavigate();
@@ -34,6 +38,26 @@ export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "defa
   // Delay determinístico por id (varia 0–1.6s) para o float não ficar sincronizado
   const floatDelay = `${(module.id.charCodeAt(0) % 8) * 0.2}s`;
 
+  const cardRef = useRef<HTMLButtonElement>(null);
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, hovered: false });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (typeof window === "undefined") return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const el = cardRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width; // 0..1
+    const py = (e.clientY - rect.top) / rect.height; // 0..1
+    // tilt limitado a ±6deg
+    const ry = (px - 0.5) * 12;
+    const rx = (0.5 - py) * 8;
+    setTilt({ rx, ry, hovered: true });
+  };
+
+  const handleMouseLeave = () => setTilt({ rx: 0, ry: 0, hovered: false });
+
   const handleClick = () => {
     if (disabled || !module.route) return;
     onNavigate?.(module);
@@ -44,23 +68,32 @@ export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "defa
 
   return (
     <button
+      ref={cardRef}
       type="button"
       onClick={handleClick}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       disabled={disabled}
       aria-label={`${module.title} — ${module.description}`}
       className={cn(
         "group relative shrink-0 rounded-2xl overflow-hidden text-left isolate",
         "bg-gradient-to-br from-white/[0.07] to-white/[0.02]",
         "border border-white/10",
-        "transition-all duration-500 ease-out [transform-style:preserve-3d]",
+        "transition-[transform,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "[transform-style:preserve-3d] will-change-transform",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         isHero
           ? "w-[280px] sm:w-[340px] h-[200px] sm:h-[230px]"
           : "w-[220px] sm:w-[260px] h-[160px] sm:h-[180px]",
         disabled
           ? "opacity-60 cursor-not-allowed"
-          : "hover:scale-[1.05] hover:-translate-y-1 hover:rotate-[-0.5deg] hover:border-white/30 hover:shadow-[0_20px_40px_-12px_rgba(0,0,0,0.6)] cursor-pointer",
+          : "hover:border-white/30 hover:shadow-[0_24px_48px_-16px_rgba(0,0,0,0.7)] cursor-pointer",
       )}
+      style={{
+        transform: tilt.hovered
+          ? `perspective(900px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) translateY(-4px) scale(1.04)`
+          : "perspective(900px) rotateX(0) rotateY(0) translateY(0) scale(1)",
+      }}
     >
       {/* Accent gradient overlay */}
       <div
@@ -88,11 +121,17 @@ export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "defa
           "bg-gradient-to-br from-primary/30 via-transparent to-transparent blur-xl",
         )}
       />
-      {/* Shine cinematográfico no hover */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1100ms] ease-out bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none"
-      />
+      {/* Shine cinematográfico no hover (sweep diagonal premium) */}
+      <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div
+          className={cn(
+            "absolute inset-y-0 left-0 w-1/2 -skew-x-12",
+            "bg-gradient-to-r from-transparent via-white/25 to-transparent",
+            "-translate-x-[120%] opacity-0",
+            "group-hover:opacity-100 group-hover:animate-shine-sweep",
+          )}
+        />
+      </div>
 
       {/* Arte hero (ilustração 3D ou ícone fallback) */}
       {heroArt ? (
@@ -105,7 +144,13 @@ export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "defa
               ? "right-1 -bottom-2 h-[140%] w-[60%]"
               : "right-0 -bottom-3 h-[120%] w-[55%]",
           )}
-          style={{ animation: `float 6s ease-in-out infinite`, animationDelay: floatDelay }}
+          style={{
+            animation: `float 6s ease-in-out infinite`,
+            animationDelay: floatDelay,
+            transform: tilt.hovered
+              ? `translateZ(20px)`
+              : undefined,
+          }}
         >
           <img
             src={heroArt}
@@ -137,7 +182,10 @@ export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "defa
       )}
 
       {/* Conteúdo textual (overlay sobre a arte) */}
-      <div className="relative h-full flex flex-col justify-end p-4 z-10">
+      <div
+        className="relative h-full flex flex-col justify-end p-4 z-10"
+        style={{ transform: tilt.hovered ? "translateZ(30px)" : undefined }}
+      >
         <div className="space-y-1 max-w-[60%]">
           <h3 className={cn(
             "font-black text-white leading-tight line-clamp-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.7)]",
