@@ -43,6 +43,9 @@ interface ClassificationResult {
   confidence: number;
   method: "alias_exact" | "exact_text" | "heuristic" | "ai";
   reason: string;
+  alias_key?: string;
+  alias_target?: string;
+  normalized_topic?: string;
 }
 
 interface AliasRow {
