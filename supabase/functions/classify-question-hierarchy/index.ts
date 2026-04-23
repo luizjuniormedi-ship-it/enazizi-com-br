@@ -422,7 +422,7 @@ Deno.serve(async (req) => {
       .limit(batchSize);
     if (rowsErr) throw new Error(`failed to fetch rows: ${rowsErr.message}`);
 
-    const breakdown = { exact_text: 0, heuristic: 0, ai: 0 };
+    const breakdown: Record<string, number> = { alias_exact: 0, exact_text: 0, heuristic: 0, ai: 0 };
     let applied = 0;
     let queuedReview = 0;
     let skipped = 0;
@@ -435,6 +435,7 @@ Deno.serve(async (req) => {
         specialties,
         topics,
         subtopics,
+        aliases,
       );
 
       // Idempotência: respeita confiança maior já existente
