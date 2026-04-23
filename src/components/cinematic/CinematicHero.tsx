@@ -2,7 +2,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { CinematicModule } from "./CinematicCard";
 
-interface CinematicHeroProps extends React.HTMLAttributes<HTMLElement> {
+interface CinematicHeroProps extends Omit<React.HTMLAttributes<HTMLElement>, "title"> {
   module?: CinematicModule;
   eyebrow?: React.ReactNode;
   title: React.ReactNode;

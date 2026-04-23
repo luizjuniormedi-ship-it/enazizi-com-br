@@ -58,8 +58,8 @@ export const CinematicMetric: React.FC<CinematicMetricProps> = ({
         <div
           className={cn(
             "mt-3 inline-flex items-center gap-1 text-xs font-medium",
-            trend.direction === "up" && "text-emerald-400",
-            trend.direction === "down" && "text-rose-400",
+            trend.direction === "up" && "text-success",
+            trend.direction === "down" && "text-destructive",
             trend.direction === "neutral" && "text-muted-foreground",
           )}
         >
