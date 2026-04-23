@@ -127,13 +127,14 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
   },
   {
     id: "predictor",
-    title: "Previsão de Desempenho",
-    description: "Projeção da sua nota com base no histórico",
+    title: "Chance de Aprovação",
+    description: "Radar preditivo da sua nota nas principais bancas",
     route: "/dashboard/predictor",
     category: "avaliacao",
     icon: TrendingUp,
     badge: "ia",
     accent: "info",
+    keywords: ["predictor", "previsão", "probabilidade", "enare", "radar"],
   },
 
   // ───────── TREINO & REVISÃO ─────────
@@ -268,16 +269,6 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     accent: "primary",
   },
   {
-    id: "resumos",
-    title: "Resumidor",
-    description: "Resuma qualquer texto médico em segundos",
-    route: "/dashboard/resumos",
-    category: "conteudo",
-    icon: FileText,
-    badge: "ia",
-    accent: "purple",
-  },
-  {
     id: "revisor",
     title: "Revisor Médico",
     description: "Validação clínica e citação de fontes",
@@ -289,13 +280,14 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
   {
     id: "chatgpt",
     title: "Tutor IA",
-    description: "Tire dúvidas com inteligência adaptativa",
+    description: "Tutor, Mentor, Revisão e Estratégia ENARE em um só lugar",
     route: "/dashboard/chatgpt",
     category: "conteudo",
     icon: MessagesSquare,
     badge: "ia",
     accent: "primary",
     featured: true,
+    keywords: ["tutor", "mentor", "estratégia", "enare", "dúvida", "chat"],
   },
 
   // ───────── PROGRESSO & ESTRATÉGIA ─────────
@@ -385,27 +377,8 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     badge: "em-alta",
     accent: "destructive",
   },
-  {
-    id: "coach",
-    title: "Coach Motivacional",
-    description: "Empurrão diário para manter o ritmo",
-    route: "/dashboard/coach",
-    category: "gamificacao",
-    icon: Dumbbell,
-    accent: "pink",
-  },
 
   // ───────── FERRAMENTAS INTELIGENTES ─────────
-  {
-    id: "mentor",
-    title: "Mentor IA",
-    description: "Estratégia ENARE personalizada",
-    route: "/dashboard/mentor",
-    category: "ferramentas",
-    icon: Sparkles,
-    badge: "ia",
-    accent: "primary",
-  },
   {
     id: "agentes",
     title: "Agentes",
@@ -416,22 +389,14 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     accent: "purple",
   },
   {
-    id: "uploads",
-    title: "Uploads",
-    description: "Envie PDFs, imagens e provas",
-    route: "/dashboard/uploads",
-    category: "ferramentas",
-    icon: FlaskConical,
-    accent: "info",
-  },
-  {
     id: "perfil",
-    title: "Perfil",
-    description: "Configurações da sua conta",
+    title: "Meu Espaço",
+    description: "Conta, preferências e configurações",
     route: "/dashboard/perfil",
     category: "ferramentas",
     icon: Settings,
     accent: "primary",
+    keywords: ["perfil", "minha conta", "configurações", "preferências"],
   },
 
   // ───────── PROFESSOR ─────────
@@ -444,16 +409,6 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     icon: Users,
     requires: "professor",
     accent: "primary",
-  },
-  {
-    id: "proficiencia-piloto",
-    title: "Proficiência Piloto",
-    description: "Programa de mentoria avançada",
-    route: "/professor/proficiencia/piloto",
-    category: "professor",
-    icon: ListChecks,
-    requires: "professor",
-    accent: "info",
   },
 
   // ───────── ADMINISTRAÇÃO ─────────
@@ -478,25 +433,16 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     accent: "info",
   },
   {
-    id: "admin-classification-health",
-    title: "Saúde do Classificador",
-    description: "Cobertura, aliases e queue",
+    id: "admin-classifier",
+    title: "Classificador IA",
+    description: "Runner, saúde, aliases, queue e snapshots",
     route: "/admin/classification-health",
     category: "admin",
     icon: LineChart,
     requires: "admin",
     badge: "novo",
     accent: "success",
-  },
-  {
-    id: "admin-classification-runner",
-    title: "Classification Runner",
-    description: "Executar runs de classificação",
-    route: "/admin/classification-runner",
-    category: "admin",
-    icon: Zap,
-    requires: "admin",
-    accent: "warning",
+    keywords: ["classificador", "runner", "health", "aliases", "queue", "snapshots", "rollback"],
   },
   {
     id: "admin-coverage",

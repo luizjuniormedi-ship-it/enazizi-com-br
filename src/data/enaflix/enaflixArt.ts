@@ -54,7 +54,6 @@ interface EnaflixArtEntry {
 export const ENAFLIX_HERO_ART_MAP: Record<string, EnaflixArtEntry> = {
   // ─── Conteúdo & IA ───
   chatgpt: { image: tutorIA, accent: "primary", animationProfile: "breathe" },
-  mentor: { image: tutorIA, accent: "primary", animationProfile: "breathe" },
   agentes: { image: tutorIA, accent: "purple", animationProfile: "breathe" },
 
   // ─── Avaliação ───
@@ -82,7 +81,6 @@ export const ENAFLIX_HERO_ART_MAP: Record<string, EnaflixArtEntry> = {
 
   // ─── Conteúdo & Estudo ───
   apostilas: { image: dashboard, accent: "primary", animationProfile: "float" },
-  resumos: { image: dashboard, accent: "purple", animationProfile: "float" },
   revisor: { image: bancoErros, accent: "success", animationProfile: "breathe" },
 
   // ─── Progresso & Estratégia ───
@@ -97,17 +95,17 @@ export const ENAFLIX_HERO_ART_MAP: Record<string, EnaflixArtEntry> = {
   conquistas: { image: conquistas, accent: "warning", animationProfile: "breathe" },
   rankings: { image: conquistas, accent: "warning", animationProfile: "breathe" },
   missao: { image: aprovacao, accent: "destructive", animationProfile: "pulse-soft" },
-  coach: { image: aprovacao, accent: "pink", animationProfile: "breathe" },
+
+  // ─── Ferramentas ───
+  perfil: { image: dashboard, accent: "primary", animationProfile: "breathe" },
 
   // ─── Professor ───
   professor: { image: professor, accent: "primary", animationProfile: "breathe" },
-  "proficiencia-piloto": { image: professor, accent: "info", animationProfile: "breathe" },
 
   // ─── Administração ───
   admin: { image: admin, accent: "destructive", animationProfile: "pulse-soft" },
   "admin-monitoring": { image: admin, accent: "info", animationProfile: "pulse-soft" },
-  "admin-classification-health": { image: admin, accent: "success", animationProfile: "pulse-soft" },
-  "admin-classification-runner": { image: admin, accent: "warning", animationProfile: "pulse-soft" },
+  "admin-classifier": { image: admin, accent: "success", animationProfile: "pulse-soft" },
 };
 
 /** Retorna apenas o caminho da imagem (compatível com versões anteriores). */
