@@ -232,32 +232,11 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-20 lg:pb-0">
-      {/* Session Bar (durante sessão ativa) */}
-      <SessionBar metrics={session.metrics} onEnd={handleEndSession} />
-
       {/* Achievement toasts (overlay invisível até disparar) */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
-      {/* ═══ INLINE STUDY LOOP — toma a tela quando ativo ═══ */}
-      {loopActive && (
-        <StudyLoopContainer
-          phase={loop.phase}
-          context={loop.context}
-          result={loop.result}
-          loading={loop.loading}
-          error={loop.error}
-          onBeginExecution={loop.beginExecution}
-          onSubmitAnswer={loop.submitAnswer}
-          onCompleteReview={loop.completeReview}
-          onContinue={loop.continueLoop}
-          onQuickAction={loop.runQuickAction}
-          onRetry={loop.retry}
-          onClose={handleLoopClose}
-        />
-      )}
-
-      {/* ═══ DASHBOARD LINEAR (fora do loop e fora do focus mode) ═══ */}
-      {!loopActive && !focusMode && (
+      {/* ═══ VISÃO GERAL — panorama silencioso (entender, não executar) ═══ */}
+      {!focusMode && (
         <>
           {/* 1 — TopBar fixa (saudação + status) */}
           <SafeCard name="DashboardTopBar"><DashboardTopBar /></SafeCard>
@@ -291,16 +270,15 @@ const Dashboard = () => {
             />
           )}
 
-          {/* 2 — HERO ÚNICO (missão atual) */}
+          {/* 2 — HERO CONTEXTUAL (missão atual — apenas resumo, execução vai para /Estudar) */}
           {activeRec && (
             <SafeCard name="MissionHero">
               <MissionHeroAnimated
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
-                onStart={handleStart}
+                onStart={() => navigate("/dashboard/sessao-estudo")}
                 onRefresh={handleRefresh}
                 onShowAlternatives={() => {
-                  // Ajuste 5: abre o accordion programaticamente E rola até ele
                   setAdvancedAccordion("advanced");
                   requestAnimationFrame(() => {
                     document.getElementById("advanced-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -309,18 +287,6 @@ const Dashboard = () => {
               />
             </SafeCard>
           )}
-
-          {/* 2.5 — INTERVENTION CARD (Next Best Action) */}
-          <SafeCard name="InterventionCard">
-            <InterventionCard />
-          </SafeCard>
-
-          {/* 3 — GUIDED FLOW: alertas + 3 ações */}
-          <SafeCard name="GuidedFlowLayer">
-            <Suspense fallback={null}>
-              <GuidedFlowLayer />
-            </Suspense>
-          </SafeCard>
 
           {/* Mnemônico adaptativo (condicional) */}
           {visibleDashboardMnemonic && (
