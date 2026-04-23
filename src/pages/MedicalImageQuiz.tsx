@@ -621,7 +621,47 @@ const MedicalImageQuiz = () => {
           </div>
 
           {/* Quiz Card */}
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden relative">
+            {/* Admin: botão lixeira para excluir questão ruim do banco */}
+            {isAdmin && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="destructive"
+                    disabled={isDeletingQuestion}
+                    onClick={(e) => e.stopPropagation()}
+                    className="absolute top-3 right-3 z-20 h-9 w-9 rounded-full shadow-lg shadow-destructive/30 backdrop-blur-md bg-destructive/90 hover:bg-destructive border border-white/10"
+                    title="Excluir questão do banco (admin)"
+                    aria-label="Excluir questão do banco"
+                  >
+                    {isDeletingQuestion ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir esta questão do banco?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação é permanente e remove a questão do banco multimodal.
+                      Use apenas para questões claramente ruins (imagem inadequada, gabarito errado, conteúdo confuso).
+                      Os alunos não verão mais esta questão.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isDeletingQuestion}>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleAdminDeleteQuestion}
+                      disabled={isDeletingQuestion}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeletingQuestion ? "Excluindo…" : "Excluir definitivamente"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+
             {/* Image */}
             {currentQuestion.image_url && (
               <div
