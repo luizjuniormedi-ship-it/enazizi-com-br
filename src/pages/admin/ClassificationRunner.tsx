@@ -1725,28 +1725,61 @@ export default function ClassificationRunner() {
                     <TableHead className="text-right">apl.</TableHead>
                     <TableHead className="text-right">fila</TableHead>
                     <TableHead className="text-right">skip</TableHead>
+                    <TableHead>verdict</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="text-xs">{new Date(r.started_at).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs">{r.table_source}</TableCell>
-                      <TableCell className="text-xs">{r.batch_size}</TableCell>
-                      <TableCell className="text-xs">
-                        {r.dry_run ? (
-                          <Badge variant="secondary" className="text-xs">true</Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs">false</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs">{r.status}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_processed ?? 0}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_applied ?? 0}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_queued_review ?? 0}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_skipped ?? 0}</TableCell>
-                    </TableRow>
-                  ))}
+                  {history.map((r) => {
+                    const v = evaluate({
+                      total_processed: r.total_processed ?? undefined,
+                      total_applied: r.total_applied ?? undefined,
+                      total_queued_review: r.total_queued_review ?? undefined,
+                      total_skipped: r.total_skipped ?? undefined,
+                      method_breakdown: r.method_breakdown ?? undefined,
+                    }).verdict;
+                    const rowClass =
+                      v === "borderline"
+                        ? "bg-secondary/40"
+                        : v === "rejected"
+                        ? "bg-destructive/10"
+                        : "";
+                    return (
+                      <TableRow key={r.id} className={rowClass}>
+                        <TableCell className="text-xs">{new Date(r.started_at).toLocaleString()}</TableCell>
+                        <TableCell className="text-xs">{r.table_source}</TableCell>
+                        <TableCell className="text-xs">{r.batch_size}</TableCell>
+                        <TableCell className="text-xs">
+                          {r.dry_run ? (
+                            <Badge variant="secondary" className="text-xs">true</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs">false</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">{r.status}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_processed ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_applied ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_queued_review ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_skipped ?? 0}</TableCell>
+                        <TableCell className="text-xs">
+                          {v === "healthy" && (
+                            <Badge className="bg-primary text-primary-foreground">healthy</Badge>
+                          )}
+                          {v === "borderline" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary">⚠️ borderline</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Dry-run abaixo do threshold ideal; revisar antes do lote real
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          {v === "rejected" && <Badge variant="destructive">rejected</Badge>}
+                          {!v && <Badge variant="outline">—</Badge>}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
