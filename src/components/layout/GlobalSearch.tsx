@@ -3,6 +3,7 @@ import { Search, X, FileText, FlipVertical, AlertTriangle, BookOpen, Loader2 } f
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface SearchResult {
   id: string;
@@ -19,7 +20,12 @@ const TYPE_META: Record<string, { icon: typeof Search; label: string; color: str
   summary: { icon: BookOpen, label: "Resumo", color: "text-emerald-500" },
 };
 
-const GlobalSearch = () => {
+interface Props {
+  /** Variante visual: 'pill' (default) = tab streaming compacto, 'icon' = só lupa */
+  variant?: "pill" | "icon";
+}
+
+const GlobalSearch = ({ variant = "pill" }: Props) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
@@ -83,14 +89,38 @@ const GlobalSearch = () => {
   };
 
   if (!open) {
+    if (variant === "icon") {
+      return (
+        <button
+          onClick={() => setOpen(true)}
+          aria-label="Buscar conteúdo (⌘K)"
+          className={cn(
+            "h-9 w-9 inline-flex items-center justify-center rounded-full",
+            "text-muted-foreground hover:text-foreground hover:bg-white/5",
+            "transition-all duration-200 hover:scale-105",
+          )}
+        >
+          <Search className="h-4 w-4" />
+        </button>
+      );
+    }
+    // pill: discreto, mas com kbd shortcut visível em desktop
     return (
       <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/50 border border-border text-muted-foreground hover:bg-muted transition-colors text-sm"
+        aria-label="Buscar (⌘K)"
+        className={cn(
+          "group h-9 inline-flex items-center gap-2 px-3 rounded-full text-sm",
+          "text-muted-foreground hover:text-foreground",
+          "bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] hover:border-white/10",
+          "transition-all duration-200",
+        )}
       >
-        <Search className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Buscar...</span>
-        <kbd className="hidden md:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono border border-border">⌘K</kbd>
+        <Search className="h-3.5 w-3.5 opacity-70 group-hover:opacity-100 transition-opacity" />
+        <span className="hidden sm:inline text-xs">Buscar</span>
+        <kbd className="hidden md:inline-flex items-center px-1.5 py-0.5 rounded bg-white/5 text-[10px] font-mono border border-white/10 text-muted-foreground/80">
+          ⌘K
+        </kbd>
       </button>
     );
   }
