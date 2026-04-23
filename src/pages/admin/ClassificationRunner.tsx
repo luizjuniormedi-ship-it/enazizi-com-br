@@ -1189,10 +1189,14 @@ export default function ClassificationRunner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 text-center text-sm">
                 <div>
                   <div className="font-semibold">{evaluation.metrics.exactPct}%</div>
                   <div className="text-xs text-muted-foreground">exact_text</div>
+                </div>
+                <div>
+                  <div className="font-semibold text-primary">{evaluation.metrics.aliasPct}%</div>
+                  <div className="text-xs text-muted-foreground">alias_exact</div>
                 </div>
                 <div>
                   <div className="font-semibold">{evaluation.metrics.heuristicPct}%</div>
