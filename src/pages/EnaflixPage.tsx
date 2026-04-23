@@ -201,11 +201,10 @@ export default function EnaflixPage() {
         </main>
       ) : (
         <main>
-          {/* Hero billboard cinematográfico (full-bleed, começa em y=0) */}
-          {billboardModule && (
-            <EnaflixBillboard
-              module={billboardModule}
-              eyebrow={billboardEyebrow}
+          {/* Vitrine cinematográfica rotativa (até 4 destaques) */}
+          {billboardSlides.length > 0 && (
+            <EnaflixBillboardRotator
+              modules={billboardSlides}
               onNavigate={handleNavigate}
             />
           )}
