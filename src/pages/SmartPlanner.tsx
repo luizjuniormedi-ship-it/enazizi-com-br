@@ -19,6 +19,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { CinematicHero } from "@/components/cinematic";
 
 // Existing cronograma components
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
@@ -389,22 +390,23 @@ const SmartPlanner = () => {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold flex items-center gap-2">
-            <Brain className="h-6 w-6 text-primary" />
-            Planner Estratégico
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Estratégia, prioridade e inteligência adaptativa
-          </p>
-        </div>
-        <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Recalcular
-        </Button>
-      </div>
+      <CinematicHero
+        module="planner"
+        eyebrow={
+          <>
+            <Brain className="h-3.5 w-3.5" />
+            Inteligência adaptativa
+          </>
+        }
+        title="Planner Estratégico"
+        subtitle="Sua trajetória até a aprovação — fases, prioridades e revisões orquestradas em tempo real."
+        actions={
+          <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)} className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Recalcular cronograma
+          </Button>
+        }
+      />
 
       {/* Reprocess Panel */}
       {showReprocess && (
