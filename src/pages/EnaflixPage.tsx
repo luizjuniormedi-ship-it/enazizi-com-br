@@ -19,6 +19,7 @@ import { EnaflixBillboard } from "@/components/enaflix/EnaflixBillboard";
 import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
+import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
@@ -133,6 +134,11 @@ export default function EnaflixPage() {
 
   return (
     <div className="min-h-[100dvh] bg-[#0a0a12] text-white relative overflow-x-hidden">
+      {/* Partículas ambientais — sobem do bottom (fixed para acompanhar o scroll) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <EnaflixAmbientParticles count={24} hue="mixed" />
+      </div>
+
       {/* Topbar OVERLAY — flutua sobre tudo, conteúdo passa por baixo */}
       <EnaflixOverlayNav
         onClose={handleClose}

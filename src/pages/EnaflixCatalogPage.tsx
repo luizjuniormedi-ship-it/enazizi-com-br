@@ -13,6 +13,7 @@ import { ENAFLIX_MODULES, type EnaflixModule } from "@/data/enaflix/enaflixModul
 import { ENAFLIX_CATEGORIES } from "@/data/enaflix/enaflixCategories";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
+import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
@@ -75,10 +76,16 @@ export default function EnaflixCatalogPage() {
   const handleBack = () => navigate("/enaflix");
 
   return (
-    <div className="min-h-[100dvh] bg-[#0a0a12] text-white">
-      {/* Topbar sóbria — sem cinematic */}
-      <header className="sticky top-0 z-40 bg-[#0a0a12]/90 backdrop-blur-xl border-b border-white/[0.06]">
-        <div className="px-4 sm:px-8 lg:px-14 h-14 flex items-center gap-4">
+    <div className="min-h-[100dvh] bg-[#0a0a12] text-white relative overflow-x-hidden">
+      {/* Partículas ambientais cinematográficas */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <EnaflixAmbientParticles count={18} hue="mixed" />
+      </div>
+
+      {/* Hero header sutil — substitui topbar plana por gradiente cinematográfico */}
+      <header className="sticky top-0 z-40 bg-[#0a0a12]/85 backdrop-blur-xl border-b border-white/[0.06]">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,hsl(var(--primary)/0.18),transparent_60%)] pointer-events-none" />
+        <div className="relative px-4 sm:px-8 lg:px-14 h-16 flex items-center gap-4">
           <button
             type="button"
             onClick={handleBack}
@@ -94,7 +101,7 @@ export default function EnaflixCatalogPage() {
         </div>
       </header>
 
-      <main className="px-4 sm:px-8 lg:px-14 py-8 space-y-10">
+      <main className="relative z-10 px-4 sm:px-8 lg:px-14 py-8 space-y-10">
         {/* Busca */}
         <EnaflixSearchBar
           value={query}
