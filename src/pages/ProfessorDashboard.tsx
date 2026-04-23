@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { CinematicHero } from "@/components/cinematic";
 
 import ClassAnalytics from "@/components/professor/ClassAnalytics";
 import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
@@ -188,20 +189,22 @@ const ProfessorDashboard = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <GraduationCap className="h-6 w-6 text-primary" />
-            Painel do Professor
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Crie simulados, acompanhe alunos e gerencie turmas
-          </p>
-        </div>
-        <Button onClick={handleOpenCreate} className="w-full sm:w-auto gap-2">
-          <Plus className="h-4 w-4" /> Novo Simulado
-        </Button>
-      </div>
+      <CinematicHero
+        module="professor"
+        eyebrow={
+          <>
+            <GraduationCap className="h-3.5 w-3.5" />
+            Centro de mentoria
+          </>
+        }
+        title="Painel do Professor"
+        subtitle="Crie simulados, acompanhe alunos e oriente turmas com inteligência adaptativa."
+        actions={
+          <Button onClick={handleOpenCreate} size="lg" className="gap-2 shadow-elegant">
+            <Plus className="h-4 w-4" /> Novo Simulado
+          </Button>
+        }
+      />
 
       <Tabs defaultValue="simulados" className="w-full">
         <div className="rounded-2xl border border-border bg-card/40 p-2">
