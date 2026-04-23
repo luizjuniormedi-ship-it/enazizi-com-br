@@ -83,6 +83,7 @@ const POLL_INTERVAL_MS = 5000;
 type TableSource = "questions_bank" | "real_exam_questions";
 
 interface MethodBreakdown {
+  alias_exact?: number;
   exact_text?: number;
   heuristic?: number;
   ai?: number;
