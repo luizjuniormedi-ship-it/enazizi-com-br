@@ -127,13 +127,14 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
   },
   {
     id: "predictor",
-    title: "Previsão de Desempenho",
-    description: "Projeção da sua nota com base no histórico",
+    title: "Chance de Aprovação",
+    description: "Radar preditivo da sua nota nas principais bancas",
     route: "/dashboard/predictor",
     category: "avaliacao",
     icon: TrendingUp,
     badge: "ia",
     accent: "info",
+    keywords: ["predictor", "previsão", "probabilidade", "enare", "radar"],
   },
 
   // ───────── TREINO & REVISÃO ─────────
