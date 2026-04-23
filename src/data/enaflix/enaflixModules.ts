@@ -377,27 +377,8 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     badge: "em-alta",
     accent: "destructive",
   },
-  {
-    id: "coach",
-    title: "Coach Motivacional",
-    description: "Empurrão diário para manter o ritmo",
-    route: "/dashboard/coach",
-    category: "gamificacao",
-    icon: Dumbbell,
-    accent: "pink",
-  },
 
   // ───────── FERRAMENTAS INTELIGENTES ─────────
-  {
-    id: "mentor",
-    title: "Mentor IA",
-    description: "Estratégia ENARE personalizada",
-    route: "/dashboard/mentor",
-    category: "ferramentas",
-    icon: Sparkles,
-    badge: "ia",
-    accent: "primary",
-  },
   {
     id: "agentes",
     title: "Agentes",
@@ -408,22 +389,14 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     accent: "purple",
   },
   {
-    id: "uploads",
-    title: "Uploads",
-    description: "Envie PDFs, imagens e provas",
-    route: "/dashboard/uploads",
-    category: "ferramentas",
-    icon: FlaskConical,
-    accent: "info",
-  },
-  {
     id: "perfil",
-    title: "Perfil",
-    description: "Configurações da sua conta",
+    title: "Meu Espaço",
+    description: "Conta, preferências e configurações",
     route: "/dashboard/perfil",
     category: "ferramentas",
     icon: Settings,
     accent: "primary",
+    keywords: ["perfil", "minha conta", "configurações", "preferências"],
   },
 
   // ───────── PROFESSOR ─────────
