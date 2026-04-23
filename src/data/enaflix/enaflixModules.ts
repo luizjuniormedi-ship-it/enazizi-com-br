@@ -1,0 +1,525 @@
+/**
+ * Enaflix — Catálogo de módulos.
+ *
+ * Fonte única para o hub visual. Cada item aponta para uma rota REAL existente
+ * em src/App.tsx. Itens sem rota ficam como "Em breve".
+ *
+ * Para adicionar um módulo no Enaflix: inclua aqui (não espalhe pelo código).
+ */
+import type { LucideIcon } from "lucide-react";
+import {
+  Activity,
+  AlertTriangle,
+  Award,
+  BarChart3,
+  BookOpen,
+  Brain,
+  Briefcase,
+  Calendar,
+  ClipboardList,
+  Cpu,
+  Crown,
+  Dumbbell,
+  FileText,
+  FlaskConical,
+  Gauge,
+  GraduationCap,
+  HeartPulse,
+  Image as ImageIcon,
+  Layers,
+  Library,
+  LineChart,
+  ListChecks,
+  MapPin,
+  MessagesSquare,
+  Mic,
+  Network,
+  PenLine,
+  Radar,
+  Rocket,
+  ScrollText,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Stethoscope,
+  Target,
+  TrendingUp,
+  Trophy,
+  Users,
+  Wand2,
+  Zap,
+} from "lucide-react";
+
+import type { EnaflixCategoryId } from "./enaflixCategories";
+
+export type EnaflixBadge =
+  | "novo"
+  | "ia"
+  | "recomendado"
+  | "em-alta"
+  | "urgente"
+  | "premium"
+  | "em-breve";
+
+export interface EnaflixModule {
+  id: string;
+  title: string;
+  description: string;
+  /** Rota real do React Router. Se ausente → "Em breve". */
+  route?: string;
+  category: EnaflixCategoryId;
+  icon: LucideIcon;
+  badge?: EnaflixBadge;
+  /** Termos extras para a busca */
+  keywords?: string[];
+  /** Restringe visibilidade por role */
+  requires?: "admin" | "professor";
+  /** Esconde sem remover (ex.: módulo desativado) */
+  enabled?: boolean;
+  /** Aparece em "Recomendados" mesmo sem heurística */
+  featured?: boolean;
+  /** Tom de gradiente para o card (HSL via design tokens) */
+  accent?: "primary" | "warning" | "success" | "destructive" | "info" | "purple" | "pink";
+}
+
+export const ENAFLIX_MODULES: EnaflixModule[] = [
+  // ───────── AVALIAÇÃO ─────────
+  {
+    id: "simulados",
+    title: "Simulados",
+    description: "Provas completas no estilo das principais bancas",
+    route: "/dashboard/simulados",
+    category: "avaliacao",
+    icon: ClipboardList,
+    badge: "em-alta",
+    keywords: ["prova", "exame", "enare", "usp", "banca"],
+    accent: "primary",
+    featured: true,
+  },
+  {
+    id: "diagnostico",
+    title: "Diagnóstico",
+    description: "Descubra seu nível atual em minutos",
+    route: "/dashboard/diagnostico",
+    category: "avaliacao",
+    icon: Gauge,
+    accent: "info",
+    keywords: ["nivelamento", "avaliação inicial"],
+  },
+  {
+    id: "discursivas",
+    title: "Discursivas",
+    description: "Treine respostas escritas com correção por IA",
+    route: "/dashboard/discursivas",
+    category: "avaliacao",
+    icon: PenLine,
+    badge: "ia",
+    accent: "purple",
+  },
+  {
+    id: "prova-pratica",
+    title: "Prova Prática (OSCE)",
+    description: "Estações simuladas com pressão de tempo",
+    route: "/dashboard/prova-pratica",
+    category: "avaliacao",
+    icon: Stethoscope,
+    accent: "destructive",
+  },
+  {
+    id: "predictor",
+    title: "Previsão de Desempenho",
+    description: "Projeção da sua nota com base no histórico",
+    route: "/dashboard/predictor",
+    category: "avaliacao",
+    icon: TrendingUp,
+    badge: "ia",
+    accent: "info",
+  },
+
+  // ───────── TREINO & REVISÃO ─────────
+  {
+    id: "sessao-estudo",
+    title: "Sessão de Estudo",
+    description: "Centro pedagógico — questões, revisão e tutor",
+    route: "/dashboard/sessao-estudo",
+    category: "treino",
+    icon: Rocket,
+    badge: "recomendado",
+    accent: "primary",
+    featured: true,
+  },
+  {
+    id: "flashcards",
+    title: "Flashcards",
+    description: "Repetição espaçada com FSRS",
+    route: "/dashboard/flashcards",
+    category: "treino",
+    icon: Layers,
+    accent: "warning",
+  },
+  {
+    id: "gerar-flashcards",
+    title: "Gerar Flashcards",
+    description: "Crie cartões a partir de qualquer tema",
+    route: "/dashboard/gerar-flashcards",
+    category: "treino",
+    icon: Wand2,
+    badge: "ia",
+    accent: "purple",
+  },
+  {
+    id: "banco-erros",
+    title: "Banco de Erros",
+    description: "Revise exatamente o que você errou",
+    route: "/dashboard/banco-erros",
+    category: "treino",
+    icon: AlertTriangle,
+    badge: "urgente",
+    accent: "destructive",
+  },
+  {
+    id: "mnemonico",
+    title: "Mnemônicos",
+    description: "Memorização visual cinematográfica",
+    route: "/dashboard/mnemonic-studio-v2",
+    category: "treino",
+    icon: Brain,
+    badge: "premium",
+    accent: "pink",
+    keywords: ["memorização", "associação"],
+  },
+  {
+    id: "mapas-mentais",
+    title: "Mapas Mentais",
+    description: "Estruture conhecimento em árvores visuais",
+    route: "/dashboard/mapas-mentais",
+    category: "treino",
+    icon: Network,
+    accent: "info",
+  },
+  {
+    id: "questoes",
+    title: "Gerador de Questões",
+    description: "Gere questões personalizadas por tema",
+    route: "/dashboard/gerador-questoes",
+    category: "treino",
+    icon: Sparkles,
+    badge: "ia",
+    accent: "purple",
+  },
+
+  // ───────── CLÍNICA & SIMULAÇÃO ─────────
+  {
+    id: "anamnese",
+    title: "Treino de Anamnese",
+    description: "Pratique a coleta semiológica com paciente IA",
+    route: "/dashboard/anamnese",
+    category: "clinica",
+    icon: Mic,
+    badge: "ia",
+    accent: "primary",
+  },
+  {
+    id: "plantao",
+    title: "Modo Plantão",
+    description: "Simulação clínica em tempo real",
+    route: "/dashboard/plantao",
+    category: "clinica",
+    icon: HeartPulse,
+    badge: "em-alta",
+    accent: "destructive",
+  },
+  {
+    id: "cronicas",
+    title: "Crônicas Médicas",
+    description: "Casos longitudinais narrativos",
+    route: "/dashboard/cronicas",
+    category: "clinica",
+    icon: ScrollText,
+    accent: "warning",
+  },
+  {
+    id: "image-quiz",
+    title: "Quiz de Imagens",
+    description: "Habilidade visual: ECG, RX, lâminas",
+    route: "/dashboard/image-quiz",
+    category: "clinica",
+    icon: ImageIcon,
+    accent: "info",
+  },
+  {
+    id: "entrevista",
+    title: "Entrevista de Residência",
+    description: "Treine respostas com banca simulada",
+    route: "/dashboard/entrevista",
+    category: "clinica",
+    icon: Briefcase,
+    accent: "purple",
+  },
+
+  // ───────── CONTEÚDO & ESTUDO ─────────
+  {
+    id: "apostilas",
+    title: "Apostilas & Resumos",
+    description: "Material de estudo curado",
+    route: "/dashboard/apostilas",
+    category: "conteudo",
+    icon: Library,
+    accent: "primary",
+  },
+  {
+    id: "resumos",
+    title: "Resumidor",
+    description: "Resuma qualquer texto médico em segundos",
+    route: "/dashboard/resumos",
+    category: "conteudo",
+    icon: FileText,
+    badge: "ia",
+    accent: "purple",
+  },
+  {
+    id: "revisor",
+    title: "Revisor Médico",
+    description: "Validação clínica e citação de fontes",
+    route: "/dashboard/revisor",
+    category: "conteudo",
+    icon: ShieldCheck,
+    accent: "success",
+  },
+  {
+    id: "chatgpt",
+    title: "Tutor IA",
+    description: "Tire dúvidas com inteligência adaptativa",
+    route: "/dashboard/chatgpt",
+    category: "conteudo",
+    icon: MessagesSquare,
+    badge: "ia",
+    accent: "primary",
+    featured: true,
+  },
+
+  // ───────── PROGRESSO & ESTRATÉGIA ─────────
+  {
+    id: "dashboard",
+    title: "Dashboard",
+    description: "Visão geral do seu progresso",
+    route: "/dashboard",
+    category: "progresso",
+    icon: Activity,
+    accent: "primary",
+  },
+  {
+    id: "planner",
+    title: "Planner IA",
+    description: "Cronograma estratégico personalizado",
+    route: "/dashboard/planner",
+    category: "progresso",
+    icon: Calendar,
+    badge: "ia",
+    accent: "info",
+  },
+  {
+    id: "analytics",
+    title: "Analytics",
+    description: "Métricas detalhadas do seu desempenho",
+    route: "/dashboard/analytics",
+    category: "progresso",
+    icon: BarChart3,
+    accent: "purple",
+  },
+  {
+    id: "radar",
+    title: "Radar de Trajetória",
+    description: "Sua aprovação por banca",
+    route: "/dashboard/radar-trajetoria",
+    category: "progresso",
+    icon: Radar,
+    badge: "novo",
+    accent: "info",
+  },
+  {
+    id: "mapa-dominio",
+    title: "Mapa de Domínio",
+    description: "Evolução por especialidade",
+    route: "/dashboard/mapa-dominio",
+    category: "progresso",
+    icon: MapPin,
+    accent: "success",
+  },
+  {
+    id: "proficiencia",
+    title: "Proficiência",
+    description: "Provas atribuídas e desempenho",
+    route: "/dashboard/proficiencia",
+    category: "progresso",
+    icon: GraduationCap,
+    accent: "warning",
+  },
+
+  // ───────── GAMIFICAÇÃO ─────────
+  {
+    id: "conquistas",
+    title: "Conquistas",
+    description: "Badges, troféus e marcos",
+    route: "/dashboard/conquistas",
+    category: "gamificacao",
+    icon: Trophy,
+    accent: "warning",
+  },
+  {
+    id: "rankings",
+    title: "Rankings",
+    description: "Compare seu desempenho com a comunidade",
+    route: "/dashboard/rankings",
+    category: "gamificacao",
+    icon: Crown,
+    accent: "warning",
+  },
+  {
+    id: "missao",
+    title: "Modo Missão",
+    description: "Foco total — uma missão por vez",
+    route: "/mission",
+    category: "gamificacao",
+    icon: Target,
+    badge: "em-alta",
+    accent: "destructive",
+  },
+  {
+    id: "coach",
+    title: "Coach Motivacional",
+    description: "Empurrão diário para manter o ritmo",
+    route: "/dashboard/coach",
+    category: "gamificacao",
+    icon: Dumbbell,
+    accent: "pink",
+  },
+
+  // ───────── FERRAMENTAS INTELIGENTES ─────────
+  {
+    id: "mentor",
+    title: "Mentor IA",
+    description: "Estratégia ENARE personalizada",
+    route: "/dashboard/mentor",
+    category: "ferramentas",
+    icon: Sparkles,
+    badge: "ia",
+    accent: "primary",
+  },
+  {
+    id: "agentes",
+    title: "Agentes",
+    description: "Hub de agentes especialistas",
+    route: "/dashboard/agentes",
+    category: "ferramentas",
+    icon: Cpu,
+    accent: "purple",
+  },
+  {
+    id: "uploads",
+    title: "Uploads",
+    description: "Envie PDFs, imagens e provas",
+    route: "/dashboard/uploads",
+    category: "ferramentas",
+    icon: FlaskConical,
+    accent: "info",
+  },
+  {
+    id: "perfil",
+    title: "Perfil",
+    description: "Configurações da sua conta",
+    route: "/dashboard/perfil",
+    category: "ferramentas",
+    icon: Settings,
+    accent: "primary",
+  },
+
+  // ───────── PROFESSOR ─────────
+  {
+    id: "professor",
+    title: "Painel do Professor",
+    description: "Turmas, atribuições e mentoria",
+    route: "/professor",
+    category: "professor",
+    icon: Users,
+    requires: "professor",
+    accent: "primary",
+  },
+  {
+    id: "proficiencia-piloto",
+    title: "Proficiência Piloto",
+    description: "Programa de mentoria avançada",
+    route: "/professor/proficiencia/piloto",
+    category: "professor",
+    icon: ListChecks,
+    requires: "professor",
+    accent: "info",
+  },
+
+  // ───────── ADMINISTRAÇÃO ─────────
+  {
+    id: "admin",
+    title: "Admin",
+    description: "Painel administrativo geral",
+    route: "/admin",
+    category: "admin",
+    icon: ShieldCheck,
+    requires: "admin",
+    accent: "destructive",
+  },
+  {
+    id: "admin-monitoring",
+    title: "Monitoramento",
+    description: "Saúde do sistema em tempo real",
+    route: "/admin/monitoring",
+    category: "admin",
+    icon: Activity,
+    requires: "admin",
+    accent: "info",
+  },
+  {
+    id: "admin-classification-health",
+    title: "Saúde do Classificador",
+    description: "Cobertura, aliases e queue",
+    route: "/admin/classification-health",
+    category: "admin",
+    icon: LineChart,
+    requires: "admin",
+    badge: "novo",
+    accent: "success",
+  },
+  {
+    id: "admin-classification-runner",
+    title: "Classification Runner",
+    description: "Executar runs de classificação",
+    route: "/admin/classification-runner",
+    category: "admin",
+    icon: Zap,
+    requires: "admin",
+    accent: "warning",
+  },
+  {
+    id: "admin-coverage",
+    title: "Cobertura de Conteúdo",
+    description: "Auditoria do banco curricular",
+    route: "/admin/coverage",
+    category: "admin",
+    icon: BookOpen,
+    requires: "admin",
+    accent: "purple",
+  },
+  {
+    id: "admin-ceo",
+    title: "CEO Dashboard",
+    description: "Métricas de negócio e produto",
+    route: "/admin/ceo",
+    category: "admin",
+    icon: Award,
+    requires: "admin",
+    accent: "primary",
+  },
+];
+
+export function getModuleById(id: string): EnaflixModule | undefined {
+  return ENAFLIX_MODULES.find((m) => m.id === id);
+}
