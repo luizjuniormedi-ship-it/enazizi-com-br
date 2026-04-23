@@ -808,7 +808,7 @@ export default function ClassificationRunner() {
                 {lastDryRunVerdict?.verdict === "borderline" && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 border-amber-500/40">
+                      <Badge variant="secondary">
                         ⚠️ borderline
                       </Badge>
                     </TooltipTrigger>
