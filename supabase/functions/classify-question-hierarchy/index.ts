@@ -41,8 +41,15 @@ interface ClassificationResult {
   subtopic_id: string | null;
   microtopic_id: string | null;
   confidence: number;
-  method: "exact_text" | "heuristic" | "ai";
+  method: "alias_exact" | "exact_text" | "heuristic" | "ai";
   reason: string;
+}
+
+interface AliasRow {
+  normalized_alias: string;
+  specialty_id: string | null;
+  topic_id: string | null;
+  subtopic_id: string | null;
 }
 
 function normalize(s: string | null | undefined): string {
@@ -52,6 +59,19 @@ function normalize(s: string | null | undefined): string {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // remove acentos
     .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Normalizador específico para aliases curriculares: além do normalize() base,
+// remove sufixos redundantes ("medica", "geral", "clinica" isolados).
+function normalizeCurriculumLabel(s: string | null | undefined): string {
+  const base = normalize(s);
+  if (!base) return "";
+  // Não remove se a string for muito curta (evita perder "geral" sozinho com sentido).
+  if (base.split(" ").length <= 1) return base;
+  return base
+    .replace(/\b(medica|geral|clinica)\b/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -87,6 +107,7 @@ function classifyDeterministic(
   specialties: Specialty[],
   topics: Topic[],
   subtopics: Subtopic[],
+  aliases: Map<string, AliasRow>,
 ): ClassificationResult {
   const normTopic = normalize(rowTopic);
   const normSub = normalize(rowSubtopic);
@@ -100,6 +121,50 @@ function classifyDeterministic(
       confidence: 0,
       method: "heuristic",
       reason: "sem topic e sem subtopic",
+    };
+  }
+
+  // 0) ALIAS-FIRST: tenta casar via curriculum_aliases (subtopic > topic > specialty)
+  const aliasKeys: string[] = [];
+  const pushKey = (k: string) => {
+    if (k && !aliasKeys.includes(k)) aliasKeys.push(k);
+  };
+  if (normSub) {
+    pushKey(normSub);
+    pushKey(normalizeCurriculumLabel(rowSubtopic));
+  }
+  if (normTopic && normSub) {
+    pushKey(`${normTopic} ${normSub}`);
+    pushKey(normalizeCurriculumLabel(`${rowTopic} ${rowSubtopic}`));
+  }
+  if (normTopic) {
+    pushKey(normTopic);
+    pushKey(normalizeCurriculumLabel(rowTopic));
+  }
+
+  for (const key of aliasKeys) {
+    const hit = aliases.get(key);
+    if (!hit) continue;
+    let specId: string | null = hit.specialty_id;
+    let topicId: string | null = hit.topic_id;
+    const subId: string | null = hit.subtopic_id;
+    if (subId && !topicId) {
+      const sub = subtopics.find((s) => s.id === subId);
+      if (sub) topicId = sub.topic_id;
+    }
+    if (topicId && !specId) {
+      const top = topics.find((t) => t.id === topicId);
+      if (top) specId = top.specialty_id;
+    }
+    if (!specId) continue;
+    return {
+      specialty_id: specId,
+      topic_id: topicId,
+      subtopic_id: subId,
+      microtopic_id: null,
+      confidence: 0.97,
+      method: "alias_exact",
+      reason: `alias="${key}" → resolvido via curriculum_aliases`,
     };
   }
 
@@ -305,6 +370,24 @@ Deno.serve(async (req) => {
       norm: normalize(s.nome),
     }));
 
+    // 1b) Carregar aliases curriculares ativos
+    const { data: aliasRaw } = await admin
+      .from("curriculum_aliases")
+      .select("normalized_alias, specialty_id, topic_id, subtopic_id")
+      .eq("active", true);
+    const aliases = new Map<string, AliasRow>();
+    for (const a of aliasRaw ?? []) {
+      if (a?.normalized_alias) {
+        aliases.set(a.normalized_alias, {
+          normalized_alias: a.normalized_alias,
+          specialty_id: a.specialty_id ?? null,
+          topic_id: a.topic_id ?? null,
+          subtopic_id: a.subtopic_id ?? null,
+        });
+      }
+    }
+    console.info("[classify-hierarchy] aliases loaded", { count: aliases.size });
+
     // 2) Criar registro do run
     const { data: run, error: runErr } = await admin
       .from("question_classification_runs")
@@ -328,7 +411,7 @@ Deno.serve(async (req) => {
       .limit(batchSize);
     if (rowsErr) throw new Error(`failed to fetch rows: ${rowsErr.message}`);
 
-    const breakdown = { exact_text: 0, heuristic: 0, ai: 0 };
+    const breakdown: Record<string, number> = { alias_exact: 0, exact_text: 0, heuristic: 0, ai: 0 };
     let applied = 0;
     let queuedReview = 0;
     let skipped = 0;
@@ -341,6 +424,7 @@ Deno.serve(async (req) => {
         specialties,
         topics,
         subtopics,
+        aliases,
       );
 
       // Idempotência: respeita confiança maior já existente
