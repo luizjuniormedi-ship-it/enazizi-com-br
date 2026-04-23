@@ -1071,7 +1071,37 @@ export default function ClassificationRunner() {
                 Tentar novamente
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={testConnection}
+              disabled={!ready || connTesting}
+              title="Dispara dry-run mínimo (batch=10) só para medir latência e validar conectividade."
+            >
+              {connTesting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Wifi className="h-4 w-4 mr-2" />
+              )}
+              Testar conexão com edge function
+            </Button>
           </div>
+
+          {connTest && (
+            <Alert variant={connTest.ok ? "default" : "destructive"}>
+              <Activity className="h-4 w-4" />
+              <AlertTitle className="flex items-center gap-2">
+                {connTest.ok ? "Conexão OK" : "Conexão falhou"}
+                <Badge variant="outline">{connTest.latencyMs} ms</Badge>
+                <span className="text-xs text-muted-foreground font-normal">
+                  {new Date(connTest.timestamp).toLocaleTimeString()}
+                </span>
+              </AlertTitle>
+              <AlertDescription className="font-mono text-xs break-all">
+                {connTest.summary}
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
