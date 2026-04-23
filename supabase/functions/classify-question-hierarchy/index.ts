@@ -41,8 +41,15 @@ interface ClassificationResult {
   subtopic_id: string | null;
   microtopic_id: string | null;
   confidence: number;
-  method: "exact_text" | "heuristic" | "ai";
+  method: "alias_exact" | "exact_text" | "heuristic" | "ai";
   reason: string;
+}
+
+interface AliasRow {
+  normalized_alias: string;
+  specialty_id: string | null;
+  topic_id: string | null;
+  subtopic_id: string | null;
 }
 
 function normalize(s: string | null | undefined): string {
