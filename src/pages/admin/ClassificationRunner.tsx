@@ -393,6 +393,162 @@ export default function ClassificationRunner() {
 
   const errorKind = errorPayload ? classifyError(errorPayload.message, errorPayload.raw) : null;
 
+  // ── Reidratar snapshots persistidos ─────────────────────────────
+  useEffect(() => {
+    setPreSnapshot(loadPreSnapshot());
+    setPostSnapshot(loadPostSnapshot());
+  }, []);
+
+  // ── GUARDRAILS para execução real ───────────────────────────────
+  const lastDryRun = useMemo(
+    () => history.find((r) => r.dry_run === true) ?? null,
+    [history],
+  );
+  const lastDryRunVerdict = useMemo(() => {
+    if (!lastDryRun) return null;
+    return evaluate({
+      total_processed: lastDryRun.total_processed ?? undefined,
+      total_applied: lastDryRun.total_applied ?? undefined,
+      total_queued_review: lastDryRun.total_queued_review ?? undefined,
+      total_skipped: lastDryRun.total_skipped ?? undefined,
+      method_breakdown: lastDryRun.method_breakdown ?? undefined,
+    });
+  }, [lastDryRun]);
+  const dryRunAgeMs = lastDryRun
+    ? Date.now() - new Date(lastDryRun.finished_at ?? lastDryRun.started_at).getTime()
+    : Infinity;
+  const dryRunFresh = dryRunAgeMs <= DRY_RUN_MAX_AGE_MS;
+  const dryRunHealthy = lastDryRunVerdict?.verdict === "healthy";
+
+  const guardrails = useMemo(() => {
+    const checks: { ok: boolean; label: string }[] = [
+      { ok: !!user, label: "Usuário logado" },
+      { ok: isAdmin, label: "Role admin confirmada" },
+      { ok: !!session?.access_token, label: "Sessão JWT presente" },
+      { ok: !!lastDryRun, label: "Existe dry-run anterior" },
+      { ok: !!lastDryRun && lastDryRun.dry_run === true, label: "Última run é dry-run válido" },
+      { ok: dryRunHealthy, label: "Dry-run saudável (verdict=healthy)" },
+      { ok: dryRunFresh, label: "Dry-run recente (≤ 2h)" },
+    ];
+    const passed = checks.every((c) => c.ok);
+    return { checks, passed };
+  }, [user, isAdmin, session, lastDryRun, dryRunHealthy, dryRunFresh]);
+
+  const realParams = lastDryRun
+    ? { table_source: lastDryRun.table_source as TableSource, batch_size: lastDryRun.batch_size }
+    : null;
+
+  // ── Executar lote real (com snapshots) ──────────────────────────
+  const executeRealBatch = useCallback(async () => {
+    if (!guardrails.passed || !realParams) {
+      toast.error("Guardrails falharam — revise condições acima");
+      return;
+    }
+    setRealRunning(true);
+    setErrorPayload(null);
+    const startedAt = new Date().toISOString();
+    try {
+      let pre: ClassificationSnapshot | null = null;
+      try {
+        pre = await captureSnapshot(realParams.table_source);
+        savePreSnapshot(pre);
+        setPreSnapshot(pre);
+      } catch (e) {
+        console.warn("Falha no snapshot pré-execução", e);
+      }
+
+      const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
+        body: {
+          table_source: realParams.table_source,
+          batch_size: realParams.batch_size,
+          dry_run: false,
+        },
+      });
+      if (error) {
+        setErrorPayload({ message: error.message, raw: data ?? error });
+        toast.error("Lote real falhou");
+        return;
+      }
+      const r = data as RunResult;
+      setResult(r);
+      const finishedAt = new Date().toISOString();
+      setSnapshotTs(finishedAt);
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            result: r,
+            params: { ...realParams, dry_run: false },
+            ts: finishedAt,
+          } satisfies LocalSnapshot),
+        );
+      } catch {
+        /* ignore */
+      }
+
+      try {
+        const post = await captureSnapshot(realParams.table_source);
+        savePostSnapshot(post);
+        setPostSnapshot(post);
+      } catch (e) {
+        console.warn("Falha no snapshot pós-execução", e);
+      }
+
+      setLastRealRunMeta({
+        runId: (r.run_id as string | undefined) ?? null,
+        startedAt,
+        finishedAt,
+        tableSource: realParams.table_source,
+        result: r,
+      });
+
+      toast.success(`Lote real concluído (${r.total_applied ?? 0} aplicadas)`);
+      void fetchPersisted();
+    } catch (e) {
+      setErrorPayload({ message: (e as Error).message, raw: e });
+      toast.error("Falha ao invocar edge function");
+    } finally {
+      setRealRunning(false);
+      setConfirmOpen(false);
+      setConfirmPhrase("");
+    }
+  }, [guardrails.passed, realParams, fetchPersisted]);
+
+  const realRunsHistory = useMemo(() => history.filter((r) => !r.dry_run), [history]);
+
+  const delta: SnapshotDelta | null = useMemo(() => {
+    if (!preSnapshot || !postSnapshot) return null;
+    return computeDelta(preSnapshot, postSnapshot);
+  }, [preSnapshot, postSnapshot]);
+
+  const coverage = useMemo(() => {
+    if (!postSnapshot || !postSnapshot.total_questions) return null;
+    const total = postSnapshot.total_questions;
+    return {
+      specialty: pct(postSnapshot.with_specialty_id, total),
+      topic: pct(postSnapshot.with_topic_id, total),
+      subtopic: pct(postSnapshot.with_subtopic_id, total),
+    };
+  }, [postSnapshot]);
+
+  const rollbackSql = useMemo(() => {
+    if (!lastRealRunMeta) return null;
+    return buildRollbackSql({
+      tableSource: lastRealRunMeta.tableSource,
+      startedAt: lastRealRunMeta.startedAt,
+      finishedAt: lastRealRunMeta.finishedAt,
+      runId: lastRealRunMeta.runId,
+    });
+  }, [lastRealRunMeta]);
+
+  const copyRollback = () => {
+    if (!rollbackSql) return;
+    navigator.clipboard
+      .writeText(rollbackSql)
+      .then(() => toast.success("SQL de rollback copiado"))
+      .catch(() => toast.error("Não foi possível copiar"));
+  };
+
   // ── Aviso de divergência local vs banco ─────────────────────────
   const divergence = useMemo(() => {
     if (!result || !lastRun) return false;
