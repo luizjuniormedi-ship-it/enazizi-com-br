@@ -23,6 +23,7 @@ import ReactMarkdown from "react-markdown";
 
 import StudyStyleSelector, { type StudyMode } from "@/components/tutor/StudyStyleSelector";
 import TutorChatPanel from "@/components/study/TutorChatPanel";
+import OperationalHub from "@/components/study/OperationalHub";
 import { parseStudySignal, stripStudySignal, type StudySignal } from "@/lib/parseStudySignal";
 import {
   invokeStudyCompleteWithRetry,
@@ -884,56 +885,13 @@ const StudySession = () => {
           </div>
         )}
 
-        {/* Start Screen */}
+        {/* Start Screen — Hub Operacional (4 áreas) substitui o input minimalista */}
         {phase === "start" && (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="max-w-xl w-full space-y-6">
-              <div className="text-center space-y-3">
-                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto">
-                  <GraduationCap className="h-8 w-8 text-primary" />
-                </div>
-                <h2 className="text-2xl font-bold">Vamos estudar! 🎯</h2>
-                <p className="text-muted-foreground text-sm">
-                  O ENAZIZI segue o protocolo pedagógico completo:
-                </p>
-                <div className="flex flex-wrap justify-center gap-1.5 text-xs">
-                  {FLOW_PHASES.map((p) => (
-                    <Badge key={p} variant="outline" className="text-[10px]">
-                      {PHASE_META[p].label}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <Input
-                  value={topicInput}
-                  onChange={(e) => setTopicInput(e.target.value)}
-                  placeholder="Digite o tema: Ex: Insuficiência Cardíaca, TEP..."
-                  onKeyDown={(e) => e.key === "Enter" && startStudy()}
-                  className="flex-1"
-                  autoFocus
-                />
-                <Button onClick={startStudy} disabled={!topicInput.trim()}>
-                  <Play className="h-4 w-4 mr-1" /> Estudar
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5 justify-center">
-                {SUGGESTED_TOPICS.map((t) => (
-                  <Button
-                    key={t}
-                    variant="outline"
-                    size="sm"
-                    className="text-[11px] h-7"
-                    onClick={() => setTopicInput(t)}
-                  >
-                    {t}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
+          <OperationalHub
+            topicInput={topicInput}
+            onTopicChange={setTopicInput}
+            onStartStudy={startStudy}
+          />
         )}
 
         {/* Style Select Screen */}
