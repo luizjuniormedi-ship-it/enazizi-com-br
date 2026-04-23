@@ -596,23 +596,56 @@ Deno.serve(async (req) => {
       .update({
         status: "completed",
         finished_at: new Date().toISOString(),
-        total_processed: (rows ?? []).length,
+        total_processed: processed,
         total_applied: applied,
         total_queued_review: queuedReview,
         total_skipped: skipped,
         method_breakdown: breakdown,
+        deterministic_pct: deterministicPct,
+        heuristic_pct: heuristicPct,
+        queue_pct: queuePct,
+        skipped_pct: skippedPct,
+        alias_exact_count: aliasExactCount,
+        exact_text_count: exactTextCount,
+        heuristic_count: heuristicCount,
         notes: dryRun ? "dry-run; nada foi gravado" : null,
       })
       .eq("id", run.id);
 
+    // Snapshot de saúde global (mesmo em dry-run)
+    try {
+      const { data: healthRow } = await admin
+        .from("v_classification_health")
+        .select("*")
+        .maybeSingle();
+      if (healthRow) {
+        await admin.from("classification_health_snapshots").insert({
+          run_id: run.id,
+          total_questions: healthRow.total_questions,
+          pct_specialty: healthRow.pct_specialty,
+          pct_topic: healthRow.pct_topic,
+          pct_subtopic: healthRow.pct_subtopic,
+          queue_pending: healthRow.queue_pending,
+          deterministic_pct: deterministicPct,
+          heuristic_pct: heuristicPct,
+          queue_pct: queuePct,
+          skipped_pct: skippedPct,
+        });
+      }
+    } catch (snapErr) {
+      console.warn("[classify-hierarchy] health snapshot failed", snapErr);
+    }
+
     console.info("[classify-hierarchy] done", {
       run_id: run.id,
       dryRun,
-      processed: (rows ?? []).length,
+      processed,
       applied,
       queuedReview,
       skipped,
       breakdown,
+      deterministicPct,
+      aliasEvents: aliasEvents.length,
       wrote_to_questions_table: !dryRun,
     });
 
