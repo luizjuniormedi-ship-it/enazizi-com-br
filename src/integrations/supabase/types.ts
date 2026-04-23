@@ -385,6 +385,62 @@ export type Database = {
         }
         Relationships: []
       }
+      alias_match_events: {
+        Row: {
+          alias_key: string
+          alias_target: string
+          confidence: number | null
+          created_at: string
+          id: string
+          normalized_topic: string | null
+          original_topic: string | null
+          question_id: string
+          run_id: string | null
+          specialty_id: string | null
+          subtopic_id: string | null
+          table_source: string
+          topic_id: string | null
+        }
+        Insert: {
+          alias_key: string
+          alias_target: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          normalized_topic?: string | null
+          original_topic?: string | null
+          question_id: string
+          run_id?: string | null
+          specialty_id?: string | null
+          subtopic_id?: string | null
+          table_source: string
+          topic_id?: string | null
+        }
+        Update: {
+          alias_key?: string
+          alias_target?: string
+          confidence?: number | null
+          created_at?: string
+          id?: string
+          normalized_topic?: string | null
+          original_topic?: string | null
+          question_id?: string
+          run_id?: string | null
+          specialty_id?: string | null
+          subtopic_id?: string | null
+          table_source?: string
+          topic_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alias_match_events_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "question_classification_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       anamnesis_interactions: {
         Row: {
           category: string | null
@@ -1029,6 +1085,59 @@ export type Database = {
             columns: ["institution_id"]
             isOneToOne: false
             referencedRelation: "institutions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      classification_health_snapshots: {
+        Row: {
+          created_at: string
+          deterministic_pct: number | null
+          heuristic_pct: number | null
+          id: string
+          pct_specialty: number | null
+          pct_subtopic: number | null
+          pct_topic: number | null
+          queue_pct: number | null
+          queue_pending: number | null
+          run_id: string | null
+          skipped_pct: number | null
+          total_questions: number | null
+        }
+        Insert: {
+          created_at?: string
+          deterministic_pct?: number | null
+          heuristic_pct?: number | null
+          id?: string
+          pct_specialty?: number | null
+          pct_subtopic?: number | null
+          pct_topic?: number | null
+          queue_pct?: number | null
+          queue_pending?: number | null
+          run_id?: string | null
+          skipped_pct?: number | null
+          total_questions?: number | null
+        }
+        Update: {
+          created_at?: string
+          deterministic_pct?: number | null
+          heuristic_pct?: number | null
+          id?: string
+          pct_specialty?: number | null
+          pct_subtopic?: number | null
+          pct_topic?: number | null
+          queue_pct?: number | null
+          queue_pending?: number | null
+          run_id?: string | null
+          skipped_pct?: number | null
+          total_questions?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "classification_health_snapshots_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "question_classification_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -6500,14 +6609,21 @@ export type Database = {
       }
       question_classification_runs: {
         Row: {
+          alias_exact_count: number | null
           batch_size: number
           created_at: string
+          deterministic_pct: number | null
           dry_run: boolean
           error_message: string | null
+          exact_text_count: number | null
           finished_at: string | null
+          heuristic_count: number | null
+          heuristic_pct: number | null
           id: string
           method_breakdown: Json
           notes: string | null
+          queue_pct: number | null
+          skipped_pct: number | null
           started_at: string
           status: string
           table_source: string
@@ -6518,14 +6634,21 @@ export type Database = {
           triggered_by: string | null
         }
         Insert: {
+          alias_exact_count?: number | null
           batch_size: number
           created_at?: string
+          deterministic_pct?: number | null
           dry_run?: boolean
           error_message?: string | null
+          exact_text_count?: number | null
           finished_at?: string | null
+          heuristic_count?: number | null
+          heuristic_pct?: number | null
           id?: string
           method_breakdown?: Json
           notes?: string | null
+          queue_pct?: number | null
+          skipped_pct?: number | null
           started_at?: string
           status?: string
           table_source: string
@@ -6536,14 +6659,21 @@ export type Database = {
           triggered_by?: string | null
         }
         Update: {
+          alias_exact_count?: number | null
           batch_size?: number
           created_at?: string
+          deterministic_pct?: number | null
           dry_run?: boolean
           error_message?: string | null
+          exact_text_count?: number | null
           finished_at?: string | null
+          heuristic_count?: number | null
+          heuristic_pct?: number | null
           id?: string
           method_breakdown?: Json
           notes?: string | null
+          queue_pct?: number | null
+          skipped_pct?: number | null
           started_at?: string
           status?: string
           table_source?: string
@@ -10467,6 +10597,17 @@ export type Database = {
         }
         Relationships: []
       }
+      v_alias_coverage: {
+        Row: {
+          alias_key: string | null
+          alias_target: string | null
+          avg_confidence: number | null
+          first_seen: string | null
+          last_seen: string | null
+          total_matches: number | null
+        }
+        Relationships: []
+      }
       v_banca_question_coverage: {
         Row: {
           banca: string | null
@@ -10477,6 +10618,21 @@ export type Database = {
           de_real_exam: number | null
           pct_classificadas: number | null
           total_questoes: number | null
+        }
+        Relationships: []
+      }
+      v_classification_health: {
+        Row: {
+          generated_at: string | null
+          pct_specialty: number | null
+          pct_subtopic: number | null
+          pct_topic: number | null
+          queue_pending: number | null
+          total_questions: number | null
+          total_runs: number | null
+          with_specialty: number | null
+          with_subtopic: number | null
+          with_topic: number | null
         }
         Relationships: []
       }

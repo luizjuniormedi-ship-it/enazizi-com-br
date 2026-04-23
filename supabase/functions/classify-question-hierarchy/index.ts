@@ -43,6 +43,9 @@ interface ClassificationResult {
   confidence: number;
   method: "alias_exact" | "exact_text" | "heuristic" | "ai";
   reason: string;
+  alias_key?: string;
+  alias_target?: string;
+  normalized_topic?: string;
 }
 
 interface AliasRow {
@@ -165,6 +168,9 @@ function classifyDeterministic(
       confidence: 0.97,
       method: "alias_exact",
       reason: `alias="${key}" → resolvido via curriculum_aliases`,
+      alias_key: key,
+      alias_target: subId ? `subtopic:${subId}` : topicId ? `topic:${topicId}` : `specialty:${specId}`,
+      normalized_topic: normTopic || normSub,
     };
   }
 
@@ -412,6 +418,19 @@ Deno.serve(async (req) => {
     if (rowsErr) throw new Error(`failed to fetch rows: ${rowsErr.message}`);
 
     const breakdown: Record<string, number> = { alias_exact: 0, exact_text: 0, heuristic: 0, ai: 0 };
+    const aliasEvents: Array<{
+      run_id: string;
+      table_source: string;
+      question_id: string;
+      original_topic: string | null;
+      normalized_topic: string | null;
+      alias_key: string;
+      alias_target: string;
+      specialty_id: string | null;
+      topic_id: string | null;
+      subtopic_id: string | null;
+      confidence: number;
+    }> = [];
     let applied = 0;
     let queuedReview = 0;
     let skipped = 0;
@@ -485,6 +504,23 @@ Deno.serve(async (req) => {
       // confiança média/alta
       breakdown[result.method]++;
 
+      // Telemetria: alias_exact → registrar evento
+      if (result.method === "alias_exact" && result.alias_key && result.alias_target) {
+        aliasEvents.push({
+          run_id: run.id,
+          table_source: tableSource,
+          question_id: row.id,
+          original_topic: row.topic ?? null,
+          normalized_topic: result.normalized_topic ?? null,
+          alias_key: result.alias_key,
+          alias_target: result.alias_target,
+          specialty_id: result.specialty_id,
+          topic_id: result.topic_id,
+          subtopic_id: result.subtopic_id,
+          confidence: result.confidence,
+        });
+      }
+
       if (!dryRun) {
         await admin
           .from(tableSource)
@@ -527,28 +563,89 @@ Deno.serve(async (req) => {
       applied++;
     }
 
+    // Persistir alias events em batch (mesmo em dry-run, para análise)
+    if (aliasEvents.length > 0) {
+      const { error: aliasEvtErr } = await admin
+        .from("alias_match_events")
+        .insert(aliasEvents);
+      if (aliasEvtErr) {
+        console.warn("[classify-hierarchy] alias_match_events insert failed", aliasEvtErr.message);
+      }
+    }
+
+    // Métricas finais
+    const processed = (rows ?? []).length;
+    const aliasExactCount = breakdown.alias_exact ?? 0;
+    const exactTextCount = breakdown.exact_text ?? 0;
+    const heuristicCount = breakdown.heuristic ?? 0;
+    const deterministicPct = processed > 0
+      ? Math.round(((aliasExactCount + exactTextCount) / processed) * 10000) / 100
+      : 0;
+    const heuristicPct = processed > 0
+      ? Math.round((heuristicCount / processed) * 10000) / 100
+      : 0;
+    const queuePct = processed > 0
+      ? Math.round((queuedReview / processed) * 10000) / 100
+      : 0;
+    const skippedPct = processed > 0
+      ? Math.round((skipped / processed) * 10000) / 100
+      : 0;
+
     await admin
       .from("question_classification_runs")
       .update({
         status: "completed",
         finished_at: new Date().toISOString(),
-        total_processed: (rows ?? []).length,
+        total_processed: processed,
         total_applied: applied,
         total_queued_review: queuedReview,
         total_skipped: skipped,
         method_breakdown: breakdown,
+        deterministic_pct: deterministicPct,
+        heuristic_pct: heuristicPct,
+        queue_pct: queuePct,
+        skipped_pct: skippedPct,
+        alias_exact_count: aliasExactCount,
+        exact_text_count: exactTextCount,
+        heuristic_count: heuristicCount,
         notes: dryRun ? "dry-run; nada foi gravado" : null,
       })
       .eq("id", run.id);
 
+    // Snapshot de saúde global (mesmo em dry-run)
+    try {
+      const { data: healthRow } = await admin
+        .from("v_classification_health")
+        .select("*")
+        .maybeSingle();
+      if (healthRow) {
+        await admin.from("classification_health_snapshots").insert({
+          run_id: run.id,
+          total_questions: healthRow.total_questions,
+          pct_specialty: healthRow.pct_specialty,
+          pct_topic: healthRow.pct_topic,
+          pct_subtopic: healthRow.pct_subtopic,
+          queue_pending: healthRow.queue_pending,
+          deterministic_pct: deterministicPct,
+          heuristic_pct: heuristicPct,
+          queue_pct: queuePct,
+          skipped_pct: skippedPct,
+        });
+      }
+    } catch (snapErr) {
+      console.warn("[classify-hierarchy] health snapshot failed", snapErr);
+    }
+
     console.info("[classify-hierarchy] done", {
       run_id: run.id,
       dryRun,
-      processed: (rows ?? []).length,
+      processed,
       applied,
       queuedReview,
       skipped,
       breakdown,
+      deterministicPct,
+      aliasEvents: aliasEvents.length,
       wrote_to_questions_table: !dryRun,
     });
 
