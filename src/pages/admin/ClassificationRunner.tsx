@@ -55,7 +55,12 @@ import {
   Copy,
   Lock,
   TrendingUp,
+  Activity,
+  Wifi,
+  HelpCircle,
+  Heart,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   captureSnapshot,
@@ -70,8 +75,10 @@ import {
 } from "@/lib/classificationSnapshot";
 
 const STORAGE_KEY = "classification_runner:last_result";
+const LAST_GOOD_DRY_RUN_KEY = "classification_runner:last_good_dry_run";
 const DRY_RUN_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 horas
 const CONFIRM_PHRASE = "EXECUTAR LOTE REAL";
+const POLL_INTERVAL_MS = 5000;
 
 type TableSource = "questions_bank" | "real_exam_questions";
 
@@ -249,6 +256,25 @@ export default function ClassificationRunner() {
   const [queueItems, setQueueItems] = useState<QueueRow[]>([]);
   const [loadingPersisted, setLoadingPersisted] = useState(true);
 
+  // Last good dry-run persistido (cache rápido)
+  const [lastGoodDryRun, setLastGoodDryRun] = useState<{
+    runId: string;
+    verdict: Verdict;
+    timestamp: string;
+    tableSource: string;
+    batchSize: number;
+    metrics: { exactPct: number; heuristicPct: number; queuePct: number; skipPct: number; total: number };
+  } | null>(null);
+
+  // Tester de conexão com a edge function
+  const [connTesting, setConnTesting] = useState(false);
+  const [connTest, setConnTest] = useState<{
+    ok: boolean;
+    latencyMs: number;
+    summary: string;
+    timestamp: string;
+  } | null>(null);
+
   // ── Estado da execução real ────────────────────────────────────
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmPhrase, setConfirmPhrase] = useState("");
@@ -265,6 +291,31 @@ export default function ClassificationRunner() {
 
   const ready = !!user && isAdmin && !rolesLoading && !!session;
   const evaluation = useMemo(() => evaluate(result), [result]);
+
+  // ── Persistir "last good dry-run" sempre que verdict for healthy ─
+  useEffect(() => {
+    if (
+      result &&
+      result.dry_run &&
+      evaluation.verdict === "healthy" &&
+      result.run_id
+    ) {
+      const payload = {
+        runId: result.run_id as string,
+        verdict: evaluation.verdict,
+        timestamp: snapshotTs ?? new Date().toISOString(),
+        tableSource: (result.table_source as string) ?? tableSource,
+        batchSize,
+        metrics: evaluation.metrics,
+      };
+      try {
+        localStorage.setItem(LAST_GOOD_DRY_RUN_KEY, JSON.stringify(payload));
+        setLastGoodDryRun(payload);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [result, evaluation, snapshotTs, tableSource, batchSize]);
 
   // ── Reidratar localStorage ──────────────────────────────────────
   useEffect(() => {
@@ -327,6 +378,71 @@ export default function ClassificationRunner() {
   useEffect(() => {
     void fetchPersisted();
   }, [fetchPersisted]);
+
+  // ── Hidratar last good dry-run do localStorage ─────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LAST_GOOD_DRY_RUN_KEY);
+      if (raw) setLastGoodDryRun(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // ── Auto-refresh enquanto houver run em andamento ──────────────
+  useEffect(() => {
+    if (!lastRun || lastRun.status !== "running") return;
+    const id = window.setInterval(() => {
+      void fetchPersisted();
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [lastRun, fetchPersisted]);
+
+  // ── Tester de conexão (dry-run mínimo, batch=10) ────────────────
+  const testConnection = useCallback(async () => {
+    if (!ready) {
+      toast.error("Login admin necessário");
+      return;
+    }
+    setConnTesting(true);
+    const start = performance.now();
+    try {
+      const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
+        body: { table_source: tableSource, batch_size: 10, dry_run: true },
+      });
+      const latencyMs = Math.round(performance.now() - start);
+      if (error) {
+        setConnTest({
+          ok: false,
+          latencyMs,
+          summary: error.message ?? "erro desconhecido",
+          timestamp: new Date().toISOString(),
+        });
+        toast.error(`Conexão falhou (${latencyMs}ms)`);
+        return;
+      }
+      const r = data as RunResult;
+      setConnTest({
+        ok: true,
+        latencyMs,
+        summary: `processed=${r.total_processed ?? 0} applied=${r.total_applied ?? 0} run=${(r.run_id as string | undefined)?.slice(0, 8) ?? "—"}`,
+        timestamp: new Date().toISOString(),
+      });
+      toast.success(`Conexão OK (${latencyMs}ms)`);
+      void fetchPersisted();
+    } catch (e) {
+      const latencyMs = Math.round(performance.now() - start);
+      setConnTest({
+        ok: false,
+        latencyMs,
+        summary: (e as Error).message,
+        timestamp: new Date().toISOString(),
+      });
+      toast.error("Falha de rede");
+    } finally {
+      setConnTesting(false);
+    }
+  }, [ready, tableSource, fetchPersisted]);
 
   // ── Execução ────────────────────────────────────────────────────
   const execute = useCallback(
@@ -572,6 +688,158 @@ export default function ClassificationRunner() {
         </Button>
       </div>
 
+      <TooltipProvider>
+
+      {/* ════════ Card Saúde da última execução ════════ */}
+      <Card className={
+        lastDryRunVerdict?.verdict === "healthy"
+          ? "border-primary/50 bg-primary/5"
+          : lastDryRunVerdict?.verdict === "borderline"
+          ? "border-secondary bg-secondary/30"
+          : lastDryRunVerdict?.verdict === "rejected"
+          ? "border-destructive/50 bg-destructive/5"
+          : ""
+      }>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="h-5 w-5" />
+            Saúde da última execução
+            {lastRun?.status === "running" && (
+              <Badge variant="secondary" className="ml-2">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" /> em andamento (auto-refresh)
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Resumo rápido da última run persistida + verdict local consolidado.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingPersisted && !lastRun ? (
+            <Skeleton className="h-24 w-full" />
+          ) : !lastRun ? (
+            <div className="space-y-3 text-sm">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Nenhuma execução registrada ainda</AlertTitle>
+                <AlertDescription>
+                  Comece com um dry-run para validar o classificador antes de qualquer escrita.
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={runWithCurrentParams} disabled={!ready || running}>
+                  <Play className="h-4 w-4 mr-2" /> Abrir dry-run
+                </Button>
+                <Button size="sm" variant="outline" onClick={testConnection} disabled={!ready || connTesting}>
+                  {connTesting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Wifi className="h-4 w-4 mr-2" />
+                  )}
+                  Testar conexão
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">run_id</div>
+                  <div className="font-mono text-xs">{lastRun.id.slice(0, 8)}…</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">tabela</div>
+                  <div className="text-xs">{lastRun.table_source}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">batch</div>
+                  <div className="text-xs">{lastRun.batch_size}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">dry_run</div>
+                  <div className="text-xs">{lastRun.dry_run ? "true" : "false"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">processed</div>
+                  <div className="font-bold">{lastRun.total_processed ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">applied</div>
+                  <div className="font-bold">{lastRun.total_applied ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">queued</div>
+                  <div className="font-bold">{lastRun.total_queued_review ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">skipped</div>
+                  <div className="font-bold">{lastRun.total_skipped ?? 0}</div>
+                </div>
+              </div>
+              {lastDryRunVerdict && (
+                <>
+                  <Separator />
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                    <div>
+                      <div className="text-xs text-muted-foreground">exact_text</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.exactPct}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">heuristic</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.heuristicPct}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">queue %</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.queuePct}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">skip %</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.skipPct}%</div>
+                    </div>
+                  </div>
+                </>
+              )}
+              <div className="flex items-center gap-2 flex-wrap pt-1">
+                {lastDryRunVerdict?.verdict === "healthy" && (
+                  <Badge className="bg-primary text-primary-foreground">
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> healthy
+                  </Badge>
+                )}
+                {lastDryRunVerdict?.verdict === "borderline" && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary">
+                        ⚠️ borderline
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Dry-run abaixo do threshold ideal; revisar antes do lote real
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {lastDryRunVerdict?.verdict === "rejected" && (
+                  <Badge variant="destructive">❌ rejected</Badge>
+                )}
+                {lastGoodDryRun && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline">
+                        Último dry-run saudável: {lastGoodDryRun.runId.slice(0, 8)}… ·{" "}
+                        {new Date(lastGoodDryRun.timestamp).toLocaleString()}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Cache local: {lastGoodDryRun.tableSource} · batch {lastGoodDryRun.batchSize} ·
+                      exact {lastGoodDryRun.metrics.exactPct}%
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Diagnóstico de autenticação */}
       <Card>
         <CardHeader>
@@ -803,7 +1071,37 @@ export default function ClassificationRunner() {
                 Tentar novamente
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={testConnection}
+              disabled={!ready || connTesting}
+              title="Dispara dry-run mínimo (batch=10) só para medir latência e validar conectividade."
+            >
+              {connTesting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Wifi className="h-4 w-4 mr-2" />
+              )}
+              Testar conexão com edge function
+            </Button>
           </div>
+
+          {connTest && (
+            <Alert variant={connTest.ok ? "default" : "destructive"}>
+              <Activity className="h-4 w-4" />
+              <AlertTitle className="flex items-center gap-2">
+                {connTest.ok ? "Conexão OK" : "Conexão falhou"}
+                <Badge variant="outline">{connTest.latencyMs} ms</Badge>
+                <span className="text-xs text-muted-foreground font-normal">
+                  {new Date(connTest.timestamp).toLocaleTimeString()}
+                </span>
+              </AlertTitle>
+              <AlertDescription className="font-mono text-xs break-all">
+                {connTest.summary}
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
@@ -1427,34 +1725,69 @@ export default function ClassificationRunner() {
                     <TableHead className="text-right">apl.</TableHead>
                     <TableHead className="text-right">fila</TableHead>
                     <TableHead className="text-right">skip</TableHead>
+                    <TableHead>verdict</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {history.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell className="text-xs">{new Date(r.started_at).toLocaleString()}</TableCell>
-                      <TableCell className="text-xs">{r.table_source}</TableCell>
-                      <TableCell className="text-xs">{r.batch_size}</TableCell>
-                      <TableCell className="text-xs">
-                        {r.dry_run ? (
-                          <Badge variant="secondary" className="text-xs">true</Badge>
-                        ) : (
-                          <Badge variant="destructive" className="text-xs">false</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-xs">{r.status}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_processed ?? 0}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_applied ?? 0}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_queued_review ?? 0}</TableCell>
-                      <TableCell className="text-right text-xs">{r.total_skipped ?? 0}</TableCell>
-                    </TableRow>
-                  ))}
+                  {history.map((r) => {
+                    const v = evaluate({
+                      total_processed: r.total_processed ?? undefined,
+                      total_applied: r.total_applied ?? undefined,
+                      total_queued_review: r.total_queued_review ?? undefined,
+                      total_skipped: r.total_skipped ?? undefined,
+                      method_breakdown: r.method_breakdown ?? undefined,
+                    }).verdict;
+                    const rowClass =
+                      v === "borderline"
+                        ? "bg-secondary/40"
+                        : v === "rejected"
+                        ? "bg-destructive/10"
+                        : "";
+                    return (
+                      <TableRow key={r.id} className={rowClass}>
+                        <TableCell className="text-xs">{new Date(r.started_at).toLocaleString()}</TableCell>
+                        <TableCell className="text-xs">{r.table_source}</TableCell>
+                        <TableCell className="text-xs">{r.batch_size}</TableCell>
+                        <TableCell className="text-xs">
+                          {r.dry_run ? (
+                            <Badge variant="secondary" className="text-xs">true</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-xs">false</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">{r.status}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_processed ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_applied ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_queued_review ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_skipped ?? 0}</TableCell>
+                        <TableCell className="text-xs">
+                          {v === "healthy" && (
+                            <Badge className="bg-primary text-primary-foreground">healthy</Badge>
+                          )}
+                          {v === "borderline" && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="secondary">⚠️ borderline</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Dry-run abaixo do threshold ideal; revisar antes do lote real
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          {v === "rejected" && <Badge variant="destructive">rejected</Badge>}
+                          {!v && <Badge variant="outline">—</Badge>}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
           )}
         </CardContent>
       </Card>
+
+      </TooltipProvider>
     </div>
   );
 }
