@@ -354,6 +354,71 @@ export default function ClassificationRunner() {
     void fetchPersisted();
   }, [fetchPersisted]);
 
+  // ── Hidratar last good dry-run do localStorage ─────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(LAST_GOOD_DRY_RUN_KEY);
+      if (raw) setLastGoodDryRun(JSON.parse(raw));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  // ── Auto-refresh enquanto houver run em andamento ──────────────
+  useEffect(() => {
+    if (!lastRun || lastRun.status !== "running") return;
+    const id = window.setInterval(() => {
+      void fetchPersisted();
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [lastRun, fetchPersisted]);
+
+  // ── Tester de conexão (dry-run mínimo, batch=10) ────────────────
+  const testConnection = useCallback(async () => {
+    if (!ready) {
+      toast.error("Login admin necessário");
+      return;
+    }
+    setConnTesting(true);
+    const start = performance.now();
+    try {
+      const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
+        body: { table_source: tableSource, batch_size: 10, dry_run: true },
+      });
+      const latencyMs = Math.round(performance.now() - start);
+      if (error) {
+        setConnTest({
+          ok: false,
+          latencyMs,
+          summary: error.message ?? "erro desconhecido",
+          timestamp: new Date().toISOString(),
+        });
+        toast.error(`Conexão falhou (${latencyMs}ms)`);
+        return;
+      }
+      const r = data as RunResult;
+      setConnTest({
+        ok: true,
+        latencyMs,
+        summary: `processed=${r.total_processed ?? 0} applied=${r.total_applied ?? 0} run=${(r.run_id as string | undefined)?.slice(0, 8) ?? "—"}`,
+        timestamp: new Date().toISOString(),
+      });
+      toast.success(`Conexão OK (${latencyMs}ms)`);
+      void fetchPersisted();
+    } catch (e) {
+      const latencyMs = Math.round(performance.now() - start);
+      setConnTest({
+        ok: false,
+        latencyMs,
+        summary: (e as Error).message,
+        timestamp: new Date().toISOString(),
+      });
+      toast.error("Falha de rede");
+    } finally {
+      setConnTesting(false);
+    }
+  }, [ready, tableSource, fetchPersisted]);
+
   // ── Execução ────────────────────────────────────────────────────
   const execute = useCallback(
     async (params: { table_source: TableSource; batch_size: number; dry_run: boolean }) => {
