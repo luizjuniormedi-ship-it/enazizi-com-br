@@ -363,6 +363,26 @@
   background-image: radial-gradient(var(--tw-gradient-stops));
 }
 
+/* Partículas ambientais — sobem do bottom até o top com fade */
+@keyframes enaflix-particle-rise {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% {
+    transform: translateY(-110vh) translateX(20px);
+    opacity: 0;
+  }
+}
+.enaflix-particle-rise {
+  animation-name: enaflix-particle-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
 /* Stagger helpers for row-reveal / text-reveal */
 .enaflix-stagger > * {
   opacity: 0;
@@ -385,7 +405,8 @@
   .animate-breathe,
   .animate-ambient-pulse,
   .animate-float,
-  .enaflix-stagger > * {
+  .enaflix-stagger > *,
+  .enaflix-particle-rise {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
