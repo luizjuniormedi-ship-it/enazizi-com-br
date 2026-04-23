@@ -63,7 +63,7 @@ const MOBILE_PANORAMA_ITEMS: MobileNavItem[] = [
 
 const MOBILE_EXECUTION_ITEMS: MobileNavItem[] = [
   { to: "/dashboard/sessao-estudo", label: "Estudar", moduleKey: "sessao-estudo", icon: Sparkles },
-  { to: "/dashboard/sessao-estudo?focus=reviews", label: "Revisões", moduleKey: "sessao-estudo", icon: Clock },
+  { to: "/dashboard/flashcards", label: "Revisões", moduleKey: "flashcards", icon: Clock },
   { to: "/dashboard/simulados", label: "Simulados", moduleKey: "simulados", icon: FileText },
   { to: "/dashboard/banco-erros", label: "Banco de Erros", moduleKey: "banco-erros", icon: AlertTriangle },
 ];
