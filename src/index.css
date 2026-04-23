@@ -357,3 +357,39 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ── ENAFLIX cinematic utilities ── */
+.bg-gradient-radial {
+  background-image: radial-gradient(var(--tw-gradient-stops));
+}
+
+/* Stagger helpers for row-reveal / text-reveal */
+.enaflix-stagger > * {
+  opacity: 0;
+  animation: row-reveal 700ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.enaflix-stagger > *:nth-child(1) { animation-delay: 60ms; }
+.enaflix-stagger > *:nth-child(2) { animation-delay: 160ms; }
+.enaflix-stagger > *:nth-child(3) { animation-delay: 260ms; }
+.enaflix-stagger > *:nth-child(4) { animation-delay: 360ms; }
+.enaflix-stagger > *:nth-child(5) { animation-delay: 460ms; }
+.enaflix-stagger > *:nth-child(6) { animation-delay: 560ms; }
+.enaflix-stagger > *:nth-child(n+7) { animation-delay: 660ms; }
+
+/* Respect reduced motion globally for ENAFLIX heavy animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-zoom-in,
+  .animate-text-reveal,
+  .animate-row-reveal,
+  .animate-shine-sweep,
+  .animate-breathe,
+  .animate-ambient-pulse,
+  .animate-float,
+  .enaflix-stagger > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
