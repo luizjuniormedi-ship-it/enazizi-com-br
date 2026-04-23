@@ -16,3 +16,4 @@ export {
   DataLoader,
   AILoader,
 } from "./ModuleLoaders";
+export { CinematicRouteTransition } from "./CinematicRouteTransition";
