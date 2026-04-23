@@ -38,18 +38,18 @@ function ProgressOverview() {
 
   // Score preditivo > snapshot legado (fallback se sem dados)
   const approvalScore = prediction?.score ?? snap?.approvalScore ?? 0;
-  const approvalTone: MetricProps["tone"] =
+  const approvalTone: Tone =
     approvalScore >= 70 ? "success" :
     approvalScore >= 50 ? "primary" :
     approvalScore >= 30 ? "warn" : "danger";
 
   const coveragePct = coverage?.requiredCoveragePct ?? 0;
-  const coverageTone: MetricProps["tone"] =
+  const coverageTone: Tone =
     coveragePct >= 80 ? "success" :
     coveragePct >= 50 ? "primary" : "danger";
 
   const goalPct = goal?.percentComplete ?? 0;
-  const goalTone: MetricProps["tone"] =
+  const goalTone: Tone =
     !goal ? "muted" :
     goal.paceStatus === "ahead" ? "success" :
     goal.paceStatus === "on_track" ? "primary" : "warn";
@@ -64,7 +64,7 @@ function ProgressOverview() {
     }, 0) / Math.min(5, examSessions.length);
     return Math.round(avg);
   }, [examSessions]);
-  const readinessTone: MetricProps["tone"] =
+  const readinessTone: Tone =
     readinessPct === null ? "muted" :
     readinessPct >= 70 ? "success" :
     readinessPct >= 50 ? "primary" :
@@ -127,54 +127,64 @@ function ProgressOverview() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          <Metric
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <CinematicMetricHalo
+            module="dashboard"
             icon={Target}
             label="Aprovação"
-            value={`${approvalScore}%`}
-            pct={approvalScore}
-            tone={approvalTone}
-            caption={
+            value={approvalScore}
+            suffix="%"
+            size="sm"
+            subtitle={
               prediction?.daysToExam != null
                 ? `${prediction.daysToExam}d até a prova`
-                : snap?.phase ? `Fase: ${snap.phase}` : undefined
+                : snap?.phase ? `Fase: ${snap.phase}` : "Acompanhe sua trajetória"
             }
+            onClick={() => navigate("/dashboard/analytics?source=progress_overview")}
           />
-          <Metric
+          <CinematicMetricHalo
+            module="planner"
             icon={ShieldCheck}
             label="Cobertura"
-            value={`${coveragePct}%`}
-            pct={coveragePct}
-            tone={coverageTone}
-            caption={
+            value={coveragePct}
+            suffix="%"
+            size="sm"
+            subtitle={
               coverage
                 ? `${coverage.requiredSeen}/${coverage.requiredTopics} obrigatórios`
-                : undefined
+                : "Currículo em construção"
             }
+            onClick={() => navigate("/dashboard/cronograma?source=progress_overview")}
           />
-          <Metric
+          <CinematicMetricHalo
+            module="flashcard"
             icon={TrendingUp}
             label="Meta do mês"
-            value={goal ? `${goalPct}%` : "—"}
-            pct={goal ? goalPct : undefined}
-            tone={goalTone}
-            caption={
+            value={goal ? goalPct : 0}
+            displayValue={goal ? undefined : "—"}
+            suffix={goal ? "%" : undefined}
+            size="sm"
+            subtitle={
               goal
                 ? `${goal.completedQuestions}/${goal.targetQuestions} questões`
-                : undefined
+                : "Defina sua meta"
             }
+            onClick={() => navigate("/dashboard/banco-questoes?source=progress_overview")}
           />
-          <Metric
+          <CinematicMetricHalo
+            module="simulado"
             icon={Award}
             label="Prontidão"
-            value={readinessPct === null ? "—" : `${readinessPct}%`}
-            pct={readinessPct ?? undefined}
-            tone={readinessTone}
-            caption={
+            value={readinessPct ?? 0}
+            displayValue={readinessPct === null ? "—" : undefined}
+            suffix={readinessPct !== null ? "%" : undefined}
+            size="sm"
+            subtitle={
               examSessions.length > 0
-                ? `${examSessions.length} simulado${examSessions.length === 1 ? "" : "s"}`
-                : "Faça um simulado"
+                ? `${examSessions.length} simulado${examSessions.length === 1 ? "" : "s"} recentes`
+                : "Faça um simulado para calibrar"
             }
+            onClick={() => navigate("/dashboard/simulados?source=progress_overview")}
           />
         </div>
       </CardContent>
