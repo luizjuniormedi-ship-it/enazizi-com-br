@@ -242,15 +242,17 @@ function Section({
   title,
   icon: Icon,
   subtitle,
+  className,
   children,
 }: {
   title: string;
   icon: React.ComponentType<{ className?: string }>;
   subtitle?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <section className="space-y-3">
+    <section className={cn("space-y-3", className)}>
       <div className="flex items-baseline justify-between">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
           <Icon className="h-3.5 w-3.5" />
