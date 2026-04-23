@@ -1,6 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { CinematicSkeleton } from "./CinematicSkeleton";
+import { AmbientAtmosphere } from "./AmbientAtmosphere";
 import type { CinematicModule } from "./CinematicCard";
 
 interface CinematicPageLoaderProps {
