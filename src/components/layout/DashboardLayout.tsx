@@ -281,21 +281,30 @@ const DashboardLayout = () => {
       {!isMissionLocked && (
         <header
           className={cn(
-            "landscape-tablet:hidden lg:hidden sticky top-0 z-40 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0",
+            "landscape-tablet:hidden lg:hidden sticky top-0 z-40 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0 isolate",
             "transition-all duration-300 ease-out",
-            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
+            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
             scrolled
-              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.45)]"
+              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.55)]"
               : "bg-gradient-to-b from-background/80 via-background/40 to-transparent border-b border-transparent",
           )}
         >
+          {/* Faixa de gradiente cinematográfica (Netflix premium) */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/40 to-transparent"
+          />
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-10 left-1/4 h-24 w-1/2 bg-gradient-to-r from-red-600/10 via-fuchsia-600/10 to-violet-600/10 blur-3xl"
+          />
           <MobileNav />
-          <Link to="/" className="flex items-center gap-2 group min-w-0">
+          <Link to="/" className="relative flex items-center gap-2 group min-w-0">
             <span className="relative flex-shrink-0">
-              <span aria-hidden className="absolute inset-0 rounded-md bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-              <img src={enazizi} alt="ENAZIZI" className="relative h-7 w-7 rounded-md object-cover ring-1 ring-white/10" />
+              <span aria-hidden className="absolute -inset-1 rounded-lg bg-gradient-to-br from-fuchsia-500/40 via-primary/30 to-violet-500/40 blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+              <img src={enazizi} alt="ENAZIZI" className="relative h-7 w-7 rounded-md object-cover ring-1 ring-white/15 shadow-md" />
             </span>
-            <span className="font-black text-sm tracking-wide bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent truncate">
+            <span className="font-black text-sm tracking-wide bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent truncate">
               ENAZIZI
             </span>
           </Link>
@@ -306,10 +315,11 @@ const DashboardLayout = () => {
             <NotificationBell />
             <button
               onClick={toggleTheme}
-              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200 hover:scale-105 flex items-center justify-center"
+              className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-110 flex items-center justify-center group/theme"
               aria-label="Alternar tema"
             >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span aria-hidden className="absolute inset-0 rounded-full bg-gradient-to-br from-fuchsia-500/0 to-violet-500/0 group-hover/theme:from-fuchsia-500/20 group-hover/theme:to-violet-500/20 transition-all duration-300" />
+              {theme === "dark" ? <Sun className="relative h-4 w-4" /> : <Moon className="relative h-4 w-4" />}
             </button>
           </div>
         </header>
@@ -317,14 +327,25 @@ const DashboardLayout = () => {
       {!isMissionLocked && (
         <div
           className={cn(
-            "hidden landscape-tablet:flex lg:flex sticky top-0 z-40 h-14 items-center px-4 lg:px-6 gap-3 flex-shrink-0",
+            "hidden landscape-tablet:flex lg:flex sticky top-0 z-40 h-14 items-center px-4 lg:px-6 gap-3 flex-shrink-0 isolate",
             "transition-all duration-300 ease-out",
-            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
+            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
             scrolled
-              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]"
+              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.55)]"
               : "bg-gradient-to-b from-background/80 via-background/40 to-transparent border-b border-transparent",
           )}
         >
+          {/* Linha superior premium (gradiente streaming) */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/50 to-transparent"
+          />
+          {/* Glow ambiental atrás do botão ENAFLIX */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-12 left-0 h-28 w-72 bg-gradient-to-r from-red-600/15 via-fuchsia-600/15 to-violet-600/10 blur-3xl"
+          />
+
           {/* ENAFLIX como elemento central — primeiro item visível */}
           <EnaflixButton />
           <span aria-hidden className="hidden xl:block h-6 w-px bg-white/10 mx-1" />
@@ -340,14 +361,18 @@ const DashboardLayout = () => {
             <button
               onClick={toggleTheme}
               className={cn(
-                "h-9 px-3 inline-flex items-center gap-2 rounded-full text-sm",
-                "text-muted-foreground hover:text-foreground hover:bg-white/5",
-                "transition-all duration-200 hover:scale-[1.04]",
+                "relative h-9 px-3 inline-flex items-center gap-2 rounded-full text-sm overflow-hidden group/theme",
+                "text-muted-foreground hover:text-foreground",
+                "transition-all duration-300 hover:scale-[1.04]",
               )}
               aria-label="Alternar tema"
             >
-              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
+              <span
+                aria-hidden
+                className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/0 via-primary/0 to-violet-500/0 group-hover/theme:from-fuchsia-500/15 group-hover/theme:via-primary/10 group-hover/theme:to-violet-500/15 transition-all duration-300"
+              />
+              {theme === "dark" ? <Sun className="relative h-4 w-4" /> : <Moon className="relative h-4 w-4" />}
+              <span className="relative hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
             </button>
           </div>
         </div>
