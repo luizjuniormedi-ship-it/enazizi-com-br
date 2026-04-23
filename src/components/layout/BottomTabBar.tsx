@@ -62,10 +62,10 @@ const BottomTabBar = () => {
     },
   });
 
-  // Bottom nav minimalista: 5 áreas — Home / Estudar / ENAFLIX / IA / Perfil.
-  // Estudar é o ponto de entrada operacional (revisões pendentes badgadas aqui).
+  // Bottom nav minimalista: 5 áreas — Visão Geral / Estudar / ENAFLIX / IA / Perfil.
+  // Visão Geral = panorama (entender). Estudar = execução (fazer).
   const tabs = [
-    { to: "/dashboard", icon: Home, label: "Home", badge: 0 },
+    { to: "/dashboard", icon: Home, label: "Visão Geral", badge: 0 },
     { to: "/dashboard/sessao-estudo", icon: GraduationCap, label: "Estudar", badge: pendingCount || 0 },
     { to: "/enaflix", icon: Clapperboard, label: "ENAFLIX", badge: 0 },
     { to: "/dashboard/chatgpt", icon: Bot, label: "IA", badge: 0 },
