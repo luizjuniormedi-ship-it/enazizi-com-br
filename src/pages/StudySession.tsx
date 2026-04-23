@@ -760,74 +760,129 @@ const StudySession = () => {
 
       {/* Main Content — agora ocupa 100% da largura */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar — enxuta: sem logo ENAZIZI duplicado, ações agrupadas */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-border">
-          <div className="flex items-center gap-2 min-w-0">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={() => setSidebarOpen(true)}
-              title="Painel de Desempenho"
-            >
-              <BarChart3 className="h-4 w-4" />
-            </Button>
-            <GraduationCap className="h-4 w-4 text-primary flex-shrink-0" />
-            <h1 className="text-sm font-semibold text-muted-foreground truncate">
-              Sessão de Estudo
-            </h1>
-            {topic && (
-              <Badge variant="secondary" className="text-xs truncate max-w-[140px]">{topic}</Badge>
-            )}
-          </div>
-          <div className="flex items-center gap-1">
-            {phase !== "start" && phase !== "style-select" && topic && (
-              <Sheet>
-                <SheetTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
-                    title="Pedir ajuda contextual ao Tutor IA sem sair da sessão"
-                  >
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Pedir ajuda ao Tutor
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
-                  <TutorChatPanel
-                    context={{
-                      topic,
-                      specialty: searchParams.get("sc_specialty") || undefined,
-                      phase: PHASE_META[phase].label,
-                      focus: studyMode,
-                      mode: "mission",
-                      origin: "study-session",
-                    }}
+        {/* Cinematic Top Bar — cockpit de foco (hue: simulado/verde performance) */}
+        <div
+          className="relative overflow-hidden border-b border-border"
+          style={{ ["--module-hue" as never]: "var(--hue-simulado)" } as React.CSSProperties}
+        >
+          {/* Ambient glow — calmo, focado */}
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 opacity-70"
+            style={{
+              background:
+                "radial-gradient(ellipse at 0% 50%, hsl(var(--module-hue) / 0.12), transparent 55%)",
+            }}
+          />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -top-8 right-1/3 h-24 w-24 rounded-full blur-3xl opacity-30"
+            style={{ background: "hsl(var(--module-hue) / 0.4)" }}
+          />
+
+          <div className="relative flex items-center justify-between px-4 py-2.5 gap-3">
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-xl hover:bg-white/5 flex-shrink-0"
+                onClick={() => setSidebarOpen(true)}
+                title="Painel de Desempenho"
+                aria-label="Abrir painel de desempenho"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+
+              {/* Identidade premium */}
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="relative h-8 w-8 rounded-xl flex items-center justify-center bg-module-tint border border-module flex-shrink-0"
+                  style={{
+                    boxShadow:
+                      "0 0 16px -4px hsl(var(--module-hue) / 0.5)",
+                  }}
+                >
+                  <GraduationCap
+                    className="h-4 w-4"
+                    style={{ color: "hsl(var(--module-hue))" }}
                   />
-                </SheetContent>
-              </Sheet>
-            )}
-            <Button variant="outline" size="icon" onClick={() => setIsFullscreen(!isFullscreen)} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </Button>
-            {phase !== "start" && phase !== "style-select" && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                    {PHASE_META[phase].label} • {progressPercent}%
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={resetSession}>
-                    <RotateCcw className="h-4 w-4 mr-2" /> Nova sessão
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
+                </div>
+                <div className="min-w-0">
+                  <h1 className="text-sm font-bold text-foreground leading-tight truncate">
+                    Sessão de Estudo
+                  </h1>
+                  <p className="text-[10px] text-muted-foreground leading-tight truncate">
+                    Cockpit de foco • Modo flow
+                  </p>
+                </div>
+                {topic && (
+                  <Badge
+                    variant="secondary"
+                    className="text-xs truncate max-w-[140px] ml-1 hidden sm:inline-flex"
+                  >
+                    {topic}
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {phase !== "start" && phase !== "style-select" && topic && (
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/10"
+                      title="Pedir ajuda contextual ao Tutor IA sem sair da sessão"
+                    >
+                      <Sparkles className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">Pedir ajuda ao Tutor</span>
+                      <span className="sm:hidden">Tutor</span>
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="right" className="w-full sm:max-w-md p-0 flex flex-col">
+                    <TutorChatPanel
+                      context={{
+                        topic,
+                        specialty: searchParams.get("sc_specialty") || undefined,
+                        phase: PHASE_META[phase].label,
+                        focus: studyMode,
+                        mode: "mission",
+                        origin: "study-session",
+                      }}
+                    />
+                  </SheetContent>
+                </Sheet>
+              )}
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                className="h-8 w-8"
+                title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+                aria-label={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}
+              >
+                {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+              </Button>
+              {phase !== "start" && phase !== "style-select" && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" className="h-8 w-8" aria-label="Mais opções">
+                      <MoreVertical className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="glass-premium">
+                    <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+                      {PHASE_META[phase].label} • {progressPercent}%
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={resetSession}>
+                      <RotateCcw className="h-4 w-4 mr-2" /> Nova sessão
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </div>
         </div>
 

@@ -23,7 +23,7 @@ import { useChatProgress } from "@/hooks/tutor/useChatProgress";
 import { useChatContext } from "@/hooks/tutor/useChatContext";
 import { useTutorPerformance } from "@/hooks/tutor/useTutorPerformance";
 
-import TutorHeader from "@/components/tutor/TutorHeader";
+import TutorHeader from "@/components/tutor/CinematicTutorHero";
 import TutorOnboardingCard from "@/components/tutor/TutorOnboardingCard";
 import TutorMetricsBar from "@/components/tutor/TutorMetricsBar";
 import TutorStartScreen from "@/components/tutor/TutorStartScreen";
