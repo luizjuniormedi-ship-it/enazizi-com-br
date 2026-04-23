@@ -55,7 +55,12 @@ import {
   Copy,
   Lock,
   TrendingUp,
+  Activity,
+  Wifi,
+  HelpCircle,
+  Heart,
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import {
   captureSnapshot,
