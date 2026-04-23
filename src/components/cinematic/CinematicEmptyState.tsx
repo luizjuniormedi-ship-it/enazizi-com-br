@@ -49,9 +49,9 @@ export const CinematicEmptyState: React.FC<Props> = ({
         {title}
       </h3>
       {description && (
-        <p className="relative mt-2 max-w-md text-sm sm:text-base text-muted-foreground leading-relaxed">
+        <div className="relative mt-2 max-w-md text-sm sm:text-base text-muted-foreground leading-relaxed">
           {description}
-        </p>
+        </div>
       )}
       {action && <div className="relative mt-6">{action}</div>}
     </div>
