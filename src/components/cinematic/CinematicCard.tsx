@@ -1,6 +1,8 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { usePointerLight } from "@/hooks/usePointerLight";
+import { useTilt } from "@/hooks/useTilt";
 
 /**
  * CinematicCard — base premium para todo o sistema.
@@ -11,6 +13,8 @@ import { cn } from "@/lib/utils";
  * - module: dashboard | enaflix | tutor | flashcard | simulado | analytics | planner | professor | admin | ranking
  * - interactive: ativa lift + cursor-pointer
  * - glow: adiciona halo do módulo
+ * - pointerLight: ativa luz contextual seguindo o cursor (AAA)
+ * - tilt: ativa leve tilt 3D Pixar/Apple
  */
 
 const cardVariants = cva(
@@ -69,17 +73,38 @@ export interface CinematicCardProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof cardVariants> {
   module?: CinematicModule;
+  /** Ativa luz contextual que segue o cursor (AAA polish) */
+  pointerLight?: boolean;
+  /** Ativa leve tilt 3D Pixar/Apple */
+  tilt?: boolean;
 }
 
 export const CinematicCard = React.forwardRef<HTMLDivElement, CinematicCardProps>(
-  ({ className, variant, interactive, glow, module, style, children, ...props }, ref) => {
+  (
+    { className, variant, interactive, glow, module, pointerLight, tilt, style, children, ...props },
+    ref,
+  ) => {
+    const lightRef = usePointerLight<HTMLDivElement>();
+    const tiltRef = useTilt<HTMLDivElement>({ max: 4, scale: 1.005 });
+
     const moduleStyle = module
       ? ({ ["--module-hue" as never]: moduleHueMap[module], ...style } as React.CSSProperties)
       : style;
 
+    // Combina refs (forwardedRef + interactionRef)
+    const setRefs = React.useCallback(
+      (node: HTMLDivElement | null) => {
+        if (typeof ref === "function") ref(node);
+        else if (ref) (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (pointerLight) (lightRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        if (tilt) (tiltRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+      },
+      [ref, pointerLight, tilt, lightRef, tiltRef],
+    );
+
     return (
       <div
-        ref={ref}
+        ref={setRefs}
         className={cn(cardVariants({ variant, interactive, glow }), className)}
         style={moduleStyle}
         {...props}
@@ -91,6 +116,17 @@ export const CinematicCard = React.forwardRef<HTMLDivElement, CinematicCardProps
             style={{
               background:
                 "radial-gradient(ellipse at top right, hsl(var(--module-hue, var(--primary)) / 0.22), transparent 55%)",
+            }}
+          />
+        )}
+        {pointerLight && (
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500"
+            style={{
+              opacity: "calc(var(--pointer-active, 0) * 0.9)",
+              background:
+                "radial-gradient(circle at calc(var(--mx,0.5)*100%) calc(var(--my,0.5)*100%), hsl(var(--module-hue, var(--primary)) / 0.18), transparent 55%)",
             }}
           />
         )}

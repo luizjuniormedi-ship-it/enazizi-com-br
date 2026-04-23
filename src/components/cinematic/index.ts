@@ -17,3 +17,10 @@ export {
   AILoader,
 } from "./ModuleLoaders";
 export { CinematicRouteTransition } from "./CinematicRouteTransition";
+
+/* ── Sprint C — AAA micro-interactions ── */
+export { MagneticButton } from "./MagneticButton";
+
+/* ── Sprint D — Pixar Identity ── */
+export { EnaziziSymbol } from "./EnaziziSymbol";
+export { CinematicEmptyState } from "./CinematicEmptyState";
