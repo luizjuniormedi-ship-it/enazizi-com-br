@@ -8,3 +8,11 @@ export { CinematicSuspense } from "./CinematicSuspense";
 export { AmbientAtmosphere } from "./AmbientAtmosphere";
 export { AmbientPersistenceLayer } from "./AmbientPersistenceLayer";
 export { useModuleAtmosphere, routeToModule } from "./useModuleAtmosphere";
+export { ModuleScene } from "./ModuleScene";
+export {
+  ModulePageLoader,
+  ModuleLoader,
+  WidgetLoader,
+  DataLoader,
+  AILoader,
+} from "./ModuleLoaders";

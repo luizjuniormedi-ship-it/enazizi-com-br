@@ -1,14 +1,14 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { CinematicSkeleton } from "./CinematicSkeleton";
-import { AmbientAtmosphere } from "./AmbientAtmosphere";
+import { ModuleScene } from "./ModuleScene";
 import type { CinematicModule } from "./CinematicCard";
 
 interface CinematicPageLoaderProps {
   /** Módulo para tonalidade do halo. */
   module?: CinematicModule;
   /** Mensagem opcional sob o pulso central. */
-  hint?: string;
+  hint?: string | string[];
   /** Variante de layout. */
   variant?: "default" | "minimal" | "session";
   className?: string;
@@ -28,17 +28,17 @@ const moduleHueMap: Record<CinematicModule, string> = {
 };
 
 /**
- * CinematicPageLoader — substitui o PageSkeleton genérico.
+ * CinematicPageLoader — fallback de página cinematográfico.
  *
- * Layout cinematográfico:
- *  - hero placeholder com halo módulo-aware
- *  - 4 cards KPI staggered
- *  - 1 bloco principal
- *  - 2 blocos secundários
- *  - hint opcional em texto suave
+ * IMPORTANTE: este componente é **transparente** — não renderiza atmosfera
+ * própria. O `AmbientPersistenceLayer` (montado em App.tsx) já cobre o
+ * background com o hue do módulo ativo. Renderizar atmosfera aqui causaria
+ * duplicação visual e quebra de continuidade emocional entre rotas.
  *
- * Use no Suspense fallback global:
- *   <Suspense fallback={<CinematicPageLoader module="tutor" />}>
+ * Layout:
+ *  - cena central identitária (ModuleScene) — a "alma" do módulo
+ *  - esqueleto suplementar abaixo (sugestão de layout)
+ *  - hint contextual rotativo
  */
 export const CinematicPageLoader: React.FC<CinematicPageLoaderProps> = ({
   module = "dashboard",
@@ -54,20 +54,12 @@ export const CinematicPageLoader: React.FC<CinematicPageLoaderProps> = ({
     return (
       <div
         className={cn(
-          "relative flex min-h-[40vh] flex-col items-center justify-center gap-4 overflow-hidden animate-fade-in",
+          "relative flex min-h-[40vh] flex-col items-center justify-center gap-4 animate-fade-in",
           className,
         )}
         style={style}
       >
-        <AmbientAtmosphere module={module} coverage="inset" intensity="soft" />
-        <div className="relative z-10 flex flex-col items-center gap-4">
-          <CinematicPulse module={module} />
-          {hint && (
-            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-              {hint}
-            </p>
-          )}
-        </div>
+        <ModuleScene module={module} size={96} hint={hint} />
       </div>
     );
   }
@@ -76,25 +68,19 @@ export const CinematicPageLoader: React.FC<CinematicPageLoaderProps> = ({
     return (
       <div
         className={cn(
-          "relative p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 overflow-hidden animate-fade-in",
+          "relative p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in",
           className,
         )}
         style={style}
       >
-        <AmbientAtmosphere module={module} coverage="inset" intensity="soft" />
-        <div className="relative z-10 space-y-6">
-          <CinematicSkeleton module={module} shape="card" className="h-40" />
-          <CinematicSkeleton
-            module={module}
-            shape="card"
-            className="h-[420px]"
-            intensity="strong"
-          />
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <CinematicSkeleton module={module} shape="card" className="h-20" delay={0} />
-            <CinematicSkeleton module={module} shape="card" className="h-20" delay={120} />
-            <CinematicSkeleton module={module} shape="card" className="h-20" delay={240} />
-          </div>
+        <div className="flex min-h-[280px] items-center justify-center">
+          <ModuleScene module={module} size={140} hint={hint} />
+        </div>
+        <CinematicSkeleton module={module} shape="card" className="h-40" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <CinematicSkeleton module={module} shape="card" className="h-20" delay={0} />
+          <CinematicSkeleton module={module} shape="card" className="h-20" delay={120} />
+          <CinematicSkeleton module={module} shape="card" className="h-20" delay={240} />
         </div>
       </div>
     );
@@ -103,66 +89,42 @@ export const CinematicPageLoader: React.FC<CinematicPageLoaderProps> = ({
   return (
     <div
       className={cn(
-        "relative p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 overflow-hidden animate-fade-in",
+        "relative p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in",
         className,
       )}
       style={style}
     >
-      <AmbientAtmosphere module={module} coverage="inset" intensity="normal" />
+      {/* Cena central — alma do módulo */}
+      <div className="flex min-h-[260px] items-center justify-center">
+        <ModuleScene module={module} size={128} hint={hint} />
+      </div>
 
-      <div className="relative z-10 space-y-6">
-        {/* Hero ambient placeholder */}
-        <div className="relative overflow-hidden rounded-3xl">
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-0 opacity-60"
-            style={{
-              background:
-                "radial-gradient(ellipse at 25% 20%, hsl(var(--module-hue) / 0.18), transparent 60%), radial-gradient(ellipse at 80% 90%, hsl(var(--accent) / 0.10), transparent 60%)",
-              filter: "blur(40px)",
-            }}
-          />
+      {/* KPI row staggered */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[0, 1, 2, 3].map((i) => (
           <CinematicSkeleton
+            key={i}
             module={module}
             shape="card"
-            className="h-36 sm:h-44"
-            intensity="strong"
+            className="h-24"
+            delay={i * 100}
           />
-        </div>
+        ))}
+      </div>
 
-        {/* KPI row staggered */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {[0, 1, 2, 3].map((i) => (
-            <CinematicSkeleton
-              key={i}
-              module={module}
-              shape="card"
-              className="h-28"
-              delay={i * 100}
-            />
-          ))}
-        </div>
+      {/* Primary block */}
+      <CinematicSkeleton
+        module={module}
+        shape="card"
+        className="h-48"
+        intensity="strong"
+        delay={400}
+      />
 
-        {/* Primary block */}
-        <CinematicSkeleton
-          module={module}
-          shape="card"
-          className="h-64"
-          intensity="strong"
-          delay={400}
-        />
-
-        {/* Secondary grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <CinematicSkeleton module={module} shape="card" className="h-44" delay={500} />
-          <CinematicSkeleton module={module} shape="card" className="h-44" delay={600} />
-        </div>
-
-        {hint && (
-          <p className="text-center text-xs uppercase tracking-[0.2em] text-muted-foreground/70">
-            {hint}
-          </p>
-        )}
+      {/* Secondary grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <CinematicSkeleton module={module} shape="card" className="h-40" delay={500} />
+        <CinematicSkeleton module={module} shape="card" className="h-40" delay={600} />
       </div>
     </div>
   );
