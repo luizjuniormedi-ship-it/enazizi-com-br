@@ -13,7 +13,6 @@
 import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
   Target, ShieldCheck, TrendingUp, Award, ArrowRight,
@@ -23,51 +22,11 @@ import { useCoverageStatus } from "@/hooks/useCoverageStatus";
 import { useMonthlyGoal } from "@/hooks/useMonthlyGoal";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
-import { approvalBadgeBg, getApprovalFocus } from "@/engines/approvalEngine";
+import { approvalBadgeBg } from "@/engines/approvalEngine";
 import { TrendingDown, Minus } from "lucide-react";
+import { CinematicMetricHalo } from "@/components/cinematic";
 
-interface MetricProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  pct?: number;
-  tone: "primary" | "success" | "warn" | "danger" | "muted";
-  caption?: string;
-}
-
-function Metric({ icon: Icon, label, value, pct, tone, caption }: MetricProps) {
-  const toneCls = {
-    primary: "text-primary",
-    success: "text-emerald-600 dark:text-emerald-400",
-    warn: "text-amber-600 dark:text-amber-400",
-    danger: "text-destructive",
-    muted: "text-muted-foreground",
-  }[tone];
-
-  const barCls = {
-    primary: "",
-    success: "[&>div]:bg-emerald-500",
-    warn: "[&>div]:bg-amber-500",
-    danger: "[&>div]:bg-destructive",
-    muted: "[&>div]:bg-muted-foreground",
-  }[tone];
-
-  return (
-    <div className="rounded-xl border border-border/50 bg-muted/20 p-3 space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Icon className={`h-3.5 w-3.5 ${toneCls} flex-shrink-0`} />
-          <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate">
-            {label}
-          </span>
-        </div>
-        <span className={`text-base font-bold tabular-nums ${toneCls}`}>{value}</span>
-      </div>
-      {typeof pct === "number" && <Progress value={pct} className={`h-1 ${barCls}`} />}
-      {caption && <p className="text-[10px] text-muted-foreground truncate">{caption}</p>}
-    </div>
-  );
-}
+type Tone = "primary" | "success" | "warn" | "danger" | "muted";
 
 function ProgressOverview() {
   const navigate = useNavigate();
@@ -79,18 +38,18 @@ function ProgressOverview() {
 
   // Score preditivo > snapshot legado (fallback se sem dados)
   const approvalScore = prediction?.score ?? snap?.approvalScore ?? 0;
-  const approvalTone: MetricProps["tone"] =
+  const approvalTone: Tone =
     approvalScore >= 70 ? "success" :
     approvalScore >= 50 ? "primary" :
     approvalScore >= 30 ? "warn" : "danger";
 
   const coveragePct = coverage?.requiredCoveragePct ?? 0;
-  const coverageTone: MetricProps["tone"] =
+  const coverageTone: Tone =
     coveragePct >= 80 ? "success" :
     coveragePct >= 50 ? "primary" : "danger";
 
   const goalPct = goal?.percentComplete ?? 0;
-  const goalTone: MetricProps["tone"] =
+  const goalTone: Tone =
     !goal ? "muted" :
     goal.paceStatus === "ahead" ? "success" :
     goal.paceStatus === "on_track" ? "primary" : "warn";
@@ -105,7 +64,7 @@ function ProgressOverview() {
     }, 0) / Math.min(5, examSessions.length);
     return Math.round(avg);
   }, [examSessions]);
-  const readinessTone: MetricProps["tone"] =
+  const readinessTone: Tone =
     readinessPct === null ? "muted" :
     readinessPct >= 70 ? "success" :
     readinessPct >= 50 ? "primary" :
@@ -168,54 +127,64 @@ function ProgressOverview() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-2">
-          <Metric
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <CinematicMetricHalo
+            module="dashboard"
             icon={Target}
             label="Aprovação"
-            value={`${approvalScore}%`}
-            pct={approvalScore}
-            tone={approvalTone}
-            caption={
+            value={approvalScore}
+            suffix="%"
+            size="sm"
+            subtitle={
               prediction?.daysToExam != null
                 ? `${prediction.daysToExam}d até a prova`
-                : snap?.phase ? `Fase: ${snap.phase}` : undefined
+                : snap?.phase ? `Fase: ${snap.phase}` : "Acompanhe sua trajetória"
             }
+            onClick={() => navigate("/dashboard/analytics?source=progress_overview")}
           />
-          <Metric
+          <CinematicMetricHalo
+            module="planner"
             icon={ShieldCheck}
             label="Cobertura"
-            value={`${coveragePct}%`}
-            pct={coveragePct}
-            tone={coverageTone}
-            caption={
+            value={coveragePct}
+            suffix="%"
+            size="sm"
+            subtitle={
               coverage
                 ? `${coverage.requiredSeen}/${coverage.requiredTopics} obrigatórios`
-                : undefined
+                : "Currículo em construção"
             }
+            onClick={() => navigate("/dashboard/cronograma?source=progress_overview")}
           />
-          <Metric
+          <CinematicMetricHalo
+            module="flashcard"
             icon={TrendingUp}
             label="Meta do mês"
-            value={goal ? `${goalPct}%` : "—"}
-            pct={goal ? goalPct : undefined}
-            tone={goalTone}
-            caption={
+            value={goal ? goalPct : 0}
+            displayValue={goal ? undefined : "—"}
+            suffix={goal ? "%" : undefined}
+            size="sm"
+            subtitle={
               goal
                 ? `${goal.completedQuestions}/${goal.targetQuestions} questões`
-                : undefined
+                : "Defina sua meta"
             }
+            onClick={() => navigate("/dashboard/banco-questoes?source=progress_overview")}
           />
-          <Metric
+          <CinematicMetricHalo
+            module="simulado"
             icon={Award}
             label="Prontidão"
-            value={readinessPct === null ? "—" : `${readinessPct}%`}
-            pct={readinessPct ?? undefined}
-            tone={readinessTone}
-            caption={
+            value={readinessPct ?? 0}
+            displayValue={readinessPct === null ? "—" : undefined}
+            suffix={readinessPct !== null ? "%" : undefined}
+            size="sm"
+            subtitle={
               examSessions.length > 0
-                ? `${examSessions.length} simulado${examSessions.length === 1 ? "" : "s"}`
-                : "Faça um simulado"
+                ? `${examSessions.length} simulado${examSessions.length === 1 ? "" : "s"} recentes`
+                : "Faça um simulado para calibrar"
             }
+            onClick={() => navigate("/dashboard/simulados?source=progress_overview")}
           />
         </div>
       </CardContent>
