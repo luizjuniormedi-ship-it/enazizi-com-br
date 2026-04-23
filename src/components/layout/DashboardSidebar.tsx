@@ -223,7 +223,7 @@ const DashboardSidebar = () => {
     return (
       <TooltipProvider delayDuration={200}>
         <aside className="hidden landscape-tablet:flex lg:flex flex-col w-14 border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300">
-          <div className="p-3 flex justify-center flex-shrink-0">
+          <div className="p-3 flex flex-col items-center gap-2 flex-shrink-0">
             <Link to="/" className="group">
               <span className="relative inline-block">
                 <span
@@ -237,6 +237,22 @@ const DashboardSidebar = () => {
                 />
               </span>
             </Link>
+            {!isStudyActive && (
+              <Tooltip delayDuration={150}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleCollapse}
+                    aria-label="Expandir barra lateral"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground/55 hover:bg-sidebar-accent/50 hover:text-foreground transition-colors"
+                  >
+                    <PanelLeftOpen className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="text-xs font-semibold">Expandir</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           <ScrollArea className="flex-1 min-h-0">
