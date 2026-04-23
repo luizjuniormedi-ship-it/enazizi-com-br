@@ -363,11 +363,16 @@ const DashboardLayout = () => {
           <nav className="hidden xl:flex items-center gap-0.5" aria-label="Navegação principal">
             {[
               { to: "/dashboard", label: "Início" },
+              { to: "/dashboard/sessao-estudo", label: "Estudar" },
+              { to: "/dashboard/sessao-estudo?focus=reviews", label: "Revisões" },
               { to: "/dashboard/simulados", label: "Simulados" },
               { to: "/dashboard/banco-erros", label: "Erros" },
-              { to: "/dashboard/proficiency", label: "Progresso" },
+              { to: "/dashboard/analytics", label: "Progresso" },
             ].map((item) => {
-              const active = location.pathname === item.to;
+              const [path, search] = item.to.split("?");
+              const active =
+                location.pathname === path &&
+                (!search || location.search.includes(search));
               return (
                 <Link
                   key={item.to}
