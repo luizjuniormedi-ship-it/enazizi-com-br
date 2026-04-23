@@ -251,6 +251,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
+          </CinematicRouteTransition>
         </BrowserRouter>
         </MedicalTermProvider>
       </TooltipProvider>
