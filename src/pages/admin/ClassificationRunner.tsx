@@ -249,6 +249,20 @@ export default function ClassificationRunner() {
   const [queueItems, setQueueItems] = useState<QueueRow[]>([]);
   const [loadingPersisted, setLoadingPersisted] = useState(true);
 
+  // ── Estado da execução real ────────────────────────────────────
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmPhrase, setConfirmPhrase] = useState("");
+  const [realRunning, setRealRunning] = useState(false);
+  const [preSnapshot, setPreSnapshot] = useState<ClassificationSnapshot | null>(null);
+  const [postSnapshot, setPostSnapshot] = useState<ClassificationSnapshot | null>(null);
+  const [lastRealRunMeta, setLastRealRunMeta] = useState<{
+    runId?: string | null;
+    startedAt: string;
+    finishedAt: string;
+    tableSource: string;
+    result: RunResult;
+  } | null>(null);
+
   const ready = !!user && isAdmin && !rolesLoading && !!session;
   const evaluation = useMemo(() => evaluate(result), [result]);
 
