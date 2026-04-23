@@ -86,13 +86,12 @@ const Dashboard = () => {
       ? dashboardMnemonic
       : null;
 
-  // ─── AUTOSTART ───
+  // ─── AUTOSTART → redireciona para o cockpit Estudar (execução pertence lá) ───
   useEffect(() => {
     if (autostartConsumedRef.current) return;
     if (missionLoading || !data) return;
     const autostart = searchParams.get("autostart");
     if (autostart !== "true") return;
-    if (!activeRec) return;
 
     autostartConsumedRef.current = true;
     const source = searchParams.get("source") || "manual";
@@ -101,20 +100,8 @@ const Dashboard = () => {
     newParams.delete("source");
     setSearchParams(newParams, { replace: true });
 
-    if (!session.metrics.active) session.startSession(source);
-    const action = resolveRecommendationAction(activeRec);
-    if (action.mode === "navigate") navigate(action.path);
-    else loop.startMission(activeRec);
-  }, [missionLoading, data, activeRec, searchParams, setSearchParams, session, loop, navigate]);
-
-  // Track loop results
-  const prevPhaseRef = useRef(loop.phase);
-  useEffect(() => {
-    if (prevPhaseRef.current === "feedback" && loop.phase !== "feedback" && loop.result && session.metrics.active) {
-      session.recordAction(loop.result.correct ?? false, loop.context?.theme);
-    }
-    prevPhaseRef.current = loop.phase;
-  }, [loop.phase, loop.result, loop.context, session]);
+    navigate(`/dashboard/sessao-estudo?autostart=true&source=${encodeURIComponent(source)}`);
+  }, [missionLoading, data, searchParams, setSearchParams, navigate]);
 
   // Celebrations
   useEffect(() => {
@@ -156,14 +143,6 @@ const Dashboard = () => {
   }, [user?.id, queryClient]);
 
   /* ─── Handlers ─── */
-  const handleStart = useCallback(() => {
-    if (!activeRec) return;
-    if (!session.metrics.active) session.startSession("manual");
-    const action = resolveRecommendationAction(activeRec);
-    if (action.mode === "navigate") navigate(action.path);
-    else loop.startMission(activeRec);
-  }, [activeRec, loop, session, navigate]);
-
   const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
     setOverrideRec(alt);
   }, []);
@@ -173,33 +152,6 @@ const Dashboard = () => {
     refresh();
   }, [refresh]);
 
-  const handleLoopClose = useCallback(() => {
-    const wasComplete = loop.phase === "complete";
-    const completedTitle = loop.context?.recommendation.title ?? "";
-    const badges = loop.result?.completionBadges;
-    loop.resetLoop();
-    if (wasComplete) {
-      setHandoff({ completedTitle, badges });
-      setOverrideRec(null);
-      refresh();
-    }
-  }, [loop, refresh]);
-
-  const handleEndSession = useCallback(() => {
-    if (loopActive) loop.resetLoop();
-    session.endSession();
-  }, [loopActive, loop, session]);
-
-  const handleContinueAfterSummary = useCallback(() => {
-    session.dismissSummary();
-    session.startSession("continue");
-    if (activeRec) loop.startMission(activeRec);
-  }, [session, activeRec, loop]);
-
-  const handleDismissSummary = useCallback(() => {
-    session.dismissSummary();
-  }, [session]);
-
   const dismissBanner = useCallback(() => setHandoff(null), []);
 
   /* ─── Derived ─── */
@@ -208,19 +160,6 @@ const Dashboard = () => {
   // First load
   const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
   if (initialLoading) return <MissionControlSkeleton />;
-
-  // Session Summary
-  if (session.summary) {
-    return (
-      <div className="max-w-2xl mx-auto pt-8 px-3 animate-fade-in">
-        <SessionSummary
-          summary={session.summary}
-          onContinue={handleContinueAfterSummary}
-          onDismiss={handleDismissSummary}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-4 max-w-4xl mx-auto pb-20 lg:pb-0">
