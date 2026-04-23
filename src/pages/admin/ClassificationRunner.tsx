@@ -256,6 +256,25 @@ export default function ClassificationRunner() {
   const [queueItems, setQueueItems] = useState<QueueRow[]>([]);
   const [loadingPersisted, setLoadingPersisted] = useState(true);
 
+  // Last good dry-run persistido (cache rápido)
+  const [lastGoodDryRun, setLastGoodDryRun] = useState<{
+    runId: string;
+    verdict: Verdict;
+    timestamp: string;
+    tableSource: string;
+    batchSize: number;
+    metrics: { exactPct: number; heuristicPct: number; queuePct: number; skipPct: number; total: number };
+  } | null>(null);
+
+  // Tester de conexão com a edge function
+  const [connTesting, setConnTesting] = useState(false);
+  const [connTest, setConnTest] = useState<{
+    ok: boolean;
+    latencyMs: number;
+    summary: string;
+    timestamp: string;
+  } | null>(null);
+
   // ── Estado da execução real ────────────────────────────────────
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmPhrase, setConfirmPhrase] = useState("");
