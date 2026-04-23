@@ -37,6 +37,7 @@ import { InvisibleMnemonicOverlay } from "@/components/mnemonic/InvisibleMnemoni
 import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
 import { useStudyContext } from "@/lib/studyContext";
 import { EnaflixButton } from "@/components/enaflix/EnaflixButton";
+import { useScrolled } from "@/hooks/useScrolled";
 
 interface MobileNavGroup {
   title: string;
@@ -259,6 +260,7 @@ const DashboardLayout = () => {
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
   const studyCtx = useStudyContext();
+  const scrolled = useScrolled(8);
   const { mnemonic: invisibleMnemonic, dismiss: dismissMnemonic, markShown } = useInvisibleMnemonic({
     currentTopic: studyCtx?.topic,
     enabled: true,
@@ -277,29 +279,77 @@ const DashboardLayout = () => {
     {!isMissionLocked && <DashboardSidebar />}
     <div className="flex-1 flex flex-col min-w-0 w-full max-w-full">
       {!isMissionLocked && (
-        <header className="landscape-tablet:hidden lg:hidden h-14 border-b border-border flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0">
+        <header
+          className={cn(
+            "landscape-tablet:hidden lg:hidden sticky top-0 z-40 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0",
+            "transition-all duration-300 ease-out",
+            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
+            scrolled
+              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.45)]"
+              : "bg-gradient-to-b from-background/80 via-background/40 to-transparent border-b border-transparent",
+          )}
+        >
           <MobileNav />
-          <img src={enazizi} alt="ENAZIZI" className="h-6 w-6 rounded object-cover flex-shrink-0" />
-          <span className="font-bold text-sm truncate">ENAZIZI</span>
-          <div className="ml-auto flex items-center gap-1 flex-shrink-0">
+          <Link to="/" className="flex items-center gap-2 group min-w-0">
+            <span className="relative flex-shrink-0">
+              <span aria-hidden className="absolute inset-0 rounded-md bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
+              <img src={enazizi} alt="ENAZIZI" className="relative h-7 w-7 rounded-md object-cover ring-1 ring-white/10" />
+            </span>
+            <span className="font-black text-sm tracking-wide bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent truncate">
+              ENAZIZI
+            </span>
+          </Link>
+          <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
             <EnaflixButton variant="compact" />
+            <span aria-hidden className="h-5 w-px bg-white/10" />
             <GlobalSearch />
             <NotificationBell />
-            <button onClick={toggleTheme} className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors" aria-label="Alternar tema">
+            <button
+              onClick={toggleTheme}
+              className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200 hover:scale-105 flex items-center justify-center"
+              aria-label="Alternar tema"
+            >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         </header>
       )}
       {!isMissionLocked && (
-        <div className="hidden landscape-tablet:flex lg:flex h-12 border-b border-border items-center justify-end px-4 gap-2 flex-shrink-0">
+        <div
+          className={cn(
+            "hidden landscape-tablet:flex lg:flex sticky top-0 z-40 h-14 items-center px-4 lg:px-6 gap-3 flex-shrink-0",
+            "transition-all duration-300 ease-out",
+            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/55",
+            scrolled
+              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.5)]"
+              : "bg-gradient-to-b from-background/80 via-background/40 to-transparent border-b border-transparent",
+          )}
+        >
+          {/* ENAFLIX como elemento central — primeiro item visível */}
           <EnaflixButton />
-          <GlobalSearch />
-          <NotificationBell />
-          <button onClick={toggleTheme} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors text-sm" aria-label="Alternar tema">
-            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
-          </button>
+          <span aria-hidden className="hidden xl:block h-6 w-px bg-white/10 mx-1" />
+
+          {/* Spacer empurra ações para a direita; busca cresce no centro */}
+          <div className="flex-1 max-w-xl">
+            <GlobalSearch />
+          </div>
+
+          <div className="ml-auto flex items-center gap-1.5">
+            <NotificationBell />
+            <span aria-hidden className="h-5 w-px bg-white/10 mx-0.5" />
+            <button
+              onClick={toggleTheme}
+              className={cn(
+                "h-9 px-3 inline-flex items-center gap-2 rounded-full text-sm",
+                "text-muted-foreground hover:text-foreground hover:bg-white/5",
+                "transition-all duration-200 hover:scale-[1.04]",
+              )}
+              aria-label="Alternar tema"
+            >
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              <span className="hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
+            </button>
+          </div>
         </div>
       )}
       <main className={cn(
