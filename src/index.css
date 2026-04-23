@@ -56,6 +56,39 @@
     --success-foreground: 210 40% 98%;
     --warning: 38 92% 50%;
     --warning-foreground: 222 47% 6%;
+
+    /* ── Cinematic Design System V2 (additive) ── */
+    /* Module signature hues — each module = one identity color */
+    --hue-dashboard: 199 89% 48%;     /* azul cockpit */
+    --hue-enaflix:   0 84% 60%;        /* vermelho streaming */
+    --hue-tutor:    263 70% 65%;       /* roxo IA */
+    --hue-flashcard: 38 92% 55%;       /* âmbar memória */
+    --hue-simulado: 152 69% 45%;       /* verde performance */
+    --hue-analytics: 199 89% 55%;      /* ciano dados */
+    --hue-planner:  280 65% 60%;       /* magenta plano */
+    --hue-professor: 25 95% 55%;       /* laranja mentor */
+    --hue-admin:    220 15% 50%;       /* grafite */
+    --hue-ranking:  45 95% 55%;        /* dourado */
+
+    /* Cinematic surfaces — multi-layer glass */
+    --surface-1: 222 47% 9%;
+    --surface-2: 222 42% 12%;
+    --surface-3: 222 38% 15%;
+    --surface-glass: 222 47% 9% / 0.65;
+    --surface-glass-strong: 222 47% 7% / 0.8;
+
+    /* Cinematic shadows — soft, layered, premium */
+    --shadow-soft: 0 1px 2px hsl(0 0% 0% / 0.2), 0 4px 12px hsl(0 0% 0% / 0.15);
+    --shadow-elevated: 0 2px 4px hsl(0 0% 0% / 0.25), 0 12px 32px hsl(0 0% 0% / 0.35);
+    --shadow-floating: 0 4px 8px hsl(0 0% 0% / 0.3), 0 24px 64px hsl(0 0% 0% / 0.45);
+    --shadow-glow-sm: 0 0 20px hsl(var(--primary) / 0.2);
+    --shadow-glow-md: 0 0 40px hsl(var(--primary) / 0.25);
+    --shadow-glow-lg: 0 0 80px hsl(var(--primary) / 0.3);
+
+    /* Motion easing — Apple/Pixar feel */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
   }
 
   .light {
@@ -106,6 +139,16 @@
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 222 47% 11%;
+
+    /* Cinematic V2 light mode */
+    --surface-1: 0 0% 100%;
+    --surface-2: 220 14% 97%;
+    --surface-3: 220 14% 94%;
+    --surface-glass: 0 0% 100% / 0.7;
+    --surface-glass-strong: 0 0% 100% / 0.85;
+    --shadow-soft: 0 1px 2px hsl(220 13% 50% / 0.08), 0 4px 12px hsl(220 13% 50% / 0.06);
+    --shadow-elevated: 0 2px 4px hsl(220 13% 50% / 0.1), 0 12px 32px hsl(220 13% 50% / 0.12);
+    --shadow-floating: 0 4px 8px hsl(220 13% 50% / 0.12), 0 24px 64px hsl(220 13% 50% / 0.18);
   }
 }
 
@@ -147,6 +190,93 @@
   .glass-card {
     @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-xl;
     box-shadow: var(--shadow-card);
+  }
+
+  /* ── Cinematic V2 utilities (additive, opt-in) ── */
+  .glass-premium {
+    background: hsl(var(--surface-glass));
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid hsl(var(--border) / 0.6);
+    box-shadow: var(--shadow-elevated), inset 0 1px 0 hsl(var(--foreground) / 0.04);
+  }
+  .glass-premium-strong {
+    background: hsl(var(--surface-glass-strong));
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid hsl(var(--border) / 0.8);
+    box-shadow: var(--shadow-floating), inset 0 1px 0 hsl(var(--foreground) / 0.06);
+  }
+  .surface-1 { background: hsl(var(--surface-1)); }
+  .surface-2 { background: hsl(var(--surface-2)); }
+  .surface-3 { background: hsl(var(--surface-3)); }
+
+  .shadow-soft     { box-shadow: var(--shadow-soft); }
+  .shadow-elevated { box-shadow: var(--shadow-elevated); }
+  .shadow-floating { box-shadow: var(--shadow-floating); }
+  .shadow-glow-sm  { box-shadow: var(--shadow-glow-sm); }
+  .shadow-glow-md  { box-shadow: var(--shadow-glow-md); }
+  .shadow-glow-lg  { box-shadow: var(--shadow-glow-lg); }
+
+  /* Cinematic hover lift */
+  .lift {
+    transition: transform 400ms var(--ease-out-expo), box-shadow 400ms var(--ease-out-expo);
+  }
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-floating);
+  }
+
+  /* Module-tinted glow (use with style={{ '--module-hue': 'var(--hue-tutor)' }}) */
+  .glow-module {
+    box-shadow: 0 0 32px hsl(var(--module-hue, var(--primary)) / 0.25);
+  }
+  .ring-module {
+    box-shadow: 0 0 0 1px hsl(var(--module-hue, var(--primary)) / 0.4);
+  }
+  .text-module {
+    color: hsl(var(--module-hue, var(--primary)));
+  }
+  .bg-module-tint {
+    background: hsl(var(--module-hue, var(--primary)) / 0.12);
+  }
+  .border-module {
+    border-color: hsl(var(--module-hue, var(--primary)) / 0.3);
+  }
+  .gradient-module {
+    background: linear-gradient(135deg,
+      hsl(var(--module-hue, var(--primary)) / 0.18),
+      hsl(var(--module-hue, var(--primary)) / 0.04));
+  }
+
+  /* Cinematic hero ambient backdrop */
+  .hero-ambient {
+    position: relative;
+    isolation: isolate;
+  }
+  .hero-ambient::before {
+    content: '';
+    position: absolute;
+    inset: -20% -10% auto -10%;
+    height: 60%;
+    background: radial-gradient(ellipse at 30% 20%,
+      hsl(var(--module-hue, var(--primary)) / 0.18),
+      transparent 60%);
+    z-index: -1;
+    pointer-events: none;
+    filter: blur(40px);
+  }
+  .hero-ambient::after {
+    content: '';
+    position: absolute;
+    inset: auto -10% -20% 30%;
+    height: 50%;
+    background: radial-gradient(ellipse at 70% 80%,
+      hsl(var(--accent) / 0.12),
+      transparent 60%);
+    z-index: -1;
+    pointer-events: none;
+    filter: blur(40px);
   }
 
   .glow {
