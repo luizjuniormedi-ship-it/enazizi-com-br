@@ -166,22 +166,34 @@ const SidebarGroup = ({
                   <Link
                     to={item.to}
                     className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-200",
+                      "group/nav relative flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out overflow-hidden",
+                      "hover:translate-x-0.5",
                       item.highlight
-                        ? "bg-primary/15 text-primary hover:bg-primary/25 font-semibold"
+                        ? "bg-gradient-to-r from-primary/20 to-primary/5 text-primary hover:from-primary/30 hover:to-primary/10 font-semibold ring-1 ring-primary/20"
                         : active
-                        ? "bg-sidebar-accent text-primary"
+                        ? "bg-gradient-to-r from-primary/15 via-sidebar-accent to-transparent text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"
                         : "text-muted-foreground/70 hover:bg-sidebar-accent/40 hover:text-foreground"
                     )}
                   >
+                    {/* Glow do ícone quando ativo */}
+                    {active && (
+                      <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 bg-primary/40 blur-md rounded-full pointer-events-none" />
+                    )}
                     {item.useAvatar ? (
-                      <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain flex-shrink-0" />
+                      <img
+                        src={tutorAvatar}
+                        alt="Tutor"
+                        className="relative h-4 w-4 rounded-full object-contain flex-shrink-0 transition-transform duration-300 group-hover/nav:scale-110"
+                      />
                     ) : (
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      <item.icon className={cn(
+                        "relative h-4 w-4 flex-shrink-0 transition-all duration-300 group-hover/nav:scale-110",
+                        active && "drop-shadow-[0_0_6px_hsl(var(--primary)/0.6)]"
+                      )} />
                     )}
                     <span className="truncate text-[13px]">{item.label}</span>
                     {item.highlight && (
-                      <span className="ml-auto text-[10px]">🔥</span>
+                      <span className="ml-auto text-[10px] animate-pulse">🔥</span>
                     )}
                   </Link>
                 </TooltipTrigger>
