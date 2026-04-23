@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useAuth } from "@/hooks/useAuth";
+import { trackStudyAction, type ActionKind } from "@/lib/behavioralTelemetry";
 import { cn } from "@/lib/utils";
 
 const SUGGESTED_TOPICS = [
@@ -39,6 +41,7 @@ interface Props {
 
 export default function OperationalHub({ topicInput, onTopicChange, onStartStudy }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data } = useDashboardData();
   const metrics = data?.metrics;
   const stats = data?.stats;
@@ -50,6 +53,16 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
   const todayTotal = stats?.todayTotal ?? 0;
   const accuracy = metrics?.accuracy ?? 0;
   const errorsCount = metrics?.errorsCount ?? 0;
+
+  // Sprint 4 — track + delegate. entry_point = 'estudar' (todas ações nascem aqui).
+  const trackAndGo = (kind: ActionKind, target: string, meta?: Record<string, unknown>) => {
+    if (user) trackStudyAction(user.id, "estudar", kind, meta);
+    navigate(target);
+  };
+  const handleStartStudy = () => {
+    if (user) trackStudyAction(user.id, "estudar", "start_topic", { topic: topicInput });
+    onStartStudy();
+  };
 
   return (
     <div className="flex-1 overflow-y-auto">
@@ -86,10 +99,10 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
                 value={topicInput}
                 onChange={(e) => onTopicChange(e.target.value)}
                 placeholder="Ex: Insuficiência Cardíaca, TEP, AVC..."
-                onKeyDown={(e) => e.key === "Enter" && onStartStudy()}
+                onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
                 className="flex-1"
               />
-              <Button onClick={onStartStudy} disabled={!topicInput.trim()}>
+              <Button onClick={handleStartStudy} disabled={!topicInput.trim()}>
                 <Play className="h-4 w-4 mr-1.5" /> Iniciar
               </Button>
             </div>
@@ -114,25 +127,25 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               title="Iniciar revisão"
               description={pendingReviews > 0 ? `${pendingReviews} pendente${pendingReviews === 1 ? "" : "s"}` : "Sem pendências"}
               accent={pendingReviews > 0}
-              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+              onClick={() => trackAndGo("start_review", "/dashboard/sessao-estudo?focus=reviews&auto=1", { pendingReviews })}
             />
             <ActionCard
               icon={AlertTriangle}
               title="Revisar erros"
               description={errorsCount > 0 ? `${errorsCount} no banco` : "Sem erros recentes"}
-              onClick={() => navigate("/dashboard/banco-erros")}
+              onClick={() => trackAndGo("open_errors", "/dashboard/banco-erros", { errorsCount })}
             />
             <ActionCard
               icon={FileText}
               title="Iniciar simulado"
               description="Treino com bancas"
-              onClick={() => navigate("/dashboard/simulados")}
+              onClick={() => trackAndGo("start_simulado", "/dashboard/simulados")}
             />
             <ActionCard
               icon={Sparkles}
               title="Tutor IA"
               description="Tirar dúvida agora"
-              onClick={() => navigate("/dashboard/chatgpt")}
+              onClick={() => trackAndGo("open_tutor", "/dashboard/chatgpt")}
             />
           </div>
         </Section>
@@ -145,7 +158,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
           <div className="sm:hidden flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
             <button
               type="button"
-              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+              onClick={() => trackAndGo("start_review", "/dashboard/sessao-estudo?focus=reviews&auto=1", { pendingReviews })}
               className={cn(
                 "tabular-nums hover:text-foreground transition-colors",
                 pendingReviews > 0 ? "text-foreground" : ""
@@ -182,7 +195,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               label="Revisões vencidas"
               value={pendingReviews}
               tone={pendingReviews > 0 ? "urgent" : "neutral"}
-              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+              onClick={() => trackAndGo("start_review", "/dashboard/sessao-estudo?focus=reviews&auto=1", { pendingReviews })}
             />
             <StatCard
               icon={ListChecks}

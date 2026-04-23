@@ -800,6 +800,51 @@ export type Database = {
         }
         Relationships: []
       }
+      behavioral_telemetry: {
+        Row: {
+          action_kind: string | null
+          created_at: string
+          entry_point: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          ms_since_session_start: number | null
+          pre_action_clicks: number | null
+          pre_action_route_changes: number | null
+          route: string | null
+          user_id: string
+          viewport: string | null
+        }
+        Insert: {
+          action_kind?: string | null
+          created_at?: string
+          entry_point?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          ms_since_session_start?: number | null
+          pre_action_clicks?: number | null
+          pre_action_route_changes?: number | null
+          route?: string | null
+          user_id: string
+          viewport?: string | null
+        }
+        Update: {
+          action_kind?: string | null
+          created_at?: string
+          entry_point?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          ms_since_session_start?: number | null
+          pre_action_clicks?: number | null
+          pre_action_route_changes?: number | null
+          route?: string | null
+          user_id?: string
+          viewport?: string | null
+        }
+        Relationships: []
+      }
       bulk_generation_jobs: {
         Row: {
           created_at: string
@@ -10741,6 +10786,20 @@ export type Database = {
           subtopic_id: string | null
           subtopic_nome: string | null
           topic_nome: string | null
+        }
+        Relationships: []
+      }
+      v_time_to_action_summary: {
+        Row: {
+          action_kind: string | null
+          avg_clicks_before: number | null
+          avg_route_changes_before: number | null
+          avg_seconds_to_action: number | null
+          day: string | null
+          entry_point: string | null
+          median_seconds_to_action: number | null
+          sessions: number | null
+          viewport: string | null
         }
         Relationships: []
       }
