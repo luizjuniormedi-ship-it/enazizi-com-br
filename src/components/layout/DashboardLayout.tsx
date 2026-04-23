@@ -351,82 +351,55 @@ const DashboardLayout = () => {
       {!isMissionLocked && (
         <div
           className={cn(
-            "hidden landscape-tablet:flex lg:flex sticky top-0 z-40 h-16 items-center px-6 lg:px-8 gap-6 flex-shrink-0 isolate",
-            "transition-all duration-500 ease-out",
+            "hidden landscape-tablet:flex lg:flex sticky top-0 z-40 h-14 items-center px-6 lg:px-8 gap-5 flex-shrink-0",
+            "transition-colors duration-300 ease-out",
             scrolled
-              ? "bg-background/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
-              : "bg-gradient-to-b from-background/70 via-background/30 to-transparent backdrop-blur-md border-b border-transparent",
+              ? "bg-background/85 backdrop-blur-xl border-b border-border/40"
+              : "bg-background/60 backdrop-blur-sm border-b border-transparent",
           )}
         >
-          {/* Linha de luz superior (premium streaming, aparece no scroll) */}
-          <span
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/40 to-transparent transition-opacity duration-500",
-              scrolled ? "opacity-100" : "opacity-0",
-            )}
-          />
+          {/* === ESQUERDA: wordmark sóbrio + nav contextual === */}
+          <Link
+            to="/"
+            className="flex items-center text-foreground/85 hover:text-foreground transition-colors duration-200"
+            aria-label="ENAZIZI — início"
+          >
+            <span className="font-bold text-[15px] tracking-[0.18em]">ENAZIZI</span>
+          </Link>
 
-          {/* === BLOCO ESQUERDA: branding + navegação primária === */}
-          <div className="flex items-center gap-7">
-            {/* Wordmark elegante (sem ícone, peso forte) */}
-            <Link to="/" className="relative flex items-center group" aria-label="ENAZIZI — início">
-              <span className="font-black text-[17px] tracking-[0.20em] bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent transition-all duration-300 group-hover:tracking-[0.22em]">
-                ENAZIZI
-              </span>
-              <span
-                aria-hidden
-                className="absolute -inset-x-3 -inset-y-2 rounded-lg bg-gradient-to-r from-fuchsia-500/0 via-primary/0 to-violet-500/0 group-hover:from-fuchsia-500/15 group-hover:via-primary/10 group-hover:to-violet-500/15 blur-xl transition-all duration-500 -z-10"
-              />
-            </Link>
+          {/* Navegação curta de seções (peso leve, sem cinematic) */}
+          <nav className="hidden xl:flex items-center gap-0.5" aria-label="Navegação principal">
+            {[
+              { to: "/dashboard", label: "Início" },
+              { to: "/dashboard/simulados", label: "Simulados" },
+              { to: "/dashboard/banco-erros", label: "Erros" },
+              { to: "/dashboard/proficiency", label: "Progresso" },
+            ].map((item) => {
+              const active = location.pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "relative px-3 py-1.5 text-[13px] font-medium rounded-md transition-colors duration-200",
+                    active
+                      ? "text-foreground bg-muted/50"
+                      : "text-muted-foreground/70 hover:text-foreground hover:bg-muted/30",
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
+          </nav>
 
-            {/* ENAFLIX — tab principal de descoberta (peso máximo) */}
-            <EnaflixButton />
-
-            {/* Navegação curta de seções (peso médio, ghost) */}
-            <nav className="hidden xl:flex items-center gap-1" aria-label="Navegação principal">
-              {[
-                { to: "/dashboard", label: "Início" },
-                { to: "/dashboard/simulados", label: "Simulados" },
-                { to: "/dashboard/banco-erros", label: "Erros" },
-                { to: "/dashboard/proficiency", label: "Progresso" },
-              ].map((item) => {
-                const active = location.pathname === item.to;
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={cn(
-                      "relative px-3 py-1.5 text-[13px] font-medium tracking-wide rounded-md transition-all duration-300",
-                      active
-                        ? "text-foreground"
-                        : "text-muted-foreground/80 hover:text-foreground",
-                    )}
-                  >
-                    {item.label}
-                    {active && (
-                      <span
-                        aria-hidden
-                        className="absolute inset-x-2 -bottom-0.5 h-0.5 rounded-full bg-gradient-to-r from-fuchsia-500 via-primary to-violet-500"
-                      />
-                    )}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-
-          {/* === BLOCO DIREITA: ações secundárias (todas mesmo peso, fantasma) === */}
+          {/* === DIREITA: ações secundárias (ghost, peso uniforme) === */}
           <div className="ml-auto flex items-center gap-1">
             <GlobalSearch variant="pill" />
             <NotificationBell />
             <button
               onClick={toggleTheme}
-              className={cn(
-                "h-9 w-9 inline-flex items-center justify-center rounded-full",
-                "text-muted-foreground hover:text-foreground hover:bg-white/5",
-                "transition-all duration-200 hover:scale-105",
-              )}
+              className="h-9 w-9 inline-flex items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 transition-colors duration-200"
               aria-label="Alternar tema"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
