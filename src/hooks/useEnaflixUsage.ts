@@ -50,6 +50,14 @@ export function useEnaflixUsage() {
       write(next);
       return next;
     });
+    // Marca a origem ENAFLIX para o botão flutuante "Voltar ao ENAFLIX"
+    // aparecer em qualquer página de módulo até o usuário voltar/limpar.
+    try {
+      sessionStorage.setItem("enaflix:origin", "1");
+      sessionStorage.setItem("enaflix:lastModule", id);
+    } catch {
+      // ignore
+    }
   }, []);
 
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
