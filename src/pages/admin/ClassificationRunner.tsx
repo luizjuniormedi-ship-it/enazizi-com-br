@@ -268,7 +268,7 @@ export default function ClassificationRunner() {
     timestamp: string;
     tableSource: string;
     batchSize: number;
-    metrics: { exactPct: number; heuristicPct: number; queuePct: number; skipPct: number; total: number };
+    metrics: { exactPct: number; aliasPct: number; deterministicPct: number; heuristicPct: number; queuePct: number; skipPct: number; total: number };
   } | null>(null);
 
   // Tester de conexão com a edge function
