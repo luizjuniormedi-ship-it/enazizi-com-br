@@ -65,7 +65,13 @@ export default function MissionStartButton() {
             className="w-full gap-2 font-bold text-base py-5"
             size="lg"
             onClick={() => {
-              if (state.status === "paused") resumeMission();
+              const wasPaused = state.status === "paused";
+              if (wasPaused) resumeMission();
+              if (user) {
+                trackStudyAction(user.id, "mission_resume",
+                  wasPaused ? "resume_mission" : "continue_session",
+                  { progress, completedMinutes, totalMinutes });
+              }
               navigate("/mission");
             }}
           >
@@ -78,6 +84,9 @@ export default function MissionStartButton() {
   }
 
   const handleStart = () => {
+    if (user) {
+      trackStudyAction(user.id, entryPoint, "start_mission", { hasTasks });
+    }
     safeCta({
       action: () => { startMission(); },
       nextStep: "/mission",
