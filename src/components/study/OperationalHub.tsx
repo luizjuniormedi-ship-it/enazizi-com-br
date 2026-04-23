@@ -209,7 +209,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
         {/* PROGRESSO panorâmico vive em /dashboard (Visão Geral) — não duplicar aqui */}
 
         {/* ÁREA 4 — ORGANIZAÇÃO */}
-        <Section title="Organização" icon={CalendarRange}>
+        <Section title="Organização" icon={CalendarRange} className="order-3">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <ActionCard
               icon={CalendarRange}
