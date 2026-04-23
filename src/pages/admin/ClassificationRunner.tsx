@@ -695,7 +695,7 @@ export default function ClassificationRunner() {
         lastDryRunVerdict?.verdict === "healthy"
           ? "border-primary/50 bg-primary/5"
           : lastDryRunVerdict?.verdict === "borderline"
-          ? "border-amber-500/50 bg-amber-500/5"
+          ? "border-secondary bg-secondary/30"
           : lastDryRunVerdict?.verdict === "rejected"
           ? "border-destructive/50 bg-destructive/5"
           : ""
