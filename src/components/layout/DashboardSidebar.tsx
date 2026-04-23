@@ -27,10 +27,13 @@ import {
   Sparkles,
   PlayCircle,
   ChevronRight,
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
   RotateCcw,
   TrendingUp,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
