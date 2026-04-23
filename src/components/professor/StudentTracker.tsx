@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 // jsPDF carregado sob demanda (lazy) para reduzir bundle inicial
 import { FACULDADES } from "@/constants/faculdades";
+import { CinematicEmptyState } from "@/components/cinematic";
 
 interface StudentProfile {
   user_id: string;
@@ -317,10 +318,11 @@ const StudentTracker = () => {
           )}
 
           {students.length === 0 && !loading && (
-            <Card><CardContent className="p-8 text-center">
-              <User className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Nenhum aluno encontrado.</p>
-            </CardContent></Card>
+            <CinematicEmptyState
+              module="professor"
+              title="Nenhum aluno encontrado"
+              description="Quando alunos se vincularem ao seu painel, eles aparecerão aqui."
+            />
           )}
 
           {students.length > 0 && filteredStudents.length === 0 && (
