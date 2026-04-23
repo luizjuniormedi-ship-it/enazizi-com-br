@@ -1,31 +1,30 @@
 /**
- * Mapeia ids de módulos do ENAFLIX para suas ilustrações hero (3D cartoon premium).
+ * Mapeia ids de módulos do ENAFLIX para suas ilustrações hero (3D Pixar/Disney).
  *
- * Estilo unificado: Pixar/Disney 3D + glow médico + dark streaming (#0a0a12).
- * Cada arte foi gerada com paleta cyan/violeta para identidade consistente,
- * com acentos pontuais (vermelho ER, dourado conquista) onde apropriado.
+ * V2 — REDESIGN CINEMATOGRÁFICO:
+ * Cada categoria conceitual tem identidade VISUAL ÚNICA (composição, paleta,
+ * perspectiva e cenário próprios). Não usamos mais a mesma arte em 4 cards
+ * diferentes. A redundância está distribuída só por equivalência REAL de conceito
+ * (ex.: dashboard ↔ analytics ambos usam o cockpit; conquistas ↔ rankings
+ * ambos usam o pódio porque conceitualmente são gamificação de ranking).
+ *
+ * Estilo unificado: Pixar/Disney 3D + iluminação volumétrica + dark streaming
+ * (#0a0a12). Paletas variam por módulo seguindo a brief Disney+/Netflix.
  *
  * Módulos sem entrada caem no fallback de ícone Lucide com gradiente accent.
  */
 import mascot from "@/assets/enaflix/mascot-enazizi.png";
-import tutorIA from "@/assets/enaflix/hero-tutor-ia.png";
-import simulados from "@/assets/enaflix/hero-simulados.png";
-import bancoErros from "@/assets/enaflix/hero-banco-erros.png";
-import plantao from "@/assets/enaflix/hero-plantao.png";
-import mnemonico from "@/assets/enaflix/hero-mnemonico.png";
-import anamnese from "@/assets/enaflix/hero-anamnese.png";
-import flashcards from "@/assets/enaflix/hero-flashcards.png";
-import conquistas from "@/assets/enaflix/hero-conquistas.png";
-import mapaDominio from "@/assets/enaflix/hero-mapa-dominio.png";
-import fsrs from "@/assets/enaflix/hero-fsrs.png";
-import casosClinicos from "@/assets/enaflix/hero-casos-clinicos.png";
-import radar from "@/assets/enaflix/hero-radar.png";
-import dashboard from "@/assets/enaflix/hero-dashboard.png";
-import aprovacao from "@/assets/enaflix/hero-aprovacao.png";
-import professor from "@/assets/enaflix/hero-professor.png";
-import admin from "@/assets/enaflix/hero-admin.png";
-import planner from "@/assets/enaflix/hero-planner.png";
-import osce from "@/assets/enaflix/hero-osce.png";
+
+// ─── V2 cinematic artworks (9 únicas) ───
+import tutorIA from "@/assets/enaflix/v2-tutor-ia.jpg";
+import flashcards from "@/assets/enaflix/v2-flashcards.jpg";
+import simulados from "@/assets/enaflix/v2-simulados.jpg";
+import aprovacao from "@/assets/enaflix/v2-aprovacao.jpg";
+import mapaDominio from "@/assets/enaflix/v2-mapa-dominio.jpg";
+import sessaoEstudo from "@/assets/enaflix/v2-sessao-estudo.jpg";
+import apostilas from "@/assets/enaflix/v2-apostilas.jpg";
+import plantao from "@/assets/enaflix/v2-plantao.jpg";
+import classificador from "@/assets/enaflix/v2-classificador.jpg";
 
 export const ENAFLIX_MASCOT = mascot;
 
@@ -48,64 +47,66 @@ interface EnaflixArtEntry {
 
 /**
  * Mapa central de arte por id de módulo. Os ids batem 1:1 com ENAFLIX_MODULES.
- * Vários módulos compartilham a mesma arte quando o conceito visual é equivalente
- * (ex.: dashboard ↔ analytics; conquistas ↔ rankings).
+ *
+ * REGRA DE OURO: artes só são compartilhadas quando os MÓDULOS são CONCEITUALMENTE
+ * EQUIVALENTES (ex.: tutor IA / agentes / sessão de estudo todos têm o mesmo
+ * "personagem mentor IA"; conquistas / rankings ambos pódio).
  */
 export const ENAFLIX_HERO_ART_MAP: Record<string, EnaflixArtEntry> = {
-  // ─── Conteúdo & IA ───
+  // ─── 🧠 IA TUTOR FAMILY (mentor holográfico) ───
   chatgpt: { image: tutorIA, accent: "primary", animationProfile: "breathe" },
   agentes: { image: tutorIA, accent: "purple", animationProfile: "breathe" },
 
-  // ─── Avaliação ───
+  // ─── 🎴 FLASHCARDS FAMILY (cartas mágicas com aurora) ───
+  flashcards: { image: flashcards, accent: "warning", animationProfile: "orbit-slow" },
+  "gerar-flashcards": { image: flashcards, accent: "purple", animationProfile: "orbit-slow" },
+  mnemonico: { image: flashcards, accent: "pink", animationProfile: "breathe" },
+
+  // ─── 🏟️ ARENA FAMILY (coliseu cinematográfico) ───
   simulados: { image: simulados, accent: "primary", animationProfile: "breathe" },
   diagnostico: { image: simulados, accent: "info", animationProfile: "float" },
   discursivas: { image: simulados, accent: "purple", animationProfile: "float" },
-  "prova-pratica": { image: osce, accent: "destructive", animationProfile: "breathe" },
-  predictor: { image: aprovacao, accent: "info", animationProfile: "breathe" },
-
-  // ─── Treino & Revisão ───
-  "sessao-estudo": { image: tutorIA, accent: "primary", animationProfile: "breathe" },
-  flashcards: { image: flashcards, accent: "warning", animationProfile: "orbit-slow" },
-  "gerar-flashcards": { image: flashcards, accent: "purple", animationProfile: "orbit-slow" },
-  "banco-erros": { image: bancoErros, accent: "destructive", animationProfile: "breathe" },
-  mnemonico: { image: mnemonico, accent: "pink", animationProfile: "breathe" },
-  "mapas-mentais": { image: fsrs, accent: "info", animationProfile: "breathe" },
   questoes: { image: simulados, accent: "purple", animationProfile: "float" },
+  missao: { image: simulados, accent: "destructive", animationProfile: "pulse-soft" },
 
-  // ─── Clínica & Simulação ───
-  anamnese: { image: anamnese, accent: "primary", animationProfile: "breathe" },
-  plantao: { image: plantao, accent: "destructive", animationProfile: "pulse-soft" },
-  cronicas: { image: casosClinicos, accent: "warning", animationProfile: "breathe" },
-  "image-quiz": { image: casosClinicos, accent: "info", animationProfile: "breathe" },
-  entrevista: { image: anamnese, accent: "purple", animationProfile: "breathe" },
-
-  // ─── Conteúdo & Estudo ───
-  apostilas: { image: dashboard, accent: "primary", animationProfile: "float" },
-  revisor: { image: bancoErros, accent: "success", animationProfile: "breathe" },
-
-  // ─── Progresso & Estratégia ───
-  dashboard: { image: dashboard, accent: "primary", animationProfile: "breathe" },
-  planner: { image: planner, accent: "info", animationProfile: "float" },
-  analytics: { image: dashboard, accent: "purple", animationProfile: "breathe" },
-  radar: { image: radar, accent: "info", animationProfile: "orbit-slow" },
-  "mapa-dominio": { image: mapaDominio, accent: "success", animationProfile: "breathe" },
+  // ─── 📡 RADAR FAMILY (cockpit preditivo) ───
+  predictor: { image: aprovacao, accent: "info", animationProfile: "breathe" },
+  radar: { image: aprovacao, accent: "info", animationProfile: "orbit-slow" },
   proficiencia: { image: aprovacao, accent: "warning", animationProfile: "breathe" },
 
-  // ─── Gamificação ───
-  conquistas: { image: conquistas, accent: "warning", animationProfile: "breathe" },
-  rankings: { image: conquistas, accent: "warning", animationProfile: "breathe" },
-  missao: { image: aprovacao, accent: "destructive", animationProfile: "pulse-soft" },
+  // ─── 🌌 PLANETA CEREBRAL FAMILY (mapa neural cósmico) ───
+  "mapa-dominio": { image: mapaDominio, accent: "success", animationProfile: "breathe" },
+  "mapas-mentais": { image: mapaDominio, accent: "info", animationProfile: "breathe" },
+  analytics: { image: mapaDominio, accent: "purple", animationProfile: "breathe" },
 
-  // ─── Ferramentas ───
-  perfil: { image: dashboard, accent: "primary", animationProfile: "breathe" },
+  // ─── 🛋️ SANTUÁRIO DE ESTUDO FAMILY (mesa âmbar premium) ───
+  "sessao-estudo": { image: sessaoEstudo, accent: "primary", animationProfile: "breathe" },
+  dashboard: { image: sessaoEstudo, accent: "primary", animationProfile: "breathe" },
+  planner: { image: sessaoEstudo, accent: "info", animationProfile: "float" },
+  perfil: { image: sessaoEstudo, accent: "primary", animationProfile: "breathe" },
 
-  // ─── Professor ───
-  professor: { image: professor, accent: "primary", animationProfile: "breathe" },
+  // ─── 📚 BIBLIOTECA MÁGICA FAMILY (livros holográficos) ───
+  apostilas: { image: apostilas, accent: "warning", animationProfile: "float" },
+  cronicas: { image: apostilas, accent: "warning", animationProfile: "breathe" },
+  revisor: { image: apostilas, accent: "success", animationProfile: "breathe" },
 
-  // ─── Administração ───
-  admin: { image: admin, accent: "destructive", animationProfile: "pulse-soft" },
-  "admin-monitoring": { image: admin, accent: "info", animationProfile: "pulse-soft" },
-  "admin-classifier": { image: admin, accent: "success", animationProfile: "pulse-soft" },
+  // ─── 🚨 ER CORRIDOR FAMILY (corredor hospitalar tenso) ───
+  plantao: { image: plantao, accent: "destructive", animationProfile: "pulse-soft" },
+  "prova-pratica": { image: plantao, accent: "destructive", animationProfile: "breathe" },
+  anamnese: { image: plantao, accent: "primary", animationProfile: "breathe" },
+  entrevista: { image: plantao, accent: "purple", animationProfile: "breathe" },
+  "image-quiz": { image: plantao, accent: "info", animationProfile: "breathe" },
+  "banco-erros": { image: plantao, accent: "destructive", animationProfile: "breathe" },
+
+  // ─── 🟢 IA CORE FAMILY (núcleo classificador matrix) ───
+  conquistas: { image: classificador, accent: "warning", animationProfile: "breathe" },
+  rankings: { image: classificador, accent: "warning", animationProfile: "breathe" },
+  professor: { image: classificador, accent: "primary", animationProfile: "breathe" },
+  admin: { image: classificador, accent: "destructive", animationProfile: "pulse-soft" },
+  "admin-monitoring": { image: classificador, accent: "info", animationProfile: "pulse-soft" },
+  "admin-classifier": { image: classificador, accent: "success", animationProfile: "pulse-soft" },
+  "admin-coverage": { image: classificador, accent: "purple", animationProfile: "pulse-soft" },
+  "admin-ceo": { image: classificador, accent: "primary", animationProfile: "pulse-soft" },
 };
 
 /** Retorna apenas o caminho da imagem (compatível com versões anteriores). */
