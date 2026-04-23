@@ -407,6 +407,20 @@
   50% { transform: scale(1.12); opacity: 1; }
 }
 
+.animate-cinematic-pulse-core {
+  animation: cinematic-pulse-core 2.4s ease-in-out infinite;
+}
+
+.animate-cinematic-skeleton-sweep {
+  background-size: 200% 100%;
+  animation: cinematic-skeleton-sweep 2.4s ease-in-out infinite;
+}
+
+@keyframes tutor-orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .gradient-border {
   position: relative;
 }

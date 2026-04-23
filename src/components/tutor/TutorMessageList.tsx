@@ -1,7 +1,8 @@
 import { forwardRef, useCallback } from "react";
-import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import TutorMessageItem from "@/components/tutor/TutorMessageItem";
+import TutorThinkingIndicator from "@/components/tutor/TutorThinkingIndicator";
 import type { Msg } from "@/components/tutor/TutorConstants";
+import { cn } from "@/lib/utils";
 
 interface TutorMessageListProps {
   messages: Msg[];
@@ -11,28 +12,40 @@ interface TutorMessageListProps {
 
 const TutorMessageList = forwardRef<HTMLDivElement, TutorMessageListProps>(
   ({ messages, isLoading, onCopy }, ref) => {
-    // Stable callback so memoized children don't invalidate
     const handleCopy = useCallback((text: string) => onCopy(text), [onCopy]);
 
     return (
-      <div ref={ref} className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots">
-        {messages.map((msg, i) => (
-          <TutorMessageItem key={i} msg={msg} onCopy={handleCopy} />
-        ))}
-        {isLoading && messages[messages.length - 1]?.role === "user" && (
-          <div className="flex gap-2 sm:gap-3 animate-fade-in">
-            <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
-              <img src={tutorAvatar} alt="Tutor" className="h-full w-full object-contain" />
-            </div>
-            <div className="rounded-xl px-4 py-3 bg-secondary/80 backdrop-blur-sm">
-              <div className="flex gap-1.5 items-center">
-                <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "0ms" }} />
-                <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "150ms" }} />
-                <div className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" style={{ animationDelay: "300ms" }} />
-              </div>
-            </div>
-          </div>
+      <div
+        ref={ref}
+        className={cn(
+          "relative flex-1 rounded-2xl overflow-y-auto p-2 sm:p-4 mb-2 sm:mb-3 min-h-0",
+          "border border-white/[0.06] bg-card/40 backdrop-blur-md",
+          "shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_8px_32px_-12px_hsl(var(--hue-tutor)/0.25)]",
         )}
+      >
+        {/* Atmosfera ambient — glow neural sutil no fundo */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-60"
+          style={{
+            background:
+              "radial-gradient(ellipse at 12% 0%, hsl(var(--hue-tutor) / 0.08), transparent 55%), radial-gradient(ellipse at 88% 100%, hsl(var(--hue-tutor) / 0.06), transparent 50%)",
+          }}
+        />
+
+        {/* Pattern de pontos sutil — herda do .pattern-dots */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 pattern-dots opacity-40" />
+
+        {/* Conteúdo (acima da atmosfera) */}
+        <div className="relative space-y-3 sm:space-y-4">
+          {messages.map((msg, i) => (
+            <TutorMessageItem key={i} msg={msg} onCopy={handleCopy} />
+          ))}
+
+          {isLoading && messages[messages.length - 1]?.role === "user" && (
+            <TutorThinkingIndicator />
+          )}
+        </div>
       </div>
     );
   }
