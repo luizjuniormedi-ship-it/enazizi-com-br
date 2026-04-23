@@ -345,9 +345,9 @@ const DashboardSidebar = () => {
   return (
     <TooltipProvider delayDuration={400}>
       <aside className="hidden landscape-tablet:flex lg:flex flex-col w-52 md:w-56 lg:w-60 border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300">
-        {/* Logo */}
-        <div className="flex-shrink-0 flex items-center p-4 gap-2">
-          <Link to="/" className="group flex items-center gap-2">
+        {/* Logo + toggle */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 gap-2">
+          <Link to="/" className="group flex items-center gap-2 min-w-0">
             <span className="relative flex-shrink-0">
               <span
                 aria-hidden
@@ -359,10 +359,24 @@ const DashboardSidebar = () => {
                 className="relative h-7 w-7 rounded-lg object-cover ring-1 ring-white/10"
               />
             </span>
-            <span className="text-base font-black bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent tracking-wide">
+            <span className="text-base font-black bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent tracking-wide truncate">
               ENAZIZI
             </span>
           </Link>
+          <Tooltip delayDuration={150}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleCollapse}
+                aria-label="Recolher barra lateral"
+                className="flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground/55 hover:bg-sidebar-accent/50 hover:text-foreground transition-colors flex-shrink-0"
+              >
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p className="text-xs font-semibold">Recolher</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Navegação minimalista — duas mentalidades distintas */}
