@@ -169,6 +169,26 @@ const DashboardSidebar = () => {
     // recompute on route change to capture starts/ends
   }, [location.pathname]);
 
+  // Toggle manual de recolhimento (persistido em localStorage)
+  const STORAGE_KEY = "enazizi:sidebar:collapsed";
+  const [manualCollapsed, setManualCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, manualCollapsed ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [manualCollapsed]);
+
+  const toggleCollapse = () => setManualCollapsed((v) => !v);
+
   // Detecta se há missão diária pendente (para o "Continuar agora")
   const hasMissionToday = useMemo(() => {
     try {
@@ -195,8 +215,11 @@ const DashboardSidebar = () => {
   const showInstitutional = isInstitutionalStaff;
   const onEnaflix = location.pathname.startsWith("/enaflix");
 
+  // Sidebar compacta se: (a) usuário recolheu manualmente OU (b) sessão de estudo ativa
+  const collapsed = manualCollapsed || isStudyActive;
+
   /* ───────── Modo compacto (icon-only) ───────── */
-  if (isStudyActive) {
+  if (collapsed) {
     return (
       <TooltipProvider delayDuration={200}>
         <aside className="hidden landscape-tablet:flex lg:flex flex-col w-14 border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300">
