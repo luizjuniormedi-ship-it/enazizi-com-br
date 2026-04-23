@@ -5,6 +5,7 @@ import { useJourneyRefresh } from "@/hooks/useJourneyRefresh";
 import { useLandscapeTablet } from "@/hooks/useLandscapeTablet";
 import { useAlertTelemetry } from "@/hooks/useAlertTelemetry";
 import { useAlertResolutionTracker } from "@/hooks/useAlertResolutionTracker";
+import { useTimeToAction } from "@/hooks/useTimeToAction";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
@@ -282,6 +283,8 @@ const DashboardLayout = () => {
   useAlertTelemetry();
   // Resolution tracker — registra `resolved` quando estado do usuário melhora
   useAlertResolutionTracker();
+  // Sprint 4 — Telemetria de tempo-até-ação (login → primeira ação real)
+  useTimeToAction();
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
   const studyCtx = useStudyContext();
