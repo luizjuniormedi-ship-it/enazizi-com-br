@@ -7,8 +7,8 @@ interface CinematicSuspenseProps {
   module?: CinematicModule;
   /** Variante de fallback. */
   variant?: "default" | "minimal" | "session";
-  /** Texto opcional sob o loader. */
-  hint?: string;
+  /** Texto opcional sob o loader (string ou rotação). */
+  hint?: string | string[];
   /** Conteúdo a ser carregado preguiçosamente. */
   children: React.ReactNode;
   /** Override de fallback (opcional). */

@@ -605,6 +605,27 @@
   50%      { opacity: 1;   transform: scale(1.4); }
 }
 
+/* ── Module Scenes (loaders identitários) ── */
+@keyframes simulado-hud-sweep {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes flashcard-float {
+  0%, 100% { transform: var(--card-base, translate(0,0)) translateY(0); }
+  50%      { transform: var(--card-base, translate(0,0)) translateY(-8px); }
+}
+
+@keyframes planner-line-pulse {
+  0%, 100% { opacity: 0.25; }
+  50%      { opacity: 0.85; }
+}
+
+@keyframes enaflix-spotlight-sweep {
+  0%, 100% { transform: translateX(-50%) rotate(-3deg); opacity: 0.65; }
+  50%      { transform: translateX(-50%) rotate(3deg);  opacity: 1;    }
+}
+
 /* Respect reduced motion globally for ENAFLIX heavy animations */
 @media (prefers-reduced-motion: reduce) {
   .animate-hero-zoom-in,
@@ -621,7 +642,12 @@
   [style*="cinematic-energy-ring"],
   [style*="cinematic-memory-orb"],
   [style*="cinematic-scan-x"],
-  [style*="cinematic-star-twinkle"] {
+  [style*="cinematic-star-twinkle"],
+  [style*="simulado-hud-sweep"],
+  [style*="flashcard-float"],
+  [style*="planner-line-pulse"],
+  [style*="enaflix-spotlight-sweep"],
+  [style*="tutor-orbit"] {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
