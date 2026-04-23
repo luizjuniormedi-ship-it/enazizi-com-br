@@ -168,6 +168,9 @@ function classifyDeterministic(
       confidence: 0.97,
       method: "alias_exact",
       reason: `alias="${key}" → resolvido via curriculum_aliases`,
+      alias_key: key,
+      alias_target: subId ? `subtopic:${subId}` : topicId ? `topic:${topicId}` : `specialty:${specId}`,
+      normalized_topic: normTopic || normSub,
     };
   }
 
