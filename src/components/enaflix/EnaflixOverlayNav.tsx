@@ -46,7 +46,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
   return (
     <header
-      className="fixed top-0 inset-x-0 z-50 transition-[background-color,box-shadow,backdrop-filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+      className="fixed top-0 inset-x-0 z-50 transition-[background-color,box-shadow,backdrop-filter] duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]"
       style={{
         backgroundColor: `rgba(10, 10, 18, ${bgAlpha})`,
         backdropFilter: `blur(${blurPx}px) saturate(140%)`,

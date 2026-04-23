@@ -53,7 +53,7 @@ export function EnaflixSectionRow({ title, subtitle, modules, onNavigate }: Prop
     <section
       ref={sectionRef}
       className={cn(
-        "space-y-3 group/section transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+        "space-y-3 group/section transition-all duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] will-change-transform",
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
       )}
     >
@@ -99,7 +99,7 @@ export function EnaflixSectionRow({ title, subtitle, modules, onNavigate }: Prop
             <div
               key={m.id}
               className={cn(
-                "snap-start transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform",
+                "snap-start transition-all duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] will-change-transform",
                 visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
               )}
               style={{ transitionDelay: visible ? `${Math.min(i, 8) * 60}ms` : "0ms" }}

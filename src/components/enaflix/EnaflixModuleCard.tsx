@@ -79,7 +79,7 @@ export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "defa
         "group relative shrink-0 rounded-2xl overflow-hidden text-left isolate",
         "bg-gradient-to-br from-white/[0.07] to-white/[0.02]",
         "border border-white/10",
-        "transition-[transform,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+        "transition-[transform,box-shadow,border-color] duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
         "[transform-style:preserve-3d] will-change-transform",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         isHero
