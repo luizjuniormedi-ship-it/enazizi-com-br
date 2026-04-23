@@ -64,8 +64,6 @@ const Dashboard = () => {
 
   const { data, isLoading: missionLoading, isError, error, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
-  const loop = useStudyLoop();
-  const session = useStudySession();
 
   const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
   const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
@@ -78,8 +76,6 @@ const Dashboard = () => {
   const justification = data?.justification ?? "";
   const alternatives = data?.alternativeActions ?? [];
   const adaptiveState = data?.adaptiveState;
-
-  const loopActive = loop.phase !== "idle";
 
   useEffect(() => {
     setDismissedMnemonicId(null);
