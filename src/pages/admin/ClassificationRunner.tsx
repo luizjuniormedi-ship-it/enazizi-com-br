@@ -75,8 +75,10 @@ import {
 } from "@/lib/classificationSnapshot";
 
 const STORAGE_KEY = "classification_runner:last_result";
+const LAST_GOOD_DRY_RUN_KEY = "classification_runner:last_good_dry_run";
 const DRY_RUN_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 horas
 const CONFIRM_PHRASE = "EXECUTAR LOTE REAL";
+const POLL_INTERVAL_MS = 5000;
 
 type TableSource = "questions_bank" | "real_exam_questions";
 
