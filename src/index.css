@@ -626,6 +626,52 @@
   50%      { transform: translateX(-50%) rotate(3deg);  opacity: 1;    }
 }
 
+/* ── Sprint D — ENAZIZI symbol (logo vivo Pixar/Apple Intelligence) ── */
+@keyframes enazizi-orbit-slow {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes enazizi-orbit-fast {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(-360deg); }
+}
+@keyframes enazizi-core-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.95; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+.enazizi-orbit-slow { animation: enazizi-orbit-slow 18s linear infinite; transform-box: fill-box; }
+.enazizi-orbit-fast { animation: enazizi-orbit-fast 9s linear infinite;  transform-box: fill-box; }
+.enazizi-core       { animation: enazizi-core-pulse 3.4s ease-in-out infinite; transform-box: fill-box; }
+
+/* ── Sprint C — AAA micro-interactions ── */
+.magnetic-btn {
+  transition: transform 320ms var(--ease-out-expo),
+              box-shadow 320ms var(--ease-out-expo),
+              background-color 240ms ease;
+}
+.magnetic-btn:active {
+  transform: scale(0.97);
+}
+
+/* Focus ring premium para CTAs cinematográficos */
+.cinematic-focus:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px hsl(var(--background)),
+    0 0 0 4px hsl(var(--module-hue, var(--primary)) / 0.7),
+    0 0 24px hsl(var(--module-hue, var(--primary)) / 0.45);
+}
+
+/* Success burst (celebrações sutis) */
+@keyframes cinematic-success-burst {
+  0%   { transform: scale(0.6); opacity: 0; }
+  40%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.animate-cinematic-success-burst {
+  animation: cinematic-success-burst 480ms var(--ease-out-back) both;
+}
+
 /* Respect reduced motion globally for ENAFLIX heavy animations */
 @media (prefers-reduced-motion: reduce) {
   .animate-hero-zoom-in,
@@ -637,6 +683,10 @@
   .animate-float,
   .enaflix-stagger > *,
   .enaflix-particle-rise,
+  .enazizi-orbit-slow,
+  .enazizi-orbit-fast,
+  .enazizi-core,
+  .animate-cinematic-success-burst,
   [style*="cinematic-atmosphere-pulse"],
   [style*="cinematic-neural-drift"],
   [style*="cinematic-energy-ring"],
