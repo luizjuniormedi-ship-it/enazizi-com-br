@@ -466,6 +466,65 @@ const Admin = () => {
                 <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
                 <AdminPlanDistribution stats={stats} />
                 <AdminDailyGenerationAlert />
+
+                {/* Atalhos para ferramentas administrativas internas (rotas /admin/*) */}
+                <div className="rounded-lg border bg-card p-4 sm:p-5">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Wrench className="h-4 w-4 text-primary" />
+                    <h3 className="text-sm font-semibold">Ferramentas administrativas</h3>
+                    <Badge variant="outline" className="text-[10px]">rotas internas</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Páginas operacionais não listadas na sidebar. Acesse aqui para evitar perder a URL.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    <Link
+                      to="/admin/classification-runner"
+                      className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
+                    >
+                      <GitBranch className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium flex items-center gap-1">
+                          Classification Runner
+                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          Executor + auditoria do classify-question-hierarchy
+                        </div>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/admin/classification"
+                      className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
+                    >
+                      <Layers className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium flex items-center gap-1">
+                          Classification Backfill
+                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          Backfill incremental de classificação
+                        </div>
+                      </div>
+                    </Link>
+                    <Link
+                      to="/admin/coverage-boost"
+                      className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
+                    >
+                      <Activity className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium flex items-center gap-1">
+                          Coverage Boost
+                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          Bridge coverage → study engine
+                        </div>
+                      </div>
+                    </Link>
+                  </div>
+                </div>
               </div>
             )}
 
