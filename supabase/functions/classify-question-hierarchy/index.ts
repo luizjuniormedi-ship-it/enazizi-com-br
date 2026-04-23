@@ -63,6 +63,30 @@ function normalize(s: string | null | undefined): string {
     .trim();
 }
 
+function normalize(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Normalizador específico para aliases curriculares: além do normalize() base,
+// remove sufixos redundantes ("medica", "geral", "clinica" isolados).
+function normalizeCurriculumLabel(s: string | null | undefined): string {
+  const base = normalize(s);
+  if (!base) return "";
+  // Não remove se a string for muito curta (evita perder "geral" sozinho com sentido).
+  if (base.split(" ").length <= 1) return base;
+  return base
+    .replace(/\b(medica|geral|clinica)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function tokens(s: string): Set<string> {
   return new Set(
     normalize(s)
