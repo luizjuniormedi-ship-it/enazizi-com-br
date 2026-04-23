@@ -24,6 +24,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useAuth } from "@/hooks/useAuth";
+import { trackStudyAction, type ActionKind } from "@/lib/behavioralTelemetry";
 import { cn } from "@/lib/utils";
 
 const SUGGESTED_TOPICS = [
@@ -39,6 +41,7 @@ interface Props {
 
 export default function OperationalHub({ topicInput, onTopicChange, onStartStudy }: Props) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data } = useDashboardData();
   const metrics = data?.metrics;
   const stats = data?.stats;
@@ -50,6 +53,16 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
   const todayTotal = stats?.todayTotal ?? 0;
   const accuracy = metrics?.accuracy ?? 0;
   const errorsCount = metrics?.errorsCount ?? 0;
+
+  // Sprint 4 — track + delegate. entry_point = 'estudar' (todas ações nascem aqui).
+  const trackAndGo = (kind: ActionKind, target: string, meta?: Record<string, unknown>) => {
+    if (user) trackStudyAction(user.id, "estudar", kind, meta);
+    navigate(target);
+  };
+  const handleStartStudy = () => {
+    if (user) trackStudyAction(user.id, "estudar", "start_topic", { topic: topicInput });
+    onStartStudy();
+  };
 
   return (
     <div className="flex-1 overflow-y-auto">
