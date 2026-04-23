@@ -39,7 +39,9 @@ interface Props {
 
 export default function OperationalHub({ topicInput, onTopicChange, onStartStudy }: Props) {
   const navigate = useNavigate();
-  const { metrics, stats } = useDashboardData();
+  const { data } = useDashboardData();
+  const metrics = data?.metrics;
+  const stats = data?.stats;
 
   const pendingReviews = metrics?.pendingRevisoes ?? 0;
   const streak = metrics?.gamificationStreak ?? 0;

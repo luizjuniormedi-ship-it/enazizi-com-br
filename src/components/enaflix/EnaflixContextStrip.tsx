@@ -16,7 +16,9 @@ import { cn } from "@/lib/utils";
 
 export function EnaflixContextStrip() {
   const navigate = useNavigate();
-  const { metrics, stats } = useDashboardData();
+  const { data } = useDashboardData();
+  const metrics = data?.metrics;
+  const stats = data?.stats;
 
   const pending = metrics?.pendingRevisoes ?? 0;
   const streak = metrics?.gamificationStreak ?? 0;
