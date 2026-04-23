@@ -683,8 +683,8 @@ const ChatGPT = () => {
 
           <TutorMessageList ref={scrollRef} messages={messages} isLoading={isLoading} onCopy={copyToClipboard} />
 
-          {/* Próximo passo fixo — só após o usuário ter trocado mensagens */}
-          {messages.length > 1 && !isLoading && (
+          {/* Próximo passo fixo — só após concluir todos os blocos de explicação (step >= 8) */}
+          {messages.length > 1 && !isLoading && enaziziStep >= 8 && (
             <TutorNextStepBlock
               topic={currentTopic || topic || null}
               specialty={searchParams.get("sc_specialty") || searchParams.get("specialty") || null}
