@@ -4,6 +4,10 @@
 **Status:** ⏳ aguardando volume mínimo de dados
 **Filosofia:** baseline nasce de comportamento real, não de pressa.
 
+> 📐 **Definição oficial de "ação pedagógica real"** (o que conta como `first_meaningful_action`):
+> ver [`sprint-5.1-meaningful-action-definition.md`](./sprint-5.1-meaningful-action-definition.md).
+> Resumo: conta apenas **entrada em estado ativo de aprendizagem** — discovery (ENAFLIX browsing, abrir IA sem pergunta de estudo, navegação) **não conta**.
+
 ---
 
 ## Por que essa página existe

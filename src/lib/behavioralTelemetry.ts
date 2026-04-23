@@ -10,6 +10,24 @@
  * - first_meaningful_action: registrado UMA vez por sessão-aba ao primeiro CTA real.
  * - study_action_started: pode ser registrado em ações subsequentes (sem dedupe).
  * - pre_action_clicks / pre_action_route_changes: contadores incrementados pelo hook.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * 📐 DEFINIÇÃO OFICIAL DE "AÇÃO PEDAGÓGICA REAL" (Sprint 5.1)
+ * Ver: .lovable/sprint-5.1-meaningful-action-definition.md
+ *
+ * `first_meaningful_action` = entrada em ESTADO ATIVO DE APRENDIZAGEM.
+ *
+ * ✅ CONTA: start_mission, resume_mission, start_topic, start_review,
+ *           start_simulado, open_flashcards, continue_session,
+ *           open_errors (para revisar), open_tutor (com âncora pedagógica)
+ *
+ * ❌ NÃO CONTA: navegação, abrir menus, scroll, ENAFLIX em modo discovery,
+ *               abrir painel IA sem pergunta de estudo, visualizar dashboard.
+ *
+ * ENAFLIX só dispara quando o usuário clica explicitamente em
+ * "Iniciar revisão / Começar tema / Resolver questões / Continuar sessão".
+ * IA só dispara quando há pergunta de estudo / explicação / revisão de erro.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 import { supabase } from "@/integrations/supabase/client";
 
