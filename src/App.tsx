@@ -100,15 +100,7 @@ const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "Rese
 
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
-const PageLoader = () => (
-  <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
-    <div className="h-8 w-48 rounded-md bg-muted animate-pulse" />
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
-    </div>
-    <div className="h-64 rounded-xl bg-muted animate-pulse" />
-  </div>
-);
+const PageLoader = () => <CinematicPageLoader module="dashboard" />;
 
 const queryClient = new QueryClient({
   defaultOptions: {
