@@ -349,7 +349,7 @@ const DashboardSidebar = () => {
               active={location.pathname === "/dashboard/sessao-estudo"}
             />
 
-            {/* ─── 2. Hub ENAFLIX ─── */}
+            {/* ─── 2. Hub ENAFLIX (silencioso — produto premium não grita) ─── */}
             <SectionLabel>Explorar</SectionLabel>
 
             <Tooltip delayDuration={300}>
@@ -357,23 +357,16 @@ const DashboardSidebar = () => {
                 <Link
                   to="/enaflix"
                   className={cn(
-                    "group/hub relative flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold",
-                    "transition-all duration-300 ease-out overflow-hidden",
-                    "bg-gradient-to-r from-fuchsia-500/15 via-rose-500/10 to-transparent",
-                    "ring-1 ring-fuchsia-500/20 hover:ring-fuchsia-500/40",
-                    "hover:translate-x-0.5",
+                    "group/hub flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium",
+                    "transition-colors duration-200 ease-out",
                     onEnaflix
-                      ? "text-foreground ring-fuchsia-500/50"
-                      : "text-foreground/85 hover:text-foreground",
+                      ? "bg-sidebar-accent text-foreground"
+                      : "text-foreground/80 hover:bg-sidebar-accent/40 hover:text-foreground",
                   )}
                 >
-                  <span
-                    aria-hidden
-                    className="absolute -left-1 top-1/2 -translate-y-1/2 h-6 w-6 bg-fuchsia-500/30 blur-lg rounded-full pointer-events-none"
-                  />
-                  <Clapperboard className="relative h-4 w-4 flex-shrink-0 text-fuchsia-300 transition-transform duration-300 group-hover/hub:scale-110" />
-                  <span className="relative truncate tracking-[0.06em]">ENAFLIX</span>
-                  <ChevronRight className="relative ml-auto h-3.5 w-3.5 opacity-50 transition-transform duration-300 group-hover/hub:translate-x-0.5" />
+                  <Clapperboard className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">ENAFLIX</span>
+                  <ChevronRight className="ml-auto h-3.5 w-3.5 opacity-40 transition-transform duration-200 group-hover/hub:translate-x-0.5" />
                 </Link>
               </TooltipTrigger>
               <TooltipContent side="right" className="max-w-[220px]">
