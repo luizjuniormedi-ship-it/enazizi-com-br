@@ -274,9 +274,16 @@ const DashboardSidebar = () => {
     )}>
       {/* Logo */}
       <div className={cn("flex-shrink-0 flex items-center", isStudyActive ? "p-3 justify-center" : "p-4 gap-2")}>
-        <Link to="/" className="flex items-center gap-2">
-          <img src={enazizi} alt="ENAZIZI" className="h-7 w-7 rounded-lg object-cover flex-shrink-0" />
-          {!isStudyActive && <span className="text-base font-bold text-foreground">ENAZIZI</span>}
+        <Link to="/" className="group flex items-center gap-2">
+          <span className="relative flex-shrink-0">
+            <span aria-hidden className="absolute inset-0 rounded-lg bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <img src={enazizi} alt="ENAZIZI" className="relative h-7 w-7 rounded-lg object-cover ring-1 ring-white/10" />
+          </span>
+          {!isStudyActive && (
+            <span className="text-base font-black bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent tracking-wide">
+              ENAZIZI
+            </span>
+          )}
         </Link>
       </div>
 
