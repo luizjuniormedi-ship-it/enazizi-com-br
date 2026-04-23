@@ -11,7 +11,7 @@ import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
 import { supabase } from "@/integrations/supabase/client";
 
-import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
+import CinematicMissionHero from "@/components/dashboard-v2/CinematicMissionHero";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 
@@ -205,7 +205,7 @@ const Dashboard = () => {
           {/* 2 — HERO CONTEXTUAL (missão atual — apenas resumo, execução vai para /Estudar) */}
           {activeRec && (
             <SafeCard name="MissionHero">
-              <MissionHeroAnimated
+              <CinematicMissionHero
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
                 onStart={() => navigate("/dashboard/sessao-estudo")}
