@@ -31,6 +31,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Loader2,
   Play,
   ShieldCheck,
@@ -41,10 +51,27 @@ import {
   RotateCcw,
   History,
   Database,
+  Flame,
+  Copy,
+  Lock,
+  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  captureSnapshot,
+  computeDelta,
+  buildRollbackSql,
+  loadPreSnapshot,
+  loadPostSnapshot,
+  savePreSnapshot,
+  savePostSnapshot,
+  type ClassificationSnapshot,
+  type SnapshotDelta,
+} from "@/lib/classificationSnapshot";
 
 const STORAGE_KEY = "classification_runner:last_result";
+const DRY_RUN_MAX_AGE_MS = 2 * 60 * 60 * 1000; // 2 horas
+const CONFIRM_PHRASE = "EXECUTAR LOTE REAL";
 
 type TableSource = "questions_bank" | "real_exam_questions";
 
@@ -222,6 +249,20 @@ export default function ClassificationRunner() {
   const [queueItems, setQueueItems] = useState<QueueRow[]>([]);
   const [loadingPersisted, setLoadingPersisted] = useState(true);
 
+  // ── Estado da execução real ────────────────────────────────────
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmPhrase, setConfirmPhrase] = useState("");
+  const [realRunning, setRealRunning] = useState(false);
+  const [preSnapshot, setPreSnapshot] = useState<ClassificationSnapshot | null>(null);
+  const [postSnapshot, setPostSnapshot] = useState<ClassificationSnapshot | null>(null);
+  const [lastRealRunMeta, setLastRealRunMeta] = useState<{
+    runId?: string | null;
+    startedAt: string;
+    finishedAt: string;
+    tableSource: string;
+    result: RunResult;
+  } | null>(null);
+
   const ready = !!user && isAdmin && !rolesLoading && !!session;
   const evaluation = useMemo(() => evaluate(result), [result]);
 
@@ -351,6 +392,162 @@ export default function ClassificationRunner() {
   };
 
   const errorKind = errorPayload ? classifyError(errorPayload.message, errorPayload.raw) : null;
+
+  // ── Reidratar snapshots persistidos ─────────────────────────────
+  useEffect(() => {
+    setPreSnapshot(loadPreSnapshot());
+    setPostSnapshot(loadPostSnapshot());
+  }, []);
+
+  // ── GUARDRAILS para execução real ───────────────────────────────
+  const lastDryRun = useMemo(
+    () => history.find((r) => r.dry_run === true) ?? null,
+    [history],
+  );
+  const lastDryRunVerdict = useMemo(() => {
+    if (!lastDryRun) return null;
+    return evaluate({
+      total_processed: lastDryRun.total_processed ?? undefined,
+      total_applied: lastDryRun.total_applied ?? undefined,
+      total_queued_review: lastDryRun.total_queued_review ?? undefined,
+      total_skipped: lastDryRun.total_skipped ?? undefined,
+      method_breakdown: lastDryRun.method_breakdown ?? undefined,
+    });
+  }, [lastDryRun]);
+  const dryRunAgeMs = lastDryRun
+    ? Date.now() - new Date(lastDryRun.finished_at ?? lastDryRun.started_at).getTime()
+    : Infinity;
+  const dryRunFresh = dryRunAgeMs <= DRY_RUN_MAX_AGE_MS;
+  const dryRunHealthy = lastDryRunVerdict?.verdict === "healthy";
+
+  const guardrails = useMemo(() => {
+    const checks: { ok: boolean; label: string }[] = [
+      { ok: !!user, label: "Usuário logado" },
+      { ok: isAdmin, label: "Role admin confirmada" },
+      { ok: !!session?.access_token, label: "Sessão JWT presente" },
+      { ok: !!lastDryRun, label: "Existe dry-run anterior" },
+      { ok: !!lastDryRun && lastDryRun.dry_run === true, label: "Última run é dry-run válido" },
+      { ok: dryRunHealthy, label: "Dry-run saudável (verdict=healthy)" },
+      { ok: dryRunFresh, label: "Dry-run recente (≤ 2h)" },
+    ];
+    const passed = checks.every((c) => c.ok);
+    return { checks, passed };
+  }, [user, isAdmin, session, lastDryRun, dryRunHealthy, dryRunFresh]);
+
+  const realParams = lastDryRun
+    ? { table_source: lastDryRun.table_source as TableSource, batch_size: lastDryRun.batch_size }
+    : null;
+
+  // ── Executar lote real (com snapshots) ──────────────────────────
+  const executeRealBatch = useCallback(async () => {
+    if (!guardrails.passed || !realParams) {
+      toast.error("Guardrails falharam — revise condições acima");
+      return;
+    }
+    setRealRunning(true);
+    setErrorPayload(null);
+    const startedAt = new Date().toISOString();
+    try {
+      let pre: ClassificationSnapshot | null = null;
+      try {
+        pre = await captureSnapshot(realParams.table_source);
+        savePreSnapshot(pre);
+        setPreSnapshot(pre);
+      } catch (e) {
+        console.warn("Falha no snapshot pré-execução", e);
+      }
+
+      const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
+        body: {
+          table_source: realParams.table_source,
+          batch_size: realParams.batch_size,
+          dry_run: false,
+        },
+      });
+      if (error) {
+        setErrorPayload({ message: error.message, raw: data ?? error });
+        toast.error("Lote real falhou");
+        return;
+      }
+      const r = data as RunResult;
+      setResult(r);
+      const finishedAt = new Date().toISOString();
+      setSnapshotTs(finishedAt);
+      try {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({
+            result: r,
+            params: { ...realParams, dry_run: false },
+            ts: finishedAt,
+          } satisfies LocalSnapshot),
+        );
+      } catch {
+        /* ignore */
+      }
+
+      try {
+        const post = await captureSnapshot(realParams.table_source);
+        savePostSnapshot(post);
+        setPostSnapshot(post);
+      } catch (e) {
+        console.warn("Falha no snapshot pós-execução", e);
+      }
+
+      setLastRealRunMeta({
+        runId: (r.run_id as string | undefined) ?? null,
+        startedAt,
+        finishedAt,
+        tableSource: realParams.table_source,
+        result: r,
+      });
+
+      toast.success(`Lote real concluído (${r.total_applied ?? 0} aplicadas)`);
+      void fetchPersisted();
+    } catch (e) {
+      setErrorPayload({ message: (e as Error).message, raw: e });
+      toast.error("Falha ao invocar edge function");
+    } finally {
+      setRealRunning(false);
+      setConfirmOpen(false);
+      setConfirmPhrase("");
+    }
+  }, [guardrails.passed, realParams, fetchPersisted]);
+
+  const realRunsHistory = useMemo(() => history.filter((r) => !r.dry_run), [history]);
+
+  const delta: SnapshotDelta | null = useMemo(() => {
+    if (!preSnapshot || !postSnapshot) return null;
+    return computeDelta(preSnapshot, postSnapshot);
+  }, [preSnapshot, postSnapshot]);
+
+  const coverage = useMemo(() => {
+    if (!postSnapshot || !postSnapshot.total_questions) return null;
+    const total = postSnapshot.total_questions;
+    return {
+      specialty: pct(postSnapshot.with_specialty_id, total),
+      topic: pct(postSnapshot.with_topic_id, total),
+      subtopic: pct(postSnapshot.with_subtopic_id, total),
+    };
+  }, [postSnapshot]);
+
+  const rollbackSql = useMemo(() => {
+    if (!lastRealRunMeta) return null;
+    return buildRollbackSql({
+      tableSource: lastRealRunMeta.tableSource,
+      startedAt: lastRealRunMeta.startedAt,
+      finishedAt: lastRealRunMeta.finishedAt,
+      runId: lastRealRunMeta.runId,
+    });
+  }, [lastRealRunMeta]);
+
+  const copyRollback = () => {
+    if (!rollbackSql) return;
+    navigator.clipboard
+      .writeText(rollbackSql)
+      .then(() => toast.success("SQL de rollback copiado"))
+      .catch(() => toast.error("Não foi possível copiar"));
+  };
 
   // ── Aviso de divergência local vs banco ─────────────────────────
   const divergence = useMemo(() => {
@@ -795,7 +992,351 @@ export default function ClassificationRunner() {
         </>
       )}
 
-      {/* Queue resumida */}
+      {/* ════════ EXECUÇÃO REAL (com guardrails) ════════ */}
+      <Card className="border-destructive/50 bg-destructive/5">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <Flame className="h-5 w-5" />
+            Execução real
+          </CardTitle>
+          <CardDescription>
+            Aplica a classificação no banco. Só é liberado quando todos os guardrails passam.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Operação irreversível sem rollback manual</AlertTitle>
+            <AlertDescription>
+              Esta ação grava <code>specialty_id / topic_id / subtopic_id</code> no banco e adiciona
+              itens à fila de revisão. Use apenas após dry-run aprovado.
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-2 text-sm">
+            <div className="font-medium">Checklist de guardrails:</div>
+            <ul className="space-y-1">
+              {guardrails.checks.map((c, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  {c.ok ? (
+                    <CheckCircle2 className="h-4 w-4 text-primary" />
+                  ) : (
+                    <Lock className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className={c.ok ? "" : "text-muted-foreground"}>{c.label}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {!lastDryRun && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Nenhum dry-run válido encontrado</AlertTitle>
+              <AlertDescription>Execute um dry-run primeiro.</AlertDescription>
+            </Alert>
+          )}
+          {lastDryRun && !dryRunHealthy && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Último dry-run não atende critérios mínimos</AlertTitle>
+              <AlertDescription>
+                Veredito: <Badge variant="outline">{lastDryRunVerdict?.verdict ?? "—"}</Badge>
+              </AlertDescription>
+            </Alert>
+          )}
+          {lastDryRun && !dryRunFresh && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Dry-run expirado — execute novamente</AlertTitle>
+              <AlertDescription>
+                Última execução há {Math.round(dryRunAgeMs / 60000)} min (limite 120 min).
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {realParams && (
+            <div className="text-sm grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 rounded border bg-background">
+              <div>
+                <div className="text-xs text-muted-foreground">Tabela alvo</div>
+                <div className="font-mono">{realParams.table_source}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Lote</div>
+                <div>{realParams.batch_size}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">Dry-run referência</div>
+                <div className="text-xs">
+                  {lastDryRun ? new Date(lastDryRun.finished_at ?? lastDryRun.started_at).toLocaleString() : "—"}
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Button
+            variant="destructive"
+            size="lg"
+            disabled={!guardrails.passed || realRunning}
+            onClick={() => setConfirmOpen(true)}
+          >
+            {realRunning ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
+              </>
+            ) : (
+              <>
+                <Flame className="h-4 w-4 mr-2" />
+                Executar primeiro lote real
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Modal de confirmação forte */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <Flame className="h-5 w-5" /> Confirmar execução real
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-2 gap-2">
+                  <span className="text-muted-foreground">Tabela:</span>
+                  <span className="font-mono">{realParams?.table_source}</span>
+                  <span className="text-muted-foreground">Batch:</span>
+                  <span>{realParams?.batch_size}</span>
+                  <span className="text-muted-foreground">Dry-run ref.:</span>
+                  <span className="text-xs">
+                    {lastDryRun
+                      ? new Date(lastDryRun.finished_at ?? lastDryRun.started_at).toLocaleString()
+                      : "—"}
+                  </span>
+                </div>
+                {lastDryRunVerdict && (
+                  <div className="grid grid-cols-4 gap-2 p-2 rounded border text-center text-xs">
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.total}</div>
+                      <div className="text-muted-foreground">proc.</div>
+                    </div>
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.exactPct}%</div>
+                      <div className="text-muted-foreground">exact</div>
+                    </div>
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.queuePct}%</div>
+                      <div className="text-muted-foreground">fila</div>
+                    </div>
+                    <div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.skipPct}%</div>
+                      <div className="text-muted-foreground">skip</div>
+                    </div>
+                  </div>
+                )}
+                <div>
+                  Verdict:{" "}
+                  <Badge className="bg-primary text-primary-foreground">
+                    {lastDryRunVerdict?.verdict ?? "—"}
+                  </Badge>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="confirm-phrase" className="text-xs">
+                    Para confirmar, digite: <code className="font-bold">{CONFIRM_PHRASE}</code>
+                  </Label>
+                  <Input
+                    id="confirm-phrase"
+                    value={confirmPhrase}
+                    onChange={(e) => setConfirmPhrase(e.target.value)}
+                    placeholder={CONFIRM_PHRASE}
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={realRunning}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={confirmPhrase !== CONFIRM_PHRASE || realRunning}
+              onClick={(e) => {
+                e.preventDefault();
+                void executeRealBatch();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {realRunning ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
+                </>
+              ) : (
+                <>Confirmar e executar</>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Impacto do lote real */}
+      {lastRealRunMeta && (
+        <Card className="border-primary/50 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5 text-primary" />
+              Impacto do lote real
+            </CardTitle>
+            <CardDescription>
+              Run {lastRealRunMeta.runId?.slice(0, 8) ?? "—"} ·{" "}
+              {new Date(lastRealRunMeta.startedAt).toLocaleString()} →{" "}
+              {new Date(lastRealRunMeta.finishedAt).toLocaleTimeString()}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_processed ?? 0}</div>
+                <div className="text-xs text-muted-foreground">processadas</div>
+              </div>
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_applied ?? 0}</div>
+                <div className="text-xs text-muted-foreground">aplicadas</div>
+              </div>
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_queued_review ?? 0}</div>
+                <div className="text-xs text-muted-foreground">para revisão</div>
+              </div>
+              <div className="p-3 rounded border bg-background">
+                <div className="text-2xl font-bold">{lastRealRunMeta.result.total_skipped ?? 0}</div>
+                <div className="text-xs text-muted-foreground">skipped</div>
+              </div>
+            </div>
+            {delta && (
+              <>
+                <Separator />
+                <div>
+                  <Label className="text-xs text-muted-foreground">Delta no banco (snapshot antes vs depois)</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2 text-sm">
+                    <Badge variant="outline">+{delta.specialty} specialty_id</Badge>
+                    <Badge variant="outline">+{delta.topic} topic_id</Badge>
+                    <Badge variant="outline">+{delta.subtopic} subtopic_id</Badge>
+                    <Badge variant="outline">{delta.queue >= 0 ? "+" : ""}{delta.queue} queue</Badge>
+                  </div>
+                </div>
+              </>
+            )}
+            {coverage && (
+              <>
+                <Separator />
+                <div>
+                  <Label className="text-xs text-muted-foreground">Cobertura atual do banco</Label>
+                  <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                    <div className="p-2 rounded border bg-background">
+                      <div className="font-bold">{coverage.specialty}%</div>
+                      <div className="text-xs text-muted-foreground">specialty_id</div>
+                    </div>
+                    <div className="p-2 rounded border bg-background">
+                      <div className="font-bold">{coverage.topic}%</div>
+                      <div className="text-xs text-muted-foreground">topic_id</div>
+                    </div>
+                    <div className="p-2 rounded border bg-background">
+                      <div className="font-bold">{coverage.subtopic}%</div>
+                      <div className="text-xs text-muted-foreground">subtopic_id</div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Rollback helper */}
+      {rollbackSql && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              Rollback helper
+            </CardTitle>
+            <CardDescription>
+              SQL pronto para reverter o lote real. <strong>NÃO executa automaticamente.</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={copyRollback}>
+                <Copy className="h-4 w-4 mr-2" /> Copiar SQL
+              </Button>
+            </div>
+            <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-72">{rollbackSql}</pre>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Histórico de lotes reais */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Flame className="h-5 w-5" />
+            Últimos lotes reais
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {realRunsHistory.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhum lote real executado ainda.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>quando</TableHead>
+                    <TableHead>tabela</TableHead>
+                    <TableHead className="text-right">lote</TableHead>
+                    <TableHead className="text-right">proc.</TableHead>
+                    <TableHead className="text-right">apl.</TableHead>
+                    <TableHead className="text-right">fila</TableHead>
+                    <TableHead className="text-right">skip</TableHead>
+                    <TableHead>verdict</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {realRunsHistory.map((r) => {
+                    const v = evaluate({
+                      total_processed: r.total_processed ?? undefined,
+                      total_applied: r.total_applied ?? undefined,
+                      total_queued_review: r.total_queued_review ?? undefined,
+                      total_skipped: r.total_skipped ?? undefined,
+                      method_breakdown: r.method_breakdown ?? undefined,
+                    }).verdict;
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell className="text-xs">
+                          {new Date(r.started_at).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-xs">{r.table_source}</TableCell>
+                        <TableCell className="text-right text-xs">{r.batch_size}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_processed ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_applied ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_queued_review ?? 0}</TableCell>
+                        <TableCell className="text-right text-xs">{r.total_skipped ?? 0}</TableCell>
+                        <TableCell className="text-xs">
+                          {v === "healthy" && <Badge className="bg-primary text-primary-foreground">healthy</Badge>}
+                          {v === "borderline" && <Badge variant="secondary">borderline</Badge>}
+                          {v === "rejected" && <Badge variant="destructive">rejected</Badge>}
+                          {!v && <Badge variant="outline">—</Badge>}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
