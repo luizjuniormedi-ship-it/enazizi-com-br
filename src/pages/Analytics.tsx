@@ -1,4 +1,5 @@
-import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical, Brain, Heart, PenLine, MessageCircle, ImageIcon } from "lucide-react";
+import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical, Brain, Heart, PenLine, MessageCircle, ImageIcon, Activity } from "lucide-react";
+import { CinematicHero } from "@/components/cinematic";
 import { useQuery } from "@tanstack/react-query";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
@@ -233,27 +234,33 @@ const Analytics = () => {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" />
-            Analytics
-          </h1>
-          <p className="text-muted-foreground">Seu desempenho real baseado nos dados da plataforma.</p>
-        </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild><div><PerformanceReport /></div></DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {}}>
-              <HelpCircle className="h-4 w-4 mr-2" /> Como usar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      <CinematicHero
+        module="analytics"
+        eyebrow={<><Activity className="h-3.5 w-3.5" /> Inteligência estratégica</>}
+        title="Analytics"
+        subtitle="Seu desempenho real, traduzido em mapas mentais, tendências e radares — para decisões cirúrgicas no seu estudo."
+        actions={
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9"><MoreVertical className="h-4 w-4" /></Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild><div><PerformanceReport /></div></DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => {}}>
+                  <HelpCircle className="h-4 w-4 mr-2" /> Como usar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        }
+        media={
+          <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
+            <BarChart3 className="h-10 w-10 text-module" />
+          </div>
+        }
+      />
 
       {/* Main Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useStudyContext } from "@/lib/studyContext";
 import StudyContextBanner from "@/components/study/StudyContextBanner";
-import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown, Image } from "lucide-react";
+import { FileText, Play, History, BookOpen, Timer, Skull, Trophy, Brain, Zap, Target, TrendingDown, Image, Swords } from "lucide-react";
+import { CinematicHero } from "@/components/cinematic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -356,8 +357,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         />
       )}
 
-      <div className="text-center py-4 relative">
-        <div className="absolute top-4 right-0">
+      <CinematicHero
+        module="simulado"
+        eyebrow={<><Swords className="h-3.5 w-3.5" /> Arena mental · Preparação de elite</>}
+        title="Simulados"
+        subtitle="Configure dificuldade, banca e cronômetro. Modo Estudo para feedback imediato, Modo Prova para tensão real, Prova Real e TRI para preparação cirúrgica."
+        actions={
           <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
             "Escolha entre Modo Estudo (feedback imediato) ou Modo Prova (cronômetro)",
             "Selecione uma ou mais especialidades clicando nos chips de tema",
@@ -367,11 +372,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             "No Modo Prova Real: simula uma prova de residência completa com distribuição real de temas",
             "Marque questões com a flag para revisão posterior em ambos os modos",
           ]} />
-        </div>
-        <FileText className="h-12 w-12 text-primary mx-auto mb-3" />
-        <h1 className="text-2xl font-bold">Simulados</h1>
-        <p className="text-muted-foreground text-sm">Configure seu simulado com dificuldade, cronômetro e relatório detalhado.</p>
-      </div>
+        }
+        media={
+          <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
+            <FileText className="h-10 w-10 text-module" />
+          </div>
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-2 border-b border-border pb-0">
