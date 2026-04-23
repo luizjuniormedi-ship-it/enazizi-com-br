@@ -12,6 +12,7 @@ import { ALL_MODULES } from "@/hooks/useModuleAccess";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
+import { CinematicHero } from "@/components/cinematic";
 
 // Lazy load all admin panels
 const WhatsAppPanel = lazy(() => import("@/components/admin/WhatsAppPanel"));
@@ -427,23 +428,47 @@ const Admin = () => {
       {/* ─── Main Content ─── */}
       <main className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 space-y-6 max-w-7xl">
-          {/* Header bar */}
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-lg font-bold">
-                {navGroups.flatMap(g => g.items).find(i => i.key === activeSection)?.label || "Painel Admin"}
-              </h1>
+          {/* Cinematic hero — sóbrio, técnico, premium */}
+          {activeSection === "overview" && (
+            <CinematicHero
+              module="admin"
+              eyebrow={
+                <>
+                  <Shield className="h-3.5 w-3.5" />
+                  Centro de operações
+                </>
+              }
+              title="Painel Administrativo"
+              subtitle="Operação, qualidade e governança do ENAZIZI em tempo real."
+              actions={
+                <Button variant="outline" size="lg" onClick={loadData} disabled={loading} className="gap-2">
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                  Atualizar dados
+                </Button>
+              }
+              className="py-6 sm:py-8"
+            />
+          )}
+
+          {/* Header bar (para outras seções) */}
+          {activeSection !== "overview" && (
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-lg font-bold">
+                  {navGroups.flatMap(g => g.items).find(i => i.key === activeSection)?.label || "Painel Admin"}
+                </h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs h-7">
+                  {users.length} usuários
+                </Badge>
+                <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
+                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                  <span className="hidden sm:inline">Atualizar</span>
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge variant="outline" className="text-xs h-7">
-                {users.length} usuários
-              </Badge>
-              <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
-                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                <span className="hidden sm:inline">Atualizar</span>
-              </Button>
-            </div>
-          </div>
+          )}
 
           {/* Pending alert (shown in overview & user sections) */}
           {pendingCount > 0 && (activeSection === "overview" || activeSection === "users-pending") && (
