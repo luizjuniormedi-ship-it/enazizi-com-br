@@ -15,7 +15,6 @@ import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
 import { supabase } from "@/integrations/supabase/client";
 
 import MissionHeroAnimated from "@/components/dashboard-v2/MissionHeroAnimated";
-import InterventionCard from "@/components/dashboard/InterventionCard";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 
@@ -23,8 +22,6 @@ import MissionCompletionBanner from "@/components/mission-control/MissionComplet
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import MissionControlError from "@/components/mission-control/MissionControlError";
 import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
-import StudyLoopContainer from "@/components/study-loop/StudyLoopContainer";
-import SessionBar from "@/components/study-session/SessionBar";
 import SessionSummary from "@/components/study-session/SessionSummary";
 import SafeCard from "@/components/layout/SafeCard";
 import { useFocusMode } from "@/components/dashboard/guided/FocusModeEntry";
