@@ -117,11 +117,15 @@ export default function EnaflixPage() {
   );
 
   const handleClose = () => {
-    if (window.history.length > 1) {
-      navigate(-1);
-    } else {
-      navigate("/dashboard");
+    // Sair do ENAFLIX sempre leva ao Dashboard (destino canônico).
+    // Limpa a flag de origem para não mostrar o botão flutuante "Voltar ao ENAFLIX".
+    try {
+      sessionStorage.removeItem("enaflix:origin");
+      sessionStorage.removeItem("enaflix:lastModule");
+    } catch {
+      // ignore
     }
+    navigate("/dashboard");
   };
 
   const handleSearchToggle = () => {
