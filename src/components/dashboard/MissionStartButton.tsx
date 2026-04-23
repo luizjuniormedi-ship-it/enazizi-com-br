@@ -37,10 +37,13 @@ export default function MissionStartButton() {
       return;
     }
     autostartFired.current = true;
+    if (user) {
+      trackStudyAction(user.id, "estudar", "start_mission", { autostart: true });
+    }
     startMission();
     setSearchParams({}, { replace: true });
     navigate("/mission");
-  }, [searchParams, engineLoading, hasTasks, state.status, startMission, setSearchParams]);
+  }, [searchParams, engineLoading, hasTasks, state.status, startMission, setSearchParams, user]);
 
   // Active or paused — show resume card
   if (state.status === "active" || state.status === "paused") {
