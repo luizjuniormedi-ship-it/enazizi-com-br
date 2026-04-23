@@ -784,10 +784,14 @@ export default function ClassificationRunner() {
               {lastDryRunVerdict && (
                 <>
                   <Separator />
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 text-sm">
                     <div>
                       <div className="text-xs text-muted-foreground">exact_text</div>
                       <div className="font-bold">{lastDryRunVerdict.metrics.exactPct}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">alias_exact</div>
+                      <div className="font-bold text-primary">{lastDryRunVerdict.metrics.aliasPct}%</div>
                     </div>
                     <div>
                       <div className="text-xs text-muted-foreground">heuristic</div>
