@@ -303,44 +303,36 @@ const DashboardLayout = () => {
       {!isMissionLocked && (
         <header
           className={cn(
-            "landscape-tablet:hidden lg:hidden sticky top-0 z-40 h-14 flex items-center px-3 sm:px-4 gap-2 flex-shrink-0 isolate",
-            "transition-all duration-500 ease-out",
+            "landscape-tablet:hidden lg:hidden sticky top-0 z-40 h-14 flex items-center px-3 sm:px-4 gap-2 flex-shrink-0",
+            "transition-colors duration-300 ease-out",
             scrolled
-              ? "bg-background/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
-              : "bg-gradient-to-b from-background/70 via-background/30 to-transparent backdrop-blur-md border-b border-transparent",
+              ? "bg-background/85 backdrop-blur-xl border-b border-border/40"
+              : "bg-background/60 backdrop-blur-sm border-b border-transparent",
           )}
         >
-          {/* Linha de luz superior (sutil, só aparece com scroll) */}
-          <span
-            aria-hidden
-            className={cn(
-              "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/30 to-transparent transition-opacity duration-500",
-              scrolled ? "opacity-100" : "opacity-0",
-            )}
-          />
-
           <MobileNav />
 
-          {/* Logo wordmark (sem mascote — mais elegante) */}
-          <Link to="/" className="relative flex items-center min-w-0 group">
-            <span className="font-black text-[15px] tracking-[0.18em] bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-              ENAZIZI
-            </span>
-            <span aria-hidden className="absolute -inset-x-2 -inset-y-1 rounded-md bg-fuchsia-500/0 group-hover:bg-fuchsia-500/10 blur-md transition-colors duration-300" />
+          {/* Wordmark sóbrio (sem gradient/glow) */}
+          <Link
+            to="/"
+            className="flex items-center min-w-0 text-foreground/85 hover:text-foreground transition-colors duration-200"
+            aria-label="ENAZIZI — início"
+          >
+            <span className="font-bold text-[14px] tracking-[0.18em]">ENAZIZI</span>
           </Link>
 
-          {/* ENAFLIX como tab principal (centro do header mobile) */}
+          {/* ENAFLIX como tab principal (centro) — único ponto cinematográfico permitido */}
           <div className="flex-1 flex justify-center">
             <EnaflixButton variant="compact" />
           </div>
 
-          {/* Ações secundárias — todas como ícones-fantasma do mesmo peso */}
+          {/* Ações secundárias — ghost icons com peso uniforme */}
           <div className="flex items-center gap-0.5 flex-shrink-0">
             <GlobalSearch variant="icon" />
             <NotificationBell />
             <button
               onClick={toggleTheme}
-              className="h-9 w-9 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200 hover:scale-105"
+              className="h-9 w-9 inline-flex items-center justify-center rounded-full text-muted-foreground/70 hover:text-foreground hover:bg-muted/40 transition-colors duration-200"
               aria-label="Alternar tema"
             >
               {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
