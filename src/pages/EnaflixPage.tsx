@@ -184,48 +184,88 @@ export default function EnaflixPage() {
             />
           )}
 
-          {/* Fileiras emergindo do gradiente do billboard */}
+          {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 4 */}
           <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
-            {continueModules.length > 0 && (
-              <EnaflixSectionRow
-                title="Continuar de onde parou"
-                subtitle="Retome sua jornada"
-                modules={continueModules}
-                onNavigate={handleNavigate}
-              />
-            )}
-            {popularModules.length > 1 && (
-              <EnaflixSectionRow
-                title="Mais usados"
-                subtitle="Os queridinhos do seu dia a dia"
-                modules={popularModules}
-                onNavigate={handleNavigate}
-              />
-            )}
-            {recommendedModules.length > 0 && (
-              <EnaflixSectionRow
-                title="Recomendados pela IA"
-                subtitle="Sugestões inteligentes do ENAZIZI"
-                modules={recommendedModules}
-                onNavigate={handleNavigate}
-              />
-            )}
+            {(() => {
+              // Curadoria: no máximo 4 fileiras visíveis para preservar foco.
+              // Prioridade: Continuar → Recomendados IA → Mais usados → 1 categoria rotativa.
+              const rows: React.ReactNode[] = [];
 
-            {ENAFLIX_CATEGORIES.filter((c) => !c.dynamic).map((cat) => {
-              if (cat.requires === "admin" && !isAdmin) return null;
-              if (cat.requires === "professor" && !isProfessor && !isAdmin) return null;
-              const items = visibleModules.filter((m) => m.category === cat.id);
-              if (items.length < (cat.minItems ?? 1)) return null;
-              return (
-                <EnaflixSectionRow
-                  key={cat.id}
-                  title={cat.title}
-                  subtitle={cat.subtitle}
-                  modules={items}
-                  onNavigate={handleNavigate}
-                />
-              );
-            })}
+              if (continueModules.length > 0) {
+                rows.push(
+                  <EnaflixSectionRow
+                    key="continue"
+                    title="Continuar de onde parou"
+                    subtitle="Retome sua jornada"
+                    modules={continueModules}
+                    onNavigate={handleNavigate}
+                  />,
+                );
+              }
+
+              if (recommendedModules.length > 0 && rows.length < 4) {
+                rows.push(
+                  <EnaflixSectionRow
+                    key="recommended"
+                    title="Recomendados pela IA"
+                    subtitle="Sugestões inteligentes do ENAZIZI"
+                    modules={recommendedModules}
+                    onNavigate={handleNavigate}
+                  />,
+                );
+              }
+
+              if (popularModules.length > 1 && rows.length < 4) {
+                rows.push(
+                  <EnaflixSectionRow
+                    key="popular"
+                    title="Mais usados"
+                    subtitle="Os queridinhos do seu dia a dia"
+                    modules={popularModules}
+                    onNavigate={handleNavigate}
+                  />,
+                );
+              }
+
+              // 1 categoria rotativa (rotaciona por dia da semana para variar a descoberta)
+              if (rows.length < 4) {
+                const rotatable = ENAFLIX_CATEGORIES.filter((c) => {
+                  if (c.dynamic) return false;
+                  if (c.requires === "admin" && !isAdmin) return false;
+                  if (c.requires === "professor" && !isProfessor && !isAdmin) return false;
+                  const items = visibleModules.filter((m) => m.category === c.id);
+                  return items.length >= (c.minItems ?? 2);
+                });
+                if (rotatable.length > 0) {
+                  const idx = new Date().getDay() % rotatable.length;
+                  const cat = rotatable[idx];
+                  const items = visibleModules.filter((m) => m.category === cat.id);
+                  rows.push(
+                    <EnaflixSectionRow
+                      key={cat.id}
+                      title={cat.title}
+                      subtitle={cat.subtitle}
+                      modules={items}
+                      onNavigate={handleNavigate}
+                    />,
+                  );
+                }
+              }
+
+              return rows;
+            })()}
+
+            {/* CTA "Ver tudo" — descobertas além das 4 fileiras curadas */}
+            <div className="px-4 sm:px-8 lg:px-14 pt-2">
+              <button
+                type="button"
+                onClick={() => navigate("/enaflix/tudo")}
+                className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors rounded-full px-4 py-2 hover:bg-white/[0.06] border border-white/10 hover:border-white/20"
+              >
+                <span>Ver todos os módulos</span>
+                <span aria-hidden>→</span>
+              </button>
+            </div>
           </div>
         </main>
       )}
