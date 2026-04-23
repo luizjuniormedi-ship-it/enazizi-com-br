@@ -118,6 +118,7 @@ function classifyDeterministic(
   specialties: Specialty[],
   topics: Topic[],
   subtopics: Subtopic[],
+  aliases: Map<string, AliasRow>,
 ): ClassificationResult {
   const normTopic = normalize(rowTopic);
   const normSub = normalize(rowSubtopic);
@@ -131,6 +132,50 @@ function classifyDeterministic(
       confidence: 0,
       method: "heuristic",
       reason: "sem topic e sem subtopic",
+    };
+  }
+
+  // 0) ALIAS-FIRST: tenta casar via curriculum_aliases (subtopic > topic > specialty)
+  const aliasKeys: string[] = [];
+  const pushKey = (k: string) => {
+    if (k && !aliasKeys.includes(k)) aliasKeys.push(k);
+  };
+  if (normSub) {
+    pushKey(normSub);
+    pushKey(normalizeCurriculumLabel(rowSubtopic));
+  }
+  if (normTopic && normSub) {
+    pushKey(`${normTopic} ${normSub}`);
+    pushKey(normalizeCurriculumLabel(`${rowTopic} ${rowSubtopic}`));
+  }
+  if (normTopic) {
+    pushKey(normTopic);
+    pushKey(normalizeCurriculumLabel(rowTopic));
+  }
+
+  for (const key of aliasKeys) {
+    const hit = aliases.get(key);
+    if (!hit) continue;
+    let specId: string | null = hit.specialty_id;
+    let topicId: string | null = hit.topic_id;
+    const subId: string | null = hit.subtopic_id;
+    if (subId && !topicId) {
+      const sub = subtopics.find((s) => s.id === subId);
+      if (sub) topicId = sub.topic_id;
+    }
+    if (topicId && !specId) {
+      const top = topics.find((t) => t.id === topicId);
+      if (top) specId = top.specialty_id;
+    }
+    if (!specId) continue;
+    return {
+      specialty_id: specId,
+      topic_id: topicId,
+      subtopic_id: subId,
+      microtopic_id: null,
+      confidence: 0.97,
+      method: "alias_exact",
+      reason: `alias="${key}" → resolvido via curriculum_aliases`,
     };
   }
 
