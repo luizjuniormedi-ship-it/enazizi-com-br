@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical, MessageCircle, ImageIcon, Brain } from "lucide-react";
+import { HelpCircle, BookOpen, Heart, ArrowRight, Sparkles, Activity, FlipVertical, MessageCircle, Brain } from "lucide-react";
+import { CinematicHero } from "@/components/cinematic";
 
 const agents = [
   {
@@ -79,12 +80,25 @@ const agents = [
     bgColor: "bg-rose-500/10",
   },
 ];
+
 const AgentsHub = () => (
   <div className="space-y-6 animate-fade-in">
-    <div>
-      <h1 className="text-2xl font-bold">Agentes IA</h1>
-      <p className="text-muted-foreground">Agentes especializados para sua aprovação em Residência Médica e Revalida.</p>
-    </div>
+    <CinematicHero
+      module="enaflix"
+      eyebrow={
+        <>
+          <Sparkles className="h-3.5 w-3.5" />
+          ENAFLIX · Universo de Agentes IA
+        </>
+      }
+      title="Sua sala de mentores inteligentes"
+      subtitle="Cada agente é um especialista cinematográfico treinado para uma missão específica na sua aprovação. Escolha quem entra em cena agora."
+      media={
+        <div className="hidden lg:flex h-28 w-28 items-center justify-center rounded-3xl glass-premium-strong">
+          <Sparkles className="h-12 w-12 text-module" />
+        </div>
+      }
+    />
 
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {agents.map((a) => (
