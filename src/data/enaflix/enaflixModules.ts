@@ -410,16 +410,6 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     requires: "professor",
     accent: "primary",
   },
-  {
-    id: "proficiencia-piloto",
-    title: "Proficiência Piloto",
-    description: "Programa de mentoria avançada",
-    route: "/professor/proficiencia/piloto",
-    category: "professor",
-    icon: ListChecks,
-    requires: "professor",
-    accent: "info",
-  },
 
   // ───────── ADMINISTRAÇÃO ─────────
   {
@@ -443,25 +433,16 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     accent: "info",
   },
   {
-    id: "admin-classification-health",
-    title: "Saúde do Classificador",
-    description: "Cobertura, aliases e queue",
+    id: "admin-classifier",
+    title: "Classificador IA",
+    description: "Runner, saúde, aliases, queue e snapshots",
     route: "/admin/classification-health",
     category: "admin",
     icon: LineChart,
     requires: "admin",
     badge: "novo",
     accent: "success",
-  },
-  {
-    id: "admin-classification-runner",
-    title: "Classification Runner",
-    description: "Executar runs de classificação",
-    route: "/admin/classification-runner",
-    category: "admin",
-    icon: Zap,
-    requires: "admin",
-    accent: "warning",
+    keywords: ["classificador", "runner", "health", "aliases", "queue", "snapshots", "rollback"],
   },
   {
     id: "admin-coverage",
