@@ -10,10 +10,9 @@
  * - Respeita roles (admin/professor)
  * - Volta para /dashboard via botão "Voltar"
  */
-import { useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, X } from "lucide-react";
-import { Helmet } from "react-helmet-async";
 
 import { ENAFLIX_MODULES, type EnaflixModule } from "@/data/enaflix/enaflixModules";
 import { ENAFLIX_CATEGORIES } from "@/data/enaflix/enaflixCategories";
