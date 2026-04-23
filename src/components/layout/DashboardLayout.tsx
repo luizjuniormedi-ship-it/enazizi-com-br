@@ -281,45 +281,47 @@ const DashboardLayout = () => {
       {!isMissionLocked && (
         <header
           className={cn(
-            "landscape-tablet:hidden lg:hidden sticky top-0 z-40 h-14 flex items-center px-3 sm:px-4 gap-2 sm:gap-3 flex-shrink-0 isolate",
-            "transition-all duration-300 ease-out",
-            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
+            "landscape-tablet:hidden lg:hidden sticky top-0 z-40 h-14 flex items-center px-3 sm:px-4 gap-2 flex-shrink-0 isolate",
+            "transition-all duration-500 ease-out",
             scrolled
-              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.55)]"
-              : "bg-gradient-to-b from-background/80 via-background/40 to-transparent border-b border-transparent",
+              ? "bg-background/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
+              : "bg-gradient-to-b from-background/70 via-background/30 to-transparent backdrop-blur-md border-b border-transparent",
           )}
         >
-          {/* Faixa de gradiente cinematográfica (Netflix premium) */}
+          {/* Linha de luz superior (sutil, só aparece com scroll) */}
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/40 to-transparent"
+            className={cn(
+              "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/30 to-transparent transition-opacity duration-500",
+              scrolled ? "opacity-100" : "opacity-0",
+            )}
           />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -top-10 left-1/4 h-24 w-1/2 bg-gradient-to-r from-red-600/10 via-fuchsia-600/10 to-violet-600/10 blur-3xl"
-          />
+
           <MobileNav />
-          <Link to="/" className="relative flex items-center gap-2 group min-w-0">
-            <span className="relative flex-shrink-0">
-              <span aria-hidden className="absolute -inset-1 rounded-lg bg-gradient-to-br from-fuchsia-500/40 via-primary/30 to-violet-500/40 blur-md opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
-              <img src={enazizi} alt="ENAZIZI" className="relative h-7 w-7 rounded-md object-cover ring-1 ring-white/15 shadow-md" />
-            </span>
-            <span className="font-black text-sm tracking-wide bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent truncate">
+
+          {/* Logo wordmark (sem mascote — mais elegante) */}
+          <Link to="/" className="relative flex items-center min-w-0 group">
+            <span className="font-black text-[15px] tracking-[0.18em] bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
               ENAZIZI
             </span>
+            <span aria-hidden className="absolute -inset-x-2 -inset-y-1 rounded-md bg-fuchsia-500/0 group-hover:bg-fuchsia-500/10 blur-md transition-colors duration-300" />
           </Link>
-          <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+
+          {/* ENAFLIX como tab principal (centro do header mobile) */}
+          <div className="flex-1 flex justify-center">
             <EnaflixButton variant="compact" />
-            <span aria-hidden className="h-5 w-px bg-white/10" />
-            <GlobalSearch />
+          </div>
+
+          {/* Ações secundárias — todas como ícones-fantasma do mesmo peso */}
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            <GlobalSearch variant="icon" />
             <NotificationBell />
             <button
               onClick={toggleTheme}
-              className="relative h-9 w-9 rounded-full text-muted-foreground hover:text-foreground transition-all duration-300 hover:scale-110 flex items-center justify-center group/theme"
+              className="h-9 w-9 inline-flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground hover:bg-white/5 transition-all duration-200 hover:scale-105"
               aria-label="Alternar tema"
             >
-              <span aria-hidden className="absolute inset-0 rounded-full bg-gradient-to-br from-fuchsia-500/0 to-violet-500/0 group-hover/theme:from-fuchsia-500/20 group-hover/theme:to-violet-500/20 transition-all duration-300" />
-              {theme === "dark" ? <Sun className="relative h-4 w-4" /> : <Moon className="relative h-4 w-4" />}
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         </header>
@@ -327,52 +329,85 @@ const DashboardLayout = () => {
       {!isMissionLocked && (
         <div
           className={cn(
-            "hidden landscape-tablet:flex lg:flex sticky top-0 z-40 h-14 items-center px-4 lg:px-6 gap-3 flex-shrink-0 isolate",
-            "transition-all duration-300 ease-out",
-            "backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
+            "hidden landscape-tablet:flex lg:flex sticky top-0 z-40 h-16 items-center px-6 lg:px-8 gap-6 flex-shrink-0 isolate",
+            "transition-all duration-500 ease-out",
             scrolled
-              ? "bg-background/85 border-b border-white/10 shadow-[0_8px_24px_-12px_rgba(0,0,0,0.55)]"
-              : "bg-gradient-to-b from-background/80 via-background/40 to-transparent border-b border-transparent",
+              ? "bg-background/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
+              : "bg-gradient-to-b from-background/70 via-background/30 to-transparent backdrop-blur-md border-b border-transparent",
           )}
         >
-          {/* Linha superior premium (gradiente streaming) */}
+          {/* Linha de luz superior (premium streaming, aparece no scroll) */}
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/50 to-transparent"
-          />
-          {/* Glow ambiental atrás do botão ENAFLIX */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -top-12 left-0 h-28 w-72 bg-gradient-to-r from-red-600/15 via-fuchsia-600/15 to-violet-600/10 blur-3xl"
+            className={cn(
+              "pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fuchsia-500/40 to-transparent transition-opacity duration-500",
+              scrolled ? "opacity-100" : "opacity-0",
+            )}
           />
 
-          {/* ENAFLIX como elemento central — primeiro item visível */}
-          <EnaflixButton />
-          <span aria-hidden className="hidden xl:block h-6 w-px bg-white/10 mx-1" />
+          {/* === BLOCO ESQUERDA: branding + navegação primária === */}
+          <div className="flex items-center gap-7">
+            {/* Wordmark elegante (sem ícone, peso forte) */}
+            <Link to="/" className="relative flex items-center group" aria-label="ENAZIZI — início">
+              <span className="font-black text-[17px] tracking-[0.20em] bg-gradient-to-r from-white via-white to-white/60 bg-clip-text text-transparent transition-all duration-300 group-hover:tracking-[0.22em]">
+                ENAZIZI
+              </span>
+              <span
+                aria-hidden
+                className="absolute -inset-x-3 -inset-y-2 rounded-lg bg-gradient-to-r from-fuchsia-500/0 via-primary/0 to-violet-500/0 group-hover:from-fuchsia-500/15 group-hover:via-primary/10 group-hover:to-violet-500/15 blur-xl transition-all duration-500 -z-10"
+              />
+            </Link>
 
-          {/* Spacer empurra ações para a direita; busca cresce no centro */}
-          <div className="flex-1 max-w-xl">
-            <GlobalSearch />
+            {/* ENAFLIX — tab principal de descoberta (peso máximo) */}
+            <EnaflixButton />
+
+            {/* Navegação curta de seções (peso médio, ghost) */}
+            <nav className="hidden xl:flex items-center gap-1" aria-label="Navegação principal">
+              {[
+                { to: "/dashboard", label: "Início" },
+                { to: "/dashboard/simulados", label: "Simulados" },
+                { to: "/dashboard/banco-erros", label: "Erros" },
+                { to: "/dashboard/proficiency", label: "Progresso" },
+              ].map((item) => {
+                const active = location.pathname === item.to;
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={cn(
+                      "relative px-3 py-1.5 text-[13px] font-medium tracking-wide rounded-md transition-all duration-300",
+                      active
+                        ? "text-foreground"
+                        : "text-muted-foreground/80 hover:text-foreground",
+                    )}
+                  >
+                    {item.label}
+                    {active && (
+                      <span
+                        aria-hidden
+                        className="absolute inset-x-2 -bottom-0.5 h-0.5 rounded-full bg-gradient-to-r from-fuchsia-500 via-primary to-violet-500"
+                      />
+                    )}
+                  </Link>
+                );
+              })}
+            </nav>
           </div>
 
-          <div className="ml-auto flex items-center gap-1.5">
+          {/* === BLOCO DIREITA: ações secundárias (todas mesmo peso, fantasma) === */}
+          <div className="ml-auto flex items-center gap-1">
+            <GlobalSearch variant="pill" />
             <NotificationBell />
-            <span aria-hidden className="h-5 w-px bg-white/10 mx-0.5" />
             <button
               onClick={toggleTheme}
               className={cn(
-                "relative h-9 px-3 inline-flex items-center gap-2 rounded-full text-sm overflow-hidden group/theme",
-                "text-muted-foreground hover:text-foreground",
-                "transition-all duration-300 hover:scale-[1.04]",
+                "h-9 w-9 inline-flex items-center justify-center rounded-full",
+                "text-muted-foreground hover:text-foreground hover:bg-white/5",
+                "transition-all duration-200 hover:scale-105",
               )}
               aria-label="Alternar tema"
             >
-              <span
-                aria-hidden
-                className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/0 via-primary/0 to-violet-500/0 group-hover/theme:from-fuchsia-500/15 group-hover/theme:via-primary/10 group-hover/theme:to-violet-500/15 transition-all duration-300"
-              />
-              {theme === "dark" ? <Sun className="relative h-4 w-4" /> : <Moon className="relative h-4 w-4" />}
-              <span className="relative hidden xl:inline">{theme === "dark" ? "Claro" : "Escuro"}</span>
+              {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
             </button>
           </div>
         </div>
