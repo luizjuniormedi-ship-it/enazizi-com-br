@@ -33,7 +33,6 @@ import { fireCelebration } from "@/lib/celebrations";
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const TutorContinueCard = lazy(() => import("@/components/dashboard/TutorContinueCard"));
 const AdvancedAnalyticsAccordion = lazy(() => import("@/components/dashboard/AdvancedAnalyticsAccordion"));
-const GuidedFlowLayer = lazy(() => import("@/components/dashboard/GuidedFlowLayer"));
 const AdaptiveMnemonicCard = lazy(() =>
   import("@/components/mnemonic/AdaptiveMnemonicCard").then((m) => ({ default: m.AdaptiveMnemonicCard }))
 );
