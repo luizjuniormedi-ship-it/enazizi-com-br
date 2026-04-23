@@ -1,226 +1,165 @@
+/**
+ * DashboardSidebar — versão MINIMALISTA (pós-ENAFLIX).
+ *
+ * Filosofia: o ENAFLIX é o hub principal de descoberta. A sidebar deixou
+ * de ser menu administrativo e virou suporte contextual silencioso.
+ *
+ * Estrutura (4 áreas):
+ *   1. Foco Agora      — contexto vivo (continuar / sessão / revisões)
+ *   2. Atalhos pinados — 4 módulos críticos do dia-a-dia
+ *   3. Hub ENAFLIX     — CTA único para descobrir todo o resto
+ *   4. Utilidades      — perfil, admin/professor compactado, sair
+ *
+ * Tudo o que saiu daqui continua acessível via /enaflix e busca global.
+ */
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  Rocket, Brain, FileText, FlipVertical,
-  BarChart3, LogOut, Shield, User,
-  Lightbulb, GraduationCap,
-  ChevronDown, Building2, BookOpen,
-  Stethoscope, Siren, Image,
-  Trophy, Crown, Bot, TrendingUp,
-  Map, AlertTriangle, Sparkles,
-  BookMarked, PenTool, Target,
-  CalendarDays, Clock, Briefcase, Zap
+  Clock,
+  FileText,
+  FlipVertical,
+  AlertTriangle,
+  User,
+  LogOut,
+  Shield,
+  GraduationCap,
+  Building2,
+  Clapperboard,
+  Sparkles,
+  PlayCircle,
+  ChevronRight,
 } from "lucide-react";
+import { useMemo } from "react";
+
 import { useAuth } from "@/hooks/useAuth";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useInstitution } from "@/hooks/useInstitution";
 import enazizi from "@/assets/enazizi-mascot.png";
-import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
-import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useStudyContext } from "@/lib/studyContext";
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from "@/components/ui/tooltip";
 
-/* ── Types ── */
-interface NavItem {
+/* ────────────────────────── Types ────────────────────────── */
+interface PinnedItem {
   to: string;
   moduleKey: string;
   icon: React.ElementType;
   label: string;
   description: string;
-  useAvatar?: boolean;
-  highlight?: boolean;
 }
 
-interface NavGroup {
-  id: string;
-  title: string;
-  items: NavItem[];
-  defaultOpen?: boolean;
-  collapsed?: boolean; // collapsed by default
-}
-
-/* ── Reorganized sidebar groups per user spec ── */
-const navGroups: NavGroup[] = [
+/* ─────────────── 4 atalhos pinados (essenciais) ─────────────── */
+const PINNED_ITEMS: PinnedItem[] = [
   {
-    id: "principal",
-    title: "Principal",
-    defaultOpen: true,
-    items: [
-      { to: "/dashboard", moduleKey: "dashboard", icon: Rocket, label: "Dashboard", description: "Sua missão prioritária de estudo" },
-      { to: "/dashboard?autostart=true&source=sidebar", moduleKey: "dashboard", icon: Zap, label: "Começar Agora", description: "Inicie sua missão imediatamente", highlight: true },
-    ],
+    to: "/dashboard/sessao-estudo",
+    moduleKey: "sessao-estudo",
+    icon: Clock,
+    label: "Sessão de Estudo",
+    description: "Ciclo guiado: ensinar, testar, corrigir, reforçar",
   },
   {
-    id: "avaliacao",
-    title: "Avaliação",
-    defaultOpen: true,
-    items: [
-      { to: "/dashboard/simulados", moduleKey: "simulados", icon: FileText, label: "Simulados", description: "Simulados completos no formato das principais bancas" },
-      { to: "/dashboard/image-quiz", moduleKey: "image-quiz", icon: Image, label: "Questões com Imagem", description: "Questões de prova com imagens médicas reais" },
-      { to: "/dashboard/gerador-questoes", moduleKey: "questoes", icon: Lightbulb, label: "Gerador Questões", description: "Gere questões adaptativas por tema e banca" },
-      { to: "/dashboard/discursivas", moduleKey: "discursivas", icon: PenTool, label: "Discursivas", description: "Pratique questões discursivas" },
-      { to: "/dashboard/prova-pratica", moduleKey: "prova-pratica", icon: Briefcase, label: "Prova Prática", description: "Prepare-se para provas práticas (OSCE)" },
-    ],
+    to: "/dashboard/simulados",
+    moduleKey: "simulados",
+    icon: FileText,
+    label: "Simulados",
+    description: "Provas no formato das principais bancas",
   },
   {
-    id: "treino",
-    title: "Treino & Revisão",
-    defaultOpen: true,
-    items: [
-      { to: "/dashboard/flashcards", moduleKey: "flashcards", icon: FlipVertical, label: "Flashcards", description: "Revise conteúdos com repetição espaçada inteligente" },
-      { to: "/dashboard/gerar-flashcards", moduleKey: "gerar-flashcards", icon: Sparkles, label: "Gerador Flashcards", description: "Gere flashcards automaticamente" },
-      { to: "/dashboard/mnemonic-studio-v2", moduleKey: "mnemonico", icon: Brain, label: "Mnemônico", description: "Crie mnemônicos visuais memoráveis com IA" },
-      { to: "/dashboard/banco-erros", moduleKey: "banco-erros", icon: AlertTriangle, label: "Banco de Erros", description: "Revise e domine os temas onde mais erra" },
-      
-      { to: "/dashboard/sessao-estudo", moduleKey: "sessao-estudo", icon: Clock, label: "Sessão de Estudo", description: "Aprendizado guiado com ciclo completo: ensinar, testar, corrigir e reforçar" },
-    ],
+    to: "/dashboard/flashcards",
+    moduleKey: "flashcards",
+    icon: FlipVertical,
+    label: "Flashcards",
+    description: "Revisão espaçada inteligente",
   },
   {
-    id: "clinica",
-    title: "Clínica & Simulação",
-    defaultOpen: true,
-    items: [
-      { to: "/dashboard/anamnese", moduleKey: "anamnese", icon: Stethoscope, label: "Anamnese", description: "Treine coleta de história clínica" },
-      { to: "/dashboard/plantao", moduleKey: "plantao", icon: Siren, label: "Plantão", description: "Resolva casos urgentes em tempo real" },
-      { to: "/dashboard/simulacao-clinica", moduleKey: "simulacao-clinica", icon: Siren, label: "Simulação Clínica", description: "Cenários OSCE interativos" },
-      { to: "/dashboard/entrevista", moduleKey: "entrevista", icon: Target, label: "Entrevista", description: "Treine para entrevistas de residência" },
-    ],
-  },
-  {
-    id: "conteudo",
-    title: "Conteúdo & Estudo",
-    defaultOpen: true,
-    items: [
-      { to: "/dashboard/chatgpt", moduleKey: "chatgpt", icon: Brain, label: "Tutor IA", useAvatar: true, description: "Assistente para dúvidas, explicações e aprofundamento" },
-      { to: "/dashboard/resumos", moduleKey: "resumos", icon: BookOpen, label: "Resumos", description: "Resumos inteligentes gerados por IA" },
-      { to: "/dashboard/apostilas", moduleKey: "apostilas", icon: BookMarked, label: "Apostilas", description: "Apostilas organizadas por especialidade" },
-      { to: "/dashboard/cronicas", moduleKey: "cronicas", icon: BookOpen, label: "Crônicas Médicas", description: "Aprenda através de narrativas clínicas" },
-      { to: "/dashboard/mapas-mentais", moduleKey: "mapas-mentais", icon: Brain, label: "Mapas Mentais", description: "Mapas mentais interativos gerados por IA" },
-      { to: "/dashboard/mentor", moduleKey: "mentor", icon: Bot, label: "Mentor IA", description: "Dúvidas rápidas e referências" },
-      { to: "/dashboard/revisor", moduleKey: "revisor", icon: FileText, label: "Revisor Médico", description: "Correção médica por IA" },
-    ],
-  },
-  {
-    id: "progresso",
-    title: "Progresso & Estratégia",
-    defaultOpen: true,
-    items: [
-      { to: "/dashboard/analytics", moduleKey: "analytics", icon: BarChart3, label: "Analytics", description: "Acompanhe seu desempenho e metas" },
-      { to: "/dashboard/mapa-dominio", moduleKey: "mapa-dominio", icon: Map, label: "Mapa de Evolução", description: "Visualize seu domínio por tema" },
-      { to: "/dashboard/predictor", moduleKey: "predictor", icon: Target, label: "Previsão", description: "Chance estimada de aprovação por banca" },
-      { to: "/dashboard/proficiencia", moduleKey: "proficiencia", icon: GraduationCap, label: "Proficiência", description: "Nível de domínio por especialidade" },
-      { to: "/dashboard/diagnostico", moduleKey: "diagnostico", icon: Stethoscope, label: "Nivelamento", description: "Teste diagnóstico para mapear pontos fracos" },
-      { to: "/dashboard/planner", moduleKey: "planner", icon: CalendarDays, label: "Plano Estratégico", description: "Cronograma personalizado" },
-      { to: "/dashboard/coach", moduleKey: "coach", icon: TrendingUp, label: "Coach", description: "Orientação estratégica" },
-    ],
-  },
-  {
-    id: "gamificacao",
-    title: "Gamificação",
-    items: [
-      { to: "/dashboard/conquistas", moduleKey: "conquistas", icon: Trophy, label: "Conquistas", description: "Medalhas e conquistas" },
-      { to: "/dashboard/rankings", moduleKey: "rankings", icon: Crown, label: "Rankings", description: "Compare seu desempenho" },
-      { to: "/dashboard/missao", moduleKey: "missao", icon: Target, label: "Modo Missão", description: "Missões temáticas com recompensas" },
-    ],
+    to: "/dashboard/banco-erros",
+    moduleKey: "banco-erros",
+    icon: AlertTriangle,
+    label: "Banco de Erros",
+    description: "Domine os temas onde mais erra",
   },
 ];
-/* ── Sidebar group component ── */
-const SidebarGroup = ({
-  group,
-  isOpen,
-  onToggle,
-  isStudyActive,
-}: {
-  group: NavGroup & { items: NavItem[] };
-  isOpen: boolean;
-  onToggle: () => void;
-  isStudyActive: boolean;
-}) => {
-  const location = useLocation();
-  const hasActive = group.items.some((item) => location.pathname === item.to);
 
-  return (
-    <div>
-      <button
-        onClick={onToggle}
+/* ────────────────── Item helper ────────────────── */
+const SidebarLink = ({
+  to,
+  icon: Icon,
+  label,
+  description,
+  active,
+  variant = "default",
+}: {
+  to: string;
+  icon: React.ElementType;
+  label: string;
+  description?: string;
+  active: boolean;
+  variant?: "default" | "muted";
+}) => (
+  <Tooltip delayDuration={400}>
+    <TooltipTrigger asChild>
+      <Link
+        to={to}
         className={cn(
-          "flex items-center justify-between w-full px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider rounded-md transition-colors",
-          hasActive ? "text-primary" : "text-muted-foreground/50 hover:text-muted-foreground/70"
+          "group/nav relative flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium",
+          "transition-all duration-300 ease-out overflow-hidden",
+          "hover:translate-x-0.5",
+          active
+            ? "bg-gradient-to-r from-primary/12 via-sidebar-accent to-transparent text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"
+            : variant === "muted"
+            ? "text-muted-foreground/55 hover:bg-sidebar-accent/40 hover:text-foreground"
+            : "text-muted-foreground/75 hover:bg-sidebar-accent/40 hover:text-foreground",
         )}
       >
-        {group.title}
-        <ChevronDown className={cn("h-3 w-3 transition-transform duration-200", isOpen ? "" : "-rotate-90")} />
-      </button>
-      {isOpen && (
-        <div className="space-y-0.5 mt-0.5">
-          {group.items.map((item) => {
-            const active = location.pathname === item.to && !item.highlight;
-            return (
-              <Tooltip key={item.to + item.label} delayDuration={300}>
-                <TooltipTrigger asChild>
-                  <Link
-                    to={item.to}
-                    className={cn(
-                      "group/nav relative flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all duration-300 ease-out overflow-hidden",
-                      "hover:translate-x-0.5",
-                      item.highlight
-                        ? "bg-gradient-to-r from-primary/20 to-primary/5 text-primary hover:from-primary/30 hover:to-primary/10 font-semibold ring-1 ring-primary/20"
-                        : active
-                        ? "bg-gradient-to-r from-primary/15 via-sidebar-accent to-transparent text-primary shadow-[inset_2px_0_0_hsl(var(--primary))]"
-                        : "text-muted-foreground/70 hover:bg-sidebar-accent/40 hover:text-foreground"
-                    )}
-                  >
-                    {/* Glow do ícone quando ativo */}
-                    {active && (
-                      <span aria-hidden className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 bg-primary/40 blur-md rounded-full pointer-events-none" />
-                    )}
-                    {item.useAvatar ? (
-                      <img
-                        src={tutorAvatar}
-                        alt="Tutor"
-                        className="relative h-4 w-4 rounded-full object-contain flex-shrink-0 transition-transform duration-300 group-hover/nav:scale-110"
-                      />
-                    ) : (
-                      <item.icon className={cn(
-                        "relative h-4 w-4 flex-shrink-0 transition-all duration-300 group-hover/nav:scale-110",
-                        active && "drop-shadow-[0_0_6px_hsl(var(--primary)/0.6)]"
-                      )} />
-                    )}
-                    <span className="truncate text-[13px]">{item.label}</span>
-                    {item.highlight && (
-                      <span className="ml-auto text-[10px] animate-pulse">🔥</span>
-                    )}
-                  </Link>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="max-w-[220px]">
-                  <p className="font-semibold text-xs">{item.label}</p>
-                  <p className="text-[11px] text-muted-foreground">{item.description}</p>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
-};
+        {active && (
+          <span
+            aria-hidden
+            className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-5 bg-primary/35 blur-md rounded-full pointer-events-none"
+          />
+        )}
+        <Icon
+          className={cn(
+            "relative h-4 w-4 flex-shrink-0 transition-transform duration-300 group-hover/nav:scale-110",
+            active && "drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]",
+          )}
+        />
+        <span className="truncate">{label}</span>
+      </Link>
+    </TooltipTrigger>
+    {description && (
+      <TooltipContent side="right" className="max-w-[220px]">
+        <p className="font-semibold text-xs">{label}</p>
+        <p className="text-[11px] text-muted-foreground">{description}</p>
+      </TooltipContent>
+    )}
+  </Tooltip>
+);
 
-/* ── Main Sidebar ── */
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">
+    {children}
+  </div>
+);
+
+/* ─────────────────────── Sidebar ─────────────────────── */
 const DashboardSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { signOut } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck();
+  const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { isStaff: isInstitutionalStaff } = useInstitution();
   const { isModuleEnabled } = useModuleAccess();
-  const studyCtx = useStudyContext();
 
+  // Modo compacto quando há sessão de estudo ativa
   const isStudyActive = useMemo(() => {
     try {
       const raw = sessionStorage.getItem("enazizi_study_session");
@@ -229,71 +168,81 @@ const DashboardSidebar = () => {
     } catch {
       return false;
     }
+    // recompute on route change to capture starts/ends
   }, [location.pathname]);
 
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    navGroups.forEach((g) => {
-      const hasActive = g.items.some((item) => location.pathname === item.to);
-      initial[g.id] = hasActive || g.defaultOpen === true;
-      if (g.collapsed && !hasActive) initial[g.id] = false;
-    });
-    return initial;
-  });
+  // Detecta se há missão diária pendente (para o "Continuar agora")
+  const hasMissionToday = useMemo(() => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      return localStorage.getItem(`enazizi:mission:${today}`) !== null;
+    } catch {
+      return false;
+    }
+  }, [location.pathname]);
 
-  const toggleGroup = (id: string) => {
-    setOpenGroups((prev) => ({ ...prev, [id]: !prev[id] }));
-  };
+  // Pinados filtrados por permissão
+  const pinned = useMemo(
+    () => PINNED_ITEMS.filter((i) => isModuleEnabled(i.moduleKey)),
+    [isModuleEnabled],
+  );
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
 
-  const filteredGroups = useMemo(() => {
-    return navGroups
-      .map((group) => ({
-        ...group,
-        items: group.items.filter((item) => {
-          if (item.moduleKey === "perfil") return true;
-          return isModuleEnabled(item.moduleKey);
-        }),
-      }))
-      .filter((g) => g.items.length > 0);
-  }, [isModuleEnabled]);
-
   const showProfessor = isProfessor || isAdmin;
   const showAdmin = isAdmin;
   const showInstitutional = isInstitutionalStaff;
+  const onEnaflix = location.pathname.startsWith("/enaflix");
 
-  return (
-    <TooltipProvider delayDuration={300}>
-    <aside className={cn(
-      "hidden landscape-tablet:flex lg:flex flex-col border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300",
-      isStudyActive ? "w-14" : "w-52 md:w-56 lg:w-60"
-    )}>
-      {/* Logo */}
-      <div className={cn("flex-shrink-0 flex items-center", isStudyActive ? "p-3 justify-center" : "p-4 gap-2")}>
-        <Link to="/" className="group flex items-center gap-2">
-          <span className="relative flex-shrink-0">
-            <span aria-hidden className="absolute inset-0 rounded-lg bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <img src={enazizi} alt="ENAZIZI" className="relative h-7 w-7 rounded-lg object-cover ring-1 ring-white/10" />
-          </span>
-          {!isStudyActive && (
-            <span className="text-base font-black bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent tracking-wide">
-              ENAZIZI
-            </span>
-          )}
-        </Link>
-      </div>
+  /* ───────── Modo compacto (icon-only) ───────── */
+  if (isStudyActive) {
+    return (
+      <TooltipProvider delayDuration={200}>
+        <aside className="hidden landscape-tablet:flex lg:flex flex-col w-14 border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300">
+          <div className="p-3 flex justify-center flex-shrink-0">
+            <Link to="/" className="group">
+              <span className="relative inline-block">
+                <span
+                  aria-hidden
+                  className="absolute inset-0 rounded-lg bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                />
+                <img
+                  src={enazizi}
+                  alt="ENAZIZI"
+                  className="relative h-7 w-7 rounded-lg object-cover ring-1 ring-white/10"
+                />
+              </span>
+            </Link>
+          </div>
 
-      {/* Nav */}
-      <ScrollArea className="flex-1 min-h-0">
-        <nav className={cn("space-y-2", isStudyActive ? "px-1.5 py-2" : "px-3 py-1")}>
-          {isStudyActive ? (
-            /* Compact icon-only mode */
-            <>
-              {filteredGroups[0]?.items.map((item) => {
+          <ScrollArea className="flex-1 min-h-0">
+            <nav className="px-1.5 py-2 space-y-1">
+              {/* Hub ENAFLIX em destaque */}
+              <Tooltip delayDuration={150}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to="/enaflix"
+                    className={cn(
+                      "flex items-center justify-center w-9 h-9 mx-auto rounded-xl transition-colors",
+                      onEnaflix
+                        ? "bg-primary/15 text-primary"
+                        : "text-muted-foreground/60 hover:bg-sidebar-accent/40 hover:text-foreground",
+                    )}
+                  >
+                    <Clapperboard className="h-4 w-4" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="text-xs font-semibold">ENAFLIX</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <div className="border-t border-sidebar-border my-2" />
+
+              {pinned.map((item) => {
                 const active = location.pathname === item.to;
                 return (
                   <Tooltip key={item.to} delayDuration={200}>
@@ -304,23 +253,21 @@ const DashboardSidebar = () => {
                           "flex items-center justify-center w-9 h-9 mx-auto rounded-xl transition-colors",
                           active
                             ? "bg-sidebar-accent text-primary"
-                            : "text-muted-foreground/50 hover:bg-sidebar-accent/40 hover:text-foreground"
+                            : "text-muted-foreground/55 hover:bg-sidebar-accent/40 hover:text-foreground",
                         )}
                       >
-                        {item.useAvatar ? (
-                          <img src={tutorAvatar} alt="Tutor" className="h-4 w-4 rounded-full object-contain" />
-                        ) : (
-                          <item.icon className="h-4 w-4" />
-                        )}
+                        <item.icon className="h-4 w-4" />
                       </Link>
                     </TooltipTrigger>
                     <TooltipContent side="right">
-                      <p className="font-semibold text-xs">{item.label}</p>
+                      <p className="text-xs font-semibold">{item.label}</p>
                     </TooltipContent>
                   </Tooltip>
                 );
               })}
+
               <div className="border-t border-sidebar-border my-2" />
+
               <Tooltip delayDuration={200}>
                 <TooltipTrigger asChild>
                   <Link
@@ -329,100 +276,192 @@ const DashboardSidebar = () => {
                       "flex items-center justify-center w-9 h-9 mx-auto rounded-xl transition-colors",
                       location.pathname === "/dashboard/perfil"
                         ? "bg-sidebar-accent text-primary"
-                        : "text-muted-foreground/50 hover:bg-sidebar-accent/40"
+                        : "text-muted-foreground/55 hover:bg-sidebar-accent/40",
                     )}
                   >
                     <User className="h-4 w-4" />
                   </Link>
                 </TooltipTrigger>
-                <TooltipContent side="right"><p className="text-xs">Perfil</p></TooltipContent>
+                <TooltipContent side="right">
+                  <p className="text-xs">Perfil</p>
+                </TooltipContent>
               </Tooltip>
-            </>
-          ) : (
-            /* Full expanded mode */
-            <>
-              {filteredGroups.map((group) => (
-                <SidebarGroup
-                  key={group.id}
-                  group={group}
-                  isOpen={openGroups[group.id] ?? false}
-                  onToggle={() => toggleGroup(group.id)}
-                  isStudyActive={isStudyActive}
-                />
-              ))}
+            </nav>
+          </ScrollArea>
 
-              {/* Bottom: Profile + Admin */}
-              <div className="pt-2 border-t border-sidebar-border mt-2 space-y-0.5">
+          <div className="border-t border-sidebar-border flex-shrink-0 p-1.5 space-y-1">
+            <ForceUpdateButton variant="sidebar" collapsed />
+            <button
+              onClick={handleSignOut}
+              title="Sair"
+              className="flex items-center justify-center p-2 rounded-xl text-sm text-muted-foreground/55 hover:bg-sidebar-accent/40 transition-colors w-full"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </aside>
+      </TooltipProvider>
+    );
+  }
+
+  /* ───────── Modo expandido (minimalista) ───────── */
+  return (
+    <TooltipProvider delayDuration={400}>
+      <aside className="hidden landscape-tablet:flex lg:flex flex-col w-52 md:w-56 lg:w-60 border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300">
+        {/* Logo */}
+        <div className="flex-shrink-0 flex items-center p-4 gap-2">
+          <Link to="/" className="group flex items-center gap-2">
+            <span className="relative flex-shrink-0">
+              <span
+                aria-hidden
+                className="absolute inset-0 rounded-lg bg-primary/30 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              />
+              <img
+                src={enazizi}
+                alt="ENAZIZI"
+                className="relative h-7 w-7 rounded-lg object-cover ring-1 ring-white/10"
+              />
+            </span>
+            <span className="text-base font-black bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent tracking-wide">
+              ENAZIZI
+            </span>
+          </Link>
+        </div>
+
+        {/* Navegação minimalista */}
+        <ScrollArea className="flex-1 min-h-0">
+          <nav className="px-3 py-1 space-y-0.5">
+            {/* ─── 1. Foco Agora ─── */}
+            <SectionLabel>Foco agora</SectionLabel>
+
+            <SidebarLink
+              to="/dashboard"
+              icon={PlayCircle}
+              label={hasMissionToday ? "Continuar missão" : "Hoje"}
+              description="Sua missão prioritária do dia"
+              active={location.pathname === "/dashboard"}
+            />
+            <SidebarLink
+              to="/dashboard/sessao-estudo"
+              icon={Sparkles}
+              label="Estudar agora"
+              description="Inicie um ciclo de estudo guiado pela IA"
+              active={location.pathname === "/dashboard/sessao-estudo"}
+            />
+
+            {/* ─── 2. Hub ENAFLIX ─── */}
+            <SectionLabel>Explorar</SectionLabel>
+
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
                 <Link
-                  to="/dashboard/perfil"
+                  to="/enaflix"
                   className={cn(
-                    "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
-                    location.pathname === "/dashboard/perfil"
-                      ? "bg-sidebar-accent text-primary"
-                      : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
+                    "group/hub relative flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold",
+                    "transition-all duration-300 ease-out overflow-hidden",
+                    "bg-gradient-to-r from-fuchsia-500/15 via-rose-500/10 to-transparent",
+                    "ring-1 ring-fuchsia-500/20 hover:ring-fuchsia-500/40",
+                    "hover:translate-x-0.5",
+                    onEnaflix
+                      ? "text-foreground ring-fuchsia-500/50"
+                      : "text-foreground/85 hover:text-foreground",
                   )}
                 >
-                  <User className="h-4 w-4" /> Meu Perfil
+                  <span
+                    aria-hidden
+                    className="absolute -left-1 top-1/2 -translate-y-1/2 h-6 w-6 bg-fuchsia-500/30 blur-lg rounded-full pointer-events-none"
+                  />
+                  <Clapperboard className="relative h-4 w-4 flex-shrink-0 text-fuchsia-300 transition-transform duration-300 group-hover/hub:scale-110" />
+                  <span className="relative truncate tracking-[0.06em]">ENAFLIX</span>
+                  <ChevronRight className="relative ml-auto h-3.5 w-3.5 opacity-50 transition-transform duration-300 group-hover/hub:translate-x-0.5" />
                 </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[220px]">
+                <p className="font-semibold text-xs">ENAFLIX</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Hub visual de todos os módulos: simulados, flashcards, mnemônicos,
+                  anamnese, OSCE, analytics e mais.
+                </p>
+              </TooltipContent>
+            </Tooltip>
 
-                {/* Admin-only items */}
-                {showProfessor && (
-                  <Link to="/professor" className={cn(
-                    "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
-                    location.pathname === "/professor" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
-                  )}>
-                    <GraduationCap className="h-4 w-4" /> Painel Professor
-                  </Link>
-                )}
-                {showAdmin && (
-                  <>
-                    <Link to="/admin" className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
-                      location.pathname === "/admin" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
-                    )}>
-                      <Shield className="h-4 w-4" /> Admin
-                    </Link>
-                    <Link to="/admin/ceo" className={cn(
-                      "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
-                      location.pathname === "/admin/ceo" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
-                    )}>
-                      <BarChart3 className="h-4 w-4" /> Painel CEO
-                    </Link>
-                  </>
-                )}
-                {showInstitutional && (
-                  <Link to="/institucional" className={cn(
-                    "flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-[13px] font-medium transition-colors",
-                    location.pathname === "/institucional" ? "bg-sidebar-accent text-primary" : "text-muted-foreground/65 hover:bg-sidebar-accent/40"
-                  )}>
-                    <Building2 className="h-4 w-4" /> Institucional
-                  </Link>
-                )}
-              </div>
-            </>
-          )}
-        </nav>
-      </ScrollArea>
+            {/* ─── 3. Atalhos pinados ─── */}
+            <SectionLabel>Atalhos</SectionLabel>
 
-      {/* Footer */}
-      <div className="border-t border-sidebar-border flex-shrink-0">
-        {!isStudyActive && <StudyTimer />}
-        <div className={cn(isStudyActive ? "p-1.5 space-y-1" : "px-3 pb-3 space-y-1")}>
-          <ForceUpdateButton variant="sidebar" collapsed={isStudyActive} />
-          <button
-            onClick={handleSignOut}
-            title="Sair"
-            className={cn(
-              "flex items-center rounded-xl text-sm text-muted-foreground/60 hover:bg-sidebar-accent/40 transition-colors w-full",
-              isStudyActive ? "justify-center p-2" : "gap-2.5 px-3 py-1.5"
-            )}
-          >
-            <LogOut className="h-4 w-4" />
-            {!isStudyActive && <span>Sair</span>}
-          </button>
+            {pinned.map((item) => {
+              const active = location.pathname === item.to;
+              return (
+                <SidebarLink
+                  key={item.to}
+                  to={item.to}
+                  icon={item.icon}
+                  label={item.label}
+                  description={item.description}
+                  active={active}
+                  variant="muted"
+                />
+              );
+            })}
+
+            {/* ─── 4. Utilidades + Admin ─── */}
+            <div className="pt-3 mt-2 border-t border-sidebar-border space-y-0.5">
+              <SidebarLink
+                to="/dashboard/perfil"
+                icon={User}
+                label="Meu Perfil"
+                active={location.pathname === "/dashboard/perfil"}
+                variant="muted"
+              />
+
+              {showProfessor && (
+                <SidebarLink
+                  to="/professor"
+                  icon={GraduationCap}
+                  label="Painel Professor"
+                  active={location.pathname === "/professor"}
+                  variant="muted"
+                />
+              )}
+              {showAdmin && (
+                <>
+                  <SidebarLink
+                    to="/admin"
+                    icon={Shield}
+                    label="Admin"
+                    active={location.pathname === "/admin"}
+                    variant="muted"
+                  />
+                </>
+              )}
+              {showInstitutional && (
+                <SidebarLink
+                  to="/institucional"
+                  icon={Building2}
+                  label="Institucional"
+                  active={location.pathname === "/institucional"}
+                  variant="muted"
+                />
+              )}
+            </div>
+          </nav>
+        </ScrollArea>
+
+        {/* Footer */}
+        <div className="border-t border-sidebar-border flex-shrink-0">
+          <StudyTimer />
+          <div className="px-3 pb-3 space-y-1">
+            <ForceUpdateButton variant="sidebar" />
+            <button
+              onClick={handleSignOut}
+              title="Sair"
+              className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm text-muted-foreground/55 hover:bg-sidebar-accent/40 hover:text-foreground transition-colors w-full"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Sair</span>
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
     </TooltipProvider>
   );
 };

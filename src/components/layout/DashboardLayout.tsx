@@ -267,11 +267,32 @@ const DashboardLayout = () => {
     enabled: true,
   });
 
+  // Modo foco — sidebar e header somem para imersão total.
+  // Cobre: missão, sessão de estudo, ENAFLIX, simulação clínica imersiva,
+  // anamnese, OSCE/prova prática e plantão. Tudo o que pede zero distração.
   const isMissionLocked = (() => {
-    const isMissionRoute = location.pathname === "/dashboard/missao" || location.pathname === "/mission" || location.pathname.startsWith("/study/");
+    const path = location.pathname;
+    const focusRoutes = [
+      "/dashboard/missao",
+      "/mission",
+      "/dashboard/anamnese",
+      "/dashboard/plantao",
+      "/dashboard/simulacao-clinica",
+      "/dashboard/prova-pratica",
+    ];
+    const isFocusRoute =
+      focusRoutes.includes(path) ||
+      path.startsWith("/study/") ||
+      path.startsWith("/enaflix");
+    // Simulado em andamento: detectado por query param `?running=1` ou rota filha
+    const isSimuladoRunning =
+      path.startsWith("/dashboard/simulados/") &&
+      path !== "/dashboard/simulados";
     const params = new URLSearchParams(location.search);
-    const fromMission = params.get("sc_origin") === "mission" || params.get("tutor_mode") === "mission";
-    return isMissionRoute || fromMission;
+    const fromMission =
+      params.get("sc_origin") === "mission" ||
+      params.get("tutor_mode") === "mission";
+    return isFocusRoute || isSimuladoRunning || fromMission;
   })();
 
   return (
