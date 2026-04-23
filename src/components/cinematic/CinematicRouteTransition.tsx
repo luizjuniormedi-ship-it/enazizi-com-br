@@ -27,11 +27,13 @@ import type { CinematicModule } from "./CinematicCard";
  *   </BrowserRouter>
  */
 
+type CubicBezier = [number, number, number, number];
+
 interface TransitionRecipe {
   /** Duração total. */
   duration: number;
   /** Curva de easing tipo câmera física. */
-  ease: number[] | string;
+  ease: CubicBezier;
   /** Deslocamento Y inicial (px). */
   yOffset: number;
   /** Escala inicial (0.97 = leve mergulho). */
@@ -202,11 +204,11 @@ export const CinematicRouteTransition: React.FC<CinematicRouteTransitionProps> =
 
   const enterTransition: Transition = prefersReduced
     ? { duration: 0.18, ease: "linear" }
-    : { duration: recipe.duration, ease: recipe.ease as number[] };
+    : { duration: recipe.duration, ease: recipe.ease };
 
   const exitTransition: Transition = prefersReduced
     ? { duration: 0.12, ease: "linear" }
-    : { duration: recipe.exitDuration, ease: recipe.ease as number[] };
+    : { duration: recipe.exitDuration, ease: recipe.ease };
 
   // chave por pathname para o AnimatePresence trocar
   return (
