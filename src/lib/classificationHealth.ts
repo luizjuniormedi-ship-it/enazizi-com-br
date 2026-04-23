@@ -43,8 +43,8 @@ export function evaluateClassificationHealth(run: HealthRunInput): HealthEvaluat
   const skipped = run.skipped_pct ?? 0;
 
   const reasons: string[] = [];
-  let verdict: HealthVerdict = "healthy";
-  let severity: HealthSeverity = "info";
+  let verdict: HealthVerdict = "healthy" as HealthVerdict;
+  let severity: HealthSeverity = "info" as HealthSeverity;
 
   // Determinístico (exact + alias)
   if (det < 70) {
