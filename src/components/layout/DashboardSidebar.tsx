@@ -27,6 +27,8 @@ import {
   Sparkles,
   PlayCircle,
   ChevronRight,
+  RotateCcw,
+  TrendingUp,
 } from "lucide-react";
 import { useMemo } from "react";
 
@@ -56,8 +58,15 @@ interface PinnedItem {
   description: string;
 }
 
-/* ─────────────── 4 atalhos pinados (essenciais) ─────────────── */
+/* ─────────────── Atalhos pinados (núcleo operacional) ─────────────── */
 const PINNED_ITEMS: PinnedItem[] = [
+  {
+    to: "/dashboard/sessao-estudo?focus=reviews",
+    moduleKey: "sessao-estudo",
+    icon: RotateCcw,
+    label: "Revisões",
+    description: "Revisões pendentes (FSRS) e cards vencidos",
+  },
   {
     to: "/dashboard/sessao-estudo",
     moduleKey: "sessao-estudo",
@@ -73,18 +82,18 @@ const PINNED_ITEMS: PinnedItem[] = [
     description: "Provas no formato das principais bancas",
   },
   {
-    to: "/dashboard/flashcards",
-    moduleKey: "flashcards",
-    icon: FlipVertical,
-    label: "Flashcards",
-    description: "Revisão espaçada inteligente",
-  },
-  {
     to: "/dashboard/banco-erros",
     moduleKey: "banco-erros",
     icon: AlertTriangle,
     label: "Banco de Erros",
     description: "Domine os temas onde mais erra",
+  },
+  {
+    to: "/dashboard/analytics",
+    moduleKey: "analytics",
+    icon: TrendingUp,
+    label: "Progresso",
+    description: "Desempenho, evolução e chance de aprovação",
   },
 ];
 
