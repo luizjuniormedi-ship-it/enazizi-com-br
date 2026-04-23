@@ -27,10 +27,13 @@ import {
   Sparkles,
   PlayCircle,
   ChevronRight,
+  ChevronLeft,
+  PanelLeftClose,
+  PanelLeftOpen,
   RotateCcw,
   TrendingUp,
 } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useModuleAccess } from "@/hooks/useModuleAccess";
@@ -166,6 +169,26 @@ const DashboardSidebar = () => {
     // recompute on route change to capture starts/ends
   }, [location.pathname]);
 
+  // Toggle manual de recolhimento (persistido em localStorage)
+  const STORAGE_KEY = "enazizi:sidebar:collapsed";
+  const [manualCollapsed, setManualCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem(STORAGE_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, manualCollapsed ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [manualCollapsed]);
+
+  const toggleCollapse = () => setManualCollapsed((v) => !v);
+
   // Detecta se há missão diária pendente (para o "Continuar agora")
   const hasMissionToday = useMemo(() => {
     try {
@@ -192,12 +215,15 @@ const DashboardSidebar = () => {
   const showInstitutional = isInstitutionalStaff;
   const onEnaflix = location.pathname.startsWith("/enaflix");
 
+  // Sidebar compacta se: (a) usuário recolheu manualmente OU (b) sessão de estudo ativa
+  const collapsed = manualCollapsed || isStudyActive;
+
   /* ───────── Modo compacto (icon-only) ───────── */
-  if (isStudyActive) {
+  if (collapsed) {
     return (
       <TooltipProvider delayDuration={200}>
         <aside className="hidden landscape-tablet:flex lg:flex flex-col w-14 border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300">
-          <div className="p-3 flex justify-center flex-shrink-0">
+          <div className="p-3 flex flex-col items-center gap-2 flex-shrink-0">
             <Link to="/" className="group">
               <span className="relative inline-block">
                 <span
@@ -211,6 +237,22 @@ const DashboardSidebar = () => {
                 />
               </span>
             </Link>
+            {!isStudyActive && (
+              <Tooltip delayDuration={150}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={toggleCollapse}
+                    aria-label="Expandir barra lateral"
+                    className="flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground/55 hover:bg-sidebar-accent/50 hover:text-foreground transition-colors"
+                  >
+                    <PanelLeftOpen className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p className="text-xs font-semibold">Expandir</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           <ScrollArea className="flex-1 min-h-0">
@@ -303,9 +345,9 @@ const DashboardSidebar = () => {
   return (
     <TooltipProvider delayDuration={400}>
       <aside className="hidden landscape-tablet:flex lg:flex flex-col w-52 md:w-56 lg:w-60 border-r border-sidebar-border bg-sidebar h-screen sticky top-0 transition-all duration-300">
-        {/* Logo */}
-        <div className="flex-shrink-0 flex items-center p-4 gap-2">
-          <Link to="/" className="group flex items-center gap-2">
+        {/* Logo + toggle */}
+        <div className="flex-shrink-0 flex items-center justify-between p-4 gap-2">
+          <Link to="/" className="group flex items-center gap-2 min-w-0">
             <span className="relative flex-shrink-0">
               <span
                 aria-hidden
@@ -317,10 +359,24 @@ const DashboardSidebar = () => {
                 className="relative h-7 w-7 rounded-lg object-cover ring-1 ring-white/10"
               />
             </span>
-            <span className="text-base font-black bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent tracking-wide">
+            <span className="text-base font-black bg-gradient-to-r from-foreground via-foreground to-foreground/60 bg-clip-text text-transparent tracking-wide truncate">
               ENAZIZI
             </span>
           </Link>
+          <Tooltip delayDuration={150}>
+            <TooltipTrigger asChild>
+              <button
+                onClick={toggleCollapse}
+                aria-label="Recolher barra lateral"
+                className="flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground/55 hover:bg-sidebar-accent/50 hover:text-foreground transition-colors flex-shrink-0"
+              >
+                <PanelLeftClose className="h-3.5 w-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="right">
+              <p className="text-xs font-semibold">Recolher</p>
+            </TooltipContent>
+          </Tooltip>
         </div>
 
         {/* Navegação minimalista — duas mentalidades distintas */}
