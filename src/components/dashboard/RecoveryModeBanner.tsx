@@ -98,10 +98,19 @@ export default function RecoveryModeBanner() {
     );
   }
 
-  // Standard recovery mode — simple banner
+  // Standard recovery mode — compacto em mobile, completo em ≥sm
   return (
-    <Card className="border-primary/30 bg-primary/5">
-      <CardContent className="p-4 flex items-center gap-3">
+    <Card className="border-primary/20 bg-primary/5">
+      {/* Mobile: linha única discreta (sem ícone grande, sem subtitle) */}
+      <CardContent className="sm:hidden px-3 py-2 flex items-center gap-2">
+        <Shield className="h-3.5 w-3.5 text-primary shrink-0" />
+        <p className="text-xs text-muted-foreground truncate">
+          <span className="font-medium text-foreground">Recuperação ativa</span>
+          {adaptive.recoveryReason ? ` · ${adaptive.recoveryReason}` : ""}
+        </p>
+      </CardContent>
+      {/* ≥sm: layout original */}
+      <CardContent className="hidden sm:flex p-4 items-center gap-3">
         <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
           <Shield className="h-5 w-5 text-primary" />
         </div>

@@ -115,7 +115,7 @@ function MissionHeroAnimated({ recommendation, adaptiveState, onStart, onRefresh
               </p>
             )}
 
-            {/* Tags */}
+            {/* Tags — em mobile, esconder Recuperação (já vem no banner acima) e Bloqueado (ruído) */}
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant="secondary" className="text-xs bg-primary/15 text-primary border-0">
                 {cfg.icon} {cfg.label}
@@ -125,12 +125,12 @@ function MissionHeroAnimated({ recommendation, adaptiveState, onStart, onRefresh
                 {recommendation.estimatedMinutes} min
               </Badge>
               {adaptiveState?.recoveryActive && (
-                <Badge variant="destructive" className="text-[10px]">
+                <Badge variant="destructive" className="hidden sm:inline-flex text-[10px]">
                   <AlertTriangle className="h-3 w-3 mr-1" /> Recuperação
                 </Badge>
               )}
               {adaptiveState?.contentLocked && (
-                <Badge variant="outline" className="text-[10px] border-muted-foreground/30">
+                <Badge variant="outline" className="hidden sm:inline-flex text-[10px] border-muted-foreground/30">
                   <Shield className="h-3 w-3 mr-1" /> Bloqueado
                 </Badge>
               )}
@@ -138,28 +138,33 @@ function MissionHeroAnimated({ recommendation, adaptiveState, onStart, onRefresh
           </div>
         </div>
 
-        {/* CTA Row */}
+        {/* CTA Row — em mobile o CTA ocupa a largura, refresh some, "Alternativas" vira link discreto abaixo */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4, duration: 0.3 }}
-          className="flex items-center gap-3"
+          className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3"
         >
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full sm:w-auto">
             <Button
               size="lg"
-              className="h-13 px-8 text-base font-bold gap-2 shadow-lg bg-primary hover:bg-primary/90 rounded-xl"
+              className="w-full sm:w-auto h-13 px-8 text-base font-bold gap-2 shadow-lg bg-primary hover:bg-primary/90 rounded-xl"
               onClick={onStart}
             >
               <Rocket className="h-5 w-5" />
               {cfg.cta || "🚀 Começar agora"}
             </Button>
           </motion.div>
-          <Button variant="ghost" size="icon" className="h-11 w-11 rounded-xl text-muted-foreground hover:text-foreground" onClick={onRefresh} title="Atualizar missão">
+          <Button variant="ghost" size="icon" className="hidden sm:inline-flex h-11 w-11 rounded-xl text-muted-foreground hover:text-foreground" onClick={onRefresh} title="Atualizar missão">
             <RefreshCw className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="sm" className="flex gap-1 text-muted-foreground rounded-xl" onClick={onShowAlternatives}>
-            Alternativas <ChevronDown className="h-3.5 w-3.5" />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-start sm:self-auto -ml-2 sm:ml-0 text-xs text-muted-foreground hover:text-foreground rounded-xl gap-1"
+            onClick={onShowAlternatives}
+          >
+            Ver alternativas <ChevronDown className="h-3.5 w-3.5" />
           </Button>
         </motion.div>
       </div>

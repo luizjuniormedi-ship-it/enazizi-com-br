@@ -29,7 +29,7 @@ export const InvisibleMnemonicOverlay = ({ mnemonic, onDismiss, onShown }: Props
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-40 max-w-md mx-auto animate-fade-in">
+    <div className="fixed left-4 right-4 z-40 max-w-md mx-auto animate-fade-in bottom-[calc(4rem+env(safe-area-inset-bottom)+0.75rem)] md:bottom-4">
       <Card className="border-primary/30 bg-background/95 backdrop-blur-md shadow-lg">
         <CardContent className="p-3 space-y-2">
           {/* Header */}
