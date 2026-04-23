@@ -99,10 +99,10 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
                 value={topicInput}
                 onChange={(e) => onTopicChange(e.target.value)}
                 placeholder="Ex: Insuficiência Cardíaca, TEP, AVC..."
-                onKeyDown={(e) => e.key === "Enter" && onStartStudy()}
+                onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
                 className="flex-1"
               />
-              <Button onClick={onStartStudy} disabled={!topicInput.trim()}>
+              <Button onClick={handleStartStudy} disabled={!topicInput.trim()}>
                 <Play className="h-4 w-4 mr-1.5" /> Iniciar
               </Button>
             </div>
@@ -127,25 +127,25 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               title="Iniciar revisão"
               description={pendingReviews > 0 ? `${pendingReviews} pendente${pendingReviews === 1 ? "" : "s"}` : "Sem pendências"}
               accent={pendingReviews > 0}
-              onClick={() => navigate("/dashboard/sessao-estudo?focus=reviews&auto=1")}
+              onClick={() => trackAndGo("start_review", "/dashboard/sessao-estudo?focus=reviews&auto=1", { pendingReviews })}
             />
             <ActionCard
               icon={AlertTriangle}
               title="Revisar erros"
               description={errorsCount > 0 ? `${errorsCount} no banco` : "Sem erros recentes"}
-              onClick={() => navigate("/dashboard/banco-erros")}
+              onClick={() => trackAndGo("open_errors", "/dashboard/banco-erros", { errorsCount })}
             />
             <ActionCard
               icon={FileText}
               title="Iniciar simulado"
               description="Treino com bancas"
-              onClick={() => navigate("/dashboard/simulados")}
+              onClick={() => trackAndGo("start_simulado", "/dashboard/simulados")}
             />
             <ActionCard
               icon={Sparkles}
               title="Tutor IA"
               description="Tirar dúvida agora"
-              onClick={() => navigate("/dashboard/chatgpt")}
+              onClick={() => trackAndGo("open_tutor", "/dashboard/chatgpt")}
             />
           </div>
         </Section>
