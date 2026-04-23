@@ -13,8 +13,9 @@ import { useFsrs, Rating } from "@/hooks/useFsrs";
 import {
   FlipVertical, Loader2, Brain, GraduationCap,
   Download, Zap, Clock, Award, Maximize2, Minimize2,
-  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap,
+  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap, Sparkles,
 } from "lucide-react";
+import { CinematicHero } from "@/components/cinematic";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import ModuleEmptyState from "@/components/layout/ModuleEmptyState";
@@ -417,41 +418,43 @@ const Flashcards = () => {
       )}
       <StudyContextBanner />
 
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-            <FlipVertical className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-            Flashcards
-          </h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            {allCards.length} total • {dueCards.length} para revisar • {reviewedCount} em dia
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
-            "Escolha um modo de revisão e inicie a sessão",
-            "Responda cada card e avalie seu desempenho",
-            "O algoritmo FSRS agenda revisões automáticas",
-          ]} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="icon" className="h-8 w-8">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={() => exportToPdf(
-                  allCards.map(c => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
-                  "Flashcards_ENAZIZI"
-                )}
-              >
-                <Download className="h-4 w-4 mr-2" /> Exportar PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
+      <CinematicHero
+        module="flashcard"
+        eyebrow={<><Sparkles className="h-3.5 w-3.5" /> Memória ativa · FSRS</>}
+        title="Flashcards"
+        subtitle={`${allCards.length} cards no acervo · ${dueCards.length} prontos para revisão · ${reviewedCount} em dia. Repetição espaçada elegante para fixação de longo prazo.`}
+        actions={
+          <div className="flex items-center gap-2">
+            <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
+              "Escolha um modo de revisão e inicie a sessão",
+              "Responda cada card e avalie seu desempenho",
+              "O algoritmo FSRS agenda revisões automáticas",
+            ]} />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => exportToPdf(
+                    allCards.map(c => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
+                    "Flashcards_ENAZIZI"
+                  )}
+                >
+                  <Download className="h-4 w-4 mr-2" /> Exportar PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        }
+        media={
+          <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
+            <FlipVertical className="h-10 w-10 text-module" />
+          </div>
+        }
+      />
 
       {/* FSRS Stats */}
       <div className="grid grid-cols-4 gap-2">
