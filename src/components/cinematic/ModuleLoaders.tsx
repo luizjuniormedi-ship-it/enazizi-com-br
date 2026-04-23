@@ -167,7 +167,7 @@ export const WidgetLoader: React.FC<WidgetLoaderProps> = ({
       style={{ minHeight: height }}
     >
       {showHeader && (
-        <CinematicSkeleton module={m} shape="line" className="h-4 w-1/3" />
+        <CinematicSkeleton module={m} shape="pill" className="h-4 w-1/3" />
       )}
       <CinematicSkeleton
         module={m}
