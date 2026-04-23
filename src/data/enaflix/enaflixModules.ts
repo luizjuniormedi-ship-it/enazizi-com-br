@@ -269,16 +269,6 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     accent: "primary",
   },
   {
-    id: "resumos",
-    title: "Resumidor",
-    description: "Resuma qualquer texto médico em segundos",
-    route: "/dashboard/resumos",
-    category: "conteudo",
-    icon: FileText,
-    badge: "ia",
-    accent: "purple",
-  },
-  {
     id: "revisor",
     title: "Revisor Médico",
     description: "Validação clínica e citação de fontes",
@@ -290,13 +280,14 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
   {
     id: "chatgpt",
     title: "Tutor IA",
-    description: "Tire dúvidas com inteligência adaptativa",
+    description: "Tutor, Mentor, Revisão e Estratégia ENARE em um só lugar",
     route: "/dashboard/chatgpt",
     category: "conteudo",
     icon: MessagesSquare,
     badge: "ia",
     accent: "primary",
     featured: true,
+    keywords: ["tutor", "mentor", "estratégia", "enare", "dúvida", "chat"],
   },
 
   // ───────── PROGRESSO & ESTRATÉGIA ─────────
