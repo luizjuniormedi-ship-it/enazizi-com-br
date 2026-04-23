@@ -688,6 +688,158 @@ export default function ClassificationRunner() {
         </Button>
       </div>
 
+      <TooltipProvider>
+
+      {/* ════════ Card Saúde da última execução ════════ */}
+      <Card className={
+        lastDryRunVerdict?.verdict === "healthy"
+          ? "border-primary/50 bg-primary/5"
+          : lastDryRunVerdict?.verdict === "borderline"
+          ? "border-amber-500/50 bg-amber-500/5"
+          : lastDryRunVerdict?.verdict === "rejected"
+          ? "border-destructive/50 bg-destructive/5"
+          : ""
+      }>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Heart className="h-5 w-5" />
+            Saúde da última execução
+            {lastRun?.status === "running" && (
+              <Badge variant="secondary" className="ml-2">
+                <Loader2 className="h-3 w-3 mr-1 animate-spin" /> em andamento (auto-refresh)
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Resumo rápido da última run persistida + verdict local consolidado.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingPersisted && !lastRun ? (
+            <Skeleton className="h-24 w-full" />
+          ) : !lastRun ? (
+            <div className="space-y-3 text-sm">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Nenhuma execução registrada ainda</AlertTitle>
+                <AlertDescription>
+                  Comece com um dry-run para validar o classificador antes de qualquer escrita.
+                </AlertDescription>
+              </Alert>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" onClick={runWithCurrentParams} disabled={!ready || running}>
+                  <Play className="h-4 w-4 mr-2" /> Abrir dry-run
+                </Button>
+                <Button size="sm" variant="outline" onClick={testConnection} disabled={!ready || connTesting}>
+                  {connTesting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Wifi className="h-4 w-4 mr-2" />
+                  )}
+                  Testar conexão
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">run_id</div>
+                  <div className="font-mono text-xs">{lastRun.id.slice(0, 8)}…</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">tabela</div>
+                  <div className="text-xs">{lastRun.table_source}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">batch</div>
+                  <div className="text-xs">{lastRun.batch_size}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">dry_run</div>
+                  <div className="text-xs">{lastRun.dry_run ? "true" : "false"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">processed</div>
+                  <div className="font-bold">{lastRun.total_processed ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">applied</div>
+                  <div className="font-bold">{lastRun.total_applied ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">queued</div>
+                  <div className="font-bold">{lastRun.total_queued_review ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">skipped</div>
+                  <div className="font-bold">{lastRun.total_skipped ?? 0}</div>
+                </div>
+              </div>
+              {lastDryRunVerdict && (
+                <>
+                  <Separator />
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                    <div>
+                      <div className="text-xs text-muted-foreground">exact_text</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.exactPct}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">heuristic</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.heuristicPct}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">queue %</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.queuePct}%</div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-muted-foreground">skip %</div>
+                      <div className="font-bold">{lastDryRunVerdict.metrics.skipPct}%</div>
+                    </div>
+                  </div>
+                </>
+              )}
+              <div className="flex items-center gap-2 flex-wrap pt-1">
+                {lastDryRunVerdict?.verdict === "healthy" && (
+                  <Badge className="bg-primary text-primary-foreground">
+                    <CheckCircle2 className="h-3 w-3 mr-1" /> healthy
+                  </Badge>
+                )}
+                {lastDryRunVerdict?.verdict === "borderline" && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="secondary" className="bg-amber-500/20 text-amber-700 border-amber-500/40">
+                        ⚠️ borderline
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Dry-run abaixo do threshold ideal; revisar antes do lote real
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {lastDryRunVerdict?.verdict === "rejected" && (
+                  <Badge variant="destructive">❌ rejected</Badge>
+                )}
+                {lastGoodDryRun && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline">
+                        Último dry-run saudável: {lastGoodDryRun.runId.slice(0, 8)}… ·{" "}
+                        {new Date(lastGoodDryRun.timestamp).toLocaleString()}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      Cache local: {lastGoodDryRun.tableSource} · batch {lastGoodDryRun.batchSize} ·
+                      exact {lastGoodDryRun.metrics.exactPct}%
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Diagnóstico de autenticação */}
       <Card>
         <CardHeader>
