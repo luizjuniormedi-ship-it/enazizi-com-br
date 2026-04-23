@@ -1,17 +1,21 @@
 /**
  * /admin/classification-runner
  * ────────────────────────────
- * Executor autenticado do classificador hierárquico.
- * Dispara `classify-question-hierarchy` usando a sessão do navegador
- * (resolve o bloqueio de "missing auth" do ambiente server-side) e
- * audita o resultado bruto antes de qualquer execução real.
+ * Executor autenticado + auditor do classify-question-hierarchy.
  *
- * Escopo estrito:
- *  - apenas dry-run (default true)
- *  - nenhuma alteração na edge function
- *  - nenhuma alteração no gerador / pipeline granular
+ * Recursos:
+ *  - Diagnóstico forte de auth/admin/sessão
+ *  - Execução via JWT da sessão atual (sem missing auth)
+ *  - Persistência local (localStorage) + leitura da última run no banco
+ *  - Histórico das últimas 10 runs
+ *  - Resumo da fila de revisão (question_classification_queue)
+ *  - Retry manual seguro + reexecutar último dry-run
+ *  - Auditoria automática (verdict local) com regras:
+ *      total_processed > 0, exact_text >= 80%, skipped < 10%
+ *
+ * Escopo estrito: NÃO altera a edge function nem rules/migrations.
  */
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
@@ -24,8 +28,23 @@ import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, Play, ShieldCheck, ShieldAlert, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
+import {
+  Loader2,
+  Play,
+  ShieldCheck,
+  ShieldAlert,
+  AlertCircle,
+  CheckCircle2,
+  RefreshCw,
+  RotateCcw,
+  History,
+  Database,
+} from "lucide-react";
 import { toast } from "sonner";
+
+const STORAGE_KEY = "classification_runner:last_result";
 
 type TableSource = "questions_bank" | "real_exam_questions";
 
@@ -61,26 +80,91 @@ interface RunResult {
   [k: string]: unknown;
 }
 
+interface PersistedRun {
+  id: string;
+  table_source: string;
+  batch_size: number;
+  dry_run: boolean;
+  status: string;
+  started_at: string;
+  finished_at: string | null;
+  total_processed: number | null;
+  total_applied: number | null;
+  total_queued_review: number | null;
+  total_skipped: number | null;
+  method_breakdown: MethodBreakdown | null;
+  error_message: string | null;
+}
+
+interface QueueRow {
+  id: string;
+  question_id: string;
+  original_topic: string | null;
+  original_subtopic: string | null;
+  classification_method: string | null;
+  confidence_score: number | null;
+  reason: string | null;
+  status: string;
+  created_at: string;
+}
+
+interface LocalSnapshot {
+  result: RunResult;
+  params: { table_source: TableSource; batch_size: number; dry_run: boolean };
+  ts: string;
+}
+
 type Verdict = "healthy" | "borderline" | "rejected" | null;
+
+type ErrorKind = "missing_auth" | "admin_only" | "network" | "server" | "timeout" | "unknown";
 
 function pct(n: number, total: number) {
   if (!total) return 0;
   return Math.round((n / total) * 1000) / 10;
 }
 
-function evaluate(result: RunResult | null): {
-  verdict: Verdict;
-  reasons: string[];
-  metrics: { exactPct: number; skipPct: number; queuePct: number; total: number };
-} {
+function classifyError(message: string, raw: unknown): ErrorKind {
+  const text = `${message} ${typeof raw === "string" ? raw : JSON.stringify(raw ?? "")}`.toLowerCase();
+  if (text.includes("missing auth") || text.includes("jwt")) return "missing_auth";
+  if (text.includes("admin only") || text.includes("403") || text.includes("forbidden")) return "admin_only";
+  if (text.includes("failed to fetch") || text.includes("network")) return "network";
+  if (text.includes("timeout") || text.includes("timed out")) return "timeout";
+  if (text.includes("500") || text.includes("internal")) return "server";
+  return "unknown";
+}
+
+function errorHint(kind: ErrorKind): string {
+  switch (kind) {
+    case "missing_auth":
+      return "Sessão sem JWT válido. Saia e entre novamente como admin.";
+    case "admin_only":
+      return "Sua conta não tem role 'admin' em user_roles.";
+    case "network":
+      return "Falha de rede ao chamar a edge function.";
+    case "timeout":
+      return "Tempo de execução excedido. Tente reduzir o batch_size.";
+    case "server":
+      return "Erro 500 na edge function. Confira os logs.";
+    default:
+      return "Erro inesperado — confira o payload bruto abaixo.";
+  }
+}
+
+function evaluate(result: RunResult | null) {
   if (!result || !result.total_processed) {
-    return { verdict: null, reasons: [], metrics: { exactPct: 0, skipPct: 0, queuePct: 0, total: 0 } };
+    return {
+      verdict: null as Verdict,
+      reasons: [] as string[],
+      metrics: { exactPct: 0, heuristicPct: 0, queuePct: 0, skipPct: 0, total: 0 },
+    };
   }
   const total = result.total_processed ?? 0;
   const exact = result.method_breakdown?.exact_text ?? 0;
+  const heuristic = result.method_breakdown?.heuristic ?? 0;
   const skip = result.total_skipped ?? 0;
   const queue = result.total_queued_review ?? 0;
   const exactPct = pct(exact, total);
+  const heuristicPct = pct(heuristic, total);
   const skipPct = pct(skip, total);
   const queuePct = pct(queue, total);
 
@@ -116,11 +200,11 @@ function evaluate(result: RunResult | null): {
 
   if (verdict === "healthy") reasons.push("Distribuição dentro dos thresholds esperados");
 
-  return { verdict, reasons, metrics: { exactPct, skipPct, queuePct, total } };
+  return { verdict, reasons, metrics: { exactPct, heuristicPct, skipPct, queuePct, total } };
 }
 
 export default function ClassificationRunner() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { roles, isAdmin, loading: rolesLoading } = useUserRoles();
 
   const [tableSource, setTableSource] = useState<TableSource>("questions_bank");
@@ -130,64 +214,165 @@ export default function ClassificationRunner() {
   const [running, setRunning] = useState(false);
   const [errorPayload, setErrorPayload] = useState<{ message: string; raw?: unknown } | null>(null);
   const [result, setResult] = useState<RunResult | null>(null);
+  const [snapshotTs, setSnapshotTs] = useState<string | null>(null);
 
-  const ready = !!user && isAdmin && !rolesLoading;
+  const [lastRun, setLastRun] = useState<PersistedRun | null>(null);
+  const [history, setHistory] = useState<PersistedRun[]>([]);
+  const [queueStats, setQueueStats] = useState<{ pending: number; approved: number; rejected: number } | null>(null);
+  const [queueItems, setQueueItems] = useState<QueueRow[]>([]);
+  const [loadingPersisted, setLoadingPersisted] = useState(true);
+
+  const ready = !!user && isAdmin && !rolesLoading && !!session;
   const evaluation = useMemo(() => evaluate(result), [result]);
 
-  const friendlyError = (err: unknown, raw?: unknown): { message: string; hint: string } => {
-    const msg = (err as { message?: string })?.message || String(err);
-    const text = (typeof raw === "string" ? raw : JSON.stringify(raw ?? "")).toLowerCase();
-    if (text.includes("missing auth") || msg.toLowerCase().includes("missing auth")) {
-      return { message: msg, hint: "Sessão sem JWT. Saia e entre novamente como admin." };
+  // ── Reidratar localStorage ──────────────────────────────────────
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as LocalSnapshot;
+      if (parsed?.result) {
+        setResult(parsed.result);
+        setSnapshotTs(parsed.ts);
+        if (parsed.params) {
+          setTableSource(parsed.params.table_source);
+          setBatchSize(parsed.params.batch_size);
+          setDryRun(parsed.params.dry_run);
+        }
+      }
+    } catch {
+      /* ignore */
     }
-    if (text.includes("admin only") || text.includes("403")) {
-      return { message: msg, hint: "Sua conta não tem role 'admin' em user_roles." };
-    }
-    if (msg.includes("Failed to fetch") || msg.toLowerCase().includes("network")) {
-      return { message: msg, hint: "Falha de rede ao chamar a edge function." };
-    }
-    return { message: msg, hint: "Erro inesperado — confira o payload bruto abaixo." };
-  };
+  }, []);
 
-  async function runDryRun() {
-    if (!ready) return;
-    if (dryRun !== true && !confirm("dry_run está DESLIGADO. Vai ESCREVER no banco. Confirmar?")) {
+  // ── Buscar última run + histórico + queue ───────────────────────
+  const fetchPersisted = useCallback(async () => {
+    setLoadingPersisted(true);
+    try {
+      const [{ data: runs }, { data: queueAll }, { data: queuePending }] = await Promise.all([
+        supabase
+          .from("question_classification_runs")
+          .select("*")
+          .order("started_at", { ascending: false })
+          .limit(10),
+        supabase.from("question_classification_queue").select("status"),
+        supabase
+          .from("question_classification_queue")
+          .select("*")
+          .eq("status", "pending")
+          .order("confidence_score", { ascending: true, nullsFirst: false })
+          .limit(10),
+      ]);
+
+      const runsTyped = (runs ?? []) as PersistedRun[];
+      setHistory(runsTyped);
+      setLastRun(runsTyped[0] ?? null);
+
+      const stats = { pending: 0, approved: 0, rejected: 0 };
+      (queueAll ?? []).forEach((r: { status: string }) => {
+        if (r.status === "pending") stats.pending++;
+        else if (r.status === "approved") stats.approved++;
+        else if (r.status === "rejected") stats.rejected++;
+      });
+      setQueueStats(stats);
+      setQueueItems((queuePending ?? []) as QueueRow[]);
+    } catch (e) {
+      console.error("fetchPersisted error", e);
+    } finally {
+      setLoadingPersisted(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchPersisted();
+  }, [fetchPersisted]);
+
+  // ── Execução ────────────────────────────────────────────────────
+  const execute = useCallback(
+    async (params: { table_source: TableSource; batch_size: number; dry_run: boolean }) => {
+      if (!ready) return;
+      if (!params.dry_run && !confirm("dry_run está DESLIGADO. Vai ESCREVER no banco. Confirmar?")) return;
+
+      setRunning(true);
+      setErrorPayload(null);
+      try {
+        const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
+          body: {
+            table_source: params.table_source,
+            batch_size: Math.max(10, Math.min(500, params.batch_size)),
+            dry_run: params.dry_run,
+          },
+        });
+        if (error) {
+          setErrorPayload({ message: error.message, raw: data ?? error });
+          toast.error("Edge function retornou erro");
+          return;
+        }
+        const r = data as RunResult;
+        setResult(r);
+        const ts = new Date().toISOString();
+        setSnapshotTs(ts);
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ result: r, params, ts } satisfies LocalSnapshot),
+          );
+        } catch {
+          /* ignore quota */
+        }
+        toast.success(params.dry_run ? "Dry-run concluído" : "Lote real concluído");
+        void fetchPersisted();
+      } catch (e) {
+        setErrorPayload({ message: (e as Error).message, raw: e });
+        toast.error("Falha ao invocar edge function");
+      } finally {
+        setRunning(false);
+      }
+    },
+    [ready, fetchPersisted],
+  );
+
+  const runWithCurrentParams = () =>
+    execute({ table_source: tableSource, batch_size: batchSize, dry_run: dryRun });
+
+  const reRunLastDryRun = () => {
+    if (!lastRun || !lastRun.dry_run) {
+      toast.error("Nenhum dry-run anterior encontrado");
       return;
     }
-    setRunning(true);
-    setErrorPayload(null);
-    setResult(null);
-    try {
-      const { data, error } = await supabase.functions.invoke("classify-question-hierarchy", {
-        body: {
-          table_source: tableSource,
-          batch_size: Math.max(10, Math.min(500, batchSize)),
-          dry_run: dryRun,
-        },
-      });
-      if (error) {
-        setErrorPayload({ message: error.message, raw: data ?? error });
-        toast.error("Edge function retornou erro");
-        return;
-      }
-      setResult(data as RunResult);
-      toast.success(dryRun ? "Dry-run concluído" : "Lote real concluído");
-    } catch (e) {
-      setErrorPayload({ message: (e as Error).message, raw: e });
-      toast.error("Falha ao invocar edge function");
-    } finally {
-      setRunning(false);
-    }
-  }
+    setTableSource(lastRun.table_source as TableSource);
+    setBatchSize(lastRun.batch_size);
+    setDryRun(true);
+    void execute({
+      table_source: lastRun.table_source as TableSource,
+      batch_size: lastRun.batch_size,
+      dry_run: true,
+    });
+  };
+
+  const errorKind = errorPayload ? classifyError(errorPayload.message, errorPayload.raw) : null;
+
+  // ── Aviso de divergência local vs banco ─────────────────────────
+  const divergence = useMemo(() => {
+    if (!result || !lastRun) return false;
+    if (!result.run_id) return false;
+    return result.run_id !== lastRun.id;
+  }, [result, lastRun]);
 
   return (
     <div className="container max-w-5xl py-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Executor autenticado do classificador</h1>
-        <p className="text-muted-foreground text-sm">
-          Dispara <code className="text-xs">classify-question-hierarchy</code> com o JWT da sua sessão atual.
-          Use para validar o dry-run antes de autorizar qualquer lote real.
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Executor autenticado do classificador</h1>
+          <p className="text-muted-foreground text-sm">
+            Dispara <code className="text-xs">classify-question-hierarchy</code> com o JWT da sua sessão. Auditoria
+            automática + persistência + retry seguro.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={fetchPersisted} disabled={loadingPersisted}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loadingPersisted ? "animate-spin" : ""}`} />
+          Atualizar status
+        </Button>
       </div>
 
       {/* Diagnóstico de autenticação */}
@@ -207,20 +392,24 @@ export default function ClassificationRunner() {
             <span className="text-muted-foreground">Logado:</span>
             <span>{user ? "✅ sim" : "❌ não"}</span>
             <span className="text-muted-foreground">user.id:</span>
-            <span className="font-mono text-xs">{user?.id ?? "—"}</span>
+            <span className="font-mono text-xs break-all">{user?.id ?? "—"}</span>
             <span className="text-muted-foreground">email:</span>
             <span>{user?.email ?? "—"}</span>
+            <span className="text-muted-foreground">sessão (JWT):</span>
+            <span>{session?.access_token ? "✅ presente" : "❌ ausente"}</span>
             <span className="text-muted-foreground">roles:</span>
-            <span>
-              {rolesLoading
-                ? "carregando…"
-                : roles.length
-                  ? roles.map((r) => (
-                      <Badge key={r} variant="secondary" className="mr-1">
-                        {r}
-                      </Badge>
-                    ))
-                  : "nenhuma"}
+            <span className="flex flex-wrap gap-1">
+              {rolesLoading ? (
+                "carregando…"
+              ) : roles.length ? (
+                roles.map((r) => (
+                  <Badge key={r} variant="secondary">
+                    {r}
+                  </Badge>
+                ))
+              ) : (
+                "nenhuma"
+              )}
             </span>
             <span className="text-muted-foreground">isAdmin:</span>
             <span>{isAdmin ? "✅ true" : "❌ false"}</span>
@@ -230,12 +419,119 @@ export default function ClassificationRunner() {
               <Badge className="bg-primary text-primary-foreground">✅ pronto para executar</Badge>
             ) : !user ? (
               <Badge variant="destructive">❌ sem login</Badge>
+            ) : !session ? (
+              <Badge variant="destructive">❌ sessão inválida</Badge>
             ) : !isAdmin ? (
               <Badge variant="destructive">❌ sem role admin</Badge>
-            ) : (
+            ) : rolesLoading ? (
               <Badge variant="outline">verificando…</Badge>
+            ) : (
+              <Badge variant="destructive">❌ erro ao carregar roles</Badge>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Última run persistida */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Última run persistida (banco)
+          </CardTitle>
+          <CardDescription>Fonte oficial: question_classification_runs.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingPersisted ? (
+            <Skeleton className="h-24 w-full" />
+          ) : !lastRun ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Nenhuma run encontrada</AlertTitle>
+              <AlertDescription>Execute um dry-run abaixo para gerar a primeira entrada.</AlertDescription>
+            </Alert>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">id</div>
+                  <div className="font-mono text-xs break-all">{lastRun.id.slice(0, 8)}…</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">tabela</div>
+                  <div>{lastRun.table_source}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">lote</div>
+                  <div>{lastRun.batch_size}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">dry_run</div>
+                  <div>
+                    {lastRun.dry_run ? (
+                      <Badge variant="secondary">true</Badge>
+                    ) : (
+                      <Badge variant="destructive">false</Badge>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">status</div>
+                  <div>{lastRun.status}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">started_at</div>
+                  <div className="text-xs">{new Date(lastRun.started_at).toLocaleString()}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">finished_at</div>
+                  <div className="text-xs">
+                    {lastRun.finished_at ? new Date(lastRun.finished_at).toLocaleString() : "—"}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">processadas</div>
+                  <div>{lastRun.total_processed ?? 0}</div>
+                </div>
+              </div>
+              <Separator />
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                <div>
+                  <div className="text-xs text-muted-foreground">aplicadas</div>
+                  <div>{lastRun.total_applied ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">para revisão</div>
+                  <div>{lastRun.total_queued_review ?? 0}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-muted-foreground">skipped</div>
+                  <div>{lastRun.total_skipped ?? 0}</div>
+                </div>
+              </div>
+              {lastRun.method_breakdown && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">method_breakdown</Label>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {Object.entries(lastRun.method_breakdown).map(([k, v]) => (
+                      <Badge key={k} variant="outline">
+                        {k}: {String(v)}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2 flex-wrap">
+                <Button size="sm" variant="outline" onClick={reRunLastDryRun} disabled={!ready || running || !lastRun.dry_run}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Reexecutar último dry-run
+                </Button>
+                {divergence && (
+                  <Badge variant="secondary">⚠️ Resultado local difere da última run persistida</Badge>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -291,18 +587,26 @@ export default function ClassificationRunner() {
             </Alert>
           )}
 
-          <Button onClick={runDryRun} disabled={!ready || running} size="lg">
-            {running ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
-              </>
-            ) : (
-              <>
-                <Play className="h-4 w-4 mr-2" />
-                {dryRun ? "Executar dry-run" : "Executar lote real"}
-              </>
+          <div className="flex gap-2 flex-wrap">
+            <Button onClick={runWithCurrentParams} disabled={!ready || running} size="lg">
+              {running ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Executando…
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  {dryRun ? "Executar dry-run" : "Executar lote real"}
+                </>
+              )}
+            </Button>
+            {errorPayload && (
+              <Button variant="outline" size="lg" onClick={runWithCurrentParams} disabled={!ready || running}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Tentar novamente
+              </Button>
             )}
-          </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -318,12 +622,21 @@ export default function ClassificationRunner() {
           <CardContent className="space-y-3">
             <Alert variant="destructive">
               <AlertTitle>{errorPayload.message}</AlertTitle>
-              <AlertDescription>{friendlyError(errorPayload.message, errorPayload.raw).hint}</AlertDescription>
+              <AlertDescription>
+                <div className="mb-1">
+                  <Badge variant="outline" className="mr-2">
+                    tipo: {errorKind}
+                  </Badge>
+                </div>
+                {errorKind ? errorHint(errorKind) : ""}
+              </AlertDescription>
             </Alert>
             <div>
               <Label className="text-xs text-muted-foreground">Payload bruto</Label>
               <pre className="mt-1 text-xs bg-muted p-3 rounded overflow-auto max-h-72">
-                {JSON.stringify(errorPayload.raw, null, 2)}
+                {typeof errorPayload.raw === "string"
+                  ? errorPayload.raw
+                  : JSON.stringify(errorPayload.raw, null, 2)}
               </pre>
             </div>
           </CardContent>
@@ -335,21 +648,21 @@ export default function ClassificationRunner() {
         <>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Resumo</span>
+              <CardTitle className="flex items-center justify-between flex-wrap gap-2">
+                <span>Resumo da execução {snapshotTs && (
+                  <span className="text-xs text-muted-foreground font-normal ml-2">
+                    ({new Date(snapshotTs).toLocaleString()})
+                  </span>
+                )}</span>
                 {evaluation.verdict === "healthy" && (
                   <Badge className="bg-primary text-primary-foreground">
                     <CheckCircle2 className="h-3 w-3 mr-1" /> Dry-run saudável
                   </Badge>
                 )}
                 {evaluation.verdict === "borderline" && (
-                  <Badge variant="secondary">
-                    Aprovado com cautela
-                  </Badge>
+                  <Badge variant="secondary">⚠️ Aprovado com cautela</Badge>
                 )}
-                {evaluation.verdict === "rejected" && (
-                  <Badge variant="destructive">Não aprovado</Badge>
-                )}
+                {evaluation.verdict === "rejected" && <Badge variant="destructive">❌ Não aprovado</Badge>}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -372,10 +685,14 @@ export default function ClassificationRunner() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3 text-center text-sm">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center text-sm">
                 <div>
                   <div className="font-semibold">{evaluation.metrics.exactPct}%</div>
                   <div className="text-xs text-muted-foreground">exact_text</div>
+                </div>
+                <div>
+                  <div className="font-semibold">{evaluation.metrics.heuristicPct}%</div>
+                  <div className="text-xs text-muted-foreground">heuristic</div>
                 </div>
                 <div>
                   <div className="font-semibold">{evaluation.metrics.queuePct}%</div>
@@ -390,13 +707,15 @@ export default function ClassificationRunner() {
               <div>
                 <Label className="text-xs text-muted-foreground">method_breakdown</Label>
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {result.method_breakdown
-                    ? Object.entries(result.method_breakdown).map(([k, v]) => (
-                        <Badge key={k} variant="outline">
-                          {k}: {v}
-                        </Badge>
-                      ))
-                    : <span className="text-xs text-muted-foreground">—</span>}
+                  {result.method_breakdown ? (
+                    Object.entries(result.method_breakdown).map(([k, v]) => (
+                      <Badge key={k} variant="outline">
+                        {k}: {v}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
                 </div>
               </div>
 
@@ -415,10 +734,16 @@ export default function ClassificationRunner() {
           {Array.isArray(result.sample_ambiguous) && result.sample_ambiguous.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle>Amostras ambíguas ({result.sample_ambiguous.length})</CardTitle>
-                <CardDescription>
-                  Itens que cairiam na fila de revisão manual.
-                </CardDescription>
+                <CardTitle className="flex items-center gap-2">
+                  Amostras ambíguas
+                  <Badge variant="secondary">{result.sample_ambiguous.length}</Badge>
+                  {snapshotTs && (
+                    <Badge variant="outline" className="text-xs">
+                      {new Date(snapshotTs).toLocaleTimeString()}
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>Itens que cairiam na fila de revisão manual.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -459,7 +784,7 @@ export default function ClassificationRunner() {
           <Card>
             <CardHeader>
               <CardTitle>JSON bruto</CardTitle>
-              <CardDescription>Retorno completo da edge function.</CardDescription>
+              <CardDescription>Retorno completo da edge function (persistido localmente).</CardDescription>
             </CardHeader>
             <CardContent>
               <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-[480px]">
@@ -469,6 +794,126 @@ export default function ClassificationRunner() {
           </Card>
         </>
       )}
+
+      {/* Queue resumida */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Database className="h-5 w-5" />
+            Fila de revisão (question_classification_queue)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loadingPersisted ? (
+            <Skeleton className="h-16 w-full" />
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="p-3 rounded border">
+                  <div className="text-2xl font-bold">{queueStats?.pending ?? 0}</div>
+                  <div className="text-xs text-muted-foreground">pendentes</div>
+                </div>
+                <div className="p-3 rounded border">
+                  <div className="text-2xl font-bold">{queueStats?.approved ?? 0}</div>
+                  <div className="text-xs text-muted-foreground">aprovadas</div>
+                </div>
+                <div className="p-3 rounded border">
+                  <div className="text-2xl font-bold">{queueStats?.rejected ?? 0}</div>
+                  <div className="text-xs text-muted-foreground">rejeitadas</div>
+                </div>
+              </div>
+              {queueItems.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>question_id</TableHead>
+                        <TableHead>topic</TableHead>
+                        <TableHead>subtopic</TableHead>
+                        <TableHead>method</TableHead>
+                        <TableHead>conf.</TableHead>
+                        <TableHead>reason</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {queueItems.map((q) => (
+                        <TableRow key={q.id}>
+                          <TableCell className="font-mono text-xs">{q.question_id.slice(0, 8)}…</TableCell>
+                          <TableCell className="text-xs">{q.original_topic ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{q.original_subtopic ?? "—"}</TableCell>
+                          <TableCell className="text-xs">{q.classification_method ?? "—"}</TableCell>
+                          <TableCell className="text-xs">
+                            {typeof q.confidence_score === "number" ? q.confidence_score.toFixed(2) : "—"}
+                          </TableCell>
+                          <TableCell className="text-xs">{q.reason ?? "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhum item pendente na fila.</p>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Histórico */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Histórico recente (10 últimas runs)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingPersisted ? (
+            <Skeleton className="h-32 w-full" />
+          ) : history.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nenhuma run registrada.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>quando</TableHead>
+                    <TableHead>tabela</TableHead>
+                    <TableHead>lote</TableHead>
+                    <TableHead>dry</TableHead>
+                    <TableHead>status</TableHead>
+                    <TableHead className="text-right">proc.</TableHead>
+                    <TableHead className="text-right">apl.</TableHead>
+                    <TableHead className="text-right">fila</TableHead>
+                    <TableHead className="text-right">skip</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {history.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="text-xs">{new Date(r.started_at).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs">{r.table_source}</TableCell>
+                      <TableCell className="text-xs">{r.batch_size}</TableCell>
+                      <TableCell className="text-xs">
+                        {r.dry_run ? (
+                          <Badge variant="secondary" className="text-xs">true</Badge>
+                        ) : (
+                          <Badge variant="destructive" className="text-xs">false</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">{r.status}</TableCell>
+                      <TableCell className="text-right text-xs">{r.total_processed ?? 0}</TableCell>
+                      <TableCell className="text-right text-xs">{r.total_applied ?? 0}</TableCell>
+                      <TableCell className="text-right text-xs">{r.total_queued_review ?? 0}</TableCell>
+                      <TableCell className="text-right text-xs">{r.total_skipped ?? 0}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
