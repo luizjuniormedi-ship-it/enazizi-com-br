@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Brain, ClipboardList, User, CalendarDays, Sparkles } from "lucide-react";
+import { Home, GraduationCap, Clapperboard, Bot, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -62,12 +62,13 @@ const BottomTabBar = () => {
     },
   });
 
+  // Bottom nav minimalista: 5 áreas — Home / Estudar / ENAFLIX / IA / Perfil.
+  // Estudar é o ponto de entrada operacional (revisões pendentes badgadas aqui).
   const tabs = [
-    { to: "/dashboard", icon: LayoutDashboard, label: "Missão", badge: 0 },
-    { to: "/dashboard/chatgpt", icon: Brain, label: "Tutor", badge: 0 },
-    { to: "/dashboard/mnemonic-studio-v2", icon: Sparkles, label: "Mnemônico", badge: 0 },
-    { to: "/dashboard/gerador-questoes", icon: ClipboardList, label: "Questões", badge: 0 },
-    { to: "/dashboard/simulados", icon: CalendarDays, label: "Simulados", badge: pendingCount || 0 },
+    { to: "/dashboard", icon: Home, label: "Home", badge: 0 },
+    { to: "/dashboard/sessao-estudo", icon: GraduationCap, label: "Estudar", badge: pendingCount || 0 },
+    { to: "/enaflix", icon: Clapperboard, label: "ENAFLIX", badge: 0 },
+    { to: "/dashboard/chatgpt", icon: Bot, label: "IA", badge: 0 },
     { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: unreadMessages || 0 },
   ];
 
@@ -75,7 +76,10 @@ const BottomTabBar = () => {
     <nav className={cn("landscape-tablet:hidden lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom transition-transform duration-300", hidden && "translate-y-full")}>
       <div className="flex items-center justify-around h-16">
         {tabs.map((tab) => {
-          const active = location.pathname === tab.to;
+          const active =
+            tab.to === "/enaflix"
+              ? location.pathname.startsWith("/enaflix")
+              : location.pathname === tab.to;
           return (
             <Link
               key={tab.to}
