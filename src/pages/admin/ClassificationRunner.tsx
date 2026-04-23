@@ -1723,6 +1723,8 @@ export default function ClassificationRunner() {
           )}
         </CardContent>
       </Card>
+
+      </TooltipProvider>
     </div>
   );
 }
