@@ -195,7 +195,7 @@ export default function ClassificationRunner() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             {ready ? (
-              <ShieldCheck className="h-5 w-5 text-green-600" />
+              <ShieldCheck className="h-5 w-5 text-primary" />
             ) : (
               <ShieldAlert className="h-5 w-5 text-destructive" />
             )}
@@ -338,12 +338,12 @@ export default function ClassificationRunner() {
               <CardTitle className="flex items-center justify-between">
                 <span>Resumo</span>
                 {evaluation.verdict === "healthy" && (
-                  <Badge className="bg-green-600 hover:bg-green-700">
+                  <Badge className="bg-primary text-primary-foreground">
                     <CheckCircle2 className="h-3 w-3 mr-1" /> Dry-run saudável
                   </Badge>
                 )}
                 {evaluation.verdict === "borderline" && (
-                  <Badge className="bg-yellow-500 hover:bg-yellow-600 text-black">
+                  <Badge variant="secondary">
                     Aprovado com cautela
                   </Badge>
                 )}
