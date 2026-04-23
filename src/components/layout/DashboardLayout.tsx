@@ -407,7 +407,8 @@ const DashboardLayout = () => {
         {!isMissionLocked && <ProficiencyGate />}
         {!isMissionLocked && <ActiveVideoRoomPopup />}
         <div key={location.pathname} className={cn(
-          "animate-fade-in relative z-10 w-full max-w-full flex-1 min-w-0 min-h-0 flex flex-col",
+          "relative z-10 w-full max-w-full flex-1 min-w-0 min-h-0 flex flex-col",
+          "animate-fade-in [animation-duration:600ms] [animation-timing-function:cubic-bezier(0.22,1,0.36,1)]",
           isMissionLocked ? "" : "pb-16 lg:pb-0"
         )}>
           <Outlet />
