@@ -9,6 +9,7 @@ import { useTutorHistory } from "./hooks/useTutorHistory";
 import { useTutorContext } from "./hooks/useTutorContext";
 import { useTutorStream } from "./hooks/useTutorStream";
 import { useTutorAdaptiveContext } from "./hooks/useTutorAdaptiveContext";
+import { useTutorMemoryBridge } from "./hooks/useTutorMemoryBridge";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
 
 interface UseAgentChatOptions {
@@ -21,6 +22,10 @@ interface UseAgentChatOptions {
   previousContentLoader?: () => Promise<string>;
   initialPrompt?: string;
   onSendRef?: React.MutableRefObject<((prompt: string) => void) | null>;
+  /** Optional context propagated from TutorDrawer for memory scoping. */
+  topic?: string | null;
+  subtopic?: string | null;
+  specialty?: string | null;
 }
 
 /**
