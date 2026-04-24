@@ -473,6 +473,9 @@ export default function TutorMemoryAdmin() {
         </Card>
       </div>
 
+      {/* Teste semântico automatizado */}
+      <SemanticTestRunner onCompleted={() => refetch()} />
+
       {/* Filtros */}
       <Card>
         <CardHeader className="pb-3">
