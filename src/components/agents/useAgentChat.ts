@@ -526,6 +526,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     handleDiscardSession,
     handleSaveMessage,
     copyToClipboard,
+    regenerateFromMemory,
 
     // Toast / user (used by upload handler)
     toast,
