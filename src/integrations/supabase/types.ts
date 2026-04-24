@@ -9653,6 +9653,9 @@ export type Database = {
           blocks: Json
           created_at: string
           difficulty_level: string | null
+          embedding_model: string | null
+          embedding_status: string
+          embedding_updated_at: string | null
           id: string
           intent: string | null
           last_used_at: string | null
@@ -9675,6 +9678,9 @@ export type Database = {
           blocks?: Json
           created_at?: string
           difficulty_level?: string | null
+          embedding_model?: string | null
+          embedding_status?: string
+          embedding_updated_at?: string | null
           id?: string
           intent?: string | null
           last_used_at?: string | null
@@ -9697,6 +9703,9 @@ export type Database = {
           blocks?: Json
           created_at?: string
           difficulty_level?: string | null
+          embedding_model?: string | null
+          embedding_status?: string
+          embedding_updated_at?: string | null
           id?: string
           intent?: string | null
           last_used_at?: string | null
