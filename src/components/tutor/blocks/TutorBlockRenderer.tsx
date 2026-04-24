@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { SummaryBlock } from "./SummaryBlock";
 import { DeepDiveBlock } from "./DeepDiveBlock";
 import { MiniQuizBlock } from "./MiniQuizBlock";
@@ -10,7 +10,9 @@ import {
   SemiologyInsightCard,
   TutorBlockTimeline,
 } from "@/components/tutor/cognitive";
+import { CognitiveEmpty } from "@/components/tutor/cognitive/_validation";
 import { useTutorAdaptiveSync } from "@/components/agents/hooks/useTutorAdaptiveSync";
+import { validateTutorBlocks } from "@/lib/tutor/blockValidation";
 import type { TutorAction, TutorBlock } from "@/types/tutor";
 
 interface Props {
@@ -24,11 +26,13 @@ interface Props {
 }
 
 /**
- * TutorBlockRenderer — Sprint 4 + Sprint 6
+ * TutorBlockRenderer — Sprint 4 + Sprint 6 + Fase 3 (Zod)
  *
- * Renderiza uma lista de TutorBlocks em sequência. Tipos não suportados
- * nesta sprint (comparison_table, clinical_flow, mnemonic_reinforce, reference)
- * fazem fallback silencioso.
+ * Renderiza uma lista de TutorBlocks em sequência, agora com validação Zod
+ * dos blocos cognitivos (clinical_flow, differential_diagnosis,
+ * pharmacology_compare, semiology_insight). Blocos parcialmente quebrados
+ * são sanitizados; blocos irrecuperáveis caem em CognitiveEmpty (sem
+ * derrubar o restante da resposta).
  *
  * Sprint 6: dispara writeback adaptativo via useTutorAdaptiveSync
  * (no-op se a flag `tutor_adaptive_writeback_enabled` estiver OFF).
@@ -43,11 +47,25 @@ export function TutorBlockRenderer({
 }: Props) {
   const sync = useTutorAdaptiveSync();
 
+  // ── Fase 3: validação Zod + sanitização ──────────────────────────────────
+  const { safeBlocks, rejected } = useMemo(() => {
+    const v = validateTutorBlocks(blocks ?? []);
+    return { safeBlocks: v.blocks, rejected: v.rejected };
+  }, [blocks]);
+
+  // Telemetria: log silencioso de blocos rejeitados (apenas dev/console).
+  useEffect(() => {
+    if (rejected.length > 0 && import.meta.env.DEV) {
+      // eslint-disable-next-line no-console
+      console.warn("[TutorBlockRenderer] blocos rejeitados:", rejected);
+    }
+  }, [rejected]);
+
   // block_rendered (1x por tipo, com dedupe interno do hook)
   useEffect(() => {
-    if (!blocks || blocks.length === 0 || !sync.writebackEnabled) return;
+    if (!safeBlocks || safeBlocks.length === 0 || !sync.writebackEnabled) return;
     const seen = new Set<string>();
-    blocks.forEach((b) => {
+    safeBlocks.forEach((b) => {
       if (seen.has(b.type)) return;
       seen.add(b.type);
       sync.logBlockRendered({
@@ -58,14 +76,26 @@ export function TutorBlockRenderer({
       });
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blocks, conversationId, topic, subtopic, sync.writebackEnabled]);
+  }, [safeBlocks, conversationId, topic, subtopic, sync.writebackEnabled]);
 
-  if (!blocks || blocks.length === 0) return null;
+  if (!safeBlocks || safeBlocks.length === 0) {
+    // Se TODOS os blocos foram rejeitados, mostra um único fallback
+    // discreto em vez de quebrar a resposta inteira.
+    if (rejected.length > 0) {
+      return (
+        <CognitiveEmpty
+          title="Conteúdo cognitivo indisponível"
+          message="A IA enviou blocos com formato inválido. Tente reformular a pergunta."
+        />
+      );
+    }
+    return null;
+  }
 
   return (
     <div className="space-y-3">
-      <TutorBlockTimeline blockTypes={blocks.map((b) => b.type)} />
-      {blocks.map((block, i) => {
+      <TutorBlockTimeline blockTypes={safeBlocks.map((b) => b.type)} />
+      {safeBlocks.map((block, i) => {
         switch (block.type) {
           case "summary":
             return <SummaryBlock key={i} block={block} />;
