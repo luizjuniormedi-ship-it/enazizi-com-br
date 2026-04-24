@@ -45,7 +45,7 @@ function renderWithProviders(ui: React.ReactNode, route = "/dashboard") {
 describe("Navigation smoke — BottomTabBar (mobile)", () => {
   it("renderiza os 5 itens cardeais", () => {
     renderWithProviders(<BottomTabBar />);
-    for (const label of ["Visão Geral", "Estudar", "ENAFLIX", "IA", "Perfil"]) {
+    for (const label of ["Hoje", "Continuar", "Simulados", "IA", "Perfil"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
@@ -53,9 +53,9 @@ describe("Navigation smoke — BottomTabBar (mobile)", () => {
   it("aponta cada item para a rota correta", () => {
     renderWithProviders(<BottomTabBar />);
     const expected: Record<string, string> = {
-      "Visão Geral": "/dashboard",
-      Estudar: "/dashboard/sessao-estudo",
-      ENAFLIX: "/enaflix",
+      Hoje: "/dashboard",
+      Continuar: "/dashboard/sessao-estudo",
+      Simulados: "/dashboard/simulados",
       IA: "/dashboard/chatgpt",
       Perfil: "/dashboard/perfil",
     };
@@ -74,10 +74,11 @@ describe("Navigation smoke — App routes (estática)", () => {
   const appSrc = readFileSync(resolve(process.cwd(), "src/App.tsx"), "utf8");
 
   it.each([
-    ['path="/dashboard"', "Visão Geral (layout)"],
-    ['path="sessao-estudo"', "Estudar (rota filha do dashboard)"],
-    ['path="/enaflix"', "ENAFLIX"],
+    ['path="/dashboard"', "Hoje (layout)"],
+    ['path="sessao-estudo"', "Continuar (rota filha do dashboard)"],
+    ['path="/dashboard/simulados"', "Simulados"],
   ])("rota %s (%s) está registrada em App.tsx", (needle) => {
     expect(appSrc).toContain(needle);
   });
+});
 });
