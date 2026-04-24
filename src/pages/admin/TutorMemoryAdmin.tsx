@@ -219,6 +219,17 @@ export default function TutorMemoryAdmin() {
     ).length;
     const aboveStrong = rows.filter((r) => r.quality_score >= 80).length;
     const totalReuse = rows.reduce((acc, r) => acc + (r.reuse_count ?? 0), 0);
+    const embPending = rows.filter((r) => (r.embedding_status ?? "pending") === "pending").length;
+    const embReady = rows.filter((r) => r.embedding_status === "ready").length;
+    const embFailed = rows.filter((r) => r.embedding_status === "failed").length;
+    const embSkipped = rows.filter((r) => r.embedding_status === "skipped").length;
+    const modelMap = new Map<string, number>();
+    rows.forEach((r) => {
+      if (r.embedding_model) {
+        modelMap.set(r.embedding_model, (modelMap.get(r.embedding_model) ?? 0) + 1);
+      }
+    });
+    const topModel = [...modelMap.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
     return {
       total,
       totalGlobal,
@@ -227,6 +238,11 @@ export default function TutorMemoryAdmin() {
       belowThreshold,
       aboveStrong,
       totalReuse,
+      embPending,
+      embReady,
+      embFailed,
+      embSkipped,
+      topModel,
     };
   }, [rows]);
 
