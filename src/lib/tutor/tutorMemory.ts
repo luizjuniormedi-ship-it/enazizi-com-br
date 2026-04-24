@@ -114,7 +114,7 @@ export async function findReusableMemory(
       .from("tutor_knowledge_memory")
       .select("*")
       .eq("question_normalized", normalized)
-      .gte("quality_score", minQuality)
+      .gte("quality_score", effectiveMin)
       .order("quality_score", { ascending: false })
       .order("reuse_count", { ascending: false })
       .limit(5);
@@ -137,7 +137,7 @@ export async function findReusableMemory(
       .eq("scope", "global")
       .eq("topic", topic)
       .eq("subtopic", subtopic)
-      .gte("quality_score", minQuality)
+      .gte("quality_score", effectiveMin)
       .order("quality_score", { ascending: false })
       .order("reuse_count", { ascending: false })
       .limit(5);
@@ -155,7 +155,7 @@ export async function findReusableMemory(
       .select("*")
       .eq("scope", "global")
       .eq("topic", topic)
-      .gte("quality_score", minQuality)
+      .gte("quality_score", effectiveMin)
       .order("quality_score", { ascending: false })
       .order("reuse_count", { ascending: false })
       .limit(5);
