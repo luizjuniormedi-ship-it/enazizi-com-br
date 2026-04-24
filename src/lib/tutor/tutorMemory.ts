@@ -97,6 +97,10 @@ export async function findReusableMemory(
   const normalized = normalizeTutorQuestion(question);
   if (!normalized) return null;
 
+  // Garante que memórias degradadas (quality_score < 50) NUNCA sejam reutilizadas,
+  // mesmo se o caller passar um minQuality menor.
+  const effectiveMin = Math.max(minQuality, MEMORY_DEGRADED_THRESHOLD);
+
   // Helper: filtra por tipos de bloco requeridos
   const matchesBlockTypes = (row: TutorMemoryRow) => {
     if (!requiredBlockTypes || requiredBlockTypes.length === 0) return true;
