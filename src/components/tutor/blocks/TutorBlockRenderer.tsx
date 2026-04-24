@@ -72,21 +72,31 @@ export function TutorBlockRenderer({
 
   if (!blocks || blocks.length === 0) return null;
 
+  const blockList = blocks as AnyTutorBlock[];
+
   return (
     <div className="space-y-3">
-      {blocks.map((block, i) => {
+      <TutorBlockTimeline blockTypes={blockList.map((b) => b.type)} />
+      {blockList.map((block, i) => {
         switch (block.type) {
           case "summary":
             return <SummaryBlock key={i} block={block} />;
           case "deep_dive":
             return <DeepDiveBlock key={i} block={block} />;
+          case "clinical_flow":
+            return <ClinicalFlowRenderer key={i} block={block} />;
+          case "differential_diagnosis":
+            return <DifferentialDiagnosisBoard key={i} block={block as DifferentialDiagnosisBlock} />;
+          case "pharmacology_compare":
+            return <PharmacologyCompareCard key={i} block={block as PharmacologyCompareBlock} />;
+          case "semiology_insight":
+            return <SemiologyInsightCard key={i} block={block as SemiologyInsightBlock} />;
           case "mini_quiz":
             return (
               <MiniQuizBlock
                 key={i}
                 block={block}
                 onAnswered={(p) => {
-                  // Writeback adaptativo (silencioso se flag OFF)
                   sync.logQuizAnswered({
                     correct: p.correct,
                     selectedIndex: p.selectedIndex,
