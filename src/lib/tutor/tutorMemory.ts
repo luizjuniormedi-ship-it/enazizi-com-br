@@ -210,7 +210,7 @@ export async function saveTutorMemory(
     intent: intent ?? null,
     difficulty_level: difficultyLevel ?? null,
     answer_summary: answerSummary ?? null,
-    blocks: blocks as unknown as Record<string, unknown>[],
+    blocks: blocks as never,
     block_types: blockTypes,
     quality_score: Math.max(0, Math.min(100, qualityScore)),
     source: "tutor_ai",
