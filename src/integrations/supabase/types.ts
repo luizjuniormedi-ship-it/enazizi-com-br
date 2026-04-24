@@ -9653,6 +9653,7 @@ export type Database = {
           blocks: Json
           created_at: string
           difficulty_level: string | null
+          embedding: string | null
           embedding_model: string | null
           embedding_status: string
           embedding_updated_at: string | null
@@ -9678,6 +9679,7 @@ export type Database = {
           blocks?: Json
           created_at?: string
           difficulty_level?: string | null
+          embedding?: string | null
           embedding_model?: string | null
           embedding_status?: string
           embedding_updated_at?: string | null
@@ -9703,6 +9705,7 @@ export type Database = {
           blocks?: Json
           created_at?: string
           difficulty_level?: string | null
+          embedding?: string | null
           embedding_model?: string | null
           embedding_status?: string
           embedding_updated_at?: string | null
@@ -11137,6 +11140,37 @@ export type Database = {
           email: string
           faculdade: string
           periodo: number
+          user_id: string
+        }[]
+      }
+      match_tutor_memory: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+          user_id_filter?: string
+        }
+        Returns: {
+          answer_summary: string
+          block_types: string[]
+          blocks: Json
+          created_at: string
+          difficulty_level: string
+          id: string
+          intent: string
+          last_used_at: string
+          model_used: string
+          quality_score: number
+          question_normalized: string
+          question_original: string
+          reuse_count: number
+          scope: string
+          similarity: number
+          source: string
+          specialty: string
+          subtopic: string
+          topic: string
+          updated_at: string
           user_id: string
         }[]
       }
