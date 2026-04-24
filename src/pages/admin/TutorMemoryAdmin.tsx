@@ -126,6 +126,19 @@ const ScopeBadge = ({ scope }: { scope: "global" | "user" }) => {
   );
 };
 
+const EmbeddingBadge = ({ status }: { status?: string | null }) => {
+  const s = status ?? "pending";
+  let tone: "default" | "secondary" | "destructive" | "outline" = "outline";
+  if (s === "ready") tone = "default";
+  else if (s === "failed") tone = "destructive";
+  else if (s === "skipped") tone = "secondary";
+  return (
+    <Badge variant={tone} className="font-mono text-[10px]">
+      {s}
+    </Badge>
+  );
+};
+
 export default function TutorMemoryAdmin() {
   const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "user">(
     "all",
@@ -413,6 +426,52 @@ export default function TutorMemoryAdmin() {
         />
       </div>
 
+      {/* Cards de embedding */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <SummaryCard
+          icon={<Loader2 className="h-4 w-4 text-muted-foreground" />}
+          label="Embeddings pending"
+          value={summary.embPending}
+          loading={isLoading}
+        />
+        <SummaryCard
+          icon={<Sparkles className="h-4 w-4 text-success" />}
+          label="Embeddings ready"
+          value={summary.embReady}
+          loading={isLoading}
+        />
+        <SummaryCard
+          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+          label="Embeddings failed"
+          value={summary.embFailed}
+          loading={isLoading}
+        />
+        <SummaryCard
+          icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+          label="Embeddings skipped"
+          value={summary.embSkipped}
+          loading={isLoading}
+        />
+        <Card>
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Zap className="h-4 w-4" />
+              <span>Modelo mais usado</span>
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-7 w-24 mt-1" />
+            ) : (
+              <p
+                className="text-sm md:text-base font-semibold mt-1 truncate font-mono"
+                title={summary.topModel}
+              >
+                {summary.topModel || "—"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filtros */}
       <Card>
         <CardHeader className="pb-3">
@@ -422,7 +481,7 @@ export default function TutorMemoryAdmin() {
             usam a base completa.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Escopo</label>
             <Select
@@ -452,6 +511,26 @@ export default function TutorMemoryAdmin() {
                     {t}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Embedding</label>
+            <Select
+              value={embeddingFilter}
+              onValueChange={(v) =>
+                setEmbeddingFilter(v as typeof embeddingFilter)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="ready">Ready</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="skipped">Skipped</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -658,6 +737,7 @@ function MemoryTable({
               <TableHead>Escopo</TableHead>
               <TableHead className="text-right">Quality</TableHead>
               <TableHead className="text-right">Reuso</TableHead>
+              <TableHead>Embedding</TableHead>
               <TableHead>Tipos</TableHead>
               <TableHead>Atualizada</TableHead>
               {actionsCol && <TableHead>Ações</TableHead>}
@@ -666,14 +746,14 @@ function MemoryTable({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={actionsCol ? 9 : 8}>
+                <TableCell colSpan={actionsCol ? 10 : 9}>
                   <Skeleton className="h-4 w-full" />
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={actionsCol ? 9 : 8}
+                  colSpan={actionsCol ? 10 : 9}
                   className="text-center text-sm text-muted-foreground py-6"
                 >
                   {emptyLabel}
@@ -697,6 +777,9 @@ function MemoryTable({
                     <QualityBadge score={r.quality_score} />
                   </TableCell>
                   <TableCell className="text-right">{r.reuse_count}</TableCell>
+                  <TableCell>
+                    <EmbeddingBadge status={r.embedding_status} />
+                  </TableCell>
                   <TableCell className="text-xs">
                     {(r.block_types ?? []).slice(0, 3).map((t) => (
                       <Badge
