@@ -161,6 +161,7 @@ const AgentMessageItem = memo(
     prev.msg.role === next.msg.role &&
     prev.msg.content === next.msg.content &&
     prev.msg.memoryId === next.msg.memoryId &&
+    prev.msg.memoryBlocks === next.msg.memoryBlocks &&
     prev.index === next.index &&
     prev.isLoading === next.isLoading &&
     prev.speakingMsgIdx === next.speakingMsgIdx &&
