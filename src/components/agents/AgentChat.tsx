@@ -31,17 +31,23 @@ interface AgentChatProps {
   previousContentLoader?: () => Promise<string>;
   initialPrompt?: string;
   onSendRef?: React.MutableRefObject<((prompt: string) => void) | null>;
+  /** Optional context for tutor pedagogical memory scoping. */
+  topic?: string | null;
+  subtopic?: string | null;
+  specialty?: string | null;
 }
 
 const AgentChat = ({
   title, subtitle, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName,
   onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload,
   linkToAgent, previousContentLoader, initialPrompt, onSendRef,
+  topic, subtopic, specialty,
 }: AgentChatProps) => {
   const navigate = useNavigate();
   const chat = useAgentChat({
     functionName, welcomeMessage, welcomeMessageWithUploads, autoPromptAfterUpload,
     quickActions, onSaveMessage, previousContentLoader, initialPrompt, onSendRef,
+    topic, subtopic, specialty,
   });
 
   // Upload handler — kept here because it touches many setters
