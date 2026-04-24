@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       query_embedding: vec as unknown as string,
       match_threshold: Math.max(0.5, Math.min(0.99, threshold)),
       match_count: matchCount,
-      user_id_filter: claims.claims.sub,
+      user_id_filter: userId,
     });
 
     if (error) {
