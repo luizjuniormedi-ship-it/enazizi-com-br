@@ -413,6 +413,52 @@ export default function TutorMemoryAdmin() {
         />
       </div>
 
+      {/* Cards de embedding */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <SummaryCard
+          icon={<Loader2 className="h-4 w-4 text-muted-foreground" />}
+          label="Embeddings pending"
+          value={summary.embPending}
+          loading={isLoading}
+        />
+        <SummaryCard
+          icon={<Sparkles className="h-4 w-4 text-success" />}
+          label="Embeddings ready"
+          value={summary.embReady}
+          loading={isLoading}
+        />
+        <SummaryCard
+          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+          label="Embeddings failed"
+          value={summary.embFailed}
+          loading={isLoading}
+        />
+        <SummaryCard
+          icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+          label="Embeddings skipped"
+          value={summary.embSkipped}
+          loading={isLoading}
+        />
+        <Card>
+          <CardContent className="p-3 md:p-4">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Zap className="h-4 w-4" />
+              <span>Modelo mais usado</span>
+            </div>
+            {isLoading ? (
+              <Skeleton className="h-7 w-24 mt-1" />
+            ) : (
+              <p
+                className="text-sm md:text-base font-semibold mt-1 truncate font-mono"
+                title={summary.topModel}
+              >
+                {summary.topModel || "—"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Filtros */}
       <Card>
         <CardHeader className="pb-3">
@@ -422,7 +468,7 @@ export default function TutorMemoryAdmin() {
             usam a base completa.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-3">
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">Escopo</label>
             <Select
@@ -452,6 +498,26 @@ export default function TutorMemoryAdmin() {
                     {t}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Embedding</label>
+            <Select
+              value={embeddingFilter}
+              onValueChange={(v) =>
+                setEmbeddingFilter(v as typeof embeddingFilter)
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="ready">Ready</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+                <SelectItem value="skipped">Skipped</SelectItem>
               </SelectContent>
             </Select>
           </div>
