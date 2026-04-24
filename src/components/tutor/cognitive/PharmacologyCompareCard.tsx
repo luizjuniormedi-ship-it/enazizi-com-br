@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Pill, Sparkles, ChevronDown, AlertTriangle, Ban, Activity, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -7,6 +7,7 @@ import type {
   PharmacologyCompareBlock,
   DrugComparisonItem,
 } from "@/types/tutor";
+import { CognitiveEmpty, dedupeBy, safeArray } from "./_validation";
 
 export type { PharmacologyCompareBlock, DrugComparisonItem };
 
@@ -19,10 +20,22 @@ interface Props {
  * Painel premium de comparação entre fármacos. Glass cards com expansão.
  */
 export function PharmacologyCompareCard({ block }: Props) {
-  const { title, indication, drugs } = block.payload;
+  const title = block?.payload?.title;
+  const indication = block?.payload?.indication;
+  const rawDrugs = safeArray<DrugComparisonItem>(block?.payload?.drugs);
+
+  const drugs = useMemo(() => {
+    const valid = rawDrugs.filter((d) => d && typeof d.name === "string" && d.name.trim() !== "");
+    return dedupeBy(valid, (d) => d.name);
+  }, [rawDrugs]);
+
   const [open, setOpen] = useState<string | null>(
     drugs.find((d) => d.preferred)?.name ?? drugs[0]?.name ?? null,
   );
+
+  if (drugs.length === 0) {
+    return <CognitiveEmpty title="Comparação farmacológica" message="Sem fármacos para comparar." />;
+  }
 
   return (
     <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/70 to-primary/5 p-4 backdrop-blur-md">
