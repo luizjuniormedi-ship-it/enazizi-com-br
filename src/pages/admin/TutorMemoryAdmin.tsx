@@ -14,6 +14,7 @@
  * Mobile-friendly. Funciona com tabela vazia.
  */
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -57,6 +58,8 @@ import {
   AlertTriangle,
   Globe,
   User,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import { MEMORY_DEGRADED_THRESHOLD } from "@/lib/tutor/tutorMemory";
 
@@ -82,6 +85,7 @@ interface MemoryRow {
   updated_at: string;
   last_used_at: string | null;
   embedding_status?: string | null;
+  embedding_model?: string | null;
 }
 
 const truncate = (s: string | null | undefined, n = 80) => {
