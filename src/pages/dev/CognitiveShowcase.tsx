@@ -379,17 +379,21 @@ export default function CognitiveShowcase() {
     [active],
   );
 
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = "Tutor Cognitive UI — Showcase | ENAZIZI";
+    const meta = document.createElement("meta");
+    meta.name = "robots";
+    meta.content = "noindex,nofollow";
+    document.head.appendChild(meta);
+    return () => {
+      document.title = previousTitle;
+      meta.remove();
+    };
+  }, []);
+
   return (
     <>
-      <Helmet>
-        <title>Tutor Cognitive UI — Showcase | ENAZIZI</title>
-        <meta
-          name="description"
-          content="Preview interno dos blocos cognitivos do Tutor IA: clinical_flow, DDx, pharmacology, semiology e timeline."
-        />
-        <meta name="robots" content="noindex,nofollow" />
-      </Helmet>
-
       <div className="min-h-screen bg-background text-foreground">
         <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
