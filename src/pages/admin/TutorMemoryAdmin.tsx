@@ -62,6 +62,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { MEMORY_DEGRADED_THRESHOLD } from "@/lib/tutor/tutorMemory";
+import { SemanticTestRunner } from "./SemanticTestRunner";
 
 const PAGE_SIZE = 1000; // limite duro para auditoria.
 
@@ -471,6 +472,9 @@ export default function TutorMemoryAdmin() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Teste semântico automatizado */}
+      <SemanticTestRunner onCompleted={() => refetch()} />
 
       {/* Filtros */}
       <Card>
