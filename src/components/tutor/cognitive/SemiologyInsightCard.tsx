@@ -2,23 +2,12 @@ import { motion } from "framer-motion";
 import { Hand, Eye, Sparkles, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface SemiologyManeuver {
-  name: string;
-  technique?: string;
-  finding?: string;
-  interpretation?: string;
-  pathophysiology?: string;
-  region?: string;
-}
+import type {
+  SemiologyInsightBlock,
+  SemiologyManeuver,
+} from "@/types/tutor";
 
-export interface SemiologyInsightBlock {
-  type: "semiology_insight";
-  payload: {
-    title?: string;
-    region?: string;
-    maneuvers: SemiologyManeuver[];
-  };
-}
+export type { SemiologyInsightBlock, SemiologyManeuver };
 
 interface Props {
   block: SemiologyInsightBlock;

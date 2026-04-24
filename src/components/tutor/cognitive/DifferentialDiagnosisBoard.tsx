@@ -3,27 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertOctagon, Check, ChevronDown, Crosshair, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface DifferentialItem {
-  name: string;
-  /** 0..1 */
-  probability?: number;
-  /** baixa | moderada | alta | crítica */
-  severity?: "baixa" | "moderada" | "alta" | "critica";
-  urgency?: "ambulatorial" | "urgencia" | "emergencia";
-  pros?: string[];
-  cons?: string[];
-  /** Se true, exibe badge "Não perder" */
-  doNotMiss?: boolean;
-}
+import type {
+  DifferentialDiagnosisBlock,
+  DifferentialItem,
+} from "@/types/tutor";
 
-export interface DifferentialDiagnosisBlock {
-  type: "differential_diagnosis";
-  payload: {
-    title?: string;
-    chief_complaint?: string;
-    items: DifferentialItem[];
-  };
-}
+export type { DifferentialDiagnosisBlock, DifferentialItem };
 
 interface Props {
   block: DifferentialDiagnosisBlock;

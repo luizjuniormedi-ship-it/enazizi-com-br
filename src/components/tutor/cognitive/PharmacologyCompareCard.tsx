@@ -3,28 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Pill, Sparkles, ChevronDown, AlertTriangle, Ban, Activity, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface DrugComparisonItem {
-  name: string;
-  class?: string;
-  mechanism?: string;
-  adverse?: string[];
-  contraindications?: string[];
-  interactions?: string[];
-  potency?: string;
-  half_life?: string;
-  clinical_advantage?: string;
-  /** Marca como melhor escolha contextual */
-  preferred?: boolean;
-}
+import type {
+  PharmacologyCompareBlock,
+  DrugComparisonItem,
+} from "@/types/tutor";
 
-export interface PharmacologyCompareBlock {
-  type: "pharmacology_compare";
-  payload: {
-    title?: string;
-    indication?: string;
-    drugs: DrugComparisonItem[];
-  };
-}
+export type { PharmacologyCompareBlock, DrugComparisonItem };
 
 interface Props {
   block: PharmacologyCompareBlock;
