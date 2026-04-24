@@ -38,7 +38,7 @@ const AgentMessageItem = memo(
   ({
     msg, index, title, isLoading, hasSpeechSynthesis, speakingMsgIdx, savingMsgIdx,
     isSaved, hasOnSaveMessage, linkToAgent, selectedUploadIds, renderAssistantMessage,
-    onCopy, onSpeak, onSave, onLink,
+    onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
   }: AgentMessageItemProps) => {
     return (
       <div className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
