@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AlertTriangle, ArrowRight, Stethoscope, GitBranch, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ClinicalFlowBlock } from "@/types/tutor";
+import { CognitiveEmpty, dedupeBy, devWarn, safeArray } from "./_validation";
 
 interface Props {
   block: ClinicalFlowBlock;
@@ -16,15 +17,40 @@ interface Props {
  * Sem dependências externas de grafo — render simples e responsivo.
  */
 export function ClinicalFlowRenderer({ block }: Props) {
-  const { title, nodes, edges } = block.payload;
+  const title = block?.payload?.title;
+  const rawNodes = safeArray<ClinicalFlowBlock["payload"]["nodes"][number]>(block?.payload?.nodes);
+  const rawEdges = safeArray<ClinicalFlowBlock["payload"]["edges"][number]>(block?.payload?.edges);
+
+  // Sanitização: dedup ids, descarta edges órfãs
+  const nodes = useMemo(() => {
+    const valid = rawNodes.filter((n) => n && typeof n.id === "string" && typeof n.label === "string");
+    const deduped = dedupeBy(valid, (n) => n.id);
+    if (deduped.length !== rawNodes.length) {
+      devWarn("ClinicalFlowRenderer", "nodes inválidos/duplicados foram filtrados");
+    }
+    return deduped;
+  }, [rawNodes]);
+
+  const nodeIds = useMemo(() => new Set(nodes.map((n) => n.id)), [nodes]);
+  const edges = useMemo(() => {
+    const ok = rawEdges.filter((e) => e && nodeIds.has(e.from) && nodeIds.has(e.to));
+    if (ok.length !== rawEdges.length) {
+      devWarn("ClinicalFlowRenderer", "edges órfãs descartadas", {
+        before: rawEdges.length,
+        after: ok.length,
+      });
+    }
+    return ok;
+  }, [rawEdges, nodeIds]);
+
   const [hovered, setHovered] = useState<string | null>(null);
-
-  // Layout topológico simples: nível por BFS a partir de nodes sem incoming.
   const levels = useMemo(() => buildLevels(nodes, edges), [nodes, edges]);
-
-  // Caminho principal = mais longo (highlight cinematográfico).
   const mainPath = useMemo(() => longestPath(nodes, edges), [nodes, edges]);
   const mainSet = new Set(mainPath);
+
+  if (nodes.length === 0) {
+    return <CognitiveEmpty title="Fluxo clínico" message="Sem nós para renderizar." />;
+  }
 
   return (
     <div className="rounded-2xl border border-primary/20 bg-gradient-to-br from-card/60 via-card/40 to-primary/5 p-4 backdrop-blur-md">
