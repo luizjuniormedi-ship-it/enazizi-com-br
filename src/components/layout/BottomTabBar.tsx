@@ -76,10 +76,45 @@ const BottomTabBar = () => {
     <nav className={cn("landscape-tablet:hidden lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-md border-t border-border safe-area-bottom transition-transform duration-300", hidden && "translate-y-full")}>
       <div className="flex items-center justify-around h-16">
         {tabs.map((tab) => {
-          const active =
-            tab.to === "/enaflix"
-              ? location.pathname.startsWith("/enaflix")
-              : location.pathname === tab.to;
+          const active = location.pathname === tab.to;
+
+          // CTA primário "Continuar" — pílula com bg-primary, sempre destacada
+          if (tab.primary) {
+            return (
+              <Link
+                key={tab.to}
+                to={tab.to}
+                className={cn(
+                  "relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 leading-none transition-all group active:scale-95",
+                )}
+              >
+                <div
+                  className={cn(
+                    "relative flex items-center justify-center rounded-full px-3 h-9 -mt-2 gap-1.5",
+                    "bg-primary text-primary-foreground shadow-soft",
+                    "transition-all duration-300 [transition-timing-function:var(--ease-out-expo)]",
+                    active ? "shadow-glow-sm scale-[1.03]" : "group-active:shadow-glow-sm",
+                  )}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.badge > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-primary-foreground/25 text-primary-foreground text-[9px] font-bold backdrop-blur-sm">
+                      {tab.badge > 99 ? "99+" : tab.badge}
+                    </span>
+                  )}
+                </div>
+                <span
+                  className={cn(
+                    "text-[9px] font-semibold text-center leading-[1.05] mt-0.5",
+                    active ? "text-primary" : "text-foreground/80",
+                  )}
+                >
+                  {tab.label}
+                </span>
+              </Link>
+            );
+          }
+
           return (
             <Link
               key={tab.to}
