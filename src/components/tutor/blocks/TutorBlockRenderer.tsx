@@ -3,8 +3,25 @@ import { SummaryBlock } from "./SummaryBlock";
 import { DeepDiveBlock } from "./DeepDiveBlock";
 import { MiniQuizBlock } from "./MiniQuizBlock";
 import { NextStepsBlock } from "./NextStepsBlock";
+import {
+  ClinicalFlowRenderer,
+  DifferentialDiagnosisBoard,
+  PharmacologyCompareCard,
+  SemiologyInsightCard,
+  TutorBlockTimeline,
+  type DifferentialDiagnosisBlock,
+  type PharmacologyCompareBlock,
+  type SemiologyInsightBlock,
+} from "@/components/tutor/cognitive";
 import { useTutorAdaptiveSync } from "@/components/agents/hooks/useTutorAdaptiveSync";
 import type { TutorAction, TutorBlock } from "@/types/tutor";
+
+// Tipos cognitivos extras (aceitos via narrowing — não fazem parte do union oficial)
+type CognitiveExtraBlock =
+  | DifferentialDiagnosisBlock
+  | PharmacologyCompareBlock
+  | SemiologyInsightBlock;
+type AnyTutorBlock = TutorBlock | CognitiveExtraBlock;
 
 interface Props {
   blocks: TutorBlock[];
