@@ -62,14 +62,14 @@ const BottomTabBar = () => {
     },
   });
 
-  // Bottom nav minimalista: 5 áreas — Visão Geral / Estudar / ENAFLIX / IA / Perfil.
-  // Visão Geral = panorama (entender). Estudar = execução (fazer).
+  // Bottom nav minimalista: 5 áreas — Hoje / Continuar (CTA) / Simulados / IA / Perfil.
+  // Hoje = panorama. Continuar = ação primária persistente.
   const tabs = [
-    { to: "/dashboard", icon: Home, label: "Visão Geral", badge: 0 },
-    { to: "/dashboard/sessao-estudo", icon: GraduationCap, label: "Estudar", badge: pendingCount || 0 },
-    { to: "/enaflix", icon: Clapperboard, label: "ENAFLIX", badge: 0 },
-    { to: "/dashboard/chatgpt", icon: Bot, label: "IA", badge: 0 },
-    { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: unreadMessages || 0 },
+    { to: "/dashboard", icon: Home, label: "Hoje", badge: 0, primary: false },
+    { to: "/dashboard/sessao-estudo", icon: Sparkles, label: "Continuar", badge: pendingCount || 0, primary: true },
+    { to: "/dashboard/simulados", icon: FileText, label: "Simulados", badge: 0, primary: false },
+    { to: "/dashboard/chatgpt", icon: Bot, label: "IA", badge: 0, primary: false },
+    { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: unreadMessages || 0, primary: false },
   ];
 
   return (
