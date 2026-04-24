@@ -9646,6 +9646,75 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_knowledge_memory: {
+        Row: {
+          answer_summary: string | null
+          block_types: string[] | null
+          blocks: Json
+          created_at: string
+          difficulty_level: string | null
+          id: string
+          intent: string | null
+          last_used_at: string | null
+          model_used: string | null
+          quality_score: number
+          question_normalized: string
+          question_original: string
+          reuse_count: number
+          scope: string
+          source: string
+          specialty: string | null
+          subtopic: string | null
+          topic: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          answer_summary?: string | null
+          block_types?: string[] | null
+          blocks?: Json
+          created_at?: string
+          difficulty_level?: string | null
+          id?: string
+          intent?: string | null
+          last_used_at?: string | null
+          model_used?: string | null
+          quality_score?: number
+          question_normalized: string
+          question_original: string
+          reuse_count?: number
+          scope?: string
+          source?: string
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          answer_summary?: string | null
+          block_types?: string[] | null
+          blocks?: Json
+          created_at?: string
+          difficulty_level?: string | null
+          id?: string
+          intent?: string | null
+          last_used_at?: string | null
+          model_used?: string | null
+          quality_score?: number
+          question_normalized?: string
+          question_original?: string
+          reuse_count?: number
+          scope?: string
+          source?: string
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tutor_messages: {
         Row: {
           content: string
@@ -11102,6 +11171,14 @@ export type Database = {
       student_has_study_assignment_result: {
         Args: { _assignment_id: string; _user_id: string }
         Returns: boolean
+      }
+      tutor_memory_adjust_quality: {
+        Args: { _delta: number; _memory_id: string }
+        Returns: undefined
+      }
+      tutor_memory_increment_reuse: {
+        Args: { _memory_id: string }
+        Returns: undefined
       }
       user_can_read_mentor_plan: {
         Args: { _plan_id: string; _user_id: string }
