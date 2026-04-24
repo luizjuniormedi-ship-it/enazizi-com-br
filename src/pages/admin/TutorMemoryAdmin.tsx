@@ -322,18 +322,43 @@ export default function TutorMemoryAdmin() {
             automaticamente.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-2"
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-          />
-          Atualizar
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => runEmbedder(false)}
+            disabled={embedderRunning}
+            className="gap-2"
+          >
+            {embedderRunning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4" />
+            )}
+            Processar embeddings pendentes
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => runEmbedder(true)}
+            disabled={embedderRunning}
+            className="gap-2"
+            title="Reprocessar memórias com embedding_status = failed"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry failed
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
+        </div>
       </header>
 
       {/* Cards de resumo */}
