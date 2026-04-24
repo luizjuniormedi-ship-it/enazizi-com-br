@@ -236,6 +236,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
                     memoryId: reuse.hit.id,
                     memoryReuseCount: (reuse.hit.reuse_count ?? 0) + 1,
                     sourceQuestion: text,
+                    memoryQualityScore: reuse.hit.quality_score,
+                    memoryScope: reuse.hit.scope,
+                    memoryBlocks: reuse.hit.blocks,
                   }
                 : m,
             ),
