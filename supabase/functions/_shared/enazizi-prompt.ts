@@ -346,11 +346,127 @@ Use os blocos conforme a necessidade pedagógica:
 • lay_explanation — Explicação leiga
 • deep_dive — Técnica profunda
 • comparison_table — Tabela comparativa
-• clinical_flow — Fluxograma clínico
+• clinical_flow — Fluxograma clínico (nodes + edges)
+• differential_diagnosis — Board ranqueado de hipóteses
+• pharmacology_compare — Comparação visual entre fármacos
+• semiology_insight — Manobras semiológicas (técnica → achado → interpretação)
 • mini_quiz — Pergunta ativa
-• mnemonic — Mnemônico
+• mnemonic_reinforce — Mnemônico
 • next_steps — Próximos passos
-• references — Bibliografia + artigos`;
+• reference — Bibliografia + artigos
+
+==================================================
+🧠 CONTRATO DOS BLOCOS COGNITIVOS (UI VISUAL)
+==================================================
+Quando emitir blocos cognitivos, siga ESTRITAMENTE estes payloads.
+Campos opcionais podem ser omitidos; campos obrigatórios NUNCA podem faltar.
+
+▶ clinical_flow — usar em: condutas, emergência, investigação diagnóstica,
+  decisão terapêutica, critérios de internação, fluxos OSCE/prova prática.
+{
+  "type": "clinical_flow",
+  "payload": {
+    "title": "Dor torácica — abordagem inicial",
+    "nodes": [
+      { "id": "n1", "label": "Avaliar estabilidade hemodinâmica", "kind": "decision" },
+      { "id": "n2", "label": "ECG + troponina seriada", "kind": "action" },
+      { "id": "n3", "label": "SCA → protocolo de revascularização", "kind": "outcome" },
+      { "id": "n4", "label": "TEP suspeito → angio-TC + D-dímero", "kind": "outcome" },
+      { "id": "n5", "label": "Dissecção → angio-TC de aorta", "kind": "outcome" }
+    ],
+    "edges": [
+      { "from": "n1", "to": "n2" },
+      { "from": "n2", "to": "n3", "label": "supra de ST" },
+      { "from": "n2", "to": "n4", "label": "ECG normal + dispneia" },
+      { "from": "n2", "to": "n5", "label": "dor lancinante + assimetria PA" }
+    ]
+  }
+}
+Regras: ids únicos; toda edge.from/edge.to DEVE existir em nodes; kind ∈ {decision|action|outcome}.
+
+▶ differential_diagnosis — usar em: casos clínicos, sintomas inespecíficos
+  (dor torácica, dispneia, febre, dor abdominal, cefaleia, síncope, confusão mental).
+{
+  "type": "differential_diagnosis",
+  "payload": {
+    "title": "DDx de dispneia aguda",
+    "chief_complaint": "Dispneia + dor torácica há 3 horas",
+    "items": [
+      {
+        "name": "TEP",
+        "probability": 0.45,
+        "severity": "critica",
+        "urgency": "emergencia",
+        "doNotMiss": true,
+        "pros": ["Imobilização recente", "Taquicardia", "SatO₂ 89%"],
+        "cons": ["Sem hemoptise", "D-dímero pendente"]
+      },
+      { "name": "IC descompensada", "probability": 0.25, "severity": "alta", "pros": ["Edema MMII"], "cons": ["BNP normal"] },
+      { "name": "Pneumonia", "probability": 0.15, "severity": "moderada" },
+      { "name": "Asma/DPOC", "probability": 0.10, "severity": "moderada" },
+      { "name": "Ansiedade (exclusão)", "probability": 0.05, "severity": "baixa" }
+    ]
+  }
+}
+Regras: probability ∈ [0,1]; severity ∈ {baixa|moderada|alta|critica};
+urgency ∈ {baixa|moderada|alta|emergencia}; sempre marcar doNotMiss=true em diagnósticos críticos não detectáveis.
+
+▶ pharmacology_compare — usar em: tratamento medicamentoso, escolha entre
+  drogas, populações especiais, contraindicações.
+{
+  "type": "pharmacology_compare",
+  "payload": {
+    "title": "Anti-hipertensivos de 1ª linha",
+    "indication": "HAS estágio 1 sem comorbidades",
+    "drugs": [
+      {
+        "name": "Losartana",
+        "class": "BRA",
+        "mechanism": "Bloqueio de receptor AT1",
+        "adverse": ["Hipercalemia", "Tontura"],
+        "contraindications": ["Gestação", "Estenose bilateral de a. renal"],
+        "interactions": ["AINEs ↓ efeito", "Lítio ↑ toxicidade"],
+        "half_life": "6-9 h",
+        "clinical_advantage": "Menos tosse que IECA",
+        "preferred": true
+      },
+      {
+        "name": "Enalapril",
+        "class": "IECA",
+        "mechanism": "Bloqueio da ECA",
+        "adverse": ["Tosse seca", "Angioedema"],
+        "contraindications": ["Gestação", "Angioedema prévio"]
+      },
+      { "name": "Hidroclorotiazida", "class": "Tiazídico" },
+      { "name": "Anlodipino", "class": "BCC" }
+    ]
+  }
+}
+Regras: marque preferred=true SOMENTE no fármaco contextualmente ideal.
+
+▶ semiology_insight — usar em: exame físico, manobras, OSCE, prova prática.
+{
+  "type": "semiology_insight",
+  "payload": {
+    "title": "Manobras de dor abdominal",
+    "region": "Abdome",
+    "maneuvers": [
+      {
+        "name": "Sinal de Murphy",
+        "technique": "Palpação profunda em HCD durante inspiração",
+        "finding": "Interrupção da inspiração por dor",
+        "interpretation": "Sugestivo de colecistite aguda",
+        "pathophysiology": "Inflamação da vesícula contatando a mão do examinador"
+      },
+      { "name": "Blumberg", "technique": "Descompressão brusca em FID", "finding": "Dor à descompressão", "interpretation": "Irritação peritoneal" },
+      { "name": "McBurney", "technique": "Palpação no ponto de McBurney", "finding": "Dor localizada", "interpretation": "Apendicite" },
+      { "name": "Giordano", "technique": "Punho-percussão lombar", "finding": "Dor lombar", "interpretation": "Pielonefrite/litíase" }
+    ]
+  }
+}
+
+▶ NÃO emita "tutor_timeline" — a timeline cognitiva é gerada pela UI
+  automaticamente a partir dos tipos dos blocos da resposta.`;
 
 // ── REGRAS ABSOLUTAS ──────────────────────────────────────────────
 const ABSOLUTE_RULES = `

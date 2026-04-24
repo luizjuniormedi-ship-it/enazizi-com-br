@@ -1,29 +1,15 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertOctagon, Check, ChevronDown, Crosshair, ShieldAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface DifferentialItem {
-  name: string;
-  /** 0..1 */
-  probability?: number;
-  /** baixa | moderada | alta | crítica */
-  severity?: "baixa" | "moderada" | "alta" | "critica";
-  urgency?: "ambulatorial" | "urgencia" | "emergencia";
-  pros?: string[];
-  cons?: string[];
-  /** Se true, exibe badge "Não perder" */
-  doNotMiss?: boolean;
-}
+import type {
+  DifferentialDiagnosisBlock,
+  DifferentialItem,
+} from "@/types/tutor";
+import { CognitiveEmpty, clamp01, dedupeBy, safeArray } from "./_validation";
 
-export interface DifferentialDiagnosisBlock {
-  type: "differential_diagnosis";
-  payload: {
-    title?: string;
-    chief_complaint?: string;
-    items: DifferentialItem[];
-  };
-}
+export type { DifferentialDiagnosisBlock, DifferentialItem };
 
 interface Props {
   block: DifferentialDiagnosisBlock;
@@ -38,9 +24,23 @@ interface Props {
  *  - cinza: menos provável
  */
 export function DifferentialDiagnosisBoard({ block }: Props) {
-  const { title, chief_complaint, items } = block.payload;
-  const sorted = [...items].sort((a, b) => (b.probability ?? 0) - (a.probability ?? 0));
+  const title = block?.payload?.title;
+  const chief_complaint = block?.payload?.chief_complaint;
+  const rawItems = safeArray<DifferentialItem>(block?.payload?.items);
+
+  const sorted = useMemo(() => {
+    const valid = rawItems
+      .filter((it) => it && typeof it.name === "string" && it.name.trim() !== "")
+      .map((it) => ({ ...it, probability: clamp01(it.probability) }));
+    const deduped = dedupeBy(valid, (it) => it.name);
+    return [...deduped].sort((a, b) => (b.probability ?? 0) - (a.probability ?? 0));
+  }, [rawItems]);
+
   const [open, setOpen] = useState<string | null>(sorted[0]?.name ?? null);
+
+  if (sorted.length === 0) {
+    return <CognitiveEmpty title="Diagnóstico diferencial" message="Sem hipóteses para ranquear." />;
+  }
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/70 p-4 backdrop-blur-md">
