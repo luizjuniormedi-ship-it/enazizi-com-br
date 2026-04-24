@@ -63,6 +63,18 @@ const AgentMessageItem = memo(
                   <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
                 </div>
               )}
+              {msg.memoryId && msg.sourceQuestion && (
+                <div className="mt-3">
+                  <MemoryReuseBadge
+                    reuseCount={msg.memoryReuseCount}
+                    onRegenerate={
+                      onRegenerateFromMemory && !isLoading
+                        ? () => onRegenerateFromMemory(msg.sourceQuestion!)
+                        : undefined
+                    }
+                  />
+                </div>
+              )}
               <button
                 onClick={() => onCopy(msg.content)}
                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
