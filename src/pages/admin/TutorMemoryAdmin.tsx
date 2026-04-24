@@ -188,6 +188,10 @@ export default function TutorMemoryAdmin() {
         const types = r.block_types ?? [];
         if (!types.includes(blockTypeFilter)) return false;
       }
+      if (embeddingFilter !== "all") {
+        const st = r.embedding_status ?? "pending";
+        if (st !== embeddingFilter) return false;
+      }
       if (topicFilter.trim()) {
         const needle = topicFilter.trim().toLowerCase();
         const hay = `${r.topic ?? ""} ${r.subtopic ?? ""}`.toLowerCase();
@@ -199,7 +203,7 @@ export default function TutorMemoryAdmin() {
       if (!Number.isNaN(max) && r.quality_score > max) return false;
       return true;
     });
-  }, [rows, scopeFilter, blockTypeFilter, topicFilter, minQuality, maxQuality]);
+  }, [rows, scopeFilter, blockTypeFilter, embeddingFilter, topicFilter, minQuality, maxQuality]);
 
   // ── Resumos (computados no cliente; volume é pequeno por padrão) ─────────
   const summary = useMemo(() => {
