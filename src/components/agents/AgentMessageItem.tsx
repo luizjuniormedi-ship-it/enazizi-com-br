@@ -1,9 +1,11 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
+import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
+import { adjustMemoryQuality } from "@/lib/tutor/tutorMemory";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
 
 interface AgentMessageItemProps {
