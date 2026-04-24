@@ -40,6 +40,8 @@ import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useInstitution } from "@/hooks/useInstitution";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import enazizi from "@/assets/enazizi-mascot.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
@@ -151,11 +153,26 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const DashboardSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { isStaff: isInstitutionalStaff } = useInstitution();
   const { isModuleEnabled } = useModuleAccess();
+
+  // Pendências (revisões) — para badge no CTA "Continuar"
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["sidebar-pending", user?.id],
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("revisoes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("status", "pendente");
+      return count || 0;
+    },
+  });
 
   // Modo compacto quando há sessão de estudo ativa
   const isStudyActive = useMemo(() => {
@@ -388,21 +405,48 @@ const DashboardSidebar = () => {
             <SidebarLink
               to="/dashboard"
               icon={PlayCircle}
-              label="Visão Geral"
-              description="Panorama do dia: progresso, ritmo, contexto e orientação"
+              label="Hoje"
+              description="Panorama do dia: progresso, ritmo e contexto"
               active={location.pathname === "/dashboard"}
             />
 
             {/* ─── 2. ESTUDAR (executar) ─── */}
             <SectionLabel>Estudar</SectionLabel>
 
-            <SidebarLink
-              to="/dashboard/sessao-estudo"
-              icon={Sparkles}
-              label="Estudar agora"
-              description="Cockpit operacional: iniciar sessão, revisões, foco"
-              active={location.pathname === "/dashboard/sessao-estudo" && !location.search}
-            />
+            {/* CTA primário persistente — "Continuar" com destaque visual */}
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Link
+                  to="/dashboard/sessao-estudo"
+                  className={cn(
+                    "group/cta relative flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold mb-1",
+                    "bg-primary text-primary-foreground shadow-soft",
+                    "transition-all duration-300 [transition-timing-function:var(--ease-out-expo)]",
+                    "hover:shadow-glow-sm hover:-translate-y-0.5 hover:bg-primary/95",
+                    "active:scale-[0.98] overflow-hidden",
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 group-hover/cta:opacity-100 transition-opacity duration-500"
+                  />
+                  <Sparkles className="relative h-4 w-4 flex-shrink-0" />
+                  <span className="relative truncate">Continuar</span>
+                  {pendingCount > 0 && (
+                    <span className="relative ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary-foreground/20 text-primary-foreground text-[10px] font-bold backdrop-blur-sm">
+                      {pendingCount > 99 ? "99+" : pendingCount}
+                    </span>
+                  )}
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side="right" className="max-w-[240px]">
+                <p className="font-semibold text-xs">Continuar estudando</p>
+                <p className="text-[11px] text-muted-foreground">
+                  Retoma sua jornada exatamente de onde parou: revisões, sessão guiada e foco.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+
             {pinned.map((item) => {
               const active =
                 location.pathname + (location.search || "") === item.to ||
