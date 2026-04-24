@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Hand, Eye, Sparkles, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -6,6 +7,7 @@ import type {
   SemiologyInsightBlock,
   SemiologyManeuver,
 } from "@/types/tutor";
+import { CognitiveEmpty, safeArray } from "./_validation";
 
 export type { SemiologyInsightBlock, SemiologyManeuver };
 
@@ -18,7 +20,17 @@ interface Props {
  * Cards visuais para manobras semiológicas (Murphy, Blumberg, etc).
  */
 export function SemiologyInsightCard({ block }: Props) {
-  const { title, region, maneuvers } = block.payload;
+  const title = block?.payload?.title;
+  const region = block?.payload?.region;
+  const rawManeuvers = safeArray<SemiologyManeuver>(block?.payload?.maneuvers);
+  const maneuvers = useMemo(
+    () => rawManeuvers.filter((m) => m && typeof m.name === "string" && m.name.trim() !== ""),
+    [rawManeuvers],
+  );
+
+  if (maneuvers.length === 0) {
+    return <CognitiveEmpty title="Semiologia" message="Sem manobras para exibir." />;
+  }
   return (
     <div className="rounded-2xl border border-border/60 bg-card/70 p-4 backdrop-blur-md">
       <div className="mb-3 flex items-start gap-2">
