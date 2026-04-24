@@ -21,6 +21,39 @@ const corsHeaders = {
 const EMBED_MODEL = "text-embedding-3-small";
 const EMBED_DIMS = 1536;
 
+// Abreviações médicas (espelho de normalizeQuestion.ts) — expandimos a query
+// antes de embeddar para que "ICC" recupere "insuficiência cardíaca".
+const MEDICAL_ABBREVIATIONS: Record<string, string> = {
+  icc: "insuficiencia cardiaca",
+  icfer: "insuficiencia cardiaca fracao ejecao reduzida",
+  icfep: "insuficiencia cardiaca fracao ejecao preservada",
+  icfei: "insuficiencia cardiaca fracao ejecao intermediaria",
+  iam: "infarto agudo miocardio",
+  tep: "tromboembolismo pulmonar",
+  avc: "acidente vascular cerebral",
+  avci: "acidente vascular cerebral isquemico",
+  avch: "acidente vascular cerebral hemorragico",
+  dpoc: "doenca pulmonar obstrutiva cronica",
+  hda: "hemorragia digestiva alta",
+  hdb: "hemorragia digestiva baixa",
+  has: "hipertensao arterial sistemica",
+  dm: "diabetes mellitus",
+  irc: "insuficiencia renal cronica",
+  ira: "insuficiencia renal aguda",
+  itu: "infeccao trato urinario",
+  ivas: "infeccao vias aereas superiores",
+  pcr: "parada cardiorrespiratoria",
+  sca: "sindrome coronariana aguda",
+};
+
+function expandAbbrev(s: string): string {
+  if (!s) return s;
+  return s.replace(/\b([a-zA-ZÀ-ÿ]{2,6})\b/g, (match) => {
+    const exp = MEDICAL_ABBREVIATIONS[match.toLowerCase()];
+    return exp ? `${match} ${exp}` : match;
+  });
+}
+
 async function embedText(text: string, apiKey: string): Promise<number[]> {
   const resp = await fetch("https://api.openai.com/v1/embeddings", {
     method: "POST",
