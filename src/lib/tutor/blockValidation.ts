@@ -427,7 +427,7 @@ export function validateTutorBlocks(blocks: unknown[]): {
       raw && typeof raw === "object" && "type" in (raw as object)
         ? String((raw as { type: unknown }).type)
         : "unknown";
-    if (outcome.ok) {
+    if (outcome.ok === true) {
       out.push(outcome.block);
       reports.push({
         block_type: type,
@@ -437,7 +437,7 @@ export function validateTutorBlocks(blocks: unknown[]): {
       const r: BlockValidationReport = {
         block_type: type,
         status: "rejected",
-        reason: outcome.reason,
+        reason: (outcome as { ok: false; reason: string }).reason,
       };
       reports.push(r);
       rejected.push(r);
