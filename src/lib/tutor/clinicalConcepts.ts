@@ -114,6 +114,7 @@ const MEDICAL_ABBREVIATIONS: Record<string, string> = {
   hic: "hipertensao intracraniana",
   meningite: "meningite",
   sepse: "sepse",
+  nihss: "national institutes of health stroke scale escala avc",
 };
 
 function stripDiacritics(s: string): string {
