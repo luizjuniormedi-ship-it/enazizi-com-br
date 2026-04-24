@@ -63,6 +63,9 @@ import {
 } from "lucide-react";
 import { MEMORY_DEGRADED_THRESHOLD } from "@/lib/tutor/tutorMemory";
 import { SemanticTestRunner } from "./SemanticTestRunner";
+import { ReembedAllButton } from "./tutor-memory/ReembedAllButton";
+import { SemanticAuditPanel } from "./tutor-memory/SemanticAuditPanel";
+import { ExpandedTestRunner } from "./tutor-memory/ExpandedTestRunner";
 
 const PAGE_SIZE = 1000; // limite duro para auditoria.
 
@@ -336,9 +339,10 @@ export default function TutorMemoryAdmin() {
             automaticamente.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-start">
+          <ReembedAllButton onCompleted={() => refetch()} />
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
             onClick={() => runEmbedder(false)}
             disabled={embedderRunning}
@@ -349,7 +353,7 @@ export default function TutorMemoryAdmin() {
             ) : (
               <Zap className="h-4 w-4" />
             )}
-            Processar embeddings pendentes
+            Pendentes (lote)
           </Button>
           <Button
             variant="outline"
@@ -374,6 +378,16 @@ export default function TutorMemoryAdmin() {
           </Button>
         </div>
       </header>
+
+      {/* Abas principais */}
+      <Tabs defaultValue="memorias">
+        <TabsList className="w-full md:w-auto flex-wrap h-auto">
+          <TabsTrigger value="memorias">Memórias</TabsTrigger>
+          <TabsTrigger value="teste">Teste semântico</TabsTrigger>
+          <TabsTrigger value="audit">Semantic Audit</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="memorias" className="space-y-6 mt-4">
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -472,9 +486,22 @@ export default function TutorMemoryAdmin() {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
 
-      {/* Teste semântico automatizado */}
-      <SemanticTestRunner onCompleted={() => refetch()} />
+        <TabsContent value="teste" className="space-y-4 mt-4">
+          <SemanticTestRunner onCompleted={() => refetch()} />
+          <ExpandedTestRunner onCompleted={() => refetch()} />
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-4">
+          <SemanticAuditPanel />
+        </TabsContent>
+      </Tabs>
+
+      {/* Filtros (continuam dentro da aba Memórias via portal) */}
+      <Tabs defaultValue="filters" className="hidden">
+        <TabsContent value="filters">
+          {/* placeholder p/ manter estrutura — abaixo é tudo "Memórias" */}
 
       {/* Filtros */}
       <Card>
