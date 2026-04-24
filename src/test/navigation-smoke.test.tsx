@@ -2,7 +2,7 @@
  * Navigation Smoke Test
  * ------------------------------------------------------------------
  * Validação leve da integridade dos pontos cardeais de navegação:
- *   • Rotas principais (Visão Geral, Estudar, ENAFLIX) registradas
+ *   • Rotas principais (Visão Geral, Estudar, *   • Rotas principais (Hoje, Continuar, Simulados) registradas
  *   • BottomTabBar com os 5 itens corretos e rotas certas
  *
  * NÃO é E2E. É apenas uma rede de segurança contra remoções acidentais
