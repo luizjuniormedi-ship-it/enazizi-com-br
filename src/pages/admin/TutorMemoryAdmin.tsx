@@ -486,9 +486,22 @@ export default function TutorMemoryAdmin() {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
 
-      {/* Teste semântico automatizado */}
-      <SemanticTestRunner onCompleted={() => refetch()} />
+        <TabsContent value="teste" className="space-y-4 mt-4">
+          <SemanticTestRunner onCompleted={() => refetch()} />
+          <ExpandedTestRunner onCompleted={() => refetch()} />
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-4">
+          <SemanticAuditPanel />
+        </TabsContent>
+      </Tabs>
+
+      {/* Filtros (continuam dentro da aba Memórias via portal) */}
+      <Tabs defaultValue="filters" className="hidden">
+        <TabsContent value="filters">
+          {/* placeholder p/ manter estrutura — abaixo é tudo "Memórias" */}
 
       {/* Filtros */}
       <Card>
