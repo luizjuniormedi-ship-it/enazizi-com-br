@@ -63,6 +63,9 @@ import {
 } from "lucide-react";
 import { MEMORY_DEGRADED_THRESHOLD } from "@/lib/tutor/tutorMemory";
 import { SemanticTestRunner } from "./SemanticTestRunner";
+import { ReembedAllButton } from "./tutor-memory/ReembedAllButton";
+import { SemanticAuditPanel } from "./tutor-memory/SemanticAuditPanel";
+import { ExpandedTestRunner } from "./tutor-memory/ExpandedTestRunner";
 
 const PAGE_SIZE = 1000; // limite duro para auditoria.
 
