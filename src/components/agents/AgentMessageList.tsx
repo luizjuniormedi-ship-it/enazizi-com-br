@@ -20,6 +20,7 @@ interface AgentMessageListProps {
   onSpeak: (text: string, idx: number) => void;
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
+  onRegenerateFromMemory?: (question: string) => void;
 }
 
 const AgentMessageList = memo(
@@ -29,7 +30,7 @@ const AgentMessageList = memo(
         messages, isLoading, loadingStage, title, hasSpeechSynthesis,
         speakingMsgIdx, savingMsgIdx, savedMsgIdxs, hasOnSaveMessage,
         linkToAgent, selectedUploadIds, renderAssistantMessage,
-        onCopy, onSpeak, onSave, onLink,
+        onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
       },
       ref
     ) => (
@@ -56,6 +57,7 @@ const AgentMessageList = memo(
             onSpeak={onSpeak}
             onSave={onSave}
             onLink={onLink}
+            onRegenerateFromMemory={onRegenerateFromMemory}
           />
         ))}
         {isLoading && messages[messages.length - 1]?.role === "user" && (

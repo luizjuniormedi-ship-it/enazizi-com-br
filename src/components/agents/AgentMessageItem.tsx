@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
+import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
 
 interface AgentMessageItemProps {
@@ -22,6 +23,7 @@ interface AgentMessageItemProps {
   onSpeak: (text: string, idx: number) => void;
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
+  onRegenerateFromMemory?: (question: string) => void;
 }
 
 const markdownComponents = {
@@ -36,7 +38,7 @@ const AgentMessageItem = memo(
   ({
     msg, index, title, isLoading, hasSpeechSynthesis, speakingMsgIdx, savingMsgIdx,
     isSaved, hasOnSaveMessage, linkToAgent, selectedUploadIds, renderAssistantMessage,
-    onCopy, onSpeak, onSave, onLink,
+    onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
   }: AgentMessageItemProps) => {
     return (
       <div className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
@@ -59,6 +61,18 @@ const AgentMessageItem = memo(
               ) : (
                 <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
                   <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+                </div>
+              )}
+              {msg.memoryId && msg.sourceQuestion && (
+                <div className="mt-3">
+                  <MemoryReuseBadge
+                    reuseCount={msg.memoryReuseCount}
+                    onRegenerate={
+                      onRegenerateFromMemory && !isLoading
+                        ? () => onRegenerateFromMemory(msg.sourceQuestion!)
+                        : undefined
+                    }
+                  />
                 </div>
               )}
               <button
@@ -126,6 +140,7 @@ const AgentMessageItem = memo(
   (prev, next) =>
     prev.msg.role === next.msg.role &&
     prev.msg.content === next.msg.content &&
+    prev.msg.memoryId === next.msg.memoryId &&
     prev.index === next.index &&
     prev.isLoading === next.isLoading &&
     prev.speakingMsgIdx === next.speakingMsgIdx &&

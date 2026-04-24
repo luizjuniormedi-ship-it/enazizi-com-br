@@ -9,6 +9,7 @@ import { useTutorHistory } from "./hooks/useTutorHistory";
 import { useTutorContext } from "./hooks/useTutorContext";
 import { useTutorStream } from "./hooks/useTutorStream";
 import { useTutorAdaptiveContext } from "./hooks/useTutorAdaptiveContext";
+import { useTutorMemoryBridge } from "./hooks/useTutorMemoryBridge";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
 
 interface UseAgentChatOptions {
@@ -21,6 +22,10 @@ interface UseAgentChatOptions {
   previousContentLoader?: () => Promise<string>;
   initialPrompt?: string;
   onSendRef?: React.MutableRefObject<((prompt: string) => void) | null>;
+  /** Optional context propagated from TutorDrawer for memory scoping. */
+  topic?: string | null;
+  subtopic?: string | null;
+  specialty?: string | null;
 }
 
 /**
@@ -44,11 +49,24 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     previousContentLoader,
     initialPrompt,
     onSendRef,
+    topic = null,
+    subtopic = null,
+    specialty = null,
   } = opts;
 
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // ── Memória pedagógica ──────────────────────────────────────────────────
+  // Quando true, o próximo handleSend pula a busca em memória (forçar IA).
+  const bypassMemoryRef = useRef(false);
+  const memory = useTutorMemoryBridge({
+    topic,
+    subtopic,
+    specialty,
+    forceBypassRef: bypassMemoryRef,
+  });
 
   // Core chat state (kept here — owned by orchestrator)
   const [messages, setMessages] = useState<Msg[]>([
@@ -173,6 +191,69 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         ? context.buildUserContext(contextOverride)
         : context.buildUserContext();
 
+      // ── Memória pedagógica: lookup ANTES da IA ─────────────────────────
+      // Tentamos reusar uma resposta de qualidade já existente. Se houver hit,
+      // simulamos um "stream local" (chunks faseados) para preservar a UX, e
+      // pulamos a chamada à edge function. Falha-silenciosa em qualquer erro.
+      try {
+        setLoadingStage("🧠 Verificando memória pedagógica...");
+        const reuse = await memory.lookup(text, user?.id ?? null);
+        if (reuse && reuse.markdown) {
+          setLoadingStage("✨ Recuperando resposta da memória...");
+          // Stream local em 3 etapas para manter sensação cinematográfica.
+          const md = reuse.markdown;
+          const slices = [
+            md.slice(0, Math.floor(md.length * 0.4)),
+            md.slice(0, Math.floor(md.length * 0.75)),
+            md,
+          ];
+          for (const partial of slices) {
+            setMessages((prev) => {
+              const last = prev[prev.length - 1];
+              if (
+                last?.role === "assistant" &&
+                prev.length > 1 &&
+                prev[prev.length - 2]?.role === "user"
+              ) {
+                return prev.map((m, i) =>
+                  i === prev.length - 1 ? { ...m, content: partial } : m,
+                );
+              }
+              return [
+                ...prev,
+                { role: "assistant", content: partial },
+              ];
+            });
+            await new Promise((r) => setTimeout(r, 90));
+          }
+          // Marca a mensagem final com metadata de memória (badge + regenerate).
+          setMessages((prev) =>
+            prev.map((m, i) =>
+              i === prev.length - 1 && m.role === "assistant"
+                ? {
+                    ...m,
+                    content: md,
+                    memoryId: reuse.hit.id,
+                    memoryReuseCount: (reuse.hit.reuse_count ?? 0) + 1,
+                    sourceQuestion: text,
+                  }
+                : m,
+            ),
+          );
+          if (convId) {
+            await history.persistAssistantMessage(convId, md);
+            history.loadConversations();
+          }
+          setIsLoading(false);
+          setLoadingStage("");
+          return;
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn("[memory] lookup error", err);
+        // Segue fluxo normal — a IA assume.
+      }
+      setLoadingStage("🔍 Buscando referências científicas...");
+
       // Sprint 5 — Adaptive context (opt-in via flag, falha-silenciosa).
       // Não bloqueia o envio se desligado ou se a edge falhar.
       let adaptiveContext: unknown = undefined;
@@ -245,6 +326,21 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           history.loadConversations();
         }
 
+        // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
+        // Salva a resposta gerada para reuso futuro. Falha-silenciosa.
+        if (assistantSoFar && assistantSoFar.trim().length > 0) {
+          memory
+            .persist({
+              question: text,
+              answerMarkdown: assistantSoFar,
+              userId: user?.id ?? null,
+              topic,
+              subtopic,
+              specialty,
+            })
+            .catch(() => {});
+        }
+
         if (onSaveMessage && assistantSoFar) {
           try {
             const count = await onSaveMessage(assistantSoFar);
@@ -288,7 +384,23 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       streamResponse,
       isAdaptiveEnabled,
       fetchAdaptive,
+      memory,
+      topic,
+      subtopic,
+      specialty,
     ]
+  );
+
+  /**
+   * Força a regeneração de uma resposta vinda da memória usando IA.
+   * Usado pelo botão "Atualizar com IA" no MemoryReuseBadge.
+   */
+  const regenerateFromMemory = useCallback(
+    (question: string) => {
+      bypassMemoryRef.current = true;
+      handleSend(question);
+    },
+    [handleSend],
   );
 
   // Expose handleSend to parent
@@ -414,6 +526,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     handleDiscardSession,
     handleSaveMessage,
     copyToClipboard,
+    regenerateFromMemory,
 
     // Toast / user (used by upload handler)
     toast,
