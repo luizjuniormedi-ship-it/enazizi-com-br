@@ -44,7 +44,7 @@ import { useScrolled } from "@/hooks/useScrolled";
 
 /* ─────────────── Mobile sheet — espelho da sidebar minimalista ───────────────
  * 4 áreas alinhadas com desktop:
- *   1. Foco agora     — Hoje + Estudar agora
+ *   1. Foco agora     — Hoje + Continuar
  *   2. Núcleo         — Revisões, Simulados, Erros, Progresso
  *   3. Explorar       — ENAFLIX (CTA único, silencioso)
  *   4. Conta          — Perfil, Professor/Admin/Institucional, Sair
