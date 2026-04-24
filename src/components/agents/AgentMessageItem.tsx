@@ -140,6 +140,7 @@ const AgentMessageItem = memo(
   (prev, next) =>
     prev.msg.role === next.msg.role &&
     prev.msg.content === next.msg.content &&
+    prev.msg.memoryId === next.msg.memoryId &&
     prev.index === next.index &&
     prev.isLoading === next.isLoading &&
     prev.speakingMsgIdx === next.speakingMsgIdx &&
