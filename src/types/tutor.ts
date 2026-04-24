@@ -109,6 +109,71 @@ export interface ReferenceBlock {
   payload: { refs: TutorReference[] };
 }
 
+// ============= Blocos cognitivos (Sprint Cognitive UI) =============
+
+export type DdxSeverity = "baixa" | "moderada" | "alta" | "critica";
+export type DdxUrgency = "baixa" | "moderada" | "alta" | "emergencia";
+
+export interface DifferentialItem {
+  name: string;
+  /** 0..1 */
+  probability?: number;
+  severity?: DdxSeverity;
+  urgency?: DdxUrgency;
+  doNotMiss?: boolean;
+  pros?: string[];
+  cons?: string[];
+}
+
+export interface DifferentialDiagnosisBlock {
+  type: "differential_diagnosis";
+  payload: {
+    title?: string;
+    chief_complaint?: string;
+    items: DifferentialItem[];
+  };
+}
+
+export interface DrugComparisonItem {
+  name: string;
+  class?: string;
+  mechanism?: string;
+  adverse?: string[];
+  contraindications?: string[];
+  interactions?: string[];
+  potency?: string;
+  half_life?: string;
+  clinical_advantage?: string;
+  preferred?: boolean;
+}
+
+export interface PharmacologyCompareBlock {
+  type: "pharmacology_compare";
+  payload: {
+    title?: string;
+    indication?: string;
+    drugs: DrugComparisonItem[];
+  };
+}
+
+export interface SemiologyManeuver {
+  name: string;
+  technique?: string;
+  finding?: string;
+  interpretation?: string;
+  pathophysiology?: string;
+  region?: string;
+}
+
+export interface SemiologyInsightBlock {
+  type: "semiology_insight";
+  payload: {
+    title?: string;
+    region?: string;
+    maneuvers: SemiologyManeuver[];
+  };
+}
+
 export type TutorBlock =
   | SummaryBlock
   | LayExplanationBlock
@@ -118,7 +183,10 @@ export type TutorBlock =
   | MiniQuizBlock
   | MnemonicReinforceBlock
   | NextStepsBlock
-  | ReferenceBlock;
+  | ReferenceBlock
+  | DifferentialDiagnosisBlock
+  | PharmacologyCompareBlock
+  | SemiologyInsightBlock;
 
 export type TutorBlockType = TutorBlock["type"];
 
@@ -167,6 +235,9 @@ export function isTutorBlock(value: unknown): value is TutorBlock {
     "mnemonic_reinforce",
     "next_steps",
     "reference",
+    "differential_diagnosis",
+    "pharmacology_compare",
+    "semiology_insight",
   ];
   return (known as string[]).includes(v.type);
 }
