@@ -134,6 +134,10 @@ export default function TutorMemoryAdmin() {
   const [topicFilter, setTopicFilter] = useState<string>("");
   const [minQuality, setMinQuality] = useState<string>("");
   const [maxQuality, setMaxQuality] = useState<string>("");
+  const [embeddingFilter, setEmbeddingFilter] = useState<
+    "all" | "pending" | "ready" | "failed" | "skipped"
+  >("all");
+  const [embedderRunning, setEmbedderRunning] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin", "tutor-memory", "rows"],
@@ -141,7 +145,7 @@ export default function TutorMemoryAdmin() {
       const { data, error } = await supabase
         .from("tutor_knowledge_memory")
         .select(
-          "id, user_id, scope, question_original, question_normalized, topic, subtopic, specialty, intent, difficulty_level, block_types, quality_score, reuse_count, source, model_used, created_at, updated_at, last_used_at, embedding_status",
+          "id, user_id, scope, question_original, question_normalized, topic, subtopic, specialty, intent, difficulty_level, block_types, quality_score, reuse_count, source, model_used, created_at, updated_at, last_used_at, embedding_status, embedding_model",
         )
         .order("updated_at", { ascending: false })
         .limit(PAGE_SIZE);
@@ -150,6 +154,29 @@ export default function TutorMemoryAdmin() {
     },
     staleTime: 30_000,
   });
+
+  const runEmbedder = async (retryFailed = false) => {
+    setEmbedderRunning(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke(
+        "tutor-memory-embedder",
+        { body: { limit: 25, retryFailed } },
+      );
+      if (error) throw error;
+      toast.success(
+        `Embeddings: ${result?.succeeded ?? 0} ok · ${result?.failed ?? 0} falhas · ${result?.skipped ?? 0} skipped`,
+      );
+      await refetch();
+    } catch (err) {
+      toast.error(
+        `Falha ao processar embeddings: ${
+          err instanceof Error ? err.message : "erro desconhecido"
+        }`,
+      );
+    } finally {
+      setEmbedderRunning(false);
+    }
+  };
 
   const rows = useMemo(() => data ?? [], [data]);
 
