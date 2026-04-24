@@ -57,13 +57,13 @@ interface MobileNavItem {
   icon: React.ElementType;
 }
 
-// Visão Geral = panorama (entender). Estudar = execução (fazer).
+// Hoje = panorama (entender). Continuar = execução (fazer).
 const MOBILE_PANORAMA_ITEMS: MobileNavItem[] = [
-  { to: "/dashboard", label: "Visão Geral", icon: Target },
+  { to: "/dashboard", label: "Hoje", icon: Target },
 ];
 
 const MOBILE_EXECUTION_ITEMS: MobileNavItem[] = [
-  { to: "/dashboard/sessao-estudo", label: "Estudar", moduleKey: "sessao-estudo", icon: Sparkles },
+  { to: "/dashboard/sessao-estudo", label: "Continuar", moduleKey: "sessao-estudo", icon: Sparkles },
   { to: "/dashboard/flashcards", label: "Revisões", moduleKey: "flashcards", icon: Clock },
   { to: "/dashboard/simulados", label: "Simulados", moduleKey: "simulados", icon: FileText },
   { to: "/dashboard/banco-erros", label: "Banco de Erros", moduleKey: "banco-erros", icon: AlertTriangle },
