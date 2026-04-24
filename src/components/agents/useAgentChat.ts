@@ -191,6 +191,69 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         ? context.buildUserContext(contextOverride)
         : context.buildUserContext();
 
+      // ── Memória pedagógica: lookup ANTES da IA ─────────────────────────
+      // Tentamos reusar uma resposta de qualidade já existente. Se houver hit,
+      // simulamos um "stream local" (chunks faseados) para preservar a UX, e
+      // pulamos a chamada à edge function. Falha-silenciosa em qualquer erro.
+      try {
+        setLoadingStage("🧠 Verificando memória pedagógica...");
+        const reuse = await memory.lookup(text, user?.id ?? null);
+        if (reuse && reuse.markdown) {
+          setLoadingStage("✨ Recuperando resposta da memória...");
+          // Stream local em 3 etapas para manter sensação cinematográfica.
+          const md = reuse.markdown;
+          const slices = [
+            md.slice(0, Math.floor(md.length * 0.4)),
+            md.slice(0, Math.floor(md.length * 0.75)),
+            md,
+          ];
+          for (const partial of slices) {
+            setMessages((prev) => {
+              const last = prev[prev.length - 1];
+              if (
+                last?.role === "assistant" &&
+                prev.length > 1 &&
+                prev[prev.length - 2]?.role === "user"
+              ) {
+                return prev.map((m, i) =>
+                  i === prev.length - 1 ? { ...m, content: partial } : m,
+                );
+              }
+              return [
+                ...prev,
+                { role: "assistant", content: partial },
+              ];
+            });
+            await new Promise((r) => setTimeout(r, 90));
+          }
+          // Marca a mensagem final com metadata de memória (badge + regenerate).
+          setMessages((prev) =>
+            prev.map((m, i) =>
+              i === prev.length - 1 && m.role === "assistant"
+                ? {
+                    ...m,
+                    content: md,
+                    memoryId: reuse.hit.id,
+                    memoryReuseCount: (reuse.hit.reuse_count ?? 0) + 1,
+                    sourceQuestion: text,
+                  }
+                : m,
+            ),
+          );
+          if (convId) {
+            await history.persistAssistantMessage(convId, md);
+            history.loadConversations();
+          }
+          setIsLoading(false);
+          setLoadingStage("");
+          return;
+        }
+      } catch (err) {
+        if (import.meta.env.DEV) console.warn("[memory] lookup error", err);
+        // Segue fluxo normal — a IA assume.
+      }
+      setLoadingStage("🔍 Buscando referências científicas...");
+
       // Sprint 5 — Adaptive context (opt-in via flag, falha-silenciosa).
       // Não bloqueia o envio se desligado ou se a edge falhar.
       let adaptiveContext: unknown = undefined;
