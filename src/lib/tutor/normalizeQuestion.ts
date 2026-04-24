@@ -100,7 +100,8 @@ export function normalizeTutorQuestion(input: string): string {
   const lowered = input.toLowerCase();
   const noAccents = stripDiacritics(lowered);
   const noPunct = stripPunctuation(noAccents);
-  const collapsed = collapseSpaces(noPunct);
+  const expanded = expandMedicalAbbreviations(noPunct);
+  const collapsed = collapseSpaces(expanded);
 
   const tokens = collapsed.split(" ").filter((t) => t.length > 0 && !STOPWORDS.has(t));
 
