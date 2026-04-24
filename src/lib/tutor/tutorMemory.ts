@@ -69,6 +69,8 @@ export interface SaveMemoryParams {
 }
 
 const DEFAULT_MIN_QUALITY = 80;
+/** Memórias com score abaixo deste valor são consideradas degradadas e ignoradas. */
+export const MEMORY_DEGRADED_THRESHOLD = 50;
 
 /**
  * Procura memória reutilizável. Retorna `null` se nada qualificar.
