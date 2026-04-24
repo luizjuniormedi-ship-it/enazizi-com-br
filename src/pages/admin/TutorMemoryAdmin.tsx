@@ -724,6 +724,7 @@ function MemoryTable({
               <TableHead>Escopo</TableHead>
               <TableHead className="text-right">Quality</TableHead>
               <TableHead className="text-right">Reuso</TableHead>
+              <TableHead>Embedding</TableHead>
               <TableHead>Tipos</TableHead>
               <TableHead>Atualizada</TableHead>
               {actionsCol && <TableHead>Ações</TableHead>}
@@ -732,14 +733,14 @@ function MemoryTable({
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={actionsCol ? 9 : 8}>
+                <TableCell colSpan={actionsCol ? 10 : 9}>
                   <Skeleton className="h-4 w-full" />
                 </TableCell>
               </TableRow>
             ) : rows.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={actionsCol ? 9 : 8}
+                  colSpan={actionsCol ? 10 : 9}
                   className="text-center text-sm text-muted-foreground py-6"
                 >
                   {emptyLabel}
