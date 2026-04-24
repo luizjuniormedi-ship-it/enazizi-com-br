@@ -49,11 +49,24 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     previousContentLoader,
     initialPrompt,
     onSendRef,
+    topic = null,
+    subtopic = null,
+    specialty = null,
   } = opts;
 
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // ── Memória pedagógica ──────────────────────────────────────────────────
+  // Quando true, o próximo handleSend pula a busca em memória (forçar IA).
+  const bypassMemoryRef = useRef(false);
+  const memory = useTutorMemoryBridge({
+    topic,
+    subtopic,
+    specialty,
+    forceBypassRef: bypassMemoryRef,
+  });
 
   // Core chat state (kept here — owned by orchestrator)
   const [messages, setMessages] = useState<Msg[]>([
