@@ -339,9 +339,10 @@ export default function TutorMemoryAdmin() {
             automaticamente.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-start">
+          <ReembedAllButton onCompleted={() => refetch()} />
           <Button
-            variant="default"
+            variant="outline"
             size="sm"
             onClick={() => runEmbedder(false)}
             disabled={embedderRunning}
@@ -352,7 +353,7 @@ export default function TutorMemoryAdmin() {
             ) : (
               <Zap className="h-4 w-4" />
             )}
-            Processar embeddings pendentes
+            Pendentes (lote)
           </Button>
           <Button
             variant="outline"
@@ -377,6 +378,16 @@ export default function TutorMemoryAdmin() {
           </Button>
         </div>
       </header>
+
+      {/* Abas principais */}
+      <Tabs defaultValue="memorias">
+        <TabsList className="w-full md:w-auto flex-wrap h-auto">
+          <TabsTrigger value="memorias">Memórias</TabsTrigger>
+          <TabsTrigger value="teste">Teste semântico</TabsTrigger>
+          <TabsTrigger value="audit">Semantic Audit</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="memorias" className="space-y-6 mt-4">
 
       {/* Cards de resumo */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
