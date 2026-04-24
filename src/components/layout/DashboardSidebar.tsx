@@ -40,6 +40,8 @@ import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useInstitution } from "@/hooks/useInstitution";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import enazizi from "@/assets/enazizi-mascot.png";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import ForceUpdateButton from "@/components/layout/ForceUpdateButton";
