@@ -3,14 +3,11 @@
  * ───────────────────
  * Governança da memória pedagógica do Tutor IA.
  *
- * Mostra:
- *  - Cards de resumo (totais, médias, baixa qualidade, reuso)
- *  - Top 20 reutilizadas
- *  - Top 20 baixa qualidade (< 50)
- *  - Distribuição por block_type
- *  - Distribuição por topic/subtopic
+ * Abas:
+ *  - Memórias: cards, filtros, top reutilizadas, baixa qualidade, distribuições
+ *  - Teste semântico: SemanticTestRunner + ExpandedTestRunner
+ *  - Semantic Audit: SemanticAuditPanel (logs reais de busca)
  *
- * Filtros: scope, block_type, topic, faixa de qualidade.
  * Mobile-friendly. Funciona com tabela vazia.
  */
 import { useMemo, useState } from "react";
@@ -67,7 +64,7 @@ import { ReembedAllButton } from "./tutor-memory/ReembedAllButton";
 import { SemanticAuditPanel } from "./tutor-memory/SemanticAuditPanel";
 import { ExpandedTestRunner } from "./tutor-memory/ExpandedTestRunner";
 
-const PAGE_SIZE = 1000; // limite duro para auditoria.
+const PAGE_SIZE = 1000;
 
 interface MemoryRow {
   id: string;
@@ -197,7 +194,6 @@ export default function TutorMemoryAdmin() {
 
   const rows = useMemo(() => data ?? [], [data]);
 
-  // ── Filtros aplicados ────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return rows.filter((r) => {
       if (scopeFilter !== "all" && r.scope !== scopeFilter) return false;
@@ -222,7 +218,6 @@ export default function TutorMemoryAdmin() {
     });
   }, [rows, scopeFilter, blockTypeFilter, embeddingFilter, topicFilter, minQuality, maxQuality]);
 
-  // ── Resumos (computados no cliente; volume é pequeno por padrão) ─────────
   const summary = useMemo(() => {
     const total = rows.length;
     const totalGlobal = rows.filter((r) => r.scope === "global").length;
@@ -379,7 +374,6 @@ export default function TutorMemoryAdmin() {
         </div>
       </header>
 
-      {/* Abas principais */}
       <Tabs defaultValue="memorias">
         <TabsList className="w-full md:w-auto flex-wrap h-auto">
           <TabsTrigger value="memorias">Memórias</TabsTrigger>
@@ -387,328 +381,326 @@ export default function TutorMemoryAdmin() {
           <TabsTrigger value="audit">Semantic Audit</TabsTrigger>
         </TabsList>
 
+        {/* ───────────────────────── ABA MEMÓRIAS ───────────────────────── */}
         <TabsContent value="memorias" className="space-y-6 mt-4">
+          {/* Cards de resumo */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <SummaryCard
+              icon={<Database className="h-4 w-4" />}
+              label="Total"
+              value={summary.total}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<Globe className="h-4 w-4" />}
+              label="Globais"
+              value={summary.totalGlobal}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<User className="h-4 w-4" />}
+              label="Pessoais"
+              value={summary.totalUser}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<TrendingUp className="h-4 w-4" />}
+              label="Reutilizações"
+              value={summary.totalReuse}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<Sparkles className="h-4 w-4" />}
+              label="Qualidade média"
+              value={Math.round(summary.avgQuality)}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<Sparkles className="h-4 w-4 text-success" />}
+              label="≥ 80 (boas)"
+              value={summary.aboveStrong}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+              label={`< ${MEMORY_DEGRADED_THRESHOLD} (degradadas)`}
+              value={summary.belowThreshold}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<Brain className="h-4 w-4" />}
+              label="Filtradas"
+              value={filtered.length}
+              loading={isLoading}
+            />
+          </div>
 
-      {/* Cards de resumo */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <SummaryCard
-          icon={<Database className="h-4 w-4" />}
-          label="Total"
-          value={summary.total}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<Globe className="h-4 w-4" />}
-          label="Globais"
-          value={summary.totalGlobal}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<User className="h-4 w-4" />}
-          label="Pessoais"
-          value={summary.totalUser}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<TrendingUp className="h-4 w-4" />}
-          label="Reutilizações"
-          value={summary.totalReuse}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<Sparkles className="h-4 w-4" />}
-          label="Qualidade média"
-          value={Math.round(summary.avgQuality)}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<Sparkles className="h-4 w-4 text-success" />}
-          label="≥ 80 (boas)"
-          value={summary.aboveStrong}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-          label={`< ${MEMORY_DEGRADED_THRESHOLD} (degradadas)`}
-          value={summary.belowThreshold}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<Brain className="h-4 w-4" />}
-          label="Filtradas"
-          value={filtered.length}
-          loading={isLoading}
-        />
-      </div>
+          {/* Cards de embedding */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <SummaryCard
+              icon={<Loader2 className="h-4 w-4 text-muted-foreground" />}
+              label="Embeddings pending"
+              value={summary.embPending}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<Sparkles className="h-4 w-4 text-success" />}
+              label="Embeddings ready"
+              value={summary.embReady}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
+              label="Embeddings failed"
+              value={summary.embFailed}
+              loading={isLoading}
+            />
+            <SummaryCard
+              icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
+              label="Embeddings skipped"
+              value={summary.embSkipped}
+              loading={isLoading}
+            />
+            <Card>
+              <CardContent className="p-3 md:p-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Zap className="h-4 w-4" />
+                  <span>Modelo mais usado</span>
+                </div>
+                {isLoading ? (
+                  <Skeleton className="h-7 w-24 mt-1" />
+                ) : (
+                  <p
+                    className="text-sm md:text-base font-semibold mt-1 truncate font-mono"
+                    title={summary.topModel}
+                  >
+                    {summary.topModel || "—"}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Cards de embedding */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <SummaryCard
-          icon={<Loader2 className="h-4 w-4 text-muted-foreground" />}
-          label="Embeddings pending"
-          value={summary.embPending}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<Sparkles className="h-4 w-4 text-success" />}
-          label="Embeddings ready"
-          value={summary.embReady}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<AlertTriangle className="h-4 w-4 text-destructive" />}
-          label="Embeddings failed"
-          value={summary.embFailed}
-          loading={isLoading}
-        />
-        <SummaryCard
-          icon={<AlertTriangle className="h-4 w-4 text-muted-foreground" />}
-          label="Embeddings skipped"
-          value={summary.embSkipped}
-          loading={isLoading}
-        />
-        <Card>
-          <CardContent className="p-3 md:p-4">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Zap className="h-4 w-4" />
-              <span>Modelo mais usado</span>
-            </div>
-            {isLoading ? (
-              <Skeleton className="h-7 w-24 mt-1" />
-            ) : (
-              <p
-                className="text-sm md:text-base font-semibold mt-1 truncate font-mono"
-                title={summary.topModel}
-              >
-                {summary.topModel || "—"}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          {/* Filtros */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Filtros</CardTitle>
+              <CardDescription>
+                Refinam todas as tabelas e distribuições abaixo. Cards de resumo
+                usam a base completa.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-3">
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Escopo</label>
+                <Select
+                  value={scopeFilter}
+                  onValueChange={(v) => setScopeFilter(v as typeof scopeFilter)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="global">Global</SelectItem>
+                    <SelectItem value="user">Pessoal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Block type</label>
+                <Select value={blockTypeFilter} onValueChange={setBlockTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    {allBlockTypes.map((t) => (
+                      <SelectItem key={t} value={t}>
+                        {t}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Embedding</label>
+                <Select
+                  value={embeddingFilter}
+                  onValueChange={(v) =>
+                    setEmbeddingFilter(v as typeof embeddingFilter)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="ready">Ready</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                    <SelectItem value="skipped">Skipped</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Topic/subtopic</label>
+                <Input
+                  value={topicFilter}
+                  placeholder="ex: cardiologia"
+                  onChange={(e) => setTopicFilter(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Qualidade mín.</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={minQuality}
+                  onChange={(e) => setMinQuality(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs text-muted-foreground">Qualidade máx.</label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={maxQuality}
+                  onChange={(e) => setMaxQuality(e.target.value)}
+                  placeholder="100"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Sub-abas internas */}
+          <Tabs defaultValue="top">
+            <TabsList className="w-full md:w-auto flex-wrap h-auto">
+              <TabsTrigger value="top">Top reutilizadas</TabsTrigger>
+              <TabsTrigger value="low">Baixa qualidade</TabsTrigger>
+              <TabsTrigger value="blocks">Por tipo de bloco</TabsTrigger>
+              <TabsTrigger value="topics">Por topic/subtopic</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="top">
+              <MemoryTable
+                rows={topReused}
+                emptyLabel="Nenhuma memória reutilizada ainda."
+                loading={isLoading}
+              />
+            </TabsContent>
+
+            <TabsContent value="low">
+              <MemoryTable
+                rows={lowQuality}
+                emptyLabel={`Nenhuma memória abaixo de ${MEMORY_DEGRADED_THRESHOLD} pontos.`}
+                loading={isLoading}
+                actionsCol
+              />
+            </TabsContent>
+
+            <TabsContent value="blocks">
+              <Card>
+                <CardContent className="p-0 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Tipo de bloco</TableHead>
+                        <TableHead className="text-right">Quantidade</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={2}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        </TableRow>
+                      ) : byBlockType.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={2}
+                            className="text-center text-sm text-muted-foreground py-6"
+                          >
+                            Nenhum bloco registrado.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        byBlockType.map((b) => (
+                          <TableRow key={b.type}>
+                            <TableCell className="font-mono text-xs">
+                              {b.type}
+                            </TableCell>
+                            <TableCell className="text-right">{b.count}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="topics">
+              <Card>
+                <CardContent className="p-0 overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Topic</TableHead>
+                        <TableHead>Subtopic</TableHead>
+                        <TableHead className="text-right">Memórias</TableHead>
+                        <TableHead className="text-right">Qualidade méd.</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {isLoading ? (
+                        <TableRow>
+                          <TableCell colSpan={4}>
+                            <Skeleton className="h-4 w-full" />
+                          </TableCell>
+                        </TableRow>
+                      ) : byTopic.length === 0 ? (
+                        <TableRow>
+                          <TableCell
+                            colSpan={4}
+                            className="text-center text-sm text-muted-foreground py-6"
+                          >
+                            Sem dados para os filtros atuais.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        byTopic.map((t) => (
+                          <TableRow key={`${t.topic}::${t.subtopic}`}>
+                            <TableCell className="text-xs">{t.topic}</TableCell>
+                            <TableCell className="text-xs">{t.subtopic}</TableCell>
+                            <TableCell className="text-right">{t.count}</TableCell>
+                            <TableCell className="text-right">
+                              <QualityBadge score={t.avgQuality} />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
+        {/* ─────────────────────── ABA TESTE SEMÂNTICO ─────────────────── */}
         <TabsContent value="teste" className="space-y-4 mt-4">
           <SemanticTestRunner onCompleted={() => refetch()} />
           <ExpandedTestRunner onCompleted={() => refetch()} />
         </TabsContent>
 
+        {/* ─────────────────────── ABA SEMANTIC AUDIT ──────────────────── */}
         <TabsContent value="audit" className="mt-4">
           <SemanticAuditPanel />
-        </TabsContent>
-      </Tabs>
-
-      {/* Filtros (continuam dentro da aba Memórias via portal) */}
-      <Tabs defaultValue="filters" className="hidden">
-        <TabsContent value="filters">
-          {/* placeholder p/ manter estrutura — abaixo é tudo "Memórias" */}
-
-      {/* Filtros */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Filtros</CardTitle>
-          <CardDescription>
-            Refinam todas as tabelas e distribuições abaixo. Cards de resumo
-            usam a base completa.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-6 gap-3">
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Escopo</label>
-            <Select
-              value={scopeFilter}
-              onValueChange={(v) => setScopeFilter(v as typeof scopeFilter)}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="global">Global</SelectItem>
-                <SelectItem value="user">Pessoal</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Block type</label>
-            <Select value={blockTypeFilter} onValueChange={setBlockTypeFilter}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                {allBlockTypes.map((t) => (
-                  <SelectItem key={t} value={t}>
-                    {t}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Embedding</label>
-            <Select
-              value={embeddingFilter}
-              onValueChange={(v) =>
-                setEmbeddingFilter(v as typeof embeddingFilter)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="ready">Ready</SelectItem>
-                <SelectItem value="failed">Failed</SelectItem>
-                <SelectItem value="skipped">Skipped</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Topic/subtopic</label>
-            <Input
-              value={topicFilter}
-              placeholder="ex: cardiologia"
-              onChange={(e) => setTopicFilter(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Qualidade mín.</label>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              value={minQuality}
-              onChange={(e) => setMinQuality(e.target.value)}
-              placeholder="0"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">Qualidade máx.</label>
-            <Input
-              type="number"
-              min={0}
-              max={100}
-              value={maxQuality}
-              onChange={(e) => setMaxQuality(e.target.value)}
-              placeholder="100"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Tabs defaultValue="top">
-        <TabsList className="w-full md:w-auto flex-wrap h-auto">
-          <TabsTrigger value="top">Top reutilizadas</TabsTrigger>
-          <TabsTrigger value="low">Baixa qualidade</TabsTrigger>
-          <TabsTrigger value="blocks">Por tipo de bloco</TabsTrigger>
-          <TabsTrigger value="topics">Por topic/subtopic</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="top">
-          <MemoryTable
-            rows={topReused}
-            emptyLabel="Nenhuma memória reutilizada ainda."
-            loading={isLoading}
-          />
-        </TabsContent>
-
-        <TabsContent value="low">
-          <MemoryTable
-            rows={lowQuality}
-            emptyLabel={`Nenhuma memória abaixo de ${MEMORY_DEGRADED_THRESHOLD} pontos.`}
-            loading={isLoading}
-            actionsCol
-          />
-        </TabsContent>
-
-        <TabsContent value="blocks">
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Tipo de bloco</TableHead>
-                    <TableHead className="text-right">Quantidade</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={2}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  ) : byBlockType.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={2}
-                        className="text-center text-sm text-muted-foreground py-6"
-                      >
-                        Nenhum bloco registrado.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    byBlockType.map((b) => (
-                      <TableRow key={b.type}>
-                        <TableCell className="font-mono text-xs">
-                          {b.type}
-                        </TableCell>
-                        <TableCell className="text-right">{b.count}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="topics">
-          <Card>
-            <CardContent className="p-0 overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Topic</TableHead>
-                    <TableHead>Subtopic</TableHead>
-                    <TableHead className="text-right">Memórias</TableHead>
-                    <TableHead className="text-right">Qualidade méd.</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={4}>
-                        <Skeleton className="h-4 w-full" />
-                      </TableCell>
-                    </TableRow>
-                  ) : byTopic.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="text-center text-sm text-muted-foreground py-6"
-                      >
-                        Sem dados para os filtros atuais.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    byTopic.map((t) => (
-                      <TableRow key={`${t.topic}::${t.subtopic}`}>
-                        <TableCell className="text-xs">{t.topic}</TableCell>
-                        <TableCell className="text-xs">{t.subtopic}</TableCell>
-                        <TableCell className="text-right">{t.count}</TableCell>
-                        <TableCell className="text-right">
-                          <QualityBadge score={t.avgQuality} />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>
