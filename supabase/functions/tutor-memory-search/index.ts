@@ -114,7 +114,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const text: string = (body?.text ?? body?.question ?? "").toString();
-    const threshold: number = Number(body?.threshold ?? 0.82);
+    const threshold: number = Number(body?.threshold ?? 0.6);
     const matchCount: number = Math.min(
       Math.max(Number(body?.matchCount ?? 5), 1),
       10,
@@ -135,9 +135,14 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Expande abreviações + repete a pergunta 2x para reforçar o vetor da query.
+    // Espelha buildEmbeddingText do embedder.
+    const expandedText = expandAbbrev(text);
+    const queryText = `${expandedText}\n${expandedText}`;
+
     let vec: number[];
     try {
-      vec = await embedText(text, OPENAI_API_KEY);
+      vec = await embedText(queryText, OPENAI_API_KEY);
     } catch (e) {
       console.warn("[tutor-memory-search] embed failed:", e);
       return new Response(JSON.stringify({ ok: true, hits: [] }), {
