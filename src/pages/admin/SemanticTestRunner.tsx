@@ -43,7 +43,11 @@ const VARIANTS = [
   "Paciente com dispneia e edema",
 ];
 
-const SIMILARITY_THRESHOLD = 0.6;
+// Threshold mínimo aceito para considerar "match" no relatório.
+// O backend usa threshold dinâmico (curtas 0.45, médias 0.55, longas 0.65)
+// e ainda baixa para 0.35 quando há overlaps clínicos. Aqui usamos um valor
+// permissivo só para classificar a variante como recuperada/não recuperada.
+const SIMILARITY_THRESHOLD = 0.4;
 const MIN_QUALITY = 80;
 
 interface VariantResult {
@@ -212,8 +216,10 @@ async function searchVariant(question: string): Promise<VariantResult> {
       {
         body: {
           text: question,
-          threshold: SIMILARITY_THRESHOLD,
-          matchCount: 5,
+          // sem threshold fixo: backend usa threshold dinâmico + overlaps
+          matchCount: 8,
+          topic: "Cardiologia",
+          subtopic: "Insuficiência cardíaca",
         },
       },
     );

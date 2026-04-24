@@ -9669,6 +9669,7 @@ export type Database = {
           source: string
           specialty: string | null
           subtopic: string | null
+          symptom_keywords: string[] | null
           topic: string | null
           updated_at: string
           user_id: string | null
@@ -9695,6 +9696,7 @@ export type Database = {
           source?: string
           specialty?: string | null
           subtopic?: string | null
+          symptom_keywords?: string[] | null
           topic?: string | null
           updated_at?: string
           user_id?: string | null
@@ -9721,11 +9723,77 @@ export type Database = {
           source?: string
           specialty?: string | null
           subtopic?: string | null
+          symptom_keywords?: string[] | null
           topic?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Relationships: []
+      }
+      tutor_memory_search_logs: {
+        Row: {
+          abbreviation_overlap_count: number | null
+          created_at: string
+          created_new_memory: boolean | null
+          duration_ms: number | null
+          fallback_tier: string | null
+          hybrid_score: number | null
+          id: string
+          matched_memory_id: string | null
+          query: string
+          query_normalized: string | null
+          reused: boolean | null
+          semantic_score: number | null
+          symptom_overlap_count: number | null
+          threshold_used: number | null
+          topic_overlap: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          abbreviation_overlap_count?: number | null
+          created_at?: string
+          created_new_memory?: boolean | null
+          duration_ms?: number | null
+          fallback_tier?: string | null
+          hybrid_score?: number | null
+          id?: string
+          matched_memory_id?: string | null
+          query: string
+          query_normalized?: string | null
+          reused?: boolean | null
+          semantic_score?: number | null
+          symptom_overlap_count?: number | null
+          threshold_used?: number | null
+          topic_overlap?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          abbreviation_overlap_count?: number | null
+          created_at?: string
+          created_new_memory?: boolean | null
+          duration_ms?: number | null
+          fallback_tier?: string | null
+          hybrid_score?: number | null
+          id?: string
+          matched_memory_id?: string | null
+          query?: string
+          query_normalized?: string | null
+          reused?: boolean | null
+          semantic_score?: number | null
+          symptom_overlap_count?: number | null
+          threshold_used?: number | null
+          topic_overlap?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_memory_search_logs_matched_memory_id_fkey"
+            columns: ["matched_memory_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_knowledge_memory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tutor_messages: {
         Row: {
@@ -11170,6 +11238,46 @@ export type Database = {
           specialty: string
           subtopic: string
           topic: string
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      match_tutor_memory_hybrid: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_abbrev?: string[]
+          query_embedding: string
+          query_subtopic?: string
+          query_symptoms?: string[]
+          query_topic?: string
+          user_id_filter?: string
+        }
+        Returns: {
+          abbreviation_overlap_count: number
+          answer_summary: string
+          block_types: string[]
+          blocks: Json
+          created_at: string
+          difficulty_level: string
+          hybrid_score: number
+          id: string
+          intent: string
+          last_used_at: string
+          model_used: string
+          quality_score: number
+          question_normalized: string
+          question_original: string
+          reuse_count: number
+          scope: string
+          similarity: number
+          source: string
+          specialty: string
+          subtopic: string
+          symptom_keywords: string[]
+          symptom_overlap_count: number
+          topic: string
+          topic_overlap: boolean
           updated_at: string
           user_id: string
         }[]

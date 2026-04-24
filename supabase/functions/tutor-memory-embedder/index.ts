@@ -1,14 +1,15 @@
 /**
- * tutor-memory-embedder
+ * tutor-memory-embedder (com sintomas)
  *
- * Processa em lote memórias da `tutor_knowledge_memory` que ainda não
- * têm embedding (`embedding_status = 'pending'`) e gera embeddings via
- * OpenAI (text-embedding-3-small, 1536 dims).
+ * Processa em lote memórias `pending`/`failed` e:
+ *   1. extrai symptom_keywords
+ *   2. expande conceitos clínicos no texto a embeddar
+ *   3. embedda via OpenAI text-embedding-3-small (1536 dims)
+ *   4. atualiza embedding + symptom_keywords + status
  *
- * Acesso: somente admin (via JWT) ou service_role.
+ * Acesso: admin (JWT) ou service_role.
  *
- * Payload opcional:
- *   { limit?: number; retryFailed?: boolean }
+ * Payload: { limit?: number; retryFailed?: boolean; forceReembed?: boolean }
  */
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -23,45 +24,121 @@ const EMBED_DIMS = 1536;
 const HARD_LIMIT = 50;
 const DEFAULT_LIMIT = 10;
 
-// Padrões adicionais de PII para bloquear globalização
 const PII_PATTERNS: RegExp[] = [
   /\bcpf\b/i,
   /\bprontu[aá]rio\b/i,
-  /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/, // CPF formato
+  /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/,
   /\bnome do paciente\b/i,
   /\bpaciente\s+(joão|joao|maria|josé|jose|ana|carlos|pedro)\b/i,
 ];
 
-// Expansão de abreviações médicas (deve casar com src/lib/tutor/normalizeQuestion.ts)
 const MEDICAL_ABBREVIATIONS: Record<string, string> = {
-  icc: "insuficiencia cardiaca",
+  ic: "insuficiencia cardiaca",
+  icc: "insuficiencia cardiaca congestiva",
   icfer: "insuficiencia cardiaca fracao ejecao reduzida",
   icfep: "insuficiencia cardiaca fracao ejecao preservada",
   icfei: "insuficiencia cardiaca fracao ejecao intermediaria",
+  feve: "fracao ejecao ventriculo esquerdo",
   iam: "infarto agudo miocardio",
+  iamcsst: "infarto agudo miocardio com supradesnivelamento st",
+  iamssst: "infarto agudo miocardio sem supradesnivelamento st",
+  sca: "sindrome coronariana aguda",
+  dac: "doenca arterial coronariana",
   tep: "tromboembolismo pulmonar",
+  tvp: "trombose venosa profunda",
   avc: "acidente vascular cerebral",
   avci: "acidente vascular cerebral isquemico",
   avch: "acidente vascular cerebral hemorragico",
+  ait: "ataque isquemico transitorio",
   dpoc: "doenca pulmonar obstrutiva cronica",
+  sdra: "sindrome desconforto respiratorio agudo",
   hda: "hemorragia digestiva alta",
   hdb: "hemorragia digestiva baixa",
   has: "hipertensao arterial sistemica",
   dm: "diabetes mellitus",
+  dm2: "diabetes mellitus tipo 2",
+  dm1: "diabetes mellitus tipo 1",
+  dlp: "dislipidemia",
   irc: "insuficiencia renal cronica",
+  drc: "doenca renal cronica",
   ira: "insuficiencia renal aguda",
+  lra: "lesao renal aguda",
   itu: "infeccao trato urinario",
   ivas: "infeccao vias aereas superiores",
   pcr: "parada cardiorrespiratoria",
-  sca: "sindrome coronariana aguda",
+  fa: "fibrilacao atrial",
+  tsv: "taquicardia supraventricular",
+  tv: "taquicardia ventricular",
+  fv: "fibrilacao ventricular",
+  bav: "bloqueio atrioventricular",
+  b3: "terceira bulha",
+  dpn: "dispneia paroxistica noturna",
+  nyha: "new york heart association",
+  eap: "edema agudo pulmao",
 };
 
-function expandAbbrev(s: string): string {
-  if (!s) return s;
-  return s.replace(/\b([a-zA-ZÀ-ÿ]{2,6})\b/g, (match) => {
-    const expansion = MEDICAL_ABBREVIATIONS[match.toLowerCase()];
-    return expansion ? `${match} ${expansion}` : match;
+const SYMPTOM_DICTIONARY: Record<string, string[]> = {
+  dispneia: ["dispneia", "falta de ar", "falta ar"],
+  ortopneia: ["ortopneia"],
+  dpn: ["dpn", "dispneia paroxistica noturna"],
+  edema: ["edema", "inchaco"],
+  edema_mmii: ["edema mmii", "edema membros inferiores"],
+  edema_pulmonar: ["edema agudo pulmao", "edema pulmonar", "eap"],
+  febre: ["febre", "febril"],
+  dor_toracica: ["dor toracica", "dor no peito", "precordialgia"],
+  sincope: ["sincope", "desmaio"],
+  tosse: ["tosse"],
+  hemoptise: ["hemoptise"],
+  hipoxemia: ["hipoxemia", "saturacao baixa"],
+  taquicardia: ["taquicardia"],
+  bradicardia: ["bradicardia"],
+  hipotensao: ["hipotensao", "pa baixa", "choque"],
+  hipertensao: ["hipertensao", "pa alta"],
+  b3: ["b3", "terceira bulha", "ritmo de galope"],
+  estertores: ["estertores", "creptantes"],
+  turgencia_jugular: ["turgencia jugular"],
+  hemiparesia: ["hemiparesia"],
+  afasia: ["afasia"],
+  convulsao: ["convulsao"],
+  rebaixamento: ["rebaixamento", "torpor", "coma"],
+  vomito: ["vomito", "emese"],
+  melena: ["melena"],
+  hematemese: ["hematemese"],
+  ictericia: ["ictericia"],
+  sibilos: ["sibilos", "chiado"],
+  hipercapnia: ["hipercapnia"],
+  anemia: ["anemia"],
+  fa: ["fibrilacao atrial"],
+  fe_reduzida: ["feve reduzida", "fe reduzida", "fracao ejecao reduzida"],
+};
+
+function stripDiacritics(s: string): string {
+  return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+function normalize(s: string): string {
+  return stripDiacritics((s || "").toLowerCase());
+}
+
+function expandClinicalConcepts(text: string): string {
+  if (!text) return text;
+  return text.replace(/\b([a-zA-ZÀ-ÿ]{2,7})\b/g, (m) => {
+    const exp = MEDICAL_ABBREVIATIONS[normalize(m)];
+    return exp ? `${m} ${exp}` : m;
   });
+}
+
+function extractSymptoms(text: string): string[] {
+  const norm = normalize(text);
+  const found = new Set<string>();
+  for (const [keyword, variants] of Object.entries(SYMPTOM_DICTIONARY)) {
+    for (const v of variants) {
+      if (norm.includes(v)) {
+        found.add(keyword);
+        break;
+      }
+    }
+  }
+  return [...found];
 }
 
 function looksPersonal(text: string): boolean {
@@ -81,31 +158,18 @@ interface MemoryRow {
   block_types: string[] | null;
 }
 
-/**
- * Constrói o texto a ser embeddado.
- *
- * Estratégia: a PERGUNTA domina o vetor (repetida 3x e expandida com
- * abreviações médicas). Topic/subtopic reforçam contexto clínico. O
- * answer_summary entra apenas como contexto curto (max 400 chars), evitando
- * que respostas longas diluam a similaridade contra perguntas curtas como
- * "O que é ICC?".
- */
 function buildEmbeddingText(row: MemoryRow): string {
-  const question =
-    row.question_normalized ?? row.question_original ?? "";
-  const expandedQuestion = expandAbbrev(question);
+  const question = row.question_normalized ?? row.question_original ?? "";
+  const expandedQuestion = expandClinicalConcepts(question);
   const summarySnippet = (row.answer_summary ?? "").slice(0, 400);
 
   const parts = [
-    // Pergunta repetida 3x — domina o vetor
     expandedQuestion,
     expandedQuestion,
     expandedQuestion,
-    // Contexto curricular curto
     row.topic ?? "",
     row.subtopic ?? "",
     row.specialty ?? "",
-    // Resposta apenas como contexto leve
     summarySnippet,
     (row.block_types ?? []).join(" "),
   ];
@@ -155,7 +219,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Auth: admin OR service_role bearer
     const authHeader = req.headers.get("Authorization") ?? "";
     const isServiceRole = authHeader.includes(SERVICE_ROLE);
 
@@ -194,8 +257,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Parse payload
-    let body: { limit?: number; retryFailed?: boolean } = {};
+    let body: { limit?: number; retryFailed?: boolean; forceReembed?: boolean } = {};
     try {
       body = await req.json();
     } catch {
@@ -206,12 +268,30 @@ Deno.serve(async (req) => {
       HARD_LIMIT,
     );
     const retryFailed = body.retryFailed === true;
+    const forceReembed = body.forceReembed === true;
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-    const statusFilter = retryFailed
+    // Se forceReembed: marca TODAS as memórias como pending primeiro (em lotes)
+    if (forceReembed) {
+      const { error: resetErr } = await admin
+        .from("tutor_knowledge_memory")
+        .update({ embedding_status: "pending" })
+        .neq("embedding_status", "pending");
+      if (resetErr) {
+        console.warn("[embedder] reset failed:", resetErr.message);
+      }
+    }
+
+    const statusFilter = retryFailed || forceReembed
       ? ["pending", "failed"]
       : ["pending"];
+
+    // Conta total pendente para reportar progresso
+    const { count: totalPending } = await admin
+      .from("tutor_knowledge_memory")
+      .select("id", { count: "exact", head: true })
+      .in("embedding_status", statusFilter);
 
     const { data: rows, error: fetchErr } = await admin
       .from("tutor_knowledge_memory")
@@ -235,7 +315,6 @@ Deno.serve(async (req) => {
       processed++;
       const text = buildEmbeddingText(row);
 
-      // Safety: PII detection — if global scope but pergunta tem PII, marcar skipped
       if (row.scope === "global" && looksPersonal(text)) {
         skipped++;
         await admin
@@ -262,6 +341,10 @@ Deno.serve(async (req) => {
 
       try {
         const vec = await embedText(text, OPENAI_API_KEY);
+        // Extrai sintomas do texto completo (pergunta + summary)
+        const symptomText = `${row.question_original ?? ""} ${row.answer_summary ?? ""}`;
+        const symptoms = extractSymptoms(symptomText);
+
         const { error: updErr } = await admin
           .from("tutor_knowledge_memory")
           .update({
@@ -269,6 +352,7 @@ Deno.serve(async (req) => {
             embedding_status: "ready",
             embedding_model: EMBED_MODEL,
             embedding_updated_at: new Date().toISOString(),
+            symptom_keywords: symptoms,
           })
           .eq("id", row.id);
         if (updErr) throw updErr;
@@ -288,6 +372,8 @@ Deno.serve(async (req) => {
       }
     }
 
+    const remaining = Math.max(0, (totalPending ?? 0) - processed);
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -298,6 +384,9 @@ Deno.serve(async (req) => {
         succeeded,
         failed,
         skipped,
+        total_pending_before: totalPending ?? null,
+        remaining_after: remaining,
+        force_reembed: forceReembed,
         errors: errors.slice(0, 5),
       }),
       {

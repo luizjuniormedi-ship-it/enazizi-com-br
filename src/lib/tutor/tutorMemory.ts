@@ -1,10 +1,18 @@
 /**
- * Cliente da memória pedagógica do Tutor IA.
+ * Cliente da memória pedagógica do Tutor IA — versão híbrida (8 tiers).
  *
- * Encapsula busca, salvamento e ajustes de qualidade na tabela
- * `tutor_knowledge_memory`. Toda a lógica de "reutilizar vs gerar"
- * fica aqui — o componente de chat só pergunta `findReusableMemory()`
- * antes de chamar a edge function.
+ * findReusableMemory implementa cascata:
+ *   1. exact normalized
+ *   2. topic + subtopic
+ *   3. topic
+ *   4. semantic similarity (RPC híbrida)
+ *   5. semantic + topic overlap
+ *   6. symptom overlap (DB direto via && em symptom_keywords)
+ *   7. abbreviation overlap (substring no question_normalized)
+ *   8. fallback high-quality same specialty
+ *
+ * Cada tier preserva backward compat: assinatura pública NÃO mudou.
+ * Falha silenciosamente — qualquer erro retorna null e a IA continua.
  */
 
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +22,12 @@ import {
   normalizeTutorQuestion,
   shouldBypassMemory,
 } from "./normalizeQuestion";
+import {
+  extractClinicalKeywords,
+  extractMedicalAbbreviations,
+  classifyQueryLength,
+  dynamicSemanticThreshold,
+} from "./clinicalConcepts";
 
 export type TutorMemoryScope = "global" | "user";
 
@@ -31,6 +45,7 @@ export interface TutorMemoryRow {
   answer_summary: string | null;
   blocks: TutorBlock[];
   block_types: string[] | null;
+  symptom_keywords?: string[] | null;
   quality_score: number;
   reuse_count: number;
   source: string;
@@ -45,19 +60,37 @@ export interface FindMemoryParams {
   userId?: string | null;
   topic?: string | null;
   subtopic?: string | null;
+  specialty?: string | null;
   intent?: string | null;
-  /** Tipos de bloco mínimos esperados na resposta (ex: ["clinical_flow"]). */
   requiredBlockTypes?: TutorBlockType[];
-  /** quality_score mínimo para considerar reutilizável. */
   minQuality?: number;
-  /** Se true, faz fallback para busca semântica (embeddings) quando exact/topic falharem. */
   useSemantic?: boolean;
-  /** Threshold de similaridade (0-1) para semantic match. Default 0.82. */
+  /** Se omitido, calcula automaticamente conforme tamanho da pergunta. */
   semanticThreshold?: number;
 }
 
 export interface SemanticHit extends TutorMemoryRow {
   similarity: number;
+  topic_overlap?: boolean;
+  symptom_overlap_count?: number;
+  abbreviation_overlap_count?: number;
+  hybrid_score?: number;
+}
+
+export interface FindMemoryDebug {
+  tier: string | null;
+  semanticScore: number | null;
+  hybridScore: number | null;
+  topicOverlap: boolean;
+  symptomOverlap: number;
+  abbreviationOverlap: number;
+  thresholdUsed: number | null;
+  durationMs: number;
+}
+
+export interface FindMemoryResult {
+  memory: TutorMemoryRow | null;
+  debug: FindMemoryDebug;
 }
 
 export interface SaveMemoryParams {
@@ -72,55 +105,103 @@ export interface SaveMemoryParams {
   answerSummary?: string | null;
   qualityScore?: number;
   modelUsed?: string | null;
-  /** Força salvar como pessoal mesmo sem contexto sensível detectado. */
   forceUserScope?: boolean;
 }
 
 const DEFAULT_MIN_QUALITY = 80;
-/** Memórias com score abaixo deste valor são consideradas degradadas e ignoradas. */
 export const MEMORY_DEGRADED_THRESHOLD = 50;
 
+/** Pesos do score híbrido (espelho da RPC). */
+export const HYBRID_WEIGHTS = {
+  semantic: 0.55,
+  topic: 0.2,
+  symptom: 0.15,
+  abbreviation: 0.1,
+} as const;
+
+/** Calcula score híbrido a partir de componentes (mesma fórmula da RPC). */
+export function computeHybridMemoryScore(input: {
+  similarity: number;
+  topicOverlap: boolean;
+  symptomOverlapCount: number;
+  abbreviationOverlapCount: number;
+}): number {
+  const sym = Math.min(1, input.symptomOverlapCount / 3);
+  const abb = Math.min(1, input.abbreviationOverlapCount / 2);
+  const score =
+    HYBRID_WEIGHTS.semantic * input.similarity +
+    HYBRID_WEIGHTS.topic * (input.topicOverlap ? 1 : 0) +
+    HYBRID_WEIGHTS.symptom * sym +
+    HYBRID_WEIGHTS.abbreviation * abb;
+  return Math.min(1, score);
+}
+
+const SELECT_COLS =
+  "id, user_id, scope, question_original, question_normalized, topic, subtopic, specialty, intent, difficulty_level, answer_summary, blocks, block_types, symptom_keywords, quality_score, reuse_count, source, model_used, created_at, updated_at, last_used_at";
+
 /**
- * Procura memória reutilizável. Retorna `null` se nada qualificar.
- *
- * Estratégia de busca (em ordem):
- *   1. pergunta normalizada idêntica (user_id OU global)
- *   2. mesmo topic + subtopic (global, melhor quality_score)
- *   3. mesmo topic (global, melhor quality_score)
+ * Versão antiga mantida — retorna apenas a memória (compat).
+ * Internamente delega para `findReusableMemoryDetailed`.
  */
 export async function findReusableMemory(
   params: FindMemoryParams,
 ): Promise<TutorMemoryRow | null> {
+  const result = await findReusableMemoryDetailed(params);
+  return result.memory;
+}
+
+/**
+ * Variante que devolve memória + debug (tier usado, scores, overlaps).
+ */
+export async function findReusableMemoryDetailed(
+  params: FindMemoryParams,
+): Promise<FindMemoryResult> {
+  const startedAt = Date.now();
+  const debug: FindMemoryDebug = {
+    tier: null,
+    semanticScore: null,
+    hybridScore: null,
+    topicOverlap: false,
+    symptomOverlap: 0,
+    abbreviationOverlap: 0,
+    thresholdUsed: null,
+    durationMs: 0,
+  };
+
   const {
     question,
     userId,
     topic,
     subtopic,
+    specialty,
     requiredBlockTypes,
     minQuality = DEFAULT_MIN_QUALITY,
   } = params;
 
-  if (!question || shouldBypassMemory(question)) return null;
+  if (!question || shouldBypassMemory(question)) {
+    debug.durationMs = Date.now() - startedAt;
+    return { memory: null, debug };
+  }
 
   const normalized = normalizeTutorQuestion(question);
-  if (!normalized) return null;
+  if (!normalized) {
+    debug.durationMs = Date.now() - startedAt;
+    return { memory: null, debug };
+  }
 
-  // Garante que memórias degradadas (quality_score < 50) NUNCA sejam reutilizadas,
-  // mesmo se o caller passar um minQuality menor.
   const effectiveMin = Math.max(minQuality, MEMORY_DEGRADED_THRESHOLD);
 
-  // Helper: filtra por tipos de bloco requeridos
   const matchesBlockTypes = (row: TutorMemoryRow) => {
     if (!requiredBlockTypes || requiredBlockTypes.length === 0) return true;
     const types = new Set(row.block_types ?? row.blocks.map((b) => b.type));
     return requiredBlockTypes.every((t) => types.has(t));
   };
 
-  // 1) match exato por pergunta normalizada
-  {
+  // Tier 1: exact normalized
+  try {
     const { data, error } = await supabase
       .from("tutor_knowledge_memory")
-      .select("*")
+      .select(SELECT_COLS)
       .eq("question_normalized", normalized)
       .gte("quality_score", effectiveMin)
       .order("quality_score", { ascending: false })
@@ -133,75 +214,204 @@ export async function findReusableMemory(
           (r.scope === "global" || (userId && r.user_id === userId)) &&
           matchesBlockTypes(r),
       );
-      if (hit) return hit;
+      if (hit) {
+        debug.tier = "exact_normalized";
+        debug.durationMs = Date.now() - startedAt;
+        return { memory: hit, debug };
+      }
     }
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn("[tutorMemory] tier1 err:", e);
   }
 
-  // 2) match por topic + subtopic
+  // Tier 2: topic + subtopic
   if (topic && subtopic) {
-    const { data, error } = await supabase
-      .from("tutor_knowledge_memory")
-      .select("*")
-      .eq("scope", "global")
-      .eq("topic", topic)
-      .eq("subtopic", subtopic)
-      .gte("quality_score", effectiveMin)
-      .order("quality_score", { ascending: false })
-      .order("reuse_count", { ascending: false })
-      .limit(5);
-
-    if (!error && data) {
-      const hit = (data as unknown as TutorMemoryRow[]).find(matchesBlockTypes);
-      if (hit) return hit;
+    try {
+      const { data, error } = await supabase
+        .from("tutor_knowledge_memory")
+        .select(SELECT_COLS)
+        .eq("scope", "global")
+        .eq("topic", topic)
+        .eq("subtopic", subtopic)
+        .gte("quality_score", effectiveMin)
+        .order("quality_score", { ascending: false })
+        .order("reuse_count", { ascending: false })
+        .limit(5);
+      if (!error && data) {
+        const hit = (data as unknown as TutorMemoryRow[]).find(matchesBlockTypes);
+        if (hit) {
+          debug.tier = "topic_subtopic";
+          debug.topicOverlap = true;
+          debug.durationMs = Date.now() - startedAt;
+          return { memory: hit, debug };
+        }
+      }
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("[tutorMemory] tier2 err:", e);
     }
   }
 
-  // 3) match por topic
+  // Tier 3: topic
   if (topic) {
-    const { data, error } = await supabase
-      .from("tutor_knowledge_memory")
-      .select("*")
-      .eq("scope", "global")
-      .eq("topic", topic)
-      .gte("quality_score", effectiveMin)
-      .order("quality_score", { ascending: false })
-      .order("reuse_count", { ascending: false })
-      .limit(5);
-
-    if (!error && data) {
-      const hit = (data as unknown as TutorMemoryRow[]).find(matchesBlockTypes);
-      if (hit) return hit;
+    try {
+      const { data, error } = await supabase
+        .from("tutor_knowledge_memory")
+        .select(SELECT_COLS)
+        .eq("scope", "global")
+        .eq("topic", topic)
+        .gte("quality_score", effectiveMin)
+        .order("quality_score", { ascending: false })
+        .order("reuse_count", { ascending: false })
+        .limit(5);
+      if (!error && data) {
+        const hit = (data as unknown as TutorMemoryRow[]).find(matchesBlockTypes);
+        if (hit) {
+          debug.tier = "topic";
+          debug.topicOverlap = true;
+          debug.durationMs = Date.now() - startedAt;
+          return { memory: hit, debug };
+        }
+      }
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("[tutorMemory] tier3 err:", e);
     }
   }
 
-  // 4) semantic similarity (embeddings) — opt-in via useSemantic
+  // Tier 4 + 5: semantic (com possíveis overlaps já vindos do RPC híbrido)
   if (params.useSemantic) {
+    const threshold =
+      params.semanticThreshold ?? dynamicSemanticThreshold(question);
+    debug.thresholdUsed = threshold;
+
     const semantic = await findSemanticMemory({
       question,
-      threshold: params.semanticThreshold ?? 0.6,
-      matchCount: 5,
+      threshold,
+      matchCount: 8,
+      topic,
+      subtopic,
     });
-    if (semantic && semantic.length > 0) {
+
+    if (semantic.length > 0) {
+      const top = semantic[0];
+      debug.semanticScore = top.similarity ?? null;
+      debug.hybridScore = top.hybrid_score ?? null;
+      debug.topicOverlap = !!top.topic_overlap;
+      debug.symptomOverlap = top.symptom_overlap_count ?? 0;
+      debug.abbreviationOverlap = top.abbreviation_overlap_count ?? 0;
+
       const hit = semantic.find(
         (r) => r.quality_score >= effectiveMin && matchesBlockTypes(r),
       );
-      if (hit) return hit;
+      if (hit) {
+        debug.tier = hit.topic_overlap ? "semantic_with_topic" : "semantic";
+        debug.durationMs = Date.now() - startedAt;
+        return { memory: hit, debug };
+      }
     }
   }
 
-  return null;
+  // Tier 6: symptom overlap (sem embeddings — só DB)
+  try {
+    const symptoms = extractClinicalKeywords(question);
+    if (symptoms.length > 0) {
+      const { data, error } = await supabase
+        .from("tutor_knowledge_memory")
+        .select(SELECT_COLS)
+        .eq("scope", "global")
+        .overlaps("symptom_keywords", symptoms)
+        .gte("quality_score", effectiveMin)
+        .order("quality_score", { ascending: false })
+        .order("reuse_count", { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        const hit = (data as unknown as TutorMemoryRow[]).find(matchesBlockTypes);
+        if (hit) {
+          debug.tier = "symptom_overlap";
+          debug.symptomOverlap = symptoms.filter((s) =>
+            (hit.symptom_keywords ?? []).includes(s),
+          ).length;
+          debug.durationMs = Date.now() - startedAt;
+          return { memory: hit, debug };
+        }
+      }
+    }
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn("[tutorMemory] tier6 err:", e);
+  }
+
+  // Tier 7: abbreviation overlap (substring)
+  try {
+    const abbrev = extractMedicalAbbreviations(question);
+    if (abbrev.length > 0) {
+      // OR de ilike — limitado a 3 tokens para não explodir
+      const tokens = abbrev.slice(0, 3);
+      const orFilters = tokens
+        .map((t) => `question_normalized.ilike.%${t}%`)
+        .join(",");
+      const { data, error } = await supabase
+        .from("tutor_knowledge_memory")
+        .select(SELECT_COLS)
+        .eq("scope", "global")
+        .or(orFilters)
+        .gte("quality_score", effectiveMin)
+        .order("quality_score", { ascending: false })
+        .order("reuse_count", { ascending: false })
+        .limit(5);
+
+      if (!error && data) {
+        const hit = (data as unknown as TutorMemoryRow[]).find(matchesBlockTypes);
+        if (hit) {
+          debug.tier = "abbreviation_overlap";
+          debug.abbreviationOverlap = tokens.length;
+          debug.durationMs = Date.now() - startedAt;
+          return { memory: hit, debug };
+        }
+      }
+    }
+  } catch (e) {
+    if (import.meta.env.DEV) console.warn("[tutorMemory] tier7 err:", e);
+  }
+
+  // Tier 8: fallback high-quality same specialty (>= 85)
+  if (specialty) {
+    try {
+      const { data, error } = await supabase
+        .from("tutor_knowledge_memory")
+        .select(SELECT_COLS)
+        .eq("scope", "global")
+        .eq("specialty", specialty)
+        .gte("quality_score", 85)
+        .order("quality_score", { ascending: false })
+        .order("reuse_count", { ascending: false })
+        .limit(3);
+      if (!error && data) {
+        const hit = (data as unknown as TutorMemoryRow[]).find(matchesBlockTypes);
+        if (hit) {
+          debug.tier = "specialty_fallback";
+          debug.durationMs = Date.now() - startedAt;
+          return { memory: hit, debug };
+        }
+      }
+    } catch (e) {
+      if (import.meta.env.DEV) console.warn("[tutorMemory] tier8 err:", e);
+    }
+  }
+
+  debug.durationMs = Date.now() - startedAt;
+  return { memory: null, debug };
 }
 
 /**
- * Busca memórias semanticamente similares chamando a edge function
- * `tutor-memory-search` (que gera embedding da pergunta + chama a RPC).
- *
- * Sempre retorna array (vazio em caso de falha) — nunca quebra o fluxo do Tutor.
+ * Busca memórias semanticamente similares via edge function `tutor-memory-search`.
+ * Sempre retorna array (vazio em caso de falha).
  */
 export async function findSemanticMemory(params: {
   question: string;
   threshold?: number;
   matchCount?: number;
+  topic?: string | null;
+  subtopic?: string | null;
 }): Promise<SemanticHit[]> {
   try {
     const { data, error } = await supabase.functions.invoke(
@@ -209,8 +419,10 @@ export async function findSemanticMemory(params: {
       {
         body: {
           text: params.question,
-          threshold: params.threshold ?? 0.82,
-          matchCount: params.matchCount ?? 5,
+          threshold: params.threshold,
+          matchCount: params.matchCount ?? 8,
+          topic: params.topic ?? null,
+          subtopic: params.subtopic ?? null,
         },
       },
     );
@@ -230,14 +442,7 @@ export async function findSemanticMemory(params: {
   }
 }
 
-/**
- * Salva uma nova memória pedagógica. Decide automaticamente o escopo:
- * `user` se a pergunta tem contexto pessoal ou se `forceUserScope=true`,
- * caso contrário `global`.
- *
- * Globais só são aceitas pelo banco se o usuário for admin (RLS).
- * Para a maioria dos alunos, salvamos como `user`.
- */
+/** Salva nova memória. */
 export async function saveTutorMemory(
   params: SaveMemoryParams,
 ): Promise<TutorMemoryRow | null> {
@@ -266,6 +471,11 @@ export async function saveTutorMemory(
 
   const blockTypes = Array.from(new Set(blocks.map((b) => b.type)));
 
+  // Pré-popula symptom_keywords (será re-confirmado pelo embedder).
+  const symptomKeywords = extractClinicalKeywords(
+    `${question} ${answerSummary ?? ""}`,
+  );
+
   const payload = {
     user_id: scope === "user" ? userId : null,
     scope,
@@ -279,6 +489,7 @@ export async function saveTutorMemory(
     answer_summary: answerSummary ?? null,
     blocks: blocks as never,
     block_types: blockTypes,
+    symptom_keywords: symptomKeywords,
     quality_score: Math.max(0, Math.min(100, qualityScore)),
     source: "tutor_ai",
     model_used: modelUsed ?? null,
@@ -287,7 +498,7 @@ export async function saveTutorMemory(
   const { data, error } = await supabase
     .from("tutor_knowledge_memory")
     .insert([payload])
-    .select("*")
+    .select(SELECT_COLS)
     .single();
 
   if (error) {
@@ -300,9 +511,6 @@ export async function saveTutorMemory(
   return data as unknown as TutorMemoryRow;
 }
 
-/**
- * Marca uma memória como reutilizada (incrementa reuse_count + last_used_at).
- */
 export async function markMemoryReused(memoryId: string): Promise<void> {
   const { error } = await supabase.rpc("tutor_memory_increment_reuse", {
     _memory_id: memoryId,
@@ -312,15 +520,6 @@ export async function markMemoryReused(memoryId: string): Promise<void> {
   }
 }
 
-/**
- * Ajusta a pontuação de qualidade (delta positivo ou negativo).
- *
- * Eventos sugeridos:
- *  - aluno curtiu resposta:        +5
- *  - mini quiz acertado:           +3
- *  - aluno pediu reformulação:    -10
- *  - mini quiz errado repetido:    -5
- */
 export async function adjustMemoryQuality(
   memoryId: string,
   delta: number,
@@ -333,3 +532,11 @@ export async function adjustMemoryQuality(
     console.warn("[tutorMemory] adjust_quality failed:", error.message);
   }
 }
+
+// Re-exports para conveniência
+export {
+  extractClinicalKeywords,
+  extractMedicalAbbreviations,
+  classifyQueryLength,
+  dynamicSemanticThreshold,
+};
