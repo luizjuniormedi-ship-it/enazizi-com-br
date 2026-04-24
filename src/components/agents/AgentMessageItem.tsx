@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
+import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
 
 interface AgentMessageItemProps {
@@ -22,6 +23,7 @@ interface AgentMessageItemProps {
   onSpeak: (text: string, idx: number) => void;
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
+  onRegenerateFromMemory?: (question: string) => void;
 }
 
 const markdownComponents = {
