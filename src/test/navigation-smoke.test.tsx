@@ -81,4 +81,3 @@ describe("Navigation smoke — App routes (estática)", () => {
     expect(appSrc).toContain(needle);
   });
 });
-});
