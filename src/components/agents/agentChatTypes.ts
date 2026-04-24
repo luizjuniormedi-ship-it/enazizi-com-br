@@ -1,3 +1,5 @@
+import type { TutorBlock } from "@/types/tutor";
+
 export type Msg = {
   role: "user" | "assistant";
   content: string;
@@ -7,6 +9,12 @@ export type Msg = {
   memoryReuseCount?: number;
   /** Original user question that produced this assistant message (for regenerate). */
   sourceQuestion?: string;
+  /** Cognitive blocks recovered from memory (renderer fallback when present). */
+  memoryBlocks?: TutorBlock[];
+  /** Quality score of the memory entry at retrieval time (badge display). */
+  memoryQualityScore?: number;
+  /** Scope of the memory entry at retrieval time (badge display). */
+  memoryScope?: "global" | "user";
 };
 
 export interface Conversation {

@@ -69,6 +69,8 @@ export interface SaveMemoryParams {
 }
 
 const DEFAULT_MIN_QUALITY = 80;
+/** Memórias com score abaixo deste valor são consideradas degradadas e ignoradas. */
+export const MEMORY_DEGRADED_THRESHOLD = 50;
 
 /**
  * Procura memória reutilizável. Retorna `null` se nada qualificar.
@@ -95,6 +97,10 @@ export async function findReusableMemory(
   const normalized = normalizeTutorQuestion(question);
   if (!normalized) return null;
 
+  // Garante que memórias degradadas (quality_score < 50) NUNCA sejam reutilizadas,
+  // mesmo se o caller passar um minQuality menor.
+  const effectiveMin = Math.max(minQuality, MEMORY_DEGRADED_THRESHOLD);
+
   // Helper: filtra por tipos de bloco requeridos
   const matchesBlockTypes = (row: TutorMemoryRow) => {
     if (!requiredBlockTypes || requiredBlockTypes.length === 0) return true;
@@ -108,7 +114,7 @@ export async function findReusableMemory(
       .from("tutor_knowledge_memory")
       .select("*")
       .eq("question_normalized", normalized)
-      .gte("quality_score", minQuality)
+      .gte("quality_score", effectiveMin)
       .order("quality_score", { ascending: false })
       .order("reuse_count", { ascending: false })
       .limit(5);
@@ -131,7 +137,7 @@ export async function findReusableMemory(
       .eq("scope", "global")
       .eq("topic", topic)
       .eq("subtopic", subtopic)
-      .gte("quality_score", minQuality)
+      .gte("quality_score", effectiveMin)
       .order("quality_score", { ascending: false })
       .order("reuse_count", { ascending: false })
       .limit(5);
@@ -149,7 +155,7 @@ export async function findReusableMemory(
       .select("*")
       .eq("scope", "global")
       .eq("topic", topic)
-      .gte("quality_score", minQuality)
+      .gte("quality_score", effectiveMin)
       .order("quality_score", { ascending: false })
       .order("reuse_count", { ascending: false })
       .limit(5);

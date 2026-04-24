@@ -67,6 +67,8 @@ const AgentMessageItem = memo(
                 <div className="mt-3">
                   <MemoryReuseBadge
                     reuseCount={msg.memoryReuseCount}
+                    qualityScore={msg.memoryQualityScore}
+                    scope={msg.memoryScope}
                     onRegenerate={
                       onRegenerateFromMemory && !isLoading
                         ? () => onRegenerateFromMemory(msg.sourceQuestion!)

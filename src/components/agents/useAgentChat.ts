@@ -199,6 +199,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         setLoadingStage("🧠 Verificando memória pedagógica...");
         const reuse = await memory.lookup(text, user?.id ?? null);
         if (reuse && reuse.markdown) {
+          // Reuso bem-sucedido → +1 (fire-and-forget).
+          import("@/lib/tutor/tutorMemory")
+            .then(({ adjustMemoryQuality }) => adjustMemoryQuality(reuse.hit.id, +1))
+            .catch(() => {});
           setLoadingStage("✨ Recuperando resposta da memória...");
           // Stream local em 3 etapas para manter sensação cinematográfica.
           const md = reuse.markdown;
@@ -236,6 +240,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
                     memoryId: reuse.hit.id,
                     memoryReuseCount: (reuse.hit.reuse_count ?? 0) + 1,
                     sourceQuestion: text,
+                    memoryQualityScore: reuse.hit.quality_score,
+                    memoryScope: reuse.hit.scope,
+                    memoryBlocks: reuse.hit.blocks,
                   }
                 : m,
             ),
@@ -397,10 +404,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
    */
   const regenerateFromMemory = useCallback(
     (question: string) => {
+      // Penaliza a memória cuja resposta o usuário rejeitou.
+      const last = messages[messages.length - 1];
+      if (last?.role === "assistant" && last.memoryId) {
+        import("@/lib/tutor/tutorMemory")
+          .then(({ adjustMemoryQuality }) => adjustMemoryQuality(last.memoryId!, -10))
+          .catch(() => {});
+      }
       bypassMemoryRef.current = true;
       handleSend(question);
     },
-    [handleSend],
+    [handleSend, messages],
   );
 
   // Expose handleSend to parent
