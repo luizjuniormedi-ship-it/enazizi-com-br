@@ -153,11 +153,26 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const DashboardSidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { isStaff: isInstitutionalStaff } = useInstitution();
   const { isModuleEnabled } = useModuleAccess();
+
+  // Pendências (revisões) — para badge no CTA "Continuar"
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["sidebar-pending", user?.id],
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("revisoes")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user!.id)
+        .eq("status", "pendente");
+      return count || 0;
+    },
+  });
 
   // Modo compacto quando há sessão de estudo ativa
   const isStudyActive = useMemo(() => {
