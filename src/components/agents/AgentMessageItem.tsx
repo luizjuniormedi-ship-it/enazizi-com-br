@@ -1,9 +1,11 @@
-import { memo } from "react";
+import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
+import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
+import { adjustMemoryQuality } from "@/lib/tutor/tutorMemory";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
 
 interface AgentMessageItemProps {
@@ -40,6 +42,13 @@ const AgentMessageItem = memo(
     isSaved, hasOnSaveMessage, linkToAgent, selectedUploadIds, renderAssistantMessage,
     onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
   }: AgentMessageItemProps) => {
+    // Filtra blocos cognitivos válidos (não-vazios) — defesa extra contra payload incompleto.
+    const cognitiveBlocks = useMemo(
+      () => (Array.isArray(msg.memoryBlocks) ? msg.memoryBlocks.filter(Boolean) : []),
+      [msg.memoryBlocks],
+    );
+    const hasCognitiveBlocks = cognitiveBlocks.length > 0;
+
     return (
       <div className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
         {msg.role === "assistant" && (
@@ -56,7 +65,16 @@ const AgentMessageItem = memo(
         >
           {msg.role === "assistant" ? (
             <>
-              {renderAssistantMessage ? (
+              {hasCognitiveBlocks ? (
+                <TutorBlockRenderer
+                  blocks={cognitiveBlocks}
+                  onQuizAnswered={({ correct }) => {
+                    // Fase 2: +3 acerto / -5 erro quando a mensagem veio de memória.
+                    if (!msg.memoryId) return;
+                    adjustMemoryQuality(msg.memoryId, correct ? 3 : -5).catch(() => {});
+                  }}
+                />
+              ) : renderAssistantMessage ? (
                 renderAssistantMessage(msg.content)
               ) : (
                 <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
@@ -143,6 +161,7 @@ const AgentMessageItem = memo(
     prev.msg.role === next.msg.role &&
     prev.msg.content === next.msg.content &&
     prev.msg.memoryId === next.msg.memoryId &&
+    prev.msg.memoryBlocks === next.msg.memoryBlocks &&
     prev.index === next.index &&
     prev.isLoading === next.isLoading &&
     prev.speakingMsgIdx === next.speakingMsgIdx &&
