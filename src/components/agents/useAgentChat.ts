@@ -326,6 +326,21 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           history.loadConversations();
         }
 
+        // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
+        // Salva a resposta gerada para reuso futuro. Falha-silenciosa.
+        if (assistantSoFar && assistantSoFar.trim().length > 0) {
+          memory
+            .persist({
+              question: text,
+              answerMarkdown: assistantSoFar,
+              userId: user?.id ?? null,
+              topic,
+              subtopic,
+              specialty,
+            })
+            .catch(() => {});
+        }
+
         if (onSaveMessage && assistantSoFar) {
           try {
             const count = await onSaveMessage(assistantSoFar);
