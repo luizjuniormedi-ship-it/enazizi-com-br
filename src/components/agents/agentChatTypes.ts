@@ -1,4 +1,13 @@
-export type Msg = { role: "user" | "assistant"; content: string };
+export type Msg = {
+  role: "user" | "assistant";
+  content: string;
+  /** Set when the assistant message was retrieved from tutor_knowledge_memory. */
+  memoryId?: string;
+  /** Reuse count of the memory entry at retrieval time (for badge display). */
+  memoryReuseCount?: number;
+  /** Original user question that produced this assistant message (for regenerate). */
+  sourceQuestion?: string;
+};
 
 export interface Conversation {
   id: string;
