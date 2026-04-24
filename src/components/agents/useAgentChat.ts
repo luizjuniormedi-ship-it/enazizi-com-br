@@ -384,7 +384,23 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       streamResponse,
       isAdaptiveEnabled,
       fetchAdaptive,
+      memory,
+      topic,
+      subtopic,
+      specialty,
     ]
+  );
+
+  /**
+   * Força a regeneração de uma resposta vinda da memória usando IA.
+   * Usado pelo botão "Atualizar com IA" no MemoryReuseBadge.
+   */
+  const regenerateFromMemory = useCallback(
+    (question: string) => {
+      bypassMemoryRef.current = true;
+      handleSend(question);
+    },
+    [handleSend],
   );
 
   // Expose handleSend to parent
