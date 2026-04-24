@@ -50,6 +50,14 @@ export interface FindMemoryParams {
   requiredBlockTypes?: TutorBlockType[];
   /** quality_score mínimo para considerar reutilizável. */
   minQuality?: number;
+  /** Se true, faz fallback para busca semântica (embeddings) quando exact/topic falharem. */
+  useSemantic?: boolean;
+  /** Threshold de similaridade (0-1) para semantic match. Default 0.82. */
+  semanticThreshold?: number;
+}
+
+export interface SemanticHit extends TutorMemoryRow {
+  similarity: number;
 }
 
 export interface SaveMemoryParams {
