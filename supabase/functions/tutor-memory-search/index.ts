@@ -69,14 +69,15 @@ Deno.serve(async (req) => {
     });
 
     const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } =
-      await supabase.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) {
+    const { data: userData, error: userErr } =
+      await supabase.auth.getUser(token);
+    if (userErr || !userData?.user?.id) {
       return new Response(JSON.stringify({ ok: true, hits: [] }), {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
     const text: string = (body?.text ?? body?.question ?? "").toString();
@@ -116,7 +117,7 @@ Deno.serve(async (req) => {
       query_embedding: vec as unknown as string,
       match_threshold: Math.max(0.5, Math.min(0.99, threshold)),
       match_count: matchCount,
-      user_id_filter: claims.claims.sub,
+      user_id_filter: userId,
     });
 
     if (error) {
