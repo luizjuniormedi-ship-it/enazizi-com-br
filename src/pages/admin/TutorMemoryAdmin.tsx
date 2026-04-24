@@ -126,6 +126,19 @@ const ScopeBadge = ({ scope }: { scope: "global" | "user" }) => {
   );
 };
 
+const EmbeddingBadge = ({ status }: { status?: string | null }) => {
+  const s = status ?? "pending";
+  let tone: "default" | "secondary" | "destructive" | "outline" = "outline";
+  if (s === "ready") tone = "default";
+  else if (s === "failed") tone = "destructive";
+  else if (s === "skipped") tone = "secondary";
+  return (
+    <Badge variant={tone} className="font-mono text-[10px]">
+      {s}
+    </Badge>
+  );
+};
+
 export default function TutorMemoryAdmin() {
   const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "user">(
     "all",
@@ -764,6 +777,9 @@ function MemoryTable({
                     <QualityBadge score={r.quality_score} />
                   </TableCell>
                   <TableCell className="text-right">{r.reuse_count}</TableCell>
+                  <TableCell>
+                    <EmbeddingBadge status={r.embedding_status} />
+                  </TableCell>
                   <TableCell className="text-xs">
                     {(r.block_types ?? []).slice(0, 3).map((t) => (
                       <Badge
