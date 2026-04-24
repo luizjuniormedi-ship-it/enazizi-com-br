@@ -219,7 +219,7 @@ export async function saveTutorMemory(
 
   const { data, error } = await supabase
     .from("tutor_knowledge_memory")
-    .insert(payload)
+    .insert([payload])
     .select("*")
     .single();
 

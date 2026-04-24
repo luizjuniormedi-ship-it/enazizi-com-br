@@ -15,8 +15,7 @@ describe("normalizeTutorQuestion", () => {
 
   it("retorna string vazia para entrada inválida", () => {
     expect(normalizeTutorQuestion("")).toBe("");
-    // @ts-expect-error testando entrada inválida
-    expect(normalizeTutorQuestion(null)).toBe("");
+    expect(normalizeTutorQuestion(null as unknown as string)).toBe("");
   });
 
   it("é estável entre variações de redação", () => {
