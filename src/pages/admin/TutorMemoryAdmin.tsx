@@ -14,6 +14,7 @@
  * Mobile-friendly. Funciona com tabela vazia.
  */
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -57,6 +58,8 @@ import {
   AlertTriangle,
   Globe,
   User,
+  Zap,
+  Loader2,
 } from "lucide-react";
 import { MEMORY_DEGRADED_THRESHOLD } from "@/lib/tutor/tutorMemory";
 
@@ -82,6 +85,7 @@ interface MemoryRow {
   updated_at: string;
   last_used_at: string | null;
   embedding_status?: string | null;
+  embedding_model?: string | null;
 }
 
 const truncate = (s: string | null | undefined, n = 80) => {
@@ -130,6 +134,10 @@ export default function TutorMemoryAdmin() {
   const [topicFilter, setTopicFilter] = useState<string>("");
   const [minQuality, setMinQuality] = useState<string>("");
   const [maxQuality, setMaxQuality] = useState<string>("");
+  const [embeddingFilter, setEmbeddingFilter] = useState<
+    "all" | "pending" | "ready" | "failed" | "skipped"
+  >("all");
+  const [embedderRunning, setEmbedderRunning] = useState(false);
 
   const { data, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin", "tutor-memory", "rows"],
@@ -137,7 +145,7 @@ export default function TutorMemoryAdmin() {
       const { data, error } = await supabase
         .from("tutor_knowledge_memory")
         .select(
-          "id, user_id, scope, question_original, question_normalized, topic, subtopic, specialty, intent, difficulty_level, block_types, quality_score, reuse_count, source, model_used, created_at, updated_at, last_used_at, embedding_status",
+          "id, user_id, scope, question_original, question_normalized, topic, subtopic, specialty, intent, difficulty_level, block_types, quality_score, reuse_count, source, model_used, created_at, updated_at, last_used_at, embedding_status, embedding_model",
         )
         .order("updated_at", { ascending: false })
         .limit(PAGE_SIZE);
@@ -146,6 +154,29 @@ export default function TutorMemoryAdmin() {
     },
     staleTime: 30_000,
   });
+
+  const runEmbedder = async (retryFailed = false) => {
+    setEmbedderRunning(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke(
+        "tutor-memory-embedder",
+        { body: { limit: 25, retryFailed } },
+      );
+      if (error) throw error;
+      toast.success(
+        `Embeddings: ${result?.succeeded ?? 0} ok · ${result?.failed ?? 0} falhas · ${result?.skipped ?? 0} skipped`,
+      );
+      await refetch();
+    } catch (err) {
+      toast.error(
+        `Falha ao processar embeddings: ${
+          err instanceof Error ? err.message : "erro desconhecido"
+        }`,
+      );
+    } finally {
+      setEmbedderRunning(false);
+    }
+  };
 
   const rows = useMemo(() => data ?? [], [data]);
 
@@ -156,6 +187,10 @@ export default function TutorMemoryAdmin() {
       if (blockTypeFilter !== "all") {
         const types = r.block_types ?? [];
         if (!types.includes(blockTypeFilter)) return false;
+      }
+      if (embeddingFilter !== "all") {
+        const st = r.embedding_status ?? "pending";
+        if (st !== embeddingFilter) return false;
       }
       if (topicFilter.trim()) {
         const needle = topicFilter.trim().toLowerCase();
@@ -168,7 +203,7 @@ export default function TutorMemoryAdmin() {
       if (!Number.isNaN(max) && r.quality_score > max) return false;
       return true;
     });
-  }, [rows, scopeFilter, blockTypeFilter, topicFilter, minQuality, maxQuality]);
+  }, [rows, scopeFilter, blockTypeFilter, embeddingFilter, topicFilter, minQuality, maxQuality]);
 
   // ── Resumos (computados no cliente; volume é pequeno por padrão) ─────────
   const summary = useMemo(() => {
@@ -184,6 +219,17 @@ export default function TutorMemoryAdmin() {
     ).length;
     const aboveStrong = rows.filter((r) => r.quality_score >= 80).length;
     const totalReuse = rows.reduce((acc, r) => acc + (r.reuse_count ?? 0), 0);
+    const embPending = rows.filter((r) => (r.embedding_status ?? "pending") === "pending").length;
+    const embReady = rows.filter((r) => r.embedding_status === "ready").length;
+    const embFailed = rows.filter((r) => r.embedding_status === "failed").length;
+    const embSkipped = rows.filter((r) => r.embedding_status === "skipped").length;
+    const modelMap = new Map<string, number>();
+    rows.forEach((r) => {
+      if (r.embedding_model) {
+        modelMap.set(r.embedding_model, (modelMap.get(r.embedding_model) ?? 0) + 1);
+      }
+    });
+    const topModel = [...modelMap.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—";
     return {
       total,
       totalGlobal,
@@ -192,6 +238,11 @@ export default function TutorMemoryAdmin() {
       belowThreshold,
       aboveStrong,
       totalReuse,
+      embPending,
+      embReady,
+      embFailed,
+      embSkipped,
+      topModel,
     };
   }, [rows]);
 
@@ -271,18 +322,43 @@ export default function TutorMemoryAdmin() {
             automaticamente.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-2"
-        >
-          <RefreshCw
-            className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`}
-          />
-          Atualizar
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => runEmbedder(false)}
+            disabled={embedderRunning}
+            className="gap-2"
+          >
+            {embedderRunning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Zap className="h-4 w-4" />
+            )}
+            Processar embeddings pendentes
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => runEmbedder(true)}
+            disabled={embedderRunning}
+            className="gap-2"
+            title="Reprocessar memórias com embedding_status = failed"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Retry failed
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
+        </div>
       </header>
 
       {/* Cards de resumo */}

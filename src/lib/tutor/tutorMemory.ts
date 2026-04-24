@@ -50,6 +50,14 @@ export interface FindMemoryParams {
   requiredBlockTypes?: TutorBlockType[];
   /** quality_score mínimo para considerar reutilizável. */
   minQuality?: number;
+  /** Se true, faz fallback para busca semântica (embeddings) quando exact/topic falharem. */
+  useSemantic?: boolean;
+  /** Threshold de similaridade (0-1) para semantic match. Default 0.82. */
+  semanticThreshold?: number;
+}
+
+export interface SemanticHit extends TutorMemoryRow {
+  similarity: number;
 }
 
 export interface SaveMemoryParams {
@@ -166,7 +174,60 @@ export async function findReusableMemory(
     }
   }
 
+  // 4) semantic similarity (embeddings) — opt-in via useSemantic
+  if (params.useSemantic) {
+    const semantic = await findSemanticMemory({
+      question,
+      threshold: params.semanticThreshold ?? 0.82,
+      matchCount: 5,
+    });
+    if (semantic && semantic.length > 0) {
+      const hit = semantic.find(
+        (r) => r.quality_score >= effectiveMin && matchesBlockTypes(r),
+      );
+      if (hit) return hit;
+    }
+  }
+
   return null;
+}
+
+/**
+ * Busca memórias semanticamente similares chamando a edge function
+ * `tutor-memory-search` (que gera embedding da pergunta + chama a RPC).
+ *
+ * Sempre retorna array (vazio em caso de falha) — nunca quebra o fluxo do Tutor.
+ */
+export async function findSemanticMemory(params: {
+  question: string;
+  threshold?: number;
+  matchCount?: number;
+}): Promise<SemanticHit[]> {
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      "tutor-memory-search",
+      {
+        body: {
+          text: params.question,
+          threshold: params.threshold ?? 0.82,
+          matchCount: params.matchCount ?? 5,
+        },
+      },
+    );
+    if (error) {
+      if (import.meta.env.DEV) {
+        console.warn("[tutorMemory] semantic search error:", error.message);
+      }
+      return [];
+    }
+    const hits = (data?.hits ?? []) as SemanticHit[];
+    return hits;
+  } catch (err) {
+    if (import.meta.env.DEV) {
+      console.warn("[tutorMemory] semantic search failed:", err);
+    }
+    return [];
+  }
 }
 
 /**

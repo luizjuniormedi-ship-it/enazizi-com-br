@@ -144,6 +144,8 @@ export function useTutorMemoryBridge(opts: UseTutorMemoryBridgeOpts = {}) {
           topic: opts.topic ?? null,
           subtopic: opts.subtopic ?? null,
           minQuality: MIN_REUSE_QUALITY,
+          useSemantic: true,
+          semanticThreshold: 0.82,
         });
         if (!hit) return null;
 
