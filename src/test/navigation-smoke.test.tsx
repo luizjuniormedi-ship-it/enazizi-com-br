@@ -76,7 +76,7 @@ describe("Navigation smoke — App routes (estática)", () => {
   it.each([
     ['path="/dashboard"', "Hoje (layout)"],
     ['path="sessao-estudo"', "Continuar (rota filha do dashboard)"],
-    ['path="/dashboard/simulados"', "Simulados"],
+    ['path="simulados"', "Simulados (rota filha do dashboard)"],
   ])("rota %s (%s) está registrada em App.tsx", (needle) => {
     expect(appSrc).toContain(needle);
   });
