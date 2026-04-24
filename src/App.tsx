@@ -98,6 +98,7 @@ const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixP
 const EnaflixCatalogPage = lazyWithRetry(() => import("./pages/EnaflixCatalogPage"), "EnaflixCatalogPage");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
+const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowcase"), "CognitiveShowcase");
 
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
@@ -248,6 +249,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/enaflix" element={<ProtectedRoute><EnaflixPage /></ProtectedRoute>} />
               <Route path="/enaflix/tudo" element={<ProtectedRoute><EnaflixCatalogPage /></ProtectedRoute>} />
+              <Route path="/dev/cognitive" element={<CognitiveShowcase />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
