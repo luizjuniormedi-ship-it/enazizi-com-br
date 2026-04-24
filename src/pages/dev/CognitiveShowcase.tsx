@@ -9,8 +9,7 @@
  * Acesso: /dev/cognitive (rota pública, gated pelo path obscuro).
  */
 
-import { useMemo, useState } from "react";
-import { Helmet } from "react-helmet-async";
+import { useEffect, useMemo, useState } from "react";
 import { Code, Eye, EyeOff, Smartphone, Monitor, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -322,7 +321,6 @@ const CASE_BROKEN: TutorBlock[] = [
       items: [
         { name: "Item A", probability: 1.5, severity: "critica" },
         { name: "Item B", probability: -0.2 },
-        // @ts-expect-error mock intencionalmente inválido
         { name: "", probability: 0.3 },
       ],
     },
