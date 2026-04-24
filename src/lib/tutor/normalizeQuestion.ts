@@ -42,6 +42,45 @@ const STOPWORDS = new Set([
   "ola", "oi", "bom", "boa", "dia", "tarde", "noite",
 ]);
 
+/**
+ * Expansão determinística de abreviações médicas comuns.
+ * Aplicada antes da remoção de stopwords para que sinônimos sejam capturados
+ * pelo embedding (ex: "ICC" → "insuficiencia cardiaca").
+ *
+ * Regra: substituição em palavra inteira (whole-word), case-insensitive.
+ * Mantemos a abreviação original também para não perder a forma curta.
+ */
+const MEDICAL_ABBREVIATIONS: Record<string, string> = {
+  icc: "insuficiencia cardiaca",
+  icfer: "insuficiencia cardiaca fracao ejecao reduzida",
+  icfep: "insuficiencia cardiaca fracao ejecao preservada",
+  icfei: "insuficiencia cardiaca fracao ejecao intermediaria",
+  iam: "infarto agudo miocardio",
+  tep: "tromboembolismo pulmonar",
+  avc: "acidente vascular cerebral",
+  avci: "acidente vascular cerebral isquemico",
+  avch: "acidente vascular cerebral hemorragico",
+  dpoc: "doenca pulmonar obstrutiva cronica",
+  hda: "hemorragia digestiva alta",
+  hdb: "hemorragia digestiva baixa",
+  has: "hipertensao arterial sistemica",
+  dm: "diabetes mellitus",
+  irc: "insuficiencia renal cronica",
+  ira: "insuficiencia renal aguda",
+  itu: "infeccao trato urinario",
+  ivas: "infeccao vias aereas superiores",
+  pcr: "parada cardiorrespiratoria",
+  sca: "sindrome coronariana aguda",
+};
+
+/** Expande abreviações conhecidas em um texto já lowercase + sem acentos. */
+function expandMedicalAbbreviations(s: string): string {
+  return s.replace(/\b([a-z]{2,6})\b/g, (match) => {
+    const expansion = MEDICAL_ABBREVIATIONS[match];
+    return expansion ? `${match} ${expansion}` : match;
+  });
+}
+
 function stripDiacritics(s: string): string {
   return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
@@ -61,7 +100,8 @@ export function normalizeTutorQuestion(input: string): string {
   const lowered = input.toLowerCase();
   const noAccents = stripDiacritics(lowered);
   const noPunct = stripPunctuation(noAccents);
-  const collapsed = collapseSpaces(noPunct);
+  const expanded = expandMedicalAbbreviations(noPunct);
+  const collapsed = collapseSpaces(expanded);
 
   const tokens = collapsed.split(" ").filter((t) => t.length > 0 && !STOPWORDS.has(t));
 

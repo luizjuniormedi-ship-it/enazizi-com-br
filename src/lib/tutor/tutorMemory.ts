@@ -178,7 +178,7 @@ export async function findReusableMemory(
   if (params.useSemantic) {
     const semantic = await findSemanticMemory({
       question,
-      threshold: params.semanticThreshold ?? 0.82,
+      threshold: params.semanticThreshold ?? 0.6,
       matchCount: 5,
     });
     if (semantic && semantic.length > 0) {

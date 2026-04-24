@@ -43,7 +43,7 @@ const VARIANTS = [
   "Paciente com dispneia e edema",
 ];
 
-const SIMILARITY_THRESHOLD = 0.82;
+const SIMILARITY_THRESHOLD = 0.6;
 const MIN_QUALITY = 80;
 
 interface VariantResult {

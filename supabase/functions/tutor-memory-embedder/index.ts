@@ -32,6 +32,38 @@ const PII_PATTERNS: RegExp[] = [
   /\bpaciente\s+(joão|joao|maria|josé|jose|ana|carlos|pedro)\b/i,
 ];
 
+// Expansão de abreviações médicas (deve casar com src/lib/tutor/normalizeQuestion.ts)
+const MEDICAL_ABBREVIATIONS: Record<string, string> = {
+  icc: "insuficiencia cardiaca",
+  icfer: "insuficiencia cardiaca fracao ejecao reduzida",
+  icfep: "insuficiencia cardiaca fracao ejecao preservada",
+  icfei: "insuficiencia cardiaca fracao ejecao intermediaria",
+  iam: "infarto agudo miocardio",
+  tep: "tromboembolismo pulmonar",
+  avc: "acidente vascular cerebral",
+  avci: "acidente vascular cerebral isquemico",
+  avch: "acidente vascular cerebral hemorragico",
+  dpoc: "doenca pulmonar obstrutiva cronica",
+  hda: "hemorragia digestiva alta",
+  hdb: "hemorragia digestiva baixa",
+  has: "hipertensao arterial sistemica",
+  dm: "diabetes mellitus",
+  irc: "insuficiencia renal cronica",
+  ira: "insuficiencia renal aguda",
+  itu: "infeccao trato urinario",
+  ivas: "infeccao vias aereas superiores",
+  pcr: "parada cardiorrespiratoria",
+  sca: "sindrome coronariana aguda",
+};
+
+function expandAbbrev(s: string): string {
+  if (!s) return s;
+  return s.replace(/\b([a-zA-ZÀ-ÿ]{2,6})\b/g, (match) => {
+    const expansion = MEDICAL_ABBREVIATIONS[match.toLowerCase()];
+    return expansion ? `${match} ${expansion}` : match;
+  });
+}
+
 function looksPersonal(text: string): boolean {
   if (!text) return false;
   return PII_PATTERNS.some((rx) => rx.test(text));
@@ -49,13 +81,32 @@ interface MemoryRow {
   block_types: string[] | null;
 }
 
+/**
+ * Constrói o texto a ser embeddado.
+ *
+ * Estratégia: a PERGUNTA domina o vetor (repetida 3x e expandida com
+ * abreviações médicas). Topic/subtopic reforçam contexto clínico. O
+ * answer_summary entra apenas como contexto curto (max 400 chars), evitando
+ * que respostas longas diluam a similaridade contra perguntas curtas como
+ * "O que é ICC?".
+ */
 function buildEmbeddingText(row: MemoryRow): string {
+  const question =
+    row.question_normalized ?? row.question_original ?? "";
+  const expandedQuestion = expandAbbrev(question);
+  const summarySnippet = (row.answer_summary ?? "").slice(0, 400);
+
   const parts = [
-    row.question_normalized ?? row.question_original ?? "",
+    // Pergunta repetida 3x — domina o vetor
+    expandedQuestion,
+    expandedQuestion,
+    expandedQuestion,
+    // Contexto curricular curto
     row.topic ?? "",
     row.subtopic ?? "",
     row.specialty ?? "",
-    row.answer_summary ?? "",
+    // Resposta apenas como contexto leve
+    summarySnippet,
     (row.block_types ?? []).join(" "),
   ];
   return parts.filter(Boolean).join("\n").slice(0, 4000);
