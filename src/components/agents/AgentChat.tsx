@@ -303,6 +303,7 @@ const AgentChat = ({
         onSpeak={chat.speakText}
         onSave={chat.handleSaveMessage}
         onLink={onLink}
+        onRegenerateFromMemory={chat.regenerateFromMemory}
       />
 
       <AgentInputBar

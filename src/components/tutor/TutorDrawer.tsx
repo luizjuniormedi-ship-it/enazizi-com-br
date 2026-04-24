@@ -100,6 +100,9 @@ export default function TutorDrawer() {
             functionName="mentor-chat"
             quickActions={QUICK_ACTIONS}
             initialPrompt={initialPrompt || undefined}
+            topic={context?.topic ?? null}
+            subtopic={context?.subtopic ?? null}
+            specialty={context?.specialty ?? null}
           />
         </div>
       </SheetContent>
