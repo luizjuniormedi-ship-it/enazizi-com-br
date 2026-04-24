@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
 
     const { data, error } = await supabase.rpc("match_tutor_memory", {
       query_embedding: vec as unknown as string,
-      match_threshold: Math.max(0.5, Math.min(0.99, threshold)),
+      match_threshold: Math.max(0.3, Math.min(0.99, threshold)),
       match_count: matchCount,
       user_id_filter: userId,
     });
