@@ -180,6 +180,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       setInput("");
       setIsLoading(true);
       setLoadingStage("🔍 Buscando referências científicas...");
+      const tutorStartedAt = Date.now();
+      telemetry.track("tutor_message_sent", {
+        topic: topic ?? null,
+        subtopic: subtopic ?? null,
+        message_length: text.length,
+      });
 
       // Ensure conversation exists (delegated to useTutorHistory)
       const convId = await history.ensureConversation(text);
