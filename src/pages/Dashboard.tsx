@@ -214,7 +214,7 @@ const Dashboard = () => {
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
                 onStart={() => {
-                  navigate(`/dashboard/sessao-estudo?source=dashboard_hero`);
+                  navigate(`/dashboard/flashcards?source=dashboard_hero`);
                 }}
                 onRefresh={handleRefresh}
                 onShowAlternatives={() => {
