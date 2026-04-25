@@ -353,6 +353,7 @@ const StudySession = () => {
     const correct = signal.wasCorrect;
     const subtopic = signal.subtopic || searchParams.get("subtopic") || undefined;
     const errorCategory = signal.errorCategory;
+    trackAction('first_answer_submitted', { topic, correct, subtopic, error_category: errorCategory, confidence: signal.confidence });
 
     try {
       // Update local domain map (lightweight; not adaptive critical-path)
