@@ -99,15 +99,16 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             {/* Wordmark com shimmer ambient muito sutil */}
             <span
               className={cn(
-                "relative font-black text-base sm:text-lg tracking-[0.18em] select-none",
+                "relative font-black text-lg sm:text-xl tracking-[0.25em] select-none",
                 "bg-clip-text text-transparent",
               )}
               style={{
                 fontFeatureSettings: '"ss01"',
                 backgroundImage:
-                  "linear-gradient(110deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,1) 30%, rgba(255,255,255,0.65) 50%, rgba(255,255,255,1) 70%, rgba(255,255,255,0.92) 100%)",
+                  "linear-gradient(110deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,1) 30%, rgba(255,255,255,0.7) 50%, rgba(255,255,255,1) 70%, rgba(255,255,255,0.95) 100%)",
                 backgroundSize: "200% 100%",
-                animation: "enaflix-shimmer 9s linear infinite",
+                animation: "enaflix-shimmer 8s linear infinite",
+                textShadow: "0 0 20px rgba(255,255,255,0.15)",
               }}
             >
               ENAFLIX

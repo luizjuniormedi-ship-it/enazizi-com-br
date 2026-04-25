@@ -183,7 +183,7 @@ function CinematicMissionHero({
               initial={{ opacity: 0, x: -8, filter: "blur(6px)" }}
               animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
               transition={{ delay: 0.2, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="text-2xl sm:text-3xl lg:text-[2.5rem] font-black leading-[1.1] tracking-tight text-foreground"
+              className="text-2xl sm:text-3xl lg:text-4xl font-black leading-[1.05] tracking-tight text-foreground"
             >
               {recommendation.title}
             </motion.h1>
@@ -193,7 +193,7 @@ function CinematicMissionHero({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.5 }}
-              className="text-sm sm:text-base text-muted-foreground leading-relaxed line-clamp-2 max-w-xl"
+              className="text-sm sm:text-[15px] text-muted-foreground/90 leading-relaxed line-clamp-2 max-w-xl font-medium"
             >
               {recommendation.description}
             </motion.p>
