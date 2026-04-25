@@ -306,6 +306,7 @@ const DashboardLayout = () => {
       "/dashboard/plantao",
       "/dashboard/simulacao-clinica",
       "/dashboard/prova-pratica",
+      "/dashboard/sessao-estudo", // Sessão de Estudo agora é modo imersivo
     ];
     const isFocusRoute =
       focusRoutes.includes(path) ||
@@ -313,8 +314,8 @@ const DashboardLayout = () => {
       path.startsWith("/enaflix");
     // Simulado em andamento: detectado por query param `?running=1` ou rota filha
     const isSimuladoRunning =
-      path.startsWith("/dashboard/simulados/") &&
-      path !== "/dashboard/simulados";
+      (path.startsWith("/dashboard/simulados/") && path !== "/dashboard/simulados") ||
+      (path === "/dashboard/simulados" && location.search.includes("running=1"));
     const params = new URLSearchParams(location.search);
     const fromMission =
       params.get("sc_origin") === "mission" ||

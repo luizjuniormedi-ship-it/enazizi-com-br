@@ -298,6 +298,11 @@ const Simulados = () => {
     setRestoredState({ timeLeft });
     startTimeRef.current = new Date();
     setPhase("exam");
+    
+    // Sincroniza com a URL para DashboardLayout ativar o modo imersivo
+    const params = new URLSearchParams(window.location.search);
+    params.set("running", "1");
+    window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
   };
 
   const handleAcceptPartial = () => {
