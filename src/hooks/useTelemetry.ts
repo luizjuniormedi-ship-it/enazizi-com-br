@@ -1,10 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 import { telemetry } from '@/lib/pedagogicalTelemetry';
 
 export const useTelemetry = () => {
   const location = useLocation();
-  const startTimeRef = useRef<number>(Date.now());
   const recentRoutesRef = useRef<Array<{ path: string; ts: number }>>([]);
 
   useEffect(() => {
@@ -24,9 +23,12 @@ export const useTelemetry = () => {
     }
   }, [location.pathname]);
 
-  const trackAction = (eventName: Parameters<typeof telemetry.track>[0], props?: any) => {
-    telemetry.track(eventName, props);
-  };
+  const trackAction = useCallback(
+    (eventName: Parameters<typeof telemetry.track>[0], props?: any) => {
+      telemetry.track(eventName, props);
+    },
+    []
+  );
 
   return { trackAction };
 };
