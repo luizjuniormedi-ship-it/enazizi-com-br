@@ -131,24 +131,30 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
   if (dismissed) return null;
 
   return (
-    <Card className="border-primary/20 overflow-hidden">
-      <CardHeader className="pb-2">
+    <Card className="border-primary/10 bg-primary/5 overflow-hidden shadow-sm rounded-2xl">
+      <CardHeader className="pb-3 px-5 pt-5">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Rocket className="h-5 w-5 text-primary" />
-            Jornada de 7 Dias
-            <Badge variant="secondary" className="text-xs">
-              {completed}/{items.length}
-            </Badge>
-          </CardTitle>
-          <div className="flex items-center gap-1">
-            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 gap-1">
-              <Star className="h-3 w-3" /> {totalXp} XP
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                <Rocket className="h-5 w-5" />
+              </div>
+              <CardTitle className="text-base font-black tracking-tight uppercase">
+                Jornada de 7 Dias
+              </CardTitle>
+            </div>
+            <p className="text-[11px] font-semibold text-muted-foreground tracking-wide uppercase opacity-70">
+              Explore o ENAZIZI e ganhe XP
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 gap-1.5 font-bold border-0 h-7 rounded-lg">
+              <Star className="h-3.5 w-3.5 fill-amber-500" /> {totalXp} XP
             </Badge>
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-8 w-8 rounded-lg hover:bg-primary/10 transition-colors"
               onClick={() => setExpanded(!expanded)}
             >
               {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -157,7 +163,7 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className="h-8 w-8 rounded-lg hover:bg-destructive/10 text-destructive transition-colors"
                 onClick={() => {
                   localStorage.setItem(DISMISSED_KEY, "true");
                   setDismissed(true);
@@ -168,46 +174,56 @@ export default function OnboardingChecklist({ stats, metrics, hasCompletedDiagno
             )}
           </div>
         </div>
-        <Progress value={percent} className="h-2 mt-2" />
+        <div className="space-y-1 mt-4">
+          <div className="flex justify-between items-center text-[10px] font-bold uppercase text-muted-foreground/80 tracking-widest px-1">
+            <span>Progresso da Jornada</span>
+            <span>{percent}%</span>
+          </div>
+          <Progress value={percent} className="h-2 rounded-full bg-primary/10" />
+        </div>
       </CardHeader>
 
       {expanded && (
-        <CardContent className="pt-2 space-y-1.5">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className={`flex items-center gap-3 p-2.5 rounded-lg transition-colors cursor-pointer ${
-                item.isComplete
-                  ? "bg-emerald-50 dark:bg-emerald-900/20 opacity-70"
-                  : "bg-muted/50 hover:bg-muted"
-              }`}
-              onClick={() => !item.isComplete && navigate(item.path)}
-            >
+        <CardContent className="px-5 pb-5 pt-1 space-y-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {items.map((item) => (
               <div
-                className={`flex items-center justify-center h-7 w-7 rounded-full shrink-0 text-xs font-bold ${
+                key={item.id}
+                className={`group flex items-center gap-3 p-3 rounded-xl transition-all border border-transparent ${
                   item.isComplete
-                    ? "bg-emerald-500 text-white"
-                    : "bg-primary/10 text-primary"
+                    ? "bg-emerald-50/50 dark:bg-emerald-900/10 opacity-60 border-emerald-100/20"
+                    : "bg-white/50 dark:bg-black/20 hover:bg-white dark:hover:bg-black/30 hover:border-primary/20 hover:shadow-sm"
                 }`}
+                onClick={() => !item.isComplete && navigate(item.path)}
               >
-                {item.isComplete ? <Check className="h-4 w-4" /> : item.day}
+                <div
+                  className={`flex items-center justify-center h-8 w-8 rounded-xl shrink-0 text-xs font-black shadow-sm transition-transform group-hover:scale-105 ${
+                    item.isComplete
+                      ? "bg-emerald-500 text-white shadow-emerald-500/20"
+                      : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {item.isComplete ? <Check className="h-4 w-4 stroke-[3px]" /> : item.day}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`text-[13px] font-bold leading-tight ${item.isComplete ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                    {item.title}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground font-medium mt-0.5 leading-tight">{item.description}</p>
+                </div>
+                {!item.isComplete && (
+                  <Badge variant="outline" className="text-[10px] font-bold shrink-0 border-0 bg-primary/5 text-primary">
+                    +{item.xp}
+                  </Badge>
+                )}
               </div>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-medium ${item.isComplete ? "line-through text-muted-foreground" : ""}`}>
-                  {item.title}
-                </p>
-                <p className="text-[11px] text-muted-foreground">{item.description}</p>
-              </div>
-              <Badge variant="outline" className="text-[10px] shrink-0">
-                +{item.xp} XP
-              </Badge>
-            </div>
-          ))}
+            ))}
+          </div>
 
           {allDone && (
-            <div className="text-center py-3">
-              <p className="text-sm font-medium text-primary">🎉 Parabéns! Jornada completa!</p>
-              <p className="text-xs text-muted-foreground">Você desbloqueou {totalXp} XP explorando toda a plataforma.</p>
+            <div className="text-center py-4 px-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20 mt-2">
+              <p className="text-sm font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">🎉 Jornada de Boas-Vindas Completa!</p>
+              <p className="text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80 mt-1">Você explorou o núcleo do ENAZIZI e acumulou {totalXp} XP.</p>
             </div>
           )}
         </CardContent>
