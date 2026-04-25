@@ -91,23 +91,23 @@ export default function TutorContinueCard() {
   if (!loaded || !session) return null;
 
   return (
-    <Card className="overflow-hidden border-border/60">
-      <CardContent className="flex items-start justify-between gap-3 p-4">
-        <div className="flex min-w-0 items-start gap-3 flex-1">
-          <div className="rounded-lg bg-primary/10 p-2 text-primary shrink-0">
-            <MessageSquare className="h-4 w-4" />
+    <Card className="overflow-hidden border-white/5 bg-card/40 backdrop-blur-sm shadow-sm rounded-2xl">
+      <CardContent className="flex items-center justify-between gap-4 p-5">
+        <div className="flex min-w-0 items-center gap-4 flex-1">
+          <div className="rounded-xl bg-primary/15 p-2.5 text-primary shrink-0 shadow-glow-sm">
+            <MessageSquare className="h-5 w-5" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-semibold truncate">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-[15px] font-bold tracking-tight truncate">
                 {session.title || "Conversa com o Tutor"}
               </span>
-              <Badge variant="secondary" className="text-[10px] shrink-0">
+              <Badge variant="secondary" className="text-[10px] font-bold px-1.5 py-0 bg-white/10 text-muted-foreground shrink-0 rounded-md">
                 {timeAgo(session.updatedAt)}
               </Badge>
             </div>
             {session.preview && (
-              <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
+              <p className="mt-1 line-clamp-1 text-[13px] text-muted-foreground/80 font-medium">
                 {session.preview}
               </p>
             )}
@@ -116,11 +116,11 @@ export default function TutorContinueCard() {
         <Button
           size="sm"
           variant="outline"
-          className="shrink-0 border-primary/20 text-primary hover:bg-primary/5"
+          className="shrink-0 border-primary/20 text-primary font-bold hover:bg-primary/5 rounded-xl h-10 px-4 transition-all hover:scale-[1.02]"
           onClick={() => navigate(`/dashboard/sessao-estudo?conversation=${session.conversationId}&source=dashboard_continue`)}
         >
           Retomar conversa
-          <ArrowRight className="ml-1 h-3.5 w-3.5" />
+          <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </CardContent>
     </Card>

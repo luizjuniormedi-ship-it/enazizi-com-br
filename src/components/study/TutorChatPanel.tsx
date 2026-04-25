@@ -14,12 +14,14 @@ const ChatMsgRow = memo(({ role, content }: MsgRowProps) => (
   <div className={`flex ${role === "user" ? "justify-end" : "justify-start"}`}>
     <div
       className={cn(
-        "max-w-[90%] rounded-2xl px-3 py-2 text-sm",
-        role === "user" ? "bg-primary text-primary-foreground" : "bg-card border border-border"
+        "max-w-[92%] rounded-2xl px-4 py-3 text-[13px] font-medium leading-relaxed",
+        role === "user" 
+          ? "bg-primary text-primary-foreground shadow-sm" 
+          : "bg-white/5 border border-white/5 backdrop-blur-sm"
       )}
     >
       {role === "assistant" ? (
-        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-1.5 [&_table]:text-xs">
+        <div className="prose prose-sm dark:prose-invert max-w-none [&_p]:my-2 [&_table]:text-xs [&_strong]:text-primary [&_strong]:font-black">
           <ReactMarkdown>{content || "..."}</ReactMarkdown>
         </div>
       ) : (
@@ -162,27 +164,28 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   };
 
   return (
-    <div className={cn("flex flex-col h-full min-h-0 bg-background", className)}>
-      {/* Context header */}
-      <div className="px-4 py-3 border-b border-border bg-card/50 flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2 min-w-0">
-          <Sparkles className="h-4 w-4 text-primary shrink-0" />
-          <span className="text-sm font-semibold">Tutor IA</span>
-          {context.topic && (
-            <Badge variant="secondary" className="text-[10px] truncate max-w-[200px]">
-              {context.topic}
-            </Badge>
-          )}
-          {context.phase && (
-            <Badge variant="outline" className="text-[10px]">
-              {context.phase}
-            </Badge>
-          )}
+    <div className={cn("flex flex-col h-full min-h-0 bg-background/95 backdrop-blur-xl", className)}>
+      {/* Context header — Premium Cockpit style */}
+      <div className="px-4 py-4 border-b border-white/5 bg-card/40 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="h-8 w-8 rounded-xl bg-primary/15 flex items-center justify-center text-primary shadow-glow-sm">
+            <Sparkles className="h-4.5 w-4.5" />
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-black tracking-tight uppercase leading-none">Tutor Mentor</h3>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {context.topic && (
+                <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[140px] uppercase tracking-wide">
+                  {context.topic}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
         {showStudySessionCTA && context.topic && (
-          <Button variant="outline" size="sm" className="h-7 text-xs gap-1" onClick={goToSession}>
-            <ArrowUpRight className="h-3 w-3" />
-            Ir para Sessão de Estudo
+          <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2 border-primary/20 text-primary hover:bg-primary/10 rounded-xl" onClick={goToSession}>
+            <ArrowUpRight className="h-3.5 w-3.5" />
+            INICIAR SESSÃO
           </Button>
         )}
       </div>
@@ -210,9 +213,9 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
         )}
       </div>
 
-      {/* Quick actions */}
-      <div className="border-t border-border px-3 pt-2">
-        <div className="flex gap-1.5 overflow-x-auto pb-2">
+      {/* Quick actions — Premium visual pills */}
+      <div className="border-t border-white/5 px-4 pt-3 pb-4 bg-card/40 backdrop-blur-md">
+        <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
           {QUICK_ACTIONS.map((a) => {
             const Icon = a.icon;
             return (
@@ -220,34 +223,41 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
                 key={a.label}
                 variant="outline"
                 size="sm"
-                className="h-7 text-[11px] gap-1 whitespace-nowrap shrink-0"
+                className="h-8 text-[11px] font-bold gap-2 whitespace-nowrap shrink-0 rounded-xl border-white/10 bg-white/5 hover:bg-primary/10 hover:text-primary transition-all"
                 disabled={isLoading}
                 onClick={() => send(a.prompt(context))}
               >
-                <Icon className="h-3 w-3" />
-                {a.label}
+                <Icon className="h-3.5 w-3.5" />
+                {a.label.toUpperCase()}
               </Button>
             );
           })}
         </div>
 
-        {/* Input */}
-        <div className="flex gap-2 pb-3">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Pergunte ao Tutor..."
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                send(input);
-              }
-            }}
-            disabled={isLoading}
-            className="flex-1 h-9 text-sm"
-          />
-          <Button onClick={() => send(input)} disabled={isLoading || !input.trim()} size="icon" className="h-9 w-9">
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        {/* Input — Premium integrated look */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Digite sua dúvida aqui..."
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  send(input);
+                }
+              }}
+              disabled={isLoading}
+              className="flex-1 h-11 bg-white/5 border-white/10 rounded-xl px-4 text-sm font-medium focus:ring-primary/20 placeholder:text-muted-foreground/40"
+            />
+          </div>
+          <Button 
+            onClick={() => send(input)} 
+            disabled={isLoading || !input.trim()} 
+            size="icon" 
+            className="h-11 w-11 rounded-xl shadow-glow-sm transition-all active:scale-90"
+          >
+            {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 fill-current" />}
           </Button>
         </div>
       </div>

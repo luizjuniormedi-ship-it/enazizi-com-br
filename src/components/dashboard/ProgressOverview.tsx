@@ -79,39 +79,41 @@ function ProgressOverview() {
     <Card className="overflow-hidden border-border/60">
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-sm font-semibold flex items-center gap-1.5">
-            <TrendingUp className="h-4 w-4 text-primary" />
-            Seu progresso
+          <h3 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
+            <TrendingUp className="h-3.5 w-3.5 text-primary" />
+            Panorama de Desempenho
           </h3>
           <Button
             size="sm"
             variant="ghost"
             onClick={handleDrillDown}
-            className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+            className="h-8 text-xs font-semibold gap-1.5 text-primary hover:bg-primary/5 rounded-xl transition-all"
           >
-            Detalhes <ArrowRight className="h-3 w-3" />
+            Análise detalhada <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </div>
 
         {/* Banner Preditivo de Aprovação */}
         {prediction && prediction.hasEnoughData && (
-          <div className={`rounded-lg border px-3 py-2 flex items-center justify-between gap-2 ${approvalBadgeBg(prediction.riskLevel)}`}>
-            <div className="flex items-center gap-2 min-w-0">
-              <Target className="h-4 w-4 flex-shrink-0" />
+          <div className={`rounded-2xl border-0 px-4 py-3 flex items-center justify-between gap-3 shadow-sm ${approvalBadgeBg(prediction.riskLevel)}`}>
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                <Target className="h-5 w-5" />
+              </div>
               <div className="min-w-0">
-                <p className="text-xs font-bold leading-tight">
+                <p className="text-[13px] font-black leading-tight tracking-tight uppercase">
                   Chance de aprovação: {prediction.score}%
                 </p>
-                <p className="text-[10px] opacity-80 leading-tight truncate">
+                <p className="text-[11px] font-medium opacity-80 leading-snug">
                   {prediction.message}
                 </p>
               </div>
             </div>
             {prediction.delta !== null && (
-              <div className="flex items-center gap-0.5 text-xs font-semibold tabular-nums flex-shrink-0">
-                {prediction.trend === "up" && <TrendingUp className="h-3 w-3" />}
-                {prediction.trend === "down" && <TrendingDown className="h-3 w-3" />}
-                {prediction.trend === "stable" && <Minus className="h-3 w-3" />}
+              <div className="flex items-center gap-1 text-[13px] font-black tabular-nums flex-shrink-0 bg-white/10 px-2 py-1 rounded-lg">
+                {prediction.trend === "up" && <TrendingUp className="h-3.5 w-3.5" />}
+                {prediction.trend === "down" && <TrendingDown className="h-3.5 w-3.5" />}
+                {prediction.trend === "stable" && <Minus className="h-3.5 w-3.5" />}
                 {prediction.delta > 0 ? "+" : ""}{prediction.delta}
               </div>
             )}

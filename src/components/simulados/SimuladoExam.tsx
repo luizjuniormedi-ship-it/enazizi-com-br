@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import ReactMarkdown from "react-markdown";
 import type { SimuladoMode } from "./SimuladoSetup";
 import ImageQuestionViewer from "./ImageQuestion";
 import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
@@ -143,108 +145,154 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
   const userAnswer = selectedAnswers[current];
 
   return (
-    <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur py-2">
-        <span className="text-sm font-medium">{current + 1}/{questions.length}</span>
+    <div className="space-y-4 animate-fade-in max-w-4xl mx-auto pb-12">
+      {/* Header — Cockpit Look */}
+      <div className="flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-xl py-3 px-1 border-b border-white/5">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
+            {current + 1}
+          </div>
+          <span className="text-[13px] font-black uppercase tracking-tight text-muted-foreground/80">Questão {current + 1} de {questions.length}</span>
+        </div>
+        
         {isStudyMode ? (
-          <div className="flex items-center gap-3 text-sm font-medium">
-            <span className="text-green-500 flex items-center gap-1"><CheckCircle2 className="h-4 w-4" />{correctCount}</span>
-            <span className="text-destructive flex items-center gap-1"><XCircle className="h-4 w-4" />{wrongCount}</span>
+          <div className="flex items-center gap-4 bg-white/5 px-3 py-1.5 rounded-xl border border-white/5">
+            <div className="flex items-center gap-1.5 text-green-500 font-black text-xs uppercase tracking-tight">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>{correctCount} ACERTOS</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-destructive font-black text-xs uppercase tracking-tight">
+              <XCircle className="h-4 w-4" />
+              <span>{wrongCount} ERROS</span>
+            </div>
           </div>
         ) : (
-          <span className={`flex items-center gap-1 text-sm font-mono font-bold ${timeWarning ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
-            <Clock className="h-4 w-4" /> {formatTime(timeLeft)}
-          </span>
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border border-white/5 bg-white/5 font-mono font-black text-sm ${timeWarning ? "text-destructive animate-pulse" : "text-muted-foreground"}`}>
+            <Clock className="h-4 w-4" /> 
+            <span>{formatTime(timeLeft)}</span>
+          </div>
         )}
-        <span className="text-xs text-muted-foreground">{answeredCount}/{questions.length} respondidas</span>
       </div>
 
-      {/* Progress */}
-      <div className="h-1 rounded-full bg-secondary">
-        <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(answeredCount / questions.length) * 100}%` }} />
+      {/* Progress — Slim & Cinematic */}
+      <div className="h-1.5 rounded-full bg-white/5 overflow-hidden shadow-inner">
+        <div 
+          className="h-full bg-gradient-to-r from-primary/60 to-primary transition-all duration-500 ease-out shadow-glow-sm" 
+          style={{ width: `${(answeredCount / questions.length) * 100}%` }} 
+        />
       </div>
 
-      {/* Question */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-3">
+      {/* Question Card — Cockpit 2.0 */}
+      <div className="rounded-3xl border-0 bg-card/40 backdrop-blur-md p-6 sm:p-8 shadow-sm relative overflow-hidden group">
+        <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
+        
+        <div className="relative flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
+            <Badge variant="outline" className="bg-primary/5 border-primary/20 text-primary font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg">
               {String(q.topic || "").replace(/\s*\(.*$/, "").trim() || q.topic}
-            </span>
+            </Badge>
             {!isRevealed && userAnswer === undefined && (
-              <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600">Não respondida</span>
+              <Badge variant="outline" className="bg-amber-500/5 border-amber-500/20 text-amber-600 font-black text-[10px] uppercase tracking-widest px-2.5 h-6 rounded-lg">
+                PENDENTE
+              </Badge>
             )}
           </div>
           <button
             onClick={() => toggleFlag(current)}
-            className={`p-1.5 rounded-lg transition-all ${flaggedQuestions.has(current) ? "text-yellow-500 bg-yellow-500/10" : "text-muted-foreground hover:text-yellow-500"}`}
+            className={`h-9 w-9 flex items-center justify-center rounded-xl transition-all ${flaggedQuestions.has(current) ? "text-yellow-500 bg-yellow-500/15 ring-1 ring-yellow-500/30" : "text-muted-foreground hover:bg-white/5"}`}
             title="Marcar para revisão"
           >
             <Bookmark className={`h-5 w-5 ${flaggedQuestions.has(current) ? "fill-current" : ""}`} />
           </button>
         </div>
+
         {/* Imagem médica se disponível (ignora placeholders) */}
         {q.image_url && q._questionMode !== "text_only" && isImageUrlClinical(q.image_url) && (
-          <div className="mb-4">
+          <div className="relative mb-8 rounded-2xl overflow-hidden border border-white/10 shadow-lg group/img">
             <ImageQuestionViewer
               imageUrl={q.image_url}
               imageType={q.image_type}
               altText={`Imagem clínica - ${q.topic}`}
             />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover/img:opacity-100 transition-opacity">
+              <p className="text-white text-[11px] font-black uppercase tracking-widest">Visualização Clínica Expandida</p>
+            </div>
           </div>
         )}
-        {q._isImageQuestion && (!q.image_url || q.image_url.includes('placeholder')) && q.image_type && (
-          <div className="mb-4 flex items-center gap-2 p-3 rounded-lg border border-border bg-muted/30">
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary font-medium">
-              🖼️ {q.image_type === 'ecg' ? 'ECG' : q.image_type === 'xray' ? 'Raio-X' : q.image_type === 'dermatology' ? 'Dermatologia' : q.image_type === 'ct' ? 'Tomografia' : q.image_type.toUpperCase()}
-            </span>
-            <span className="text-xs text-muted-foreground">Questão baseada em imagem médica</span>
-          </div>
-        )}
-        <p className="text-base font-medium mb-6">{q.statement}</p>
-        <div className="space-y-3">
-          {q.options.map((opt, i) => {
-            let optionClass = "border-border bg-secondary/50 hover:border-primary/30";
-            if (isRevealed) {
-              if (i === q.correct) optionClass = "border-green-500 bg-green-500/10";
-              else if (i === userAnswer) optionClass = "border-destructive bg-destructive/10";
-              else optionClass = "border-border bg-secondary/30 opacity-60";
-            } else if (userAnswer === i) {
-              optionClass = "border-primary bg-primary/10";
-            }
 
-            return (
-              <button
-                key={i}
-                onClick={() => selectAnswer(current, i)}
-                disabled={isRevealed}
-                className={`w-full text-left p-4 rounded-lg border text-sm transition-all ${optionClass} ${isRevealed ? "cursor-default" : ""}`}
-              >
-                <div className="flex items-center gap-2">
-                  {isRevealed && i === q.correct && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
-                  {isRevealed && i === userAnswer && i !== q.correct && <XCircle className="h-4 w-4 text-destructive shrink-0" />}
-                  <span>
-                    <span className="font-semibold mr-2">{String.fromCharCode(65 + i)})</span>
-                    {opt.replace(/^[A-Ea-e]\)\s*/, '')}
-                  </span>
-                </div>
-              </button>
-            );
-          })}
+        <div className="relative">
+          <p className="text-[17px] sm:text-[19px] font-bold leading-relaxed text-foreground/90 mb-8 selection:bg-primary selection:text-primary-foreground">
+            {q.statement}
+          </p>
+          
+          <div className="space-y-3.5">
+            {q.options.map((opt, i) => {
+              let optionClass = "border-white/5 bg-white/5 hover:bg-white/10 hover:border-primary/30";
+              let labelClass = "bg-white/10 text-muted-foreground font-black";
+              
+              if (isRevealed) {
+                if (i === q.correct) {
+                  optionClass = "border-green-500/40 bg-green-500/10 ring-1 ring-green-500/20";
+                  labelClass = "bg-green-500 text-white shadow-glow-sm";
+                } else if (i === userAnswer) {
+                  optionClass = "border-destructive/40 bg-destructive/10 ring-1 ring-destructive/20";
+                  labelClass = "bg-destructive text-white";
+                } else {
+                  optionClass = "border-transparent bg-white/5 opacity-40 grayscale";
+                  labelClass = "bg-white/5 text-muted-foreground/50";
+                }
+              } else if (userAnswer === i) {
+                optionClass = "border-primary/50 bg-primary/10 ring-1 ring-primary/20 shadow-glow-sm";
+                labelClass = "bg-primary text-white";
+              }
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => selectAnswer(current, i)}
+                  disabled={isRevealed}
+                  className={`relative w-full text-left p-4.5 rounded-2xl border transition-all duration-300 ${optionClass} ${isRevealed ? "cursor-default" : "active:scale-[0.99]"}`}
+                >
+                  <div className="flex items-start gap-4">
+                    <div className={`flex items-center justify-center h-7 w-7 rounded-lg shrink-0 text-xs transition-colors duration-300 ${labelClass}`}>
+                      {isRevealed && i === q.correct ? <CheckCircle2 className="h-4 w-4" /> : 
+                       isRevealed && i === userAnswer ? <XCircle className="h-4 w-4" /> : 
+                       String.fromCharCode(65 + i)}
+                    </div>
+                    <span className="text-[15px] font-medium leading-normal pt-0.5">
+                      {opt.replace(/^[A-Ea-e]\)\s*/, '')}
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* Study mode: explanation after answer */}
         {isRevealed && (
-          <div className="mt-4 space-y-3 animate-fade-in">
+          <div className="mt-8 pt-8 border-t border-white/5 space-y-4 animate-fade-in relative">
+            <div aria-hidden className="absolute -top-px left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+            
             {q.explanation && (
-              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-sm font-medium mb-1 text-primary">📖 Explicação</p>
-                <p className="text-sm text-muted-foreground">{q.explanation}</p>
+              <div className="p-5 rounded-2xl bg-primary/[0.03] border border-primary/10 shadow-inner">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  <p className="text-[12px] font-black uppercase tracking-widest text-primary">Análise Pedagógica</p>
+                </div>
+                <div className="text-[14px] leading-relaxed text-muted-foreground font-medium selection:bg-primary/20">
+                  <ReactMarkdown>{q.explanation}</ReactMarkdown>
+                </div>
               </div>
             )}
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleStudyWithTutor(q)}>
-              <GraduationCap className="h-3.5 w-3.5" /> Aprofundar com Tutor IA
+            
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="w-full gap-2.5 text-[12px] font-black uppercase tracking-tight h-12 rounded-2xl border-primary/20 text-primary hover:bg-primary/5 transition-all shadow-sm" 
+              onClick={() => handleStudyWithTutor(q)}
+            >
+              <GraduationCap className="h-5 w-5" /> Aprofundar com Tutor Mentor
             </Button>
           </div>
         )}

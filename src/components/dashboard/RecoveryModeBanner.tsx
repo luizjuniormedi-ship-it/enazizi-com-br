@@ -58,40 +58,40 @@ export default function RecoveryModeBanner() {
   if (hr?.active) {
     const phaseColor = PHASE_COLORS[hr.phase] || PHASE_COLORS[1];
     return (
-      <Card className="border-primary/30 bg-primary/5">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl shrink-0 ${phaseColor}`}>
-              <Shield className="h-5 w-5" />
+      <Card className="border-destructive/20 bg-destructive/5 shadow-sm rounded-2xl overflow-hidden">
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-start gap-4">
+            <div className={`p-3 rounded-2xl shrink-0 shadow-sm ${phaseColor} animate-pulse-slow`}>
+              <Shield className="h-6 w-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <p className="text-sm font-semibold leading-snug">
-                  Recuperação Pesada
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <p className="text-[15px] font-black tracking-tight uppercase text-destructive">
+                  Modo de Recuperação Pesada
                 </p>
-                <Badge variant="outline" className="text-[10px] py-0">
+                <Badge variant="destructive" className="text-[10px] font-bold py-0 h-5 px-2 rounded-lg border-0 bg-destructive text-destructive-foreground">
                   Fase {hr.phase}/4 — {hr.phaseLabel}
                 </Badge>
               </div>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-[13px] font-medium text-muted-foreground mt-1 leading-relaxed">
                 {hr.phaseDescription}
               </p>
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Dia {hr.dayInRecovery}/30</span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="h-3 w-3" />
-                {hr.progressPercent}%
+          <div className="space-y-2 bg-white/5 p-3 rounded-xl border border-white/5">
+            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+              <span>Dia {hr.dayInRecovery}/30 na jornada de resgate</span>
+              <span className="flex items-center gap-1.5 text-destructive">
+                <TrendingUp className="h-3.5 w-3.5" />
+                {hr.progressPercent}% recuperado
               </span>
             </div>
-            <Progress value={hr.progressPercent} className="h-1.5" />
+            <Progress value={hr.progressPercent} className="h-2 rounded-full bg-destructive/10" />
           </div>
 
-          <p className="text-xs text-muted-foreground/80 italic">
-            {PHASE_MESSAGES[hr.phase]}
+          <p className="text-[12px] text-muted-foreground/70 italic font-medium border-l-2 border-destructive/30 pl-3 py-0.5">
+            "{PHASE_MESSAGES[hr.phase]}"
           </p>
         </CardContent>
       </Card>
