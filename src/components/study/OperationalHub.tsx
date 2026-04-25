@@ -219,7 +219,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
           </div>
         </Section>
 
-        {/* PROGRESSO panorâmico vive em /dashboard (Visão Geral) — não duplicar aqui */}
+        {/* PROGRESSO panorâmico vive em /dashboard (Hoje) — não duplicar aqui */}
 
         {/* ÁREA 4 — ORGANIZAÇÃO */}
         <Section title="Organização" icon={CalendarRange} className="order-3">
