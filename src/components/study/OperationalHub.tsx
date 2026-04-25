@@ -66,53 +66,53 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
 
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-8">
-        {/* Header silencioso */}
-        <header className="space-y-1">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground font-medium">
-            Modo Estudar
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-8">
+        {/* Header premium e silencioso */}
+        <header className="space-y-1 text-center sm:text-left">
+          <p className="text-[11px] uppercase tracking-[0.25em] text-primary font-black">
+            Modo Estudo Ativo
           </p>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Sua jornada de hoje
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground">
+            Sua missão começa aqui
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Comece pela ação certa — sem ruído, sem distração.
+          <p className="text-[13px] text-muted-foreground/80 font-medium">
+            Escolha um tema ou retome seu plano diário com um clique.
           </p>
         </header>
 
-        {/*
-         * Ordem mobile: EXECUÇÃO primeiro (ação > ansiedade), HOJE depois.
-         * Ordem ≥sm: HOJE primeiro (panorâmico), EXECUÇÃO depois.
-         * Conseguimos isso com `order-*` sem duplicar markup.
-         */}
-
-        {/* ÁREA 2 — EXECUÇÃO */}
-        <Section title="Execução" icon={Play} subtitle="Comece agora" className="order-1 sm:order-2">
-          {/* Quick start: tópico livre */}
-          <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium">
+        {/* ÁREA 2 — EXECUÇÃO (AÇÃO PRINCIPAL) */}
+        <Section title="Estudo Direto" icon={Play} subtitle="O que você quer dominar agora?" className="order-1">
+          {/* Quick start: tópico livre — Estética Cockpit */}
+          <div className="rounded-2xl border-0 bg-card/40 backdrop-blur-sm p-6 space-y-4 shadow-sm relative overflow-hidden group">
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            
+            <div className="relative flex items-center gap-3 text-[13px] font-bold uppercase tracking-wider text-muted-foreground/70">
               <Sparkles className="h-4 w-4 text-primary" />
-              <span>Estudar um tema</span>
+              <span>Tema de foco</span>
             </div>
-            <div className="flex gap-2">
+            <div className="relative flex flex-col sm:flex-row gap-3">
               <Input
                 value={topicInput}
                 onChange={(e) => onTopicChange(e.target.value)}
                 placeholder="Ex: Insuficiência Cardíaca, TEP, AVC..."
                 onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
-                className="flex-1"
+                className="flex-1 h-12 bg-white/5 border-white/10 rounded-xl text-base font-medium placeholder:text-muted-foreground/40 focus:ring-primary/20"
               />
-              <Button onClick={handleStartStudy} disabled={!topicInput.trim()}>
-                <Play className="h-4 w-4 mr-1.5" /> Iniciar
+              <Button 
+                onClick={handleStartStudy} 
+                disabled={!topicInput.trim()}
+                className="h-12 px-8 rounded-xl font-black text-sm uppercase tracking-tight shadow-glow-sm transition-all hover:scale-[1.02] active:scale-95"
+              >
+                <Play className="h-4 w-4 mr-2 fill-current" /> Iniciar Sessão
               </Button>
             </div>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="relative flex flex-wrap gap-2 pt-1">
               {SUGGESTED_TOPICS.map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => onTopicChange(t)}
-                  className="text-[11px] px-2.5 py-1 rounded-full border border-border bg-background hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+                  className="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground/70"
                 >
                   {t}
                 </button>
@@ -120,31 +120,31 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
             </div>
           </div>
 
-          {/* Ações rápidas */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
+          {/* Ações rápidas — Grid de Cards Premium */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
             <ActionCard
               icon={RotateCcw}
-              title="Iniciar revisão"
-              description={pendingReviews > 0 ? `${pendingReviews} pendente${pendingReviews === 1 ? "" : "s"}` : "Sem pendências"}
+              title="Minhas Revisões"
+              description={pendingReviews > 0 ? `${pendingReviews} cards vencidos` : "Tudo em dia"}
               accent={pendingReviews > 0}
               onClick={() => trackAndGo("start_review", "/dashboard/sessao-estudo?focus=reviews&auto=1", { pendingReviews })}
             />
             <ActionCard
               icon={AlertTriangle}
-              title="Revisar erros"
-              description={errorsCount > 0 ? `${errorsCount} no banco` : "Sem erros recentes"}
+              title="Banco de Erros"
+              description={errorsCount > 0 ? `${errorsCount} temas críticos` : "Sem pendências"}
               onClick={() => trackAndGo("open_errors", "/dashboard/banco-erros", { errorsCount })}
             />
             <ActionCard
               icon={FileText}
-              title="Iniciar simulado"
-              description="Treino com bancas"
+              title="Simulados"
+              description="Provas de residência"
               onClick={() => trackAndGo("start_simulado", "/dashboard/simulados")}
             />
             <ActionCard
               icon={Sparkles}
-              title="Tutor IA"
-              description="Tirar dúvida agora"
+              title="Tutor Mentor"
+              description="Dúvida pontual"
               onClick={() => trackAndGo("open_tutor", "/dashboard/chatgpt")}
             />
           </div>
@@ -265,13 +265,13 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className={cn("space-y-3", className)}>
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground flex items-center gap-2">
-          <Icon className="h-3.5 w-3.5" />
+    <section className={cn("space-y-4", className)}>
+      <div className="flex items-baseline justify-between px-1">
+        <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/60 flex items-center gap-2">
+          <Icon className="h-3 w-3 text-primary/70" />
           {title}
         </h2>
-        {subtitle && <span className="text-[11px] text-muted-foreground/70">{subtitle}</span>}
+        {subtitle && <span className="text-[11px] font-bold text-muted-foreground/40">{subtitle}</span>}
       </div>
       {children}
     </section>
@@ -337,26 +337,26 @@ function ActionCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "text-left rounded-lg border bg-card p-3.5 transition-all",
-        "hover:border-primary/40 hover:bg-muted/40",
-        accent ? "border-primary/30" : "border-border",
+        "text-left rounded-2xl border-0 bg-card/40 p-4 transition-all shadow-sm",
+        "hover:bg-card hover:shadow-glow-sm hover:scale-[1.02]",
+        accent ? "ring-1 ring-primary/30 bg-primary/[0.03]" : "",
       )}
     >
-      <div className="flex items-center gap-2 mb-1">
-        <Icon
-          className={cn(
-            "h-4 w-4",
-            accent ? "text-primary" : "text-muted-foreground",
-          )}
-        />
-        <span className="text-sm font-medium">{title}</span>
-        {accent && (
-          <Badge variant="outline" className="ml-auto h-4 px-1.5 text-[9px] border-primary/30 text-primary">
-            Agora
-          </Badge>
-        )}
+      <div className="flex items-center gap-3 mb-2">
+        <div className={cn(
+          "h-8 w-8 rounded-xl flex items-center justify-center shrink-0",
+          accent ? "bg-primary/10 text-primary" : "bg-white/5 text-muted-foreground"
+        )}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-[14px] font-black tracking-tight">{title}</span>
       </div>
-      <p className="text-[11px] text-muted-foreground">{description}</p>
+      <p className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-wide">{description}</p>
+      {accent && (
+        <Badge variant="outline" className="mt-2 h-5 px-2 text-[9px] font-black uppercase border-0 bg-primary/20 text-primary rounded-md">
+          Prioritário
+        </Badge>
+      )}
     </button>
   );
 }
