@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { type StudyRecommendation } from "@/lib/studyEngine";
 import { markRecommendationClicked } from "@/lib/coverageBoostTelemetry";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 /**
  * Shows "Next up" prompt after completing a task to maintain continuous flow.
@@ -62,6 +63,8 @@ export default function ContinuousFlowPrompt({ completedTask, nextTask, onContin
             size="sm"
             onClick={() => {
               if (user?.id) void markRecommendationClicked(user.id, nextTask.id);
+              telemetry.track('continuar_clicked', { origin: 'continuous_flow', next_task_type: nextTask.type, next_task_topic: nextTask.topic });
+              telemetry.track('study_session_started', { origin: 'continuous_flow', task_type: nextTask.type, task_topic: nextTask.topic });
               onContinue();
               navigate(buildStudyPath(nextTask));
             }}
