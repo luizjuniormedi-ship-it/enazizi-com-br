@@ -92,7 +92,7 @@ const TelemetryAdmin = () => {
     setTutorQ(t.data ?? {});
     setHeatmap((h.data ?? []) as any[]);
     setBaseline(b.data ?? {});
-    setAlerts(((a.data ?? []) as Alert[]));
+    setAlerts((a.data as unknown as Alert[]) ?? []);
     setRecent(r.data ?? []);
     setLoading(false);
     setRefreshing(false);
