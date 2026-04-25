@@ -57,16 +57,20 @@ const AdvancedAnalyticsAccordion = forwardRef<HTMLDivElement, Props>(
     ref,
   ) => {
     return (
-      <Card ref={ref} className="overflow-hidden border-border/60">
+      <Card ref={ref} className="overflow-hidden border-white/5 bg-card/40 backdrop-blur-sm shadow-sm rounded-2xl">
         <Accordion type="single" collapsible value={value} onValueChange={onValueChange}>
           <AccordionItem value="advanced" className="border-0">
-            <AccordionTrigger className="px-5 py-3 hover:no-underline">
-              <div className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-semibold">Análises avançadas</span>
-                <span className="text-[11px] text-muted-foreground font-normal">
-                  Cockpit · Estratégia · Motor adaptativo
-                </span>
+            <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-white/5 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-lg bg-white/5 flex items-center justify-center text-muted-foreground">
+                  <BarChart3 className="h-4 w-4" />
+                </div>
+                <div className="flex flex-col items-start gap-0.5">
+                  <span className="text-[13px] font-black uppercase tracking-tight">Análises de Motor e Estratégia</span>
+                  <span className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-60">
+                    Cockpit Cognitivo · Telemetria · Calibração
+                  </span>
+                </div>
               </div>
             </AccordionTrigger>
             <AccordionContent className="px-5 pb-5">
