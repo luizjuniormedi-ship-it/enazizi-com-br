@@ -96,6 +96,8 @@ const Dashboard = () => {
     const autostart = searchParams.get("autostart");
     if (autostart !== "true") return;
 
+    trackAction('continuar_clicked', { source: 'autostart' });
+
     autostartConsumedRef.current = true;
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("autostart");

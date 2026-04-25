@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { cn } from "@/lib/utils";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 interface MsgRowProps { role: "user" | "assistant"; content: string }
 const ChatMsgRow = memo(({ role, content }: MsgRowProps) => (
