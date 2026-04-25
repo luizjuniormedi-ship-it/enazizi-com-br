@@ -20,10 +20,7 @@ import CockpitMnemonics from "./CockpitMnemonics";
 import CockpitMemory from "./CockpitMemory";
 import CockpitPerformance from "./CockpitPerformance";
 import CockpitRadar from "./CockpitRadar";
-import CockpitRadar from "./CockpitRadar";
 import CockpitNextSteps from "./CockpitNextSteps";
-import CockpitProfile from "./CockpitProfile";
-import CockpitVisualQuiz from "./CockpitVisualQuiz";
 import CockpitProfile from "./CockpitProfile";
 import CockpitVisualQuiz from "./CockpitVisualQuiz";
 
