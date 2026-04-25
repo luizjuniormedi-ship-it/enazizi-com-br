@@ -760,6 +760,21 @@ const StudySession = () => {
 
       {/* Main Content — agora ocupa 100% da largura */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* ── Panorama Navigation (Só aparece na fase start) ── */}
+        {phase === "start" && (
+          <div className="px-4 py-2 border-b border-border/40">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/dashboard")}
+              className="gap-2 text-muted-foreground hover:text-foreground h-7"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Voltar ao Panorama
+            </Button>
+          </div>
+        )}
+
         {/* Cinematic Top Bar — cockpit de foco (hue: simulado/verde performance) */}
         <div
           className="relative overflow-hidden border-b border-border"
