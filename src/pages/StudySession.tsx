@@ -548,6 +548,10 @@ const StudySession = () => {
                 if (last?.role === "assistant") {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
+                if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
+                  firstQuestionTrackedRef.current = true;
+                  trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
+                }
                 return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
