@@ -267,7 +267,7 @@ function CinematicMissionHero({
                   )}
                 >
                   <Rocket className="h-5 w-5" />
-                  Continuar missão
+                  Revisar agora
                 </Button>
               </motion.div>
 
