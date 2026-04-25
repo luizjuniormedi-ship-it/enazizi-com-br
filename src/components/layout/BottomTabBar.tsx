@@ -66,9 +66,9 @@ const BottomTabBar = () => {
   // Hoje = panorama. Continuar = ação primária persistente.
   const tabs = [
     { to: "/dashboard", icon: Home, label: "Hoje", badge: 0, primary: false },
-    { to: "/dashboard/chatgpt?tutor_mode=mission&tutor_origin=bottom_tab_continue", icon: Sparkles, label: "Continuar", badge: pendingCount || 0, primary: true },
+    { to: "/dashboard/sessao-estudo?auto=1&source=bottom_tab", icon: Sparkles, label: "Estudar", badge: pendingCount || 0, primary: true },
     { to: "/dashboard/simulados", icon: FileText, label: "Simulados", badge: 0, primary: false },
-    { to: "/dashboard/chatgpt", icon: Bot, label: "IA", badge: 0, primary: false },
+    { to: "/dashboard/chatgpt", icon: Bot, label: "Tutor", badge: 0, primary: false },
     { to: "/dashboard/perfil", icon: User, label: "Perfil", badge: unreadMessages || 0, primary: false },
   ];
 
