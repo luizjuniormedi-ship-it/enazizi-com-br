@@ -109,6 +109,14 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   const send = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading) return;
+
+      // Telemetry
+      if (messages.length === 0) {
+        trackAction('first_question_loaded', { topic: context.topic, mode: context.mode });
+      } else {
+        trackAction('first_answer_submitted', { topic: context.topic, mode: context.mode });
+      }
+
       const userMsg: Msg = { role: "user", content: text };
       const all = [...messages, userMsg];
       setMessages([...all, { role: "assistant", content: "" }]);
