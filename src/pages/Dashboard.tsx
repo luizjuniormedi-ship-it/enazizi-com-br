@@ -101,8 +101,13 @@ const Dashboard = () => {
     newParams.delete("source");
     setSearchParams(newParams, { replace: true });
 
-    navigate(`/dashboard/sessao-estudo?autostart=true&source=${encodeURIComponent(source)}`);
-  }, [missionLoading, data, searchParams, setSearchParams, navigate]);
+    const topic = (activeRec?.contextPayload?.topic as string) || activeRec?.title;
+    if (topic) {
+      navigate(`/dashboard/chatgpt?tutor_mode=mission&topic=${encodeURIComponent(topic)}&tutor_origin=dashboard_autostart&source=${encodeURIComponent(source)}`);
+    } else {
+      navigate(`/dashboard/chatgpt?tutor_mode=mission&tutor_origin=dashboard_autostart&source=${encodeURIComponent(source)}`);
+    }
+  }, [missionLoading, data, searchParams, setSearchParams, navigate, activeRec]);
 
   // Celebrations
   useEffect(() => {
