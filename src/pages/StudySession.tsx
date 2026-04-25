@@ -224,6 +224,19 @@ const StudySession = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
+  // Unmount: track abandonment if session was active and not concluded
+  useEffect(() => {
+    return () => {
+      if (firstQuestionTrackedRef.current && !sessionCompleteTrackedRef.current) {
+        const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+        try {
+          telemetry.track('study_session_abandoned', { topic, mode: studyMode, duration_seconds: duration, questions_answered: performance.totalQuestions });
+        } catch {}
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Drain any pending study-complete retries from past failures (network, reload).
   useEffect(() => {
     if (!user) return;
