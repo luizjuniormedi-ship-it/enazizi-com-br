@@ -60,16 +60,15 @@ function DashboardTopBar() {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card/40 px-3 py-2 backdrop-blur-sm">
       <div className="flex min-w-0 flex-col">
-        <p className="text-xs text-muted-foreground leading-tight">
-          {getGreeting()}, <span className="font-semibold text-foreground">{firstName}</span>
-        </p>
-        {daysToExam !== null && (
-          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-            <Calendar className="h-3 w-3" />
+        {daysToExam !== null ? (
+          <div className="flex items-center gap-1.5 text-xs font-medium">
+            <Calendar className="h-3.5 w-3.5 text-primary" />
             <span>
-              {daysToExam === 0 ? "prova hoje" : `${daysToExam} ${daysToExam === 1 ? "dia" : "dias"} até a prova`}
+              {daysToExam === 0 ? "Prova hoje" : `${daysToExam} ${daysToExam === 1 ? "dia" : "dias"} para a prova`}
             </span>
           </div>
+        ) : (
+          <p className="text-xs font-semibold text-foreground">Status do dia</p>
         )}
       </div>
 
