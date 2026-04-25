@@ -22,6 +22,7 @@ import { useChatMessages } from "@/hooks/tutor/useChatMessages";
 import { useChatProgress } from "@/hooks/tutor/useChatProgress";
 import { useChatContext } from "@/hooks/tutor/useChatContext";
 import { useTutorPerformance } from "@/hooks/tutor/useTutorPerformance";
+import { useStudyNext } from "@/hooks/useStudyNext";
 
 import TutorHeader from "@/components/tutor/CinematicTutorHero";
 import TutorOnboardingCard from "@/components/tutor/TutorOnboardingCard";
@@ -89,6 +90,7 @@ const ChatGPT = () => {
   const perf = useTutorPerformance(user?.id);
   const { performance, savePerformance, sessionQuestions, setSessionQuestions, sessionCorrect, setSessionCorrect, handleFinishSession } = perf;
   const sessionMemory = useSessionMemory();
+  const { data: missionData } = useStudyNext();
 
   // Session persistence
   const { pendingSession, checked: sessionChecked, saveSession: persistSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "chatgpt" });
@@ -139,32 +141,36 @@ const ChatGPT = () => {
   // Mission-mode auto-start (from MissionMode task routing)
   const missionHandled = useRef(false);
   useEffect(() => {
-    if (!missionContext || !user || missionHandled.current) return;
-    if (missionContext.topic) {
+    if (!user || missionHandled.current) return;
+    
+    // Explicit mission from URL or auto-fetched from engine
+    const activeTopic = missionContext?.topic || (tutorMode === "mission" && missionData?.recommendation ? (missionData.recommendation.contextPayload?.topic as string || missionData.recommendation.title) : null);
+    
+    if (activeTopic) {
       missionHandled.current = true;
 
       // Build phase-correct initial prompt
-      const phase = missionContext.phase || "lesson";
+      const phase = missionContext?.phase || (missionData?.recommendation?.type === "error_review" ? "correction" : "fixation");
       let msg: string;
       if (phase === "correction") {
-        msg = `MODO CORREÇÃO DE ERROS — Tema: ${missionContext.topic}. ` +
+        msg = `MODO CORREÇÃO DE ERROS — Tema: ${activeTopic}. ` +
           `O aluno errou neste tema e precisa de correção direcionada. ` +
           `Identifique os erros comuns, explique por que a alternativa correta é certa e reforce as "golden rules" do tema. ` +
-          `Foque no que cai na prova.${missionContext.error ? ` Erro específico: ${missionContext.error}` : ""}`;
+          `Foque no que cai na prova.${missionContext?.error ? ` Erro específico: ${missionContext.error}` : ""}`;
       } else if (phase === "fixation") {
-        msg = `MODO REVISÃO/FIXAÇÃO — Tema: ${missionContext.topic}. ` +
+        msg = `MODO REVISÃO/FIXAÇÃO — Tema: ${activeTopic}. ` +
           `O aluno precisa consolidar este tema. Inicie com Active Recall: faça 5 perguntas sequenciais para testar a memorização, ` +
           `depois proponha um caso clínico objetivo (A-E). Foque em pegadinhas de prova.`;
       } else {
-        msg = `Quero estudar o tema: ${missionContext.topic}. ` +
+        msg = `Quero estudar o tema: ${activeTopic}. ` +
           `Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). ` +
           `Estou na etapa 3/15 do Protocolo ENAZIZI.`;
       }
 
       setStudyStarted(true);
       setMetricsCollapsed(true);
-      setCurrentTopic(missionContext.topic);
-      setTopic(missionContext.topic);
+      setCurrentTopic(activeTopic);
+      setTopic(activeTopic);
 
       // Set appropriate step based on phase
       const stepMap: Record<string, number> = { lesson: 3, fixation: 7, correction: 12 };
@@ -173,7 +179,7 @@ const ChatGPT = () => {
 
       setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
     }
-  }, [missionContext, user]);
+  }, [missionContext, user, missionData, tutorMode]);
 
   // StudyContext-driven auto-start (from guided flows via URL params)
   const studyCtx = useStudyContext();

@@ -54,7 +54,7 @@ describe("Navigation smoke — BottomTabBar (mobile)", () => {
     renderWithProviders(<BottomTabBar />);
     const expected: Record<string, string> = {
       Hoje: "/dashboard",
-      Continuar: "/dashboard/sessao-estudo",
+      Continuar: "/dashboard/chatgpt?tutor_mode=mission&tutor_origin=bottom_tab_continue",
       Simulados: "/dashboard/simulados",
       IA: "/dashboard/chatgpt",
       Perfil: "/dashboard/perfil",
