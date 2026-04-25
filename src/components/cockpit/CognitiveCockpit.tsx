@@ -20,7 +20,10 @@ import CockpitMnemonics from "./CockpitMnemonics";
 import CockpitMemory from "./CockpitMemory";
 import CockpitPerformance from "./CockpitPerformance";
 import CockpitRadar from "./CockpitRadar";
+import CockpitRadar from "./CockpitRadar";
 import CockpitNextSteps from "./CockpitNextSteps";
+import CockpitProfile from "./CockpitProfile";
+import CockpitVisualQuiz from "./CockpitVisualQuiz";
 import CockpitProfile from "./CockpitProfile";
 import CockpitVisualQuiz from "./CockpitVisualQuiz";
 
@@ -73,11 +76,13 @@ export default function CognitiveCockpit() {
       {/* ═══ BLOCO 3 — ALERTAS ACIONÁVEIS ═══ */}
       <CockpitAlerts alerts={cockpit.alerts} />
 
-      {/* ═══ BLOCO 6 — PRÓXIMOS PASSOS + QUIZ VISUAL (ações rápidas contextuais) ═══ */}
+      {/* ═══ BLOCO 6 — PRÓXIMOS PASSOS + QUIZ VISUAL (removido do Dashboard p/ evitar redundância) ═══ */}
+      {/* 
       <div className="grid lg:grid-cols-2 gap-4">
         <CockpitNextSteps steps={cockpit.nextSteps} />
         <CockpitVisualQuiz weaknesses={cockpit.visualWeaknesses} />
       </div>
+      */}
 
       {/* ═══ BLOCO 4 — EVOLUÇÃO (agrupado e expansível) ═══ */}
       <Card className="overflow-hidden">

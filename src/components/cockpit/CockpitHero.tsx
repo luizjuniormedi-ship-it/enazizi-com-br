@@ -120,7 +120,7 @@ export default function CockpitHero({
     if (onPrimaryAction) return onPrimaryAction();
     if (orchRec) return handleAction(orchRec);
     if (primaryStep) return navigate(primaryStep.route);
-    navigate("/dashboard/quiz");
+    navigate("/dashboard/sessao-estudo");
   };
 
   return (
