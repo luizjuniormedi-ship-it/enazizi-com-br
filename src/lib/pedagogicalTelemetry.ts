@@ -1,5 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
-import { v4 as uuidv4 } from "uuid";
+// Using crypto.randomUUID() instead of uuid package to avoid dependency issues
+const genUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
 
 /**
  * Pedagogical Telemetry System
@@ -45,7 +49,7 @@ class TelemetryService {
   private isProcessing = false;
 
   private constructor() {
-    this.sessionId = uuidv4();
+    this.sessionId = genUUID();
     this.setupListeners();
     this.startAutoFlush();
   }

@@ -100,6 +100,7 @@ const EnaflixCatalogPage = lazyWithRetry(() => import("./pages/EnaflixCatalogPag
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowcase"), "CognitiveShowcase");
 const TutorMemoryAdmin = lazyWithRetry(() => import("./pages/admin/TutorMemoryAdmin"), "TutorMemoryAdmin");
+const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"), "TelemetryAdmin");
 
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
@@ -212,7 +213,8 @@ const App = () => (
                 <Route path="banca-readiness" element={<BancaReadiness />} />
                 <Route path="simulado-selection" element={<SimuladoSelectionTelemetry />} />
                 <Route path="simulado-selection/:id" element={<SimuladoSelectionRunDetail />} />
-                <Route path="tutor-memory" element={<TutorMemoryAdmin />} />
+                 <Route path="tutor-memory" element={<TutorMemoryAdmin />} />
+                 <Route path="telemetry" element={<TelemetryAdmin />} />
               </Route>
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
