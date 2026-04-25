@@ -435,6 +435,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           .then(({ adjustMemoryQuality }) => adjustMemoryQuality(last.memoryId!, -10))
           .catch(() => {});
       }
+      telemetry.track("tutor_response_regenerated", {
+        memory_id: last?.memoryId ?? null,
+      });
       bypassMemoryRef.current = true;
       handleSend(question);
     },
