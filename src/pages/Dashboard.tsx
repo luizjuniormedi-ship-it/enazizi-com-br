@@ -103,9 +103,9 @@ const Dashboard = () => {
 
     const topic = (activeRec?.contextPayload?.topic as string) || activeRec?.title;
     if (topic) {
-      navigate(`/dashboard/chatgpt?tutor_mode=mission&topic=${encodeURIComponent(topic)}&tutor_origin=dashboard_autostart&source=${encodeURIComponent(source)}`);
+      navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
     } else {
-      navigate(`/dashboard/chatgpt?tutor_mode=mission&tutor_origin=dashboard_autostart&source=${encodeURIComponent(source)}`);
+      navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
     }
   }, [missionLoading, data, searchParams, setSearchParams, navigate, activeRec]);
 
@@ -214,8 +214,7 @@ const Dashboard = () => {
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
                 onStart={() => {
-                  const topic = (activeRec.contextPayload?.topic as string) || activeRec.title;
-                  navigate(`/dashboard/chatgpt?tutor_mode=mission&topic=${encodeURIComponent(topic)}&tutor_origin=dashboard_hero`);
+                  navigate(`/dashboard/sessao-estudo?source=dashboard_hero`);
                 }}
                 onRefresh={handleRefresh}
                 onShowAlternatives={() => {
