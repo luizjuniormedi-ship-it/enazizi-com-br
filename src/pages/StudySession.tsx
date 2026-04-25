@@ -114,6 +114,9 @@ const StudySession = () => {
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const [targetExam, setTargetExam] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const firstQuestionTrackedRef = useRef(false);
+  const sessionCompleteTrackedRef = useRef(false);
+  const sessionStartTimeRef = useRef<number>(Date.now());
   const getStudySessionHeaders = useCallback(async () => {
     const {
       data: { session },
@@ -584,6 +587,10 @@ const StudySession = () => {
     setStudyMode(mode);
     const t = topicOverride?.trim() || topic;
     if (!t) return;
+    sessionStartTimeRef.current = Date.now();
+    firstQuestionTrackedRef.current = false;
+    sessionCompleteTrackedRef.current = false;
+    trackAction('study_session_started', { topic: t, mode, origin: 'style_select' });
 
     // Map mode to initial phase
     const phaseMap: Record<StudyMode, Phase> = {
