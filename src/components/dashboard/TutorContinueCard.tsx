@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { MessageSquare, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 interface LastSession {
   conversationId: string;
@@ -40,6 +41,7 @@ function timeAgo(iso: string): string {
 export default function TutorContinueCard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { trackAction } = useTelemetry();
   const [session, setSession] = useState<LastSession | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -117,7 +119,10 @@ export default function TutorContinueCard() {
           size="sm"
           variant="outline"
           className="shrink-0 border-primary/20 text-primary font-bold hover:bg-primary/5 rounded-xl h-10 px-4 transition-all hover:scale-[1.02]"
-          onClick={() => navigate(`/dashboard/sessao-estudo?conversation=${session.conversationId}&source=dashboard_continue`)}
+          onClick={() => {
+            trackAction('tutor_continue_clicked', { conversation_id: session.conversationId });
+            navigate(`/dashboard/sessao-estudo?conversation=${session.conversationId}&source=dashboard_continue`);
+          }}
         >
           Retomar conversa
           <ArrowRight className="ml-2 h-4 w-4" />
