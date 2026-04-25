@@ -9018,6 +9018,42 @@ export type Database = {
         }
         Relationships: []
       }
+      telemetry_events: {
+        Row: {
+          device_type: string | null
+          event_name: string
+          id: string
+          properties: Json | null
+          route: string | null
+          screen_size: string | null
+          session_id: string
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          device_type?: string | null
+          event_name: string
+          id?: string
+          properties?: Json | null
+          route?: string | null
+          screen_size?: string | null
+          session_id: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          device_type?: string | null
+          event_name?: string
+          id?: string
+          properties?: Json | null
+          route?: string | null
+          screen_size?: string | null
+          session_id?: string
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       temas_estudados: {
         Row: {
           anexos: Json | null
