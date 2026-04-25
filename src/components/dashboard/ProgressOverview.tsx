@@ -25,11 +25,13 @@ import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
 import { approvalBadgeBg } from "@/engines/approvalEngine";
 import { TrendingDown, Minus } from "lucide-react";
 import { CinematicMetricHalo } from "@/components/cinematic";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 type Tone = "primary" | "success" | "warn" | "danger" | "muted";
 
 function ProgressOverview() {
   const navigate = useNavigate();
+  const { trackAction } = useTelemetry();
   const { data: snap } = useAnalyticsSnapshot();
   const { data: coverage } = useCoverageStatus();
   const { data: goal } = useMonthlyGoal();
@@ -72,6 +74,7 @@ function ProgressOverview() {
 
   // Drill-down inteligente: vai para a central de estudo/revisões
   const handleDrillDown = () => {
+    trackAction('analytics_opened', { source: 'progress_overview' });
     navigate("/dashboard/sessao-estudo?source=progress_overview");
   };
 
