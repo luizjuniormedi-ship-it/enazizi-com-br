@@ -13,7 +13,7 @@ import { useFsrs, Rating } from "@/hooks/useFsrs";
 import {
   FlipVertical, Loader2, Brain, GraduationCap,
   Download, Zap, Clock, Award, Maximize2, Minimize2,
-  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap, Sparkles,
+  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap, Sparkles, ChevronLeft,
 } from "lucide-react";
 import { CinematicHero } from "@/components/cinematic";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
