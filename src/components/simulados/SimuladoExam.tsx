@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Clock, ArrowRight, ArrowLeft, Flag, Bookmark, GraduationCap, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import ReactMarkdown from "react-markdown";
 import type { SimuladoMode } from "./SimuladoSetup";
 import ImageQuestionViewer from "./ImageQuestion";
 import { isImageUrlClinical } from "@/lib/multimodalSafetyGate";
