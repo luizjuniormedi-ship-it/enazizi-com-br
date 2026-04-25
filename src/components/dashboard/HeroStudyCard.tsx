@@ -335,6 +335,7 @@ export default function HeroStudyCard() {
                       task={task}
                       onTap={() => {
                         if (user?.id) void markRecommendationClicked(user.id, task.id);
+                        telemetry.track('study_session_started', { origin: 'day_plan_row_expanded', task_type: task.type, task_topic: task.topic });
                         navigate(buildStudyPath(task, "daily-plan"));
                       }}
                     />
