@@ -797,44 +797,47 @@ const StudySession = () => {
           />
 
           <div className="relative flex items-center justify-between px-4 py-2.5 gap-3">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 rounded-xl hover:bg-white/5 flex-shrink-0"
+                className="h-9 w-9 rounded-xl hover:bg-white/5 flex-shrink-0 transition-all active:scale-90"
                 onClick={() => setSidebarOpen(true)}
                 title="Painel de Desempenho"
                 aria-label="Abrir painel de desempenho"
               >
-                <BarChart3 className="h-4 w-4" />
+                <BarChart3 className="h-4.5 w-4.5" />
               </Button>
 
-              {/* Identidade premium */}
-              <div className="flex items-center gap-2 min-w-0">
+              {/* Identidade premium — Estilo Cockpit 2.0 */}
+              <div className="flex items-center gap-3 min-w-0">
                 <div
-                  className="relative h-8 w-8 rounded-xl flex items-center justify-center bg-module-tint border border-module flex-shrink-0"
+                  className="relative h-9 w-9 rounded-xl flex items-center justify-center bg-module-tint border border-module/20 flex-shrink-0"
                   style={{
-                    boxShadow:
-                      "0 0 16px -4px hsl(var(--module-hue) / 0.5)",
+                    boxShadow: "0 0 20px -5px hsl(var(--module-hue) / 0.5)",
                   }}
                 >
                   <GraduationCap
-                    className="h-4 w-4"
+                    className="h-5 w-5"
                     style={{ color: "hsl(var(--module-hue))" }}
                   />
+                  <div className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary animate-pulse" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-sm font-bold text-foreground leading-tight truncate">
-                    Sessão de Estudo
+                  <h1 className="text-sm font-black text-foreground leading-none tracking-tight uppercase">
+                    Missão de Estudo
                   </h1>
-                  <p className="text-[10px] text-muted-foreground leading-tight truncate">
-                    Cockpit de foco • Modo flow
-                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    <p className="text-[10px] font-bold text-muted-foreground/80 leading-none uppercase tracking-wider">
+                      Foco Máximo • Conectado
+                    </p>
+                  </div>
                 </div>
                 {topic && (
                   <Badge
                     variant="secondary"
-                    className="text-xs truncate max-w-[140px] ml-1 hidden sm:inline-flex"
+                    className="text-[11px] font-black truncate max-w-[160px] ml-2 hidden sm:inline-flex bg-white/5 border-0 rounded-lg px-2"
                   >
                     {topic}
                   </Badge>
