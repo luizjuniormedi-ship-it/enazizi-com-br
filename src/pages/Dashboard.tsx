@@ -117,10 +117,29 @@ const Dashboard = () => {
     prevLevelRef.current = dashData.metrics.gamificationLevel;
   }, [dashData]);
 
-  // Fresh login cleanup
+  // Fresh login cleanup + retention tracking
   useEffect(() => {
     localStorage.removeItem("enazizi_last_login_ts");
-  }, []);
+    try {
+      const lastVisitKey = "enazizi_last_dashboard_visit";
+      const last = localStorage.getItem(lastVisitKey);
+      const now = Date.now();
+      if (last) {
+        const lastDate = new Date(parseInt(last, 10));
+        const nowDate = new Date(now);
+        const sameDay = lastDate.toDateString() === nowDate.toDateString();
+        const dayDiff = Math.floor((now - parseInt(last, 10)) / 86400000);
+        if (sameDay) {
+          trackAction('returned_same_day', { hours_since_last: Math.floor((now - parseInt(last, 10)) / 3600000) });
+        } else if (dayDiff === 1) {
+          trackAction('returned_next_day', { hours_since_last: Math.floor((now - parseInt(last, 10)) / 3600000) });
+        } else if (dayDiff >= 2) {
+          trackAction('streak_recovered', { days_since_last: dayDiff });
+        }
+      }
+      localStorage.setItem(lastVisitKey, String(now));
+    } catch {}
+  }, [trackAction]);
 
   // Realtime invalidation
   useEffect(() => {

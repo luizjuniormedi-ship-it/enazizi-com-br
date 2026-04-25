@@ -15,6 +15,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { getHumanReadableReason } from "@/lib/humanizedReasons";
 import { useAuth } from "@/hooks/useAuth";
 import { markRecommendationClicked } from "@/lib/coverageBoostTelemetry";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 /* ── Dynamic Title Logic ── */
 function getDynamicTitle(
@@ -134,6 +135,7 @@ export default function HeroStudyCard() {
               className="w-full gap-2 font-bold text-lg h-14 shadow-lg shadow-primary/20"
               size="lg"
               onClick={() => {
+                telemetry.track('continuar_clicked', { mission_status: state.status, progress: Math.round(progress) });
                 if (isMissionPaused) resumeMission();
                 navigate("/mission");
               }}
@@ -177,6 +179,21 @@ export default function HeroStudyCard() {
 
   // ─── Main: Idle with tasks ───
   const handleStart = (focusTotal = false) => {
+    telemetry.track('hero_cta_clicked', {
+      focus_total: focusTotal,
+      tasks_count: tasks.length,
+      total_minutes: totalStudyMinutes,
+      pending_reviews: pendingReviews,
+      streak,
+      is_new_user: isNewUser,
+      is_recovery: isRecovery,
+    });
+    telemetry.track('study_session_started', {
+      origin: 'hero_cta',
+      tasks_count: tasks.length,
+      top_task_type: topTask?.type,
+      top_task_topic: topTask?.topic,
+    });
     safeCta({
       action: () => { startMission(); },
       nextStep: focusTotal ? "/mission?focus=total" : "/mission",
@@ -289,6 +306,7 @@ export default function HeroStudyCard() {
                 task={task}
                 onTap={() => {
                   if (user?.id) void markRecommendationClicked(user.id, task.id);
+                  telemetry.track('study_session_started', { origin: 'day_plan_row', task_type: task.type, task_topic: task.topic });
                   navigate(buildStudyPath(task, "daily-plan"));
                 }}
               />
@@ -317,6 +335,7 @@ export default function HeroStudyCard() {
                       task={task}
                       onTap={() => {
                         if (user?.id) void markRecommendationClicked(user.id, task.id);
+                        telemetry.track('study_session_started', { origin: 'day_plan_row_expanded', task_type: task.type, task_topic: task.topic });
                         navigate(buildStudyPath(task, "daily-plan"));
                       }}
                     />

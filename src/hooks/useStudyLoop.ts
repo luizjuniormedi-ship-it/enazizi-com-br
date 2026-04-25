@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import type { StudyNextRecommendation } from "./useStudyNext";
 import { trackLoopEvent, incrementDailyEngagement } from "@/lib/studyLoopTracking";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 /* ─── Loop states ─── */
 export type LoopPhase = "idle" | "intro" | "running" | "feedback" | "next" | "complete";
@@ -181,6 +182,7 @@ export function useStudyLoop() {
         const reinforcement = await callReinforceError(context.theme);
         const question = await callGenerateQuestion(context.theme, context.subtopic, "medium", { fromError: true });
         setResult({ reinforcement, generatedQuestion: question });
+        telemetry.track('first_question_loaded', { recommendation_type: rec.type, theme: context.theme, difficulty: question?.difficulty, from_error: true });
       } else if (rec.type === "review") {
         const summary = await callSummarizeTopic(context.theme);
         setResult({ summaryContent: summary.summary, helperContent: null });
@@ -188,9 +190,11 @@ export function useStudyLoop() {
         // daily_task + free_study
         const question = await callGenerateQuestion(context.theme, context.subtopic);
         setResult({ generatedQuestion: question });
+        telemetry.track('first_question_loaded', { recommendation_type: rec.type, theme: context.theme, difficulty: question?.difficulty });
       }
     } catch (e: any) {
       setError(e.message || "Erro ao executar missão");
+      telemetry.track('exited_before_question', { recommendation_type: context.recommendation.type, theme: context.theme, error_message: e.message });
       if (uid) {
         trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "error", recommendationType: context.recommendation.type, theme: context.theme, metadata: { step: "beginExecution", error: e.message } });
         incrementDailyEngagement(uid, { errors_encountered: 1 });
@@ -213,6 +217,7 @@ export function useStudyLoop() {
       await callStudyComplete(buildCompletePayload(context, correct));
 
       // Track answer event
+      telemetry.track('first_answer_submitted', { recommendation_type: context.recommendation.type, theme: context.theme, correct, reinforcement_count: reinforceCountRef.current });
       if (uid) {
         trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: correct ? "answer_correct" : "answer_wrong", recommendationType: context.recommendation.type, theme: context.theme, subtopic: context.subtopic });
         incrementDailyEngagement(uid, { questions_answered: 1, ...(correct ? { questions_correct: 1 } : {}) });
@@ -318,6 +323,9 @@ export function useStudyLoop() {
         trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_complete", recommendationType: context.recommendation.type, theme: context.theme, durationSeconds });
         incrementDailyEngagement(uid, { loops_completed: 1, total_study_seconds: durationSeconds || 0 });
       }
+      if (context) {
+        telemetry.track('study_session_completed', { recommendation_type: context.recommendation.type, theme: context.theme, duration_seconds: durationSeconds });
+      }
 
       setPhase("complete");
     } catch (e: any) {
@@ -418,6 +426,10 @@ export function useStudyLoop() {
       const durationSeconds = sessionStartRef.current ? Math.round((Date.now() - sessionStartRef.current) / 1000) : undefined;
       trackLoopEvent({ userId: uid, sessionId: loopSessionIdRef.current, eventType: "loop_abandon", recommendationType: context.recommendation.type, theme: context.theme, durationSeconds, metadata: { abandonedPhase: phase } });
       incrementDailyEngagement(uid, { loops_abandoned: 1, total_study_seconds: durationSeconds || 0 });
+      telemetry.track('study_session_abandoned', { recommendation_type: context.recommendation.type, theme: context.theme, duration_seconds: durationSeconds, abandoned_phase: phase });
+      if (phase === "intro") {
+        telemetry.track('exited_before_question', { recommendation_type: context.recommendation.type, theme: context.theme });
+      }
     }
     setPhase("idle");
     setContext(null);

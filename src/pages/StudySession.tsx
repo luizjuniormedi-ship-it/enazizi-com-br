@@ -8,6 +8,7 @@ import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -114,6 +115,9 @@ const StudySession = () => {
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const [targetExam, setTargetExam] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const firstQuestionTrackedRef = useRef(false);
+  const sessionCompleteTrackedRef = useRef(false);
+  const sessionStartTimeRef = useRef<number>(Date.now());
   const getStudySessionHeaders = useCallback(async () => {
     const {
       data: { session },
@@ -220,6 +224,22 @@ const StudySession = () => {
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Unmount: track completion (>=3 questions) or abandonment
+  useEffect(() => {
+    return () => {
+      if (firstQuestionTrackedRef.current && !sessionCompleteTrackedRef.current) {
+        const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+        const completed = performance.totalQuestions >= 3;
+        try {
+          telemetry.track(completed ? 'study_session_completed' : 'study_session_abandoned', {
+            topic, mode: studyMode, duration_seconds: duration, questions_answered: performance.totalQuestions, correct_answers: performance.correctAnswers,
+          });
+        } catch {}
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Drain any pending study-complete retries from past failures (network, reload).
   useEffect(() => {
@@ -353,6 +373,7 @@ const StudySession = () => {
     const correct = signal.wasCorrect;
     const subtopic = signal.subtopic || searchParams.get("subtopic") || undefined;
     const errorCategory = signal.errorCategory;
+    trackAction('first_answer_submitted', { topic, correct, subtopic, error_category: errorCategory, confidence: signal.confidence });
 
     try {
       // Update local domain map (lightweight; not adaptive critical-path)
@@ -544,6 +565,10 @@ const StudySession = () => {
                 if (last?.role === "assistant") {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
+                if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
+                  firstQuestionTrackedRef.current = true;
+                  trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
+                }
                 return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
@@ -583,6 +608,10 @@ const StudySession = () => {
     setStudyMode(mode);
     const t = topicOverride?.trim() || topic;
     if (!t) return;
+    sessionStartTimeRef.current = Date.now();
+    firstQuestionTrackedRef.current = false;
+    sessionCompleteTrackedRef.current = false;
+    trackAction('study_session_started', { topic: t, mode, origin: 'style_select' });
 
     // Map mode to initial phase
     const phaseMap: Record<StudyMode, Phase> = {

@@ -7,6 +7,7 @@ import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { markRecommendationClicked } from "@/lib/coverageBoostTelemetry";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 export default function PendingReviewsCard() {
   const navigate = useNavigate();
@@ -51,6 +52,8 @@ export default function PendingReviewsCard() {
             className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 hover:bg-muted cursor-pointer transition-colors group"
             onClick={() => {
               if (user?.id) void markRecommendationClicked(user.id, rev.id);
+              telemetry.track('revisoes_clicked', { topic: rev.topic, type: rev.type, priority: rev.priority, total_pending: reviews.length });
+              telemetry.track('study_session_started', { origin: 'pending_reviews', task_type: rev.type, task_topic: rev.topic });
               navigate(buildStudyPath(rev));
             }}
           >
@@ -68,7 +71,7 @@ export default function PendingReviewsCard() {
           </div>
         ))}
         {reviews.length > 4 && (
-          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => navigate("/dashboard/planner")}>
+          <Button variant="ghost" size="sm" className="w-full text-xs h-7 text-muted-foreground" onClick={() => { telemetry.track('revisoes_clicked', { origin: 'see_all', total_pending: reviews.length }); navigate("/dashboard/planner"); }}>
             Ver todas as revisões
           </Button>
         )}

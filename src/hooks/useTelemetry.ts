@@ -5,10 +5,22 @@ import { telemetry } from '@/lib/pedagogicalTelemetry';
 export const useTelemetry = () => {
   const location = useLocation();
   const startTimeRef = useRef<number>(Date.now());
+  const recentRoutesRef = useRef<Array<{ path: string; ts: number }>>([]);
 
   useEffect(() => {
     if (location.pathname === '/dashboard') {
       telemetry.track('dashboard_opened');
+    }
+    // Detect repeated_navigation: same path visited 3+ times within 60s
+    const now = Date.now();
+    const recent = recentRoutesRef.current.filter((r) => now - r.ts < 60000);
+    recent.push({ path: location.pathname, ts: now });
+    recentRoutesRef.current = recent;
+    const sameCount = recent.filter((r) => r.path === location.pathname).length;
+    if (sameCount >= 3) {
+      telemetry.track('repeated_navigation', { path: location.pathname, count: sameCount, window_ms: 60000 });
+      // Reset for this path to avoid spam
+      recentRoutesRef.current = recent.filter((r) => r.path !== location.pathname);
     }
   }, [location.pathname]);
 
