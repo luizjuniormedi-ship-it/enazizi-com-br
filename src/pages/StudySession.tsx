@@ -225,13 +225,16 @@ const StudySession = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Unmount: track abandonment if session was active and not concluded
+  // Unmount: track completion (>=3 questions) or abandonment
   useEffect(() => {
     return () => {
       if (firstQuestionTrackedRef.current && !sessionCompleteTrackedRef.current) {
         const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
+        const completed = performance.totalQuestions >= 3;
         try {
-          telemetry.track('study_session_abandoned', { topic, mode: studyMode, duration_seconds: duration, questions_answered: performance.totalQuestions });
+          telemetry.track(completed ? 'study_session_completed' : 'study_session_abandoned', {
+            topic, mode: studyMode, duration_seconds: duration, questions_answered: performance.totalQuestions, correct_answers: performance.correctAnswers,
+          });
         } catch {}
       }
     };
