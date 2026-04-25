@@ -117,24 +117,37 @@ const Dashboard = () => {
     prevLevelRef.current = dashData.metrics.gamificationLevel;
   }, [dashData]);
 
-  // Fresh login cleanup + retention tracking
+  // Fresh login cleanup + retention tracking (fires ONCE per page load)
+  const retentionFiredRef = useRef(false);
   useEffect(() => {
+    if (retentionFiredRef.current) return;
+    retentionFiredRef.current = true;
     localStorage.removeItem("enazizi_last_login_ts");
     try {
       const lastVisitKey = "enazizi_last_dashboard_visit";
+      const retentionFiredKey = "enazizi_retention_fired_at";
       const last = localStorage.getItem(lastVisitKey);
+      const lastFired = localStorage.getItem(retentionFiredKey);
       const now = Date.now();
-      if (last) {
+      // Throttle: only allow one retention event per 6h, even across reloads
+      const sixHours = 6 * 3600 * 1000;
+      const canFire = !lastFired || (now - parseInt(lastFired, 10)) > sixHours;
+      if (last && canFire) {
         const lastDate = new Date(parseInt(last, 10));
         const nowDate = new Date(now);
         const sameDay = lastDate.toDateString() === nowDate.toDateString();
         const dayDiff = Math.floor((now - parseInt(last, 10)) / 86400000);
-        if (sameDay) {
-          trackAction('returned_same_day', { hours_since_last: Math.floor((now - parseInt(last, 10)) / 3600000) });
+        const hoursSince = Math.floor((now - parseInt(last, 10)) / 3600000);
+        // Only fire returned_same_day if at least 1h has passed (otherwise it's the same session)
+        if (sameDay && hoursSince >= 1) {
+          trackAction('returned_same_day', { hours_since_last: hoursSince });
+          localStorage.setItem(retentionFiredKey, String(now));
         } else if (dayDiff === 1) {
-          trackAction('returned_next_day', { hours_since_last: Math.floor((now - parseInt(last, 10)) / 3600000) });
+          trackAction('returned_next_day', { hours_since_last: hoursSince });
+          localStorage.setItem(retentionFiredKey, String(now));
         } else if (dayDiff >= 2) {
           trackAction('streak_recovered', { days_since_last: dayDiff });
+          localStorage.setItem(retentionFiredKey, String(now));
         }
       }
       localStorage.setItem(lastVisitKey, String(now));

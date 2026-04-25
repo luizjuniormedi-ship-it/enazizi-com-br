@@ -96,11 +96,17 @@ class TelemetryService {
       this.lastActionTimestamp = now;
     });
 
-    // Detect Idle
+    // Detect Idle (fires AT MOST once per idle stretch — resets when user acts again)
+    let idleFiredForThisStretch = false;
     setInterval(() => {
       const idleTime = Date.now() - this.lastActionTimestamp;
-      if (idleTime > 60000 && window.location.pathname.includes('dashboard')) {
+      const onDashboard = window.location.pathname.includes('dashboard');
+      if (idleTime > 60000 && onDashboard && !idleFiredForThisStretch) {
         this.track('idle_dashboard', { idle_duration_ms: idleTime });
+        idleFiredForThisStretch = true;
+      } else if (idleTime < 60000 && idleFiredForThisStretch) {
+        // user acted again — re-arm
+        idleFiredForThisStretch = false;
       }
     }, 60000);
   }
