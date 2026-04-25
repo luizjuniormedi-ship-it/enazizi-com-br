@@ -90,6 +90,7 @@ const ChatGPT = () => {
   const perf = useTutorPerformance(user?.id);
   const { performance, savePerformance, sessionQuestions, setSessionQuestions, sessionCorrect, setSessionCorrect, handleFinishSession } = perf;
   const sessionMemory = useSessionMemory();
+  const { data: missionData } = useStudyNext();
 
   // Session persistence
   const { pendingSession, checked: sessionChecked, saveSession: persistSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "chatgpt" });
