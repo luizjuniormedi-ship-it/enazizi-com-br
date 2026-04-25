@@ -40,7 +40,7 @@ interface CompletionHandoff {
 }
 
 /* ═══════════════════════════════════════════════════
-   VISÃO GERAL — Panorama silencioso (entender, não executar)
+   HOJE — Panorama silencioso (entender, não executar)
    Função: orientar o aluno sobre o estado do dia.
    Execução vive em /dashboard/sessao-estudo (cockpit Estudar).
    Blocos:
@@ -167,7 +167,7 @@ const Dashboard = () => {
       {/* Achievement toasts (overlay invisível até disparar) */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
-      {/* ═══ VISÃO GERAL — panorama silencioso (entender, não executar) ═══ */}
+      {/* ═══ HOJE — panorama silencioso (entender, não executar) ═══ */}
       {!focusMode && (
         <>
           {/* 1 — TopBar fixa (saudação + status) */}
