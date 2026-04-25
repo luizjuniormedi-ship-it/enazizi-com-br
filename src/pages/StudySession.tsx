@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
   Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
-  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical, Sparkles
+  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical, Sparkles, ChevronLeft
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
