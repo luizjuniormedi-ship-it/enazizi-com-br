@@ -22,6 +22,7 @@ import { useChatMessages } from "@/hooks/tutor/useChatMessages";
 import { useChatProgress } from "@/hooks/tutor/useChatProgress";
 import { useChatContext } from "@/hooks/tutor/useChatContext";
 import { useTutorPerformance } from "@/hooks/tutor/useTutorPerformance";
+import { useStudyNext } from "@/hooks/useStudyNext";
 
 import TutorHeader from "@/components/tutor/CinematicTutorHero";
 import TutorOnboardingCard from "@/components/tutor/TutorOnboardingCard";
