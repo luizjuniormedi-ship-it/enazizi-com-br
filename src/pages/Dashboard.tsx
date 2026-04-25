@@ -208,7 +208,10 @@ const Dashboard = () => {
               <CinematicMissionHero
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
-                onStart={() => navigate("/dashboard/sessao-estudo")}
+                onStart={() => {
+                  const topic = (activeRec.contextPayload?.topic as string) || activeRec.title;
+                  navigate(`/dashboard/chatgpt?tutor_mode=mission&topic=${encodeURIComponent(topic)}&tutor_origin=dashboard_hero`);
+                }}
                 onRefresh={handleRefresh}
                 onShowAlternatives={() => {
                   setAdvancedAccordion("advanced");
