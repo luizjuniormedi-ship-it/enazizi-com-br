@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { BarChart3, TrendingUp, Target, Clock, BookOpen, CheckCircle2, Loader2, HelpCircle, Stethoscope, Award, MoreVertical, Brain, Heart, PenLine, MessageCircle, ImageIcon, Activity } from "lucide-react";
 import { CinematicHero } from "@/components/cinematic";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 import { useQuery } from "@tanstack/react-query";
 import ModuleHelpButton from "@/components/layout/ModuleHelpButton";
 import { Button } from "@/components/ui/button";
@@ -211,6 +213,7 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
 
 const Analytics = () => {
   const { user } = useAuth();
+  useEffect(() => { telemetry.track('analytics_opened'); }, []);
   const { data, isLoading: loading } = useQuery({
     queryKey: ["analytics-data", user?.id],
     queryFn: () => fetchAnalyticsData(user!.id),
