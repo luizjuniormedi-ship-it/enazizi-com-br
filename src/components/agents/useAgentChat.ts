@@ -349,6 +349,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           history.loadConversations();
         }
 
+        if (assistantSoFar) {
+          telemetry.track("tutor_response_received", {
+            source: "ai",
+            response_ms: Date.now() - tutorStartedAt,
+            length: assistantSoFar.length,
+          });
+        }
+
         // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
         // Salva a resposta gerada para reuso futuro. Falha-silenciosa.
         if (assistantSoFar && assistantSoFar.trim().length > 0) {
