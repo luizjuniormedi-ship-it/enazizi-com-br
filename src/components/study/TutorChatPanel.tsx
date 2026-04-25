@@ -94,6 +94,7 @@ interface Props {
 
 export default function TutorChatPanel({ context, showStudySessionCTA = false, className }: Props) {
   const navigate = useNavigate();
+  const { trackAction } = useTelemetry();
   const { streamResponse } = useStreamingResponse();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
