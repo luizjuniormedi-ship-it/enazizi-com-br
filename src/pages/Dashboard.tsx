@@ -163,18 +163,20 @@ const Dashboard = () => {
   if (initialLoading) return <MissionControlSkeleton />;
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto pb-20 lg:pb-0">
+    <div className="space-y-6 max-w-4xl mx-auto pb-24 lg:pb-6 px-4">
       {/* Achievement toasts (overlay invisível até disparar) */}
       <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
 
       {/* ═══ HOJE — panorama silencioso (entender, não executar) ═══ */}
       {!focusMode && (
         <>
-          {/* 1 — TopBar fixa (saudação + status) */}
-          <SafeCard name="DashboardTopBar"><DashboardTopBar /></SafeCard>
-
-          {/* Recovery banner sempre que ativo */}
-          <RecoveryModeBanner />
+          {/* 1 — Header Contextual (Status e Boas-vindas) */}
+          <div className="space-y-4">
+            <SafeCard name="DashboardTopBar"><DashboardTopBar /></SafeCard>
+            
+            {/* Recovery banner sempre que ativo */}
+            <RecoveryModeBanner />
+          </div>
 
           {/* Onboarding inline para usuários totalmente novos */}
           {isNewUser && dashData && (
@@ -202,7 +204,7 @@ const Dashboard = () => {
             />
           )}
 
-          {/* 2 — HERO CONTEXTUAL (missão atual — apenas resumo, execução vai para /Estudar) */}
+          {/* 2 — HERO CONTEXTUAL (Ação Principal Recomendada) */}
           {activeRec && (
             <SafeCard name="MissionHero">
               <CinematicMissionHero
@@ -215,41 +217,45 @@ const Dashboard = () => {
                 onShowAlternatives={() => {
                   setAdvancedAccordion("advanced");
                   requestAnimationFrame(() => {
-                    document.getElementById("advanced-analytics")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    const el = document.getElementById("advanced-analytics");
+                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
                   });
                 }}
               />
             </SafeCard>
           )}
 
-          {/* Mnemônico adaptativo (condicional) */}
-          {visibleDashboardMnemonic && (
-            <SafeCard name="DashboardMnemonic">
+          {/* 3 — CONTINUIDADE (Mnemônicos e Tutor) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Mnemônico adaptativo (condicional) */}
+            {visibleDashboardMnemonic && (
+              <SafeCard name="DashboardMnemonic">
+                <Suspense fallback={null}>
+                  <AdaptiveMnemonicCard
+                    mnemonic={visibleDashboardMnemonic}
+                    onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
+                  />
+                </Suspense>
+              </SafeCard>
+            )}
+
+            {/* TUTOR (continuar conversa anterior) */}
+            <SafeCard name="TutorContinueCard">
               <Suspense fallback={null}>
-                <AdaptiveMnemonicCard
-                  mnemonic={visibleDashboardMnemonic}
-                  onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
-                />
+                <TutorContinueCard />
               </Suspense>
             </SafeCard>
-          )}
+          </div>
 
-          {/* 4 — PROGRESSO UNIFICADO */}
+          {/* 4 — PANORAMA DE MÉTRICAS (Estatísticas Unificadas) */}
           <SafeCard name="ProgressOverview">
             <Suspense fallback={null}>
               <ProgressOverview />
             </Suspense>
           </SafeCard>
 
-          {/* 5 — TUTOR (continuar) */}
-          <SafeCard name="TutorContinueCard">
-            <Suspense fallback={null}>
-              <TutorContinueCard />
-            </Suspense>
-          </SafeCard>
-
-          {/* 6 — ANÁLISES AVANÇADAS (accordion fechado) */}
-          <div id="advanced-analytics">
+          {/* 5 — ANÁLISES AVANÇADAS (Accordion técnico) */}
+          <div id="advanced-analytics" className="pt-2">
             <SafeCard name="AdvancedAnalytics">
               <Suspense fallback={null}>
                 <AdvancedAnalyticsAccordion
