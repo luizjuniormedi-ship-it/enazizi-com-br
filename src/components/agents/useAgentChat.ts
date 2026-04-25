@@ -258,6 +258,15 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             await history.persistAssistantMessage(convId, md);
             history.loadConversations();
           }
+          telemetry.track("tutor_memory_reused", {
+            memory_id: reuse.hit.id,
+            quality_score: reuse.hit.quality_score,
+            response_ms: Date.now() - tutorStartedAt,
+          });
+          telemetry.track("tutor_response_received", {
+            source: "memory",
+            response_ms: Date.now() - tutorStartedAt,
+          });
           setIsLoading(false);
           setLoadingStage("");
           return;
