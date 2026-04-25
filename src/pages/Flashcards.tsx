@@ -408,7 +408,18 @@ const Flashcards = () => {
 
   // ── PHASE: Setup ──
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto pb-20">
+      <div className="flex items-center gap-2 -mb-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate("/dashboard")}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Voltar ao Panorama
+        </Button>
+      </div>
       {pendingSession && (
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}
