@@ -10,6 +10,7 @@ import { useTutorContext } from "./hooks/useTutorContext";
 import { useTutorStream } from "./hooks/useTutorStream";
 import { useTutorAdaptiveContext } from "./hooks/useTutorAdaptiveContext";
 import { useTutorMemoryBridge } from "./hooks/useTutorMemoryBridge";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 import type { Msg, QuickAction, TimelineEntry } from "./agentChatTypes";
 
 interface UseAgentChatOptions {
@@ -179,6 +180,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       setInput("");
       setIsLoading(true);
       setLoadingStage("🔍 Buscando referências científicas...");
+      const tutorStartedAt = Date.now();
+      telemetry.track("tutor_message_sent", {
+        topic: topic ?? null,
+        subtopic: subtopic ?? null,
+        message_length: text.length,
+      });
 
       // Ensure conversation exists (delegated to useTutorHistory)
       const convId = await history.ensureConversation(text);
@@ -251,6 +258,15 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             await history.persistAssistantMessage(convId, md);
             history.loadConversations();
           }
+          telemetry.track("tutor_memory_reused", {
+            memory_id: reuse.hit.id,
+            quality_score: reuse.hit.quality_score,
+            response_ms: Date.now() - tutorStartedAt,
+          });
+          telemetry.track("tutor_response_received", {
+            source: "memory",
+            response_ms: Date.now() - tutorStartedAt,
+          });
           setIsLoading(false);
           setLoadingStage("");
           return;
@@ -333,6 +349,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           history.loadConversations();
         }
 
+        if (assistantSoFar) {
+          telemetry.track("tutor_response_received", {
+            source: "ai",
+            response_ms: Date.now() - tutorStartedAt,
+            length: assistantSoFar.length,
+          });
+        }
+
         // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
         // Salva a resposta gerada para reuso futuro. Falha-silenciosa.
         if (assistantSoFar && assistantSoFar.trim().length > 0) {
@@ -411,6 +435,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           .then(({ adjustMemoryQuality }) => adjustMemoryQuality(last.memoryId!, -10))
           .catch(() => {});
       }
+      telemetry.track("tutor_response_regenerated", {
+        memory_id: last?.memoryId ?? null,
+      });
       bypassMemoryRef.current = true;
       handleSend(question);
     },

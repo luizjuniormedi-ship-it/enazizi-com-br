@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import AgentChat from "@/components/agents/AgentChat";
 import { useTutorDrawer } from "@/hooks/useTutorDrawer";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 const QUICK_ACTIONS = [
   { label: "🩺 Explicar do zero", prompt: "Explique este tema do zero, como se eu nunca tivesse visto.", icon: "🩺" },
@@ -42,6 +43,16 @@ export default function TutorDrawer() {
 
   const initialPrompt = useMemo(() => buildInitialPrompt(context ?? {}), [context]);
   const topic = context?.topic;
+
+  useEffect(() => {
+    if (open) {
+      telemetry.track("tutor_opened", {
+        topic: context?.topic ?? null,
+        source: context?.source ?? null,
+        phase: context?.tutorPhase ?? null,
+      });
+    }
+  }, [open, context]);
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>

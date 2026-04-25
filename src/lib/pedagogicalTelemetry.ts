@@ -10,25 +10,39 @@ const genUUID = () => {
  * Optimized for performance with batching and offline resilience.
  */
 
-export type TelemetryEventName = 
+export type TelemetryEventName =
+  // Dashboard / navegação
   | 'dashboard_opened'
   | 'hero_cta_clicked'
   | 'continuar_clicked'
   | 'revisoes_clicked'
   | 'tutor_continue_clicked'
   | 'analytics_opened'
+  // Sessão de estudo
   | 'study_session_started'
   | 'first_question_loaded'
   | 'first_answer_submitted'
   | 'study_session_abandoned'
   | 'study_session_completed'
+  // Fricção & comportamento
   | 'rage_click_detected'
   | 'repeated_navigation'
   | 'idle_dashboard'
   | 'exited_before_question'
+  // Retenção
   | 'returned_same_day'
   | 'returned_next_day'
-  | 'streak_recovered';
+  | 'streak_recovered'
+  // Tutor IA — qualidade (Fase 2)
+  | 'tutor_opened'
+  | 'tutor_message_sent'
+  | 'tutor_response_received'
+  | 'tutor_response_regenerated'
+  | 'tutor_memory_reused'
+  | 'tutor_quiz_answered'
+  | 'tutor_helpful_clicked'
+  | 'tutor_unhelpful_clicked'
+  | 'tutor_abandoned_after_response';
 
 interface TelemetryProperties {
   [key: string]: any;

@@ -11073,6 +11073,41 @@ export type Database = {
       }
     }
     Functions: {
+      admin_telemetry_alerts: { Args: { _days?: number }; Returns: Json }
+      admin_telemetry_baseline: { Args: never; Returns: Json }
+      admin_telemetry_cohorts: { Args: { _days?: number }; Returns: Json }
+      admin_telemetry_export: {
+        Args: { _days?: number; _limit?: number }
+        Returns: {
+          device_type: string
+          event_name: string
+          properties: Json
+          route: string
+          screen_size: string
+          session_id: string
+          timestamp: string
+          user_id: string
+        }[]
+      }
+      admin_telemetry_funnel: {
+        Args: { _days?: number }
+        Returns: {
+          order: number
+          stage: string
+          value: number
+        }[]
+      }
+      admin_telemetry_heatmap: {
+        Args: { _days?: number }
+        Returns: {
+          click_count: number
+          event_name: string
+          rage_click_count: number
+          route: string
+          sessions: number
+        }[]
+      }
+      admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
