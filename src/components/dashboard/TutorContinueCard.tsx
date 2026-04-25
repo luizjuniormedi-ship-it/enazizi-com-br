@@ -117,7 +117,7 @@ export default function TutorContinueCard() {
           size="sm"
           variant="outline"
           className="shrink-0 border-primary/20 text-primary hover:bg-primary/5"
-          onClick={() => navigate(`/dashboard/flashcards?conversation=${session.conversationId}&source=dashboard_continue`)}
+          onClick={() => navigate(`/dashboard/sessao-estudo?conversation=${session.conversationId}&source=dashboard_continue`)}
         >
           Retomar conversa
           <ArrowRight className="ml-1 h-3.5 w-3.5" />

@@ -417,7 +417,7 @@ const DashboardSidebar = () => {
             <Tooltip delayDuration={300}>
               <TooltipTrigger asChild>
                 <Link
-                  to="/dashboard/chatgpt?tutor_mode=mission&tutor_origin=sidebar_continue"
+                  to="/dashboard/sessao-estudo?source=sidebar_continue"
                   className={cn(
                     "group/cta relative flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold mb-1",
                     "bg-primary text-primary-foreground shadow-soft",
