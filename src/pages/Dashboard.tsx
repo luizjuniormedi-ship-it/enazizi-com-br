@@ -95,19 +95,14 @@ const Dashboard = () => {
     if (autostart !== "true") return;
 
     autostartConsumedRef.current = true;
-    const source = searchParams.get("source") || "manual";
     const newParams = new URLSearchParams(searchParams);
     newParams.delete("autostart");
     newParams.delete("source");
     setSearchParams(newParams, { replace: true });
 
-    const topic = (activeRec?.contextPayload?.topic as string) || activeRec?.title;
-    if (topic) {
-      navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
-    } else {
-      navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
-    }
-  }, [missionLoading, data, searchParams, setSearchParams, navigate, activeRec]);
+    // Redireciona para sessao-estudo (Fluxo: Hoje -> Continuar -> Sessão Ativa)
+    navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
+  }, [missionLoading, data, searchParams, setSearchParams, navigate]);
 
   // Celebrations
   useEffect(() => {
@@ -214,7 +209,7 @@ const Dashboard = () => {
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
                 onStart={() => {
-                  navigate(`/dashboard/flashcards?source=dashboard_hero`);
+                  navigate(`/dashboard/sessao-estudo?source=dashboard_hero`);
                 }}
                 onRefresh={handleRefresh}
                 onShowAlternatives={() => {

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -15,7 +15,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   BookOpen, Brain, HelpCircle, MessageSquare, BarChart3,
   Send, Loader2, GraduationCap, Play, RotateCcw, Stethoscope,
-  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical, Sparkles
+  FileText, AlertTriangle, TrendingUp, Target, Maximize2, Minimize2, MoreVertical, Sparkles, ChevronLeft
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -91,6 +91,7 @@ const SUGGESTED_TOPICS = [
 ];
 
 const StudySession = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -760,6 +761,21 @@ const StudySession = () => {
 
       {/* Main Content — agora ocupa 100% da largura */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* ── Panorama Navigation (Só aparece na fase start) ── */}
+        {phase === "start" && (
+          <div className="px-4 py-2 border-b border-border/40">
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => navigate("/dashboard")}
+              className="gap-2 text-muted-foreground hover:text-foreground h-7"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Voltar ao Panorama
+            </Button>
+          </div>
+        )}
+
         {/* Cinematic Top Bar — cockpit de foco (hue: simulado/verde performance) */}
         <div
           className="relative overflow-hidden border-b border-border"

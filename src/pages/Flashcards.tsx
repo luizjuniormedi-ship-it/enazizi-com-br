@@ -13,7 +13,7 @@ import { useFsrs, Rating } from "@/hooks/useFsrs";
 import {
   FlipVertical, Loader2, Brain, GraduationCap,
   Download, Zap, Clock, Award, Maximize2, Minimize2,
-  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap, Sparkles,
+  MoreVertical, HelpCircle, ArrowLeft, Search, DatabaseZap, Sparkles, ChevronLeft,
 } from "lucide-react";
 import { CinematicHero } from "@/components/cinematic";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -408,7 +408,18 @@ const Flashcards = () => {
 
   // ── PHASE: Setup ──
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto pb-20">
+      <div className="flex items-center gap-2 -mb-2">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={() => navigate("/dashboard")}
+          className="gap-2 text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Voltar ao Panorama
+        </Button>
+      </div>
       {pendingSession && (
         <ResumeSessionBanner
           updatedAt={pendingSession.updated_at}

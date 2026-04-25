@@ -70,9 +70,9 @@ function ProgressOverview() {
     readinessPct >= 50 ? "primary" :
     readinessPct >= 30 ? "warn" : "danger";
 
-  // Drill-down inteligente: vai para a métrica mais fraca
+  // Drill-down inteligente: vai para a central de estudo/revisões
   const handleDrillDown = () => {
-    navigate("/dashboard/flashcards?source=progress_overview");
+    navigate("/dashboard/sessao-estudo?source=progress_overview");
   };
 
   return (
@@ -131,7 +131,7 @@ function ProgressOverview() {
                 ? `${prediction.daysToExam}d até a prova`
                 : snap?.phase ? `Fase: ${snap.phase}` : "Acompanhe sua trajetória"
             }
-            onClick={() => navigate("/dashboard/flashcards?source=progress_overview_score")}
+            onClick={() => navigate("/dashboard/sessao-estudo?source=progress_overview_score")}
           />
           <CinematicMetricHalo
             module="planner"
@@ -145,7 +145,7 @@ function ProgressOverview() {
                 ? `${coverage.requiredSeen}/${coverage.requiredTopics} obrigatórios`
                 : "Currículo em construção"
             }
-            onClick={() => navigate("/dashboard/flashcards?source=progress_overview_coverage")}
+            onClick={() => navigate("/dashboard/sessao-estudo?source=progress_overview_coverage")}
           />
           <CinematicMetricHalo
             module="flashcard"
@@ -160,7 +160,7 @@ function ProgressOverview() {
                 ? `${goal.completedQuestions}/${goal.targetQuestions} questões`
                 : "Defina sua meta"
             }
-            onClick={() => navigate("/dashboard/flashcards?source=progress_overview_goal")}
+            onClick={() => navigate("/dashboard/sessao-estudo?source=progress_overview_goal")}
           />
           <CinematicMetricHalo
             module="simulado"
@@ -175,7 +175,7 @@ function ProgressOverview() {
                 ? `${examSessions.length} simulado${examSessions.length === 1 ? "" : "s"} recentes`
                 : "Faça um simulado para calibrar"
             }
-            onClick={() => navigate("/dashboard/flashcards?source=progress_overview_readiness")}
+            onClick={() => navigate("/dashboard/sessao-estudo?source=progress_overview_readiness")}
           />
         </div>
       </CardContent>
