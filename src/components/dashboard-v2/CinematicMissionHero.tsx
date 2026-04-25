@@ -174,8 +174,7 @@ function CinematicMissionHero({
                 Sua missão de hoje
               </div>
               <h2 className="text-base sm:text-lg text-muted-foreground font-medium">
-                {greeting}
-                {firstName ? `, ${firstName}.` : "."}
+                {firstName ? `${firstName}, seu resumo para hoje.` : "Seu resumo para hoje."}
               </h2>
             </motion.div>
 
@@ -268,7 +267,7 @@ function CinematicMissionHero({
                   )}
                 >
                   <Rocket className="h-5 w-5" />
-                  {cfg.cta || "Começar agora"}
+                  Continuar missão
                 </Button>
               </motion.div>
 
@@ -282,13 +281,14 @@ function CinematicMissionHero({
                 <RefreshCw className="h-4 w-4" />
               </Button>
 
+              {/* Alternatives Popover logic would go here, but for now we keep the button for cleaner integration */}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onShowAlternatives}
                 className="self-start sm:self-auto text-xs text-muted-foreground hover:text-foreground rounded-xl gap-1"
               >
-                Ver alternativas <ChevronDown className="h-3.5 w-3.5" />
+                Alternativas <ChevronDown className="h-3.5 w-3.5" />
               </Button>
             </motion.div>
           </div>

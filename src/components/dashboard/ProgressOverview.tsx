@@ -72,16 +72,7 @@ function ProgressOverview() {
 
   // Drill-down inteligente: vai para a métrica mais fraca
   const handleDrillDown = () => {
-    const candidates = [
-      { tone: coverageTone, path: "/dashboard/cronograma?source=progress_overview" },
-      { tone: goalTone, path: "/dashboard/banco-questoes?source=progress_overview" },
-      { tone: readinessTone, path: "/dashboard/simulados?source=progress_overview" },
-      { tone: approvalTone, path: "/dashboard/analytics?source=progress_overview" },
-    ];
-    const weakest = candidates.find(c => c.tone === "danger") ||
-                    candidates.find(c => c.tone === "warn") ||
-                    candidates[0];
-    navigate(weakest.path);
+    navigate("/dashboard/analytics?source=progress_overview");
   };
 
   return (
@@ -154,7 +145,7 @@ function ProgressOverview() {
                 ? `${coverage.requiredSeen}/${coverage.requiredTopics} obrigatórios`
                 : "Currículo em construção"
             }
-            onClick={() => navigate("/dashboard/cronograma?source=progress_overview")}
+            onClick={() => navigate("/dashboard/cronograma-inteligente?source=progress_overview")}
           />
           <CinematicMetricHalo
             module="flashcard"
