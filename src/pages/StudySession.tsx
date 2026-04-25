@@ -7,6 +7,7 @@ import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { createPortal } from "react-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useTelemetry } from "@/hooks/useTelemetry";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +96,7 @@ const StudySession = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
+  const { trackAction } = useTelemetry();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -184,6 +186,7 @@ const StudySession = () => {
       // If focused on review/errors, jump straight to a "review" or "correction" mode
       const mode: StudyMode = paramFocus === "reviews" ? "review" : paramFocus === "errors" ? "correction" : "full";
       // Tiny delay so state settles before triggering
+      trackAction('study_session_started', { topic: paramTopic, mode });
       const t = setTimeout(() => {
         handleStyleSelect(mode, paramTopic);
       }, 200);

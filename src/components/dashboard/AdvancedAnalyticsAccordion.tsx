@@ -22,6 +22,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart3 } from "lucide-react";
 import type { StudyNextRecommendation } from "@/hooks/useStudyNext";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 const CognitiveCockpit = lazy(() => import("@/components/cockpit/CognitiveCockpit"));
 const QuestionStrategyCard = lazy(() => import("./guided/QuestionStrategyCard"));
@@ -56,9 +57,13 @@ const AdvancedAnalyticsAccordion = forwardRef<HTMLDivElement, Props>(
     },
     ref,
   ) => {
+    const { trackAction } = useTelemetry();
     return (
       <Card ref={ref} className="overflow-hidden border-white/5 bg-card/40 backdrop-blur-sm shadow-sm rounded-2xl">
-        <Accordion type="single" collapsible value={value} onValueChange={onValueChange}>
+        <Accordion type="single" collapsible value={value} onValueChange={(val) => {
+          if (val === 'advanced') trackAction('analytics_opened');
+          onValueChange?.(val);
+        }}>
           <AccordionItem value="advanced" className="border-0">
             <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-white/5 transition-all">
               <div className="flex items-center gap-3">

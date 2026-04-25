@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { cn } from "@/lib/utils";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 interface MsgRowProps { role: "user" | "assistant"; content: string }
 const ChatMsgRow = memo(({ role, content }: MsgRowProps) => (
@@ -93,6 +94,7 @@ interface Props {
 
 export default function TutorChatPanel({ context, showStudySessionCTA = false, className }: Props) {
   const navigate = useNavigate();
+  const { trackAction } = useTelemetry();
   const { streamResponse } = useStreamingResponse();
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
@@ -107,6 +109,14 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   const send = useCallback(
     async (text: string) => {
       if (!text.trim() || isLoading) return;
+
+      // Telemetry
+      if (messages.length === 0) {
+        trackAction('first_question_loaded', { topic: context.topic, mode: context.mode });
+      } else {
+        trackAction('first_answer_submitted', { topic: context.topic, mode: context.mode });
+      }
+
       const userMsg: Msg = { role: "user", content: text };
       const all = [...messages, userMsg];
       setMessages([...all, { role: "assistant", content: "" }]);

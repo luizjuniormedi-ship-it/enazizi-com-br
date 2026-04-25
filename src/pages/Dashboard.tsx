@@ -10,6 +10,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
 import { supabase } from "@/integrations/supabase/client";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 import CinematicMissionHero from "@/components/dashboard-v2/CinematicMissionHero";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
@@ -58,6 +59,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
+  const { trackAction } = useTelemetry();
   const { user } = useAuth();
   const { data: coreData } = useCoreData();
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
@@ -93,6 +95,8 @@ const Dashboard = () => {
     if (missionLoading || !data) return;
     const autostart = searchParams.get("autostart");
     if (autostart !== "true") return;
+
+    trackAction('continuar_clicked', { source: 'autostart' });
 
     autostartConsumedRef.current = true;
     const newParams = new URLSearchParams(searchParams);
@@ -211,6 +215,7 @@ const Dashboard = () => {
                 recommendation={activeRec}
                 adaptiveState={adaptiveState}
                 onStart={() => {
+                  trackAction('hero_cta_clicked', { rec_type: activeRec.type });
                   navigate(`/dashboard/sessao-estudo?source=dashboard_hero`);
                 }}
                 onRefresh={handleRefresh}
