@@ -63,6 +63,14 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Snapshot dos campos pedagógicos no load — usado para detectar mudanças
+  // de exam_date / target_exam(s) e disparar recálculo do plano após o save.
+  const initialExamSnapRef = useRef<ExamProfileSnapshot>({
+    exam_date: null,
+    target_exam: null,
+    target_exams: null,
+  });
+
   useEffect(() => {
     if (!user) return;
 
