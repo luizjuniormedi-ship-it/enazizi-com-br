@@ -93,11 +93,21 @@ const Profile = () => {
         setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
         setWhatsappDailyBi(data.whatsapp_daily_bi || false);
         const exams = (data as any).target_exams;
+        let resolvedExams: string[] = [];
         if (Array.isArray(exams) && exams.length > 0) {
+          resolvedExams = exams;
           setTargetExams(exams);
         } else if ((data as any).target_exam) {
+          resolvedExams = [(data as any).target_exam];
           setTargetExams([(data as any).target_exam]);
         }
+
+        // Snapshot inicial — base para detectar alteração no save
+        initialExamSnapRef.current = {
+          exam_date: data.exam_date || null,
+          target_exam: (data as any).target_exam || null,
+          target_exams: resolvedExams.length > 0 ? resolvedExams : null,
+        };
       }
 
       setLoading(false);
