@@ -42,7 +42,9 @@ export type TelemetryEventName =
   | 'tutor_quiz_answered'
   | 'tutor_helpful_clicked'
   | 'tutor_unhelpful_clicked'
-  | 'tutor_abandoned_after_response';
+  | 'tutor_abandoned_after_response'
+  // Perfil — alvo/banca/data da prova
+  | 'profile_exam_target_updated';
 
 interface TelemetryProperties {
   [key: string]: any;

@@ -18,6 +18,11 @@ import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import { cn } from "@/lib/utils";
 import { CinematicHero } from "@/components/cinematic";
+import {
+  recalcStudyPlanAfterProfileChange,
+  examProfileChanged,
+  type ExamProfileSnapshot,
+} from "@/lib/recalcStudyPlanAfterProfileChange";
 
 const EXAM_OPTIONS = [
   { value: "enare", label: "ENARE" },
@@ -58,6 +63,14 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  // Snapshot dos campos pedagógicos no load — usado para detectar mudanças
+  // de exam_date / target_exam(s) e disparar recálculo do plano após o save.
+  const initialExamSnapRef = useRef<ExamProfileSnapshot>({
+    exam_date: null,
+    target_exam: null,
+    target_exams: null,
+  });
+
   useEffect(() => {
     if (!user) return;
 
@@ -80,11 +93,21 @@ const Profile = () => {
         setDailyStudyHours(data.daily_study_hours ? String(data.daily_study_hours) : "4");
         setWhatsappDailyBi(data.whatsapp_daily_bi || false);
         const exams = (data as any).target_exams;
+        let resolvedExams: string[] = [];
         if (Array.isArray(exams) && exams.length > 0) {
+          resolvedExams = exams;
           setTargetExams(exams);
         } else if ((data as any).target_exam) {
+          resolvedExams = [(data as any).target_exam];
           setTargetExams([(data as any).target_exam]);
         }
+
+        // Snapshot inicial — base para detectar alteração no save
+        initialExamSnapRef.current = {
+          exam_date: data.exam_date || null,
+          target_exam: (data as any).target_exam || null,
+          target_exams: resolvedExams.length > 0 ? resolvedExams : null,
+        };
       }
 
       setLoading(false);
@@ -185,9 +208,43 @@ const Profile = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
-      toast({ title: "Perfil atualizado!" });
+
+      // Detectar mudança em exam_date / target_exam(s) e disparar recálculo
+      const newSnap: ExamProfileSnapshot = {
+        exam_date: examDate || null,
+        target_exam: targetExams[0] || null,
+        target_exams: targetExams.length > 0 ? targetExams : null,
+      };
+      const oldSnap = initialExamSnapRef.current;
+      const examChanged = examProfileChanged(oldSnap, newSnap);
+
       invalidateAll();
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
+
+      if (examChanged && user) {
+        toast({ title: "Perfil atualizado!", description: "Recalculando seu plano..." });
+        const result = await recalcStudyPlanAfterProfileChange(user.id, oldSnap, newSnap);
+        // Atualiza snapshot local para evitar disparar de novo num save subsequente
+        initialExamSnapRef.current = newSnap;
+        // Invalidar caches novamente para refletir o plano regenerado
+        invalidateAll();
+
+        if (result.success) {
+          toast({
+            title: "Plano recalculado",
+            description:
+              "Seu plano de estudos foi atualizado com base na nova prova/data.",
+          });
+        } else {
+          toast({
+            title: "Perfil salvo",
+            description:
+              "Não foi possível recalcular o plano agora. Ele será atualizado ao iniciar o estudo.",
+          });
+        }
+      } else {
+        toast({ title: "Perfil atualizado!" });
+      }
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
