@@ -1,4 +1,4 @@
-import { GraduationCap, ArrowRight, Target, Zap, History, FileText, ChevronDown } from "lucide-react";
+import { GraduationCap, ArrowRight, Target, Zap, History, FileText, ChevronDown, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,6 +10,8 @@ interface TutorStartScreenProps {
   topic: string;
   setTopic: (v: string) => void;
   onStartStudy: (topic?: string) => void;
+  /** Inicia uma sessão socrática no Modo Feynman (10 passos). */
+  onStartFeynman?: (topic?: string) => void;
   performance: StudyPerformance;
   availableUploads: Upload[];
   selectedUploadIds: Set<string>;
@@ -19,7 +21,7 @@ interface TutorStartScreenProps {
 }
 
 const TutorStartScreen = ({
-  displayName, topic, setTopic, onStartStudy, performance,
+  displayName, topic, setTopic, onStartStudy, onStartFeynman, performance,
   availableUploads, selectedUploadIds, showUploads, setShowUploads, toggleUpload,
 }: TutorStartScreenProps) => {
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
@@ -57,6 +59,22 @@ const TutorStartScreen = ({
               <ArrowRight className="h-4 w-4 sm:hidden" />
             </Button>
           </div>
+
+          {onStartFeynman && (
+            <div className="flex justify-center pt-1">
+              <button
+                type="button"
+                onClick={() => onStartFeynman()}
+                disabled={!topic.trim()}
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-medium border border-yellow-400/30 bg-gradient-to-r from-yellow-400/10 to-amber-300/10 text-yellow-700 dark:text-yellow-300 hover:from-yellow-400/20 hover:to-amber-300/20 hover:border-yellow-400/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                title={topic.trim() ? "Iniciar Modo Feynman com este tema" : "Digite um tema acima para usar o Modo Feynman"}
+              >
+                <Lightbulb className="h-3.5 w-3.5 group-hover:rotate-12 transition-transform" />
+                <span>Modo Feynman</span>
+                <span className="hidden sm:inline text-muted-foreground/70">— explique para fixar</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

@@ -406,6 +406,53 @@ const ChatGPT = () => {
     sendMessage(`Quero estudar o tema: ${t}. Comece com o Bloco Técnico 1 (conceito e definição — explicação técnica baseada na literatura). Estou na etapa 3/15 do Protocolo ENAZIZI.`);
   };
 
+  // Inicia o Modo Feynman: protocolo socrático de 10 passos sobre o tema escolhido.
+  // Reaproveita 100% o pipeline do Tutor (chatgpt-agent + memória + telemetria).
+  const handleStartFeynman = (overrideTopic?: string) => {
+    const t = (overrideTopic || topic || "").trim();
+    if (!t) return;
+    if (NON_MEDICAL_KEYWORDS.test(t)) {
+      toast({ title: "⛔ Tema não médico", description: "O Modo Feynman aqui é exclusivo para temas de Medicina.", variant: "destructive" });
+      return;
+    }
+    setStudyStarted(true);
+    setMetricsCollapsed(true);
+    setCurrentTopic(t);
+    sessionMemory.recordTopicChange(t);
+    setSessionQuestions(0);
+    setSessionCorrect(0);
+    setEnaziziStep(3);
+    savePerformance({ tema_atual: t });
+    saveEnaziziStep(3, t, performance, sessionQuestions);
+
+    const feynmanPrompt =
+`MODO FEYNMAN — Tema: ${t}.
+
+Conduza o aluno pelo Método Feynman aplicado à Medicina, em 10 passos sequenciais. NÃO entregue tudo de uma vez: avance UM passo por mensagem, faça perguntas socráticas e só siga adiante quando o aluno responder.
+
+Passos do protocolo (siga nesta ordem):
+1. **Escolha um conceito específico** — Confirme com o aluno qual recorte exato de "${t}" será trabalhado (ex.: definição, fisiopatologia, diagnóstico, tratamento). Pergunte e espere a resposta.
+2. **Estude até entender o básico** — Apresente um resumo técnico curto e direto do conceito escolhido (3-5 linhas, baseado na literatura). Pergunte se ficou claro antes de seguir.
+3. **Explique como se fosse para uma criança** — Peça ao aluno para explicar o conceito com palavras simples, como se ensinasse a um leigo. Aguarde a resposta dele.
+4. **Identifique lacunas** — Avalie a explicação do aluno em 4 critérios (Clareza ✨, Completude 📋, Precisão 🎯, Simplicidade 💬). Aponte exatamente onde travou ou simplificou demais. Seja rigoroso e específico.
+5. **Use linguagem simples** — Mostre como reformular os trechos técnicos em linguagem acessível, sem perder precisão clínica.
+6. **Crie analogias práticas** — Proponha 1-2 analogias clínicas ou cotidianas que ancorem o conceito na memória.
+7. **Reorganize a explicação** — Estruture o conteúdo em começo (definição), meio (mecanismo/clínica) e fim (conduta/relevância).
+8. **Ensine para alguém real** — Peça uma nova explicação completa do aluno, agora consolidada. Avalie de novo nos 4 critérios.
+9. **Revise os pontos fracos** — Liste os 2-3 pontos onde o aluno ainda falha e proponha um mini-quiz objetivo (A-E) sobre o mais crítico.
+10. **Repita o processo** — Resuma o aprendizado, ofereça flashcards FSRS dos pontos fracos identificados e sugira o próximo recorte do tema para repetir o ciclo.
+
+Regras:
+- Seja socrático: pergunte mais do que entregue.
+- Marque cada mensagem com o passo atual (ex.: "**Passo 3/10 — Explique como para uma criança**").
+- Use a metodologia ENAZIZI nas explicações técnicas (MBE, golden rules, pegadinhas de prova).
+- No passo 9, se detectar erro grave, registre no banco de erros usando os marcadores [ERRO_TIPO:...] e [ERRO_MOTIVO:...].
+
+Comece agora pelo Passo 1.`;
+
+    sendMessage(feynmanPrompt);
+  };
+
   const handleChangeTopic = () => {
     if (!newTopic.trim()) return;
     if (NON_MEDICAL_KEYWORDS.test(newTopic)) {
@@ -611,7 +658,8 @@ const ChatGPT = () => {
 
       {!studyStarted && (
         <TutorStartScreen
-          displayName={displayName} topic={topic} setTopic={setTopic} onStartStudy={handleStartStudy}
+          displayName={displayName} topic={topic} setTopic={setTopic}
+          onStartStudy={handleStartStudy} onStartFeynman={handleStartFeynman}
           performance={performance} availableUploads={availableUploads} selectedUploadIds={selectedUploadIds}
           showUploads={showUploads} setShowUploads={setShowUploads} toggleUpload={toggleUpload}
         />
