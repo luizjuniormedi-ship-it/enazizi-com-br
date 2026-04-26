@@ -14,6 +14,7 @@ NEVER change module names, sidebar labels, group organization, or route names wi
 
 ## Memories
 - [Observational Freeze](mem://constraint/observational-freeze) — Sistema congelado até baseline v1, só bugfixes críticos
+- [Baseline Fase 2 (7d)](mem://constraint/baseline-fase2-7-dias) — Janela observacional pós-Fase 1 da telemetria, metas e regras
 - [Dashboard Nomenclatura Intocável](mem://constraint/dashboard-nomenclatura-intocavel) — Never change module names/labels/organization without permission
 - [Mapeamento de Temas](mem://arquitetura/mapeamento-temas-especialidades-unificado) — 13 clinical specialties unified mapping
 - [Biblioteca Médica](mem://funcionalidades/biblioteca-medica-interligada) — AMBOSS-style definitions via Gemini
