@@ -11,8 +11,9 @@ import {
 } from "recharts";
 import {
   Loader2, TrendingUp, Users, AlertCircle, Download, RefreshCw,
-  Smartphone, MessageSquare, Activity, Target, Brain,
+  Smartphone, MessageSquare, Activity, Target, Brain, HeartPulse,
 } from "lucide-react";
+import { TelemetryHealthCheck } from "./TelemetryHealthCheck";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
