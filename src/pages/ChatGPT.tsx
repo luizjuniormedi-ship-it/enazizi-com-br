@@ -658,7 +658,8 @@ Comece agora pelo Passo 1.`;
 
       {!studyStarted && (
         <TutorStartScreen
-          displayName={displayName} topic={topic} setTopic={setTopic} onStartStudy={handleStartStudy}
+          displayName={displayName} topic={topic} setTopic={setTopic}
+          onStartStudy={handleStartStudy} onStartFeynman={handleStartFeynman}
           performance={performance} availableUploads={availableUploads} selectedUploadIds={selectedUploadIds}
           showUploads={showUploads} setShowUploads={setShowUploads} toggleUpload={toggleUpload}
         />
