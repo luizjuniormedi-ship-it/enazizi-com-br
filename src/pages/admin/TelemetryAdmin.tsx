@@ -11,8 +11,9 @@ import {
 } from "recharts";
 import {
   Loader2, TrendingUp, Users, AlertCircle, Download, RefreshCw,
-  Smartphone, MessageSquare, Activity, Target, Brain,
+  Smartphone, MessageSquare, Activity, Target, Brain, HeartPulse,
 } from "lucide-react";
+import { TelemetryHealthCheck } from "./TelemetryHealthCheck";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
@@ -215,13 +216,18 @@ const TelemetryAdmin = () => {
 
       {/* Tabs principais */}
       <Tabs defaultValue="funnel" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
+          <TabsTrigger value="health"><HeartPulse className="h-4 w-4 mr-1" /> Saúde</TabsTrigger>
           <TabsTrigger value="funnel"><Target className="h-4 w-4 mr-1" /> Funil</TabsTrigger>
           <TabsTrigger value="cohorts"><Users className="h-4 w-4 mr-1" /> Coortes</TabsTrigger>
           <TabsTrigger value="tutor"><Brain className="h-4 w-4 mr-1" /> Tutor IA</TabsTrigger>
           <TabsTrigger value="heatmap"><Activity className="h-4 w-4 mr-1" /> Heatmap</TabsTrigger>
           <TabsTrigger value="recent"><MessageSquare className="h-4 w-4 mr-1" /> Eventos</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="health" className="mt-4">
+          <TelemetryHealthCheck />
+        </TabsContent>
 
         <TabsContent value="funnel" className="mt-4">
           <Card>
