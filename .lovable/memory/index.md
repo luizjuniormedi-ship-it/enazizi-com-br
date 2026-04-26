@@ -2,6 +2,7 @@
 
 ## Core
 🧠 OBSERVATIONAL FREEZE ATIVO (2026-04-23): não alterar UI/UX/IA/telemetria/arquitetura até baseline v1 (ver mem://constraint/observational-freeze). Apenas bugfixes críticos.
+🔬 FASE 2 BASELINE (26/04/2026): janela observacional 7d. Não remover módulos/páginas/planners até metas: ≥10 users, ≥100 sessões, ≥30 first_question_loaded (ver mem://constraint/baseline-fase2-7-dias).
 Brand is ENAZIZI. Do not use "MedStudy AI" in UI/prompts.
 Pedagogical Sequence: ENSINAR → TESTAR → CORRIGIR → REFORÇAR → AVANÇAR. Max 2 reinforcement loops.
 AI Output: strictly pt-BR, min 4-5 options. Max 3 retries. Cite reference bibliography (Nelson, Sabiston).
