@@ -18,6 +18,11 @@ import { Switch } from "@/components/ui/switch";
 import { ALL_SPECIALTIES } from "@/constants/specialties";
 import { cn } from "@/lib/utils";
 import { CinematicHero } from "@/components/cinematic";
+import {
+  recalcStudyPlanAfterProfileChange,
+  examProfileChanged,
+  type ExamProfileSnapshot,
+} from "@/lib/recalcStudyPlanAfterProfileChange";
 
 const EXAM_OPTIONS = [
   { value: "enare", label: "ENARE" },
