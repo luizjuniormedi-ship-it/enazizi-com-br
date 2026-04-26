@@ -1,4 +1,4 @@
-import { GraduationCap, ArrowRight, Target, Zap, History, FileText, ChevronDown } from "lucide-react";
+import { GraduationCap, ArrowRight, Target, Zap, History, FileText, ChevronDown, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -10,6 +10,8 @@ interface TutorStartScreenProps {
   topic: string;
   setTopic: (v: string) => void;
   onStartStudy: (topic?: string) => void;
+  /** Inicia uma sessão socrática no Modo Feynman (10 passos). */
+  onStartFeynman?: (topic?: string) => void;
   performance: StudyPerformance;
   availableUploads: Upload[];
   selectedUploadIds: Set<string>;
@@ -19,7 +21,7 @@ interface TutorStartScreenProps {
 }
 
 const TutorStartScreen = ({
-  displayName, topic, setTopic, onStartStudy, performance,
+  displayName, topic, setTopic, onStartStudy, onStartFeynman, performance,
   availableUploads, selectedUploadIds, showUploads, setShowUploads, toggleUpload,
 }: TutorStartScreenProps) => {
   const recentHistory = performance.historico_estudo.slice(-5).reverse();
