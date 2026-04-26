@@ -208,9 +208,43 @@ const Profile = () => {
         .eq("user_id", user.id);
 
       if (error) throw error;
-      toast({ title: "Perfil atualizado!" });
+
+      // Detectar mudança em exam_date / target_exam(s) e disparar recálculo
+      const newSnap: ExamProfileSnapshot = {
+        exam_date: examDate || null,
+        target_exam: targetExams[0] || null,
+        target_exams: targetExams.length > 0 ? targetExams : null,
+      };
+      const oldSnap = initialExamSnapRef.current;
+      const examChanged = examProfileChanged(oldSnap, newSnap);
+
       invalidateAll();
       supabase.functions.invoke("auto-assign-simulados").catch(() => {});
+
+      if (examChanged && user) {
+        toast({ title: "Perfil atualizado!", description: "Recalculando seu plano..." });
+        const result = await recalcStudyPlanAfterProfileChange(user.id, oldSnap, newSnap);
+        // Atualiza snapshot local para evitar disparar de novo num save subsequente
+        initialExamSnapRef.current = newSnap;
+        // Invalidar caches novamente para refletir o plano regenerado
+        invalidateAll();
+
+        if (result.success) {
+          toast({
+            title: "Plano recalculado",
+            description:
+              "Seu plano de estudos foi atualizado com base na nova prova/data.",
+          });
+        } else {
+          toast({
+            title: "Perfil salvo",
+            description:
+              "Não foi possível recalcular o plano agora. Ele será atualizado ao iniciar o estudo.",
+          });
+        }
+      } else {
+        toast({ title: "Perfil atualizado!" });
+      }
     } catch (err: any) {
       toast({ title: "Erro ao salvar", description: err.message, variant: "destructive" });
     } finally {
