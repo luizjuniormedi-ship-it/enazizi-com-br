@@ -1,39 +1,41 @@
 import { supabase } from "@/integrations/supabase/client";
-// Using crypto.randomUUID() instead of uuid package to avoid dependency issues
-const genUUID = () => {
-  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-};
 
 /**
- * Pedagogical Telemetry System
- * Optimized for performance with batching and offline resilience.
+ * Pedagogical Telemetry System v2
+ * - Cache de user/session (sem await por evento)
+ * - Flush em beforeunload/visibilitychange (sendBeacon-style via fetch keepalive)
+ * - Persistência localStorage (resiliência a refresh/crash)
+ * - Watchdog do isProcessing
+ * - Limite de fila para não vazar memória
  */
 
+const genUUID = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  return `${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+};
+
+const STORAGE_KEY = 'enazizi_telemetry_queue_v1';
+const MAX_QUEUE = 500;
+
 export type TelemetryEventName =
-  // Dashboard / navegação
   | 'dashboard_opened'
   | 'hero_cta_clicked'
   | 'continuar_clicked'
   | 'revisoes_clicked'
   | 'tutor_continue_clicked'
   | 'analytics_opened'
-  // Sessão de estudo
   | 'study_session_started'
   | 'first_question_loaded'
   | 'first_answer_submitted'
   | 'study_session_abandoned'
   | 'study_session_completed'
-  // Fricção & comportamento
   | 'rage_click_detected'
   | 'repeated_navigation'
   | 'idle_dashboard'
   | 'exited_before_question'
-  // Retenção
   | 'returned_same_day'
   | 'returned_next_day'
   | 'streak_recovered'
-  // Tutor IA — qualidade (Fase 2)
   | 'tutor_opened'
   | 'tutor_message_sent'
   | 'tutor_response_received'
@@ -43,16 +45,10 @@ export type TelemetryEventName =
   | 'tutor_helpful_clicked'
   | 'tutor_unhelpful_clicked'
   | 'tutor_abandoned_after_response'
-  // Perfil — alvo/banca/data da prova
   | 'profile_exam_target_updated';
 
 interface TelemetryProperties {
   [key: string]: any;
-  pending_reviews?: number;
-  active_exam?: string | null;
-  current_mode?: string;
-  time_since_last_action?: number;
-  duration?: number;
 }
 
 class TelemetryService {
@@ -60,12 +56,18 @@ class TelemetryService {
   private sessionId: string;
   private eventQueue: any[] = [];
   private batchSize = 5;
-  private flushInterval = 10000; // 10 seconds
+  private flushInterval = 8000;
   private lastActionTimestamp: number = Date.now();
   private isProcessing = false;
+  private processingStartedAt = 0;
+  private cachedUserId: string | null = null;
+  private userPromise: Promise<string | null> | null = null;
+  private navStart: number = typeof performance !== 'undefined' ? performance.now() : Date.now();
 
   private constructor() {
     this.sessionId = genUUID();
+    this.hydrateFromStorage();
+    this.bootstrapUser();
     this.setupListeners();
     this.startAutoFlush();
   }
@@ -77,10 +79,51 @@ class TelemetryService {
     return TelemetryService.instance;
   }
 
+  private hydrateFromStorage() {
+    if (typeof window === 'undefined') return;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) this.eventQueue = arr.slice(-MAX_QUEUE);
+      }
+    } catch {}
+  }
+
+  private persist() {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.eventQueue.slice(-MAX_QUEUE)));
+    } catch {}
+  }
+
+  private async bootstrapUser() {
+    try {
+      const { data } = await supabase.auth.getUser();
+      this.cachedUserId = data.user?.id ?? null;
+    } catch {
+      this.cachedUserId = null;
+    }
+    supabase.auth.onAuthStateChange((_evt, session) => {
+      this.cachedUserId = session?.user?.id ?? null;
+      if (this.cachedUserId) this.flush();
+    });
+  }
+
+  private async ensureUser(): Promise<string | null> {
+    if (this.cachedUserId) return this.cachedUserId;
+    if (!this.userPromise) {
+      this.userPromise = supabase.auth.getUser().then(({ data }) => {
+        this.cachedUserId = data.user?.id ?? null;
+        return this.cachedUserId;
+      }).catch(() => null).finally(() => { this.userPromise = null; });
+    }
+    return this.userPromise;
+  }
+
   private setupListeners() {
     if (typeof window === 'undefined') return;
 
-    // Detect rage clicks
     let clickCount = 0;
     let lastClickTime = 0;
     window.addEventListener('click', () => {
@@ -96,9 +139,8 @@ class TelemetryService {
       }
       lastClickTime = now;
       this.lastActionTimestamp = now;
-    });
+    }, { passive: true });
 
-    // Detect Idle (fires AT MOST once per idle stretch — resets when user acts again)
     let idleFiredForThisStretch = false;
     setInterval(() => {
       const idleTime = Date.now() - this.lastActionTimestamp;
@@ -107,61 +149,88 @@ class TelemetryService {
         this.track('idle_dashboard', { idle_duration_ms: idleTime });
         idleFiredForThisStretch = true;
       } else if (idleTime < 60000 && idleFiredForThisStretch) {
-        // user acted again — re-arm
         idleFiredForThisStretch = false;
       }
     }, 60000);
+
+    // Flush on tab hide / page unload — crítico para não perder eventos
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') this.flush(true);
+    });
+    window.addEventListener('pagehide', () => this.flush(true));
+    window.addEventListener('beforeunload', () => this.flush(true));
   }
 
   private startAutoFlush() {
-    setInterval(() => this.flush(), this.flushInterval);
+    setInterval(() => {
+      // Watchdog: destrava se uma flush ficou pendurada > 30s
+      if (this.isProcessing && Date.now() - this.processingStartedAt > 30000) {
+        this.isProcessing = false;
+      }
+      this.flush();
+    }, this.flushInterval);
   }
 
   public async track(eventName: TelemetryEventName, properties: TelemetryProperties = {}) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    try {
+      const userId = await this.ensureUser();
+      if (!userId) return; // sem usuário, não há como satisfazer RLS
 
-    const event = {
-      user_id: user.id,
-      session_id: this.sessionId,
-      event_name: eventName,
-      properties: {
-        ...properties,
-        time_to_first_action: properties.time_to_first_action || (Date.now() - performance.timing.navigationStart)
-      },
-      route: window.location.pathname,
-      device_type: this.getDeviceType(),
-      screen_size: `${window.innerWidth}x${window.innerHeight}`,
-      timestamp: new Date().toISOString()
-    };
+      const event = {
+        user_id: userId,
+        session_id: this.sessionId,
+        event_name: eventName,
+        properties: {
+          ...properties,
+          time_to_first_action: properties.time_to_first_action ?? Math.round((typeof performance !== 'undefined' ? performance.now() : Date.now()) - this.navStart),
+        },
+        route: typeof window !== 'undefined' ? window.location.pathname : null,
+        device_type: this.getDeviceType(),
+        screen_size: typeof window !== 'undefined' ? `${window.innerWidth}x${window.innerHeight}` : null,
+        timestamp: new Date().toISOString(),
+      };
 
-    this.eventQueue.push(event);
+      this.eventQueue.push(event);
+      if (this.eventQueue.length > MAX_QUEUE) {
+        this.eventQueue = this.eventQueue.slice(-MAX_QUEUE);
+      }
+      this.persist();
 
-    if (this.eventQueue.length >= this.batchSize) {
-      this.flush();
+      if (this.eventQueue.length >= this.batchSize) {
+        this.flush();
+      }
+    } catch (err) {
+      console.warn('[telemetry] track failed', eventName, err);
     }
   }
 
-  private async flush() {
-    if (this.isProcessing || this.eventQueue.length === 0) return;
+  private async flush(isFinal: boolean = false) {
+    if (this.eventQueue.length === 0) return;
+    if (this.isProcessing && !isFinal) return;
 
     this.isProcessing = true;
+    this.processingStartedAt = Date.now();
     const batch = [...this.eventQueue];
     this.eventQueue = [];
+    this.persist();
 
     try {
       const { error } = await supabase.from('telemetry_events').insert(batch);
       if (error) throw error;
     } catch (err) {
-      console.error('Failed to flush telemetry batch', err);
-      // Put back in queue if failed (offline resilience)
-      this.eventQueue = [...batch, ...this.eventQueue];
+      console.warn('[telemetry] flush failed, requeueing', err);
+      this.eventQueue = [...batch, ...this.eventQueue].slice(-MAX_QUEUE);
+      this.persist();
     } finally {
       this.isProcessing = false;
     }
   }
 
+  public getSessionId() { return this.sessionId; }
+  public getQueueSize() { return this.eventQueue.length; }
+
   private getDeviceType() {
+    if (typeof navigator === 'undefined') return 'unknown';
     const ua = navigator.userAgent;
     if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return "tablet";
     if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return "mobile";
