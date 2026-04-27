@@ -29,6 +29,19 @@ serve(async (req) => {
     const now = new Date().toISOString();
     const today = now.slice(0, 10);
 
+    // ── Reset fence: read user's last_study_plan_reset_at to filter stale items ──
+    // Items from before the latest reset must NOT appear as the "current mission",
+    // even though they remain in the DB as pedagogical history.
+    let resetAt: string | null = null;
+    try {
+      const { data: rp } = await db
+        .from("profiles")
+        .select("last_study_plan_reset_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      resetAt = (rp as any)?.last_study_plan_reset_at ?? null;
+    } catch { /* non-fatal */ }
+
     // ── Parallel data fetch ──
     const [
       pendingReviews, errorBankItems, dailyPlanToday, dailyTasks,
@@ -36,19 +49,23 @@ serve(async (req) => {
       imageQuizCount, visualAttempts,
       mnemonicFeedbackAgg, mnemonicResultsForUser,
     ] = await Promise.all([
-      safeQuery<any[]>(db, (c) =>
-        c.from("revisoes")
-          .select("id, tema_id, data_revisao, prioridade, risco_esquecimento, temas_estudados(tema, especialidade)")
+      safeQuery<any[]>(db, (c) => {
+        let q = c.from("revisoes")
+          .select("id, tema_id, data_revisao, prioridade, risco_esquecimento, created_at, temas_estudados(tema, especialidade)")
           .eq("user_id", userId).eq("status", "pendente")
-          .lte("data_revisao", today)
-          .order("prioridade", { ascending: false }).limit(20),
-        "revisoes"),
-      safeQuery<any[]>(db, (c) =>
-        c.from("error_bank")
+          .lte("data_revisao", today);
+        // Reset fence: do not surface review items created before the user reset their plan
+        if (resetAt) q = q.gt("created_at", resetAt);
+        return q.order("prioridade", { ascending: false }).limit(20);
+      }, "revisoes"),
+      safeQuery<any[]>(db, (c) => {
+        let q = c.from("error_bank")
           .select("id, tema, subtema, vezes_errado, categoria_erro, updated_at, dificuldade")
-          .eq("user_id", userId).eq("dominado", false)
-          .order("vezes_errado", { ascending: false }).limit(15),
-        "error_bank"),
+          .eq("user_id", userId).eq("dominado", false);
+        // Reset fence: only errors touched after the latest reset count as current journey
+        if (resetAt) q = q.gt("updated_at", resetAt);
+        return q.order("vezes_errado", { ascending: false }).limit(15);
+      }, "error_bank"),
       safeQuery<any>(db, (c) =>
         c.from("daily_plans")
           .select("id, plan_json, completed_count, total_blocks, recovery_mode, content_lock, phase")
