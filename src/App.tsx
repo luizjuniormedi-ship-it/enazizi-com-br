@@ -189,14 +189,14 @@ const App = () => (
                 <Route path="mnemonic-studio" element={<Navigate to="/dashboard/mnemonic-studio-v2" replace />} />
                 <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
                 <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
-                {/* Fase 0 cleanup: Mapas Mentais sem tabelas no banco — redireciona ao dashboard com aviso */}
-                <Route path="mapas-mentais" element={<Navigate to="/dashboard?mind_maps=coming_soon" replace />} />
+                {/* Mapas Mentais — reativado: tabela mental_maps + 3 edge functions já existentes */}
+                <Route path="mapas-mentais" element={<MindMaps />} />
                 <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
                 <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
 
               </Route>
-              {/* Fullscreen mind map viewer — disabled (Fase 0): tabelas mind_maps* não existem */}
-              <Route path="/dashboard/mapas-mentais/:id" element={<Navigate to="/dashboard?mind_maps=coming_soon" replace />} />
+              {/* Fullscreen mind map viewer */}
+              <Route path="/dashboard/mapas-mentais/:id" element={<MindMapFullscreen />} />
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
