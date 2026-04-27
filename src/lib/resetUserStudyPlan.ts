@@ -3,19 +3,27 @@
  * ──────────────────
  * Reset MANUAL e EXPLÍCITO do plano de estudo do próprio usuário.
  *
- * Apaga apenas:
+ * Apaga / reseta apenas a JORNADA ATUAL:
  *   - daily_plans (do user)
  *   - daily_plan_tasks (cascateado pelo daily_plan)
  *   - study_plans / study_tasks (do user)
- *   - localStorage relacionado à missão / planner / loop
+ *   - module_sessions com status='active' → marcadas como 'abandoned'
+ *     (zera "Continuar de onde parou" em flashcards, simulados,
+ *     image-quiz, anamnese, clinical-simulation, study-session etc.)
  *   - dashboard_snapshots (marcado como stale → forçar reconstrução)
+ *   - localStorage da missão diária / planner / loop / focus / EOD
+ *   - sessionStorage de "Continuar" (ENAFLIX origin/lastModule, study_session)
  *
- * NÃO apaga:
- *   - perfil, conta, gamificação
- *   - histórico de respostas (user_question_attempts, etc.)
- *   - banco de erros, FSRS/flashcard_reviews
- *   - simulados realizados, métricas históricas
- *   - professor_plan_daily_tasks (gerido pelo professor; RLS impede de qualquer forma)
+ * NÃO apaga (preserva histórico pedagógico):
+ *   - perfil, conta, gamificação, streak, XP
+ *   - histórico de respostas (user_question_attempts)
+ *   - banco de erros, FSRS / flashcard_reviews
+ *   - flashcards, mapas mentais, mnemônicos, simulados realizados
+ *   - chat_conversations (histórico do Tutor — última conversa pode
+ *     continuar aparecendo no StartHereCard, é histórico pedagógico)
+ *   - métricas históricas, ranking, progresso cognitivo real
+ *   - professor_plan_daily_tasks (gerido pelo professor; RLS impede)
+ *   - module_sessions com status='completed' ou 'abandoned' (auditoria)
  *
  * Após o reset, dispara `generate-daily-plan` para reconstruir o plano do zero.
  * NÃO recria snapshot — deixa o próximo render do dashboard regenerá-lo
@@ -53,17 +61,34 @@ const LOCAL_STORAGE_KEYS = [
   "enazizi_weekly_snap_ts",
 ];
 
+/**
+ * Prefixos que cobrem chaves dinâmicas (ex.: `enazizi:mission:2026-04-27`).
+ * IMPORTANTE: usar tanto separadores `-` quanto `:` quanto `_` —
+ * a aba "Continuar" do sidebar usa `enazizi:mission:YYYY-MM-DD`
+ * (NÃO coberto por prefixo `enazizi-mission`).
+ */
 const LOCAL_STORAGE_PREFIXES = [
   "daily-plan",
   "daily_plan",
   "mission",
   "enazizi-mission",
   "enazizi_mission",
+  "enazizi:mission",
   "study-plan",
   "study_plan",
   "study-loop",
   "enazizi_study_session",
   "enazizi-weekly-snap",
+];
+
+/**
+ * Chaves sessionStorage que apontam pra "Continuar de onde parou".
+ * Limpamos pra que o sidebar/EnaflixBackButton não voltem ao estado anterior.
+ */
+const SESSION_STORAGE_KEYS = [
+  "enazizi_study_session",
+  "enaflix:origin",
+  "enaflix:lastModule",
 ];
 
 function clearPlanLocalStorage(): void {
@@ -72,7 +97,7 @@ function clearPlanLocalStorage(): void {
   for (const key of LOCAL_STORAGE_KEYS) {
     try { window.localStorage.removeItem(key); } catch {}
   }
-  // 2) varredura por prefixo
+  // 2) varredura por prefixo (cobre `enazizi:mission:YYYY-MM-DD` etc.)
   try {
     const toRemove: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {
@@ -84,10 +109,10 @@ function clearPlanLocalStorage(): void {
     }
     toRemove.forEach((k) => window.localStorage.removeItem(k));
   } catch {}
-  // 3) sessionStorage espelhado (sessão de estudo ativa)
-  try {
-    window.sessionStorage.removeItem("enazizi_study_session");
-  } catch {}
+  // 3) sessionStorage — Continuar / ENAFLIX origin
+  for (const key of SESSION_STORAGE_KEYS) {
+    try { window.sessionStorage.removeItem(key); } catch {}
+  }
 }
 
 export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResult> {
@@ -125,15 +150,30 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
     if (spErr) throw spErr;
     studyDeleted = sp?.length ?? 0;
 
-    // 3) Marcar dashboard_snapshots como STALE (não apaga histórico,
+    // 3) Marcar TODAS as sessões ativas (`module_sessions`) como
+    //    `abandoned` para que a aba/banner "Continuar de onde parou"
+    //    não exiba retomada de sessão antiga em flashcards, simulados,
+    //    image-quiz, anamnese, clinical-simulation, study-session etc.
+    //    NÃO apaga o registro: preserva histórico/auditoria.
+    try {
+      await supabase
+        .from("module_sessions")
+        .update({ status: "abandoned" })
+        .eq("user_id", userId)
+        .eq("status", "active");
+    } catch (e) {
+      if (isDev) console.warn("[resetUserStudyPlan] abandon module_sessions falhou:", e);
+    }
+
+    // 4) Marcar dashboard_snapshots como STALE (não apaga histórico,
     //    apenas força próxima leitura a recomputar o snapshot).
     //    CRÍTICO: useDashboardData usa fast-path de 5min via snapshot.
     invalidateDashboardSnapshot(userId);
 
-    // 4) Limpar localStorage / sessionStorage relacionado a plano / missão
+    // 5) Limpar localStorage / sessionStorage relacionado a plano / missão / continuar
     clearPlanLocalStorage();
 
-    // 5) Regenerar plano via motor oficial (idempotente).
+    // 6) Regenerar plano via motor oficial (idempotente).
     //    Importante: rodar DEPOIS da invalidação do snapshot, para que
     //    quando o dashboard recomputar ele já encontre o plano novo.
     const { error: genErr } = await supabase.functions.invoke("generate-daily-plan", {
@@ -147,7 +187,7 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
       regenerated = true;
     }
 
-    // 6) NÃO chamar dashboard-snapshot { action: 'update' } aqui —
+    // 7) NÃO chamar dashboard-snapshot { action: 'update' } aqui —
     //    isso reescreveria o snapshot com possível leitura intermediária
     //    do banco e congelaria por até 5 min novamente.
     //    O próximo render do dashboard reconstrói via useDashboardData.
