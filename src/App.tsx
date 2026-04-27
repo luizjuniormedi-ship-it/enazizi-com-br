@@ -184,17 +184,19 @@ const App = () => (
                 <Route path="image-quiz" element={<MedicalImageQuiz />} />
                 <Route path="rankings" element={<Rankings />} />
                 <Route path="prova-pratica" element={<PracticalExam />} />
-                <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
-                <Route path="mnemonic-studio" element={<MnemonicStudio />} />
+                {/* Fase 0 cleanup: rotas antigas de mnemônico redirecionam para v2 (motor oficial) */}
+                <Route path="mnemonico" element={<Navigate to="/dashboard/mnemonic-studio-v2" replace />} />
+                <Route path="mnemonic-studio" element={<Navigate to="/dashboard/mnemonic-studio-v2" replace />} />
                 <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
                 <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
-                <Route path="mapas-mentais" element={<MindMaps />} />
+                {/* Fase 0 cleanup: Mapas Mentais sem tabelas no banco — redireciona ao dashboard com aviso */}
+                <Route path="mapas-mentais" element={<Navigate to="/dashboard?mind_maps=coming_soon" replace />} />
                 <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
                 <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
 
               </Route>
-              {/* Fullscreen mind map viewer — outside DashboardLayout */}
-              <Route path="/dashboard/mapas-mentais/:id" element={<ProtectedRoute><MindMapFullscreen /></ProtectedRoute>} />
+              {/* Fullscreen mind map viewer — disabled (Fase 0): tabelas mind_maps* não existem */}
+              <Route path="/dashboard/mapas-mentais/:id" element={<Navigate to="/dashboard?mind_maps=coming_soon" replace />} />
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />

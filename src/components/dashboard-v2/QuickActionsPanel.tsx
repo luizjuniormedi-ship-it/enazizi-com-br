@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Image, FileText, AlertCircle, Brain, Sparkles,
   MessageSquare, Map, Stethoscope, BookOpen,
@@ -10,6 +11,7 @@ interface QuickAction {
   label: string;
   path: string;
   highlight?: boolean;
+  comingSoon?: boolean;
 }
 
 interface Props {
@@ -27,13 +29,24 @@ export default function QuickActionsPanel({ hasErrors, hasPendingReviews }: Prop
     { icon: <Brain className="h-5 w-5" />, label: "Flashcards", path: "/dashboard/flashcards" },
     { icon: <Sparkles className="h-5 w-5" />, label: "Mnemônico", path: "/dashboard/mnemonic-studio-v2" },
     { icon: <MessageSquare className="h-5 w-5" />, label: "Tutor IA", path: "/dashboard/tutor" },
-    { icon: <Map className="h-5 w-5" />, label: "Mapas Mentais", path: "/dashboard/mapas-mentais" },
+    // Fase 0: Mapas Mentais sem backend funcional (tabelas mind_maps* não existem) — mantém visível mas exibe aviso
+    { icon: <Map className="h-5 w-5" />, label: "Mapas Mentais", path: "/dashboard/mapas-mentais", comingSoon: true },
     { icon: <Stethoscope className="h-5 w-5" />, label: "Plantão", path: "/dashboard/clinical-simulation" },
     { icon: <BookOpen className="h-5 w-5" />, label: "Revisões", path: "/dashboard/revisoes", highlight: hasPendingReviews },
   ];
 
   // Sort: highlighted items first
   const sorted = [...actions].sort((a, b) => (b.highlight ? 1 : 0) - (a.highlight ? 1 : 0));
+
+  const handleClick = (action: QuickAction) => {
+    if (action.comingSoon) {
+      toast.info("Mapas Mentais em breve", {
+        description: "Estamos preparando essa funcionalidade. Você será avisado quando estiver pronta.",
+      });
+      return;
+    }
+    navigate(action.path);
+  };
 
   return (
     <motion.div
@@ -53,7 +66,7 @@ export default function QuickActionsPanel({ hasErrors, hasPendingReviews }: Prop
             transition={{ delay: 0.75 + i * 0.04, duration: 0.2 }}
             whileHover={{ scale: 1.08, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(action.path)}
+            onClick={() => handleClick(action)}
             className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-colors
               ${action.highlight
                 ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
