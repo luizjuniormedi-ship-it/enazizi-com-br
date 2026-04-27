@@ -553,7 +553,9 @@ const CronogramaInteligente = () => {
 
       {tab === "historico" && (
         <CronogramaHistorico
-          temas={temas} revisoes={revisoes} desempenhos={desempenhos}
+          temas={temasHistorico}
+          revisoes={revisoesHistorico}
+          desempenhos={desempenhosHistorico}
         />
       )}
 
