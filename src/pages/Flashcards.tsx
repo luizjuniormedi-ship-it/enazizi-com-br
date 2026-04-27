@@ -5,6 +5,7 @@ import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { isMedicalContent } from "@/lib/medicalValidation";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
@@ -66,6 +67,9 @@ const Flashcards = () => {
 
   // Session result
   const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0, skipped: 0 });
+
+  // Telemetry: module opened (Fase A baseline)
+  useEffect(() => { telemetry.track('flashcard_opened'); }, []);
 
   const {
     pendingSession, checked: sessionChecked, saveSession: persistSession,
@@ -273,6 +277,7 @@ const Flashcards = () => {
   const handleFinish = (stats: { correct: number; wrong: number; skipped: number }) => {
     clearInterval(sprintTimerRef.current);
     setSessionStats(stats);
+    telemetry.track('flashcard_completed', { ...stats, mode });
     if (user?.id) {
       completeStudyAction({
         userId: user.id,

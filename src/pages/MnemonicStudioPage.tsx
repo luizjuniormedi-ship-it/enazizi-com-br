@@ -25,6 +25,7 @@ import { validateMnemonicForm } from "@/utils/mnemonicValidation";
 import { supabase } from "@/integrations/supabase/client";
 import type { MnemonicResultData, RegenerateStyle } from "@/types/mnemonics";
 import { ESTILOS, PUBLICOS, REGENERATE_OPTIONS } from "@/types/mnemonics";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 const safeArray = <T,>(arr: T[] | undefined | null): T[] => Array.isArray(arr) ? arr : [];
 
@@ -73,6 +74,9 @@ export default function MnemonicGeneratorPage() {
   const [savingFsrs, setSavingFsrs] = useState(false);
   const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+
+  // Telemetry: module opened (Fase A baseline)
+  useEffect(() => { telemetry.track('mnemonic_opened'); }, []);
 
   // ── Deep-link from study-next / cockpit ──
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1

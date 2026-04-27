@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 const SPECIALTIES = [
   "Clínica Médica", "Cirurgia", "Pediatria", "Ginecologia e Obstetrícia",
@@ -95,6 +96,9 @@ export default function PracticalExam() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // Telemetry: module opened (Fase A baseline)
+  useEffect(() => { telemetry.track('practical_exam_opened'); }, []);
+
   // Timer countdown
   useEffect(() => {
     if (phase !== "exam" || !caseData) return;
@@ -169,6 +173,7 @@ export default function PracticalExam() {
       });
       if (res.error) throw res.error;
       setEvaluation(res.data);
+      telemetry.track('practical_exam_completed', { specialty, difficulty });
       if (user?.id) {
         await completeStudyAction({
           userId: user.id,
