@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { emitShadowEvent, logShadowOutcome } from "@/lib/shadowAdaptive";
 
 export interface StudySessionMetrics {
   active: boolean;
