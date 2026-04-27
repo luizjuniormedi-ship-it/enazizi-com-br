@@ -142,12 +142,27 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
     if (spErr) throw spErr;
     studyDeleted = sp?.length ?? 0;
 
-    // 3) Marcar dashboard_snapshots como STALE (não apaga histórico,
+    // 3) Marcar TODAS as sessões ativas (`module_sessions`) como
+    //    `abandoned` para que a aba/banner "Continuar de onde parou"
+    //    não exiba retomada de sessão antiga em flashcards, simulados,
+    //    image-quiz, anamnese, clinical-simulation, study-session etc.
+    //    NÃO apaga o registro: preserva histórico/auditoria.
+    try {
+      await supabase
+        .from("module_sessions")
+        .update({ status: "abandoned" })
+        .eq("user_id", userId)
+        .eq("status", "active");
+    } catch (e) {
+      if (isDev) console.warn("[resetUserStudyPlan] abandon module_sessions falhou:", e);
+    }
+
+    // 4) Marcar dashboard_snapshots como STALE (não apaga histórico,
     //    apenas força próxima leitura a recomputar o snapshot).
     //    CRÍTICO: useDashboardData usa fast-path de 5min via snapshot.
     invalidateDashboardSnapshot(userId);
 
-    // 4) Limpar localStorage / sessionStorage relacionado a plano / missão
+    // 5) Limpar localStorage / sessionStorage relacionado a plano / missão / continuar
     clearPlanLocalStorage();
 
     // 5) Regenerar plano via motor oficial (idempotente).
