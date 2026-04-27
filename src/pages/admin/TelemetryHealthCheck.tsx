@@ -22,6 +22,18 @@ const EXPECTED_EVENTS: TelemetryEventName[] = [
   "tutor_response_received",
   "tutor_memory_reused",
   "analytics_opened",
+  // Fase A: módulos de estudo
+  "plantao_opened",
+  "plantao_completed",
+  "anamnese_opened",
+  "anamnese_completed",
+  "simulado_opened",
+  "simulado_completed",
+  "flashcard_opened",
+  "flashcard_completed",
+  "mnemonic_opened",
+  "practical_exam_opened",
+  "practical_exam_completed",
 ];
 
 type Row = { event_name: string; total: number; last_seen: string | null };
