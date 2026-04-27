@@ -10,6 +10,7 @@
  *  - popular          → top módulos por contagem total
  */
 import { useCallback, useEffect, useState } from "react";
+import { emitShadowEvent } from "@/lib/shadowAdaptive";
 
 type UsageMap = Record<string, { count: number; lastVisit: string }>;
 
