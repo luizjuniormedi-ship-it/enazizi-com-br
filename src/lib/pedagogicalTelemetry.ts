@@ -48,7 +48,19 @@ export type TelemetryEventName =
   | 'profile_exam_target_updated'
   | 'study_plan_reset_requested'
   | 'study_plan_reset_completed'
-  | 'study_plan_reset_failed';
+  | 'study_plan_reset_failed'
+  // Module entry/exit instrumentation (Fase A baseline)
+  | 'plantao_opened'
+  | 'plantao_completed'
+  | 'anamnese_opened'
+  | 'anamnese_completed'
+  | 'simulado_opened'
+  | 'simulado_completed'
+  | 'flashcard_opened'
+  | 'flashcard_completed'
+  | 'mnemonic_opened'
+  | 'practical_exam_opened'
+  | 'practical_exam_completed';
 
 interface TelemetryProperties {
   [key: string]: any;
