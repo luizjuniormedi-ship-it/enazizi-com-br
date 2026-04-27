@@ -228,7 +228,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               icon={CalendarRange}
               title="Cronograma"
               description="Planejamento estratégico"
-              onClick={() => navigate("/dashboard/cronograma-inteligente")}
+              onClick={() => navigate("/dashboard/planner")}
             />
             <ActionCard
               icon={ListChecks}
