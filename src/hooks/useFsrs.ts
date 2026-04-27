@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
+import { emitShadowEvent } from "@/lib/shadowAdaptive";
 import {
   Rating,
   State,
@@ -101,6 +102,15 @@ export function useFsrs() {
         elapsed_days: result.log.elapsed_days,
         review_duration_ms: durationMs ?? null,
         reviewed_at: now.toISOString(),
+      });
+
+      // Shadow Adaptive Layer (Fase 3A) — observacional. NÃO altera fila FSRS.
+      void emitShadowEvent({
+        module: "flashcard",
+        event: "flashcard_review_completed",
+        topic: cardType,
+        durationMs: durationMs ?? null,
+        extra: { rating, ref_id: cardRefId },
       });
 
       return result.card;

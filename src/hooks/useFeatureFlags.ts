@@ -40,7 +40,12 @@ export type FlagKey =
   // Coverage → Study Engine Bridge (Fase 1.4)
   | "coverage_priority_boost_enabled"
   // Sprint 4 — Gerador granular de simulados (opt-in, default false)
-  | "granular_generator_enabled";
+  | "granular_generator_enabled"
+  // Fase 3A — Shadow Adaptive Layer (todas OFF em prod, observacional)
+  | "shadow_adaptive_enabled"
+  | "unified_events_enabled"
+  | "shadow_decisions_enabled"
+  | "shadow_scores_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -88,6 +93,11 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   coverage_priority_boost_enabled: true,
   // Sprint 4 — Gerador granular: OFF por padrão (segurança máxima)
   granular_generator_enabled: false,
+  // Fase 3A — Shadow Adaptive Layer: TODAS OFF por padrão. Não muda jornada.
+  shadow_adaptive_enabled: false,
+  unified_events_enabled: false,
+  shadow_decisions_enabled: false,
+  shadow_scores_enabled: false,
 };
 
 export const useFeatureFlags = () => {

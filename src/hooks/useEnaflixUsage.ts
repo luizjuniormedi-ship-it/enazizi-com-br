@@ -10,6 +10,7 @@
  *  - popular          → top módulos por contagem total
  */
 import { useCallback, useEffect, useState } from "react";
+import { emitShadowEvent } from "@/lib/shadowAdaptive";
 
 type UsageMap = Record<string, { count: number; lastVisit: string }>;
 
@@ -58,6 +59,8 @@ export function useEnaflixUsage() {
     } catch {
       // ignore
     }
+    // Shadow Adaptive Layer (Fase 3A) — observacional, sem efeito na UX.
+    void emitShadowEvent({ module: "enaflix", event: "watch_started", topic: id });
   }, []);
 
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
