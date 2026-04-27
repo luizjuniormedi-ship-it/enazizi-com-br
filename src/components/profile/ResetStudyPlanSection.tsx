@@ -16,7 +16,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { resetUserStudyPlan } from "@/lib/resetUserStudyPlan";
+import {
+  resetUserStudyPlan,
+  PLAN_RELATED_QUERY_KEYS,
+} from "@/lib/resetUserStudyPlan";
 
 const CONFIRM_WORD = "RESETAR";
 
