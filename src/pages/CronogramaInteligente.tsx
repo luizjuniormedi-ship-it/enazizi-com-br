@@ -246,9 +246,15 @@ const CronogramaInteligente = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { refreshAll } = useRefreshUserState();
+  // Jornada atual (filtrada pelo último reset).
   const [temas, setTemas] = useState<TemaEstudado[]>([]);
   const [revisoes, setRevisoes] = useState<Revisao[]>([]);
   const [desempenhos, setDesempenhos] = useState<Desempenho[]>([]);
+  // Histórico pedagógico completo — alimenta apenas a aba "Histórico".
+  // Preserva visibilidade de tudo que o usuário já estudou no passado.
+  const [temasHistorico, setTemasHistorico] = useState<TemaEstudado[]>([]);
+  const [revisoesHistorico, setRevisoesHistorico] = useState<Revisao[]>([]);
+  const [desempenhosHistorico, setDesempenhosHistorico] = useState<Desempenho[]>([]);
   const [config, setConfig] = useState<CronogramaConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeRevisao, setActiveRevisao] = useState<(Revisao & { tema: TemaEstudado }) | null>(null);
@@ -256,16 +262,38 @@ const CronogramaInteligente = () => {
 
   const loadData = useCallback(async () => {
     if (!user) return;
-    const [temasRes, revisoesRes, desRes, configRes] = await Promise.all([
+    // Reset fence: tudo que aparece como "jornada atual" (visão, hoje, temas,
+    // críticos, gráficos, plano) deve ignorar dados anteriores ao último reset.
+    // O histórico pedagógico continua acessível na aba "Histórico".
+    const profileRes = await supabase
+      .from("profiles")
+      .select("last_study_plan_reset_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const resetAt: string =
+      (profileRes.data as any)?.last_study_plan_reset_at || "1900-01-01T00:00:00Z";
+
+    const [
+      temasRes, revisoesRes, desRes, configRes,
+      temasHistRes, revisoesHistRes, desHistRes,
+    ] = await Promise.all([
+      // Atuais — pós-reset
+      supabase.from("temas_estudados").select("*").eq("user_id", user.id).gt("created_at", resetAt).order("data_estudo", { ascending: false }),
+      supabase.from("revisoes").select("*").eq("user_id", user.id).gt("created_at", resetAt).order("data_revisao", { ascending: true }),
+      supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).gt("data_registro", resetAt).order("data_registro", { ascending: false }),
+      supabase.from("cronograma_config").select("*").eq("user_id", user.id).maybeSingle(),
+      // Histórico — sem fence (todas as atividades passadas)
       supabase.from("temas_estudados").select("*").eq("user_id", user.id).order("data_estudo", { ascending: false }),
       supabase.from("revisoes").select("*").eq("user_id", user.id).order("data_revisao", { ascending: true }),
       supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).order("data_registro", { ascending: false }),
-      supabase.from("cronograma_config").select("*").eq("user_id", user.id).maybeSingle(),
     ]);
     setTemas((temasRes.data as any[]) || []);
     setRevisoes((revisoesRes.data as any[]) || []);
     setDesempenhos((desRes.data as any[]) || []);
     setConfig((configRes.data as any) || null);
+    setTemasHistorico((temasHistRes.data as any[]) || []);
+    setRevisoesHistorico((revisoesHistRes.data as any[]) || []);
+    setDesempenhosHistorico((desHistRes.data as any[]) || []);
     setLoading(false);
   }, [user]);
 
@@ -525,7 +553,9 @@ const CronogramaInteligente = () => {
 
       {tab === "historico" && (
         <CronogramaHistorico
-          temas={temas} revisoes={revisoes} desempenhos={desempenhos}
+          temas={temasHistorico}
+          revisoes={revisoesHistorico}
+          desempenhos={desempenhosHistorico}
         />
       )}
 
