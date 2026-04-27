@@ -185,6 +185,20 @@ serve(async (req) => {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 86_400_000).toISOString();
     const startOfDay = new Date(today + "T00:00:00.000Z").toISOString();
 
+    // ── Reset fence (jornada atual): qualquer dado anterior ao último reset
+    // é IGNORADO pelo orquestrador. Histórico permanece nas tabelas e nas
+    // páginas próprias (Histórico/Cronograma/FSRS), apenas não é mais
+    // considerado pelas regras de "ação atual" do plano.
+    const { data: resetProfile } = await db
+      .from("profiles")
+      .select("last_study_plan_reset_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const resetAt: string = (resetProfile as any)?.last_study_plan_reset_at
+      || "1900-01-01T00:00:00Z";
+    // Janela efetiva: mais recente entre "7 dias atrás" e o reset.
+    const recentSince = resetAt > sevenDaysAgo ? resetAt : sevenDaysAgo;
+
     // ── Parallel data fetch ──
     const [
       revisoes, fsrsDue, errorBank, dailyPlan, dailyTasks,
@@ -197,6 +211,7 @@ serve(async (req) => {
         c.from("revisoes")
           .select("id, tema_id, data_revisao, prioridade")
           .eq("user_id", userId).eq("status", "pendente")
+          .gt("created_at", resetAt)
           .lte("data_revisao", today).limit(50),
         "revisoes"),
       safeQuery<any[]>(db, (c) =>
@@ -208,7 +223,7 @@ serve(async (req) => {
         c.from("error_bank")
           .select("id, tema, subtema, vezes_errado, categoria_erro, dificuldade, updated_at")
           .eq("user_id", userId).eq("dominado", false)
-          .gte("updated_at", sevenDaysAgo)
+          .gte("updated_at", recentSince)
           .order("vezes_errado", { ascending: false }).limit(20),
         "error_bank"),
       safeQuery<any>(db, (c) =>
