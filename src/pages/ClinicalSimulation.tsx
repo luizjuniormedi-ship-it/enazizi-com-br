@@ -10,6 +10,7 @@ import { useSessionTracking, SessionOrigin } from "@/hooks/useSessionTracking";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 import {
   Activity, Loader2, Send, Users, ClipboardCheck, Maximize2, Minimize2,
 } from "lucide-react";
@@ -185,6 +186,11 @@ const ClinicalSimulation = () => {
   }, []);
 
   useEffect(() => { registerAutoSave(getClinicalState); }, [getClinicalState, registerAutoSave]);
+
+  // Telemetry: module opened (Fase A baseline)
+  useEffect(() => {
+    telemetry.track('plantao_opened', { teacher_case_id: teacherCaseId || null });
+  }, []);
 
   const restoreClinicalSession = useCallback((data: Record<string, any>) => {
     if (data.specialty) setSpecialty(data.specialty);
@@ -650,6 +656,7 @@ const ClinicalSimulation = () => {
       setPhase("result");
       await completePersistedSession();
       await addXp(XP_REWARDS.plantao_completed);
+      telemetry.track('plantao_completed', { specialty: specialty || null, difficulty, final_score: res?.final_score ?? null });
       if (user?.id) {
         await completeStudyAction({
           userId: user.id, taskType: "clinical",
