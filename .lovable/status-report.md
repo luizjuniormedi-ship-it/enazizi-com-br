@@ -106,3 +106,26 @@ Quando os 6 forem ✅ → publicar baseline v1 → iniciar Fase 3.
 ## Resumo em uma linha
 
 > **Telemetria viva. Sistema parado. Dados a caminho.**
+
+---
+
+## Atualização — Fase 0 (Audit) executada
+
+**Data:** 2026-04-27
+**Escopo:** correções estruturais invisíveis (compatíveis com freeze observacional)
+
+### Mudanças aplicadas
+1. ✅ **Rotas antigas de mnemônico** (`/dashboard/mnemonico`, `/dashboard/mnemonic-studio`) → redirect 301-like para `/dashboard/mnemonic-studio-v2` (motor oficial). Nenhuma UX visível alterada.
+2. ✅ **Mapas Mentais** (sem tabelas `mind_maps*` no banco): rotas `/dashboard/mapas-mentais` e `/dashboard/mapas-mentais/:id` redirecionam ao dashboard. Botão no `QuickActionsPanel` mantido visível, mas clique exibe toast "Em breve" via sonner. Nenhum caminho quebrado restante.
+3. ✅ **Recálculo do plano após edição de perfil**: validado — `recalcStudyPlanAfterProfileChange` já está corretamente conectado em `src/pages/Profile.tsx` nos 3 gatilhos (`exam_date`, `target_exam`, `target_exams`). Nenhuma mudança necessária.
+4. ✅ **schedule-review**: marcado como `DEPRECATED` em comentário de cabeçalho. **Não foi conectado** — duplicaria o motor FSRS atual. Decisão de consolidar/deletar adiada para Fase 1+ (pós-baseline).
+
+### NÃO alterado (continua aguardando baseline)
+- 🚫 Deleção das 77 edge functions órfãs
+- 🚫 ENAFLIX (decisão sobre consolidar/remover)
+- 🚫 Consolidação de simulados / planners
+- 🚫 Sidebar / nomenclatura / UX
+- 🚫 Ativação de RAG ou novos motores
+
+### Status Fase 2 (freeze observacional)
+🧊 **Mantido.** Mudanças desta Fase 0 são invisíveis ao usuário típico (apenas redirects e 1 toast). Baseline continua válida.
