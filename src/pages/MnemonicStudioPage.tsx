@@ -75,6 +75,9 @@ export default function MnemonicGeneratorPage() {
   const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
 
+  // Telemetry: module opened (Fase A baseline)
+  useEffect(() => { telemetry.track('mnemonic_opened'); }, []);
+
   // ── Deep-link from study-next / cockpit ──
   // Suporta: ?tema=... &topic=... &termos=a,b,c &estilo=... &publico=... &auto=1
   const autoTriggeredRef = useRef(false);
