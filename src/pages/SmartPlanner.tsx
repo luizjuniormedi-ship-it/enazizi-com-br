@@ -47,6 +47,7 @@ import { useStudyEngine } from "@/hooks/useStudyEngine";
 import { useExamReadiness } from "@/hooks/useExamReadiness";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { useRadarPlannerOverlay } from "@/hooks/useRadarPlannerOverlay";
+import { useCoreData } from "@/hooks/useCoreData";
 
 const DEFAULT_PESOS: PesosAlgoritmo = { erro: 0.3, tempo: 0.2, atraso: 0.2, dificuldade: 0.15, confianca: 0.15 };
 
@@ -79,20 +80,22 @@ const SmartPlanner = () => {
 
   const { data: engineRecs, adaptive } = useStudyEngine();
   const { getHint: getRadarHint } = useRadarPlannerOverlay();
+  const { data: coreData } = useCoreData();
+  const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
 
   const loadData = useCallback(async () => {
     if (!user) return;
     const [temasRes, revisoesRes, desRes, configRes, approvalRes, chanceRes, fsrsRes, errorRes, profileRes, recoveryRes] = await Promise.all([
-      supabase.from("temas_estudados").select("*").eq("user_id", user.id).order("data_estudo", { ascending: false }),
-      supabase.from("revisoes").select("*").eq("user_id", user.id).order("data_revisao", { ascending: true }),
-      supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).order("data_registro", { ascending: false }),
+      supabase.from("temas_estudados").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_estudo", { ascending: false }),
+      supabase.from("revisoes").select("*").eq("user_id", user.id).gt("created_at", resetAt || "1900-01-01T00:00:00Z").order("data_revisao", { ascending: true }),
+      supabase.from("desempenho_questoes").select("*").eq("user_id", user.id).gt("data_registro", resetAt || "1900-01-01T00:00:00Z").order("data_registro", { ascending: false }),
       supabase.from("cronograma_config").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("approval_scores").select("score, phase").eq("user_id", user.id).order("updated_at", { ascending: false }).limit(1).maybeSingle(),
       chanceByExamEnabled ? supabase.from("chance_by_exam").select("banca, chance_score").eq("user_id", user.id) : Promise.resolve({ data: [], error: null }),
-      supabase.from("fsrs_cards").select("id, card_ref_id, card_type, due, stability, difficulty, state, reps, lapses").eq("user_id", user.id),
-      supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).order("vezes_errado", { ascending: false }).limit(20),
+      supabase.from("fsrs_cards").select("id, card_ref_id, card_type, due, stability, difficulty, state, reps, lapses").eq("user_id", user.id).gt("updated_at", resetAt || "1900-01-01T00:00:00Z"),
+      supabase.from("error_bank").select("id, tema, subtema, vezes_errado, categoria_erro, motivo_erro").eq("user_id", user.id).eq("dominado", false).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").order("vezes_errado", { ascending: false }).limit(20),
       supabase.from("profiles").select("exam_date, target_exams").eq("user_id", user.id).maybeSingle(),
-      recoveryFlagEnabled ? supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).maybeSingle() : Promise.resolve({ data: null, error: null }),
+      recoveryFlagEnabled ? supabase.from("recovery_runs").select("mode, phase, active").eq("user_id", user.id).eq("active", true).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").maybeSingle() : Promise.resolve({ data: null, error: null }),
     ]);
 
     setTemas((temasRes.data as any[]) || []);
@@ -108,7 +111,7 @@ const SmartPlanner = () => {
     setRecoveryMode(!!recoveryRes.data);
     setHeavyRecoveryPhase(recoveryRes.data?.mode === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
     setLoading(false);
-  }, [user]);
+  }, [user, chanceByExamEnabled, recoveryFlagEnabled, resetAt]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

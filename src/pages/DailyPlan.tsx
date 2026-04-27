@@ -16,6 +16,7 @@ import { buildStudyPath } from "@/lib/studyRouter";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useStudyEngine } from "@/hooks/useStudyEngine";
+import { useCoreData } from "@/hooks/useCoreData";
 import { encodeStudyContext, type StudyContext } from "@/lib/studyContext";
 import DailyPlanProgress from "@/components/daily-plan/DailyPlanProgress";
 import MasteryBadge, { getMasteryLevel } from "@/components/daily-plan/MasteryBadge";
@@ -74,6 +75,8 @@ const DailyPlan = () => {
 
   // Study Engine recommendations (from Planner + performance data)
   const { data: engineRecs } = useStudyEngine();
+  const { data: coreData } = useCoreData();
+  const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
 
   // ── Load today's data from Planner tables ──
   useEffect(() => {
@@ -87,6 +90,7 @@ const DailyPlan = () => {
           .select("id, tema_id, tipo_revisao, data_revisao, status, prioridade, risco_esquecimento")
           .eq("user_id", user.id)
           .eq("status", "pendente")
+          .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
           .lte("data_revisao", today)
           .order("prioridade", { ascending: false }),
         // Unified view (read-only): exposes tema (text), not tema_id.
@@ -94,11 +98,13 @@ const DailyPlan = () => {
         supabase
           .from("performance_unified" as any)
           .select("tema, questoes_feitas, taxa_acerto")
-          .eq("user_id", user.id),
+          .eq("user_id", user.id)
+          .gt("data_registro", resetAt || "1900-01-01T00:00:00Z"),
         supabase
           .from("temas_estudados")
           .select("id, tema, especialidade, subtopico")
           .eq("user_id", user.id)
+          .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
           .eq("status", "ativo"),
         supabase
           .from("profiles")
@@ -132,8 +138,8 @@ const DailyPlan = () => {
       if (reviewsRes.data && reviewsRes.data.length > 0) {
         const temaIds = [...new Set(reviewsRes.data.map(r => r.tema_id))];
         const [temasRes, doneReviewsRes] = await Promise.all([
-          supabase.from("temas_estudados").select("id, tema, especialidade, subtopico").in("id", temaIds),
-          supabase.from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida").in("tema_id", temaIds),
+          supabase.from("temas_estudados").select("id, tema, especialidade, subtopico").gt("created_at", resetAt || "1900-01-01T00:00:00Z").in("id", temaIds),
+          supabase.from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida").gt("created_at", resetAt || "1900-01-01T00:00:00Z").in("tema_id", temaIds),
         ]);
 
         const reviewCounts = new Map<string, number>();
@@ -205,7 +211,7 @@ const DailyPlan = () => {
       setLoading(false);
     };
     loadToday();
-  }, [user, location.key]);
+  }, [user, location.key, resetAt]);
 
   // ── Navigation helpers with studyContext ──
   const navigateWithContext = (path: string, ctx: StudyContext) => {

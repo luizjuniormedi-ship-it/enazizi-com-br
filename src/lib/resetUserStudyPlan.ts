@@ -159,6 +159,13 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
     if (spErr) throw spErr;
     studyDeleted = sp?.length ?? 0;
 
+    // 2b) Garantir limpeza defensiva de tasks legadas soltas.
+    try {
+      await supabase.from("study_tasks").delete().eq("user_id", userId);
+    } catch (e) {
+      if (isDev) console.warn("[resetUserStudyPlan] delete study_tasks falhou:", e);
+    }
+
     // 3) Marcar TODAS as sessões ativas (`module_sessions`) como
     //    `abandoned` para que a aba/banner "Continuar de onde parou"
     //    não exiba retomada de sessão antiga em flashcards, simulados,
@@ -174,10 +181,31 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
       if (isDev) console.warn("[resetUserStudyPlan] abandon module_sessions falhou:", e);
     }
 
+    // 3b) Encerrar estados derivados ATUAIS da jornada, sem apagar histórico.
+    try {
+      await supabase
+        .from("recovery_runs" as any)
+        .update({ active: false, ended_at: resetAt } as any)
+        .eq("user_id", userId)
+        .eq("active", true);
+
+      await supabase
+        .from("trajectory_applied_actions" as any)
+        .update({ status: "reset", updated_at: resetAt } as any)
+        .eq("user_id", userId)
+        .in("status", ["pending", "pending_orchestrator", "applied", "accepted", "in_progress"]);
+    } catch (e) {
+      if (isDev) console.warn("[resetUserStudyPlan] reset derived current state falhou:", e);
+    }
+
     // 4) Marcar dashboard_snapshots como STALE (não apaga histórico,
     //    apenas força próxima leitura a recomputar o snapshot).
     //    CRÍTICO: useDashboardData usa fast-path de 5min via snapshot.
     invalidateDashboardSnapshot(userId);
+    await supabase
+      .from("dashboard_snapshots")
+      .update({ updated_at: "2000-01-01T00:00:00Z" })
+      .eq("user_id", userId);
 
     // 5) Limpar localStorage / sessionStorage relacionado a plano / missão / continuar
     clearPlanLocalStorage();
@@ -249,6 +277,8 @@ export const PLAN_RELATED_QUERY_KEYS: readonly string[] = [
   // Plano diário / hoje
   "daily-plan",
   "daily-plan-tasks",
+  "daily_plans",
+  "daily_plan_tasks",
   "mission-mode",
   // Engine pedagógico (queries observacionais — não altera motor real)
   "study-engine",
@@ -269,6 +299,7 @@ export const PLAN_RELATED_QUERY_KEYS: readonly string[] = [
   "daily-goal",
   // Trajetória / radar
   "radar-trajetoria",
+  "trajectory-applied-actions",
   "radar-telemetry",
   "radar-snapshot-history",
   // Snapshots de análise
