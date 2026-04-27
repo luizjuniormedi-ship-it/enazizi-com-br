@@ -29,6 +29,19 @@ serve(async (req) => {
     const now = new Date().toISOString();
     const today = now.slice(0, 10);
 
+    // ── Reset fence: read user's last_study_plan_reset_at to filter stale items ──
+    // Items from before the latest reset must NOT appear as the "current mission",
+    // even though they remain in the DB as pedagogical history.
+    let resetAt: string | null = null;
+    try {
+      const { data: rp } = await db
+        .from("profiles")
+        .select("last_study_plan_reset_at")
+        .eq("user_id", userId)
+        .maybeSingle();
+      resetAt = (rp as any)?.last_study_plan_reset_at ?? null;
+    } catch { /* non-fatal */ }
+
     // ── Parallel data fetch ──
     const [
       pendingReviews, errorBankItems, dailyPlanToday, dailyTasks,
