@@ -23,6 +23,9 @@ import {
   examProfileChanged,
   type ExamProfileSnapshot,
 } from "@/lib/recalcStudyPlanAfterProfileChange";
+import { ResetStudyPlanSection } from "@/components/profile/ResetStudyPlanSection";
+import { Separator } from "@/components/ui/separator";
+import { Target as TargetIcon } from "lucide-react";
 
 const EXAM_OPTIONS = [
   { value: "enare", label: "ENARE" },
