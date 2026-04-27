@@ -17,6 +17,7 @@ import { MessageSquare, ArrowRight } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
+import { useCoreData } from "@/hooks/useCoreData";
 
 interface LastSession {
   conversationId: string;
@@ -42,6 +43,8 @@ export default function TutorContinueCard() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { trackAction } = useTelemetry();
+  const { data: coreData } = useCoreData();
+  const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
   const [session, setSession] = useState<LastSession | null>(null);
   const [loaded, setLoaded] = useState(false);
 
@@ -51,15 +54,23 @@ export default function TutorContinueCard() {
     (async () => {
       try {
         const sevenDaysAgoIso = new Date(Date.now() - SEVEN_DAYS_MS).toISOString();
-        const { data: conv } = await supabase
+        let query = supabase
           .from("chat_conversations")
           .select("id, title, updated_at, agent_type")
           .eq("user_id", user.id)
           .eq("agent_type", "chatgpt-agent")
-          .gte("updated_at", sevenDaysAgoIso)
+          .gte("updated_at", sevenDaysAgoIso);
+
+        if (resetAt) query = query.gt("updated_at", resetAt);
+
+        const { data: conv } = await query
           .order("updated_at", { ascending: false })
           .limit(1)
           .maybeSingle();
+
+        if (import.meta.env.DEV) {
+          console.log("[RESET-DEBUG]", { component: "TutorContinueCard", source: "chat_conversations", resetAt, data: conv });
+        }
 
         if (cancelled || !conv) {
           if (!cancelled) setLoaded(true);
@@ -88,7 +99,7 @@ export default function TutorContinueCard() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user]);
+  }, [user, resetAt]);
 
   if (!loaded || !session) return null;
 
