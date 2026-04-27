@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 import { generateRecommendations } from "@/lib/studyEngine";
+import { useCoreData } from "@/hooks/useCoreData";
 
 /**
  * Checks for pending reviews, streak risk, study engine recommendations
@@ -13,10 +14,12 @@ export function useRevisionNotifier() {
   const { user } = useAuth();
   const { toast } = useToast();
   const { permission, sendNotification, requestPermission } = usePushNotifications();
+  const { data: coreData } = useCoreData();
   const hasNotified = useRef(false);
+  const resetAt = coreData?.profile.last_study_plan_reset_at ?? "1900-01-01T00:00:00Z";
 
   useEffect(() => {
-    if (!user || hasNotified.current) return;
+    if (!user || !coreData || hasNotified.current) return;
 
     const check = async () => {
       // Request notification permission on first visit (non-blocking)
@@ -32,6 +35,7 @@ export function useRevisionNotifier() {
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)
           .eq("status", "pendente")
+          .gt("created_at", resetAt)
           .lte("data_revisao", today),
         supabase
           .from("user_gamification")
@@ -85,7 +89,7 @@ export function useRevisionNotifier() {
 
       // 3. Study Engine — topic-specific notifications
       try {
-        const engineResult = await generateRecommendations({ userId: user.id });
+        const engineResult = await generateRecommendations({ userId: user.id, coreData });
         const recs = engineResult.recommendations;
         
         // High-priority error review notification
@@ -128,5 +132,5 @@ export function useRevisionNotifier() {
 
     const timer = setTimeout(check, 2000);
     return () => clearTimeout(timer);
-  }, [user, toast, permission, sendNotification, requestPermission]);
+  }, [user, coreData, resetAt, toast, permission, sendNotification, requestPermission]);
 }
