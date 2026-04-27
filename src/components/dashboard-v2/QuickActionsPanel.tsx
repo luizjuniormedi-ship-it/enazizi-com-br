@@ -66,7 +66,7 @@ export default function QuickActionsPanel({ hasErrors, hasPendingReviews }: Prop
             transition={{ delay: 0.75 + i * 0.04, duration: 0.2 }}
             whileHover={{ scale: 1.08, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            onClick={() => navigate(action.path)}
+            onClick={() => handleClick(action)}
             className={`flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-colors
               ${action.highlight
                 ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
