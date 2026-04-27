@@ -27,7 +27,7 @@ export default function MissionCard() {
   // Estimativa simples: 25min por tarefa pendente (média típica de bloco de estudo).
   const minutesLeft = remaining * 25;
 
-  const handleContinue = () => navigate("/dashboard/cronograma?source=guided_mission");
+  const handleContinue = () => navigate("/dashboard/planner?source=guided_mission");
   const handleGenerate = () => navigate("/dashboard/smart-planner?source=guided_mission");
 
   return (
