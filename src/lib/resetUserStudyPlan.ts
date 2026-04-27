@@ -53,17 +53,34 @@ const LOCAL_STORAGE_KEYS = [
   "enazizi_weekly_snap_ts",
 ];
 
+/**
+ * Prefixos que cobrem chaves dinâmicas (ex.: `enazizi:mission:2026-04-27`).
+ * IMPORTANTE: usar tanto separadores `-` quanto `:` quanto `_` —
+ * a aba "Continuar" do sidebar usa `enazizi:mission:YYYY-MM-DD`
+ * (NÃO coberto por prefixo `enazizi-mission`).
+ */
 const LOCAL_STORAGE_PREFIXES = [
   "daily-plan",
   "daily_plan",
   "mission",
   "enazizi-mission",
   "enazizi_mission",
+  "enazizi:mission",
   "study-plan",
   "study_plan",
   "study-loop",
   "enazizi_study_session",
   "enazizi-weekly-snap",
+];
+
+/**
+ * Chaves sessionStorage que apontam pra "Continuar de onde parou".
+ * Limpamos pra que o sidebar/EnaflixBackButton não voltem ao estado anterior.
+ */
+const SESSION_STORAGE_KEYS = [
+  "enazizi_study_session",
+  "enaflix:origin",
+  "enaflix:lastModule",
 ];
 
 function clearPlanLocalStorage(): void {
@@ -72,7 +89,7 @@ function clearPlanLocalStorage(): void {
   for (const key of LOCAL_STORAGE_KEYS) {
     try { window.localStorage.removeItem(key); } catch {}
   }
-  // 2) varredura por prefixo
+  // 2) varredura por prefixo (cobre `enazizi:mission:YYYY-MM-DD` etc.)
   try {
     const toRemove: string[] = [];
     for (let i = 0; i < window.localStorage.length; i++) {
@@ -84,10 +101,10 @@ function clearPlanLocalStorage(): void {
     }
     toRemove.forEach((k) => window.localStorage.removeItem(k));
   } catch {}
-  // 3) sessionStorage espelhado (sessão de estudo ativa)
-  try {
-    window.sessionStorage.removeItem("enazizi_study_session");
-  } catch {}
+  // 3) sessionStorage — Continuar / ENAFLIX origin
+  for (const key of SESSION_STORAGE_KEYS) {
+    try { window.sessionStorage.removeItem(key); } catch {}
+  }
 }
 
 export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResult> {
