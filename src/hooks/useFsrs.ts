@@ -103,6 +103,15 @@ export function useFsrs() {
         reviewed_at: now.toISOString(),
       });
 
+      // Shadow Adaptive Layer (Fase 3A) — observacional. NÃO altera fila FSRS.
+      void emitShadowEvent({
+        module: "flashcard",
+        event: "flashcard_review_completed",
+        topic: cardType,
+        durationMs: durationMs ?? null,
+        extra: { rating, ref_id: cardRefId },
+      });
+
       return result.card;
     },
     [user, getOrCreateCard]

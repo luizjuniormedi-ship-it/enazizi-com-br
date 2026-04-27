@@ -106,6 +106,8 @@ export function useStudySession() {
     setMetrics(m);
     setSummary(null);
     saveSession(m);
+    // Shadow Adaptive Layer (Fase 3A) — observacional.
+    void emitShadowEvent({ module: "simulado", event: "simulation_started", extra: { source } });
   }, []);
 
   const recordAction = useCallback((correct: boolean, theme?: string, xp = 0) => {
@@ -137,6 +139,19 @@ export function useStudySession() {
       };
       setSummary(s);
       clearSession();
+      // Shadow Adaptive Layer (Fase 3A) — observacional.
+      void emitShadowEvent({
+        module: "simulado",
+        event: "simulation_finished",
+        durationMs: s.durationSeconds * 1000,
+        extra: { tasks: s.tasksCompleted, correct: s.correctAnswers, wrong: s.wrongAnswers },
+      });
+      void logShadowOutcome({
+        module: "simulado",
+        action: "completed",
+        durationMs: s.durationSeconds * 1000,
+        extra: { tasks: s.tasksCompleted },
+      });
       return { ...prev, active: false };
     });
   }, []);
