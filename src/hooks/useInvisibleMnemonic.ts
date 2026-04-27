@@ -4,6 +4,7 @@
  */
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "./useAuth";
+import { useCoreData } from "./useCoreData";
 import {
   getInvisibleMnemonicToShow,
   markInvisibleShown,
@@ -21,9 +22,11 @@ interface UseInvisibleMnemonicOptions {
 export function useInvisibleMnemonic(opts: UseInvisibleMnemonicOptions = {}) {
   const { currentTopic, enabled = true } = opts;
   const { user } = useAuth();
+  const { data: coreData } = useCoreData();
   const [mnemonic, setMnemonic] = useState<ServableMnemonic | null>(null);
   const [visible, setVisible] = useState(false);
   const checkedRef = useRef(false);
+  const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
 
   // Check for pending mnemonics on mount / topic change
   useEffect(() => {
@@ -36,7 +39,7 @@ export function useInvisibleMnemonic(opts: UseInvisibleMnemonicOptions = {}) {
       checkedRef.current = true;
 
       try {
-        const result = await getInvisibleMnemonicToShow(user.id, currentTopic);
+        const result = await getInvisibleMnemonicToShow(user.id, currentTopic, resetAt);
         if (result) {
           setMnemonic(result);
           // Slight delay before showing to not interrupt flow
@@ -48,7 +51,7 @@ export function useInvisibleMnemonic(opts: UseInvisibleMnemonicOptions = {}) {
     }, 3000); // Wait 3s after topic change before checking
 
     return () => clearTimeout(timer);
-  }, [user?.id, currentTopic, enabled]);
+  }, [user?.id, currentTopic, enabled, resetAt]);
 
   const handleDismiss = useCallback(() => {
     if (mnemonic && user?.id) {

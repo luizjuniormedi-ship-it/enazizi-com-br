@@ -4,11 +4,14 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useCoreData } from "@/hooks/useCoreData";
 import { useState, useEffect, useRef } from "react";
 
 const BottomTabBar = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const { data: coreData } = useCoreData();
+  const resetAt = coreData?.profile.last_study_plan_reset_at ?? "1900-01-01T00:00:00Z";
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
 
@@ -25,7 +28,7 @@ const BottomTabBar = () => {
   }, []);
 
   const { data: pendingCount } = useQuery({
-    queryKey: ["bottom-tab-pending", user?.id],
+    queryKey: ["bottom-tab-pending", user?.id, resetAt],
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
@@ -33,7 +36,8 @@ const BottomTabBar = () => {
         .from("revisoes")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user!.id)
-        .eq("status", "pendente");
+        .eq("status", "pendente")
+        .gt("created_at", resetAt);
       return count || 0;
     },
   });

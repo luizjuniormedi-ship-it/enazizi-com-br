@@ -280,9 +280,11 @@ export function triggerInvisibleMnemonic(params: InvisibleTriggerParams) {
 
 export async function getInvisibleMnemonicToShow(
   userId: string,
-  currentTopic?: string
+  currentTopic?: string,
+  resetAt?: string | null
 ): Promise<ServableMnemonic | null> {
   const now = new Date().toISOString();
+  const fence = resetAt || "1900-01-01T00:00:00Z";
 
   // Priority 1: topic-relevant, recently generated
   if (currentTopic) {
@@ -292,6 +294,7 @@ export async function getInvisibleMnemonicToShow(
       .eq("user_id", userId)
       .eq("topic", currentTopic)
       .eq("mnemonic_not_helping", false)
+      .gt("created_at", fence)
       .lte("next_review_at", now)
       .order("created_at", { ascending: false })
       .limit(1);
@@ -311,6 +314,7 @@ export async function getInvisibleMnemonicToShow(
     .select("*, mnemonic_assets(*)")
     .eq("user_id", userId)
     .eq("mnemonic_not_helping", false)
+    .gt("created_at", fence)
     .lte("next_review_at", now)
     .order("next_review_at", { ascending: true })
     .limit(1);

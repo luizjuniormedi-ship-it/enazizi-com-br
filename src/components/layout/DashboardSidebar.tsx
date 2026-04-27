@@ -40,6 +40,7 @@ import { useModuleAccess } from "@/hooks/useModuleAccess";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useInstitution } from "@/hooks/useInstitution";
+import { useCoreData } from "@/hooks/useCoreData";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import enazizi from "@/assets/enazizi-mascot.png";
@@ -158,10 +159,12 @@ const DashboardSidebar = () => {
   const { isProfessor } = useProfessorCheck();
   const { isStaff: isInstitutionalStaff } = useInstitution();
   const { isModuleEnabled } = useModuleAccess();
+  const { data: coreData } = useCoreData();
+  const resetAt = coreData?.profile.last_study_plan_reset_at ?? "1900-01-01T00:00:00Z";
 
   // Pendências (revisões) — para badge no CTA "Continuar"
   const { data: pendingCount = 0 } = useQuery({
-    queryKey: ["sidebar-pending", user?.id],
+    queryKey: ["sidebar-pending", user?.id, resetAt],
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
     queryFn: async () => {
@@ -169,7 +172,8 @@ const DashboardSidebar = () => {
         .from("revisoes")
         .select("id", { count: "exact", head: true })
         .eq("user_id", user!.id)
-        .eq("status", "pendente");
+        .eq("status", "pendente")
+        .gt("created_at", resetAt);
       return count || 0;
     },
   });
