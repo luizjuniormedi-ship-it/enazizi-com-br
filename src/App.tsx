@@ -140,7 +140,8 @@ const App = () => (
                <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
-                <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
+                <Route path="cronograma" element={<PreserveQueryNavigate to="/dashboard/planner" />} />
+                <Route path="cronograma-inteligente" element={<PreserveQueryNavigate to="/dashboard/planner" />} />
                 {/* P0-bis: preserve ?did= so orchestrator decisions reach the destination */}
                 <Route path="quiz" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo" />} />
                 <Route path="revisoes" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo?focus=reviews" />} />
