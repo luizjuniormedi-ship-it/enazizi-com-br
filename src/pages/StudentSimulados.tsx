@@ -19,6 +19,7 @@ import { usePendingProficiency } from "@/hooks/usePendingProficiency";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import ProficiencyGuidedPanel from "@/components/proficiency/ProficiencyGuidedPanel";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 interface SimuladoResult {
   id: string;
@@ -59,6 +60,9 @@ const StudentSimulados = () => {
   const [assigned, setAssigned] = useState<AssignedSimulado[]>([]);
   const [loading, setLoading] = useState(true);
   const [phase, setPhase] = useState<Phase>("list");
+
+  // Telemetry: module opened (Fase A baseline)
+  useEffect(() => { telemetry.track('simulado_opened'); }, []);
 
   // Clinical cases (Plantão)
   const [clinicalCases, setClinicalCases] = useState<any[]>([]);
@@ -425,6 +429,7 @@ const StudentSimulados = () => {
       await completeSession();
       setResultData({ score, total: questions.length, correct, details });
       setPhase("result");
+      telemetry.track('simulado_completed', { score, total: questions.length, correct });
       toast({ title: "Simulado concluído!", description: `Sua nota: ${score}%` });
     } catch {
       finishedRef.current = false;
