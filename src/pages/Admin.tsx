@@ -21,6 +21,7 @@ const AdminStatsCards = lazy(() => import("@/components/admin/AdminStatsCards"))
 const AdminOnlineUsers = lazy(() => import("@/components/admin/AdminOnlineUsers"));
 const AdminPlanDistribution = lazy(() => import("@/components/admin/AdminPlanDistribution"));
 const AdminDailyGenerationAlert = lazy(() => import("@/components/admin/AdminDailyGenerationAlert"));
+const BaselineFreezeAlert = lazy(() => import("@/components/admin/BaselineFreezeAlert"));
 const AdminPipelineMonitor = lazy(() => import("@/components/admin/AdminPipelineMonitor"));
 const AdminWebScrapingPanel = lazy(() => import("@/components/admin/AdminWebScrapingPanel"));
 const AdminIngestionPanel = lazy(() => import("@/components/admin/AdminIngestionPanel"));
@@ -488,6 +489,8 @@ const Admin = () => {
             {/* Overview */}
             {activeSection === "overview" && (
               <div className="space-y-6">
+                {/* Alerta de contaminação da baseline (apenas-leitura, admin-only) */}
+                <BaselineFreezeAlert />
                 <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
                 <AdminPlanDistribution stats={stats} />
                 <AdminDailyGenerationAlert />
