@@ -1,6 +1,7 @@
 import { useRef, useCallback } from "react";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { supabase } from "@/integrations/supabase/client";
+import { emitShadowEvent } from "@/lib/shadowAdaptive";
 
 interface StreamOptions {
   url: string;
@@ -15,6 +16,12 @@ export function useStreamingResponse() {
 
   const streamResponse = useCallback(async ({ url, body, onChunk, onComplete, onError }: StreamOptions) => {
     accumulatorRef.current = "";
+    // Shadow Adaptive Layer (Fase 3A) — observacional. NÃO altera o Tutor.
+    void emitShadowEvent({
+      module: "tutor",
+      event: "tutor_session_started",
+      topic: (body as any)?.topic ?? null,
+    });
 
     // === rAF-based flush throttle: at most 1 React render per frame (~60Hz) ===
     let pendingFlush = false;
