@@ -58,6 +58,8 @@ export function useEnaflixUsage() {
     } catch {
       // ignore
     }
+    // Shadow Adaptive Layer (Fase 3A) — observacional, sem efeito na UX.
+    void emitShadowEvent({ module: "enaflix", event: "watch_started", topic: id });
   }, []);
 
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
