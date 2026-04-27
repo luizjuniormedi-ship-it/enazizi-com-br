@@ -45,7 +45,10 @@ export type TelemetryEventName =
   | 'tutor_helpful_clicked'
   | 'tutor_unhelpful_clicked'
   | 'tutor_abandoned_after_response'
-  | 'profile_exam_target_updated';
+  | 'profile_exam_target_updated'
+  | 'study_plan_reset_requested'
+  | 'study_plan_reset_completed'
+  | 'study_plan_reset_failed';
 
 interface TelemetryProperties {
   [key: string]: any;
