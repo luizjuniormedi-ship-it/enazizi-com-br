@@ -201,8 +201,14 @@ export async function emitShadowEvent(payload: ShadowEventPayload): Promise<void
     const dedupKey = `evt:${userId}:${payload.module}:${payload.event}:${payload.topic ?? ""}`;
     if (!shouldEmit(dedupKey)) return;
 
+    const sessionId =
+      typeof crypto !== "undefined" && (crypto as any).randomUUID
+        ? (crypto as any).randomUUID()
+        : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+
     await supabase.from("telemetry_events").insert([{
       user_id: userId,
+      session_id: sessionId,
       event_name: `shadow_${payload.event}`,
       properties: {
         shadow: true,
