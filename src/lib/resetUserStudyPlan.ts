@@ -165,7 +165,7 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
     // 5) Limpar localStorage / sessionStorage relacionado a plano / missão / continuar
     clearPlanLocalStorage();
 
-    // 5) Regenerar plano via motor oficial (idempotente).
+    // 6) Regenerar plano via motor oficial (idempotente).
     //    Importante: rodar DEPOIS da invalidação do snapshot, para que
     //    quando o dashboard recomputar ele já encontre o plano novo.
     const { error: genErr } = await supabase.functions.invoke("generate-daily-plan", {
@@ -179,7 +179,7 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
       regenerated = true;
     }
 
-    // 6) NÃO chamar dashboard-snapshot { action: 'update' } aqui —
+    // 7) NÃO chamar dashboard-snapshot { action: 'update' } aqui —
     //    isso reescreveria o snapshot com possível leitura intermediária
     //    do banco e congelaria por até 5 min novamente.
     //    O próximo render do dashboard reconstrói via useDashboardData.
