@@ -26,14 +26,17 @@ export interface CoreDataResult {
 }
 
 async function fetchCoreData(userId: string): Promise<CoreDataResult> {
+  const profileRes = await supabase.from("profiles")
+    .select("display_name, has_completed_diagnostic, target_exams, target_exam, exam_date, last_study_plan_reset_at")
+    .eq("user_id", userId).maybeSingle();
+  const ep = profileRes.data as any;
+  const resetAt = ep?.last_study_plan_reset_at || null;
+
   const [
-    profileRes, practiceRes, revisoesRes, examRes,
+    practiceRes, revisoesRes, examRes,
     anamnesisRes, temasRes, simRes, osceRes,
     gamRes, errorRes, approvalRes, domainRes,
   ] = await Promise.all([
-    supabase.from("profiles")
-      .select("display_name, has_completed_diagnostic, target_exams, target_exam, exam_date, last_study_plan_reset_at")
-      .eq("user_id", userId).maybeSingle(),
     supabase.from("practice_attempts")
       .select("correct, created_at")
       .eq("user_id", userId)
@@ -41,7 +44,8 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       .limit(500),
     supabase.from("revisoes")
       .select("id, status, data_revisao, created_at")
-      .eq("user_id", userId),
+      .eq("user_id", userId)
+      .gt("created_at", resetAt || "1900-01-01T00:00:00Z"),
     supabase.from("exam_sessions")
       .select("score, total_questions, finished_at")
       .eq("user_id", userId).eq("status", "finished")
@@ -54,7 +58,8 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       .limit(10),
     supabase.from("temas_estudados")
       .select("id, tema, especialidade, created_at", { count: "exact" })
-      .eq("user_id", userId),
+      .eq("user_id", userId)
+      .gt("created_at", resetAt || "1900-01-01T00:00:00Z"),
     supabase.from("simulation_sessions")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId).eq("status", "finished"),
@@ -66,7 +71,8 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       .eq("user_id", userId).maybeSingle(),
     supabase.from("error_bank")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", userId),
+      .eq("user_id", userId)
+      .gt("updated_at", resetAt || "1900-01-01T00:00:00Z"),
     supabase.from("approval_scores")
       .select("score, created_at")
       .eq("user_id", userId)
@@ -77,7 +83,6 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       .eq("user_id", userId),
   ]);
 
-  const ep = profileRes.data as any;
   let targetExams: string[] = [];
   if (Array.isArray(ep?.target_exams) && ep.target_exams.length > 0) {
     targetExams = ep.target_exams;
