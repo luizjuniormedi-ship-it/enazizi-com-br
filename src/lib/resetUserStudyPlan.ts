@@ -129,6 +129,15 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
   } catch {}
 
   try {
+    const resetAt = new Date().toISOString();
+
+    // 0) Marcador seguro de corte da jornada atual. Histórico continua salvo,
+    // mas cards de Hoje/Continuar passam a ignorar itens anteriores ao reset.
+    await supabase
+      .from("profiles")
+      .update({ last_study_plan_reset_at: resetAt })
+      .eq("user_id", userId);
+
     // 1) Apagar daily_plans (CASCADE remove daily_plan_tasks)
     const { data: dp, error: dpErr } = await supabase
       .from("daily_plans")
@@ -233,6 +242,10 @@ export const PLAN_RELATED_QUERY_KEYS: readonly string[] = [
   "dashboard-data",
   "dashboard-snapshot",
   "dashboard-mnemonic",
+  "sidebar-pending",
+  "bottom-tab-pending",
+  "coverage-status",
+  "monthly-goal",
   // Plano diário / hoje
   "daily-plan",
   "daily-plan-tasks",
