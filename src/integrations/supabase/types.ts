@@ -6025,6 +6025,7 @@ export type Database = {
           id: string
           is_blocked: boolean
           last_onboarding_step: number | null
+          last_study_plan_reset_at: string | null
           onboarding_version: number
           organization_id: string | null
           periodo: number | null
@@ -6056,6 +6057,7 @@ export type Database = {
           id?: string
           is_blocked?: boolean
           last_onboarding_step?: number | null
+          last_study_plan_reset_at?: string | null
           onboarding_version?: number
           organization_id?: string | null
           periodo?: number | null
@@ -6087,6 +6089,7 @@ export type Database = {
           id?: string
           is_blocked?: boolean
           last_onboarding_step?: number | null
+          last_study_plan_reset_at?: string | null
           onboarding_version?: number
           organization_id?: string | null
           periodo?: number | null
