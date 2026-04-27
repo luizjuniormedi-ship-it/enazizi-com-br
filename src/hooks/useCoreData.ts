@@ -9,6 +9,7 @@ export interface CoreDataResult {
     target_exams: string[];
     target_exam: string | null;
     exam_date: string | null;
+    last_study_plan_reset_at: string | null;
   };
   practiceAttempts: { correct: boolean; created_at: string }[];
   revisoes: { id: string; status: string; data_revisao: string; created_at: string }[];
@@ -31,7 +32,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
     gamRes, errorRes, approvalRes, domainRes,
   ] = await Promise.all([
     supabase.from("profiles")
-      .select("display_name, has_completed_diagnostic, target_exams, target_exam, exam_date")
+      .select("display_name, has_completed_diagnostic, target_exams, target_exam, exam_date, last_study_plan_reset_at")
       .eq("user_id", userId).maybeSingle(),
     supabase.from("practice_attempts")
       .select("correct, created_at")
@@ -91,6 +92,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       target_exams: targetExams,
       target_exam: ep?.target_exam || null,
       exam_date: ep?.exam_date || null,
+      last_study_plan_reset_at: ep?.last_study_plan_reset_at || null,
     },
     practiceAttempts: (practiceRes.data || []) as any[],
     revisoes: (revisoesRes.data || []) as any[],
