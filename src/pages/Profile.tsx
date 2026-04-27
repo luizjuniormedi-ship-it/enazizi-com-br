@@ -534,6 +534,19 @@ const Profile = () => {
             </>
           )}
         </Button>
+
+        {user?.id && (
+          <>
+            <Separator className="my-6" />
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <TargetIcon className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">Plano de Estudo</h3>
+              </div>
+              <ResetStudyPlanSection userId={user.id} />
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
