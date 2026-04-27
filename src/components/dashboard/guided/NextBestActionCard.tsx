@@ -81,7 +81,7 @@ export default function NextBestActionCard({ excludePaths = [] }: NextBestAction
         label: "Atalho rápido",
         description: `${todayPending} ${todayPending === 1 ? "tarefa pendente" : "tarefas pendentes"} hoje`,
         cta: "Continuar missão",
-        to: "/dashboard/cronograma?source=guided_nba",
+        to: "/dashboard/planner?source=guided_nba",
       };
     }
     if (hasRecentError) {
