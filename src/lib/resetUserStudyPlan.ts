@@ -7,7 +7,8 @@
  *   - daily_plans (do user)
  *   - daily_plan_tasks (cascateado pelo daily_plan)
  *   - study_plans / study_tasks (do user)
- *   - localStorage relacionado à missão do dia
+ *   - localStorage relacionado à missão / planner / loop
+ *   - dashboard_snapshots (marcado como stale → forçar reconstrução)
  *
  * NÃO apaga:
  *   - perfil, conta, gamificação
@@ -16,11 +17,13 @@
  *   - simulados realizados, métricas históricas
  *   - professor_plan_daily_tasks (gerido pelo professor; RLS impede de qualquer forma)
  *
- * Após o reset, dispara `generate-daily-plan` (mesmo motor já usado por
- * recalcStudyPlanAfterProfileChange) para reconstruir o plano do zero.
+ * Após o reset, dispara `generate-daily-plan` para reconstruir o plano do zero.
+ * NÃO recria snapshot — deixa o próximo render do dashboard regenerá-lo
+ * naturalmente sobre o plano novo.
  */
 import { supabase } from "@/integrations/supabase/client";
 import { telemetry } from "@/lib/pedagogicalTelemetry";
+import { invalidateDashboardSnapshot } from "@/lib/dashboardSnapshot";
 
 export interface ResetPlanResult {
   success: boolean;
@@ -30,13 +33,62 @@ export interface ResetPlanResult {
   error?: string;
 }
 
+/**
+ * Chaves localStorage CONHECIDAS que cacheiam estado de plano/missão/loop.
+ * Mantemos lista explícita + sweep por prefixo para resiliência.
+ */
 const LOCAL_STORAGE_KEYS = [
+  // Mission (chave real usada por useMissionMode)
+  "enazizi-mission-state",
+  // Possíveis caches legados / outros loops
   "daily-mission-state",
   "daily-mission-cache",
   "current-daily-plan",
   "study-loop-state",
   "study-context",
+  // Recovery e snapshots derivados
+  "enazizi-heavy-recovery",
+  "enazizi_daily_focus",
+  "enazizi_eod_summary_date",
+  "enazizi_weekly_snap_ts",
 ];
+
+const LOCAL_STORAGE_PREFIXES = [
+  "daily-plan",
+  "daily_plan",
+  "mission",
+  "enazizi-mission",
+  "enazizi_mission",
+  "study-plan",
+  "study_plan",
+  "study-loop",
+  "enazizi_study_session",
+  "enazizi-weekly-snap",
+];
+
+function clearPlanLocalStorage(): void {
+  if (typeof window === "undefined") return;
+  // 1) chaves explícitas
+  for (const key of LOCAL_STORAGE_KEYS) {
+    try { window.localStorage.removeItem(key); } catch {}
+  }
+  // 2) varredura por prefixo
+  try {
+    const toRemove: string[] = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k) continue;
+      if (LOCAL_STORAGE_PREFIXES.some((p) => k.startsWith(p))) {
+        toRemove.push(k);
+      }
+    }
+    toRemove.forEach((k) => window.localStorage.removeItem(k));
+  } catch {}
+  // 3) sessionStorage espelhado (sessão de estudo ativa)
+  try {
+    window.sessionStorage.removeItem("enazizi_study_session");
+  } catch {}
+}
 
 export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResult> {
   const isDev = import.meta.env.DEV;
@@ -73,31 +125,17 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
     if (spErr) throw spErr;
     studyDeleted = sp?.length ?? 0;
 
-    // 3) Limpar localStorage relacionado à missão diária / plano
-    if (typeof window !== "undefined") {
-      for (const key of LOCAL_STORAGE_KEYS) {
-        try { window.localStorage.removeItem(key); } catch {}
-      }
-      // Limpar quaisquer chaves prefixadas com daily-plan / mission
-      try {
-        const toRemove: string[] = [];
-        for (let i = 0; i < window.localStorage.length; i++) {
-          const k = window.localStorage.key(i);
-          if (!k) continue;
-          if (
-            k.startsWith("daily-plan") ||
-            k.startsWith("mission") ||
-            k.startsWith("study-plan") ||
-            k.startsWith("study-loop")
-          ) {
-            toRemove.push(k);
-          }
-        }
-        toRemove.forEach((k) => window.localStorage.removeItem(k));
-      } catch {}
-    }
+    // 3) Marcar dashboard_snapshots como STALE (não apaga histórico,
+    //    apenas força próxima leitura a recomputar o snapshot).
+    //    CRÍTICO: useDashboardData usa fast-path de 5min via snapshot.
+    invalidateDashboardSnapshot(userId);
 
-    // 4) Regenerar plano via motor oficial (idempotente)
+    // 4) Limpar localStorage / sessionStorage relacionado a plano / missão
+    clearPlanLocalStorage();
+
+    // 5) Regenerar plano via motor oficial (idempotente).
+    //    Importante: rodar DEPOIS da invalidação do snapshot, para que
+    //    quando o dashboard recomputar ele já encontre o plano novo.
     const { error: genErr } = await supabase.functions.invoke("generate-daily-plan", {
       body: { user_id: userId, force: true },
     });
@@ -109,10 +147,10 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
       regenerated = true;
     }
 
-    // 5) Dashboard snapshot (fire-and-forget)
-    supabase.functions
-      .invoke("dashboard-snapshot", { body: { action: "update", force: true } })
-      .catch(() => {});
+    // 6) NÃO chamar dashboard-snapshot { action: 'update' } aqui —
+    //    isso reescreveria o snapshot com possível leitura intermediária
+    //    do banco e congelaria por até 5 min novamente.
+    //    O próximo render do dashboard reconstrói via useDashboardData.
 
     success = true;
   } catch (err: any) {
@@ -142,3 +180,48 @@ export async function resetUserStudyPlan(userId: string): Promise<ResetPlanResul
     error: errorMsg,
   };
 }
+
+/**
+ * Lista canônica de queryKeys do React Query que dependem do plano atual.
+ * Usado pelo componente UI para invalidar TUDO após o reset.
+ *
+ * Mantida em sync com `useRefreshUserState` (contexto "all") + extras.
+ */
+export const PLAN_RELATED_QUERY_KEYS: readonly string[] = [
+  // Dashboard core
+  "core-data",
+  "dashboard-data",
+  "dashboard-snapshot",
+  "dashboard-mnemonic",
+  // Plano diário / hoje
+  "daily-plan",
+  "daily-plan-tasks",
+  "mission-mode",
+  // Engine pedagógico (queries observacionais — não altera motor real)
+  "study-engine",
+  "study-engine-impact",
+  "study-orchestrator",
+  "study-next",
+  "cockpit-data",
+  // Indicadores derivados
+  "exam-readiness",
+  "weekly-goals",
+  "preparation-index",
+  "smart-notifications",
+  "approval-score-latest",
+  "approval-timeline",
+  "domain-map-thermo",
+  "topic-evolution",
+  "specialty-progress",
+  "daily-goal",
+  // Trajetória / radar
+  "radar-trajetoria",
+  "radar-telemetry",
+  "radar-snapshot-history",
+  // Snapshots de análise
+  "analytics-snapshot",
+  // Reforço / FSRS (lê tarefas planejadas)
+  "revisoes",
+  "fsrs-cards",
+  "error-bank",
+] as const;

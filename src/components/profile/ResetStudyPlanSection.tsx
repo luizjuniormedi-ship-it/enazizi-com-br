@@ -16,7 +16,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
-import { resetUserStudyPlan } from "@/lib/resetUserStudyPlan";
+import {
+  resetUserStudyPlan,
+  PLAN_RELATED_QUERY_KEYS,
+} from "@/lib/resetUserStudyPlan";
 
 const CONFIRM_WORD = "RESETAR";
 
@@ -54,16 +57,21 @@ export function ResetStudyPlanSection({ userId }: Props) {
       return;
     }
 
-    // Invalidar caches do react-query relacionados ao plano
+    // Invalidar TODAS as queries relacionadas ao plano (lista canônica
+    // mantida em sync com useRefreshUserState).
+    // 1) removeQueries → descarta cache em memória (incl. dados servidos
+    //    pelo fast-path de snapshot já hidratado).
+    // 2) invalidateQueries → marca como stale e força refetch para queries
+    //    montadas no momento (ex.: dashboard ainda visível ao retornar).
     try {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["daily-plan"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard"] }),
-        queryClient.invalidateQueries({ queryKey: ["dashboard-snapshot"] }),
-        queryClient.invalidateQueries({ queryKey: ["study-plan"] }),
-        queryClient.invalidateQueries({ queryKey: ["mission"] }),
-        queryClient.invalidateQueries({ queryKey: ["smart-planner"] }),
-      ]);
+      for (const key of PLAN_RELATED_QUERY_KEYS) {
+        queryClient.removeQueries({ queryKey: [key] });
+      }
+      await Promise.all(
+        PLAN_RELATED_QUERY_KEYS.map((key) =>
+          queryClient.invalidateQueries({ queryKey: [key] })
+        )
+      );
     } catch {}
 
     setOpen(false);
