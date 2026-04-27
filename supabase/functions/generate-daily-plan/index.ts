@@ -57,6 +57,17 @@ Deno.serve(async (req) => {
     const userId = user.id;
     const today = new Date().toISOString().split("T")[0];
 
+    // ── Reset fence: a "jornada atual" só considera dados criados/atualizados
+    // após o último reset manual do plano. Histórico pedagógico permanece intacto
+    // nas tabelas, mas é ignorado por este motor ao montar o plano de hoje.
+    const { data: resetProfile } = await adminClient
+      .from("profiles")
+      .select("last_study_plan_reset_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    const resetAt: string = (resetProfile as any)?.last_study_plan_reset_at
+      || "1900-01-01T00:00:00Z";
+
     // Fetch inputs in parallel
     const [revisoesRes, errorsRes, desempenhoRes, temasRes, profilesRes, domainRes, practiceRes, examRes, anamnesisRes, clinicalRes] =
       await Promise.all([
@@ -65,6 +76,7 @@ Deno.serve(async (req) => {
           .select("id, tema_id, data_revisao, prioridade, risco_esquecimento, status, temas_estudados(tema, especialidade)")
           .eq("user_id", userId)
           .eq("status", "pendente")
+          .gt("created_at", resetAt)
           .lte("data_revisao", today)
           .order("prioridade", { ascending: false })
           .limit(10),
@@ -73,12 +85,14 @@ Deno.serve(async (req) => {
           .select("id, tema, subtema, vezes_errado, categoria_erro")
           .eq("user_id", userId)
           .eq("dominado", false)
+          .gt("updated_at", resetAt)
           .order("vezes_errado", { ascending: false })
           .limit(10),
         adminClient
           .from("desempenho_questoes")
           .select("tema_id, taxa_acerto, questoes_feitas, temas_estudados(tema, especialidade)")
           .eq("user_id", userId)
+          .gt("data_registro", resetAt)
           .order("taxa_acerto", { ascending: true })
           .limit(15),
         adminClient
@@ -86,6 +100,7 @@ Deno.serve(async (req) => {
           .select("id, tema, especialidade, dificuldade, status")
           .eq("user_id", userId)
           .eq("status", "ativo")
+          .gt("created_at", resetAt)
           .order("data_estudo", { ascending: false })
           .limit(20),
         adminClient
