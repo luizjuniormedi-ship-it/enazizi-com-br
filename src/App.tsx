@@ -195,8 +195,8 @@ const App = () => (
                 <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
 
               </Route>
-              {/* Fullscreen mind map viewer — outside DashboardLayout */}
-              <Route path="/dashboard/mapas-mentais/:id" element={<ProtectedRoute><MindMapFullscreen /></ProtectedRoute>} />
+              {/* Fullscreen mind map viewer — disabled (Fase 0): tabelas mind_maps* não existem */}
+              <Route path="/dashboard/mapas-mentais/:id" element={<Navigate to="/dashboard?mind_maps=coming_soon" replace />} />
               <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
