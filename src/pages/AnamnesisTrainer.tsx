@@ -15,6 +15,7 @@ import { useSessionTracking, SessionOrigin } from "@/hooks/useSessionTracking";
 import { useToast } from "@/hooks/use-toast";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 import { useIsMobile } from "@/hooks/use-mobile";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import {
@@ -298,6 +299,9 @@ const AnamnesisTrainer = () => {
 
   useEffect(() => { registerAutoSave(getAnamnesisState); }, [getAnamnesisState, registerAutoSave]);
 
+  // Telemetry: module opened (Fase A baseline)
+  useEffect(() => { telemetry.track('anamnese_opened'); }, []);
+
   const restoreAnamnesisSession = useCallback((data: Record<string, any>) => {
     if (data.specialty) setSpecialty(data.specialty);
     if (data.difficulty) setDifficulty(data.difficulty);
@@ -552,6 +556,7 @@ const AnamnesisTrainer = () => {
       }
 
       await completeSession();
+      telemetry.track('anamnese_completed', { specialty: specialty || null });
       if (user?.id) {
         await completeStudyAction({
           userId: user.id,
