@@ -1,3 +1,8 @@
+// ⚠️ DEPRECATED (Fase 0 audit — observational freeze)
+// Esta função está órfã: nenhum frontend ou outra edge function a chama.
+// O motor oficial de revisão é o FSRS (ver useFsrs + tabela fsrs_cards).
+// Decisão sobre deletar ou consolidar com FSRS será tomada pós-baseline (Fase 1+).
+// NÃO conectar essa função sem antes consolidar com o FSRS — criaria pipeline duplicado.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
