@@ -3,19 +3,27 @@
  * ──────────────────
  * Reset MANUAL e EXPLÍCITO do plano de estudo do próprio usuário.
  *
- * Apaga apenas:
+ * Apaga / reseta apenas a JORNADA ATUAL:
  *   - daily_plans (do user)
  *   - daily_plan_tasks (cascateado pelo daily_plan)
  *   - study_plans / study_tasks (do user)
- *   - localStorage relacionado à missão / planner / loop
+ *   - module_sessions com status='active' → marcadas como 'abandoned'
+ *     (zera "Continuar de onde parou" em flashcards, simulados,
+ *     image-quiz, anamnese, clinical-simulation, study-session etc.)
  *   - dashboard_snapshots (marcado como stale → forçar reconstrução)
+ *   - localStorage da missão diária / planner / loop / focus / EOD
+ *   - sessionStorage de "Continuar" (ENAFLIX origin/lastModule, study_session)
  *
- * NÃO apaga:
- *   - perfil, conta, gamificação
- *   - histórico de respostas (user_question_attempts, etc.)
- *   - banco de erros, FSRS/flashcard_reviews
- *   - simulados realizados, métricas históricas
- *   - professor_plan_daily_tasks (gerido pelo professor; RLS impede de qualquer forma)
+ * NÃO apaga (preserva histórico pedagógico):
+ *   - perfil, conta, gamificação, streak, XP
+ *   - histórico de respostas (user_question_attempts)
+ *   - banco de erros, FSRS / flashcard_reviews
+ *   - flashcards, mapas mentais, mnemônicos, simulados realizados
+ *   - chat_conversations (histórico do Tutor — última conversa pode
+ *     continuar aparecendo no StartHereCard, é histórico pedagógico)
+ *   - métricas históricas, ranking, progresso cognitivo real
+ *   - professor_plan_daily_tasks (gerido pelo professor; RLS impede)
+ *   - module_sessions com status='completed' ou 'abandoned' (auditoria)
  *
  * Após o reset, dispara `generate-daily-plan` para reconstruir o plano do zero.
  * NÃO recria snapshot — deixa o próximo render do dashboard regenerá-lo
