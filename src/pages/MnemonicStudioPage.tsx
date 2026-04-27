@@ -25,6 +25,7 @@ import { validateMnemonicForm } from "@/utils/mnemonicValidation";
 import { supabase } from "@/integrations/supabase/client";
 import type { MnemonicResultData, RegenerateStyle } from "@/types/mnemonics";
 import { ESTILOS, PUBLICOS, REGENERATE_OPTIONS } from "@/types/mnemonics";
+import { telemetry } from "@/lib/pedagogicalTelemetry";
 
 const safeArray = <T,>(arr: T[] | undefined | null): T[] => Array.isArray(arr) ? arr : [];
 
