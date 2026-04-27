@@ -34,6 +34,12 @@ Deno.serve(async (req) => {
     const uid = user.id;
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
     const today = new Date().toISOString();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("last_study_plan_reset_at")
+      .eq("user_id", uid)
+      .maybeSingle();
+    const resetAt = profile?.last_study_plan_reset_at ?? "1900-01-01T00:00:00Z";
 
     const [
       errorsRes,
@@ -52,6 +58,7 @@ Deno.serve(async (req) => {
           .select("tema, subtema, vezes_errado, dificuldade, updated_at, dominado")
           .eq("user_id", uid)
           .eq("dominado", false)
+          .gt("updated_at", resetAt)
           .order("vezes_errado", { ascending: false })
           .limit(20),
         { data: [] as any[] } as any,
@@ -75,12 +82,13 @@ Deno.serve(async (req) => {
           .select("id, card_type, due, stability, lapses, state")
           .eq("user_id", uid)
           .lte("due", today)
+          .gt("updated_at", resetAt)
           .order("due", { ascending: true })
           .limit(50),
         { data: [] as any[] } as any,
       ),
       safe(
-        supabase.from("fsrs_cards").select("stability, lapses, state").eq("user_id", uid).limit(500),
+        supabase.from("fsrs_cards").select("stability, lapses, state").eq("user_id", uid).gt("updated_at", resetAt).limit(500),
         { data: [] as any[] } as any,
       ),
       safe(
@@ -89,6 +97,7 @@ Deno.serve(async (req) => {
           .select("id, tipo_revisao, prioridade, risco_esquecimento, data_revisao, status")
           .eq("user_id", uid)
           .eq("status", "pendente")
+          .gt("created_at", resetAt)
           .order("data_revisao", { ascending: true })
           .limit(20),
         { data: [] as any[] } as any,
@@ -116,6 +125,7 @@ Deno.serve(async (req) => {
           .select("rating_general, utility_score, created_at")
           .eq("user_id", uid)
           .gte("created_at", sevenDaysAgo)
+          .gt("created_at", resetAt)
           .limit(200),
         { data: [] as any[] } as any,
       ),
