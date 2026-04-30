@@ -173,7 +173,7 @@ export default function AIStudio() {
       setIsUploadOpen(false);
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       // Trigger AI generation
-      generateAIContent.mutate(data.id);
+      generateAIContent.mutate({ contentId: data.id });
     }
   });
 
@@ -528,7 +528,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select onValueChange={(val) => generateAIContent.mutate(val)}>
+                    <Select onValueChange={(val) => generateAIContent.mutate({ contentId: val })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um conteúdo mestre" />
                       </SelectTrigger>
@@ -553,7 +553,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select onValueChange={(val) => generateAIContent.mutate(val)}>
+                    <Select onValueChange={(val) => generateAIContent.mutate({ contentId: val })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a fonte" />
                       </SelectTrigger>
