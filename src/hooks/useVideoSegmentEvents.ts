@@ -21,6 +21,8 @@ export type VideoEventType =
   | "abandon"
   | "tutor_open"
   | "quiz_complete"
+  | "quiz_error"
+  | "long_pause"
   | "flashcard_view"
   | "seek"
   | "complete";
