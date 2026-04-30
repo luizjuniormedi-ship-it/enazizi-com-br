@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +17,14 @@ import {
   BrainCircuit,
   Award,
   Sparkles,
-  Zap
+  Zap,
+  AlertTriangle,
+  RotateCcw
 } from "lucide-react";
+import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
+import { useVideoSegmentAnalytics } from "@/hooks/useVideoSegmentAnalytics";
+import { useTutorTemporalContext } from "@/hooks/useTutorTemporalContext";
+import { VideoSegmentList, type VideoSegment } from "@/components/video-library/VideoSegmentList";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -102,6 +108,43 @@ const VideoLessonPlayer = () => {
     enabled: !!lesson
   });
 
+  // ───────────────── FASE 2: Adaptive Video ─────────────────
+  // Carrega segmentos da videoaula (se houver). Compatível com vídeos sem segmentação.
+  const { data: segments = [] } = useQuery<VideoSegment[]>({
+    queryKey: ["video-lesson-segments", lesson?.tutor_lesson_id],
+    enabled: !!lesson?.tutor_lesson_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lesson_segments")
+        .select("id, title, summary, key_points, start_second, end_second, ordem, segment_type")
+        .eq("lesson_id", lesson!.tutor_lesson_id!)
+        .order("ordem", { ascending: true });
+      if (error) {
+        console.warn("[VideoLessonPlayer] segments fetch:", error.message);
+        return [];
+      }
+      return (data ?? []) as VideoSegment[];
+    },
+  });
+
+  const { logEvent } = useVideoSegmentEvents();
+  const { getForSegment, smartReplayEnabled, analyticsEnabled } = useVideoSegmentAnalytics(id);
+  const { temporalEnabled, buildContext } = useTutorTemporalContext();
+
+  // Determina o segmento "atual" baseado em watchedSeconds (fallback p/ primeiro)
+  const currentSegment = useMemo<VideoSegment | null>(() => {
+    if (!segments || segments.length === 0) return null;
+    const found = segments.find(s => {
+      const start = s.start_second ?? 0;
+      const end = s.end_second ?? Number.MAX_SAFE_INTEGER;
+      return watchedSeconds >= start && watchedSeconds < end;
+    });
+    return found ?? segments[0];
+  }, [segments, watchedSeconds]);
+
+  const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
+  const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
+
   useEffect(() => {
     if (progress?.watched_seconds) {
       setWatchedSeconds(progress.watched_seconds);
@@ -146,6 +189,69 @@ const VideoLessonPlayer = () => {
     if (action === "complete") {
       toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
     }
+  };
+
+  // ───── FASE 2: handlers Adaptive Video ─────
+  const handleSelectSegment = (seg: VideoSegment) => {
+    const target = seg.start_second ?? 0;
+    setWatchedSeconds(target);
+    if (id) {
+      logEvent({
+        videoLessonId: id,
+        segmentId: seg.id,
+        eventType: "seek",
+        timestampSeconds: target,
+        metadata: { source: "segment_list" },
+      });
+    }
+  };
+
+  const handleAskTutorAtSegment = (seg: VideoSegment) => {
+    if (!lesson || !id) return;
+    const ctx = buildContext({
+      videoLessonId: id,
+      segment: seg,
+      currentTimestamp: seg.start_second ?? watchedSeconds,
+      lesson: {
+        specialty: lesson.specialty,
+        topic: lesson.topic,
+        subtopic: lesson.subtopic,
+        tutor_lesson_summary: lesson.tutor_lesson_summary,
+      },
+    });
+    logEvent({
+      videoLessonId: id,
+      segmentId: seg.id,
+      eventType: "tutor_open",
+      timestampSeconds: seg.start_second ?? watchedSeconds,
+      metadata: { temporal: !!ctx, source: "segment_button" },
+    });
+    handleAction("open_tutor");
+    const params = new URLSearchParams({
+      context: lesson.id,
+      session: lesson.tutor_session_id || "",
+    });
+    if (ctx) {
+      params.set("video_segment", seg.id);
+      params.set("video_ts", String(ctx.current_timestamp));
+    }
+    navigate(`/dashboard/mentor?${params.toString()}`);
+  };
+
+  const handleReplaySegment = (seg: VideoSegment) => {
+    const target = seg.start_second ?? 0;
+    setWatchedSeconds(target);
+    setIsPlaying(true);
+    if (id) {
+      logEvent({
+        videoLessonId: id,
+        segmentId: seg.id,
+        eventType: "replay",
+        timestampSeconds: target,
+        metadata: { source: "smart_replay" },
+      });
+    }
+    toast.success("Revisando este trecho do início.");
   };
 
   const handleQuizSubmit = async () => {
@@ -215,7 +321,15 @@ const VideoLessonPlayer = () => {
                   src={lesson.video_url} 
                   className="w-full h-full"
                   allowFullScreen
-                  onLoad={() => setIsPlaying(true)}
+                  onLoad={() => {
+                    setIsPlaying(true);
+                    if (id) logEvent({
+                      videoLessonId: id,
+                      segmentId: currentSegment?.id ?? null,
+                      eventType: "play",
+                      timestampSeconds: watchedSeconds,
+                    });
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
@@ -231,6 +345,47 @@ const VideoLessonPlayer = () => {
                 </div>
               )}
             </div>
+
+            {/* FASE 2: Indicador de dificuldade + segmento atual */}
+            {currentSegment && (
+              <div className="rounded-xl border border-primary/10 bg-muted/30 p-3 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm min-w-0">
+                  <Badge variant="secondary" className="text-[10px]">
+                    Trecho {String(currentSegment.ordem).padStart(2, "0")}
+                  </Badge>
+                  <span className="font-medium truncate">
+                    {currentSegment.title || `Segmento ${currentSegment.ordem}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {currentDifficulty && (
+                    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Dificuldade provável
+                    </Badge>
+                  )}
+                  {temporalEnabled && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 h-8"
+                      onClick={() => handleAskTutorAtSegment(currentSegment)}
+                    >
+                      <MessageSquare className="h-3 w-3" /> Perguntar ao Tutor neste trecho
+                    </Button>
+                  )}
+                  {smartReplayEnabled && currentDifficulty && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 h-8"
+                      onClick={() => handleReplaySegment(currentSegment)}
+                    >
+                      <RotateCcw className="h-3 w-3" /> Revisar trecho
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-4">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -250,7 +405,15 @@ const VideoLessonPlayer = () => {
                   <Button variant="outline" size="icon"><Share2 className="h-4 w-4" /></Button>
                   <Button 
                     className="gap-2" 
-                    onClick={() => handleAction("complete")}
+                    onClick={() => {
+                      handleAction("complete");
+                      if (id) logEvent({
+                        videoLessonId: id,
+                        segmentId: currentSegment?.id ?? null,
+                        eventType: "complete",
+                        timestampSeconds: watchedSeconds,
+                      });
+                    }}
                     disabled={completionRate < 90}
                   >
                     <CheckCircle className="h-4 w-4" /> Finalizar Aula
@@ -365,6 +528,20 @@ const VideoLessonPlayer = () => {
                 </Button>
               </CardContent>
             </Card>
+
+            {/* FASE 2: Lista de segmentos (oculta se vídeo não for segmentado) */}
+            {segments.length > 0 && (
+              <VideoSegmentList
+                segments={segments}
+                currentSegmentId={currentSegment?.id ?? null}
+                onSelectSegment={handleSelectSegment}
+                onAskTutor={handleAskTutorAtSegment}
+                onReplaySegment={handleReplaySegment}
+                getAnalytics={getForSegment}
+                smartReplayEnabled={smartReplayEnabled}
+                tutorTemporalEnabled={temporalEnabled}
+              />
+            )}
 
             <Card>
               <CardHeader className="pb-2">
