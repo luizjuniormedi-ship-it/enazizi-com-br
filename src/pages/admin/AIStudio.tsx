@@ -208,7 +208,12 @@ export default function AIStudio() {
       contentId: string, 
       score: number, 
       label: string, 
-      accuracy: number, 
+      precision: number,
+      clarity: number,
+      depth: number,
+      flashcards: number,
+      quiz: number,
+      feynman: number,
       didactic: number, 
       hallucination: string,
       comments: string 
@@ -220,7 +225,12 @@ export default function AIStudio() {
           reviewer_id: user?.id,
           score: reviewData.score,
           quality_label: reviewData.label,
-          scientific_accuracy_score: reviewData.accuracy,
+          precision_score: reviewData.precision,
+          clarity_score: reviewData.clarity,
+          depth_score: reviewData.depth,
+          flashcards_quality_score: reviewData.flashcards,
+          quiz_quality_score: reviewData.quiz,
+          feynman_quality_score: reviewData.feynman,
           didactic_score: reviewData.didactic,
           hallucination_risk: reviewData.hallucination,
           comments: reviewData.comments
@@ -228,12 +238,12 @@ export default function AIStudio() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Avaliação pedagógica registrada com sucesso!");
+      toast.success("Auditoria Médica registrada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
-      queryClient.invalidateQueries({ queryKey: ["pedagogical-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["pedagogical-stats-v2"] });
     },
     onError: (error) => {
-      toast.error("Erro ao salvar avaliação: " + error.message);
+      toast.error("Erro ao salvar auditoria: " + error.message);
     }
   });
 
