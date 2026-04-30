@@ -66,9 +66,20 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function AIStudio() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("recent");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<any>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+
+  // Form states for new content
+  const [newTitle, setNewTitle] = useState("");
+  const [newDiscipline, setNewDiscipline] = useState("");
+  const [newTopic, setNewTopic] = useState("");
+  const [newSourceType, setNewSourceType] = useState("text");
+  const [newRawContent, setNewRawContent] = useState("");
 
   // Queries
   const { data: libraryContent, isLoading: isLoadingLibrary } = useQuery({
@@ -86,12 +97,93 @@ export default function AIStudio() {
   const { data: queueItems, isLoading: isLoadingQueue } = useQuery({
     queryKey: ["ai-generation-queue"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ai_generation_queue")
-        .select("*, master_content_library(title)")
-        .order("created_at", { ascending: false });
+      // Checking for existence of queue table - fallback if not found
+      try {
+        const { data, error } = await supabase
+          .from("ai_generation_queue")
+          .select("*, master_content_library(title)")
+          .order("created_at", { ascending: false });
+        if (error) return [];
+        return data;
+      } catch (e) {
+        return [];
+      }
+    }
+  });
+
+  const generateAIContent = useMutation({
+    mutationFn: async (contentId: string) => {
+      const { data, error } = await supabase.functions.invoke('generate-content-ai', {
+        body: { contentId }
+      });
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      toast.success("Geração iniciada na fila de processamento.");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-generation-queue"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao iniciar geração: " + error.message);
+    }
+  });
+
+  const createContent = useMutation({
+    mutationFn: async () => {
+      const contentHash = btoa(newRawContent.slice(0, 100) + newTitle).slice(0, 32);
+      
+      // Check for existing content (Reuse/Cache logic)
+      const { data: existing } = await supabase
+        .from("master_content_library")
+        .select("id, title")
+        .eq("content_hash", contentHash)
+        .single();
+
+      if (existing) {
+        toast.info(`Conteúdo reutilizado da Biblioteca Mestre: ${existing.title}`);
+        return existing;
+      }
+
+      const { data, error } = await supabase
+        .from("master_content_library")
+        .insert([{
+          title: newTitle,
+          discipline: newDiscipline,
+          topic: newTopic,
+          source_type: newSourceType,
+          raw_content: newRawContent,
+          content_hash: contentHash,
+          status: 'draft',
+          created_by: user?.id
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success("Conteúdo criado com sucesso!");
+      setIsUploadOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      // Trigger AI generation
+      generateAIContent.mutate(data.id);
+    }
+  });
+
+  const publishContent = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("master_content_library")
+        .update({ status: 'published', published_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Conteúdo publicado para os alunos!");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      setIsReviewOpen(false);
     }
   });
 
@@ -100,6 +192,7 @@ export default function AIStudio() {
     published: libraryContent?.filter(c => c.status === "published").length || 0,
     review: libraryContent?.filter(c => c.status === "review").length || 0,
     processing: queueItems?.filter(q => q.status === "processing").length || 0,
+    savings: (libraryContent?.filter(c => c.status === "published").length || 0) * 0.50 // Placeholder calc
   };
 
   const getStatusBadge = (status: string) => {
@@ -112,8 +205,29 @@ export default function AIStudio() {
     }
   };
 
-  const handleUpload = () => {
-    toast.info("Interface de upload será aberta em breve.");
+  const handleCopyNotebookLM = (content: any) => {
+    const text = `
+# EXPORTAÇÃO ENAZIZI -> NOTEBOOKLM
+Título: ${content.title}
+Disciplina: ${content.discipline}
+
+## RESUMO TÉCNICO
+${content.generated_summary || "Pendente"}
+
+## RESUMO FEYNMAN
+${content.generated_feynman || "Pendente"}
+
+## ROTEIRO DE VÍDEO / PODCAST
+${content.generated_video_script || "Pendente"}
+
+## FLASHCARDS (FSRS)
+${JSON.stringify(content.generated_flashcards, null, 2)}
+
+## QUIZ
+${JSON.stringify(content.generated_quiz, null, 2)}
+    `;
+    navigator.clipboard.writeText(text);
+    toast.success("Pacote formatado copiado para o NotebookLM Pro!");
   };
 
   return (
