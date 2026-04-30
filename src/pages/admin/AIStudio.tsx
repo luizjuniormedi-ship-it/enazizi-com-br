@@ -672,7 +672,14 @@ INSTRUÇÃO PARA NOTEBOOKLM:
               className="px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
             >
               <ShieldCheck className="h-4 w-4 mr-2" />
-              Qualidade Pedagógica
+              Auditoria
+            </TabsTrigger>
+            <TabsTrigger 
+              value="logs" 
+              className="px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
+            >
+              <FileJson className="h-4 w-4 mr-2" />
+              Logs IA
             </TabsTrigger>
           </TabsList>
           
