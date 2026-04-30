@@ -255,7 +255,5 @@ const ContentSummarizer = () => {
     </div>
   );
 };
-  );
-};
 
 export default ContentSummarizer;
