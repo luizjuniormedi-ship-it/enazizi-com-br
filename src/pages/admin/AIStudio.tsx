@@ -25,7 +25,9 @@ import {
   BarChart3,
   Loader2,
   MoreVertical,
-  Filter
+  Filter,
+  Zap,
+  UserCog
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
