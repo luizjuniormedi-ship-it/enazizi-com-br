@@ -239,7 +239,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
             <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">Enterprise</Badge>
             <Badge variant="outline" className="text-[10px] border-indigo-500/20 text-indigo-500">NotebookLM Sync</Badge>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary via-indigo-400 to-primary/60 bg-clip-text text-transparent">
             Central de Produção IA
           </h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">

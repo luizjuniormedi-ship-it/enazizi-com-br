@@ -77,19 +77,34 @@ serve(async (req) => {
     })
 
     const geminiData = await response.json()
+    console.log('Gemini raw response:', JSON.stringify(geminiData))
+
+    if (geminiData.error) {
+      if (geminiData.error.code === 429) {
+        throw new Error('Limite de cota do Gemini atingido (429). Por favor, aguarde alguns instantes ou verifique seu plano no Google AI Studio.')
+      }
+      throw new Error(`Erro na API Gemini: ${geminiData.error.message}`)
+    }
+
+    if (!geminiData.candidates || geminiData.candidates.length === 0) {
+      throw new Error('Gemini não retornou candidatos válidos. Verifique a API Key e o conteúdo.')
+    }
+
     const aiResponseText = geminiData.candidates[0].content.parts[0].text
-    const parsedData = JSON.parse(aiResponseText)
+    // Clean up potential markdown code blocks if the model included them
+    const cleanJson = aiResponseText.replace(/```json|```/g, '').trim()
+    const parsedData = JSON.parse(cleanJson)
 
     // 5. Update library with generated content
     const { error: updateError } = await supabaseClient
       .from('master_content_library')
       .update({
-        generated_summary: parsedData.summary,
-        generated_feynman: parsedData.feynman_summary,
+        generated_summary: parsedData.summary || parsedData.resumo_tecnico,
+        generated_feynman: parsedData.feynman_summary || parsedData.resumo_feynman,
         generated_flashcards: parsedData.flashcards,
         generated_quiz: parsedData.quiz,
-        generated_questions: parsedData.questions,
-        generated_video_script: parsedData.video_script,
+        generated_questions: parsedData.questions || parsedData.questoes_comentadas,
+        generated_video_script: parsedData.video_script || parsedData.roteiro_video,
         status: 'review'
       })
       .eq('id', contentId)
