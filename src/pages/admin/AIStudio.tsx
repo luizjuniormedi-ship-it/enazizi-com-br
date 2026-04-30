@@ -150,15 +150,80 @@ export default function AIStudio() {
     },
     onSuccess: (data) => {
       if (data?.success) {
-        toast.success(data.message || "Geração iniciada na fila de processamento.");
+        toast.success(data.message || "Geração concluída com sucesso.");
       } else {
         toast.info(data?.message || "Processamento em andamento.");
       }
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       queryClient.invalidateQueries({ queryKey: ["ai-generation-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-usage-logs"] });
     },
     onError: (error) => {
-      toast.error("Erro ao iniciar geração: " + error.message);
+      toast.error("Erro no pipeline: " + error.message);
+    }
+  });
+
+  const { data: usageLogsData, isLoading: isLoadingLogs } = useQuery({
+    queryKey: ["ai-usage-logs-detailed"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_usage_logs")
+        .select("*, master_content_library(title, discipline)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: exportLogs } = useQuery({
+    queryKey: ["ai-export-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_export_logs")
+        .select("*, master_content_library(title)")
+        .order("created_at", { ascending: false });
+      if (error) return [];
+      return data;
+    }
+  });
+
+  const trackExport = useMutation({
+    mutationFn: async ({ contentId, destination }: { contentId: string, destination: string }) => {
+      const { error } = await supabase
+        .from("ai_export_logs")
+        .insert([{ content_id: contentId, user_id: user?.id, destination }]);
+      if (error) throw error;
+      
+      await supabase
+        .from("master_content_library")
+        .update({ media_status: 'exported_to_notebooklm' })
+        .eq('id', contentId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ai-export-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+    }
+  });
+
+  const updateMultimedia = useMutation({
+    mutationFn: async ({ contentId, audioUrl, videoUrl }: { contentId: string, audioUrl?: string, videoUrl?: string }) => {
+      const status = audioUrl && videoUrl ? 'ready_for_students' : (audioUrl ? 'audio_linked' : 'none');
+      const { error } = await supabase
+        .from("master_content_library")
+        .update({ 
+          notebooklm_audio_url: audioUrl, 
+          notebooklm_video_url: videoUrl,
+          media_status: status,
+          media_added_by: user?.id,
+          media_added_at: new Date().toISOString()
+        })
+        .eq('id', contentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Ativos multimídia atualizados!");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
     }
   });
 
