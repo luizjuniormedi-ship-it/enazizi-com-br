@@ -118,10 +118,10 @@ serve(async (req) => {
     const systemPrompt = promptData?.system_prompt || "Você é um especialista em educação médica ENAZIZI.";
     const getSpecialtyInstructions = (discipline: string) => {
       const d = discipline?.toLowerCase() || '';
-      if (d.includes('cardio')) return "Siga diretrizes SBC/AHA. Foque em ECG, IC e síndromes coronarianas.";
-      if (d.includes('pedia')) return "Considere marcos do desenvolvimento e doses mg/kg.";
-      if (d.includes('emerg')) return "Siga ACLS/ATLS. Foque em manejo ABCDE e estabilização.";
-      return "Foque nos consensos médicos brasileiros vigentes.";
+      if (d.includes('cardio')) return "Siga diretrizes SBC/AHA. Foque em raciocínio clínico para provas.";
+      if (d.includes('pedia')) return "Considere marcos do desenvolvimento e bibliografia Nelson.";
+      if (d.includes('emerg')) return "Siga ACLS/ATLS. Foque em condutas de emergência para residência.";
+      return "Foque nos consensos educacionais e bibliografias de referência para residência médica.";
     }
 
     const finalPrompt = `
@@ -138,21 +138,39 @@ serve(async (req) => {
         "flashcards": [{"front": "", "back": ""}],
         "quiz": [{"question": "", "options": ["A","B","C","D"], "answer": "A", "explanation": ""}],
         "questions": [{"question": "", "answer": ""}],
-        "video_script": "roteiro estruturado"
+        "video_script": "roteiro estruturado de aula",
+        "notebooklm_package": {
+           "title": "${content.title}",
+           "objectives": ["Objetivo 1", "Objetivo 2"],
+           "points_of_exam": ["Ponto 1", "Ponto 2"],
+           "audio_script": "Roteiro narrativo para Audio Overview"
+        }
       }
     `;
 
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: finalPrompt }] }],
-        generationConfig: { response_mime_type: "application/json" }
-      })
-    })
+    // Resilient fetch with retry logic for 429
+    let response;
+    let retries = 3;
+    while (retries > 0) {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: finalPrompt }] }],
+          generationConfig: { response_mime_type: "application/json" }
+        })
+      });
+      
+      if (response.status === 429) {
+        retries--;
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      break;
+    }
 
     const geminiData = await response.json()
-    if (geminiData.error) throw new Error(geminiData.error.message)
+    if (geminiData.error) throw new Error(`Gemini Error: ${geminiData.error.message}`);
 
     let aiResponseText = geminiData.candidates[0].content.parts[0].text;
     aiResponseText = aiResponseText.replace(/```json|```/g, '').trim();
@@ -177,6 +195,25 @@ serve(async (req) => {
     const outputTokens = Math.round(aiResponseText.length / 4);
     const estimatedCost = ((inputTokens + outputTokens) / 1000000) * 0.10;
 
+    // Structured NotebookLM text
+    const notebookLMText = `
+# ENAZIZI MÉDICO -> NOTEBOOKLM EXPORT
+Título: ${content.title}
+Disciplina: ${content.discipline}
+
+## OBJETIVOS
+${parsedData.notebooklm_package?.objectives?.join('\n') || ''}
+
+## RESUMO TÉCNICO
+${parsedData.summary}
+
+## PONTOS DE PROVA
+${parsedData.notebooklm_package?.points_of_exam?.join('\n') || ''}
+
+## ROTEIRO DE ÁUDIO
+${parsedData.notebooklm_package?.audio_script || parsedData.video_script}
+    `.trim();
+
     // Update Library
     await supabaseClient.from('master_content_library').update({
       generated_summary: parsedData.summary,
@@ -185,6 +222,7 @@ serve(async (req) => {
       generated_quiz: parsedData.quiz,
       generated_questions: parsedData.questions,
       generated_video_script: parsedData.video_script,
+      notebooklm_export_text: notebookLMText,
       status: 'ai_generated'
     }).eq('id', contentId)
 
