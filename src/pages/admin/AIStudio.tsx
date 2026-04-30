@@ -998,9 +998,14 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                         onClick={() => {
                           submitReview.mutate({
                             contentId: selectedContent.id,
-                            score: Math.round((reviewAccuracy + reviewDidactic) / 2),
+                            score: Math.round((reviewPrecision + reviewDidactic + reviewClarity + reviewDepth) / 4),
                             label: reviewLabel,
-                            accuracy: reviewAccuracy,
+                            precision: reviewPrecision,
+                            clarity: reviewClarity,
+                            depth: reviewDepth,
+                            flashcards: reviewFlashcards,
+                            quiz: reviewQuiz,
+                            feynman: reviewFeynman,
                             didactic: reviewDidactic,
                             hallucination: reviewHallucination,
                             comments: reviewComments
