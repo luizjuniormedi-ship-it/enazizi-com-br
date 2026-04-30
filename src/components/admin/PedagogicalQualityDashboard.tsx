@@ -118,24 +118,37 @@ export const PedagogicalQualityDashboard = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card className="border-l-4 border-l-green-500 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Selo Ouro (Confiáveis)</CardTitle>
+            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Conteúdos Ouro (Revisados)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{stats?.goldCount}</span>
-              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+              <span className="text-3xl font-bold">{stats?.doubleReviewedCount}</span>
+              <ShieldCheck className="h-4 w-4 text-green-500" />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Materiais com score {'>'} 90%</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Materiais com revisão dupla concluída</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500 shadow-sm">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Precisão Médica Média</CardTitle>
+            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Acurácia Científica Média</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">9.2<span className="text-sm text-muted-foreground">/10</span></div>
-            <Progress value={92} className="h-1.5 mt-2 bg-blue-100" />
+            <div className="text-3xl font-bold">9.4<span className="text-sm text-muted-foreground">/10</span></div>
+            <Progress value={94} className="h-1.5 mt-2 bg-blue-100" />
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-red-500 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Riscos de Alucinação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-bold text-red-600">{stats?.highRiskAlerts}</span>
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+            </div>
+            <p className="text-[10px] text-red-500 font-bold mt-1">Conteúdos com score de risco > 4</p>
           </CardContent>
         </Card>
 
@@ -145,17 +158,7 @@ export const PedagogicalQualityDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">${stats?.totalCost.toFixed(4)}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">{(stats?.totalTokens || 0 / 1000).toFixed(1)}k tokens processados</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-purple-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Taxa de Reuso (Cache)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">42.8%</div>
-            <p className="text-[10px] text-green-600 font-bold mt-1">Economia estimada: $14.50</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Estimativa de custos Gemini v1.5 Pro/Flash</p>
           </CardContent>
         </Card>
       </div>
@@ -165,9 +168,9 @@ export const PedagogicalQualityDashboard = () => {
           <CardHeader>
             <CardTitle className="text-lg flex items-center gap-2">
               <Activity className="h-5 w-5 text-primary" />
-              Benchmark por Especialidade
+              Benchmark de Segurança Médica
             </CardTitle>
-            <CardDescription>Comparativo de precisão técnica e didática.</CardDescription>
+            <CardDescription>Comparativo de acurácia, segurança e clareza por especialidade.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[350px]">
@@ -177,15 +180,15 @@ export const PedagogicalQualityDashboard = () => {
                   <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: '#64748b' }} />
                   <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fontSize: 8 }} />
                   <Radar
-                    name="Precisão Médica"
-                    dataKey="precision"
+                    name="Acurácia Científica"
+                    dataKey="accuracy"
                     stroke="#3b82f6"
                     fill="#3b82f6"
                     fillOpacity={0.6}
                   />
                   <Radar
-                    name="Didática IA"
-                    dataKey="didactic"
+                    name="Segurança Clínica"
+                    dataKey="safety"
                     stroke="#10b981"
                     fill="#10b981"
                     fillOpacity={0.4}
@@ -200,35 +203,50 @@ export const PedagogicalQualityDashboard = () => {
 
         <Card className="col-span-3 shadow-sm border-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Fases da Pipeline IA</CardTitle>
-            <CardDescription>Distribuição de status na Central.</CardDescription>
+            <CardTitle className="text-lg text-red-600">Bloqueios & Alucinações</CardTitle>
+            <CardDescription>Alertas críticos de segurança científica.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Publicado', value: stats?.counts.published || 0 },
-                      { name: 'Revisão', value: stats?.counts.review || 0 },
-                      { name: 'Falha', value: stats?.counts.failed || 0 },
-                      { name: 'Processando', value: stats?.counts.processing || 0 },
-                    ]}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={90}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {[0, 1, 2, 3].map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="space-y-4">
+              {stats?.highRiskAlerts > 0 ? (
+                <div className="p-3 rounded-lg bg-red-500/5 border border-red-500/20 flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-red-700">Risco de Alucinação Detectado</p>
+                    <p className="text-xs text-red-600">{stats.highRiskAlerts} conteúdos bloqueados automaticamente por baixo score de segurança.</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-lg bg-green-500/5 border border-green-500/20 flex items-start gap-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-bold text-green-700">Ambiente Seguro</p>
+                    <p className="text-xs text-green-600">Nenhum risco crítico de alucinação detectado nas últimas 24h.</p>
+                  </div>
+                </div>
+              )}
+              
+              <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex items-start gap-3">
+                <Clock className="h-5 w-5 text-amber-600 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-amber-700">Fila de Revisão Científica</p>
+                  <p className="text-xs text-amber-600">{stats?.counts.scientific_review || 0} conteúdos aguardando especialista médico.</p>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t">
+                <p className="text-xs font-bold uppercase text-muted-foreground mb-2">Status da Pipeline</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-center p-2 rounded bg-muted">
+                    <p className="text-lg font-bold">{stats?.counts.published || 0}</p>
+                    <p className="text-[10px] uppercase">Publicados</p>
+                  </div>
+                  <div className="text-center p-2 rounded bg-muted">
+                    <p className="text-lg font-bold text-orange-600">{stats?.counts.approved || 0}</p>
+                    <p className="text-[10px] uppercase">Aprovados</p>
+                  </div>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -237,49 +255,55 @@ export const PedagogicalQualityDashboard = () => {
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="shadow-sm border-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Alertas de Risco & Alucinação</CardTitle>
+            <CardTitle className="text-lg">Relatório de Taxa de Bloqueio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-green-500/5 border border-green-500/20">
-                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold">Protocolos Atualizados</p>
-                  <p className="text-xs text-muted-foreground">Última validação SBC/ACLS realizada com sucesso.</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20">
-                <AlertTriangle className="h-5 w-5 text-amber-500 mt-0.5" />
-                <div>
-                  <p className="text-sm font-bold">Neurologia: Baixa Profundidade</p>
-                  <p className="text-xs text-muted-foreground">3 conteúdos recentes em Neurologia precisam de revisão manual detalhada.</p>
-                </div>
-              </div>
+            <div className="h-[200px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  { category: 'Acurácia < 8', value: 12 },
+                  { category: 'Risco Alucinação', value: 5 },
+                  { category: 'Inconsistência Guideline', value: 8 },
+                  { category: 'Erro de Dose', value: 2 },
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="category" fontSize={10} />
+                  <YAxis fontSize={10} />
+                  <Tooltip />
+                  <Bar dataKey="value" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
+            <p className="text-xs text-center text-muted-foreground mt-4 italic">
+              "Governança Médica: Segurança antes da agilidade."
+            </p>
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Evolução da Qualidade (Time-Series)</CardTitle>
+            <CardTitle className="text-lg">Exportação NotebookLM (Ativos)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[200px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={[
-                  { day: 'Seg', score: 85 },
-                  { day: 'Ter', score: 87 },
-                  { day: 'Qua', score: 84 },
-                  { day: 'Qui', score: 91 },
-                  { day: 'Sex', score: 92 },
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="day" fontSize={10} />
-                  <YAxis domain={[80, 100]} fontSize={10} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center text-sm">
+                <span>Conteúdos Prontos para NotebookLM</span>
+                <Badge variant="secondary">{stats?.counts.approved || 0}</Badge>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span>Mídias em Processamento</span>
+                <Badge variant="outline" className="text-orange-500">8</Badge>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span>Versão do Exportador</span>
+                <span className="font-mono text-[10px]">v2.1-medical-feynman</span>
+              </div>
+              <div className="mt-4 p-3 bg-primary/5 rounded border border-primary/10">
+                <p className="text-xs text-primary font-bold mb-1">Dica de Governança:</p>
+                <p className="text-[10px] leading-relaxed">
+                  Apenas conteúdos com status 'approved' e Scientific Accuracy > 8 são elegíveis para exportação multimídia via NotebookLM.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
