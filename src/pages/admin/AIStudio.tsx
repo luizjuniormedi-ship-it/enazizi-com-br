@@ -392,6 +392,62 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
         </div>
       </header>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-2 bg-primary/5 border-primary/20">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                Calibração de Lote v1.0 (Audit)
+              </CardTitle>
+              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary">
+                {libraryContent?.filter(c => c.status === 'published' || c.status === 'review').length || 0} / 10 PDFs
+              </Badge>
+            </div>
+            <CardDescription className="text-xs">
+              Calibre a qualidade real rodando 10 materiais médicos de especialidades diferentes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {['Cardio', 'Pneumo', 'Farmaco', 'Pedia', 'GO', 'Clínica', 'Cirurgia', 'Neuro', 'Prev', 'Emerg'].map((spec) => {
+                const isDone = libraryContent?.some(c => c.discipline?.toLowerCase().includes(spec.toLowerCase()) && (c.status === 'published' || c.status === 'review'));
+                return (
+                  <div key={spec} className={`flex items-center gap-2 p-2 rounded border text-[10px] transition-colors ${isDone ? 'bg-green-500/10 border-green-500/30 text-green-600' : 'bg-background/50 border-primary/10 text-muted-foreground'}`}>
+                    {isDone ? <CheckCircle2 className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border border-current" />}
+                    {spec}
+                  </div>
+                );
+              })}
+            </div>
+            <Progress value={((libraryContent?.filter(c => c.status === 'published' || c.status === 'review').length || 0) / 10) * 100} className="h-1.5 mt-4" />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-amber-500/5 border-amber-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Status de Produção
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">Prompt Especializado</span>
+              <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/20 h-5 px-1.5 text-[10px]">Ativo</Badge>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">Cache de Reuso</span>
+              <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/20 h-5 px-1.5 text-[10px]">Ativo</Badge>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">Auditoria Pedagógica</span>
+              <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/20 h-5 px-1.5 text-[10px]">Ativo</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardContent className="pt-6">
