@@ -102,6 +102,8 @@ const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowc
 const TutorMemoryAdmin = lazyWithRetry(() => import("./pages/admin/TutorMemoryAdmin"), "TutorMemoryAdmin");
 const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"), "TelemetryAdmin");
 const AIStudio = lazyWithRetry(() => import("./pages/admin/AIStudio"), "AIStudio");
+const MedicalReviewQueue = lazyWithRetry(() => import("./pages/admin/MedicalReviewQueue"), "MedicalReviewQueue");
+
 
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
