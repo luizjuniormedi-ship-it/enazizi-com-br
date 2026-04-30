@@ -109,6 +109,7 @@ const NotebookLMDashboard = lazyWithRetry(() => import("./pages/admin/NotebookLM
 const NotebookLMSync = lazyWithRetry(() => import("./pages/admin/NotebookLMSync"), "NotebookLMSync");
 const NotebookLMAnalytics = lazyWithRetry(() => import("./pages/admin/NotebookLMAnalytics"), "NotebookLMAnalytics");
 const VideoLessonsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonsAdmin"), "VideoLessonsAdmin");
+const VideoLessonDetailsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonDetailsAdmin"), "VideoLessonDetailsAdmin");
 const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibrary"), "VideoLessonsLibrary");
 const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"), "VideoLessonPlayer");
 
@@ -240,6 +241,7 @@ const App = () => (
                   <Route path="notebooklm-sync" element={<NotebookLMSync />} />
                    <Route path="notebooklm-analytics" element={<NotebookLMAnalytics />} />
                    <Route path="video-lessons" element={<VideoLessonsAdmin />} />
+                   <Route path="video-lessons/:id" element={<VideoLessonDetailsAdmin />} />
                </Route>
 
 
