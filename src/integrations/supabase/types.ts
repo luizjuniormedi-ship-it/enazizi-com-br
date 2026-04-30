@@ -425,6 +425,53 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_logs: {
+        Row: {
+          content_id: string | null
+          created_at: string | null
+          estimated_cost: number | null
+          id: string
+          input_tokens: number | null
+          model: string
+          output_tokens: number | null
+          reused_from_cache: boolean | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          id?: string
+          input_tokens?: number | null
+          model: string
+          output_tokens?: number | null
+          reused_from_cache?: boolean | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string | null
+          estimated_cost?: number | null
+          id?: string
+          input_tokens?: number | null
+          model?: string
+          output_tokens?: number | null
+          reused_from_cache?: boolean | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_events: {
         Row: {
           alert_id: string
@@ -5568,6 +5615,53 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      pedagogical_reviews: {
+        Row: {
+          comments: string | null
+          content_id: string | null
+          didactic_score: number | null
+          hallucination_risk: string | null
+          id: string
+          quality_label: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          scientific_accuracy_score: number | null
+          score: number | null
+        }
+        Insert: {
+          comments?: string | null
+          content_id?: string | null
+          didactic_score?: number | null
+          hallucination_risk?: string | null
+          id?: string
+          quality_label?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          scientific_accuracy_score?: number | null
+          score?: number | null
+        }
+        Update: {
+          comments?: string | null
+          content_id?: string | null
+          didactic_score?: number | null
+          hallucination_risk?: string | null
+          id?: string
+          quality_label?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          scientific_accuracy_score?: number | null
+          score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedagogical_reviews_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       performance_by_topic: {
         Row: {
