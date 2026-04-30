@@ -40,7 +40,8 @@ import {
   Music,
   Download,
   Share2,
-  TrendingUp
+  TrendingUp,
+  RotateCcw
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
