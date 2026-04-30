@@ -672,6 +672,7 @@ const Admin = () => {
             {activeSection === "ingestion" && <AdminIngestionPanel />}
             {activeSection === "scraping" && <AdminWebScrapingPanel />}
             {activeSection === "qa" && <AdminQAPanel />}
+            {activeSection === "ai-studio" && <AIStudio />}
 
             {/* Communication */}
             {activeSection === "messages" && <AdminMessagesPanel />}
