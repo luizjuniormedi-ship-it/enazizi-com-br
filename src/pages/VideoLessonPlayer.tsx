@@ -191,6 +191,69 @@ const VideoLessonPlayer = () => {
     }
   };
 
+  // ───── FASE 2: handlers Adaptive Video ─────
+  const handleSelectSegment = (seg: VideoSegment) => {
+    const target = seg.start_second ?? 0;
+    setWatchedSeconds(target);
+    if (id) {
+      logEvent({
+        videoLessonId: id,
+        segmentId: seg.id,
+        eventType: "seek",
+        timestampSeconds: target,
+        metadata: { source: "segment_list" },
+      });
+    }
+  };
+
+  const handleAskTutorAtSegment = (seg: VideoSegment) => {
+    if (!lesson || !id) return;
+    const ctx = buildContext({
+      videoLessonId: id,
+      segment: seg,
+      currentTimestamp: seg.start_second ?? watchedSeconds,
+      lesson: {
+        specialty: lesson.specialty,
+        topic: lesson.topic,
+        subtopic: lesson.subtopic,
+        tutor_lesson_summary: lesson.tutor_lesson_summary,
+      },
+    });
+    logEvent({
+      videoLessonId: id,
+      segmentId: seg.id,
+      eventType: "tutor_open",
+      timestampSeconds: seg.start_second ?? watchedSeconds,
+      metadata: { temporal: !!ctx, source: "segment_button" },
+    });
+    handleAction("open_tutor");
+    const params = new URLSearchParams({
+      context: lesson.id,
+      session: lesson.tutor_session_id || "",
+    });
+    if (ctx) {
+      params.set("video_segment", seg.id);
+      params.set("video_ts", String(ctx.current_timestamp));
+    }
+    navigate(`/dashboard/mentor?${params.toString()}`);
+  };
+
+  const handleReplaySegment = (seg: VideoSegment) => {
+    const target = seg.start_second ?? 0;
+    setWatchedSeconds(target);
+    setIsPlaying(true);
+    if (id) {
+      logEvent({
+        videoLessonId: id,
+        segmentId: seg.id,
+        eventType: "replay",
+        timestampSeconds: target,
+        metadata: { source: "smart_replay" },
+      });
+    }
+    toast.success("Revisando este trecho do início.");
+  };
+
   const handleQuizSubmit = async () => {
     if (selectedOption === null || !quiz) return;
     
