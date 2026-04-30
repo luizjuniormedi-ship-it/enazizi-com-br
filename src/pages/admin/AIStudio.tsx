@@ -39,7 +39,8 @@ import {
   Video,
   Music,
   Download,
-  Share2
+  Share2,
+  TrendingUp
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
