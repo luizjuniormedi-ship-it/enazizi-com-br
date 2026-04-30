@@ -160,8 +160,9 @@ export default function AIStudio() {
           source_type: newSourceType,
           raw_content: newRawContent,
           content_hash: contentHash,
-          status: 'draft',
-          created_by: user?.id
+          status: 'processing',
+          created_by: user?.id,
+          metadata: { version: '1.0.0', audit: 'ready' }
         }])
         .select()
         .single();
