@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { jsPDF } from "jspdf";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -401,6 +402,68 @@ export default function AIStudio() {
       case "approved": return <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20">Aprovado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const handleExportPDF = (content: any) => {
+    const doc = new jsPDF();
+    const margin = 20;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(41, 128, 185);
+    doc.text("ENAZIZI - Central de Produção IA", margin, y);
+    y += 10;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`v1.5 Production Ready - Geração: ${new Date().toLocaleString('pt-BR')}`, margin, y);
+    y += 15;
+
+    // Title
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text(content.title || "Sem Título", margin, y);
+    y += 10;
+
+    // Metadata
+    doc.setFontSize(10);
+    doc.text(`Disciplina: ${content.discipline || "N/A"}`, margin, y);
+    y += 5;
+    doc.text(`Tópico: ${content.topic || "N/A"}`, margin, y);
+    y += 10;
+
+    // Content sections
+    const sections = [
+      { title: "Resumo Técnico", content: content.generated_summary },
+      { title: "Explicação Feynman", content: content.generated_feynman },
+      { title: "Roteiro NotebookLM", content: content.notebooklm_export_text }
+    ];
+
+    sections.forEach(section => {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(section.title, margin, y);
+      y += 7;
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const splitText = doc.splitTextToSize(section.content || "Conteúdo não disponível.", 170);
+      doc.text(splitText, margin, y);
+      y += (splitText.length * 5) + 10;
+    });
+
+    doc.save(`ENAZIZI_${content.title.replace(/\s+/g, '_')}.pdf`);
+    
+    supabase.rpc('log_ai_alert', { 
+      p_type: 'pdf_export', 
+      p_severity: 'info', 
+      p_message: `PDF exportado para: ${content.title}`,
+      p_content_id: content.id
+    });
+    
+    toast.success("PDF gerado e exportado!");
   };
 
   const handleCopyNotebookLM = (content: any) => {
