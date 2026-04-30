@@ -192,12 +192,23 @@ export default function AIStudio() {
     }
   });
 
+  const { data: usageLogs } = useQuery({
+    queryKey: ["ai-usage-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("ai_usage_logs").select("*");
+      if (error) return [];
+      return data;
+    }
+  });
+
   const stats = {
     total: libraryContent?.length || 0,
     published: libraryContent?.filter(c => c.status === "published").length || 0,
     review: libraryContent?.filter(c => c.status === "review").length || 0,
-    processing: queueItems?.filter(q => q.status === "processing").length || 0,
-    savings: (libraryContent?.filter(c => c.status === "published").length || 0) * 0.50 // Placeholder calc
+    processing: libraryContent?.filter(c => c.status === "processing").length || 0,
+    failed: libraryContent?.filter(c => c.status === "failed").length || 0,
+    savings: usageLogs?.reduce((acc, log) => acc + (log.reused_from_cache ? 0.50 : 0), 0) || 0,
+    cost: usageLogs?.reduce((acc, log) => acc + Number(log.estimated_cost || 0), 0) || 0
   };
 
   const getStatusBadge = (status: string) => {
