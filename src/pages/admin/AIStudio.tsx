@@ -76,6 +76,14 @@ export default function AIStudio() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedContent, setSelectedContent] = useState<any>(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  
+  // Review form states
+  const [reviewScore, setReviewScore] = useState(5);
+  const [reviewLabel, setReviewLabel] = useState("Excelente");
+  const [reviewAccuracy, setReviewAccuracy] = useState(5);
+  const [reviewDidactic, setReviewDidactic] = useState(5);
+  const [reviewHallucination, setReviewHallucination] = useState("none");
+  const [reviewComments, setReviewComments] = useState("");
 
   // Form states for new content
   const [newTitle, setNewTitle] = useState("");
