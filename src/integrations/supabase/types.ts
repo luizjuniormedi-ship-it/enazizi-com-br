@@ -563,6 +563,84 @@ export type Database = {
           },
         ]
       }
+      ai_video_lessons: {
+        Row: {
+          audio_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          difficulty_level: string | null
+          duration_seconds: number | null
+          id: string
+          learning_objectives: string[] | null
+          notebooklm_export_text: string | null
+          notebooklm_notebook_url: string | null
+          published_at: string | null
+          reviewed_by: string | null
+          specialty: string
+          status: string
+          subtopic: string | null
+          thumbnail_url: string | null
+          title: string
+          topic: string
+          tutor_lesson_id: string | null
+          tutor_lesson_summary: string | null
+          updated_at: string
+          video_url: string | null
+          visibility: string
+        }
+        Insert: {
+          audio_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty_level?: string | null
+          duration_seconds?: number | null
+          id?: string
+          learning_objectives?: string[] | null
+          notebooklm_export_text?: string | null
+          notebooklm_notebook_url?: string | null
+          published_at?: string | null
+          reviewed_by?: string | null
+          specialty: string
+          status?: string
+          subtopic?: string | null
+          thumbnail_url?: string | null
+          title: string
+          topic: string
+          tutor_lesson_id?: string | null
+          tutor_lesson_summary?: string | null
+          updated_at?: string
+          video_url?: string | null
+          visibility?: string
+        }
+        Update: {
+          audio_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          difficulty_level?: string | null
+          duration_seconds?: number | null
+          id?: string
+          learning_objectives?: string[] | null
+          notebooklm_export_text?: string | null
+          notebooklm_notebook_url?: string | null
+          published_at?: string | null
+          reviewed_by?: string | null
+          specialty?: string
+          status?: string
+          subtopic?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          topic?: string
+          tutor_lesson_id?: string | null
+          tutor_lesson_summary?: string | null
+          updated_at?: string
+          video_url?: string | null
+          visibility?: string
+        }
+        Relationships: []
+      }
       alert_events: {
         Row: {
           alert_id: string
@@ -11438,6 +11516,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_lesson_usage_logs: {
+        Row: {
+          action: string
+          completion_rate: number | null
+          created_at: string
+          id: string
+          user_id: string
+          video_lesson_id: string
+          watched_seconds: number | null
+        }
+        Insert: {
+          action: string
+          completion_rate?: number | null
+          created_at?: string
+          id?: string
+          user_id: string
+          video_lesson_id: string
+          watched_seconds?: number | null
+        }
+        Update: {
+          action?: string
+          completion_rate?: number | null
+          created_at?: string
+          id?: string
+          user_id?: string
+          video_lesson_id?: string
+          watched_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_lesson_usage_logs_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       video_rooms: {
         Row: {

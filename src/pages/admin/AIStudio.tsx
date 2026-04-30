@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +83,8 @@ import {
 } from "@/components/ui/table";
 
 export default function AIStudio() {
-  const { user } = useAuth();
+   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("recent");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -929,6 +931,30 @@ ${content.generated_video_script || "Roteiro pendente."}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleCopyNotebookLM(item)}>
                                   <Copy className="h-4 w-4 mr-2" /> Exportar NotebookLM
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-primary" onClick={async () => {
+                                  const { data, error } = await supabase
+                                    .from('ai_video_lessons')
+                                    .insert({
+                                      title: item.title,
+                                      specialty: item.discipline || 'Geral',
+                                      topic: item.topic || 'Geral',
+                                      description: item.generated_summary,
+                                      tutor_lesson_summary: item.generated_feynman,
+                                      notebooklm_export_text: item.notebooklm_export_text,
+                                      status: 'tutor_lesson_saved'
+                                    })
+                                    .select()
+                                    .single();
+                                  
+                                  if (error) {
+                                    toast.error("Erro ao converter para Videoaula: " + error.message);
+                                  } else {
+                                    toast.success("Aula vinculada ao módulo de Videoaulas!");
+                                    navigate("/admin/video-lessons");
+                                  }
+                                }}>
+                                  <Video className="h-4 w-4 mr-2" /> Transformar em Videoaula
                                 </DropdownMenuItem>
                                 {item.status === 'review' && (
                                   <DropdownMenuItem className="text-primary" onClick={() => publishContent.mutate(item.id)}>
