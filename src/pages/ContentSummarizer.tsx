@@ -1,16 +1,35 @@
-import { BookOpen, Sparkles, Music, ExternalLink, ChevronRight, FileText, Brain, HelpCircle, ArrowLeft } from "lucide-react";
+import { 
+  BookOpen, 
+  Sparkles, 
+  Music, 
+  ExternalLink, 
+  ChevronRight, 
+  FileText, 
+  Brain, 
+  HelpCircle, 
+  ArrowLeft,
+  Play,
+  Pause,
+  RotateCcw,
+  CheckCircle2,
+  Clock,
+  History
+} from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const quickActions = [
   { label: "📋 Resumo completo", prompt: "Faça um resumo completo e estruturado de todo o meu material, com pontos de prova, mnemônicos e tabelas comparativas.", icon: "📋" },
@@ -21,7 +40,13 @@ const quickActions = [
 ];
 
 const ContentSummarizer = () => {
+  const { user } = useAuth();
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackLogged, setPlaybackLogged] = useState(false);
 
   const { data: libraryContent, isLoading } = useQuery({
     queryKey: ["master-content-library-published"],
@@ -29,15 +54,72 @@ const ContentSummarizer = () => {
       const { data, error } = await supabase
         .from("master_content_library")
         .select("*, notebooklm_notebooks(*)")
-        .eq("status", "published")
+        .or("status.eq.published,media_status.eq.published_to_students")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     }
   });
 
+  const logUsageMutation = useMutation({
+    mutationFn: async (payload: { action: string, media_type?: string, playback_time?: number, completion_rate?: number }) => {
+      if (!user || !selectedContentId) return;
+      await supabase.from("notebooklm_usage_logs").insert([{
+        content_id: selectedContentId,
+        user_id: user.id,
+        ...payload
+      }]);
+    }
+  });
+
   const selectedContent = libraryContent?.find(c => c.id === selectedContentId);
   const notebookData = selectedContent?.notebooklm_notebooks?.[0];
+
+  useEffect(() => {
+    if (audioRef.current) {
+      const audio = audioRef.current;
+      const updateProgress = () => setCurrentTime(audio.currentTime);
+      const onLoadedMetadata = () => setDuration(audio.duration);
+      const onEnded = () => {
+        setIsPlaying(false);
+        logUsageMutation.mutate({ action: 'audio_complete', media_type: 'audio', completion_rate: 100 });
+      };
+
+      audio.addEventListener('timeupdate', updateProgress);
+      audio.addEventListener('loadedmetadata', onLoadedMetadata);
+      audio.addEventListener('ended', onEnded);
+      
+      return () => {
+        audio.removeEventListener('timeupdate', updateProgress);
+        audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+        audio.removeEventListener('ended', onEnded);
+      };
+    }
+  }, [selectedContentId, notebookData?.audio_url]);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        logUsageMutation.mutate({ action: 'audio_pause', media_type: 'audio', playback_time: Math.round(audioRef.current.currentTime) });
+      } else {
+        audioRef.current.play();
+        if (!playbackLogged) {
+          logUsageMutation.mutate({ action: 'audio_play', media_type: 'audio' });
+          setPlaybackLogged(true);
+        } else {
+          logUsageMutation.mutate({ action: 'audio_resume', media_type: 'audio' });
+        }
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
