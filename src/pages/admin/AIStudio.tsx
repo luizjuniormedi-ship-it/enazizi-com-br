@@ -346,12 +346,12 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Biblioteca</p>
+                <p className="text-sm font-medium text-muted-foreground">Total</p>
                 <h3 className="text-2xl font-bold">{stats.total}</h3>
               </div>
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -377,11 +377,11 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Em Revisão</p>
-                <h3 className="text-2xl font-bold text-amber-500">{stats.review}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Processando</p>
+                <h3 className="text-2xl font-bold text-blue-500">{stats.processing}</h3>
               </div>
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <Clock className="h-5 w-5 text-amber-500" />
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Sparkles className="h-5 w-5 text-blue-500" />
               </div>
             </div>
           </CardContent>
@@ -390,11 +390,11 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Geração Ativa</p>
-                <h3 className="text-2xl font-bold text-blue-500">{stats.processing}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Falhas</p>
+                <h3 className="text-2xl font-bold text-destructive">{stats.failed}</h3>
               </div>
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Sparkles className="h-5 w-5 text-blue-500" />
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -404,10 +404,23 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-indigo-500/70">Economia IA</p>
-                <h3 className="text-2xl font-bold text-indigo-500">$ {stats.savings.toFixed(2)}</h3>
+                <h3 className="text-xl font-bold text-indigo-500">$ {stats.savings.toFixed(2)}</h3>
               </div>
               <div className="p-2 bg-indigo-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-indigo-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-amber-500/5 backdrop-blur-sm border-amber-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-500/70">Custo Total</p>
+                <h3 className="text-xl font-bold text-amber-500">$ {stats.cost.toFixed(2)}</h3>
+              </div>
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-amber-500" />
               </div>
             </div>
           </CardContent>
