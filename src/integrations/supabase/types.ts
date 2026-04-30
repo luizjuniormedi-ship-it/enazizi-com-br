@@ -100,6 +100,53 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_content_audit_logs: {
+        Row: {
+          action: string
+          content_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          new_status: string | null
+          previous_status: string | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          previous_status?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          previous_status?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_content_audit_logs_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_content_cache: {
         Row: {
           banca: string | null
@@ -4030,13 +4077,17 @@ export type Database = {
           generated_summary: string | null
           generated_video_script: string | null
           id: string
+          last_error: string | null
+          max_retries: number | null
           metadata: Json | null
           notebooklm_audio_url: string | null
           notebooklm_export_text: string | null
           notebooklm_notes: string | null
           notebooklm_video_url: string | null
+          processing_started_at: string | null
           published_at: string | null
           raw_content: string | null
+          retry_count: number | null
           reviewed_by: string | null
           source_type: string
           source_url: string | null
@@ -4064,13 +4115,17 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           id?: string
+          last_error?: string | null
+          max_retries?: number | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
           notebooklm_notes?: string | null
           notebooklm_video_url?: string | null
+          processing_started_at?: string | null
           published_at?: string | null
           raw_content?: string | null
+          retry_count?: number | null
           reviewed_by?: string | null
           source_type: string
           source_url?: string | null
@@ -4098,13 +4153,17 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           id?: string
+          last_error?: string | null
+          max_retries?: number | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
           notebooklm_notes?: string | null
           notebooklm_video_url?: string | null
+          processing_started_at?: string | null
           published_at?: string | null
           raw_content?: string | null
+          retry_count?: number | null
           reviewed_by?: string | null
           source_type?: string
           source_url?: string | null
