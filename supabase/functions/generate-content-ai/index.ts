@@ -6,25 +6,40 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface GeminiResponse {
+  summary: string;
+  feynman_summary: string;
+  flashcards: Array<{ front: string; back: string }>;
+  quiz: Array<{ question: string; options: string[]; answer: string; explanation: string }>;
+  questions: Array<{ question: string; answer: string }>;
+  video_script: string;
+}
+
 serve(async (req) => {
+  const startTime = Date.now();
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  try {
-    const { contentId, isRetry = false } = await req.json()
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+  const supabaseClient = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  )
 
-    // Auth check - Admin only
+  let contentId: string | null = null;
+  let userId: string | null = null;
+  let tenantId: string | null = null;
+
+  try {
+    const { contentId: cid, isRetry = false } = await req.json()
+    contentId = cid;
+
+    // Auth check
     const authHeader = req.headers.get('Authorization')
     const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader?.replace('Bearer ', '') ?? '')
     
-    if (authError || !user) {
-      throw new Error('Não autorizado')
-    }
+    if (authError || !user) throw new Error('Não autorizado')
+    userId = user.id;
 
     const { data: profile } = await supabaseClient
       .from('profiles')
@@ -35,24 +50,18 @@ serve(async (req) => {
     if (!profile || !['admin', 'professor'].includes(profile.user_type)) {
       throw new Error('Acesso restrito a administradores')
     }
+    tenantId = profile.organization_id;
 
-    // 1. Fetch content from library
+    // 1. Fetch content
     const { data: content, error: fetchError } = await supabaseClient
       .from('master_content_library')
       .select('*')
       .eq('id', contentId)
       .single()
 
-    if (fetchError || !content) {
-      throw new Error('Conteúdo não encontrado')
-    }
+    if (fetchError || !content) throw new Error('Conteúdo não encontrado')
 
-    // Check if already processing or succeeded
-    if (content.status === 'processing' && !isRetry) {
-      return new Response(JSON.stringify({ message: "Conteúdo já está em processamento" }), { headers: corsHeaders })
-    }
-
-    // Hash check for reuse (Skip if explicit retry)
+    // 2. Cache Logic (Reuse)
     if (!isRetry && content.content_hash) {
       const { data: existingContent } = await supabaseClient
         .from('master_content_library')
@@ -64,7 +73,6 @@ serve(async (req) => {
         .maybeSingle()
 
       if (existingContent) {
-        // Reuse content
         await supabaseClient.from('master_content_library').update({
           generated_summary: existingContent.generated_summary,
           generated_feynman: existingContent.generated_feynman,
@@ -72,102 +80,56 @@ serve(async (req) => {
           generated_quiz: existingContent.generated_quiz,
           generated_questions: existingContent.generated_questions,
           generated_video_script: existingContent.generated_video_script,
-          status: 'review',
-          metadata: { ...content.metadata, reused_from_id: existingContent.id }
+          status: 'review'
         }).eq('id', contentId)
 
-        // Log audit
-        await supabaseClient.from('ai_content_audit_logs').insert({
-          content_id: contentId,
-          user_id: user.id,
-          action: 'reused_content',
-          new_status: 'review',
-          metadata: { source_id: existingContent.id }
-        })
-
-        // Log usage (Zero cost)
         await supabaseClient.from('ai_usage_logs').insert({
-          tenant_id: profile.organization_id,
-          user_id: user.id,
+          tenant_id: tenantId,
+          user_id: userId,
           content_id: contentId,
           model: 'cache',
           reused_from_cache: true,
-          estimated_cost: 0
+          latency_ms: Date.now() - startTime,
+          status: 'success'
         })
 
-        return new Response(JSON.stringify({ success: true, message: "Conteúdo reutilizado da biblioteca mestre." }), { headers: corsHeaders })
+        return new Response(JSON.stringify({ success: true, message: "Conteúdo reutilizado do cache." }), { headers: corsHeaders })
       }
     }
 
-    // 2. Update status to processing
-    await supabaseClient
-      .from('master_content_library')
-      .update({ 
-        status: 'processing',
-        processing_started_at: new Date().toISOString(),
-        retry_count: isRetry ? content.retry_count + 1 : content.retry_count
-      })
-      .eq('id', contentId)
-
+    // 3. AI Generation
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada')
 
-    // 3. Construct the prompt with specialty-specific instructions (SBC, AHA, ACLS, ATLS, SUS, etc.)
     const getSpecialtyInstructions = (discipline: string) => {
       const d = discipline?.toLowerCase() || '';
-      
-      if (d.includes('cardio')) {
-        return "Siga rigorosamente as diretrizes mais recentes da SBC (Sociedade Brasileira de Cardiologia), AHA e ESC. Inclua interpretação de ECG se pertinente, critérios para insuficiência cardíaca e manejo de arritmias ou síndromes coronarianas.";
-      }
-      if (d.includes('farmaco')) {
-        return "Foque detalhadamente em mecanismos de ação moleculares, farmacocinética, doses usuais (adulto/pedia), contraindicações absolutas, efeitos adversos críticos e interações medicamentosas clinicamente relevantes.";
-      }
-      if (d.includes('cirur')) {
-        return "Foque em indicações cirúrgicas baseadas em evidências, técnica operatória passo a passo, manejo de complicações trans e pós-operatórias imediatas e critérios de alta.";
-      }
-      if (d.includes('pedia')) {
-        return "Considere as faixas etárias específicas (neonato, lactente, escolar), marcos do desenvolvimento neuropsicomotor, doses pediátricas mg/kg e abordagem centrada na família.";
-      }
-      if (d.includes('prev')) {
-        return "Siga os princípios do SUS, epidemiologia brasileira, indicadores de saúde, níveis de prevenção, programas de rastreamento e calendário vacinal atualizado do PNI.";
-      }
-      if (d.includes('emerg')) {
-        return "Siga os protocolos ACLS e ATLS vigentes. Foque em suporte de vida, manejo 'ABCDE', estabilização hemodinâmica e condutas críticas de tempo-dependência.";
-      }
-      if (d.includes('gineco') || d.includes('obste')) {
-        return "Foque em assistência ao pré-natal de baixo e alto risco, mecânica de parto, complicações obstétricas e rastreamento de neoplasias ginecológicas.";
-      }
-      if (d.includes('neuro')) {
-        return "Foque em localização neuroanatômica da lesão, síndromes deficitárias e semiologia neurológica detalhada.";
-      }
-      return "Foque nos pontos essenciais para o aprendizado médico prático e de alto rendimento, seguindo consensos brasileiros.";
+      if (d.includes('cardio')) return "Siga diretrizes SBC/AHA. Foque em ECG, IC e síndromes coronarianas.";
+      if (d.includes('farmaco')) return "Foque em mecanismos de ação, farmacocinética, doses e interações.";
+      if (d.includes('cirur')) return "Foque em técnica operatória, indicações e complicações pós-operatórias.";
+      if (d.includes('pedia')) return "Considere marcos do desenvolvimento e doses mg/kg.";
+      if (d.includes('prev')) return "Foque em SUS, epidemiologia brasileira e PNI.";
+      if (d.includes('emerg')) return "Siga ACLS/ATLS. Foque em manejo ABCDE e estabilização.";
+      return "Foque nos consensos médicos brasileiros vigentes.";
     }
 
-    const specialtyInstructions = getSpecialtyInstructions(content.discipline);
-
     const prompt = `
-      Você é um especialista em educação médica pedagógica de elite (ENAZIZI Médico).
-      Baseado no conteúdo técnico de ${content.discipline || 'Medicina'} sobre ${content.topic || 'um tema médico'}:
-      
-      "${content.raw_content}"
+      Você é um especialista em educação médica ENAZIZI.
+      Gere material pedagógico para: ${content.discipline} - ${content.topic}.
+      Fonte: "${content.raw_content}"
 
-      ${specialtyInstructions}
+      ${getSpecialtyInstructions(content.discipline)}
 
-      Gere os seguintes itens educacionais em formato JSON estrito:
-      1. resumo técnico: Um resumo profundo, profissional e atualizado (mínimo 600 palavras).
-      2. resumo Feynman: Uma explicação didática de alta simplicidade sem perder a essência técnica.
-      3. flashcards: Uma lista de pelo menos 15 objetos com { "front": "pergunta direta", "back": "resposta concisa para FSRS" }.
-      4. quiz: 5 questões nível residência médica (USP, ENARE, UNICAMP) com { "question": "", "options": ["A", "B", "C", "D"], "answer": "A", "explanation": "Explicação técnica por que a alternativa está correta e por que as outras são incorretas" }.
-      5. questões comentadas: 3 casos clínicos complexos com raciocínio diagnóstico e resolução baseada em diretrizes.
-      6. roteiro de vídeo: Roteiro estruturado para vídeo de 5 minutos, incluindo sugestões de slides ou ilustrações.
-
-      IMPORTANTE:
-      - Rigor técnico absoluto.
-      - Terminologia médica padrão.
-      - Formato de resposta: APENAS JSON.
+      Retorne APENAS um JSON com:
+      {
+        "summary": "resumo técnico profundo (min 600 palavras)",
+        "feynman_summary": "explicação simples",
+        "flashcards": [{"front": "", "back": ""}],
+        "quiz": [{"question": "", "options": ["A","B","C","D"], "answer": "A", "explanation": ""}],
+        "questions": [{"question": "", "answer": ""}],
+        "video_script": "roteiro estruturado"
+      }
     `;
 
-    // 4. Call Gemini API
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -178,80 +140,82 @@ serve(async (req) => {
     })
 
     const geminiData = await response.json()
+    if (geminiData.error) throw new Error(geminiData.error.message)
 
-    if (geminiData.error) {
-      const isRateLimit = geminiData.error.code === 429
-      const errorMsg = isRateLimit ? 'Rate limit reached' : geminiData.error.message
-      
-      await supabaseClient.from('master_content_library').update({ 
-        status: 'failed',
-        last_error: errorMsg
-      }).eq('id', contentId)
+    let aiResponseText = geminiData.candidates[0].content.parts[0].text;
+    // Basic cleaning if Markdown markers are present
+    aiResponseText = aiResponseText.replace(/```json|```/g, '').trim();
 
-      await supabaseClient.from('ai_content_audit_logs').insert({
-        content_id: contentId,
-        user_id: user.id,
-        action: 'generation_error',
-        error_message: errorMsg,
-        metadata: { code: geminiData.error.code }
-      })
+    let parsedData: GeminiResponse;
+    let validationStatus: 'valid' | 'repaired' | 'failed' = 'valid';
 
-      throw new Error(errorMsg)
+    try {
+      parsedData = JSON.parse(aiResponseText);
+      // Basic field validation
+      if (!parsedData.summary || !parsedData.flashcards || !parsedData.quiz) throw new Error('Campos obrigatórios ausentes');
+    } catch (e) {
+      console.log("Falha no JSON, tentando reparo simples...");
+      // Simple repair attempt: find first { and last }
+      const start = aiResponseText.indexOf('{');
+      const end = aiResponseText.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+        try {
+          parsedData = JSON.parse(aiResponseText.substring(start, end + 1));
+          validationStatus = 'repaired';
+        } catch (e2) {
+          validationStatus = 'failed';
+          throw new Error('JSON Inválido após tentativa de reparo');
+        }
+      } else {
+        validationStatus = 'failed';
+        throw new Error('JSON Inválido');
+      }
     }
 
-    const aiResponseText = geminiData.candidates[0].content.parts[0].text
-    const parsedData = JSON.parse(aiResponseText.replace(/```json|```/g, '').trim())
+    const inputTokens = content.raw_content.length / 4;
+    const outputTokens = aiResponseText.length / 4;
+    const estimatedCost = ((inputTokens + outputTokens) / 1000000) * 0.10;
 
-    // 5. Token usage (Simulated/Estimated for Gemini)
-    const inputTokens = content.raw_content.length / 4 // Rough estimate
-    const outputTokens = aiResponseText.length / 4
-    const costPerMillion = 0.10 // 0.10 USD per 1M tokens approx
-    const estimatedCost = ((inputTokens + outputTokens) / 1000000) * costPerMillion
+    // 4. Update Library & Logs
+    await supabaseClient.from('master_content_library').update({
+      generated_summary: parsedData.summary,
+      generated_feynman: parsedData.feynman_summary,
+      generated_flashcards: parsedData.flashcards,
+      generated_quiz: parsedData.quiz,
+      generated_questions: parsedData.questions,
+      generated_video_script: parsedData.video_script,
+      status: 'review'
+    }).eq('id', contentId)
 
-    // 6. Update library
-    await supabaseClient
-      .from('master_content_library')
-      .update({
-        generated_summary: parsedData.summary || parsedData.resumo_tecnico,
-        generated_feynman: parsedData.feynman_summary || parsedData.resumo_feynman,
-        generated_flashcards: parsedData.flashcards,
-        generated_quiz: parsedData.quiz,
-        generated_questions: parsedData.questions || parsedData.questoes_comentadas,
-        generated_video_script: parsedData.video_script || parsedData.roteiro_video,
-        status: 'review',
-        last_error: null
-      })
-      .eq('id', contentId)
+    await supabaseClient.from('ai_usage_logs').insert({
+      tenant_id: tenantId,
+      user_id: userId,
+      content_id: contentId,
+      model: 'gemini-2.0-flash',
+      input_tokens: Math.round(inputTokens),
+      output_tokens: Math.round(outputTokens),
+      estimated_cost: estimatedCost,
+      latency_ms: Date.now() - startTime,
+      json_validation_status: validationStatus,
+      status: 'success'
+    })
 
-    // Audit and Usage
-    await Promise.all([
-      supabaseClient.from('ai_content_audit_logs').insert({
-        content_id: contentId,
-        user_id: user.id,
-        action: 'generation_success',
-        new_status: 'review'
-      }),
-      supabaseClient.from('ai_usage_logs').insert({
-        tenant_id: profile.organization_id,
-        user_id: user.id,
-        content_id: contentId,
-        model: 'gemini-2.0-flash',
-        input_tokens: Math.round(inputTokens),
-        output_tokens: Math.round(outputTokens),
-        estimated_cost: estimatedCost
-      })
-    ])
-
-    return new Response(
-      JSON.stringify({ success: true, message: "Conteúdo gerado com IA. Revisão pedagógica obrigatória." }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    return new Response(JSON.stringify({ success: true, message: "Geração concluída com validação JSON." }), { headers: corsHeaders })
 
   } catch (error) {
-    console.error('Erro na generate-content-ai:', error.message)
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    )
+    console.error('ERRO PIPELINE:', error.message);
+    if (contentId) {
+      await supabaseClient.from('master_content_library').update({ status: 'failed', last_error: error.message }).eq('id', contentId)
+      await supabaseClient.from('ai_usage_logs').insert({
+        tenant_id: tenantId,
+        user_id: userId,
+        content_id: contentId,
+        model: 'gemini-2.0-flash',
+        status: 'failed',
+        error_message: error.message,
+        latency_ms: Date.now() - startTime
+      })
+    }
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
   }
 })
