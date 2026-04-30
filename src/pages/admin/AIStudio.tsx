@@ -195,18 +195,28 @@ export default function AIStudio() {
 
   const trackExport = useMutation({
     mutationFn: async ({ contentId, destination }: { contentId: string, destination: string }) => {
+      // Registrar log oficial de exportação NotebookLM
       const { error } = await supabase
-        .from("ai_export_logs")
-        .insert([{ content_id: contentId, user_id: user?.id, destination }]);
+        .from("notebooklm_export_logs")
+        .insert([{ 
+          content_id: contentId, 
+          user_id: user?.id, 
+          status: 'exported',
+          metadata: { destination }
+        }]);
       if (error) throw error;
       
       await supabase
         .from("master_content_library")
-        .update({ media_status: 'exported_to_notebooklm' })
+        .update({ 
+          media_status: 'exported_to_notebooklm',
+          exported_by: user?.id,
+          exported_at: new Date().toISOString()
+        })
         .eq('id', contentId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ai-export-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["notebooklm-export-logs"] });
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
     }
   });
@@ -467,50 +477,78 @@ export default function AIStudio() {
   };
 
   const handleCopyNotebookLM = (content: any) => {
+    // Validação de Governança
+    if (content.status !== 'published' && content.status !== 'approved') {
+      toast.error("Apenas conteúdos aprovados ou publicados podem ser exportados.");
+      return;
+    }
+
+    if ((content.hallucination_risk_score || 0) > 0.4) {
+      toast.warning("Risco de alucinação elevado. Revise antes de exportar.");
+    }
+
     const text = `
-# ENAZIZI MÉDICO -> NOTEBOOKLM EXPORT v1.0
-ID: ${content.id}
-Título: ${content.title}
-Disciplina: ${content.discipline}
-Especialidade: ${content.discipline}
-Data: ${new Date().toLocaleDateString('pt-BR')}
+# PACOTE EDUCACIONAL ENAZIZI -> NOTEBOOKLM v1.5
+ID CONTEÚDO: ${content.id}
 
-## OBJETIVOS DE APRENDIZAGEM
-- Compreender os mecanismos fundamentais de ${content.topic}.
-- Consolidar a conduta clínica baseada em diretrizes atuais.
-- Revisar pontos críticos para provas de residência.
+## 1. CABEÇALHO
+- Título da Aula: ${content.title}
+- Especialidade Médica: ${content.discipline}
+- Data de Geração: ${new Date().toLocaleDateString('pt-BR')}
 
-## RESUMO TÉCNICO PROFUNDO
-${content.generated_summary || "Pendente"}
+## 2. OBJETIVOS DE APRENDIZAGEM
+- Consolidar conceitos fundamentais de ${content.topic}.
+- Aplicar diretrizes clínicas atualizadas na prática médica.
+- Identificar pontos críticos para exames de residência.
 
-## EXPLICAÇÃO FEYNMAN (CONCEITUAL)
-${content.generated_feynman || "Pendente"}
+## 3. RESUMO TÉCNICO PROFUNDO
+${content.generated_summary || "Pendente de geração."}
 
-## ROTEIRO DE ÁUDIO (PODCAST) / VÍDEO OVERVIEW
-${content.generated_video_script || "Pendente"}
+## 4. EXPLICAÇÃO FEYNMAN (DIDÁTICA SIMPLIFICADA)
+${content.generated_feynman || "Pendente de geração."}
 
-## FLASHCARDS PRINCIPAIS (CONSOLIDAÇÃO)
-${JSON.stringify(content.generated_flashcards, null, 2)}
+## 5. PONTOS DE PROVA E RESUMO CLÍNICO
+- Foco em Incidência: ${content.topic}
+- Conceitos-chave: ${content.discipline} avançado.
+${content.generated_questions ? JSON.stringify(content.generated_questions, null, 2) : "Pendente."}
 
-## QUIZ DE AUTOAVALIAÇÃO
-${JSON.stringify(content.generated_quiz, null, 2)}
+## 6. FLASHCARDS PRINCIPAIS (CONSOLIDAÇÃO FSRS)
+${Array.isArray(content.generated_flashcards) ? 
+  content.generated_flashcards.map((f: any, i: number) => `[${i+1}] Q: ${f.front || f.pergunta} | A: ${f.back || f.resposta}`).join('\n') : 
+  "Pendente."}
+
+## 7. QUIZ RESUMIDO (AUTOAVALIAÇÃO)
+${Array.isArray(content.generated_quiz) ? 
+  content.generated_quiz.slice(0, 5).map((q: any, i: number) => `[${i+1}] ${q.question || q.pergunta}`).join('\n') : 
+  "Pendente."}
+
+## 8. ROTEIROS MULTIMÍDIA
+### Roteiro de Áudio (Podcast / Audio Overview)
+${content.generated_video_script || "Pendente."}
+
+### Roteiro Conversacional (Tutor IA Interativo)
+Instrução: Atue como um professor especialista em ${content.discipline} explicando ${content.topic}.
 
 ---
-INSTRUÇÃO PARA NOTEBOOKLM:
-"Com base nesta fonte, gere um 'Deep Dive Audio' focado na clareza didática para médicos e um 'Study Guide' que destaque as condutas terapêuticas mencionadas."
+## 9. INSTRUÇÕES PARA CONFIGURAÇÃO NOTEBOOKLM
+- Audio Overview: "Gere um diálogo estilo 'Deep Dive' entre dois especialistas médicos focando na aplicabilidade clínica."
+- Guia Multimídia: "Crie um Guia de Estudo que priorize diagnósticos diferenciais e condutas terapêuticas."
     `;
+
     navigator.clipboard.writeText(text);
+    
+    // Registrar exportação
     trackExport.mutate({ contentId: content.id, destination: 'notebooklm' });
     
-    // Alerta de sucesso operacional
+    // Alerta operacional
     supabase.rpc('log_ai_alert', { 
       p_type: 'notebooklm_export', 
       p_severity: 'info', 
-      p_message: `Exportação NotebookLM realizada para: ${content.title}`,
+      p_message: `Pacote NotebookLM v1.5 exportado: ${content.title}`,
       p_content_id: content.id
     });
 
-    toast.success("Pacote estruturado copiado para o NotebookLM!");
+    toast.success("Pacote estruturado v1.5 copiado para o NotebookLM!");
   };
 
   return (
