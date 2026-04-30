@@ -82,7 +82,8 @@ import {
 } from "@/components/ui/table";
 
 export default function AIStudio() {
-  const { user } = useAuth();
+   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("recent");
   const [isGenerating, setIsGenerating] = useState(false);
