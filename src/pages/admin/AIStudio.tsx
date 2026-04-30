@@ -366,27 +366,40 @@ export default function AIStudio() {
 
   const handleCopyNotebookLM = (content: any) => {
     const text = `
-# EXPORTAÇÃO ENAZIZI -> NOTEBOOKLM
+# ENAZIZI MÉDICO -> NOTEBOOKLM EXPORT v1.0
+ID: ${content.id}
 Título: ${content.title}
 Disciplina: ${content.discipline}
+Especialidade: ${content.discipline}
+Data: ${new Date().toLocaleDateString('pt-BR')}
 
-## RESUMO TÉCNICO
+## OBJETIVOS DE APRENDIZAGEM
+- Compreender os mecanismos fundamentais de ${content.topic}.
+- Consolidar a conduta clínica baseada em diretrizes atuais.
+- Revisar pontos críticos para provas de residência.
+
+## RESUMO TÉCNICO PROFUNDO
 ${content.generated_summary || "Pendente"}
 
-## RESUMO FEYNMAN
+## EXPLICAÇÃO FEYNMAN (CONCEITUAL)
 ${content.generated_feynman || "Pendente"}
 
-## ROTEIRO DE VÍDEO / PODCAST
+## ROTEIRO DE ÁUDIO (PODCAST) / VÍDEO OVERVIEW
 ${content.generated_video_script || "Pendente"}
 
-## FLASHCARDS (FSRS)
+## FLASHCARDS PRINCIPAIS (CONSOLIDAÇÃO)
 ${JSON.stringify(content.generated_flashcards, null, 2)}
 
-## QUIZ
+## QUIZ DE AUTOAVALIAÇÃO
 ${JSON.stringify(content.generated_quiz, null, 2)}
+
+---
+INSTRUÇÃO PARA NOTEBOOKLM:
+"Com base nesta fonte, gere um 'Deep Dive Audio' focado na clareza didática para médicos e um 'Study Guide' que destaque as condutas terapêuticas mencionadas."
     `;
     navigator.clipboard.writeText(text);
-    toast.success("Pacote formatado copiado para o NotebookLM Pro!");
+    trackExport.mutate({ contentId: content.id, destination: 'notebooklm' });
+    toast.success("Pacote estruturado copiado para o NotebookLM!");
   };
 
   return (
