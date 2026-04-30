@@ -195,6 +195,40 @@ export default function AIStudio() {
     }
   });
 
+  const submitReview = useMutation({
+    mutationFn: async (reviewData: { 
+      contentId: string, 
+      score: number, 
+      label: string, 
+      accuracy: number, 
+      didactic: number, 
+      hallucination: string,
+      comments: string 
+    }) => {
+      const { error } = await supabase
+        .from("pedagogical_reviews")
+        .insert([{
+          content_id: reviewData.contentId,
+          reviewer_id: user?.id,
+          score: reviewData.score,
+          quality_label: reviewData.label,
+          scientific_accuracy_score: reviewData.accuracy,
+          didactic_score: reviewData.didactic,
+          hallucination_risk: reviewData.hallucination,
+          comments: reviewData.comments
+        }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Avaliação pedagógica registrada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      queryClient.invalidateQueries({ queryKey: ["pedagogical-stats"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao salvar avaliação: " + error.message);
+    }
+  });
+
   const { data: usageLogs } = useQuery({
     queryKey: ["ai-usage-logs"],
     queryFn: async () => {
