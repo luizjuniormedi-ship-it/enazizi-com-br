@@ -1039,8 +1039,9 @@ INSTRUÇÃO PARA NOTEBOOKLM:
                 <TabsTrigger value="feynman">Feynman</TabsTrigger>
                 <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
                  <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
-                <TabsTrigger value="pedagogical" className="text-green-500">Revisão Pedagógica</TabsTrigger>
-                <TabsTrigger value="notebooklm" className="text-indigo-500">Google NotebookLM</TabsTrigger>
+                <TabsTrigger value="multimedia" className="text-blue-500">Multimídia</TabsTrigger>
+                <TabsTrigger value="pedagogical" className="text-green-500">Auditoria</TabsTrigger>
+                <TabsTrigger value="notebooklm" className="text-indigo-500">NotebookLM</TabsTrigger>
               </TabsList>
 
               <ScrollArea className="flex-1 p-6">
