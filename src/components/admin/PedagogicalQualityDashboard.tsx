@@ -14,7 +14,7 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export const PedagogicalQualityDashboard = () => {
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['medical-governance-stats-v1.4'],
+    queryKey: ['medical-governance-stats-v1.4-final'],
     queryFn: async () => {
       // 1. Distribution of Status (using new workflow)
       const { data: libraryData } = await supabase
