@@ -214,7 +214,8 @@ export default function AIAuditMode() {
                             <div>
                               <h4 className="font-bold mb-2 text-sm">Histórico de Revisão Médico-Pedagógica</h4>
                               <div className="space-y-2">
-                                {(log.master_content_library?.revision_history || []).map((rev: any, i: number) => (
+                                {Array.isArray(log.master_content_library?.revision_history) && 
+                                 log.master_content_library.revision_history.map((rev: any, i: number) => (
                                   <div key={i} className="p-2 border rounded-md bg-background text-xs">
                                     <div className="flex justify-between font-medium">
                                       <span>{rev.reviewer || 'IA System'}</span>
@@ -223,7 +224,8 @@ export default function AIAuditMode() {
                                     <p className="mt-1 opacity-70">{rev.comment}</p>
                                   </div>
                                 ))}
-                                {(!log.master_content_library?.revision_history || log.master_content_library.revision_history.length === 0) && (
+                                {(!Array.isArray(log.master_content_library?.revision_history) || 
+                                  log.master_content_library.revision_history.length === 0) && (
                                   <p className="text-xs text-muted-foreground italic">Nenhuma revisão manual registrada ainda.</p>
                                 )}
                               </div>
