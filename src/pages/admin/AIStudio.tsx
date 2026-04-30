@@ -1169,41 +1169,71 @@ INSTRUÇÃO PARA NOTEBOOKLM:
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <Label>Comentários de Auditoria</Label>
-                      <Textarea 
-                        placeholder="Descreva pontos de melhoria ou erros encontrados..." 
-                        className="min-h-[200px]"
-                        value={reviewComments}
-                        onChange={e => setReviewComments(e.target.value)}
-                      />
-                      <Button 
-                        className="w-full gap-2 h-12 text-lg shadow-glow-sm" 
-                        variant="default"
-                        disabled={submitReview.isPending}
-                        onClick={() => {
-                          submitReview.mutate({
-                            contentId: selectedContent.id,
-                            score: Math.round((reviewPrecision + reviewDidactic + reviewClarity + reviewDepth) / 4),
-                            label: reviewLabel,
-                            precision: reviewPrecision,
-                            clarity: reviewClarity,
-                            depth: reviewDepth,
-                            flashcards: reviewFlashcards,
-                            quiz: reviewQuiz,
-                            feynman: reviewFeynman,
-                            didactic: reviewDidactic,
-                            hallucination: reviewHallucination,
-                            comments: reviewComments
-                          });
-                        }}
-                      >
-                        {submitReview.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                        Finalizar Auditoria Pedagógica
-                      </Button>
-                      <p className="text-[10px] text-center text-muted-foreground italic">
-                        Ao finalizar, o status do material será atualizado automaticamente.
-                      </p>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Tipo de Revisão</Label>
+                          <Select value={reviewType} onValueChange={setReviewType}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pedagogical">Pedagógica (Professor)</SelectItem>
+                              <SelectItem value="scientific">Científica (Médico Especialista)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Aderência à Diretriz (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewAdherence} onChange={e => setReviewAdherence(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Segurança Clínica (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewSafety} onChange={e => setReviewSafety(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Utilidade para Prova (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewExamUtility} onChange={e => setReviewExamUtility(Number(e.target.value))} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <Label>Comentários de Auditoria</Label>
+                        <Textarea 
+                          placeholder="Descreva pontos de melhoria ou erros encontrados..." 
+                          className="min-h-[150px]"
+                          value={reviewComments}
+                          onChange={e => setReviewComments(e.target.value)}
+                        />
+                        <Button 
+                          className="w-full gap-2 h-12 text-lg shadow-glow-sm" 
+                          variant="default"
+                          disabled={submitReview.isPending}
+                          onClick={() => {
+                            submitReview.mutate({
+                              contentId: selectedContent.id,
+                              score: Math.round((reviewPrecision + reviewSafety + reviewAdherence + reviewDidactic) / 4),
+                              label: reviewLabel,
+                              precision: reviewPrecision,
+                              clarity: reviewClarity,
+                              depth: reviewDepth,
+                              flashcards: reviewFlashcards,
+                              quiz: reviewQuiz,
+                              feynman: reviewFeynman,
+                              didactic: reviewDidactic,
+                              adherence: reviewAdherence,
+                              safety: reviewSafety,
+                              examUtility: reviewExamUtility,
+                              reviewType: reviewType,
+                              hallucination: reviewHallucination,
+                              comments: reviewComments
+                            });
+                          }}
+                        >
+                          {submitReview.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+                          Finalizar Auditoria Médica
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
