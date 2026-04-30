@@ -103,6 +103,11 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   unified_events_enabled: false,
   shadow_decisions_enabled: false,
   shadow_scores_enabled: false,
+  // Adaptive Video Library — OFF por padrão (rollout admins_only no banco)
+  adaptive_video_enabled: false,
+  smart_replay_enabled: false,
+  tutor_temporal_enabled: false,
+  multimodal_analytics_enabled: false,
 };
 
 export const useFeatureFlags = () => {

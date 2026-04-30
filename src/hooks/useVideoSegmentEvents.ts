@@ -61,7 +61,7 @@ export function useVideoSegmentEvents() {
             event_type: args.eventType,
             timestamp_seconds: args.timestampSeconds ?? null,
             duration_ms: args.durationMs ?? null,
-            metadata: args.metadata ?? {},
+            metadata: (args.metadata ?? {}) as never,
           },
         ]);
         if (error) {
