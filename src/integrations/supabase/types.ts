@@ -5109,54 +5109,6 @@ export type Database = {
         }
         Relationships: []
       }
-      medical_institutional_materials: {
-        Row: {
-          content: string | null
-          created_at: string
-          discipline: string | null
-          id: string
-          metadata: Json | null
-          notebooklm_audio_url: string | null
-          notebooklm_guide_url: string | null
-          reliability_score: number | null
-          status: string
-          technical_supervisor: string | null
-          title: string
-          type: string
-          updated_at: string
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string
-          discipline?: string | null
-          id?: string
-          metadata?: Json | null
-          notebooklm_audio_url?: string | null
-          notebooklm_guide_url?: string | null
-          reliability_score?: number | null
-          status?: string
-          technical_supervisor?: string | null
-          title: string
-          type: string
-          updated_at?: string
-        }
-        Update: {
-          content?: string | null
-          created_at?: string
-          discipline?: string | null
-          id?: string
-          metadata?: Json | null
-          notebooklm_audio_url?: string | null
-          notebooklm_guide_url?: string | null
-          reliability_score?: number | null
-          status?: string
-          technical_supervisor?: string | null
-          title?: string
-          type?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
       medical_prompt_execution_logs: {
         Row: {
           cache_status: string | null
