@@ -273,11 +273,11 @@ export default function NotebookLMSync() {
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {item.is_gold_standard && <Award className="h-4 w-4 text-yellow-500" title="Padrão Ouro" />}
+                        {item.is_gold_standard && <Award className="h-4 w-4 text-yellow-500" />}
                         {item.hallucination_risk_score < 0.3 ? (
-                          <ShieldCheck className="h-4 w-4 text-green-500" title="Baixo Risco" />
+                          <ShieldCheck className="h-4 w-4 text-green-500" />
                         ) : (
-                          <AlertCircle className="h-4 w-4 text-amber-500" title="Risco Moderado" />
+                          <AlertCircle className="h-4 w-4 text-amber-500" />
                         )}
                       </div>
                     </TableCell>
