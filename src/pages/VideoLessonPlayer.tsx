@@ -119,7 +119,7 @@ const VideoLessonPlayer = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lesson_segments")
-        .select("id, title, summary, key_points, start_second, end_second, ordem, segment_type")
+        .select("id, title, summary, key_points, start_second, end_second, ordem, segment_type, has_flashcards")
         .eq("lesson_id", lesson!.tutor_lesson_id!)
         .order("ordem", { ascending: true });
       if (error) {
@@ -239,7 +239,8 @@ const VideoLessonPlayer = () => {
     
     if (action === "complete") {
       toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
-      if (lesson?.has_flashcards) {
+      const hasFlashcardsInSegments = segments.some(s => s.has_flashcards);
+      if (hasFlashcardsInSegments) {
         toast("Revisão Recomendada", {
           description: "Você concluiu a aula. Deseja revisar os flashcards FSRS deste conteúdo agora?",
           action: {
