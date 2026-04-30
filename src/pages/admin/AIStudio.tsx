@@ -843,8 +843,8 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     </div>
                     
                     <div className="mt-8 pt-6 border-t border-primary/10 flex items-center justify-between">
-                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Version 1.0.0 Production Ready</Badge>
-                      <p className="text-[10px] text-muted-foreground italic">ENAZIZI - Central de Produção IA</p>
+                       <p className="text-[10px] text-muted-foreground italic uppercase tracking-widest">ENAZIZI - Central de Produção IA</p>
+                       <p className="text-[10px] text-muted-foreground">Certified v1.0</p>
                     </div>
                   </div>
                 </TabsContent>
