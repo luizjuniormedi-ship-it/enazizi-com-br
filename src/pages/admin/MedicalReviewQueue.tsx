@@ -264,7 +264,19 @@ const MedicalReviewQueue = () => {
                           <FlaskConical className="h-4 w-4 mr-1" /> Especialista
                         </Button>
                       )}
+                      {(item.status === "approved" || item.status === "published") && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-orange-600"
+                          onClick={() => exportToNotebookLMMutation.mutate(item.id)}
+                          disabled={item.media_status === 'exported_to_notebooklm'}
+                        >
+                          <Share2 className="h-4 w-4 mr-1" /> NotebookLM
+                        </Button>
+                      )}
                       {item.status === "approved" && (
+
                         <Button 
                           variant="default" 
                           size="sm" 
