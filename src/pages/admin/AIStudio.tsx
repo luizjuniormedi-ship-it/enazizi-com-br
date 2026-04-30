@@ -195,10 +195,13 @@ export default function AIStudio() {
   const { data: usageLogs } = useQuery({
     queryKey: ["ai-usage-logs"],
     queryFn: async () => {
-      // Cast to any to bypass temporary type issues with new tables
-      const { data, error } = await supabase.from("ai_enterprise_usage_logs" as any).select("*");
-      if (error) return [];
-      return data as any[];
+      try {
+        const { data, error } = await supabase.from("ai_enterprise_usage_logs" as any).select("*");
+        if (error) return [];
+        return data as any[];
+      } catch (e) {
+        return [];
+      }
     }
   });
 
@@ -207,9 +210,9 @@ export default function AIStudio() {
     published: libraryContent?.filter(c => c.status === "published").length || 0,
     review: libraryContent?.filter(c => c.status === "review").length || 0,
     processing: libraryContent?.filter(c => c.status === "processing").length || 0,
-    failed: libraryContent?.filter(c => (c.status as string) === "failed").length || 0,
-    savings: usageLogs?.reduce((acc, log) => acc + (log.reused_from_cache ? 0.50 : 0), 0) || 0,
-    cost: usageLogs?.reduce((acc, log) => acc + Number(log.estimated_cost || 0), 0) || 0
+    failed: libraryContent?.filter(c => (c.status as any) === "failed").length || 0,
+    savings: usageLogs?.reduce((acc: number, log: any) => acc + (log.reused_from_cache ? 0.50 : 0), 0) || 0,
+    cost: usageLogs?.reduce((acc: number, log: any) => acc + Number(log.estimated_cost || 0), 0) || 0
   };
 
   const getStatusBadge = (status: string) => {
@@ -217,6 +220,7 @@ export default function AIStudio() {
       case "published": return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Publicado</Badge>;
       case "review": return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">Em Revisão</Badge>;
       case "processing": return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 animate-pulse">Processando</Badge>;
+      case "failed": return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Falha</Badge>;
       case "approved": return <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20">Aprovado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
