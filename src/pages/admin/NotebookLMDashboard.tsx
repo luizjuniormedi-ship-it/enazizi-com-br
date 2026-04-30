@@ -22,7 +22,8 @@ import {
   LayoutDashboard,
   Zap,
   MoreVertical,
-  Link
+  Link,
+  BarChart3
 } from "lucide-react";
 import { 
   Dialog, 
