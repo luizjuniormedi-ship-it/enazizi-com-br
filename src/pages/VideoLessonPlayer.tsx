@@ -170,7 +170,7 @@ const VideoLessonPlayer = () => {
     }
   }, [progress]);
 
-  // Simulação de log de progresso e detecção de pausa longa
+  // Simulação de log de progresso e detecção de pausa longa / abandono
   useEffect(() => {
     let interval: any;
     if (isPlaying) {
@@ -204,8 +204,20 @@ const VideoLessonPlayer = () => {
         pauseStartTime.current = Date.now();
       }
     }
-    return () => clearInterval(interval);
-  }, [isPlaying, watchedSeconds, id, currentSegment?.id]);
+    return () => {
+      clearInterval(interval);
+      // Detecção básica de abandono (cleanup do componente)
+      if (id && completionRate > 5 && completionRate < 90 && !quizFinished) {
+        logEvent({
+          videoLessonId: id,
+          segmentId: currentSegment?.id,
+          eventType: "abandon",
+          timestampSeconds: watchedSeconds,
+          metadata: { completion_at_abandon: completionRate }
+        });
+      }
+    };
+  }, [isPlaying, watchedSeconds, id, currentSegment?.id, completionRate, quizFinished]);
 
   const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
 
