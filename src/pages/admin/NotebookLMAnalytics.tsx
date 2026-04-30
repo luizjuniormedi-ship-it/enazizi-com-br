@@ -217,7 +217,10 @@ export default function NotebookLMAnalytics() {
                 </div>
                 <div className="flex items-center gap-4">
                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-primary" style={{ width: `${(item.value / metrics.contentData[0].value) * 100}%` }} />
+                      <div 
+                        className="h-full bg-primary" 
+                        style={{ width: `${metrics?.contentData?.[0]?.value ? (item.value / (metrics.contentData[0].value as number)) * 100 : 0}%` }} 
+                      />
                    </div>
                    <span className="text-xs font-bold">{item.value} interações</span>
                 </div>
