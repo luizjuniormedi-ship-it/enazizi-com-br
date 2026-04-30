@@ -844,7 +844,6 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                       <Badge variant="outline" className="text-[10px] text-muted-foreground">Version 1.0.0 Production Ready</Badge>
                       <p className="text-[10px] text-muted-foreground italic">ENAZIZI - Central de Produção IA</p>
                     </div>
-                    </div>
                   </div>
                 </TabsContent>
               </ScrollArea>
