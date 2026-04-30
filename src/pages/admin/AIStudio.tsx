@@ -939,6 +939,71 @@ INSTRUÇÃO PARA NOTEBOOKLM:
           </div>
         </TabsContent>
 
+        <TabsContent value="logs" className="py-4">
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileJson className="h-5 w-5 text-primary" />
+                Rastreabilidade Gemini v1.0
+              </CardTitle>
+              <CardDescription>Logs detalhados de cada chamada de IA, latência e validação de JSON.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[180px]">Timestamp</TableHead>
+                      <TableHead>Material</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>JSON</TableHead>
+                      <TableHead className="text-right">Tokens</TableHead>
+                      <TableHead className="text-right">Latência</TableHead>
+                      <TableHead className="text-right">Custo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usageLogsData?.map((log: any) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-[11px] font-mono">
+                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-xs truncate max-w-[200px]">{log.master_content_library?.title}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">{log.master_content_library?.discipline}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {log.status === 'success' ? 
+                            <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 text-[10px]">Success</Badge> : 
+                            <Badge variant="destructive" className="text-[10px]">Failed</Badge>
+                          }
+                          {log.reused_from_cache && <Badge variant="outline" className="ml-1 text-[10px] border-blue-500/20 text-blue-500">Cache</Badge>}
+                        </TableCell>
+                        <TableCell>
+                          {log.json_validation_status === 'valid' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                          {log.json_validation_status === 'repaired' && <Zap className="h-4 w-4 text-amber-500" />}
+                          {log.json_validation_status === 'failed' && <AlertCircle className="h-4 w-4 text-destructive" />}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {log.input_tokens + log.output_tokens || 0}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {log.latency_ms ? `${log.latency_ms}ms` : '-'}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono text-green-600">
+                          ${log.estimated_cost?.toFixed(5) || '0.00000'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="quality" className="space-y-4 py-4">
           <PedagogicalQualityDashboard />
         </TabsContent>
