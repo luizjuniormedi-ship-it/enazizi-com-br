@@ -73,7 +73,11 @@ const VideoLessonPlayer = () => {
         .maybeSingle();
       
       if (error) return null;
-      return data;
+      if (!data) return null;
+      
+      // Type casting safely
+      const questions = (data.questions as any[]) || [];
+      return { ...data, questions };
     },
     enabled: !!lesson
   });
@@ -81,73 +85,17 @@ const VideoLessonPlayer = () => {
   const { data: progress } = useQuery({
     queryKey: ["video-lesson-progress", id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return null;
-      
-      const { data, error } = await supabase
-        .from("video_lesson_usage_logs")
-        .select("*")
-        .eq("video_lesson_id", id)
-        .eq("user_id", user.id)
-        .order("watched_seconds", { ascending: false })
-        .limit(1);
-      
-      if (error) return null;
-      return data[0];
-    },
-    enabled: !!lesson
-  });
-
-  useEffect(() => {
-    if (progress?.watched_seconds) {
-      setWatchedSeconds(progress.watched_seconds);
-    }
-  }, [progress]);
-
-  // Simulação de log de progresso
-  useEffect(() => {
-    let interval: any;
-    if (isPlaying) {
-      interval = setInterval(() => {
-        setWatchedSeconds(prev => prev + 1);
-        
-        // Log a cada 30 segundos ou na conclusão
-        if (watchedSeconds - lastLogTime.current >= 30) {
-          handleAction("heartbeat");
-          lastLogTime.current = watchedSeconds;
-        }
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, watchedSeconds]);
-
-  const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
-
-  const handleAction = async (action: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { error } = await supabase
-      .from("video_lesson_usage_logs")
-      .insert({
-        video_lesson_id: id,
-        user_id: user.id,
-        action,
-        watched_seconds: watchedSeconds,
-        completion_rate: completionRate
-      });
-
-    if (error) console.error("Erro ao logar ação:", error);
-    
+// ...
     if (action === "complete") {
       toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
     }
   };
 
   const handleQuizSubmit = async () => {
-    if (selectedOption === null) return;
+    if (selectedOption === null || !quiz) return;
     
-    const currentQuestion = quiz.questions[currentQuizIndex];
+    const questions = quiz.questions;
+    const currentQuestion = questions[currentQuizIndex];
     if (selectedOption === currentQuestion.correct_index) {
       setQuizScore(prev => prev + 1);
       toast.success("Resposta correta!");
@@ -155,7 +103,7 @@ const VideoLessonPlayer = () => {
       toast.error("Resposta incorreta. Veja a explicação.");
     }
 
-    if (currentQuizIndex + 1 < quiz.questions.length) {
+    if (currentQuizIndex + 1 < questions.length) {
       setCurrentQuizIndex(prev => prev + 1);
       setSelectedOption(null);
     } else {
@@ -165,8 +113,12 @@ const VideoLessonPlayer = () => {
   };
 
   const saveQuizAttempt = async () => {
+    if (!quiz) return;
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    const questions = quiz.questions;
+    const currentQuestion = questions[currentQuizIndex];
 
     const { error } = await supabase
       .from("video_lesson_quiz_attempts")
@@ -174,10 +126,11 @@ const VideoLessonPlayer = () => {
         user_id: user.id,
         video_lesson_id: id,
         quiz_id: quiz.id,
-        score: quizScore + (selectedOption === quiz.questions[currentQuizIndex].correct_index ? 1 : 0),
-        total_questions: quiz.questions.length,
+        score: quizScore + (selectedOption === currentQuestion.correct_index ? 1 : 0),
+        total_questions: questions.length,
         answers: [] // Placeholder
       });
+
 
     if (error) console.error("Erro ao salvar tentativa de quiz:", error);
     handleAction("quiz_completed");
