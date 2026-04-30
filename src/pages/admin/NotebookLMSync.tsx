@@ -184,6 +184,9 @@ export default function NotebookLMSync() {
           <p className="text-muted-foreground">Workflow oficial de publicação multimídia ENAZIZI v1.5.</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.location.href='/admin/notebooklm-analytics'}>
+            <BarChart3 className="h-4 w-4 mr-2" /> Ver Analytics
+          </Button>
           <Button variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ["notebooklm-sync-contents"] })}>
             <RefreshCcw className="h-4 w-4 mr-2" /> Atualizar
           </Button>
