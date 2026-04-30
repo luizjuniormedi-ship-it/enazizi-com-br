@@ -108,6 +108,43 @@ const VideoLessonPlayer = () => {
     enabled: !!lesson
   });
 
+  // ───────────────── FASE 2: Adaptive Video ─────────────────
+  // Carrega segmentos da videoaula (se houver). Compatível com vídeos sem segmentação.
+  const { data: segments = [] } = useQuery<VideoSegment[]>({
+    queryKey: ["video-lesson-segments", lesson?.tutor_lesson_id],
+    enabled: !!lesson?.tutor_lesson_id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("lesson_segments")
+        .select("id, title, summary, key_points, start_second, end_second, ordem, segment_type")
+        .eq("lesson_id", lesson!.tutor_lesson_id!)
+        .order("ordem", { ascending: true });
+      if (error) {
+        console.warn("[VideoLessonPlayer] segments fetch:", error.message);
+        return [];
+      }
+      return (data ?? []) as VideoSegment[];
+    },
+  });
+
+  const { logEvent } = useVideoSegmentEvents();
+  const { getForSegment, smartReplayEnabled, analyticsEnabled } = useVideoSegmentAnalytics(id);
+  const { temporalEnabled, buildContext } = useTutorTemporalContext();
+
+  // Determina o segmento "atual" baseado em watchedSeconds (fallback p/ primeiro)
+  const currentSegment = useMemo<VideoSegment | null>(() => {
+    if (!segments || segments.length === 0) return null;
+    const found = segments.find(s => {
+      const start = s.start_second ?? 0;
+      const end = s.end_second ?? Number.MAX_SAFE_INTEGER;
+      return watchedSeconds >= start && watchedSeconds < end;
+    });
+    return found ?? segments[0];
+  }, [segments, watchedSeconds]);
+
+  const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
+  const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
+
   useEffect(() => {
     if (progress?.watched_seconds) {
       setWatchedSeconds(progress.watched_seconds);
