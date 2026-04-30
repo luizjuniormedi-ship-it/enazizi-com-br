@@ -302,6 +302,10 @@ export default function AIStudio() {
       quiz: number,
       feynman: number,
       didactic: number, 
+      adherence: number,
+      safety: number,
+      examUtility: number,
+      reviewType: string,
       hallucination: string,
       comments: string 
     }) => {
@@ -318,14 +322,29 @@ export default function AIStudio() {
           flashcards_quality_score: reviewData.flashcards,
           quiz_quality_score: reviewData.quiz,
           feynman_quality_score: reviewData.feynman,
-          didactic_score: reviewData.didactic,
+          didactic_score: Math.round(reviewData.didactic / 2), // DB is 1-5 for didactic
+          adherence_to_guidelines_score: reviewData.adherence,
+          clinical_safety_score: reviewData.safety,
+          exam_utility_score: reviewData.examUtility,
+          review_type: reviewData.reviewType,
           hallucination_risk: reviewData.hallucination,
           comments: reviewData.comments
         }]);
       if (error) throw error;
+
+      // Update content status based on review type
+      let newStatus = 'pedagogical_review';
+      if (reviewData.reviewType === 'scientific') newStatus = 'scientific_review';
+      if (reviewData.label === 'Excelente' && reviewData.reviewType === 'scientific') newStatus = 'approved';
+      if (reviewData.label === 'Reprovado') newStatus = 'rejected';
+
+      await supabase
+        .from("master_content_library")
+        .update({ status: newStatus as any })
+        .eq("id", reviewData.contentId);
     },
     onSuccess: () => {
-      toast.success("Auditoria Médica registrada com sucesso!");
+      toast.success("Auditoria Médica registrada!");
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       queryClient.invalidateQueries({ queryKey: ["pedagogical-stats-v2"] });
     },
