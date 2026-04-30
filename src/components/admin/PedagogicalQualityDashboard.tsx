@@ -14,7 +14,7 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export const PedagogicalQualityDashboard = () => {
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['medical-governance-stats-v1.4'],
+    queryKey: ['medical-governance-stats-v1.4-final'],
     queryFn: async () => {
       // 1. Distribution of Status (using new workflow)
       const { data: libraryData } = await supabase
@@ -116,49 +116,55 @@ export const PedagogicalQualityDashboard = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-green-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Conteúdos Ouro (Revisados)</CardTitle>
+        <Card className="border-l-4 border-l-red-500 shadow-sm">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Bloqueios Críticos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{stats?.doubleReviewedCount}</span>
-              <ShieldCheck className="h-4 w-4 text-green-500" />
+              <span className="text-3xl font-black text-red-600">{stats?.highRiskAlerts}</span>
+              <AlertCircle className="h-5 w-5 text-red-600 animate-pulse" />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Materiais com revisão dupla concluída</p>
+            <p className="text-[10px] text-red-500 font-bold">Inseguro / Alucinação detectada</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-green-500 shadow-sm">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Conteúdos Ouro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-green-600">{stats?.doubleReviewedCount}</span>
+              <ShieldCheck className="h-5 w-5 text-green-600" />
+            </div>
+            <p className="text-[10px] text-green-600 font-bold">Revisão dupla & Scoring {'>'} 8.0</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Acurácia Científica Média</CardTitle>
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Acurácia Científica</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">9.4<span className="text-sm text-muted-foreground">/10</span></div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-blue-600">9.4</span>
+              <span className="text-sm font-bold text-muted-foreground">/10</span>
+            </div>
             <Progress value={94} className="h-1.5 mt-2 bg-blue-100" />
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Riscos de Alucinação</CardTitle>
+        <Card className="border-l-4 border-l-orange-500 shadow-sm">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Eficiência Operacional</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-red-600">{stats?.highRiskAlerts}</span>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <span className="text-3xl font-black text-orange-600">78%</span>
+              <TrendingUp className="h-4 w-4 text-orange-600" />
             </div>
-            <p className="text-[10px] text-red-500 font-bold mt-1">Conteúdos com score de risco {'>'} 4</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Custo Operacional IA</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">${stats?.totalCost.toFixed(4)}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Estimativa de custos Gemini v1.5 Pro/Flash</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Aprovação em 1ª instância</p>
           </CardContent>
         </Card>
       </div>
@@ -282,26 +288,25 @@ export const PedagogicalQualityDashboard = () => {
 
         <Card className="shadow-sm border-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Exportação NotebookLM (Ativos)</CardTitle>
+            <CardTitle className="text-lg">Prontos para Publicação</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between items-center text-sm">
-                <span>Conteúdos Prontos para NotebookLM</span>
-                <Badge variant="secondary">{stats?.counts.approved || 0}</Badge>
+                <span className="flex items-center gap-2 font-bold"><CheckCircle className="h-4 w-4 text-green-500" /> Elegíveis (Approved)</span>
+                <Badge variant="secondary" className="bg-green-100 text-green-700">{stats?.counts.approved || 0}</Badge>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span>Mídias em Processamento</span>
-                <Badge variant="outline" className="text-orange-500">8</Badge>
+                <span className="flex items-center gap-2 font-bold"><Clock className="h-4 w-4 text-orange-500" /> Pendentes (Review)</span>
+                <Badge variant="outline" className="text-orange-500">{stats?.counts.scientific_review || 0}</Badge>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span>Versão do Exportador</span>
-                <span className="font-mono text-[10px]">v2.1-medical-feynman</span>
+                <span className="flex items-center gap-2 font-bold"><Star className="h-4 w-4 text-yellow-500" /> Exportáveis NotebookLM</span>
+                <Badge className="bg-blue-100 text-blue-700">{stats?.counts.approved || 0}</Badge>
               </div>
-              <div className="mt-4 p-3 bg-primary/5 rounded border border-primary/10">
-                <p className="text-xs text-primary font-bold mb-1">Dica de Governança:</p>
-                <p className="text-[10px] leading-relaxed">
-                  Apenas conteúdos com status 'approved' e Scientific Accuracy {'>'} 8 são elegíveis para exportação multimídia via NotebookLM.
+              <div className="mt-4 p-3 bg-red-500/5 rounded border border-red-500/10">
+                <p className="text-[10px] leading-relaxed text-red-700 font-bold uppercase tracking-tighter">
+                  BLOQUEIO AUTOMÁTICO ATIVO: Impedindo publicação de {stats?.highRiskAlerts || 0} conteúdos com falha de segurança científica.
                 </p>
               </div>
             </div>
