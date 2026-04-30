@@ -27,7 +27,8 @@ import {
   CheckCircle,
   Eye,
   ShieldCheck,
-  Award
+  Award,
+  BarChart3
 } from "lucide-react";
 import { 
   Dialog, 
