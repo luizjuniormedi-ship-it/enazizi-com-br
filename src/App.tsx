@@ -168,7 +168,9 @@ const App = () => (
                 <Route path="banco-questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                 <Route path="gerador-questoes" element={<QuestionGenerator />} />
                 <Route path="resumos" element={<ContentSummarizer />} />
-                <Route path="apostilas" element={<StudyGuides />} />
+                 <Route path="apostilas" element={<StudyGuides />} />
+                 <Route path="videoaulas" element={<VideoLessonsLibrary />} />
+                 <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
                 
                 <Route path="coach" element={<MotivationalCoach />} />
                 <Route path="chatgpt" element={<ChatGPT />} />
