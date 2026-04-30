@@ -79,6 +79,13 @@ serve(async (req) => {
     const geminiData = await response.json()
     console.log('Gemini raw response:', JSON.stringify(geminiData))
 
+    if (geminiData.error) {
+      if (geminiData.error.code === 429) {
+        throw new Error('Limite de cota do Gemini atingido (429). Por favor, aguarde alguns instantes ou verifique seu plano no Google AI Studio.')
+      }
+      throw new Error(`Erro na API Gemini: ${geminiData.error.message}`)
+    }
+
     if (!geminiData.candidates || geminiData.candidates.length === 0) {
       throw new Error('Gemini não retornou candidatos válidos. Verifique a API Key e o conteúdo.')
     }
