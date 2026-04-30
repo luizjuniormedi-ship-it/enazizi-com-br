@@ -264,10 +264,10 @@ export default function NotebookLMSync() {
                     <TableCell>{getStatusBadge(item.media_status)}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
-                        {notebook?.notebook_url && <Link className="h-4 w-4 text-indigo-500" title="Notebook" />}
-                        {notebook?.audio_url && <Music className="h-4 w-4 text-purple-500" title="Áudio" />}
-                        {notebook?.notes_url && <FileText className="h-4 w-4 text-blue-500" title="Guia" />}
-                        {notebook?.video_url && <Video className="h-4 w-4 text-orange-500" title="Vídeo" />}
+                        {notebook?.notebook_url && <Link className="h-4 w-4 text-indigo-500" />}
+                        {notebook?.audio_url && <Music className="h-4 w-4 text-purple-500" />}
+                        {notebook?.notes_url && <FileText className="h-4 w-4 text-blue-500" />}
+                        {notebook?.video_url && <Video className="h-4 w-4 text-orange-500" />}
                         {!notebook && <span className="text-[10px] opacity-40">Sem vínculos</span>}
                       </div>
                     </TableCell>
