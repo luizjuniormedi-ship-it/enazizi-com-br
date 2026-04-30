@@ -89,6 +89,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "ingestion", label: "Ingestão", icon: Upload },
         { key: "scraping", label: "Web Scraping", icon: HardDrive },
         { key: "qa", label: "QA Bot", icon: Bug },
+        { key: "ai-studio", label: "AI Studio", icon: Sparkles },
       ],
     },
     {
