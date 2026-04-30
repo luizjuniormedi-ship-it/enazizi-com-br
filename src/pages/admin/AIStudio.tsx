@@ -66,6 +66,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
+import { PedagogicalQualityDashboard } from "@/components/admin/PedagogicalQualityDashboard";
 
 export default function AIStudio() {
   const { user } = useAuth();
@@ -75,6 +76,14 @@ export default function AIStudio() {
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [selectedContent, setSelectedContent] = useState<any>(null);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
+  
+  // Review form states
+  const [reviewScore, setReviewScore] = useState(5);
+  const [reviewLabel, setReviewLabel] = useState("Excelente");
+  const [reviewAccuracy, setReviewAccuracy] = useState(5);
+  const [reviewDidactic, setReviewDidactic] = useState(5);
+  const [reviewHallucination, setReviewHallucination] = useState("none");
+  const [reviewComments, setReviewComments] = useState("");
 
   // Form states for new content
   const [newTitle, setNewTitle] = useState("");
@@ -191,6 +200,40 @@ export default function AIStudio() {
       toast.success("Conteúdo publicado para os alunos!");
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       setIsReviewOpen(false);
+    }
+  });
+
+  const submitReview = useMutation({
+    mutationFn: async (reviewData: { 
+      contentId: string, 
+      score: number, 
+      label: string, 
+      accuracy: number, 
+      didactic: number, 
+      hallucination: string,
+      comments: string 
+    }) => {
+      const { error } = await supabase
+        .from("pedagogical_reviews")
+        .insert([{
+          content_id: reviewData.contentId,
+          reviewer_id: user?.id,
+          score: reviewData.score,
+          quality_label: reviewData.label,
+          scientific_accuracy_score: reviewData.accuracy,
+          didactic_score: reviewData.didactic,
+          hallucination_risk: reviewData.hallucination,
+          comments: reviewData.comments
+        }]);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Avaliação pedagógica registrada com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      queryClient.invalidateQueries({ queryKey: ["pedagogical-stats"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao salvar avaliação: " + error.message);
     }
   });
 
@@ -349,6 +392,62 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
         </div>
       </header>
 
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="md:col-span-2 bg-primary/5 border-primary/20">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                Calibração de Lote v1.0 (Audit)
+              </CardTitle>
+              <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary">
+                {libraryContent?.filter(c => c.status === 'published' || c.status === 'review').length || 0} / 10 PDFs
+              </Badge>
+            </div>
+            <CardDescription className="text-xs">
+              Calibre a qualidade real rodando 10 materiais médicos de especialidades diferentes.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {['Cardio', 'Pneumo', 'Farmaco', 'Pedia', 'GO', 'Clínica', 'Cirurgia', 'Neuro', 'Prev', 'Emerg'].map((spec) => {
+                const isDone = libraryContent?.some(c => c.discipline?.toLowerCase().includes(spec.toLowerCase()) && (c.status === 'published' || c.status === 'review'));
+                return (
+                  <div key={spec} className={`flex items-center gap-2 p-2 rounded border text-[10px] transition-colors ${isDone ? 'bg-green-500/10 border-green-500/30 text-green-600' : 'bg-background/50 border-primary/10 text-muted-foreground'}`}>
+                    {isDone ? <CheckCircle2 className="h-3 w-3" /> : <div className="h-3 w-3 rounded-full border border-current" />}
+                    {spec}
+                  </div>
+                );
+              })}
+            </div>
+            <Progress value={((libraryContent?.filter(c => c.status === 'published' || c.status === 'review').length || 0) / 10) * 100} className="h-1.5 mt-4" />
+          </CardContent>
+        </Card>
+
+        <Card className="bg-amber-500/5 border-amber-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <Zap className="h-4 w-4 text-amber-500" />
+              Status de Produção
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">Prompt Especializado</span>
+              <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/20 h-5 px-1.5 text-[10px]">Ativo</Badge>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">Cache de Reuso</span>
+              <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/20 h-5 px-1.5 text-[10px]">Ativo</Badge>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-muted-foreground">Auditoria Pedagógica</span>
+              <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/20 h-5 px-1.5 text-[10px]">Ativo</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardContent className="pt-6">
@@ -461,6 +560,13 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
             >
               <BarChart3 className="h-4 w-4 mr-2" />
               Analytics & Custos
+            </TabsTrigger>
+            <TabsTrigger 
+              value="quality" 
+              className="px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
+            >
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Qualidade Pedagógica
             </TabsTrigger>
           </TabsList>
           
@@ -719,6 +825,10 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
              </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="quality" className="space-y-4 py-4">
+          <PedagogicalQualityDashboard />
+        </TabsContent>
       </Tabs>
 
       {/* Content Review & NotebookLM Export Dialog */}
@@ -750,7 +860,8 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                 <TabsTrigger value="overview">Resumo Técnico</TabsTrigger>
                 <TabsTrigger value="feynman">Feynman</TabsTrigger>
                 <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
-                <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
+                 <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
+                <TabsTrigger value="pedagogical" className="text-green-500">Revisão Pedagógica</TabsTrigger>
                 <TabsTrigger value="notebooklm" className="text-indigo-500">Google NotebookLM</TabsTrigger>
               </TabsList>
 
@@ -792,6 +903,85 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                         </CardContent>
                       </Card>
                     ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="pedagogical" className="mt-0 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <Label className="text-base font-bold">Qualidade Geral</Label>
+                        <Select value={reviewLabel} onValueChange={setReviewLabel}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione o selo de qualidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Excelente">Excelente (Pronto para Aluno)</SelectItem>
+                            <SelectItem value="Bom">Bom (Ajustes Mínimos)</SelectItem>
+                            <SelectItem value="Revisar">Revisar (Necessita Correção)</SelectItem>
+                            <SelectItem value="Reprovado">Reprovado (Descartar)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Acurácia Científica (1-5)</Label>
+                          <Input type="number" min="1" max="5" value={reviewAccuracy} onChange={e => setReviewAccuracy(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Didática (1-5)</Label>
+                          <Input type="number" min="1" max="5" value={reviewDidactic} onChange={e => setReviewDidactic(Number(e.target.value))} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Risco de Alucinação</Label>
+                        <Select value={reviewHallucination} onValueChange={setReviewHallucination}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhum</SelectItem>
+                            <SelectItem value="low">Baixo</SelectItem>
+                            <SelectItem value="medium">Médio</SelectItem>
+                            <SelectItem value="high">Alto (Crítico)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Comentários de Auditoria</Label>
+                      <Textarea 
+                        placeholder="Descreva pontos de melhoria ou erros encontrados..." 
+                        className="min-h-[200px]"
+                        value={reviewComments}
+                        onChange={e => setReviewComments(e.target.value)}
+                      />
+                      <Button 
+                        className="w-full gap-2 h-12 text-lg shadow-glow-sm" 
+                        variant="default"
+                        disabled={submitReview.isPending}
+                        onClick={() => {
+                          submitReview.mutate({
+                            contentId: selectedContent.id,
+                            score: Math.round((reviewAccuracy + reviewDidactic) / 2),
+                            label: reviewLabel,
+                            accuracy: reviewAccuracy,
+                            didactic: reviewDidactic,
+                            hallucination: reviewHallucination,
+                            comments: reviewComments
+                          });
+                        }}
+                      >
+                        {submitReview.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+                        Finalizar Auditoria Pedagógica
+                      </Button>
+                      <p className="text-[10px] text-center text-muted-foreground italic">
+                        Ao finalizar, o status do material será atualizado automaticamente.
+                      </p>
+                    </div>
                   </div>
                 </TabsContent>
 

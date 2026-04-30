@@ -112,22 +112,42 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada')
 
-    // 3. Construct the prompt
+    // 3. Construct the prompt with specialty-specific instructions
+    const getSpecialtyInstructions = (discipline: string) => {
+      const d = discipline?.toLowerCase() || ''
+      if (d.includes('farmaco')) return "Foque em mecanismos de ação, doses usuais, efeitos adversos críticos e interações medicamentosas."
+      if (d.includes('cirur')) return "Foque em indicações cirúrgicas, técnica operatória (passo a passo), condutas imediatas e complicações pós-operatórias."
+      if (d.includes('pedia')) return "Considere as faixas etárias, marcos de desenvolvimento, doses pediátricas e abordagem centrada na família."
+      if (d.includes('prev')) return "Foque em níveis de prevenção, indicadores epidemiológicos, políticas do SUS e medicina baseada em evidências populacionais."
+      if (d.includes('clinica') || d.includes('medica')) return "Foque em fisiopatologia, quadro clínico clássico, critérios diagnósticos e fluxogramas de tratamento."
+      if (d.includes('emerg')) return "Foque em suporte de vida, manejo inicial 'ABCDE', estabilização e condutas de tempo-dependência."
+      if (d.includes('neuro')) return "Foque em localização neuroanatômica, síndromes neurológicas e semiologia específica."
+      if (d.includes('gineco') || d.includes('obste')) return "Foque em saúde da mulher, pré-natal, complicações obstétricas e oncologia ginecológica."
+      return "Foque nos pontos essenciais para o aprendizado médico prático e de alto rendimento."
+    }
+
+    const specialtyInstructions = getSpecialtyInstructions(content.discipline)
+
     const prompt = `
-      Você é um especialista em educação pedagógica (ENAZIZI médico). 
-      Com base no seguinte conteúdo bruto de ${content.discipline || 'uma matéria'} sobre ${content.topic || 'um assunto'}:
+      Você é um especialista em educação médica pedagógica de alto nível (ENAZIZI).
+      Baseado no conteúdo de ${content.discipline || 'Medicina'} sobre ${content.topic || 'um tema médico'}:
       
       "${content.raw_content}"
 
-      Gere os seguintes itens educacionais em formato JSON estrito:
-      1. resumo técnico: Um resumo detalhado e profissional.
-      2. resumo Feynman: Uma explicação extremamente simples, como se fosse para uma criança.
-      3. flashcards: Uma lista de objetos com { "front": "pergunta", "back": "resposta" }.
-      4. quiz: Uma lista de 5 questões de múltipla escolha com { "question": "", "options": ["A", "B", "C", "D"], "answer": "A", "explanation": "" }.
-      5. questões comentadas: 3 questões dissertativas complexas com resolução comentada.
-      6. roteiro de vídeo: Um roteiro para um vídeo curto de 3 minutos.
+      ${specialtyInstructions}
 
-      Retorne APENAS o JSON no formato solicitado.
+      Gere os seguintes itens educacionais em formato JSON estrito:
+      1. resumo técnico: Um resumo detalhado e profissional (mínimo 500 palavras).
+      2. resumo Feynman: Uma explicação extremamente simples, evitando jargões, como se fosse para um aluno do 1º ano.
+      3. flashcards: Uma lista de pelo menos 10 objetos com { "front": "pergunta direta", "back": "resposta concisa" }.
+      4. quiz: Uma lista de 5 questões de múltipla escolha no padrão de provas de residência médica com { "question": "", "options": ["A", "B", "C", "D"], "answer": "A", "explanation": "Explicação detalhada da alternativa correta e por que as outras estão incorretas" }.
+      5. questões comentadas: 3 questões dissertativas de casos clínicos complexos com resolução comentada.
+      6. roteiro de vídeo: Um roteiro completo para um vídeo de 3 a 5 minutos, incluindo sugestões visuais.
+
+      IMPORTANTE:
+      - Mantenha o rigor técnico médico.
+      - Use terminologia atualizada.
+      - Responda apenas o JSON.
     `;
 
     // 4. Call Gemini API
