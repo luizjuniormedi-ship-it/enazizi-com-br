@@ -1218,6 +1218,9 @@ INSTRUÇÃO PARA NOTEBOOKLM:
               </div>
               <div className="flex items-center gap-2">
                 {selectedContent && getStatusBadge(selectedContent.status)}
+                <Button variant="outline" size="sm" onClick={() => handleExportPDF(selectedContent)}>
+                  <FileText className="h-4 w-4 mr-2" /> PDF
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => handleCopyNotebookLM(selectedContent)}>
                   <Copy className="h-4 w-4 mr-2" /> NotebookLM
                 </Button>
