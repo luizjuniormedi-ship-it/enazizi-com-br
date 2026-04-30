@@ -85,11 +85,29 @@ const VideoLessonPlayer = () => {
   const { data: progress } = useQuery({
     queryKey: ["video-lesson-progress", id],
     queryFn: async () => {
-// ...
-    if (action === "complete") {
-      toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      const { data, error } = await supabase
+        .from("video_lesson_usage_logs")
+        .select("*")
+        .eq("video_lesson_id", id)
+        .eq("user_id", user.id)
+        .order("watched_seconds", { ascending: false })
+        .limit(1);
+      
+      if (error) return null;
+      return data[0];
+    },
+    enabled: !!lesson
+  });
+
+  useEffect(() => {
+    if (progress?.watched_seconds) {
+      setWatchedSeconds(progress.watched_seconds);
     }
-  };
+  }, [progress]);
+
 
   const handleQuizSubmit = async () => {
     if (selectedOption === null || !quiz) return;
