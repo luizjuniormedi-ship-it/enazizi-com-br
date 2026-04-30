@@ -1,4 +1,8 @@
-# Welcome to your Lovable project
+# ENAZIZI — Central de Produção IA v1.0
+
+> **Status: Production Ready** (Auditado & Seguro)
+
+Este projeto contém o módulo Enterprise de produção de conteúdo educacional médico para o ENAZIZI, utilizando Gemini 2.0 Flash e sincronização com Google NotebookLM Pro.
 
 ## Project info
 
