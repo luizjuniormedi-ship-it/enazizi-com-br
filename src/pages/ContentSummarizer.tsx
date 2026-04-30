@@ -178,15 +178,46 @@ const ContentSummarizer = () => {
                 <ScrollArea className="flex-1 p-6">
                   <TabsContent value="summary" className="mt-0 space-y-6">
                     {notebookData?.audio_url && (
-                      <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 space-y-3">
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-indigo-500/5 border border-purple-500/20 shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-bold flex items-center gap-2 text-purple-600">
-                            <Music className="h-4 w-4" /> Audio Overview (Podcast)
-                          </h4>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                              <Music className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-purple-700">Audio Overview</h4>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Podcast Educacional v1.5</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] bg-white/50 border-purple-200 text-purple-600">
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                          </Badge>
                         </div>
-                        <audio controls className="w-full h-10">
+                        
+                        <div className="space-y-2">
+                          <Progress value={(currentTime / duration) * 100 || 0} className="h-1.5 bg-purple-200/50" />
+                          <div className="flex items-center justify-center gap-4">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-purple-600 hover:bg-purple-500/10"
+                              onClick={() => { if(audioRef.current) audioRef.current.currentTime -= 10; }}
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/30"
+                              onClick={togglePlay}
+                            >
+                              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+                            </Button>
+                            <div className="w-8" /> {/* Placeholder to balance layout */}
+                          </div>
+                        </div>
+                        
+                        <audio ref={audioRef} className="hidden">
                           <source src={notebookData.audio_url} type="audio/mpeg" />
-                          Seu navegador não suporta o player de áudio.
                         </audio>
                       </div>
                     )}
