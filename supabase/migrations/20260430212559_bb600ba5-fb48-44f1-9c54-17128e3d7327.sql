@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS public.medical_institutional_materials CASCADE;
