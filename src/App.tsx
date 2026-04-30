@@ -108,6 +108,9 @@ const AIAuditMode = lazyWithRetry(() => import("./pages/admin/AIAuditMode"), "AI
 const NotebookLMDashboard = lazyWithRetry(() => import("./pages/admin/NotebookLMDashboard"), "NotebookLMDashboard");
 const NotebookLMSync = lazyWithRetry(() => import("./pages/admin/NotebookLMSync"), "NotebookLMSync");
 const NotebookLMAnalytics = lazyWithRetry(() => import("./pages/admin/NotebookLMAnalytics"), "NotebookLMAnalytics");
+const VideoLessonsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonsAdmin"), "VideoLessonsAdmin");
+const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibrary"), "VideoLessonsLibrary");
+const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"), "VideoLessonPlayer");
 
 
 
