@@ -523,9 +523,12 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>
-                                  <Eye className="h-4 w-4 mr-2" /> Visualizar / Revisar
-                                </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>
+                        <Eye className="h-4 w-4 mr-2" /> Visualizar / Revisar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => generateAIContent.mutate({ contentId: item.id, isRetry: true })}>
+                        <RotateCcw className="h-4 w-4 mr-2" /> Tentar Novamente (Retry)
+                      </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleCopyNotebookLM(item)}>
                                   <Copy className="h-4 w-4 mr-2" /> Exportar NotebookLM
                                 </DropdownMenuItem>
