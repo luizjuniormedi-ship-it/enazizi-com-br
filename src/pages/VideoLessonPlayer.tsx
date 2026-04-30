@@ -170,6 +170,8 @@ const VideoLessonPlayer = () => {
     }
   }, [progress]);
 
+  const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
+
   // Simulação de log de progresso e detecção de pausa longa / abandono
   useEffect(() => {
     let interval: any;
@@ -218,8 +220,6 @@ const VideoLessonPlayer = () => {
       }
     };
   }, [isPlaying, watchedSeconds, id, currentSegment?.id, completionRate, quizFinished]);
-
-  const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
 
   const handleAction = async (action: string) => {
     const { data: { user } } = await supabase.auth.getUser();
