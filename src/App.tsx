@@ -225,7 +225,9 @@ const App = () => (
                   <Route path="telemetry" element={<TelemetryAdmin />} />
                   <Route path="ai-studio" element={<AIStudio />} />
                   <Route path="medical-review-queue" element={<MedicalReviewQueue />} />
+                  <Route path="medical-governance" element={<MedicalGovernanceDashboard />} />
                </Route>
+
 
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
