@@ -524,7 +524,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select>
+                    <Select onValueChange={(val) => generateAIContent.mutate(val)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um conteúdo mestre" />
                       </SelectTrigger>
@@ -534,7 +534,10 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button className="w-full bg-indigo-500 hover:bg-indigo-600">Gerar Flashcards (FSRS)</Button>
+                    <Button className="w-full bg-indigo-500 hover:bg-indigo-600" disabled={generateAIContent.isPending}>
+                      {generateAIContent.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                      Gerar Flashcards (FSRS)
+                    </Button>
                   </CardContent>
                 </Card>
 
