@@ -572,6 +572,7 @@ export type Database = {
           difficulty_level: string | null
           duration_seconds: number | null
           id: string
+          is_gold_content: boolean | null
           learning_objectives: string[] | null
           notebooklm_export_text: string | null
           notebooklm_notebook_url: string | null
@@ -583,8 +584,10 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           topic: string
+          tutor_context_snapshot_id: string | null
           tutor_lesson_id: string | null
           tutor_lesson_summary: string | null
+          tutor_session_id: string | null
           updated_at: string
           video_url: string | null
           visibility: string
@@ -597,6 +600,7 @@ export type Database = {
           difficulty_level?: string | null
           duration_seconds?: number | null
           id?: string
+          is_gold_content?: boolean | null
           learning_objectives?: string[] | null
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
@@ -608,8 +612,10 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           topic: string
+          tutor_context_snapshot_id?: string | null
           tutor_lesson_id?: string | null
           tutor_lesson_summary?: string | null
+          tutor_session_id?: string | null
           updated_at?: string
           video_url?: string | null
           visibility?: string
@@ -622,6 +628,7 @@ export type Database = {
           difficulty_level?: string | null
           duration_seconds?: number | null
           id?: string
+          is_gold_content?: boolean | null
           learning_objectives?: string[] | null
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
@@ -633,8 +640,10 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           topic?: string
+          tutor_context_snapshot_id?: string | null
           tutor_lesson_id?: string | null
           tutor_lesson_summary?: string | null
+          tutor_session_id?: string | null
           updated_at?: string
           video_url?: string | null
           visibility?: string
@@ -11516,6 +11525,86 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      video_lesson_quiz_attempts: {
+        Row: {
+          answers: Json
+          created_at: string
+          id: string
+          quiz_id: string
+          score: number
+          total_questions: number
+          user_id: string
+          video_lesson_id: string
+        }
+        Insert: {
+          answers: Json
+          created_at?: string
+          id?: string
+          quiz_id: string
+          score: number
+          total_questions: number
+          user_id: string
+          video_lesson_id: string
+        }
+        Update: {
+          answers?: Json
+          created_at?: string
+          id?: string
+          quiz_id?: string
+          score?: number
+          total_questions?: number
+          user_id?: string
+          video_lesson_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_lesson_quiz_attempts_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "video_lesson_quizzes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_lesson_quiz_attempts_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_lesson_quizzes: {
+        Row: {
+          created_at: string
+          id: string
+          questions: Json
+          updated_at: string
+          video_lesson_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          questions: Json
+          updated_at?: string
+          video_lesson_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          questions?: Json
+          updated_at?: string
+          video_lesson_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_lesson_quizzes_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       video_lesson_usage_logs: {
         Row: {
