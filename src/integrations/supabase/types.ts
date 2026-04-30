@@ -4300,34 +4300,58 @@ export type Database = {
       }
       lesson_segments: {
         Row: {
+          ai_generated: boolean | null
           created_at: string
+          difficulty_score: number | null
           end_second: number | null
+          has_flashcards: boolean | null
+          has_quiz: boolean | null
           id: string
+          key_points: Json | null
           lesson_id: string
           ordem: number
+          segment_type: string | null
           start_second: number | null
+          summary: string | null
           title: string | null
           transcript_segment: string | null
+          updated_at: string | null
         }
         Insert: {
+          ai_generated?: boolean | null
           created_at?: string
+          difficulty_score?: number | null
           end_second?: number | null
+          has_flashcards?: boolean | null
+          has_quiz?: boolean | null
           id?: string
+          key_points?: Json | null
           lesson_id: string
           ordem?: number
+          segment_type?: string | null
           start_second?: number | null
+          summary?: string | null
           title?: string | null
           transcript_segment?: string | null
+          updated_at?: string | null
         }
         Update: {
+          ai_generated?: boolean | null
           created_at?: string
+          difficulty_score?: number | null
           end_second?: number | null
+          has_flashcards?: boolean | null
+          has_quiz?: boolean | null
           id?: string
+          key_points?: Json | null
           lesson_id?: string
           ordem?: number
+          segment_type?: string | null
           start_second?: number | null
+          summary?: string | null
           title?: string | null
           transcript_segment?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -11526,6 +11550,48 @@ export type Database = {
         }
         Relationships: []
       }
+      video_adaptive_recommendations: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          payload: Json | null
+          priority: number | null
+          reason: string | null
+          recommendation_type: string
+          segment_id: string | null
+          status: string | null
+          user_id: string
+          video_lesson_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          payload?: Json | null
+          priority?: number | null
+          reason?: string | null
+          recommendation_type: string
+          segment_id?: string | null
+          status?: string | null
+          user_id: string
+          video_lesson_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          payload?: Json | null
+          priority?: number | null
+          reason?: string | null
+          recommendation_type?: string
+          segment_id?: string | null
+          status?: string | null
+          user_id?: string
+          video_lesson_id?: string | null
+        }
+        Relationships: []
+      }
       video_lesson_quiz_attempts: {
         Row: {
           answers: Json
@@ -11689,6 +11755,96 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_group_link?: string | null
           title?: string
+        }
+        Relationships: []
+      }
+      video_segment_events: {
+        Row: {
+          created_at: string
+          duration_ms: number | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          segment_id: string | null
+          timestamp_seconds: number | null
+          user_id: string
+          video_lesson_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          segment_id?: string | null
+          timestamp_seconds?: number | null
+          user_id: string
+          video_lesson_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          segment_id?: string | null
+          timestamp_seconds?: number | null
+          user_id?: string
+          video_lesson_id?: string
+        }
+        Relationships: []
+      }
+      video_segment_fsrs: {
+        Row: {
+          created_at: string
+          difficulty: number | null
+          due_at: string
+          id: string
+          lapses: number | null
+          last_review: string | null
+          reps: number | null
+          retrievability: number | null
+          segment_id: string
+          stability: number | null
+          subtopic: string | null
+          topic: string | null
+          updated_at: string
+          user_id: string
+          video_lesson_id: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty?: number | null
+          due_at?: string
+          id?: string
+          lapses?: number | null
+          last_review?: string | null
+          reps?: number | null
+          retrievability?: number | null
+          segment_id: string
+          stability?: number | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+          video_lesson_id: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: number | null
+          due_at?: string
+          id?: string
+          lapses?: number | null
+          last_review?: string | null
+          reps?: number | null
+          retrievability?: number | null
+          segment_id?: string
+          stability?: number | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
+          video_lesson_id?: string
         }
         Relationships: []
       }
