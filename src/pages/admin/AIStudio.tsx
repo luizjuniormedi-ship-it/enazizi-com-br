@@ -195,18 +195,28 @@ export default function AIStudio() {
 
   const trackExport = useMutation({
     mutationFn: async ({ contentId, destination }: { contentId: string, destination: string }) => {
+      // Registrar log oficial de exportação NotebookLM
       const { error } = await supabase
-        .from("ai_export_logs")
-        .insert([{ content_id: contentId, user_id: user?.id, destination }]);
+        .from("notebooklm_export_logs")
+        .insert([{ 
+          content_id: contentId, 
+          user_id: user?.id, 
+          status: 'exported',
+          metadata: { destination }
+        }]);
       if (error) throw error;
       
       await supabase
         .from("master_content_library")
-        .update({ media_status: 'exported_to_notebooklm' })
+        .update({ 
+          media_status: 'exported_to_notebooklm',
+          exported_by: user?.id,
+          exported_at: new Date().toISOString()
+        })
         .eq('id', contentId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["ai-export-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["notebooklm-export-logs"] });
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
     }
   });
