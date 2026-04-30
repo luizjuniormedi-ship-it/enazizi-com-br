@@ -100,6 +100,10 @@ export default function AIStudio() {
   const [reviewFlashcards, setReviewFlashcards] = useState(10);
   const [reviewQuiz, setReviewQuiz] = useState(10);
   const [reviewFeynman, setReviewFeynman] = useState(10);
+  const [reviewAdherence, setReviewAdherence] = useState(10);
+  const [reviewSafety, setReviewSafety] = useState(10);
+  const [reviewExamUtility, setReviewExamUtility] = useState(10);
+  const [reviewType, setReviewType] = useState("pedagogical");
   const [reviewHallucination, setReviewHallucination] = useState("none");
   const [reviewComments, setReviewComments] = useState("");
 
