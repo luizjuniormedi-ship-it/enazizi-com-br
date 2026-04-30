@@ -379,7 +379,12 @@ const VideoLessonPlayer = () => {
               </div>
             )}
 
-
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{lesson.specialty}</Badge>
+                    <Badge variant="secondary">{lesson.topic}</Badge>
                     {lesson.is_gold_content && (
                       <Badge className="bg-yellow-500 text-black gap-1">
                         <Sparkles className="h-3 w-3" /> Ouro
