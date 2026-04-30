@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -17,8 +17,14 @@ import {
   BrainCircuit,
   Award,
   Sparkles,
-  Zap
+  Zap,
+  AlertTriangle,
+  RotateCcw
 } from "lucide-react";
+import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
+import { useVideoSegmentAnalytics } from "@/hooks/useVideoSegmentAnalytics";
+import { useTutorTemporalContext } from "@/hooks/useTutorTemporalContext";
+import { VideoSegmentList, type VideoSegment } from "@/components/video-library/VideoSegmentList";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
