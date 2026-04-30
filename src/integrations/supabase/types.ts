@@ -100,6 +100,53 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_content_audit_logs: {
+        Row: {
+          action: string
+          content_id: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          new_status: string | null
+          previous_status: string | null
+          tenant_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          previous_status?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          new_status?: string | null
+          previous_status?: string | null
+          tenant_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_content_audit_logs_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_content_cache: {
         Row: {
           banca: string | null
@@ -157,6 +204,57 @@ export type Database = {
           subtopic?: string | null
           topic?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_enterprise_usage_logs: {
+        Row: {
+          actor_key: string | null
+          actor_type: string
+          cache_hit: boolean | null
+          cost_estimate: number | null
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          model_tier: string | null
+          model_used: string | null
+          response_time_ms: number | null
+          success: boolean
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          actor_key?: string | null
+          actor_type?: string
+          cache_hit?: boolean | null
+          cost_estimate?: number | null
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          model_tier?: string | null
+          model_used?: string | null
+          response_time_ms?: number | null
+          success?: boolean
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          actor_key?: string | null
+          actor_type?: string
+          cache_hit?: boolean | null
+          cost_estimate?: number | null
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          model_tier?: string | null
+          model_used?: string | null
+          response_time_ms?: number | null
+          success?: boolean
+          tokens_used?: number | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -324,57 +422,6 @@ export type Database = {
           plan_type?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      ai_usage_logs: {
-        Row: {
-          actor_key: string | null
-          actor_type: string
-          cache_hit: boolean | null
-          cost_estimate: number | null
-          created_at: string
-          error_message: string | null
-          function_name: string
-          id: string
-          model_tier: string | null
-          model_used: string | null
-          response_time_ms: number | null
-          success: boolean
-          tokens_used: number | null
-          user_id: string | null
-        }
-        Insert: {
-          actor_key?: string | null
-          actor_type?: string
-          cache_hit?: boolean | null
-          cost_estimate?: number | null
-          created_at?: string
-          error_message?: string | null
-          function_name: string
-          id?: string
-          model_tier?: string | null
-          model_used?: string | null
-          response_time_ms?: number | null
-          success?: boolean
-          tokens_used?: number | null
-          user_id?: string | null
-        }
-        Update: {
-          actor_key?: string | null
-          actor_type?: string
-          cache_hit?: boolean | null
-          cost_estimate?: number | null
-          created_at?: string
-          error_message?: string | null
-          function_name?: string
-          id?: string
-          model_tier?: string | null
-          model_used?: string | null
-          response_time_ms?: number | null
-          success?: boolean
-          tokens_used?: number | null
-          user_id?: string | null
         }
         Relationships: []
       }
@@ -4030,13 +4077,17 @@ export type Database = {
           generated_summary: string | null
           generated_video_script: string | null
           id: string
+          last_error: string | null
+          max_retries: number | null
           metadata: Json | null
           notebooklm_audio_url: string | null
           notebooklm_export_text: string | null
           notebooklm_notes: string | null
           notebooklm_video_url: string | null
+          processing_started_at: string | null
           published_at: string | null
           raw_content: string | null
+          retry_count: number | null
           reviewed_by: string | null
           source_type: string
           source_url: string | null
@@ -4064,13 +4115,17 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           id?: string
+          last_error?: string | null
+          max_retries?: number | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
           notebooklm_notes?: string | null
           notebooklm_video_url?: string | null
+          processing_started_at?: string | null
           published_at?: string | null
           raw_content?: string | null
+          retry_count?: number | null
           reviewed_by?: string | null
           source_type: string
           source_url?: string | null
@@ -4098,13 +4153,17 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           id?: string
+          last_error?: string | null
+          max_retries?: number | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
           notebooklm_notes?: string | null
           notebooklm_video_url?: string | null
+          processing_started_at?: string | null
           published_at?: string | null
           raw_content?: string | null
+          retry_count?: number | null
           reviewed_by?: string | null
           source_type?: string
           source_url?: string | null

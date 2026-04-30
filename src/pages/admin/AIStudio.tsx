@@ -40,7 +40,8 @@ import {
   Music,
   Download,
   Share2,
-  TrendingUp
+  TrendingUp,
+  RotateCcw
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -113,15 +114,19 @@ export default function AIStudio() {
   });
 
   const generateAIContent = useMutation({
-    mutationFn: async (contentId: string) => {
+    mutationFn: async ({ contentId, isRetry = false }: { contentId: string, isRetry?: boolean }) => {
       const { data, error } = await supabase.functions.invoke('generate-content-ai', {
-        body: { contentId }
+        body: { contentId, isRetry }
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Geração iniciada na fila de processamento.");
+    onSuccess: (data) => {
+      if (data?.success) {
+        toast.success(data.message || "Geração iniciada na fila de processamento.");
+      } else {
+        toast.info(data?.message || "Processamento em andamento.");
+      }
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       queryClient.invalidateQueries({ queryKey: ["ai-generation-queue"] });
     },
@@ -155,8 +160,9 @@ export default function AIStudio() {
           source_type: newSourceType,
           raw_content: newRawContent,
           content_hash: contentHash,
-          status: 'draft',
-          created_by: user?.id
+          status: 'processing',
+          created_by: user?.id,
+          metadata: { version: '1.0.0', audit: 'ready' }
         }])
         .select()
         .single();
@@ -169,7 +175,7 @@ export default function AIStudio() {
       setIsUploadOpen(false);
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       // Trigger AI generation
-      generateAIContent.mutate(data.id);
+      generateAIContent.mutate({ contentId: data.id });
     }
   });
 
@@ -188,12 +194,27 @@ export default function AIStudio() {
     }
   });
 
+  const { data: usageLogs } = useQuery({
+    queryKey: ["ai-usage-logs"],
+    queryFn: async () => {
+      try {
+        const { data, error } = await supabase.from("ai_enterprise_usage_logs" as any).select("*");
+        if (error) return [];
+        return data as any[];
+      } catch (e) {
+        return [];
+      }
+    }
+  });
+
   const stats = {
     total: libraryContent?.length || 0,
     published: libraryContent?.filter(c => c.status === "published").length || 0,
     review: libraryContent?.filter(c => c.status === "review").length || 0,
-    processing: queueItems?.filter(q => q.status === "processing").length || 0,
-    savings: (libraryContent?.filter(c => c.status === "published").length || 0) * 0.50 // Placeholder calc
+    processing: libraryContent?.filter(c => c.status === "processing").length || 0,
+    failed: libraryContent?.filter(c => (c.status as any) === "failed").length || 0,
+    savings: usageLogs?.reduce((acc: number, log: any) => acc + (log.reused_from_cache ? 0.50 : 0), 0) || 0,
+    cost: usageLogs?.reduce((acc: number, log: any) => acc + Number(log.estimated_cost || 0), 0) || 0
   };
 
   const getStatusBadge = (status: string) => {
@@ -201,6 +222,7 @@ export default function AIStudio() {
       case "published": return <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Publicado</Badge>;
       case "review": return <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20">Em Revisão</Badge>;
       case "processing": return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20 animate-pulse">Processando</Badge>;
+      case "failed": return <Badge className="bg-destructive/10 text-destructive border-destructive/20">Falha</Badge>;
       case "approved": return <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20">Aprovado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
@@ -326,12 +348,12 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4">
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Biblioteca</p>
+                <p className="text-sm font-medium text-muted-foreground">Total</p>
                 <h3 className="text-2xl font-bold">{stats.total}</h3>
               </div>
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -357,11 +379,11 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Em Revisão</p>
-                <h3 className="text-2xl font-bold text-amber-500">{stats.review}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Processando</p>
+                <h3 className="text-2xl font-bold text-blue-500">{stats.processing}</h3>
               </div>
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <Clock className="h-5 w-5 text-amber-500" />
+              <div className="p-2 bg-blue-500/10 rounded-lg">
+                <Sparkles className="h-5 w-5 text-blue-500" />
               </div>
             </div>
           </CardContent>
@@ -370,11 +392,11 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Geração Ativa</p>
-                <h3 className="text-2xl font-bold text-blue-500">{stats.processing}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Falhas</p>
+                <h3 className="text-2xl font-bold text-destructive">{stats.failed}</h3>
               </div>
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Sparkles className="h-5 w-5 text-blue-500" />
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -384,10 +406,23 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-indigo-500/70">Economia IA</p>
-                <h3 className="text-2xl font-bold text-indigo-500">$ {stats.savings.toFixed(2)}</h3>
+                <h3 className="text-xl font-bold text-indigo-500">$ {stats.savings.toFixed(2)}</h3>
               </div>
               <div className="p-2 bg-indigo-500/10 rounded-lg">
                 <TrendingUp className="h-5 w-5 text-indigo-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-amber-500/5 backdrop-blur-sm border-amber-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-amber-500/70">Custo Total</p>
+                <h3 className="text-xl font-bold text-amber-500">$ {stats.cost.toFixed(2)}</h3>
+              </div>
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-amber-500" />
               </div>
             </div>
           </CardContent>
@@ -493,6 +528,9 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                                 <DropdownMenuItem onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>
                                   <Eye className="h-4 w-4 mr-2" /> Visualizar / Revisar
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => generateAIContent.mutate({ contentId: item.id, isRetry: true })}>
+                                  <RotateCcw className="h-4 w-4 mr-2" /> Tentar Novamente (Retry)
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => handleCopyNotebookLM(item)}>
                                   <Copy className="h-4 w-4 mr-2" /> Exportar NotebookLM
                                 </DropdownMenuItem>
@@ -524,7 +562,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select onValueChange={(val) => generateAIContent.mutate(val)}>
+                    <Select onValueChange={(val) => generateAIContent.mutate({ contentId: val })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um conteúdo mestre" />
                       </SelectTrigger>
@@ -549,7 +587,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select onValueChange={(val) => generateAIContent.mutate(val)}>
+                    <Select onValueChange={(val) => generateAIContent.mutate({ contentId: val })}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a fonte" />
                       </SelectTrigger>
@@ -801,6 +839,11 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                          <ExternalLink className="h-3 w-3" /> Requer assinatura NotebookLM Pro / Enterprise
                        </p>
                        <Button variant="link" className="text-indigo-500 text-xs h-auto p-0">Ver tutorial de integração</Button>
+                    </div>
+                    
+                    <div className="mt-8 pt-6 border-t border-primary/10 flex items-center justify-between">
+                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Version 1.0.0 Production Ready</Badge>
+                      <p className="text-[10px] text-muted-foreground italic">ENAZIZI - Central de Produção IA</p>
                     </div>
                   </div>
                 </TabsContent>

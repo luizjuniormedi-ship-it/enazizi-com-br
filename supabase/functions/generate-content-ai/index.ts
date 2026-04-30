@@ -12,11 +12,29 @@ serve(async (req) => {
   }
 
   try {
-    const { contentId } = await req.json()
+    const { contentId, isRetry = false } = await req.json()
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+
+    // Auth check - Admin only
+    const authHeader = req.headers.get('Authorization')
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader?.replace('Bearer ', '') ?? '')
+    
+    if (authError || !user) {
+      throw new Error('Não autorizado')
+    }
+
+    const { data: profile } = await supabaseClient
+      .from('profiles')
+      .select('user_type, organization_id')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || !['admin', 'professor'].includes(profile.user_type)) {
+      throw new Error('Acesso restrito a administradores')
+    }
 
     // 1. Fetch content from library
     const { data: content, error: fetchError } = await supabaseClient
@@ -29,20 +47,74 @@ serve(async (req) => {
       throw new Error('Conteúdo não encontrado')
     }
 
+    // Check if already processing or succeeded
+    if (content.status === 'processing' && !isRetry) {
+      return new Response(JSON.stringify({ message: "Conteúdo já está em processamento" }), { headers: corsHeaders })
+    }
+
+    // Hash check for reuse (Skip if explicit retry)
+    if (!isRetry && content.content_hash) {
+      const { data: existingContent } = await supabaseClient
+        .from('master_content_library')
+        .select('*')
+        .eq('content_hash', content.content_hash)
+        .eq('status', 'review')
+        .neq('id', contentId)
+        .limit(1)
+        .maybeSingle()
+
+      if (existingContent) {
+        // Reuse content
+        await supabaseClient.from('master_content_library').update({
+          generated_summary: existingContent.generated_summary,
+          generated_feynman: existingContent.generated_feynman,
+          generated_flashcards: existingContent.generated_flashcards,
+          generated_quiz: existingContent.generated_quiz,
+          generated_questions: existingContent.generated_questions,
+          generated_video_script: existingContent.generated_video_script,
+          status: 'review',
+          metadata: { ...content.metadata, reused_from_id: existingContent.id }
+        }).eq('id', contentId)
+
+        // Log audit
+        await supabaseClient.from('ai_content_audit_logs').insert({
+          content_id: contentId,
+          user_id: user.id,
+          action: 'reused_content',
+          new_status: 'review',
+          metadata: { source_id: existingContent.id }
+        })
+
+        // Log usage (Zero cost)
+        await supabaseClient.from('ai_usage_logs').insert({
+          tenant_id: profile.organization_id,
+          user_id: user.id,
+          content_id: contentId,
+          model: 'cache',
+          reused_from_cache: true,
+          estimated_cost: 0
+        })
+
+        return new Response(JSON.stringify({ success: true, message: "Conteúdo reutilizado da biblioteca mestre." }), { headers: corsHeaders })
+      }
+    }
+
     // 2. Update status to processing
     await supabaseClient
       .from('master_content_library')
-      .update({ status: 'processing' })
+      .update({ 
+        status: 'processing',
+        processing_started_at: new Date().toISOString(),
+        retry_count: isRetry ? content.retry_count + 1 : content.retry_count
+      })
       .eq('id', contentId)
 
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY não configurada')
-    }
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada')
 
-    // 3. Construct the prompt for Gemini 2.0 Flash
+    // 3. Construct the prompt
     const prompt = `
-      Você é um especialista em educação pedagógica. 
+      Você é um especialista em educação pedagógica (ENAZIZI médico). 
       Com base no seguinte conteúdo bruto de ${content.discipline || 'uma matéria'} sobre ${content.topic || 'um assunto'}:
       
       "${content.raw_content}"
@@ -55,15 +127,7 @@ serve(async (req) => {
       5. questões comentadas: 3 questões dissertativas complexas com resolução comentada.
       6. roteiro de vídeo: Um roteiro para um vídeo curto de 3 minutos.
 
-      Retorne APENAS o JSON no formato:
-      {
-        "summary": "...",
-        "feynman_summary": "...",
-        "flashcards": [...],
-        "quiz": [...],
-        "questions": [...],
-        "video_script": "..."
-      }
+      Retorne APENAS o JSON no formato solicitado.
     `;
 
     // 4. Call Gemini API
@@ -77,26 +141,38 @@ serve(async (req) => {
     })
 
     const geminiData = await response.json()
-    console.log('Gemini raw response:', JSON.stringify(geminiData))
 
     if (geminiData.error) {
-      if (geminiData.error.code === 429) {
-        throw new Error('Limite de cota do Gemini atingido (429). Por favor, aguarde alguns instantes ou verifique seu plano no Google AI Studio.')
-      }
-      throw new Error(`Erro na API Gemini: ${geminiData.error.message}`)
-    }
+      const isRateLimit = geminiData.error.code === 429
+      const errorMsg = isRateLimit ? 'Rate limit reached' : geminiData.error.message
+      
+      await supabaseClient.from('master_content_library').update({ 
+        status: 'failed',
+        last_error: errorMsg
+      }).eq('id', contentId)
 
-    if (!geminiData.candidates || geminiData.candidates.length === 0) {
-      throw new Error('Gemini não retornou candidatos válidos. Verifique a API Key e o conteúdo.')
+      await supabaseClient.from('ai_content_audit_logs').insert({
+        content_id: contentId,
+        user_id: user.id,
+        action: 'generation_error',
+        error_message: errorMsg,
+        metadata: { code: geminiData.error.code }
+      })
+
+      throw new Error(errorMsg)
     }
 
     const aiResponseText = geminiData.candidates[0].content.parts[0].text
-    // Clean up potential markdown code blocks if the model included them
-    const cleanJson = aiResponseText.replace(/```json|```/g, '').trim()
-    const parsedData = JSON.parse(cleanJson)
+    const parsedData = JSON.parse(aiResponseText.replace(/```json|```/g, '').trim())
 
-    // 5. Update library with generated content
-    const { error: updateError } = await supabaseClient
+    // 5. Token usage (Simulated/Estimated for Gemini)
+    const inputTokens = content.raw_content.length / 4 // Rough estimate
+    const outputTokens = aiResponseText.length / 4
+    const costPerMillion = 0.10 // 0.10 USD per 1M tokens approx
+    const estimatedCost = ((inputTokens + outputTokens) / 1000000) * costPerMillion
+
+    // 6. Update library
+    await supabaseClient
       .from('master_content_library')
       .update({
         generated_summary: parsedData.summary || parsedData.resumo_tecnico,
@@ -105,11 +181,29 @@ serve(async (req) => {
         generated_quiz: parsedData.quiz,
         generated_questions: parsedData.questions || parsedData.questoes_comentadas,
         generated_video_script: parsedData.video_script || parsedData.roteiro_video,
-        status: 'review'
+        status: 'review',
+        last_error: null
       })
       .eq('id', contentId)
 
-    if (updateError) throw updateError
+    // Audit and Usage
+    await Promise.all([
+      supabaseClient.from('ai_content_audit_logs').insert({
+        content_id: contentId,
+        user_id: user.id,
+        action: 'generation_success',
+        new_status: 'review'
+      }),
+      supabaseClient.from('ai_usage_logs').insert({
+        tenant_id: profile.organization_id,
+        user_id: user.id,
+        content_id: contentId,
+        model: 'gemini-2.0-flash',
+        input_tokens: Math.round(inputTokens),
+        output_tokens: Math.round(outputTokens),
+        estimated_cost: estimatedCost
+      })
+    ])
 
     return new Response(
       JSON.stringify({ success: true, message: "Conteúdo gerado com IA. Revisão pedagógica obrigatória." }),

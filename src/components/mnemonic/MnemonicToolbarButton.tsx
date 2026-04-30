@@ -108,7 +108,7 @@ export const MnemonicToolbarButton = () => {
     // Telemetry
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return;
-      supabase.from("ai_usage_logs").insert({
+      supabase.from("ai_usage_logs" as any).insert({
         user_id: user.id,
         function_name: "mnemonic_subtopic_selected",
         actor_type: "user",
@@ -185,7 +185,7 @@ export const MnemonicToolbarButton = () => {
         userId: user.id, topic: effectiveTopic, contentType, items: optimized.optimizedItems, source: "manual",
       });
       const elapsed = Date.now() - startTime;
-      supabase.from("ai_usage_logs").insert({
+      supabase.from("ai_usage_logs" as any).insert({
         user_id: user.id, function_name: "generate-mnemonic", actor_type: "user",
         success: response.success, response_time_ms: elapsed,
         cache_hit: response.result?.cached ?? false, error_message: response.error || null,
