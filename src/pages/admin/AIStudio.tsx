@@ -438,6 +438,15 @@ INSTRUÇÃO PARA NOTEBOOKLM:
     `;
     navigator.clipboard.writeText(text);
     trackExport.mutate({ contentId: content.id, destination: 'notebooklm' });
+    
+    // Alerta de sucesso operacional
+    supabase.rpc('log_ai_alert', { 
+      p_type: 'notebooklm_export', 
+      p_severity: 'info', 
+      p_message: `Exportação NotebookLM realizada para: ${content.title}`,
+      p_content_id: content.id
+    });
+
     toast.success("Pacote estruturado copiado para o NotebookLM!");
   };
 
@@ -529,6 +538,11 @@ INSTRUÇÃO PARA NOTEBOOKLM:
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Button variant="outline" onClick={() => window.location.href='/admin/ai-audit-mode'} className="gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            Modo Auditoria
+          </Button>
 
           <Button variant="outline" onClick={() => setActiveTab("library")} className="gap-2">
             <Database className="h-4 w-4" />
