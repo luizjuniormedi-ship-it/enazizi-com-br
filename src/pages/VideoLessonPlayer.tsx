@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   RotateCcw
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
 import { useVideoSegmentAnalytics } from "@/hooks/useVideoSegmentAnalytics";
 import { useTutorTemporalContext } from "@/hooks/useTutorTemporalContext";
