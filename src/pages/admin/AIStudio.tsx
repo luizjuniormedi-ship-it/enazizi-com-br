@@ -258,8 +258,9 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">Enterprise</Badge>
-            <Badge variant="outline" className="text-[10px] border-indigo-500/20 text-indigo-500">NotebookLM Sync</Badge>
+            <Badge variant="outline" className="text-[10px] border-primary/20 text-primary uppercase">Enterprise</Badge>
+            <Badge variant="outline" className="text-[10px] border-indigo-500/20 text-indigo-500 uppercase">NotebookLM Sync</Badge>
+            <Badge className="text-[10px] bg-green-500/10 text-green-500 border-green-500/20 uppercase font-bold tracking-tighter">v1.0 Production Ready</Badge>
           </div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary via-indigo-400 to-primary/60 bg-clip-text text-transparent">
             Central de Produção IA
@@ -842,8 +843,8 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     </div>
                     
                     <div className="mt-8 pt-6 border-t border-primary/10 flex items-center justify-between">
-                      <Badge variant="outline" className="text-[10px] text-muted-foreground">Version 1.0.0 Production Ready</Badge>
-                      <p className="text-[10px] text-muted-foreground italic">ENAZIZI - Central de Produção IA</p>
+                       <p className="text-[10px] text-muted-foreground italic uppercase tracking-widest">ENAZIZI - Central de Produção IA</p>
+                       <p className="text-[10px] text-muted-foreground">Certified v1.0</p>
                     </div>
                   </div>
                 </TabsContent>
