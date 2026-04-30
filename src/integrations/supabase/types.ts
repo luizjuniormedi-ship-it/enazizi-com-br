@@ -258,6 +258,41 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_export_logs: {
+        Row: {
+          content_id: string | null
+          created_at: string | null
+          destination: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string | null
+          destination?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string | null
+          destination?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_export_logs_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_generated_assets: {
         Row: {
           asset_type: string
@@ -429,11 +464,15 @@ export type Database = {
         Row: {
           content_id: string | null
           created_at: string | null
+          error_code: string | null
           estimated_cost: number | null
           id: string
           input_tokens: number | null
+          json_validation_status: string | null
+          latency_ms: number | null
           model: string
           output_tokens: number | null
+          prompt_type: string | null
           reused_from_cache: boolean | null
           tenant_id: string | null
           user_id: string | null
@@ -441,11 +480,15 @@ export type Database = {
         Insert: {
           content_id?: string | null
           created_at?: string | null
+          error_code?: string | null
           estimated_cost?: number | null
           id?: string
           input_tokens?: number | null
+          json_validation_status?: string | null
+          latency_ms?: number | null
           model: string
           output_tokens?: number | null
+          prompt_type?: string | null
           reused_from_cache?: boolean | null
           tenant_id?: string | null
           user_id?: string | null
@@ -453,11 +496,15 @@ export type Database = {
         Update: {
           content_id?: string | null
           created_at?: string | null
+          error_code?: string | null
           estimated_cost?: number | null
           id?: string
           input_tokens?: number | null
+          json_validation_status?: string | null
+          latency_ms?: number | null
           model?: string
           output_tokens?: number | null
+          prompt_type?: string | null
           reused_from_cache?: boolean | null
           tenant_id?: string | null
           user_id?: string | null
@@ -4128,6 +4175,9 @@ export type Database = {
           last_error: string | null
           manual_correction_log: Json | null
           max_retries: number | null
+          media_added_at: string | null
+          media_added_by: string | null
+          media_status: string | null
           metadata: Json | null
           notebooklm_audio_url: string | null
           notebooklm_export_text: string | null
@@ -4169,6 +4219,9 @@ export type Database = {
           last_error?: string | null
           manual_correction_log?: Json | null
           max_retries?: number | null
+          media_added_at?: string | null
+          media_added_by?: string | null
+          media_status?: string | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
@@ -4210,6 +4263,9 @@ export type Database = {
           last_error?: string | null
           manual_correction_log?: Json | null
           max_retries?: number | null
+          media_added_at?: string | null
+          media_added_by?: string | null
+          media_status?: string | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
