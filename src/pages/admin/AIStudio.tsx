@@ -850,6 +850,85 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                   </div>
                 </TabsContent>
 
+                <TabsContent value="pedagogical" className="mt-0 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-6">
+                      <div className="space-y-4">
+                        <Label className="text-base font-bold">Qualidade Geral</Label>
+                        <Select value={reviewLabel} onValueChange={setReviewLabel}>
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecione o selo de qualidade" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Excelente">Excelente (Pronto para Aluno)</SelectItem>
+                            <SelectItem value="Bom">Bom (Ajustes Mínimos)</SelectItem>
+                            <SelectItem value="Revisar">Revisar (Necessita Correção)</SelectItem>
+                            <SelectItem value="Reprovado">Reprovado (Descartar)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Acurácia Científica (1-5)</Label>
+                          <Input type="number" min="1" max="5" value={reviewAccuracy} onChange={e => setReviewAccuracy(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Didática (1-5)</Label>
+                          <Input type="number" min="1" max="5" value={reviewDidactic} onChange={e => setReviewDidactic(Number(e.target.value))} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Risco de Alucinação</Label>
+                        <Select value={reviewHallucination} onValueChange={setReviewHallucination}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Nenhum</SelectItem>
+                            <SelectItem value="low">Baixo</SelectItem>
+                            <SelectItem value="medium">Médio</SelectItem>
+                            <SelectItem value="high">Alto (Crítico)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <Label>Comentários de Auditoria</Label>
+                      <Textarea 
+                        placeholder="Descreva pontos de melhoria ou erros encontrados..." 
+                        className="min-h-[200px]"
+                        value={reviewComments}
+                        onChange={e => setReviewComments(e.target.value)}
+                      />
+                      <Button 
+                        className="w-full gap-2 h-12 text-lg shadow-glow-sm" 
+                        variant="default"
+                        disabled={submitReview.isPending}
+                        onClick={() => {
+                          submitReview.mutate({
+                            contentId: selectedContent.id,
+                            score: Math.round((reviewAccuracy + reviewDidactic) / 2),
+                            label: reviewLabel,
+                            accuracy: reviewAccuracy,
+                            didactic: reviewDidactic,
+                            hallucination: reviewHallucination,
+                            comments: reviewComments
+                          });
+                        }}
+                      >
+                        {submitReview.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+                        Finalizar Auditoria Pedagógica
+                      </Button>
+                      <p className="text-[10px] text-center text-muted-foreground italic">
+                        Ao finalizar, o status do material será atualizado automaticamente.
+                      </p>
+                    </div>
+                  </div>
+                </TabsContent>
+
                 <TabsContent value="notebooklm" className="mt-0 space-y-6">
                   <div className="p-6 rounded-xl border-2 border-dashed border-indigo-500/20 bg-indigo-500/5 space-y-6">
                     <div className="flex items-start gap-4">
