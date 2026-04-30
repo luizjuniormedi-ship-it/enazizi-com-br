@@ -366,14 +366,30 @@ export default function AIStudio() {
     }
   });
 
+  const { data: operationalAlerts } = useQuery({
+    queryKey: ["ai-operational-alerts-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_operational_alerts")
+        .select("*")
+        .eq("is_resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) return [];
+      return data;
+    }
+  });
+
   const stats = {
     total: libraryContent?.length || 0,
     published: libraryContent?.filter(c => c.status === "published").length || 0,
-    review: libraryContent?.filter(c => c.status === "review").length || 0,
+    review: libraryContent?.filter(c => ["ai_generated", "pedagogical_review", "scientific_review"].includes(c.status)).length || 0,
     processing: libraryContent?.filter(c => c.status === "processing").length || 0,
-    failed: libraryContent?.filter(c => (c.status as any) === "failed").length || 0,
-    savings: usageLogs?.reduce((acc: number, log: any) => acc + (log.reused_from_cache ? 0.50 : 0), 0) || 0,
-    cost: usageLogs?.reduce((acc: number, log: any) => acc + Number(log.estimated_cost || 0), 0) || 0
+    failed: libraryContent?.filter(c => c.status === "failed").length || 0,
+    savings: usageLogs?.reduce((acc: number, log: any) => acc + (log.cache_status !== 'cache_miss' ? 0.50 : 0), 0) || 0,
+    cost: usageLogs?.reduce((acc: number, log: any) => acc + Number(log.estimated_cost || 0), 0) || 0,
+    alerts: operationalAlerts?.length || 0,
+    blocked: libraryContent?.filter(c => (c.hallucination_risk_score || 0) > 0.7).length || 0
   };
 
   const getStatusBadge = (status: string) => {
