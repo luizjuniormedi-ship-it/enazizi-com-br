@@ -41,7 +41,11 @@ import {
   Download,
   Share2,
   TrendingUp,
-  RotateCcw
+  RotateCcw,
+  FileJson,
+  Activity,
+  DollarSign,
+  Package
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -67,6 +71,14 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { PedagogicalQualityDashboard } from "@/components/admin/PedagogicalQualityDashboard";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 
 export default function AIStudio() {
   const { user } = useAuth();
