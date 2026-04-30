@@ -3,16 +3,59 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { 
-...
+  Video, 
+  Search, 
+  Filter, 
+  Clock, 
+  BookOpen, 
+  MoreVertical, 
+  Plus, 
+  CheckCircle2, 
+  AlertCircle,
+  BarChart3,
+  ExternalLink,
+  History,
+  ShieldCheck,
+  Star,
+  BrainCircuit,
+  Award
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { toast } from "sonner";
+
 const VideoLessonsAdmin = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
 
-
   const { data: lessons, isLoading, refetch } = useQuery({
     queryKey: ["admin-video-lessons"],
+
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ai_video_lessons")
