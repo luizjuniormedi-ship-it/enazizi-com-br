@@ -211,6 +211,47 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_generation_queue: {
+        Row: {
+          completed_at: string | null
+          content_id: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          started_at: string | null
+          status: string | null
+          task_type: Database["public"]["Enums"]["ai_content_type"]
+        }
+        Insert: {
+          completed_at?: string | null
+          content_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          task_type: Database["public"]["Enums"]["ai_content_type"]
+        }
+        Update: {
+          completed_at?: string | null
+          content_id?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          started_at?: string | null
+          status?: string | null
+          task_type?: Database["public"]["Enums"]["ai_content_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_generation_queue_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_routing_decisions: {
         Row: {
           chosen_model: string | null
@@ -3968,6 +4009,57 @@ export type Database = {
           title?: string
           topic?: string | null
           transcript?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      master_content_library: {
+        Row: {
+          content_hash: string | null
+          created_at: string
+          created_by: string | null
+          estimated_cost: number | null
+          generated_data: Json | null
+          id: string
+          metadata: Json | null
+          raw_content: string | null
+          reviewed_by: string | null
+          source_type: string
+          source_url: string | null
+          status: Database["public"]["Enums"]["content_status"] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_cost?: number | null
+          generated_data?: Json | null
+          id?: string
+          metadata?: Json | null
+          raw_content?: string | null
+          reviewed_by?: string | null
+          source_type: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_cost?: number | null
+          generated_data?: Json | null
+          id?: string
+          metadata?: Json | null
+          raw_content?: string | null
+          reviewed_by?: string | null
+          source_type?: string
+          source_url?: string | null
+          status?: Database["public"]["Enums"]["content_status"] | null
+          title?: string
           updated_at?: string
         }
         Relationships: []
@@ -11424,12 +11516,26 @@ export type Database = {
       }
     }
     Enums: {
+      ai_content_type:
+        | "technical_summary"
+        | "feynman_summary"
+        | "flashcards"
+        | "quiz"
+        | "video_script"
+        | "commented_questions"
       app_role:
         | "admin"
         | "user"
         | "professor"
         | "coordinator"
         | "institutional_admin"
+      content_status:
+        | "draft"
+        | "processing"
+        | "review"
+        | "approved"
+        | "published"
+        | "archived"
       difficulty_level: "easy" | "medium" | "hard"
       image_question_status:
         | "draft"
@@ -11615,12 +11721,28 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ai_content_type: [
+        "technical_summary",
+        "feynman_summary",
+        "flashcards",
+        "quiz",
+        "video_script",
+        "commented_questions",
+      ],
       app_role: [
         "admin",
         "user",
         "professor",
         "coordinator",
         "institutional_admin",
+      ],
+      content_status: [
+        "draft",
+        "processing",
+        "review",
+        "approved",
+        "published",
+        "archived",
       ],
       difficulty_level: ["easy", "medium", "hard"],
       image_question_status: [
