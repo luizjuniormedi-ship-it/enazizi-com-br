@@ -473,7 +473,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                             <div>
                               <p className="font-medium text-sm line-clamp-1">{item.title}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.source_type}</span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.discipline || item.source_type}</span>
                                 <span className="text-[10px] text-muted-foreground">•</span>
                                 <span className="text-[10px] text-muted-foreground">
                                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR })}
@@ -490,10 +490,17 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Visualizar</DropdownMenuItem>
-                                <DropdownMenuItem>Revisar Conteúdo</DropdownMenuItem>
-                                <DropdownMenuItem className="text-primary">Publicar</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>
+                                  <Eye className="h-4 w-4 mr-2" /> Visualizar / Revisar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleCopyNotebookLM(item)}>
+                                  <Copy className="h-4 w-4 mr-2" /> Exportar NotebookLM
+                                </DropdownMenuItem>
+                                {item.status === 'review' && (
+                                  <DropdownMenuItem className="text-primary" onClick={() => publishContent.mutate(item.id)}>
+                                    <Send className="h-4 w-4 mr-2" /> Publicar
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
