@@ -6029,6 +6029,7 @@ export type Database = {
       notebooklm_notebooks: {
         Row: {
           audio_url: string | null
+          avg_completion_rate: number | null
           content_id: string | null
           created_at: string | null
           exported_by: string | null
@@ -6038,11 +6039,13 @@ export type Database = {
           notebook_url: string | null
           notes_url: string | null
           specialty: string | null
+          total_views: number | null
           updated_at: string | null
           video_url: string | null
         }
         Insert: {
           audio_url?: string | null
+          avg_completion_rate?: number | null
           content_id?: string | null
           created_at?: string | null
           exported_by?: string | null
@@ -6052,11 +6055,13 @@ export type Database = {
           notebook_url?: string | null
           notes_url?: string | null
           specialty?: string | null
+          total_views?: number | null
           updated_at?: string | null
           video_url?: string | null
         }
         Update: {
           audio_url?: string | null
+          avg_completion_rate?: number | null
           content_id?: string | null
           created_at?: string | null
           exported_by?: string | null
@@ -6066,12 +6071,54 @@ export type Database = {
           notebook_url?: string | null
           notes_url?: string | null
           specialty?: string | null
+          total_views?: number | null
           updated_at?: string | null
           video_url?: string | null
         }
         Relationships: [
           {
             foreignKeyName: "notebooklm_notebooks_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebooklm_usage_logs: {
+        Row: {
+          action: string
+          completion_rate: number | null
+          content_id: string | null
+          created_at: string | null
+          id: string
+          media_type: string | null
+          playback_time: number | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          completion_rate?: number | null
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          media_type?: string | null
+          playback_time?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          completion_rate?: number | null
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          media_type?: string | null
+          playback_time?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebooklm_usage_logs_content_id_fkey"
             columns: ["content_id"]
             isOneToOne: false
             referencedRelation: "master_content_library"
