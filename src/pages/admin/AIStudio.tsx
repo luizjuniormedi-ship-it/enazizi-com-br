@@ -704,6 +704,13 @@ INSTRUÇÃO PARA NOTEBOOKLM:
               <FileJson className="h-4 w-4 mr-2" />
               Logs IA
             </TabsTrigger>
+            <TabsTrigger 
+              value="prompts" 
+              className="px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Prompts
+            </TabsTrigger>
           </TabsList>
           
           <div className="flex items-center gap-2">
