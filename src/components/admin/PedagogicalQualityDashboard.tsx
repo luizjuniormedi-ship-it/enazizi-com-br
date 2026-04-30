@@ -301,7 +301,7 @@ export const PedagogicalQualityDashboard = () => {
               <div className="mt-4 p-3 bg-primary/5 rounded border border-primary/10">
                 <p className="text-xs text-primary font-bold mb-1">Dica de Governança:</p>
                 <p className="text-[10px] leading-relaxed">
-                  Apenas conteúdos com status 'approved' e Scientific Accuracy > 8 são elegíveis para exportação multimídia via NotebookLM.
+                  Apenas conteúdos com status 'approved' e Scientific Accuracy {'>'} 8 são elegíveis para exportação multimídia via NotebookLM.
                 </p>
               </div>
             </div>
