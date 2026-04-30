@@ -113,15 +113,19 @@ export default function AIStudio() {
   });
 
   const generateAIContent = useMutation({
-    mutationFn: async (contentId: string) => {
+    mutationFn: async ({ contentId, isRetry = false }: { contentId: string, isRetry?: boolean }) => {
       const { data, error } = await supabase.functions.invoke('generate-content-ai', {
-        body: { contentId }
+        body: { contentId, isRetry }
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Geração iniciada na fila de processamento.");
+    onSuccess: (data) => {
+      if (data?.success) {
+        toast.success(data.message || "Geração iniciada na fila de processamento.");
+      } else {
+        toast.info(data?.message || "Processamento em andamento.");
+      }
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       queryClient.invalidateQueries({ queryKey: ["ai-generation-queue"] });
     },
