@@ -81,18 +81,22 @@ const MedicalReviewQueue = () => {
     }
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: ContentStatus }) => {
+      const { error } = await supabase
+        .from("master_content_library")
+        .update({ status })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["medical-review-queue"] });
+      toast({ title: "Status atualizado", description: "O conteúdo foi movido no workflow." });
+    }
+  });
+
   const exportToNotebookLMMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { data: content, error: fetchError } = await supabase
-        .from("master_content_library")
-        .select("*")
-        .eq("id", id)
-        .single();
-      
-      if (fetchError) throw fetchError;
-
-      // In a real scenario, this would call an edge function to format the data
-      // For now, we update the media status
       const { error: updateError } = await supabase
         .from("master_content_library")
         .update({ 
@@ -102,14 +106,13 @@ const MedicalReviewQueue = () => {
         .eq("id", id);
       
       if (updateError) throw updateError;
-      
-      return content;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["medical-review-queue"] });
       toast({ title: "Pacote Exportado", description: "O conteúdo foi formatado para o NotebookLM." });
     }
   });
+
 
 
   const getStatusBadge = (status: string) => {
