@@ -14,71 +14,72 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export const PedagogicalQualityDashboard = () => {
   const { data: stats, isLoading } = useQuery({
-    queryKey: ['pedagogical-stats-v2'],
+    queryKey: ['medical-governance-stats-v1.4'],
     queryFn: async () => {
-      // 1. Distribution of Status
+      // 1. Distribution of Status (using new workflow)
       const { data: libraryData } = await supabase
         .from('master_content_library')
-        .select('status, discipline, reliability_score, is_gold_standard');
+        .select('status, discipline, reliability_score, is_gold_standard, double_reviewed');
       
       const counts = libraryData?.reduce((acc: any, curr) => {
         acc[curr.status] = (acc[curr.status] || 0) + 1;
         return acc;
-      }, { 'published': 0, 'review': 0, 'processing': 0, 'failed': 0 });
+      }, { 'published': 0, 'approved': 0, 'scientific_review': 0, 'pedagogical_review': 0, 'ai_generated': 0, 'failed': 0 });
 
-      // 2. Specialty Scores (Radar & Bar)
-      const { data: reviewData } = await supabase
-        .from('pedagogical_reviews')
+      // 2. Specialty Scores from medical_content_scores
+      const { data: medicalScores } = await supabase
+        .from('medical_content_scores')
         .select(`
-          precision_score, clarity_score, depth_score, didactic_score,
-          flashcards_quality_score, quiz_quality_score, feynman_quality_score,
-          master_content_library ( discipline )
+          scientific_accuracy_score, clinical_safety_score, hallucination_risk_score,
+          pedagogical_clarity_score, master_content_library ( discipline )
         `);
 
       const specialtyMetrics: any = {};
-      reviewData?.forEach((item: any) => {
+      medicalScores?.forEach((item: any) => {
         const discipline = item.master_content_library?.discipline || 'Geral';
         if (!specialtyMetrics[discipline]) specialtyMetrics[discipline] = { 
           name: discipline, 
-          precision: 0, clarity: 0, depth: 0, didactic: 0, flashcards: 0, quiz: 0, feynman: 0, count: 0 
+          accuracy: 0, safety: 0, hallucination: 0, clarity: 0, count: 0 
         };
-        specialtyMetrics[discipline].precision += item.precision_score || 0;
-        specialtyMetrics[discipline].clarity += item.clarity_score || 0;
-        specialtyMetrics[discipline].depth += item.depth_score || 0;
-        specialtyMetrics[discipline].didactic += (item.didactic_score || 0) * 2; // Normalize 1-5 to 10
-        specialtyMetrics[discipline].flashcards += item.flashcards_quality_score || 0;
-        specialtyMetrics[discipline].quiz += item.quiz_quality_score || 0;
-        specialtyMetrics[discipline].feynman += item.feynman_quality_score || 0;
+        specialtyMetrics[discipline].accuracy += Number(item.scientific_accuracy_score) || 0;
+        specialtyMetrics[discipline].safety += Number(item.clinical_safety_score) || 0;
+        specialtyMetrics[discipline].hallucination += Number(item.hallucination_risk_score) || 0;
+        specialtyMetrics[discipline].clarity += Number(item.pedagogical_clarity_score) || 0;
         specialtyMetrics[discipline].count += 1;
       });
 
       const processedSpecialties = Object.values(specialtyMetrics).map((item: any) => ({
         subject: item.name,
-        precision: parseFloat((item.precision / item.count).toFixed(1)),
-        didactic: parseFloat((item.didactic / item.count).toFixed(1)),
-        quality: parseFloat(((item.precision + item.didactic + item.clarity) / (item.count * 3)).toFixed(1)),
-        A: parseFloat((item.precision / item.count).toFixed(1)), // For Radar
+        accuracy: parseFloat((item.accuracy / item.count).toFixed(1)),
+        safety: parseFloat((item.safety / item.count).toFixed(1)),
+        hallucination: parseFloat((item.hallucination / item.count).toFixed(1)),
+        clarity: parseFloat((item.clarity / item.count).toFixed(1)),
+        A: parseFloat((item.accuracy / item.count).toFixed(1)), // For Radar
         fullMark: 10
       }));
 
-      // 3. Financial/Token Stats
+      // 3. Hallucination Risks (High Risk > 4)
+      const highRiskAlerts = medicalScores?.filter(s => Number(s.hallucination_risk_score) > 4).length || 0;
+
+      // 4. Financial/Token Stats
       const { data: usageLogs } = await supabase.from('ai_usage_logs').select('estimated_cost, input_tokens, output_tokens');
       const totalCost = usageLogs?.reduce((acc, curr) => acc + Number(curr.estimated_cost), 0) || 0;
-      const totalTokens = usageLogs?.reduce((acc, curr) => acc + (curr.input_tokens + curr.output_tokens), 0) || 0;
 
-      // 4. Gold Standards & High Risks
+      // 5. Gold Standards & Averages
       const goldCount = libraryData?.filter(c => c.is_gold_standard).length || 0;
+      const doubleReviewedCount = libraryData?.filter(c => c.double_reviewed).length || 0;
       const avgReliability = libraryData?.length ? (libraryData.reduce((acc, curr) => acc + Number(curr.reliability_score || 0), 0) / libraryData.length) : 0;
 
       return {
         counts,
         processedSpecialties,
         totalCost,
-        totalTokens,
         goldCount,
+        doubleReviewedCount,
+        highRiskAlerts,
         avgReliability,
         totalMaterials: libraryData?.length || 0,
-        approvalRate: libraryData?.length ? ((counts.published / libraryData.length) * 100) : 0
+        approvalRate: libraryData?.length ? (((counts.published + counts.approved) / libraryData.length) * 100) : 0
       };
     }
   });
