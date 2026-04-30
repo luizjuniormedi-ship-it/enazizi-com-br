@@ -942,12 +942,28 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Acurácia Científica (1-5)</Label>
-                          <Input type="number" min="1" max="5" value={reviewAccuracy} onChange={e => setReviewAccuracy(Number(e.target.value))} />
+                          <Label className="text-xs">Precisão Médica (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewPrecision} onChange={e => setReviewPrecision(Number(e.target.value))} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Didática (1-5)</Label>
-                          <Input type="number" min="1" max="5" value={reviewDidactic} onChange={e => setReviewDidactic(Number(e.target.value))} />
+                          <Label className="text-xs">Didática (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewDidactic} onChange={e => setReviewDidactic(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Clareza (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewClarity} onChange={e => setReviewClarity(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Profundidade (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewDepth} onChange={e => setReviewDepth(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Flashcards (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewFlashcards} onChange={e => setReviewFlashcards(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Quiz (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewQuiz} onChange={e => setReviewQuiz(Number(e.target.value))} />
                         </div>
                       </div>
 
