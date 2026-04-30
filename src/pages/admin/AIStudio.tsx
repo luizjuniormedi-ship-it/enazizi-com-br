@@ -460,7 +460,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                     <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
                       <FileText className="h-10 w-10 mx-auto mb-3 opacity-20" />
                       <p>Nenhum conteúdo encontrado.</p>
-                      <Button variant="link" onClick={handleUpload}>Clique aqui para começar</Button>
+                      <Button variant="link" onClick={() => setIsUploadOpen(true)}>Clique aqui para começar</Button>
                     </div>
                   ) : (
                     <div className="space-y-3">
