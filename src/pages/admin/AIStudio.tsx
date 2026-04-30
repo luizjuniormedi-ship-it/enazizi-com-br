@@ -804,7 +804,8 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                 <TabsTrigger value="overview">Resumo Técnico</TabsTrigger>
                 <TabsTrigger value="feynman">Feynman</TabsTrigger>
                 <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
-                <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
+                 <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
+                <TabsTrigger value="pedagogical" className="text-green-500">Revisão Pedagógica</TabsTrigger>
                 <TabsTrigger value="notebooklm" className="text-indigo-500">Google NotebookLM</TabsTrigger>
               </TabsList>
 
