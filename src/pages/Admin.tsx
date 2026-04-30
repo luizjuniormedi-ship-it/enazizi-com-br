@@ -16,6 +16,7 @@ import { CinematicHero } from "@/components/cinematic";
 
 // Lazy load all admin panels
 const WhatsAppPanel = lazy(() => import("@/components/admin/WhatsAppPanel"));
+const AIStudio = lazy(() => import("@/pages/admin/AIStudio"));
 const TelegramConfigPanel = lazy(() => import("@/components/admin/TelegramConfigPanel"));
 const AdminStatsCards = lazy(() => import("@/components/admin/AdminStatsCards"));
 const AdminOnlineUsers = lazy(() => import("@/components/admin/AdminOnlineUsers"));
