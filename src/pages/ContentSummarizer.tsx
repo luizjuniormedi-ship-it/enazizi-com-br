@@ -1,16 +1,35 @@
-import { BookOpen, Sparkles, Music, ExternalLink, ChevronRight, FileText, Brain, HelpCircle, ArrowLeft } from "lucide-react";
+import { 
+  BookOpen, 
+  Sparkles, 
+  Music, 
+  ExternalLink, 
+  ChevronRight, 
+  FileText, 
+  Brain, 
+  HelpCircle, 
+  ArrowLeft,
+  Play,
+  Pause,
+  RotateCcw,
+  CheckCircle2,
+  Clock,
+  History
+} from "lucide-react";
 import AgentChat from "@/components/agents/AgentChat";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 const quickActions = [
   { label: "📋 Resumo completo", prompt: "Faça um resumo completo e estruturado de todo o meu material, com pontos de prova, mnemônicos e tabelas comparativas.", icon: "📋" },
@@ -21,7 +40,13 @@ const quickActions = [
 ];
 
 const ContentSummarizer = () => {
+  const { user } = useAuth();
   const [selectedContentId, setSelectedContentId] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [playbackLogged, setPlaybackLogged] = useState(false);
 
   const { data: libraryContent, isLoading } = useQuery({
     queryKey: ["master-content-library-published"],
@@ -29,15 +54,72 @@ const ContentSummarizer = () => {
       const { data, error } = await supabase
         .from("master_content_library")
         .select("*, notebooklm_notebooks(*)")
-        .eq("status", "published")
+        .or("status.eq.published,media_status.eq.published_to_students")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     }
   });
 
+  const logUsageMutation = useMutation({
+    mutationFn: async (payload: { action: string, media_type?: string, playback_time?: number, completion_rate?: number }) => {
+      if (!user || !selectedContentId) return;
+      await supabase.from("notebooklm_usage_logs").insert([{
+        content_id: selectedContentId,
+        user_id: user.id,
+        ...payload
+      }]);
+    }
+  });
+
   const selectedContent = libraryContent?.find(c => c.id === selectedContentId);
   const notebookData = selectedContent?.notebooklm_notebooks?.[0];
+
+  useEffect(() => {
+    if (audioRef.current) {
+      const audio = audioRef.current;
+      const updateProgress = () => setCurrentTime(audio.currentTime);
+      const onLoadedMetadata = () => setDuration(audio.duration);
+      const onEnded = () => {
+        setIsPlaying(false);
+        logUsageMutation.mutate({ action: 'audio_complete', media_type: 'audio', completion_rate: 100 });
+      };
+
+      audio.addEventListener('timeupdate', updateProgress);
+      audio.addEventListener('loadedmetadata', onLoadedMetadata);
+      audio.addEventListener('ended', onEnded);
+      
+      return () => {
+        audio.removeEventListener('timeupdate', updateProgress);
+        audio.removeEventListener('loadedmetadata', onLoadedMetadata);
+        audio.removeEventListener('ended', onEnded);
+      };
+    }
+  }, [selectedContentId, notebookData?.audio_url]);
+
+  const togglePlay = () => {
+    if (audioRef.current) {
+      if (isPlaying) {
+        audioRef.current.pause();
+        logUsageMutation.mutate({ action: 'audio_pause', media_type: 'audio', playback_time: Math.round(audioRef.current.currentTime) });
+      } else {
+        audioRef.current.play();
+        if (!playbackLogged) {
+          logUsageMutation.mutate({ action: 'audio_play', media_type: 'audio' });
+          setPlaybackLogged(true);
+        } else {
+          logUsageMutation.mutate({ action: 'audio_resume', media_type: 'audio' });
+        }
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const formatTime = (time: number) => {
+    const mins = Math.floor(time / 60);
+    const secs = Math.floor(time % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-140px)]">
@@ -96,15 +178,46 @@ const ContentSummarizer = () => {
                 <ScrollArea className="flex-1 p-6">
                   <TabsContent value="summary" className="mt-0 space-y-6">
                     {notebookData?.audio_url && (
-                      <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/10 space-y-3">
+                      <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-500/10 to-indigo-500/5 border border-purple-500/20 shadow-sm space-y-4">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-bold flex items-center gap-2 text-purple-600">
-                            <Music className="h-4 w-4" /> Audio Overview (Podcast)
-                          </h4>
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                              <Music className="h-5 w-5 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="text-sm font-bold text-purple-700">Audio Overview</h4>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Podcast Educacional v1.5</p>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-[10px] bg-white/50 border-purple-200 text-purple-600">
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                          </Badge>
                         </div>
-                        <audio controls className="w-full h-10">
+                        
+                        <div className="space-y-2">
+                          <Progress value={(currentTime / duration) * 100 || 0} className="h-1.5 bg-purple-200/50" />
+                          <div className="flex items-center justify-center gap-4">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-8 w-8 text-purple-600 hover:bg-purple-500/10"
+                              onClick={() => { if(audioRef.current) audioRef.current.currentTime -= 10; }}
+                            >
+                              <RotateCcw className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              size="icon" 
+                              className="h-12 w-12 rounded-full bg-purple-600 hover:bg-purple-700 shadow-lg shadow-purple-600/30"
+                              onClick={togglePlay}
+                            >
+                              {isPlaying ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-1" />}
+                            </Button>
+                            <div className="w-8" /> {/* Placeholder to balance layout */}
+                          </div>
+                        </div>
+                        
+                        <audio ref={audioRef} className="hidden">
                           <source src={notebookData.audio_url} type="audio/mpeg" />
-                          Seu navegador não suporta o player de áudio.
                         </audio>
                       </div>
                     )}
@@ -173,7 +286,7 @@ const ContentSummarizer = () => {
                           </p>
                           <div className="flex flex-wrap gap-3">
                             {notebookData?.notebook_url && (
-                              <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+                              <Button asChild className="bg-indigo-600 hover:bg-indigo-700" onClick={() => logUsageMutation.mutate({ action: 'guide_open', media_type: 'guide' })}>
                                 <a href={notebookData.notebook_url} target="_blank" rel="noreferrer">
                                   <ExternalLink className="h-4 w-4 mr-2" /> Abrir Workspace
                                 </a>

@@ -491,48 +491,58 @@ export default function AIStudio() {
 # PACOTE EDUCACIONAL ENAZIZI -> NOTEBOOKLM v1.5
 ID CONTEÚDO: ${content.id}
 
-## 1. CABEÇALHO
+---
+## 1. CABEÇALHO E OBJETIVOS
 - Título da Aula: ${content.title}
 - Especialidade Médica: ${content.discipline}
-- Data de Geração: ${new Date().toLocaleDateString('pt-BR')}
+- Data: ${new Date().toLocaleDateString('pt-BR')}
 
-## 2. OBJETIVOS DE APRENDIZAGEM
-- Consolidar conceitos fundamentais de ${content.topic}.
-- Aplicar diretrizes clínicas atualizadas na prática médica.
-- Identificar pontos críticos para exames de residência.
-
-## 3. RESUMO TÉCNICO PROFUNDO
-${content.generated_summary || "Pendente de geração."}
-
-## 4. EXPLICAÇÃO FEYNMAN (DIDÁTICA SIMPLIFICADA)
-${content.generated_feynman || "Pendente de geração."}
-
-## 5. PONTOS DE PROVA E RESUMO CLÍNICO
-- Foco em Incidência: ${content.topic}
-- Conceitos-chave: ${content.discipline} avançado.
-${content.generated_questions ? JSON.stringify(content.generated_questions, null, 2) : "Pendente."}
-
-## 6. FLASHCARDS PRINCIPAIS (CONSOLIDAÇÃO FSRS)
-${Array.isArray(content.generated_flashcards) ? 
-  content.generated_flashcards.map((f: any, i: number) => `[${i+1}] Q: ${f.front || f.pergunta} | A: ${f.back || f.resposta}`).join('\n') : 
-  "Pendente."}
-
-## 7. QUIZ RESUMIDO (AUTOAVALIAÇÃO)
-${Array.isArray(content.generated_quiz) ? 
-  content.generated_quiz.slice(0, 5).map((q: any, i: number) => `[${i+1}] ${q.question || q.pergunta}`).join('\n') : 
-  "Pendente."}
-
-## 8. ROTEIROS MULTIMÍDIA
-### Roteiro de Áudio (Podcast / Audio Overview)
-${content.generated_video_script || "Pendente."}
-
-### Roteiro Conversacional (Tutor IA Interativo)
-Instrução: Atue como um professor especialista em ${content.discipline} explicando ${content.topic}.
+OBJETIVOS DE APRENDIZAGEM:
+1. Consolidar conceitos fundamentais de ${content.topic}.
+2. Aplicar diretrizes clínicas atualizadas na prática médica.
+3. Identificar pontos críticos para exames de residência médica.
 
 ---
-## 9. INSTRUÇÕES PARA CONFIGURAÇÃO NOTEBOOKLM
-- Audio Overview: "Gere um diálogo estilo 'Deep Dive' entre dois especialistas médicos focando na aplicabilidade clínica."
-- Guia Multimídia: "Crie um Guia de Estudo que priorize diagnósticos diferenciais e condutas terapêuticas."
+## 2. RESUMO TÉCNICO PROFUNDO (CORPO DA AULA)
+${content.generated_summary || "Conteúdo técnico pendente."}
+
+---
+## 3. EXPLICAÇÃO FEYNMAN (CONCEITOS COMPLEXOS SIMPLIFICADOS)
+${content.generated_feynman || "Explicação simplificada pendente."}
+
+---
+## 4. PONTOS DE PROVA E RESUMO CLÍNICO
+CONCEITOS-CHAVE:
+- Tema Central: ${content.topic}
+- Especialidade: ${content.discipline} avançado.
+
+PONTOS DE ATENÇÃO (HIGH-YIELD):
+${Array.isArray(content.generated_questions) ? 
+  content.generated_questions.map((q: any) => `- ${q.question || q.pergunta}`).join('\n') : 
+  "Questões de revisão pendentes."}
+
+---
+## 5. FLASHCARDS E REVISÃO RÁPIDA (CONSOLIDAÇÃO)
+${Array.isArray(content.generated_flashcards) ? 
+  content.generated_flashcards.map((f: any, i: number) => `Q${i+1}: ${f.front || f.pergunta}\nA${i+1}: ${f.back || f.resposta}`).join('\n\n') : 
+  "Flashcards pendentes."}
+
+---
+## 6. QUIZ DE AUTOAVALIAÇÃO
+${Array.isArray(content.generated_quiz) ? 
+  content.generated_quiz.slice(0, 5).map((q: any, i: number) => `${i+1}. ${q.question || q.pergunta}\nOpções: ${(q.options || q.alternativas || []).join(', ')}`).join('\n\n') : 
+  "Quiz pendente."}
+
+---
+## 7. ROTEIROS MULTIMÍDIA E INSTRUÇÕES
+### ROTEIRO DE ÁUDIO (PODCAST / AUDIO OVERVIEW)
+${content.generated_video_script || "Roteiro pendente."}
+
+### INSTRUÇÕES PARA AUDIO OVERVIEW (NOTEBOOKLM):
+"Por favor, gere um diálogo estilo 'Deep Dive' entre dois especialistas médicos sobre este material. Foque na clareza didática, raciocínio clínico e condutas terapêuticas de última linha."
+
+### INSTRUÇÕES PARA GUIA INTERATIVO:
+"Crie um guia de estudos interativo que destaque os diagnósticos diferenciais e as pegadinhas de prova mais comuns citadas neste material."
     `;
 
     navigator.clipboard.writeText(text);
@@ -639,6 +649,11 @@ Instrução: Atue como um professor especialista em ${content.discipline} explic
               </DialogFooter>
             </DialogContent>
           </Dialog>
+
+          <Button variant="outline" onClick={() => window.location.href='/admin/notebooklm-sync'} className="gap-2">
+            <Music className="h-4 w-4" />
+            Sync Multimídia
+          </Button>
 
           <Button variant="outline" onClick={() => window.location.href='/admin/ai-audit-mode'} className="gap-2">
             <ShieldCheck className="h-4 w-4" />
