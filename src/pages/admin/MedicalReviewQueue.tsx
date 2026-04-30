@@ -29,11 +29,12 @@ import {
   Search,
   BookOpen,
   FlaskConical,
-  Award,
-  ExternalLink
+  Award
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Database } from "@/integrations/supabase/types";
+
+type ContentStatus = Database["public"]["Enums"]["content_status"];
 
 const MedicalReviewQueue = () => {
   const [filterSpecialty, setFilterSpecialty] = useState<string>("all");
@@ -57,7 +58,7 @@ const MedicalReviewQueue = () => {
         query = query.eq("discipline", filterSpecialty);
       }
       if (filterStatus !== "all") {
-        query = query.eq("status", filterStatus);
+        query = query.eq("status", filterStatus as ContentStatus);
       }
       if (searchQuery) {
         query = query.ilike("title", `%${searchQuery}%`);
@@ -70,7 +71,7 @@ const MedicalReviewQueue = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status }: { id: string; status: ContentStatus }) => {
       const { error } = await supabase
         .from("master_content_library")
         .update({ status })
@@ -86,10 +87,10 @@ const MedicalReviewQueue = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "ai_generated": return <Badge variant="secondary">IA Gerada</Badge>;
-      case "pedagogical_review": return <Badge className="bg-blue-500">Revisão Pedagógica</Badge>;
-      case "scientific_review": return <Badge className="bg-purple-500">Revisão Científica</Badge>;
-      case "approved": return <Badge className="bg-green-500">Aprovado</Badge>;
-      case "published": return <Badge className="bg-emerald-600">Publicado</Badge>;
+      case "pedagogical_review": return <Badge className="bg-blue-500 text-white">Revisão Pedagógica</Badge>;
+      case "scientific_review": return <Badge className="bg-purple-500 text-white">Revisão Científica</Badge>;
+      case "approved": return <Badge className="bg-green-500 text-white">Aprovado</Badge>;
+      case "published": return <Badge className="bg-emerald-600 text-white">Publicado</Badge>;
       case "rejected": return <Badge variant="destructive">Reprovado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
@@ -200,7 +201,7 @@ const MedicalReviewQueue = () => {
                         C: {item.pedagogical_reviews?.[0]?.scientific_accuracy_score || "--"}
                       </Badge>
                       {item.is_gold_standard && (
-                        <Award className="h-4 w-4 text-yellow-500" title="Conteúdo Ouro" />
+                        <Award className="h-4 w-4 text-yellow-500" />
                       )}
                     </div>
                   </TableCell>
@@ -209,7 +210,7 @@ const MedicalReviewQueue = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" title="Ver Detalhes">
+                      <Button variant="ghost" size="icon">
                         <Eye className="h-4 w-4" />
                       </Button>
                       {item.status === "ai_generated" && (
@@ -258,3 +259,4 @@ const MedicalReviewQueue = () => {
 };
 
 export default MedicalReviewQueue;
+
