@@ -28,13 +28,18 @@ export interface SegmentAnalytics {
   segmentId: string | null;
   playCount: number;
   pauseCount: number;
+  longPauseCount: number; // FASE 2.1
   replayCount: number;
   abandonCount: number;
   tutorOpenCount: number;
   quizCompleteCount: number;
+  quizErrorCount: number; // FASE 2.1
+  completionRate: number; // FASE 2.1
   totalWatchedMs: number;
   difficultyLikely: boolean;
+  difficultyLevel: "baixa" | "média" | "alta"; // FASE 2.1
   difficultyReasons: string[];
+  suggestedActions: string[]; // FASE 2.1
 }
 
 const SINGLE_KEY = "__single__";
@@ -69,13 +74,18 @@ export function useVideoSegmentAnalytics(videoLessonId: string | undefined) {
             segmentId: segId,
             playCount: 0,
             pauseCount: 0,
+            longPauseCount: 0,
             replayCount: 0,
             abandonCount: 0,
             tutorOpenCount: 0,
             quizCompleteCount: 0,
+            quizErrorCount: 0,
+            completionRate: 0,
             totalWatchedMs: 0,
             difficultyLikely: false,
+            difficultyLevel: "baixa",
             difficultyReasons: [],
+            suggestedActions: [],
           };
           map.set(key, entry);
         }
@@ -91,21 +101,50 @@ export function useVideoSegmentAnalytics(videoLessonId: string | undefined) {
           case "abandon": e.abandonCount++; break;
           case "tutor_open": e.tutorOpenCount++; break;
           case "quiz_complete": e.quizCompleteCount++; break;
+          case "quiz_error": e.quizErrorCount++; break;
+          case "long_pause": e.longPauseCount++; break;
         }
         if (row.duration_ms && row.duration_ms > 0) {
           e.totalWatchedMs += row.duration_ms;
         }
       }
 
-      // Heurística Smart Replay (apenas se flag ON)
+      // Heurística Smart Replay v2.1
       if (smartReplayOn) {
         for (const entry of map.values()) {
           const reasons: string[] = [];
           if (entry.replayCount >= 2) reasons.push("replay_high");
           if (entry.abandonCount >= 1) reasons.push("abandoned");
           if (entry.tutorOpenCount >= 2) reasons.push("tutor_repeated");
+          if (entry.quizErrorCount >= 1) reasons.push("quiz_errors");
+          if (entry.longPauseCount >= 1) reasons.push("long_pause");
+          
           entry.difficultyReasons = reasons;
           entry.difficultyLikely = reasons.length > 0;
+
+          // Define nível de dificuldade
+          const score = (entry.replayCount * 2) + (entry.tutorOpenCount * 1.5) + (entry.quizErrorCount * 3) + (entry.longPauseCount * 1);
+          if (score >= 10 || entry.abandonCount > 0) {
+            entry.difficultyLevel = "alta";
+          } else if (score >= 4) {
+            entry.difficultyLevel = "média";
+          } else {
+            entry.difficultyLevel = "baixa";
+          }
+
+          // Ações sugeridas
+          const actions: string[] = [];
+          if (entry.difficultyLikely) {
+            actions.push("revisar_trecho");
+            actions.push("abrir_tutor");
+          }
+          if (entry.quizErrorCount > 0) {
+            actions.push("fazer_quiz_rapido");
+          }
+          if (entry.difficultyLevel === "alta") {
+            actions.push("revisar_flashcards_fsrs");
+          }
+          entry.suggestedActions = actions;
         }
       }
 
