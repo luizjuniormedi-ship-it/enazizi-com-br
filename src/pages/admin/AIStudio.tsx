@@ -325,13 +325,12 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
         </div>
       </header>
 
-      {/* Analytics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total na Biblioteca</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Biblioteca</p>
                 <h3 className="text-2xl font-bold">{stats.total}</h3>
               </div>
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -357,7 +356,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Aguardando Revisão</p>
+                <p className="text-sm font-medium text-muted-foreground">Em Revisão</p>
                 <h3 className="text-2xl font-bold text-amber-500">{stats.review}</h3>
               </div>
               <div className="p-2 bg-amber-500/10 rounded-lg">
@@ -375,6 +374,19 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
               </div>
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Sparkles className="h-5 w-5 text-blue-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-indigo-500/5 backdrop-blur-sm border-indigo-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-indigo-500/70">Economia IA</p>
+                <h3 className="text-2xl font-bold text-indigo-500">$ {stats.savings.toFixed(2)}</h3>
+              </div>
+              <div className="p-2 bg-indigo-500/10 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-indigo-500" />
               </div>
             </div>
           </CardContent>
