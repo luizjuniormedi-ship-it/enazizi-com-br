@@ -286,7 +286,7 @@ const ContentSummarizer = () => {
                           </p>
                           <div className="flex flex-wrap gap-3">
                             {notebookData?.notebook_url && (
-                              <Button asChild className="bg-indigo-600 hover:bg-indigo-700">
+                              <Button asChild className="bg-indigo-600 hover:bg-indigo-700" onClick={() => logUsageMutation.mutate({ action: 'guide_open', media_type: 'guide' })}>
                                 <a href={notebookData.notebook_url} target="_blank" rel="noreferrer">
                                   <ExternalLink className="h-4 w-4 mr-2" /> Abrir Workspace
                                 </a>
