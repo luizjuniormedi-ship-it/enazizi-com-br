@@ -321,7 +321,15 @@ const VideoLessonPlayer = () => {
                   src={lesson.video_url} 
                   className="w-full h-full"
                   allowFullScreen
-                  onLoad={() => setIsPlaying(true)}
+                  onLoad={() => {
+                    setIsPlaying(true);
+                    if (id) logEvent({
+                      videoLessonId: id,
+                      segmentId: currentSegment?.id ?? null,
+                      eventType: "play",
+                      timestampSeconds: watchedSeconds,
+                    });
+                  }}
                 />
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
