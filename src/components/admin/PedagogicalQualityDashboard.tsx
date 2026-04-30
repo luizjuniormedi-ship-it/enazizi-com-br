@@ -87,7 +87,7 @@ export const PedagogicalQualityDashboard = () => {
   if (isLoading) return (
     <div className="p-12 flex flex-col items-center justify-center space-y-4">
       <Activity className="h-12 w-12 text-primary animate-pulse" />
-      <p className="text-muted-foreground animate-pulse">Auditando Central de Produção v1.0...</p>
+      <p className="text-muted-foreground animate-pulse">Auditando Central de Produção v1.4 Governança Médica...</p>
     </div>
   );
 
@@ -96,11 +96,11 @@ export const PedagogicalQualityDashboard = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Badge className="bg-primary/10 text-primary border-primary/20">Audit Intelligence</Badge>
-            <Badge variant="outline" className="border-green-500/20 text-green-500 bg-green-500/5 uppercase text-[10px] font-bold">Stable v1.0</Badge>
+            <Badge className="bg-primary/10 text-primary border-primary/20">Scientific Hardening</Badge>
+            <Badge variant="outline" className="border-blue-500/20 text-blue-500 bg-blue-500/5 uppercase text-[10px] font-bold">v1.4 Governança</Badge>
           </div>
-          <h2 className="text-3xl font-bold tracking-tight">Qualidade Médica ENAZIZI</h2>
-          <p className="text-muted-foreground">Monitoramento de acurácia científica e confiabilidade IA.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Governança Médica ENAZIZI</h2>
+          <p className="text-muted-foreground">Monitoramento de acurácia científica, segurança clínica e riscos de alucinação.</p>
         </div>
         <div className="flex items-center gap-3">
           <Card className="bg-card px-4 py-2 border-primary/10 flex items-center gap-4">
