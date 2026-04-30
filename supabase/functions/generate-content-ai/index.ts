@@ -79,6 +79,13 @@ serve(async (req) => {
         if (hashMatch) {
           cacheStatus = 'cache_hit_hash';
           await updateContentFromCache(supabaseClient, contentId, hashMatch);
+          await supabaseClient.rpc('log_ai_alert', { 
+            p_type: 'cache_hit', 
+            p_severity: 'info', 
+            p_message: `Cache Hit (Hash) para ${content.title}`,
+            p_content_id: contentId,
+            p_metadata: { source_id: hashMatch.id, type: 'hash' }
+          });
           await logPromptExecution(supabaseClient, contentId, content, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
           return new Response(JSON.stringify({ success: true, message: "Cache Hit (Hash)" }), { headers: corsHeaders });
         }
@@ -98,6 +105,13 @@ serve(async (req) => {
       if (topicMatch) {
         cacheStatus = 'cache_hit_topic';
         await updateContentFromCache(supabaseClient, contentId, topicMatch);
+        await supabaseClient.rpc('log_ai_alert', { 
+          p_type: 'cache_hit', 
+          p_severity: 'info', 
+          p_message: `Cache Hit (Tópico) para ${content.title}`,
+          p_content_id: contentId,
+          p_metadata: { source_id: topicMatch.id, type: 'topic' }
+        });
         await logPromptExecution(supabaseClient, contentId, content, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
         return new Response(JSON.stringify({ success: true, message: "Cache Hit (Topic/Semantic)" }), { headers: corsHeaders });
       }
@@ -163,6 +177,12 @@ serve(async (req) => {
       
       if (response.status === 429) {
         retries--;
+        await supabaseClient.rpc('log_ai_alert', { 
+          p_type: 'rate_limit_429', 
+          p_severity: 'warning', 
+          p_message: `Rate limit 429 atingido. Tentativa ${3-retries+1}`,
+          p_content_id: contentId
+        });
         await new Promise(r => setTimeout(r, 2000));
         continue;
       }
@@ -187,6 +207,13 @@ serve(async (req) => {
         parsedData = JSON.parse(aiResponseText.substring(start, end + 1));
         validationStatus = 'repaired';
       } else {
+        await supabaseClient.rpc('log_ai_alert', { 
+          p_type: 'json_failure', 
+          p_severity: 'critical', 
+          p_message: `Falha crítica ao parsear JSON do Gemini para ${content.title}`,
+          p_content_id: contentId,
+          p_metadata: { raw_text: aiResponseText.substring(0, 500) }
+        });
         throw new Error('JSON Inválido');
       }
     }
@@ -248,6 +275,12 @@ ${parsedData.notebooklm_package?.audio_script || parsedData.video_script}
     console.error('ERRO PIPELINE:', error.message);
     if (contentId) {
       await supabaseClient.from('master_content_library').update({ status: 'failed', last_error: error.message }).eq('id', contentId)
+      await supabaseClient.rpc('log_ai_alert', { 
+        p_type: 'gemini_error', 
+        p_severity: 'critical', 
+        p_message: `Erro na pipeline IA: ${error.message}`,
+        p_content_id: contentId
+      });
       await logPromptExecution(supabaseClient, contentId, null, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'failed', 'cache_miss', null, null, error.message);
     }
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
