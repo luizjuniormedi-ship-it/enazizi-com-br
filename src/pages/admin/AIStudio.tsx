@@ -969,6 +969,58 @@ INSTRUÇÃO PARA NOTEBOOKLM:
           </div>
         </TabsContent>
 
+        <TabsContent value="prompts" className="py-4">
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Governança de Prompts v1.0
+              </CardTitle>
+              <CardDescription>Gerenciamento de prompts especializados e versionados por área médica.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-end mb-4">
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" /> Novo Prompt
+                </Button>
+              </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Especialidade</TableHead>
+                      <TableHead>Nome/Versão</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Criado em</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-bold">Cardiologia</TableCell>
+                      <TableCell>SBC-AHA-v2.1</TableCell>
+                      <TableCell><Badge className="bg-green-500/10 text-green-500">Ativo</Badge></TableCell>
+                      <TableCell className="text-xs">30/04/2026</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">Editar</Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-bold">Geral</TableCell>
+                      <TableCell>Standard-v1.0</TableCell>
+                      <TableCell><Badge variant="outline">Inativo</Badge></TableCell>
+                      <TableCell className="text-xs">15/04/2026</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">Editar</Button>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="logs" className="py-4">
           <Card className="border-primary/10">
             <CardHeader>
