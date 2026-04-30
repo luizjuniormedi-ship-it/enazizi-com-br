@@ -107,9 +107,25 @@ export function VideoSegmentList({
               </button>
 
               {showDifficulty && (
-                <div className="flex items-center gap-1.5 text-[11px] text-amber-700 dark:text-amber-400 bg-amber-500/10 rounded px-2 py-1">
+                <div className={cn(
+                  "flex items-center gap-1.5 text-[11px] rounded px-2 py-1",
+                  analytics.difficultyLevel === "alta" ? "text-red-700 dark:text-red-400 bg-red-500/10" :
+                  analytics.difficultyLevel === "média" ? "text-amber-700 dark:text-amber-400 bg-amber-500/10" :
+                  "text-blue-700 dark:text-blue-400 bg-blue-500/10"
+                )}>
                   <AlertTriangle className="h-3 w-3" />
-                  <span>Trecho com dificuldade provável</span>
+                  <span>Dificuldade {analytics.difficultyLevel} detectada</span>
+                </div>
+              )}
+
+              {analytics?.suggestedActions && analytics.suggestedActions.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1">
+                  {analytics.suggestedActions.includes("revisar_trecho") && (
+                    <Badge variant="outline" className="text-[9px] py-0 h-4 border-amber-200 text-amber-600 bg-amber-50">Sugerido: Revisar</Badge>
+                  )}
+                  {analytics.suggestedActions.includes("abrir_tutor") && (
+                    <Badge variant="outline" className="text-[9px] py-0 h-4 border-blue-200 text-blue-600 bg-blue-50">Sugerido: Tutor</Badge>
+                  )}
                 </div>
               )}
 
