@@ -100,6 +100,10 @@ export default function AIStudio() {
   const [reviewFlashcards, setReviewFlashcards] = useState(10);
   const [reviewQuiz, setReviewQuiz] = useState(10);
   const [reviewFeynman, setReviewFeynman] = useState(10);
+  const [reviewAdherence, setReviewAdherence] = useState(10);
+  const [reviewSafety, setReviewSafety] = useState(10);
+  const [reviewExamUtility, setReviewExamUtility] = useState(10);
+  const [reviewType, setReviewType] = useState("pedagogical");
   const [reviewHallucination, setReviewHallucination] = useState("none");
   const [reviewComments, setReviewComments] = useState("");
 
@@ -298,6 +302,10 @@ export default function AIStudio() {
       quiz: number,
       feynman: number,
       didactic: number, 
+      adherence: number,
+      safety: number,
+      examUtility: number,
+      reviewType: string,
       hallucination: string,
       comments: string 
     }) => {
@@ -314,14 +322,29 @@ export default function AIStudio() {
           flashcards_quality_score: reviewData.flashcards,
           quiz_quality_score: reviewData.quiz,
           feynman_quality_score: reviewData.feynman,
-          didactic_score: reviewData.didactic,
+          didactic_score: Math.round(reviewData.didactic / 2), // DB is 1-5 for didactic
+          adherence_to_guidelines_score: reviewData.adherence,
+          clinical_safety_score: reviewData.safety,
+          exam_utility_score: reviewData.examUtility,
+          review_type: reviewData.reviewType,
           hallucination_risk: reviewData.hallucination,
           comments: reviewData.comments
         }]);
       if (error) throw error;
+
+      // Update content status based on review type
+      let newStatus = 'pedagogical_review';
+      if (reviewData.reviewType === 'scientific') newStatus = 'scientific_review';
+      if (reviewData.label === 'Excelente' && reviewData.reviewType === 'scientific') newStatus = 'approved';
+      if (reviewData.label === 'Reprovado') newStatus = 'rejected';
+
+      await supabase
+        .from("master_content_library")
+        .update({ status: newStatus as any })
+        .eq("id", reviewData.contentId);
     },
     onSuccess: () => {
-      toast.success("Auditoria Médica registrada com sucesso!");
+      toast.success("Auditoria Médica registrada!");
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       queryClient.invalidateQueries({ queryKey: ["pedagogical-stats-v2"] });
     },
@@ -681,6 +704,13 @@ INSTRUÇÃO PARA NOTEBOOKLM:
               <FileJson className="h-4 w-4 mr-2" />
               Logs IA
             </TabsTrigger>
+            <TabsTrigger 
+              value="prompts" 
+              className="px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
+            >
+              <Zap className="h-4 w-4 mr-2" />
+              Prompts
+            </TabsTrigger>
           </TabsList>
           
           <div className="flex items-center gap-2">
@@ -939,6 +969,58 @@ INSTRUÇÃO PARA NOTEBOOKLM:
           </div>
         </TabsContent>
 
+        <TabsContent value="prompts" className="py-4">
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Zap className="h-5 w-5 text-primary" />
+                Governança de Prompts v1.0
+              </CardTitle>
+              <CardDescription>Gerenciamento de prompts especializados e versionados por área médica.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-end mb-4">
+                <Button className="gap-2">
+                  <Plus className="h-4 w-4" /> Novo Prompt
+                </Button>
+              </div>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Especialidade</TableHead>
+                      <TableHead>Nome/Versão</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Criado em</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-bold">Cardiologia</TableCell>
+                      <TableCell>SBC-AHA-v2.1</TableCell>
+                      <TableCell><Badge className="bg-green-500/10 text-green-500">Ativo</Badge></TableCell>
+                      <TableCell className="text-xs">30/04/2026</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">Editar</Button>
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-bold">Geral</TableCell>
+                      <TableCell>Standard-v1.0</TableCell>
+                      <TableCell><Badge variant="outline">Inativo</Badge></TableCell>
+                      <TableCell className="text-xs">15/04/2026</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm">Editar</Button>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="logs" className="py-4">
           <Card className="border-primary/10">
             <CardHeader>
@@ -1146,41 +1228,71 @@ INSTRUÇÃO PARA NOTEBOOKLM:
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <Label>Comentários de Auditoria</Label>
-                      <Textarea 
-                        placeholder="Descreva pontos de melhoria ou erros encontrados..." 
-                        className="min-h-[200px]"
-                        value={reviewComments}
-                        onChange={e => setReviewComments(e.target.value)}
-                      />
-                      <Button 
-                        className="w-full gap-2 h-12 text-lg shadow-glow-sm" 
-                        variant="default"
-                        disabled={submitReview.isPending}
-                        onClick={() => {
-                          submitReview.mutate({
-                            contentId: selectedContent.id,
-                            score: Math.round((reviewPrecision + reviewDidactic + reviewClarity + reviewDepth) / 4),
-                            label: reviewLabel,
-                            precision: reviewPrecision,
-                            clarity: reviewClarity,
-                            depth: reviewDepth,
-                            flashcards: reviewFlashcards,
-                            quiz: reviewQuiz,
-                            feynman: reviewFeynman,
-                            didactic: reviewDidactic,
-                            hallucination: reviewHallucination,
-                            comments: reviewComments
-                          });
-                        }}
-                      >
-                        {submitReview.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
-                        Finalizar Auditoria Pedagógica
-                      </Button>
-                      <p className="text-[10px] text-center text-muted-foreground italic">
-                        Ao finalizar, o status do material será atualizado automaticamente.
-                      </p>
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Tipo de Revisão</Label>
+                          <Select value={reviewType} onValueChange={setReviewType}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="pedagogical">Pedagógica (Professor)</SelectItem>
+                              <SelectItem value="scientific">Científica (Médico Especialista)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Aderência à Diretriz (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewAdherence} onChange={e => setReviewAdherence(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Segurança Clínica (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewSafety} onChange={e => setReviewSafety(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Utilidade para Prova (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewExamUtility} onChange={e => setReviewExamUtility(Number(e.target.value))} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <Label>Comentários de Auditoria</Label>
+                        <Textarea 
+                          placeholder="Descreva pontos de melhoria ou erros encontrados..." 
+                          className="min-h-[150px]"
+                          value={reviewComments}
+                          onChange={e => setReviewComments(e.target.value)}
+                        />
+                        <Button 
+                          className="w-full gap-2 h-12 text-lg shadow-glow-sm" 
+                          variant="default"
+                          disabled={submitReview.isPending}
+                          onClick={() => {
+                            submitReview.mutate({
+                              contentId: selectedContent.id,
+                              score: Math.round((reviewPrecision + reviewSafety + reviewAdherence + reviewDidactic) / 4),
+                              label: reviewLabel,
+                              precision: reviewPrecision,
+                              clarity: reviewClarity,
+                              depth: reviewDepth,
+                              flashcards: reviewFlashcards,
+                              quiz: reviewQuiz,
+                              feynman: reviewFeynman,
+                              didactic: reviewDidactic,
+                              adherence: reviewAdherence,
+                              safety: reviewSafety,
+                              examUtility: reviewExamUtility,
+                              reviewType: reviewType,
+                              hallucination: reviewHallucination,
+                              comments: reviewComments
+                            });
+                          }}
+                        >
+                          {submitReview.isPending ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />}
+                          Finalizar Auditoria Médica
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </TabsContent>

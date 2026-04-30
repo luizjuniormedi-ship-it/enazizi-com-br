@@ -4289,6 +4289,51 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_ai_prompts: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          feynman_prompt: string | null
+          flashcard_prompt: string | null
+          id: string
+          is_active: boolean | null
+          prompt_name: string
+          prompt_version: string
+          quiz_prompt: string | null
+          review_prompt: string | null
+          specialty: string
+          system_prompt: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          feynman_prompt?: string | null
+          flashcard_prompt?: string | null
+          id?: string
+          is_active?: boolean | null
+          prompt_name: string
+          prompt_version: string
+          quiz_prompt?: string | null
+          review_prompt?: string | null
+          specialty: string
+          system_prompt: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          feynman_prompt?: string | null
+          flashcard_prompt?: string | null
+          id?: string
+          is_active?: boolean | null
+          prompt_name?: string
+          prompt_version?: string
+          quiz_prompt?: string | null
+          review_prompt?: string | null
+          specialty?: string
+          system_prompt?: string
+        }
+        Relationships: []
+      }
       medical_chronicles: {
         Row: {
           content: string
@@ -5683,12 +5728,15 @@ export type Database = {
       }
       pedagogical_reviews: {
         Row: {
+          adherence_to_guidelines_score: number | null
           clarity_score: number | null
+          clinical_safety_score: number | null
           comments: string | null
           content_id: string | null
           correction_count: number | null
           depth_score: number | null
           didactic_score: number | null
+          exam_utility_score: number | null
           feynman_quality_score: number | null
           flashcards_quality_score: number | null
           hallucination_risk: string | null
@@ -5696,18 +5744,23 @@ export type Database = {
           precision_score: number | null
           quality_label: string | null
           quiz_quality_score: number | null
+          review_type: string | null
           reviewed_at: string | null
           reviewer_id: string | null
           scientific_accuracy_score: number | null
           score: number | null
+          specific_specialist_id: string | null
         }
         Insert: {
+          adherence_to_guidelines_score?: number | null
           clarity_score?: number | null
+          clinical_safety_score?: number | null
           comments?: string | null
           content_id?: string | null
           correction_count?: number | null
           depth_score?: number | null
           didactic_score?: number | null
+          exam_utility_score?: number | null
           feynman_quality_score?: number | null
           flashcards_quality_score?: number | null
           hallucination_risk?: string | null
@@ -5715,18 +5768,23 @@ export type Database = {
           precision_score?: number | null
           quality_label?: string | null
           quiz_quality_score?: number | null
+          review_type?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           scientific_accuracy_score?: number | null
           score?: number | null
+          specific_specialist_id?: string | null
         }
         Update: {
+          adherence_to_guidelines_score?: number | null
           clarity_score?: number | null
+          clinical_safety_score?: number | null
           comments?: string | null
           content_id?: string | null
           correction_count?: number | null
           depth_score?: number | null
           didactic_score?: number | null
+          exam_utility_score?: number | null
           feynman_quality_score?: number | null
           flashcards_quality_score?: number | null
           hallucination_risk?: string | null
@@ -5734,10 +5792,12 @@ export type Database = {
           precision_score?: number | null
           quality_label?: string | null
           quiz_quality_score?: number | null
+          review_type?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           scientific_accuracy_score?: number | null
           score?: number | null
+          specific_specialist_id?: string | null
         }
         Relationships: [
           {
@@ -11829,6 +11889,11 @@ export type Database = {
         | "approved"
         | "published"
         | "archived"
+        | "ai_generated"
+        | "pedagogical_review"
+        | "scientific_review"
+        | "rejected"
+        | "failed"
       difficulty_level: "easy" | "medium" | "hard"
       image_question_status:
         | "draft"
@@ -12036,6 +12101,11 @@ export const Constants = {
         "approved",
         "published",
         "archived",
+        "ai_generated",
+        "pedagogical_review",
+        "scientific_review",
+        "rejected",
+        "failed",
       ],
       difficulty_level: ["easy", "medium", "hard"],
       image_question_status: [
