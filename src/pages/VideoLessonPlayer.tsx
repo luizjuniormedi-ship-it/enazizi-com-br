@@ -513,6 +513,20 @@ const VideoLessonPlayer = () => {
               </CardContent>
             </Card>
 
+            {/* FASE 2: Lista de segmentos (oculta se vídeo não for segmentado) */}
+            {segments.length > 0 && (
+              <VideoSegmentList
+                segments={segments}
+                currentSegmentId={currentSegment?.id ?? null}
+                onSelectSegment={handleSelectSegment}
+                onAskTutor={handleAskTutorAtSegment}
+                onReplaySegment={handleReplaySegment}
+                getAnalytics={getForSegment}
+                smartReplayEnabled={smartReplayEnabled}
+                tutorTemporalEnabled={temporalEnabled}
+              />
+            )}
+
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base">Progresso Educacional</CardTitle>
