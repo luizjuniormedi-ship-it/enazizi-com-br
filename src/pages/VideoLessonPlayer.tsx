@@ -239,6 +239,15 @@ const VideoLessonPlayer = () => {
     
     if (action === "complete") {
       toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
+      if (lesson?.has_flashcards) {
+        toast("Revisão Recomendada", {
+          description: "Você concluiu a aula. Deseja revisar os flashcards FSRS deste conteúdo agora?",
+          action: {
+            label: "Revisar",
+            onClick: () => navigate(`/dashboard/flashcards?lesson=${id}`)
+          }
+        });
+      }
     }
   };
 
