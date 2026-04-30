@@ -668,6 +668,134 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Content Review & NotebookLM Export Dialog */}
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0 bg-card">
+          <DialogHeader className="p-6 pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl">{selectedContent?.title}</DialogTitle>
+                <DialogDescription>{selectedContent?.discipline} • {selectedContent?.topic}</DialogDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedContent && getStatusBadge(selectedContent.status)}
+                <Button variant="outline" size="sm" onClick={() => handleCopyNotebookLM(selectedContent)}>
+                  <Copy className="h-4 w-4 mr-2" /> NotebookLM
+                </Button>
+                {selectedContent?.status !== 'published' && (
+                  <Button size="sm" onClick={() => publishContent.mutate(selectedContent.id)}>
+                    Publicar Agora
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-hidden">
+            <Tabs defaultValue="overview" className="h-full flex flex-col">
+              <TabsList className="px-6 bg-transparent border-b rounded-none h-12 gap-4">
+                <TabsTrigger value="overview">Resumo Técnico</TabsTrigger>
+                <TabsTrigger value="feynman">Feynman</TabsTrigger>
+                <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
+                <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
+                <TabsTrigger value="notebooklm" className="text-indigo-500">Google NotebookLM</TabsTrigger>
+              </TabsList>
+
+              <ScrollArea className="flex-1 p-6">
+                <TabsContent value="overview" className="mt-0 space-y-4">
+                  <div className="prose prose-invert max-w-none">
+                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                      {selectedContent?.generated_summary || "O conteúdo ainda está sendo processado pela IA..."}
+                    </pre>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="feynman" className="mt-0">
+                  <div className="p-6 rounded-xl bg-primary/5 border border-primary/10">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" /> Técnica Feynman (Simplicidade)
+                    </h3>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {selectedContent?.generated_feynman || "Geração em andamento..."}
+                    </p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="flashcards" className="mt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedContent?.generated_flashcards?.map((card: any, idx: number) => (
+                      <Card key={idx} className="bg-background/50">
+                        <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0 border-b border-primary/5">
+                          <Badge variant="outline" className="text-[10px]">Flashcard {idx + 1}</Badge>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6"><Check className="h-3 w-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6"><X className="h-3 w-3" /></Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3">
+                          <p className="text-sm font-bold">{card.front || card.pergunta}</p>
+                          <Separator className="bg-primary/5" />
+                          <p className="text-sm text-muted-foreground italic">{card.back || card.resposta}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="notebooklm" className="mt-0 space-y-6">
+                  <div className="p-6 rounded-xl border-2 border-dashed border-indigo-500/20 bg-indigo-500/5 space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
+                        <Music className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-indigo-500">Integração NotebookLM Pro</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Siga o fluxo abaixo para gerar Deep Dive Audio (Podcasts) e Overview Videos.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-500/20 text-indigo-500 text-[10px] font-bold">1</span>
+                          <p className="text-xs font-medium">Exportar pacote ENAZIZI</p>
+                        </div>
+                        <Button 
+                          className="w-full bg-indigo-500 hover:bg-indigo-600 gap-2"
+                          onClick={() => handleCopyNotebookLM(selectedContent)}
+                        >
+                          <Copy className="h-4 w-4" /> Copiar Pacote para NotebookLM
+                        </Button>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-500/20 text-indigo-500 text-[10px] font-bold">2</span>
+                          <p className="text-xs font-medium">Vincular links gerados</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Input placeholder="Link do Deep Dive Audio" className="h-8 text-[11px]" />
+                          <Input placeholder="Link do Guia de Estudo" className="h-8 text-[11px]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-indigo-500/10 flex justify-between items-center">
+                       <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                         <ExternalLink className="h-3 w-3" /> Requer assinatura NotebookLM Pro / Enterprise
+                       </p>
+                       <Button variant="link" className="text-indigo-500 text-xs h-auto p-0">Ver tutorial de integração</Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </ScrollArea>
+            </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
