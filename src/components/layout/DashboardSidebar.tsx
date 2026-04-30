@@ -521,8 +521,16 @@ const DashboardSidebar = () => {
                   <SidebarLink
                     to="/admin"
                     icon={Shield}
-                    label="Admin"
+                    label="Painel Admin"
                     active={location.pathname === "/admin"}
+                    variant="muted"
+                  />
+                  <SidebarLink
+                    to="/admin/ai-studio"
+                    icon={Sparkles}
+                    label="Produção IA"
+                    description="Central de Produção de Conteúdo e NotebookLM"
+                    active={location.pathname === "/admin/ai-studio"}
                     variant="muted"
                   />
                 </>

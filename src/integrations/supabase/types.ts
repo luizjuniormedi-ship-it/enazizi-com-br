@@ -4018,49 +4018,103 @@ export type Database = {
           content_hash: string | null
           created_at: string
           created_by: string | null
+          discipline: string | null
           estimated_cost: number | null
+          exam_category: string | null
           generated_data: Json | null
+          generated_feynman: string | null
+          generated_flashcards: Json | null
+          generated_mindmap: string | null
+          generated_questions: Json | null
+          generated_quiz: Json | null
+          generated_summary: string | null
+          generated_video_script: string | null
           id: string
           metadata: Json | null
+          notebooklm_audio_url: string | null
+          notebooklm_export_text: string | null
+          notebooklm_notes: string | null
+          notebooklm_video_url: string | null
+          published_at: string | null
           raw_content: string | null
           reviewed_by: string | null
           source_type: string
           source_url: string | null
           status: Database["public"]["Enums"]["content_status"] | null
+          subtopic: string | null
+          target_groups: string[] | null
           title: string
+          topic: string | null
           updated_at: string
+          visibility: string | null
         }
         Insert: {
           content_hash?: string | null
           created_at?: string
           created_by?: string | null
+          discipline?: string | null
           estimated_cost?: number | null
+          exam_category?: string | null
           generated_data?: Json | null
+          generated_feynman?: string | null
+          generated_flashcards?: Json | null
+          generated_mindmap?: string | null
+          generated_questions?: Json | null
+          generated_quiz?: Json | null
+          generated_summary?: string | null
+          generated_video_script?: string | null
           id?: string
           metadata?: Json | null
+          notebooklm_audio_url?: string | null
+          notebooklm_export_text?: string | null
+          notebooklm_notes?: string | null
+          notebooklm_video_url?: string | null
+          published_at?: string | null
           raw_content?: string | null
           reviewed_by?: string | null
           source_type: string
           source_url?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
+          subtopic?: string | null
+          target_groups?: string[] | null
           title: string
+          topic?: string | null
           updated_at?: string
+          visibility?: string | null
         }
         Update: {
           content_hash?: string | null
           created_at?: string
           created_by?: string | null
+          discipline?: string | null
           estimated_cost?: number | null
+          exam_category?: string | null
           generated_data?: Json | null
+          generated_feynman?: string | null
+          generated_flashcards?: Json | null
+          generated_mindmap?: string | null
+          generated_questions?: Json | null
+          generated_quiz?: Json | null
+          generated_summary?: string | null
+          generated_video_script?: string | null
           id?: string
           metadata?: Json | null
+          notebooklm_audio_url?: string | null
+          notebooklm_export_text?: string | null
+          notebooklm_notes?: string | null
+          notebooklm_video_url?: string | null
+          published_at?: string | null
           raw_content?: string | null
           reviewed_by?: string | null
           source_type?: string
           source_url?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
+          subtopic?: string | null
+          target_groups?: string[] | null
           title?: string
+          topic?: string | null
           updated_at?: string
+          visibility?: string | null
         }
         Relationships: []
       }

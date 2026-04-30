@@ -27,7 +27,20 @@ import {
   MoreVertical,
   Filter,
   Zap,
-  UserCog
+  UserCog,
+  Youtube,
+  Globe,
+  Check,
+  X,
+  Copy,
+  ExternalLink,
+  ChevronRight,
+  ShieldCheck,
+  Video,
+  Music,
+  Download,
+  Share2,
+  TrendingUp
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,11 +51,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AIStudio() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("recent");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isUploadOpen, setIsUploadOpen] = useState(false);
+  const [selectedContent, setSelectedContent] = useState<any>(null);
+  const [isReviewOpen, setIsReviewOpen] = useState(false);
+
+  // Form states for new content
+  const [newTitle, setNewTitle] = useState("");
+  const [newDiscipline, setNewDiscipline] = useState("");
+  const [newTopic, setNewTopic] = useState("");
+  const [newSourceType, setNewSourceType] = useState("text");
+  const [newRawContent, setNewRawContent] = useState("");
 
   // Queries
   const { data: libraryContent, isLoading: isLoadingLibrary } = useQuery({
@@ -60,12 +98,93 @@ export default function AIStudio() {
   const { data: queueItems, isLoading: isLoadingQueue } = useQuery({
     queryKey: ["ai-generation-queue"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ai_generation_queue")
-        .select("*, master_content_library(title)")
-        .order("created_at", { ascending: false });
+      // Checking for existence of queue table - fallback if not found
+      try {
+        const { data, error } = await supabase
+          .from("ai_generation_queue")
+          .select("*, master_content_library(title)")
+          .order("created_at", { ascending: false });
+        if (error) return [];
+        return data;
+      } catch (e) {
+        return [];
+      }
+    }
+  });
+
+  const generateAIContent = useMutation({
+    mutationFn: async (contentId: string) => {
+      const { data, error } = await supabase.functions.invoke('generate-content-ai', {
+        body: { contentId }
+      });
       if (error) throw error;
       return data;
+    },
+    onSuccess: () => {
+      toast.success("Geração iniciada na fila de processamento.");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-generation-queue"] });
+    },
+    onError: (error) => {
+      toast.error("Erro ao iniciar geração: " + error.message);
+    }
+  });
+
+  const createContent = useMutation({
+    mutationFn: async () => {
+      const contentHash = btoa(newRawContent.slice(0, 100) + newTitle).slice(0, 32);
+      
+      // Check for existing content (Reuse/Cache logic)
+      const { data: existing } = await supabase
+        .from("master_content_library")
+        .select("id, title")
+        .eq("content_hash", contentHash)
+        .single();
+
+      if (existing) {
+        toast.info(`Conteúdo reutilizado da Biblioteca Mestre: ${existing.title}`);
+        return existing;
+      }
+
+      const { data, error } = await supabase
+        .from("master_content_library")
+        .insert([{
+          title: newTitle,
+          discipline: newDiscipline,
+          topic: newTopic,
+          source_type: newSourceType,
+          raw_content: newRawContent,
+          content_hash: contentHash,
+          status: 'draft',
+          created_by: user?.id
+        }])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      toast.success("Conteúdo criado com sucesso!");
+      setIsUploadOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      // Trigger AI generation
+      generateAIContent.mutate(data.id);
+    }
+  });
+
+  const publishContent = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("master_content_library")
+        .update({ status: 'published', published_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Conteúdo publicado para os alunos!");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+      setIsReviewOpen(false);
     }
   });
 
@@ -74,6 +193,7 @@ export default function AIStudio() {
     published: libraryContent?.filter(c => c.status === "published").length || 0,
     review: libraryContent?.filter(c => c.status === "review").length || 0,
     processing: queueItems?.filter(q => q.status === "processing").length || 0,
+    savings: (libraryContent?.filter(c => c.status === "published").length || 0) * 0.50 // Placeholder calc
   };
 
   const getStatusBadge = (status: string) => {
@@ -86,40 +206,132 @@ export default function AIStudio() {
     }
   };
 
-  const handleUpload = () => {
-    toast.info("Interface de upload será aberta em breve.");
+  const handleCopyNotebookLM = (content: any) => {
+    const text = `
+# EXPORTAÇÃO ENAZIZI -> NOTEBOOKLM
+Título: ${content.title}
+Disciplina: ${content.discipline}
+
+## RESUMO TÉCNICO
+${content.generated_summary || "Pendente"}
+
+## RESUMO FEYNMAN
+${content.generated_feynman || "Pendente"}
+
+## ROTEIRO DE VÍDEO / PODCAST
+${content.generated_video_script || "Pendente"}
+
+## FLASHCARDS (FSRS)
+${JSON.stringify(content.generated_flashcards, null, 2)}
+
+## QUIZ
+${JSON.stringify(content.generated_quiz, null, 2)}
+    `;
+    navigator.clipboard.writeText(text);
+    toast.success("Pacote formatado copiado para o NotebookLM Pro!");
   };
 
   return (
     <div className="container mx-auto p-6 space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">Enterprise</Badge>
+            <Badge variant="outline" className="text-[10px] border-indigo-500/20 text-indigo-500">NotebookLM Sync</Badge>
+          </div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Central de Produção IA
           </h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Gere, revise e publique conteúdos educacionais de alta fidelidade.
+            Geração de conteúdo pedagógico e sincronização com Google NotebookLM Pro.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button onClick={handleUpload} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Conteúdo
-          </Button>
-          <Button variant="outline" className="gap-2">
+          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shadow-glow-sm">
+                <Plus className="h-4 w-4" />
+                Novo Conteúdo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] bg-card border-primary/10">
+              <DialogHeader>
+                <DialogTitle>Produzir Novo Material IA</DialogTitle>
+                <DialogDescription>
+                  Envie arquivos ou texto para gerar resumos, flashcards e simulados automaticamente.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Disciplina</Label>
+                    <Input placeholder="Ex: Cardiologia" value={newDiscipline} onChange={e => setNewDiscipline(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Assunto</Label>
+                    <Input placeholder="Ex: Arritmias" value={newTopic} onChange={e => setNewTopic(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Título do Material</Label>
+                  <Input placeholder="Título identificador" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de Fonte</Label>
+                  <Select value={newSourceType} onValueChange={setNewSourceType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Texto / Link</SelectItem>
+                      <SelectItem value="pdf">Documento PDF</SelectItem>
+                      <SelectItem value="youtube">Vídeo YouTube</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Conteúdo Bruto / Link</Label>
+                  <Textarea 
+                    placeholder="Cole o texto, link do YouTube ou descrição do arquivo..." 
+                    className="min-h-[150px] font-mono text-xs"
+                    value={newRawContent}
+                    onChange={e => setNewRawContent(e.target.value)}
+                  />
+                </div>
+                <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+                  <p className="text-[11px] text-amber-500/80 italic">
+                    Ao confirmar, a IA Gemini Flash processará o conteúdo. O sistema verificará automaticamente se este material já existe na Biblioteca Mestre para evitar custos duplicados.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsUploadOpen(false)}>Cancelar</Button>
+                <Button 
+                  onClick={() => createContent.mutate()} 
+                  disabled={createContent.isPending || !newTitle || !newRawContent}
+                  className="gap-2"
+                >
+                  {createContent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Iniciar Produção IA
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="outline" onClick={() => setActiveTab("library")} className="gap-2">
             <Database className="h-4 w-4" />
             Biblioteca Mestre
           </Button>
         </div>
       </header>
 
-      {/* Analytics Overview */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total na Biblioteca</p>
+                <p className="text-sm font-medium text-muted-foreground">Total Biblioteca</p>
                 <h3 className="text-2xl font-bold">{stats.total}</h3>
               </div>
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -145,7 +357,7 @@ export default function AIStudio() {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Aguardando Revisão</p>
+                <p className="text-sm font-medium text-muted-foreground">Em Revisão</p>
                 <h3 className="text-2xl font-bold text-amber-500">{stats.review}</h3>
               </div>
               <div className="p-2 bg-amber-500/10 rounded-lg">
@@ -163,6 +375,19 @@ export default function AIStudio() {
               </div>
               <div className="p-2 bg-blue-500/10 rounded-lg">
                 <Sparkles className="h-5 w-5 text-blue-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-indigo-500/5 backdrop-blur-sm border-indigo-500/20">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-indigo-500/70">Economia IA</p>
+                <h3 className="text-2xl font-bold text-indigo-500">$ {stats.savings.toFixed(2)}</h3>
+              </div>
+              <div className="p-2 bg-indigo-500/10 rounded-lg">
+                <TrendingUp className="h-5 w-5 text-indigo-500" />
               </div>
             </div>
           </CardContent>
@@ -235,7 +460,7 @@ export default function AIStudio() {
                     <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">
                       <FileText className="h-10 w-10 mx-auto mb-3 opacity-20" />
                       <p>Nenhum conteúdo encontrado.</p>
-                      <Button variant="link" onClick={handleUpload}>Clique aqui para começar</Button>
+                      <Button variant="link" onClick={() => setIsUploadOpen(true)}>Clique aqui para começar</Button>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -248,7 +473,7 @@ export default function AIStudio() {
                             <div>
                               <p className="font-medium text-sm line-clamp-1">{item.title}</p>
                               <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.source_type}</span>
+                                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">{item.discipline || item.source_type}</span>
                                 <span className="text-[10px] text-muted-foreground">•</span>
                                 <span className="text-[10px] text-muted-foreground">
                                   {formatDistanceToNow(new Date(item.created_at), { addSuffix: true, locale: ptBR })}
@@ -265,10 +490,17 @@ export default function AIStudio() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Visualizar</DropdownMenuItem>
-                                <DropdownMenuItem>Revisar Conteúdo</DropdownMenuItem>
-                                <DropdownMenuItem className="text-primary">Publicar</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">Excluir</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>
+                                  <Eye className="h-4 w-4 mr-2" /> Visualizar / Revisar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleCopyNotebookLM(item)}>
+                                  <Copy className="h-4 w-4 mr-2" /> Exportar NotebookLM
+                                </DropdownMenuItem>
+                                {item.status === 'review' && (
+                                  <DropdownMenuItem className="text-primary" onClick={() => publishContent.mutate(item.id)}>
+                                    <Send className="h-4 w-4 mr-2" /> Publicar
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
@@ -292,7 +524,7 @@ export default function AIStudio() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select>
+                    <Select onValueChange={(val) => generateAIContent.mutate(val)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um conteúdo mestre" />
                       </SelectTrigger>
@@ -302,7 +534,10 @@ export default function AIStudio() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button className="w-full bg-indigo-500 hover:bg-indigo-600">Gerar Flashcards (FSRS)</Button>
+                    <Button className="w-full bg-indigo-500 hover:bg-indigo-600" disabled={generateAIContent.isPending}>
+                      {generateAIContent.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                      Gerar Flashcards (FSRS)
+                    </Button>
                   </CardContent>
                 </Card>
 
@@ -314,7 +549,7 @@ export default function AIStudio() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Select>
+                    <Select onValueChange={(val) => generateAIContent.mutate(val)}>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione a fonte" />
                       </SelectTrigger>
@@ -324,7 +559,10 @@ export default function AIStudio() {
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button className="w-full bg-emerald-500 hover:bg-emerald-600">Criar Banco de Questões</Button>
+                    <Button className="w-full bg-emerald-500 hover:bg-emerald-600" disabled={generateAIContent.isPending}>
+                       {generateAIContent.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <FileUp className="h-4 w-4 mr-2" />}
+                       Criar Banco de Questões
+                    </Button>
                   </CardContent>
                 </Card>
               </div>
@@ -413,7 +651,7 @@ export default function AIStudio() {
                           <p className="text-xs text-muted-foreground">$ {item.estimated_cost?.toFixed(2) || "0.00"}</p>
                         </div>
                         {getStatusBadge(item.status)}
-                        <Button variant="outline" size="sm">Gerenciar</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>Gerenciar</Button>
                       </div>
                     </div>
                   ))}
@@ -443,6 +681,134 @@ export default function AIStudio() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Content Review & NotebookLM Export Dialog */}
+      <Dialog open={isReviewOpen} onOpenChange={setIsReviewOpen}>
+        <DialogContent className="sm:max-w-[900px] h-[90vh] flex flex-col p-0 bg-card">
+          <DialogHeader className="p-6 pb-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-xl">{selectedContent?.title}</DialogTitle>
+                <DialogDescription>{selectedContent?.discipline} • {selectedContent?.topic}</DialogDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedContent && getStatusBadge(selectedContent.status)}
+                <Button variant="outline" size="sm" onClick={() => handleCopyNotebookLM(selectedContent)}>
+                  <Copy className="h-4 w-4 mr-2" /> NotebookLM
+                </Button>
+                {selectedContent?.status !== 'published' && (
+                  <Button size="sm" onClick={() => publishContent.mutate(selectedContent.id)}>
+                    Publicar Agora
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-hidden">
+            <Tabs defaultValue="overview" className="h-full flex flex-col">
+              <TabsList className="px-6 bg-transparent border-b rounded-none h-12 gap-4">
+                <TabsTrigger value="overview">Resumo Técnico</TabsTrigger>
+                <TabsTrigger value="feynman">Feynman</TabsTrigger>
+                <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
+                <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
+                <TabsTrigger value="notebooklm" className="text-indigo-500">Google NotebookLM</TabsTrigger>
+              </TabsList>
+
+              <ScrollArea className="flex-1 p-6">
+                <TabsContent value="overview" className="mt-0 space-y-4">
+                  <div className="prose prose-invert max-w-none">
+                    <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                      {selectedContent?.generated_summary || "O conteúdo ainda está sendo processado pela IA..."}
+                    </pre>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="feynman" className="mt-0">
+                  <div className="p-6 rounded-xl bg-primary/5 border border-primary/10">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-primary" /> Técnica Feynman (Simplicidade)
+                    </h3>
+                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                      {selectedContent?.generated_feynman || "Geração em andamento..."}
+                    </p>
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="flashcards" className="mt-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedContent?.generated_flashcards?.map((card: any, idx: number) => (
+                      <Card key={idx} className="bg-background/50">
+                        <CardHeader className="py-3 px-4 flex-row items-center justify-between space-y-0 border-b border-primary/5">
+                          <Badge variant="outline" className="text-[10px]">Flashcard {idx + 1}</Badge>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6"><Check className="h-3 w-3" /></Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6"><X className="h-3 w-3" /></Button>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="p-4 space-y-3">
+                          <p className="text-sm font-bold">{card.front || card.pergunta}</p>
+                          <Separator className="bg-primary/5" />
+                          <p className="text-sm text-muted-foreground italic">{card.back || card.resposta}</p>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="notebooklm" className="mt-0 space-y-6">
+                  <div className="p-6 rounded-xl border-2 border-dashed border-indigo-500/20 bg-indigo-500/5 space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="h-10 w-10 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
+                        <Music className="h-5 w-5 text-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="font-bold text-indigo-500">Integração NotebookLM Pro</h4>
+                        <p className="text-xs text-muted-foreground">
+                          Siga o fluxo abaixo para gerar Deep Dive Audio (Podcasts) e Overview Videos.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-500/20 text-indigo-500 text-[10px] font-bold">1</span>
+                          <p className="text-xs font-medium">Exportar pacote ENAZIZI</p>
+                        </div>
+                        <Button 
+                          className="w-full bg-indigo-500 hover:bg-indigo-600 gap-2"
+                          onClick={() => handleCopyNotebookLM(selectedContent)}
+                        >
+                          <Copy className="h-4 w-4" /> Copiar Pacote para NotebookLM
+                        </Button>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center justify-center h-6 w-6 rounded-full bg-indigo-500/20 text-indigo-500 text-[10px] font-bold">2</span>
+                          <p className="text-xs font-medium">Vincular links gerados</p>
+                        </div>
+                        <div className="space-y-2">
+                          <Input placeholder="Link do Deep Dive Audio" className="h-8 text-[11px]" />
+                          <Input placeholder="Link do Guia de Estudo" className="h-8 text-[11px]" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-indigo-500/10 flex justify-between items-center">
+                       <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+                         <ExternalLink className="h-3 w-3" /> Requer assinatura NotebookLM Pro / Enterprise
+                       </p>
+                       <Button variant="link" className="text-indigo-500 text-xs h-auto p-0">Ver tutorial de integração</Button>
+                    </div>
+                  </div>
+                </TabsContent>
+              </ScrollArea>
+            </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
