@@ -288,26 +288,25 @@ export const PedagogicalQualityDashboard = () => {
 
         <Card className="shadow-sm border-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Exportação NotebookLM (Ativos)</CardTitle>
+            <CardTitle className="text-lg">Prontos para Publicação</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between items-center text-sm">
-                <span>Conteúdos Prontos para NotebookLM</span>
-                <Badge variant="secondary">{stats?.counts.approved || 0}</Badge>
+                <span className="flex items-center gap-2 font-bold"><CheckCircle className="h-4 w-4 text-green-500" /> Elegíveis (Approved)</span>
+                <Badge variant="secondary" className="bg-green-100 text-green-700">{stats?.counts.approved || 0}</Badge>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span>Mídias em Processamento</span>
-                <Badge variant="outline" className="text-orange-500">8</Badge>
+                <span className="flex items-center gap-2 font-bold"><Clock className="h-4 w-4 text-orange-500" /> Pendentes (Review)</span>
+                <Badge variant="outline" className="text-orange-500">{stats?.counts.scientific_review || 0}</Badge>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span>Versão do Exportador</span>
-                <span className="font-mono text-[10px]">v2.1-medical-feynman</span>
+                <span className="flex items-center gap-2 font-bold"><Star className="h-4 w-4 text-yellow-500" /> Exportáveis NotebookLM</span>
+                <Badge className="bg-blue-100 text-blue-700">{stats?.counts.approved || 0}</Badge>
               </div>
-              <div className="mt-4 p-3 bg-primary/5 rounded border border-primary/10">
-                <p className="text-xs text-primary font-bold mb-1">Dica de Governança:</p>
-                <p className="text-[10px] leading-relaxed">
-                  Apenas conteúdos com status 'approved' e Scientific Accuracy {'>'} 8 são elegíveis para exportação multimídia via NotebookLM.
+              <div className="mt-4 p-3 bg-red-500/5 rounded border border-red-500/10">
+                <p className="text-[10px] leading-relaxed text-red-700 font-bold uppercase tracking-tighter">
+                  BLOQUEIO AUTOMÁTICO ATIVO: Impedindo publicação de {stats?.highRiskAlerts || 0} conteúdos com falha de segurança científica.
                 </p>
               </div>
             </div>
