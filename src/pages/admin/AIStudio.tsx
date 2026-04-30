@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { jsPDF } from "jspdf";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -366,14 +367,30 @@ export default function AIStudio() {
     }
   });
 
+  const { data: operationalAlerts } = useQuery({
+    queryKey: ["ai-operational-alerts-summary"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_operational_alerts")
+        .select("*")
+        .eq("is_resolved", false)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (error) return [];
+      return data;
+    }
+  });
+
   const stats = {
     total: libraryContent?.length || 0,
     published: libraryContent?.filter(c => c.status === "published").length || 0,
-    review: libraryContent?.filter(c => c.status === "review").length || 0,
+    review: libraryContent?.filter(c => ["ai_generated", "pedagogical_review", "scientific_review"].includes(c.status)).length || 0,
     processing: libraryContent?.filter(c => c.status === "processing").length || 0,
-    failed: libraryContent?.filter(c => (c.status as any) === "failed").length || 0,
-    savings: usageLogs?.reduce((acc: number, log: any) => acc + (log.reused_from_cache ? 0.50 : 0), 0) || 0,
-    cost: usageLogs?.reduce((acc: number, log: any) => acc + Number(log.estimated_cost || 0), 0) || 0
+    failed: libraryContent?.filter(c => c.status === "failed").length || 0,
+    savings: usageLogs?.reduce((acc: number, log: any) => acc + (log.cache_status !== 'cache_miss' ? 0.50 : 0), 0) || 0,
+    cost: usageLogs?.reduce((acc: number, log: any) => acc + Number(log.estimated_cost || 0), 0) || 0,
+    alerts: operationalAlerts?.length || 0,
+    blocked: libraryContent?.filter(c => (c.hallucination_risk_score || 0) > 0.7).length || 0
   };
 
   const getStatusBadge = (status: string) => {
@@ -385,6 +402,68 @@ export default function AIStudio() {
       case "approved": return <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/20">Aprovado</Badge>;
       default: return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  const handleExportPDF = (content: any) => {
+    const doc = new jsPDF();
+    const margin = 20;
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(41, 128, 185);
+    doc.text("ENAZIZI - Central de Produção IA", margin, y);
+    y += 10;
+    
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`v1.5 Production Ready - Geração: ${new Date().toLocaleString('pt-BR')}`, margin, y);
+    y += 15;
+
+    // Title
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text(content.title || "Sem Título", margin, y);
+    y += 10;
+
+    // Metadata
+    doc.setFontSize(10);
+    doc.text(`Disciplina: ${content.discipline || "N/A"}`, margin, y);
+    y += 5;
+    doc.text(`Tópico: ${content.topic || "N/A"}`, margin, y);
+    y += 10;
+
+    // Content sections
+    const sections = [
+      { title: "Resumo Técnico", content: content.generated_summary },
+      { title: "Explicação Feynman", content: content.generated_feynman },
+      { title: "Roteiro NotebookLM", content: content.notebooklm_export_text }
+    ];
+
+    sections.forEach(section => {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text(section.title, margin, y);
+      y += 7;
+      
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      const splitText = doc.splitTextToSize(section.content || "Conteúdo não disponível.", 170);
+      doc.text(splitText, margin, y);
+      y += (splitText.length * 5) + 10;
+    });
+
+    doc.save(`ENAZIZI_${content.title.replace(/\s+/g, '_')}.pdf`);
+    
+    supabase.rpc('log_ai_alert', { 
+      p_type: 'pdf_export', 
+      p_severity: 'info', 
+      p_message: `PDF exportado para: ${content.title}`,
+      p_content_id: content.id
+    });
+    
+    toast.success("PDF gerado e exportado!");
   };
 
   const handleCopyNotebookLM = (content: any) => {
@@ -422,6 +501,15 @@ INSTRUÇÃO PARA NOTEBOOKLM:
     `;
     navigator.clipboard.writeText(text);
     trackExport.mutate({ contentId: content.id, destination: 'notebooklm' });
+    
+    // Alerta de sucesso operacional
+    supabase.rpc('log_ai_alert', { 
+      p_type: 'notebooklm_export', 
+      p_severity: 'info', 
+      p_message: `Exportação NotebookLM realizada para: ${content.title}`,
+      p_content_id: content.id
+    });
+
     toast.success("Pacote estruturado copiado para o NotebookLM!");
   };
 
@@ -514,6 +602,11 @@ INSTRUÇÃO PARA NOTEBOOKLM:
             </DialogContent>
           </Dialog>
 
+          <Button variant="outline" onClick={() => window.location.href='/admin/ai-audit-mode'} className="gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            Modo Auditoria
+          </Button>
+
           <Button variant="outline" onClick={() => setActiveTab("library")} className="gap-2">
             <Database className="h-4 w-4" />
             Biblioteca Mestre
@@ -582,11 +675,37 @@ INSTRUÇÃO PARA NOTEBOOKLM:
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <h3 className="text-2xl font-bold">{stats.total}</h3>
+                <p className="text-sm font-medium text-muted-foreground">Alertas Ativos</p>
+                <h3 className={`text-2xl font-bold ${stats.alerts > 0 ? "text-destructive" : "text-primary"}`}>{stats.alerts}</h3>
               </div>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Database className="h-5 w-5 text-primary" />
+              <div className={`p-2 rounded-lg ${stats.alerts > 0 ? "bg-destructive/10" : "bg-primary/10"}`}>
+                <AlertCircle className={`h-5 w-5 ${stats.alerts > 0 ? "text-destructive" : "text-primary"}`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Aguardando Revisão</p>
+                <h3 className="text-2xl font-bold text-amber-500">{stats.review}</h3>
+              </div>
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <History className="h-5 w-5 text-amber-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Bloqueados (Risco)</p>
+                <h3 className="text-2xl font-bold text-destructive">{stats.blocked}</h3>
+              </div>
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <ShieldCheck className="h-5 w-5 text-destructive" />
               </div>
             </div>
           </CardContent>
@@ -604,41 +723,15 @@ INSTRUÇÃO PARA NOTEBOOKLM:
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Processando</p>
-                <h3 className="text-2xl font-bold text-blue-500">{stats.processing}</h3>
-              </div>
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Falhas</p>
-                <h3 className="text-2xl font-bold text-destructive">{stats.failed}</h3>
-              </div>
-              <div className="p-2 bg-destructive/10 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-destructive" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
         <Card className="bg-indigo-500/5 backdrop-blur-sm border-indigo-500/20">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-indigo-500/70">Economia IA</p>
+                <p className="text-sm font-medium text-indigo-500/70">Economia Cache</p>
                 <h3 className="text-xl font-bold text-indigo-500">$ {stats.savings.toFixed(2)}</h3>
               </div>
               <div className="p-2 bg-indigo-500/10 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-indigo-500" />
+                <Zap className="h-5 w-5 text-indigo-500" />
               </div>
             </div>
           </CardContent>
@@ -651,7 +744,7 @@ INSTRUÇÃO PARA NOTEBOOKLM:
                 <h3 className="text-xl font-bold text-amber-500">$ {stats.cost.toFixed(2)}</h3>
               </div>
               <div className="p-2 bg-amber-500/10 rounded-lg">
-                <BarChart3 className="h-5 w-5 text-amber-500" />
+                <DollarSign className="h-5 w-5 text-amber-500" />
               </div>
             </div>
           </CardContent>
@@ -939,7 +1032,30 @@ INSTRUÇÃO PARA NOTEBOOKLM:
                           <p className="text-xs text-muted-foreground">$ {item.estimated_cost?.toFixed(2) || "0.00"}</p>
                         </div>
                         {getStatusBadge(item.status)}
-                        <Button variant="outline" size="sm" onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>Gerenciar</Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>Gerenciar</Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleExportPDF(item)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Exportar PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleCopyNotebookLM(item)}>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                NotebookLM Sync
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => generateAIContent.mutate({ contentId: item.id, isRetry: true })}>
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Regerar IA
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1102,6 +1218,9 @@ INSTRUÇÃO PARA NOTEBOOKLM:
               </div>
               <div className="flex items-center gap-2">
                 {selectedContent && getStatusBadge(selectedContent.status)}
+                <Button variant="outline" size="sm" onClick={() => handleExportPDF(selectedContent)}>
+                  <FileText className="h-4 w-4 mr-2" /> PDF
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => handleCopyNotebookLM(selectedContent)}>
                   <Copy className="h-4 w-4 mr-2" /> NotebookLM
                 </Button>

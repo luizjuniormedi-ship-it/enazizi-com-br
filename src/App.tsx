@@ -104,6 +104,7 @@ const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"
 const AIStudio = lazyWithRetry(() => import("./pages/admin/AIStudio"), "AIStudio");
 const MedicalReviewQueue = lazyWithRetry(() => import("./pages/admin/MedicalReviewQueue"), "MedicalReviewQueue");
 const MedicalGovernanceDashboard = lazyWithRetry(() => import("./pages/admin/MedicalGovernanceDashboard"), "MedicalGovernanceDashboard");
+const AIAuditMode = lazyWithRetry(() => import("./pages/admin/AIAuditMode"), "AIAuditMode");
 
 
 
@@ -226,6 +227,7 @@ const App = () => (
                   <Route path="ai-studio" element={<AIStudio />} />
                   <Route path="medical-review-queue" element={<MedicalReviewQueue />} />
                   <Route path="medical-governance" element={<MedicalGovernanceDashboard />} />
+                  <Route path="ai-audit-mode" element={<AIAuditMode />} />
                </Route>
 
 
