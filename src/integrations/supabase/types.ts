@@ -3627,6 +3627,76 @@ export type Database = {
         }
         Relationships: []
       }
+      hallucination_reports: {
+        Row: {
+          content_id: string | null
+          created_at: string | null
+          description: string
+          id: string
+          issue_type: string
+          original_text: string | null
+          prompt_version_id: string | null
+          reporter_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          risk_level: string
+          status: string
+          suggested_correction: string | null
+        }
+        Insert: {
+          content_id?: string | null
+          created_at?: string | null
+          description: string
+          id?: string
+          issue_type: string
+          original_text?: string | null
+          prompt_version_id?: string | null
+          reporter_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level: string
+          status?: string
+          suggested_correction?: string | null
+        }
+        Update: {
+          content_id?: string | null
+          created_at?: string | null
+          description?: string
+          id?: string
+          issue_type?: string
+          original_text?: string | null
+          prompt_version_id?: string | null
+          reporter_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          risk_level?: string
+          status?: string
+          suggested_correction?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hallucination_reports_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hallucination_reports_prompt_version_id_fkey"
+            columns: ["prompt_version_id"]
+            isOneToOne: false
+            referencedRelation: "medical_ai_prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hallucination_reports_prompt_version_id_fkey"
+            columns: ["prompt_version_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_performance_analytics"
+            referencedColumns: ["prompt_id"]
+          },
+        ]
+      }
       image_curation_log: {
         Row: {
           asset_code: string | null
@@ -4170,9 +4240,12 @@ export type Database = {
           generated_quiz: Json | null
           generated_summary: string | null
           generated_video_script: string | null
+          hallucination_count: number | null
           id: string
+          impact_score: number | null
           is_gold_standard: boolean | null
           last_error: string | null
+          learning_efficiency_rating: number | null
           manual_correction_log: Json | null
           max_retries: number | null
           media_added_at: string | null
@@ -4214,9 +4287,12 @@ export type Database = {
           generated_quiz?: Json | null
           generated_summary?: string | null
           generated_video_script?: string | null
+          hallucination_count?: number | null
           id?: string
+          impact_score?: number | null
           is_gold_standard?: boolean | null
           last_error?: string | null
+          learning_efficiency_rating?: number | null
           manual_correction_log?: Json | null
           max_retries?: number | null
           media_added_at?: string | null
@@ -4258,9 +4334,12 @@ export type Database = {
           generated_quiz?: Json | null
           generated_summary?: string | null
           generated_video_script?: string | null
+          hallucination_count?: number | null
           id?: string
+          impact_score?: number | null
           is_gold_standard?: boolean | null
           last_error?: string | null
+          learning_efficiency_rating?: number | null
           manual_correction_log?: Json | null
           max_retries?: number | null
           media_added_at?: string | null
@@ -4333,6 +4412,56 @@ export type Database = {
           system_prompt?: string
         }
         Relationships: []
+      }
+      medical_benchmarks: {
+        Row: {
+          avg_retention_fsrs: number | null
+          avg_review_time_seconds: number | null
+          benchmark_date: string | null
+          content_id: string | null
+          error_rate: number | null
+          id: string
+          metadata: Json | null
+          sample_size_students: number | null
+          simulation_performance_score: number | null
+          specialty: string
+          tenant_id: string
+        }
+        Insert: {
+          avg_retention_fsrs?: number | null
+          avg_review_time_seconds?: number | null
+          benchmark_date?: string | null
+          content_id?: string | null
+          error_rate?: number | null
+          id?: string
+          metadata?: Json | null
+          sample_size_students?: number | null
+          simulation_performance_score?: number | null
+          specialty: string
+          tenant_id: string
+        }
+        Update: {
+          avg_retention_fsrs?: number | null
+          avg_review_time_seconds?: number | null
+          benchmark_date?: string | null
+          content_id?: string | null
+          error_rate?: number | null
+          id?: string
+          metadata?: Json | null
+          sample_size_students?: number | null
+          simulation_performance_score?: number | null
+          specialty?: string
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_benchmarks_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       medical_chronicles: {
         Row: {
@@ -11272,6 +11401,20 @@ export type Database = {
           taxa_acerto: number | null
           tema: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      prompt_performance_analytics: {
+        Row: {
+          avg_precision: number | null
+          avg_scientific_accuracy: number | null
+          critical_hallucinations: number | null
+          prompt_id: string | null
+          prompt_name: string | null
+          prompt_version: string | null
+          specialty: string | null
+          total_generations: number | null
+          total_issues: number | null
         }
         Relationships: []
       }
