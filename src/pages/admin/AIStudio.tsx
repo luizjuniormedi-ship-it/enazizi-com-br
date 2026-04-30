@@ -1032,7 +1032,30 @@ INSTRUÇÃO PARA NOTEBOOKLM:
                           <p className="text-xs text-muted-foreground">$ {item.estimated_cost?.toFixed(2) || "0.00"}</p>
                         </div>
                         {getStatusBadge(item.status)}
-                        <Button variant="outline" size="sm" onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>Gerenciar</Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>Gerenciar</Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleExportPDF(item)}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                Exportar PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleCopyNotebookLM(item)}>
+                                <Share2 className="h-4 w-4 mr-2" />
+                                NotebookLM Sync
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => generateAIContent.mutate({ contentId: item.id, isRetry: true })}>
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                                Regerar IA
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
                   ))}
