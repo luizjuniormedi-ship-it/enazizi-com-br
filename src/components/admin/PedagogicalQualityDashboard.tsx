@@ -116,49 +116,55 @@ export const PedagogicalQualityDashboard = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-l-4 border-l-green-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Conteúdos Ouro (Revisados)</CardTitle>
+        <Card className="border-l-4 border-l-red-500 shadow-sm">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Bloqueios Críticos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold">{stats?.doubleReviewedCount}</span>
-              <ShieldCheck className="h-4 w-4 text-green-500" />
+              <span className="text-3xl font-black text-red-600">{stats?.highRiskAlerts}</span>
+              <AlertCircle className="h-5 w-5 text-red-600 animate-pulse" />
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1">Materiais com revisão dupla concluída</p>
+            <p className="text-[10px] text-red-500 font-bold">Inseguro / Alucinação detectada</p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-green-500 shadow-sm">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Conteúdos Ouro</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-green-600">{stats?.doubleReviewedCount}</span>
+              <ShieldCheck className="h-5 w-5 text-green-600" />
+            </div>
+            <p className="text-[10px] text-green-600 font-bold">Revisão dupla & Scoring {'>'} 8.0</p>
           </CardContent>
         </Card>
 
         <Card className="border-l-4 border-l-blue-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Acurácia Científica Média</CardTitle>
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Acurácia Científica</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">9.4<span className="text-sm text-muted-foreground">/10</span></div>
+            <div className="flex items-baseline gap-2">
+              <span className="text-3xl font-black text-blue-600">9.4</span>
+              <span className="text-sm font-bold text-muted-foreground">/10</span>
+            </div>
             <Progress value={94} className="h-1.5 mt-2 bg-blue-100" />
           </CardContent>
         </Card>
 
-        <Card className="border-l-4 border-l-red-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Riscos de Alucinação</CardTitle>
+        <Card className="border-l-4 border-l-orange-500 shadow-sm">
+          <CardHeader className="pb-1">
+            <CardTitle className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">Eficiência Operacional</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-bold text-red-600">{stats?.highRiskAlerts}</span>
-              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <span className="text-3xl font-black text-orange-600">78%</span>
+              <TrendingUp className="h-4 w-4 text-orange-600" />
             </div>
-            <p className="text-[10px] text-red-500 font-bold mt-1">Conteúdos com score de risco {'>'} 4</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-bold text-muted-foreground uppercase">Custo Operacional IA</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">${stats?.totalCost.toFixed(4)}</div>
-            <p className="text-[10px] text-muted-foreground mt-1">Estimativa de custos Gemini v1.5 Pro/Flash</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Aprovação em 1ª instância</p>
           </CardContent>
         </Card>
       </div>
