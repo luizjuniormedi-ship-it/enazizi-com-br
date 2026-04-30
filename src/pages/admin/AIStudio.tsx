@@ -638,7 +638,7 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                           <p className="text-xs text-muted-foreground">$ {item.estimated_cost?.toFixed(2) || "0.00"}</p>
                         </div>
                         {getStatusBadge(item.status)}
-                        <Button variant="outline" size="sm">Gerenciar</Button>
+                        <Button variant="outline" size="sm" onClick={() => { setSelectedContent(item); setIsReviewOpen(true); }}>Gerenciar</Button>
                       </div>
                     </div>
                   ))}
