@@ -62,38 +62,44 @@ serve(async (req) => {
     if (fetchError || !content) throw new Error('Conteúdo não encontrado')
 
     // 2. Cache Logic (Reuse)
-    if (!isRetry && content.content_hash) {
-      const { data: existingContent } = await supabaseClient
+    let cacheStatus = 'cache_miss';
+    
+    if (!isRetry) {
+      // 2.1 Hash Cache
+      if (content.content_hash) {
+        const { data: hashMatch } = await supabaseClient
+          .from('master_content_library')
+          .select('*')
+          .eq('content_hash', content.content_hash)
+          .in('status', ['approved', 'published'])
+          .neq('id', contentId)
+          .limit(1)
+          .maybeSingle()
+
+        if (hashMatch) {
+          cacheStatus = 'cache_hit_hash';
+          await updateContentFromCache(supabaseClient, contentId, hashMatch);
+          await logPromptExecution(supabaseClient, contentId, content, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
+          return new Response(JSON.stringify({ success: true, message: "Cache Hit (Hash)" }), { headers: corsHeaders });
+        }
+      }
+
+      // 2.2 Semantic/Topic Cache
+      const { data: topicMatch } = await supabaseClient
         .from('master_content_library')
         .select('*')
-        .eq('content_hash', content.content_hash)
-        .eq('status', 'review')
+        .eq('discipline', content.discipline)
+        .eq('topic', content.topic)
+        .in('status', ['approved', 'published'])
         .neq('id', contentId)
         .limit(1)
         .maybeSingle()
 
-      if (existingContent) {
-        await supabaseClient.from('master_content_library').update({
-          generated_summary: existingContent.generated_summary,
-          generated_feynman: existingContent.generated_feynman,
-          generated_flashcards: existingContent.generated_flashcards,
-          generated_quiz: existingContent.generated_quiz,
-          generated_questions: existingContent.generated_questions,
-          generated_video_script: existingContent.generated_video_script,
-          status: 'review'
-        }).eq('id', contentId)
-
-        await supabaseClient.from('ai_usage_logs').insert({
-          tenant_id: tenantId,
-          user_id: userId,
-          content_id: contentId,
-          model: 'cache',
-          reused_from_cache: true,
-          latency_ms: Date.now() - startTime,
-          status: 'success'
-        })
-
-        return new Response(JSON.stringify({ success: true, message: "Conteúdo reutilizado do cache." }), { headers: corsHeaders })
+      if (topicMatch) {
+        cacheStatus = 'cache_hit_topic';
+        await updateContentFromCache(supabaseClient, contentId, topicMatch);
+        await logPromptExecution(supabaseClient, contentId, content, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
+        return new Response(JSON.stringify({ success: true, message: "Cache Hit (Topic/Semantic)" }), { headers: corsHeaders });
       }
     }
 
@@ -101,19 +107,25 @@ serve(async (req) => {
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada')
 
+    // Get Active Prompt
+    const { data: promptData } = await supabaseClient
+      .from('medical_ai_prompts')
+      .select('*')
+      .eq('is_active', true)
+      .limit(1)
+      .single()
+
+    const systemPrompt = promptData?.system_prompt || "Você é um especialista em educação médica ENAZIZI.";
     const getSpecialtyInstructions = (discipline: string) => {
       const d = discipline?.toLowerCase() || '';
       if (d.includes('cardio')) return "Siga diretrizes SBC/AHA. Foque em ECG, IC e síndromes coronarianas.";
-      if (d.includes('farmaco')) return "Foque em mecanismos de ação, farmacocinética, doses e interações.";
-      if (d.includes('cirur')) return "Foque em técnica operatória, indicações e complicações pós-operatórias.";
       if (d.includes('pedia')) return "Considere marcos do desenvolvimento e doses mg/kg.";
-      if (d.includes('prev')) return "Foque em SUS, epidemiologia brasileira e PNI.";
       if (d.includes('emerg')) return "Siga ACLS/ATLS. Foque em manejo ABCDE e estabilização.";
       return "Foque nos consensos médicos brasileiros vigentes.";
     }
 
-    const prompt = `
-      Você é um especialista em educação médica ENAZIZI.
+    const finalPrompt = `
+      ${systemPrompt}
       Gere material pedagógico para: ${content.discipline} - ${content.topic}.
       Fonte: "${content.raw_content}"
 
@@ -134,7 +146,7 @@ serve(async (req) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: [{ text: finalPrompt }] }],
         generationConfig: { response_mime_type: "application/json" }
       })
     })
@@ -143,7 +155,6 @@ serve(async (req) => {
     if (geminiData.error) throw new Error(geminiData.error.message)
 
     let aiResponseText = geminiData.candidates[0].content.parts[0].text;
-    // Basic cleaning if Markdown markers are present
     aiResponseText = aiResponseText.replace(/```json|```/g, '').trim();
 
     let parsedData: GeminiResponse;
@@ -151,32 +162,22 @@ serve(async (req) => {
 
     try {
       parsedData = JSON.parse(aiResponseText);
-      // Basic field validation
-      if (!parsedData.summary || !parsedData.flashcards || !parsedData.quiz) throw new Error('Campos obrigatórios ausentes');
     } catch (e) {
-      console.log("Falha no JSON, tentando reparo simples...");
-      // Simple repair attempt: find first { and last }
       const start = aiResponseText.indexOf('{');
       const end = aiResponseText.lastIndexOf('}');
       if (start !== -1 && end !== -1) {
-        try {
-          parsedData = JSON.parse(aiResponseText.substring(start, end + 1));
-          validationStatus = 'repaired';
-        } catch (e2) {
-          validationStatus = 'failed';
-          throw new Error('JSON Inválido após tentativa de reparo');
-        }
+        parsedData = JSON.parse(aiResponseText.substring(start, end + 1));
+        validationStatus = 'repaired';
       } else {
-        validationStatus = 'failed';
         throw new Error('JSON Inválido');
       }
     }
 
-    const inputTokens = content.raw_content.length / 4;
-    const outputTokens = aiResponseText.length / 4;
+    const inputTokens = Math.round(content.raw_content.length / 4);
+    const outputTokens = Math.round(aiResponseText.length / 4);
     const estimatedCost = ((inputTokens + outputTokens) / 1000000) * 0.10;
 
-    // 4. Update Library & Logs
+    // Update Library
     await supabaseClient.from('master_content_library').update({
       generated_summary: parsedData.summary,
       generated_feynman: parsedData.feynman_summary,
@@ -184,38 +185,77 @@ serve(async (req) => {
       generated_quiz: parsedData.quiz,
       generated_questions: parsedData.questions,
       generated_video_script: parsedData.video_script,
-      status: 'review'
+      status: 'ai_generated'
     }).eq('id', contentId)
 
-    await supabaseClient.from('ai_usage_logs').insert({
-      tenant_id: tenantId,
-      user_id: userId,
-      content_id: contentId,
-      model: 'gemini-2.0-flash',
-      input_tokens: Math.round(inputTokens),
-      output_tokens: Math.round(outputTokens),
-      estimated_cost: estimatedCost,
-      latency_ms: Date.now() - startTime,
-      json_validation_status: validationStatus,
-      status: 'success'
-    })
+    // Log Execution
+    await logPromptExecution(
+      supabaseClient, 
+      contentId, 
+      content, 
+      'gemini-2.0-flash', 
+      inputTokens, 
+      outputTokens, 
+      estimatedCost, 
+      Date.now() - startTime, 
+      validationStatus, 
+      'cache_miss',
+      promptData?.id,
+      promptData?.prompt_version
+    );
 
-    return new Response(JSON.stringify({ success: true, message: "Geração concluída com validação JSON." }), { headers: corsHeaders })
+    return new Response(JSON.stringify({ success: true, message: "Geração concluída." }), { headers: corsHeaders })
 
   } catch (error) {
     console.error('ERRO PIPELINE:', error.message);
     if (contentId) {
       await supabaseClient.from('master_content_library').update({ status: 'failed', last_error: error.message }).eq('id', contentId)
-      await supabaseClient.from('ai_usage_logs').insert({
-        tenant_id: tenantId,
-        user_id: userId,
-        content_id: contentId,
-        model: 'gemini-2.0-flash',
-        status: 'failed',
-        error_message: error.message,
-        latency_ms: Date.now() - startTime
-      })
+      await logPromptExecution(supabaseClient, contentId, null, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'failed', 'cache_miss', null, null, error.message);
     }
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
   }
 })
+
+async function updateContentFromCache(supabaseClient: any, contentId: string, sourceContent: any) {
+  await supabaseClient.from('master_content_library').update({
+    generated_summary: sourceContent.generated_summary,
+    generated_feynman: sourceContent.generated_feynman,
+    generated_flashcards: sourceContent.generated_flashcards,
+    generated_quiz: sourceContent.generated_quiz,
+    generated_questions: sourceContent.generated_questions,
+    generated_video_script: sourceContent.generated_video_script,
+    status: 'ai_generated' // Move to review queue even if cached
+  }).eq('id', contentId)
+}
+
+async function logPromptExecution(
+  supabaseClient: any, 
+  contentId: string, 
+  content: any, 
+  model: string, 
+  inputTokens: number, 
+  outputTokens: number, 
+  cost: number, 
+  latency: number, 
+  validation: string, 
+  cacheStatus: string,
+  promptId?: string,
+  promptVersion?: string,
+  error?: string
+) {
+  await supabaseClient.from('medical_prompt_execution_logs').insert({
+    content_id: contentId,
+    prompt_id: promptId,
+    prompt_version: promptVersion,
+    specialty: content?.discipline,
+    model: model,
+    input_tokens: inputTokens,
+    output_tokens: outputTokens,
+    latency_ms: latency,
+    estimated_cost: cost,
+    json_validation_status: validation,
+    cache_status: cacheStatus,
+    status: error ? 'failed' : 'success',
+    error_message: error
+  })
+}
