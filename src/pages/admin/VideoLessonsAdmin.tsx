@@ -14,7 +14,10 @@ import {
   BarChart3,
   ExternalLink,
   History,
-  ShieldCheck
+  ShieldCheck,
+  Star,
+  BrainCircuit,
+  Award
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,6 +49,7 @@ import { toast } from "sonner";
 const VideoLessonsAdmin = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [specialtyFilter, setSpecialtyFilter] = useState("all");
 
   const { data: lessons, isLoading, refetch } = useQuery({
     queryKey: ["admin-video-lessons"],
@@ -63,11 +67,24 @@ const VideoLessonsAdmin = () => {
     }
   });
 
+  const { data: analytics } = useQuery({
+    queryKey: ["admin-video-lessons-analytics"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("video_lesson_usage_logs")
+        .select("video_lesson_id, action, completion_rate");
+      
+      if (error) return [];
+      return data;
+    }
+  });
+
   const filteredLessons = lessons?.filter(lesson => {
     const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          lesson.specialty.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || lesson.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    const matchesSpecialty = specialtyFilter === "all" || lesson.specialty === specialtyFilter;
+    return matchesSearch && matchesStatus && matchesSpecialty;
   });
 
   const getStatusBadge = (status: string) => {
@@ -89,16 +106,45 @@ const VideoLessonsAdmin = () => {
   const handleStatusChange = async (id: string, newStatus: string) => {
     const { error } = await supabase
       .from("ai_video_lessons")
-      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .update({ 
+        status: newStatus, 
+        updated_at: new Date().toISOString(),
+        published_at: newStatus === 'published' ? new Date().toISOString() : undefined
+      })
       .eq("id", id);
 
     if (error) {
       toast.error("Erro ao atualizar status: " + error.message);
     } else {
-      toast.success("Status atualizado com sucesso!");
+      toast.success(`Status atualizado para ${newStatus}!`);
       refetch();
     }
   };
+
+  const toggleGoldContent = async (id: string, current: boolean) => {
+    const { error } = await supabase
+      .from("ai_video_lessons")
+      .update({ is_gold_content: !current })
+      .eq("id", id);
+    
+    if (error) toast.error("Erro ao atualizar destaque.");
+    else {
+      toast.success("Destaque atualizado!");
+      refetch();
+    }
+  };
+
+  const getEngagementMetrics = (lessonId: string) => {
+    if (!analytics) return { views: 0, completion: 0 };
+    const lessonLogs = analytics.filter(l => l.video_lesson_id === lessonId);
+    const views = lessonLogs.filter(l => l.action === 'heartbeat' || l.action === 'play').length;
+    const avgCompletion = lessonLogs.length > 0 
+      ? lessonLogs.reduce((acc, curr) => acc + (Number(curr.completion_rate) || 0), 0) / lessonLogs.length 
+      : 0;
+    return { views, completion: Math.round(avgCompletion) };
+  };
+
+  const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
 
   const stats = {
     total: lessons?.length || 0,
@@ -111,12 +157,17 @@ const VideoLessonsAdmin = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Biblioteca de Videoaulas IA</h1>
-          <p className="text-muted-foreground">Gestão e publicação de conteúdos multimídia médicos.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Biblioteca de Videoaulas IA v1.5</h1>
+          <p className="text-muted-foreground">Governança e auditoria de conteúdos multimídia médicos.</p>
         </div>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" /> Nova Videoaula
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/notebooklm-analytics')}>
+            <BarChart3 className="h-4 w-4" /> Analytics
+          </Button>
+          <Button className="gap-2">
+            <Plus className="h-4 w-4" /> Nova Videoaula
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -161,7 +212,7 @@ const VideoLessonsAdmin = () => {
       <Card>
         <CardHeader>
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative w-full md:w-96">
+            <div className="relative w-full md:w-80">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Buscar por título ou especialidade..."
@@ -170,16 +221,24 @@ const VideoLessonsAdmin = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
+              <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Especialidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Especialidades</SelectItem>
+                  {specialties.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Filtrar por status" />
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos os Status</SelectItem>
                   <SelectItem value="draft">Rascunho</SelectItem>
-                  <SelectItem value="exported_to_notebooklm">Aguardando Vídeo</SelectItem>
                   <SelectItem value="video_review">Em Revisão</SelectItem>
                   <SelectItem value="published">Publicado</SelectItem>
                 </SelectContent>
@@ -195,8 +254,9 @@ const VideoLessonsAdmin = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Videoaula</TableHead>
-                  <TableHead>Especialidade / Tema</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Especialidade</TableHead>
+                  <TableHead>Status / Visibilidade</TableHead>
+                  <TableHead>Engajamento</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -204,63 +264,88 @@ const VideoLessonsAdmin = () => {
               <TableBody>
                 {filteredLessons?.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Nenhuma videoaula encontrada.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLessons?.map((lesson) => (
-                    <TableRow key={lesson.id}>
-                      <TableCell>
-                        <div className="font-medium">{lesson.title}</div>
-                        <div className="text-xs text-muted-foreground line-clamp-1">{lesson.id}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="mb-1">{lesson.specialty}</Badge>
-                        <div className="text-sm">{lesson.topic}</div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(lesson.status)}</TableCell>
-                      <TableCell className="text-sm">
-                        {new Date(lesson.created_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="gap-2">
-                              <ExternalLink className="h-4 w-4" /> Ver Detalhes
-                            </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2">
-                              <BookOpen className="h-4 w-4" /> Editar Conteúdo
-                            </DropdownMenuItem>
-                            {lesson.status === 'video_review' && (
-                              <DropdownMenuItem 
-                                className="gap-2 text-green-600"
-                                onClick={() => handleStatusChange(lesson.id, 'approved')}
-                              >
-                                <CheckCircle2 className="h-4 w-4" /> Aprovar Vídeo
+                  filteredLessons?.map((lesson) => {
+                    const metrics = getEngagementMetrics(lesson.id);
+                    return (
+                      <TableRow key={lesson.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {lesson.is_gold_content && <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />}
+                            <div className="font-medium">{lesson.title}</div>
+                          </div>
+                          <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                            <BrainCircuit className="h-3 w-3" /> {lesson.tutor_lesson_id ? 'Vinculada ao Tutor' : 'Manual'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{lesson.specialty}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            {getStatusBadge(lesson.status)}
+                            <div className="text-[10px] text-muted-foreground px-1 uppercase tracking-wider">
+                              {lesson.visibility || 'Public'}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-xs space-y-1">
+                            <div className="flex items-center gap-1">
+                              <History className="h-3 w-3" /> {metrics.views} views
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Award className="h-3 w-3 text-primary" /> {metrics.completion}% conclusão
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {new Date(lesson.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem className="gap-2" onClick={() => window.open(`/videoaulas/${lesson.id}`, '_blank')}>
+                                <ExternalLink className="h-4 w-4" /> Visualizar (Aluno)
                               </DropdownMenuItem>
-                            )}
-                            {lesson.status === 'approved' && (
-                              <DropdownMenuItem 
-                                className="gap-2 text-blue-600"
-                                onClick={() => handleStatusChange(lesson.id, 'published')}
-                              >
-                                <ExternalLink className="h-4 w-4" /> Publicar Aula
+                              <DropdownMenuItem className="gap-2" onClick={() => toggleGoldContent(lesson.id, lesson.is_gold_content)}>
+                                <Star className={`h-4 w-4 ${lesson.is_gold_content ? 'fill-yellow-500 text-yellow-500' : ''}`} /> 
+                                {lesson.is_gold_content ? 'Remover Destaque' : 'Destacar (Ouro)'}
                               </DropdownMenuItem>
-                            )}
-                            <DropdownMenuItem className="gap-2 text-red-600">
-                              <AlertCircle className="h-4 w-4" /> Arquivar
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                              {lesson.status === 'video_review' && (
+                                <DropdownMenuItem 
+                                  className="gap-2 text-green-600"
+                                  onClick={() => handleStatusChange(lesson.id, 'approved')}
+                                >
+                                  <CheckCircle2 className="h-4 w-4" /> Aprovar Vídeo
+                                </DropdownMenuItem>
+                              )}
+                              {(lesson.status === 'approved' || lesson.status === 'draft') && (
+                                <DropdownMenuItem 
+                                  className="gap-2 text-blue-600"
+                                  onClick={() => handleStatusChange(lesson.id, 'published')}
+                                >
+                                  <ExternalLink className="h-4 w-4" /> Publicar Aula
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuItem className="gap-2 text-red-600">
+                                <AlertCircle className="h-4 w-4" /> Arquivar
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
