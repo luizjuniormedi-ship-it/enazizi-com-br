@@ -4982,6 +4982,85 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_prompt_execution_logs: {
+        Row: {
+          cache_status: string | null
+          content_id: string | null
+          created_at: string | null
+          error_message: string | null
+          estimated_cost: number | null
+          hallucination_risk: string | null
+          id: string
+          input_tokens: number | null
+          json_validation_status: string | null
+          latency_ms: number | null
+          model: string | null
+          output_tokens: number | null
+          prompt_id: string | null
+          prompt_version: string | null
+          specialty: string | null
+          status: string | null
+        }
+        Insert: {
+          cache_status?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_cost?: number | null
+          hallucination_risk?: string | null
+          id?: string
+          input_tokens?: number | null
+          json_validation_status?: string | null
+          latency_ms?: number | null
+          model?: string | null
+          output_tokens?: number | null
+          prompt_id?: string | null
+          prompt_version?: string | null
+          specialty?: string | null
+          status?: string | null
+        }
+        Update: {
+          cache_status?: string | null
+          content_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          estimated_cost?: number | null
+          hallucination_risk?: string | null
+          id?: string
+          input_tokens?: number | null
+          json_validation_status?: string | null
+          latency_ms?: number | null
+          model?: string | null
+          output_tokens?: number | null
+          prompt_id?: string | null
+          prompt_version?: string | null
+          specialty?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_prompt_execution_logs_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_prompt_execution_logs_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "medical_ai_prompts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "medical_prompt_execution_logs_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_performance_analytics"
+            referencedColumns: ["prompt_id"]
+          },
+        ]
+      }
       medical_terms: {
         Row: {
           aliases: string[] | null
@@ -5870,9 +5949,11 @@ export type Database = {
           flashcards_quality_score: number | null
           hallucination_risk: string | null
           id: string
+          notebooklm_script_quality_score: number | null
           precision_score: number | null
           quality_label: string | null
           quiz_quality_score: number | null
+          reliability_score: number | null
           review_type: string | null
           reviewed_at: string | null
           reviewer_id: string | null
@@ -5894,9 +5975,11 @@ export type Database = {
           flashcards_quality_score?: number | null
           hallucination_risk?: string | null
           id?: string
+          notebooklm_script_quality_score?: number | null
           precision_score?: number | null
           quality_label?: string | null
           quiz_quality_score?: number | null
+          reliability_score?: number | null
           review_type?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null
@@ -5918,9 +6001,11 @@ export type Database = {
           flashcards_quality_score?: number | null
           hallucination_risk?: string | null
           id?: string
+          notebooklm_script_quality_score?: number | null
           precision_score?: number | null
           quality_label?: string | null
           quiz_quality_score?: number | null
+          reliability_score?: number | null
           review_type?: string | null
           reviewed_at?: string | null
           reviewer_id?: string | null

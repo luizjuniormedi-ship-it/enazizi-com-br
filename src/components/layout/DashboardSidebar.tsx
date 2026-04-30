@@ -533,7 +533,24 @@ const DashboardSidebar = () => {
                     active={location.pathname === "/admin/ai-studio"}
                     variant="muted"
                   />
+                  <SidebarLink
+                    to="/admin/medical-review-queue"
+                    icon={Shield}
+                    label="Fila de Revisão"
+                    description="Governança Pedagógica Médica"
+                    active={location.pathname === "/admin/medical-review-queue"}
+                    variant="muted"
+                  />
+                  <SidebarLink
+                    to="/admin/medical-governance"
+                    icon={TrendingUp}
+                    label="Dashboard BI"
+                    description="Métricas de Custo e Qualidade"
+                    active={location.pathname === "/admin/medical-governance"}
+                    variant="muted"
+                  />
                 </>
+
               )}
               {showInstitutional && (
                 <SidebarLink
