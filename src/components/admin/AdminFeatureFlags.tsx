@@ -111,6 +111,7 @@ const AdminFeatureFlags = () => {
       recovery: "bg-orange-500/10 text-orange-400 border-orange-500/30",
       fsrs: "bg-cyan-500/10 text-cyan-400 border-cyan-500/30",
       approval: "bg-yellow-500/10 text-yellow-400 border-yellow-500/30",
+      video: "bg-pink-500/10 text-pink-400 border-pink-500/30",
     };
     return colors[cat || ""] || "bg-muted text-muted-foreground";
   };

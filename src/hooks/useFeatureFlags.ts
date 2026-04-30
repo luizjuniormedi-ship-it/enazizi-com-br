@@ -45,7 +45,12 @@ export type FlagKey =
   | "shadow_adaptive_enabled"
   | "unified_events_enabled"
   | "shadow_decisions_enabled"
-  | "shadow_scores_enabled";
+  | "shadow_scores_enabled"
+  // Adaptive Video Library — FASE 1+ (todas OFF por padrão, rollout admins_only)
+  | "adaptive_video_enabled"
+  | "smart_replay_enabled"
+  | "tutor_temporal_enabled"
+  | "multimodal_analytics_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -98,6 +103,11 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   unified_events_enabled: false,
   shadow_decisions_enabled: false,
   shadow_scores_enabled: false,
+  // Adaptive Video Library — OFF por padrão (rollout admins_only no banco)
+  adaptive_video_enabled: false,
+  smart_replay_enabled: false,
+  tutor_temporal_enabled: false,
+  multimodal_analytics_enabled: false,
 };
 
 export const useFeatureFlags = () => {
