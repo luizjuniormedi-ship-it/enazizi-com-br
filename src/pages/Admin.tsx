@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +16,7 @@ import { CinematicHero } from "@/components/cinematic";
 
 // Lazy load all admin panels
 const WhatsAppPanel = lazy(() => import("@/components/admin/WhatsAppPanel"));
+const AIStudio = lazy(() => import("@/pages/admin/AIStudio"));
 const TelegramConfigPanel = lazy(() => import("@/components/admin/TelegramConfigPanel"));
 const AdminStatsCards = lazy(() => import("@/components/admin/AdminStatsCards"));
 const AdminOnlineUsers = lazy(() => import("@/components/admin/AdminOnlineUsers"));
@@ -88,6 +89,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "ingestion", label: "Ingestão", icon: Upload },
         { key: "scraping", label: "Web Scraping", icon: HardDrive },
         { key: "qa", label: "QA Bot", icon: Bug },
+        { key: "ai-studio", label: "AI Studio", icon: Sparkles },
       ],
     },
     {
@@ -670,6 +672,7 @@ const Admin = () => {
             {activeSection === "ingestion" && <AdminIngestionPanel />}
             {activeSection === "scraping" && <AdminWebScrapingPanel />}
             {activeSection === "qa" && <AdminQAPanel />}
+            {activeSection === "ai-studio" && <AIStudio />}
 
             {/* Communication */}
             {activeSection === "messages" && <AdminMessagesPanel />}
