@@ -25,6 +25,7 @@ export interface VideoSegment {
   end_second: number | null;
   ordem: number;
   segment_type?: string | null;
+  has_flashcards?: boolean;
 }
 
 interface Props {
