@@ -405,7 +405,15 @@ const VideoLessonPlayer = () => {
                   <Button variant="outline" size="icon"><Share2 className="h-4 w-4" /></Button>
                   <Button 
                     className="gap-2" 
-                    onClick={() => handleAction("complete")}
+                    onClick={() => {
+                      handleAction("complete");
+                      if (id) logEvent({
+                        videoLessonId: id,
+                        segmentId: currentSegment?.id ?? null,
+                        eventType: "complete",
+                        timestampSeconds: watchedSeconds,
+                      });
+                    }}
                     disabled={completionRate < 90}
                   >
                     <CheckCircle className="h-4 w-4" /> Finalizar Aula
