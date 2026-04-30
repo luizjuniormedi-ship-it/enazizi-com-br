@@ -29,10 +29,21 @@ import {
   Search,
   BookOpen,
   FlaskConical,
-  Award
+  Award,
+  Share2
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Database } from "@/integrations/supabase/types";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog";
+
 
 type ContentStatus = Database["public"]["Enums"]["content_status"];
 
