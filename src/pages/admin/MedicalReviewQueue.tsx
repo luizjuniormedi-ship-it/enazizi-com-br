@@ -61,7 +61,8 @@ const MedicalReviewQueue = () => {
         .from("master_content_library")
         .select(`
           *,
-          pedagogical_reviews (*)
+          pedagogical_reviews (*),
+          ai_operational_alerts (*)
         `)
         .order("created_at", { ascending: false });
 
@@ -69,7 +70,11 @@ const MedicalReviewQueue = () => {
         query = query.eq("discipline", filterSpecialty);
       }
       if (filterStatus !== "all") {
-        query = query.eq("status", filterStatus as ContentStatus);
+        if (filterStatus === "waiting_notebooklm") {
+          query = query.eq("media_status", "none").in("status", ["approved", "published"]);
+        } else {
+          query = query.eq("status", filterStatus as ContentStatus);
+        }
       }
       if (searchQuery) {
         query = query.ilike("title", `%${searchQuery}%`);
@@ -171,6 +176,9 @@ const MedicalReviewQueue = () => {
             <SelectItem value="Ginecologia">Ginecologia</SelectItem>
             <SelectItem value="Cirurgia">Cirurgia</SelectItem>
             <SelectItem value="Infectologia">Infectologia</SelectItem>
+            <SelectItem value="Neurologia">Neurologia</SelectItem>
+            <SelectItem value="Ortopedia">Ortopedia</SelectItem>
+            <SelectItem value="Psiquiatria">Psiquiatria</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -184,6 +192,8 @@ const MedicalReviewQueue = () => {
             <SelectItem value="scientific_review">Em Revisão Científica</SelectItem>
             <SelectItem value="approved">Pronto para Publicar</SelectItem>
             <SelectItem value="published">Publicado</SelectItem>
+            <SelectItem value="failed">Falha na Geração</SelectItem>
+            <SelectItem value="waiting_notebooklm">Aguardando NotebookLM</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex items-center gap-2">
