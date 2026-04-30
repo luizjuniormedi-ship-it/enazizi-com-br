@@ -195,9 +195,10 @@ export default function AIStudio() {
   const { data: usageLogs } = useQuery({
     queryKey: ["ai-usage-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("ai_usage_logs").select("*");
+      // Cast to any to bypass temporary type issues with new tables
+      const { data, error } = await supabase.from("ai_enterprise_usage_logs" as any).select("*");
       if (error) return [];
-      return data;
+      return data as any[];
     }
   });
 
@@ -206,7 +207,7 @@ export default function AIStudio() {
     published: libraryContent?.filter(c => c.status === "published").length || 0,
     review: libraryContent?.filter(c => c.status === "review").length || 0,
     processing: libraryContent?.filter(c => c.status === "processing").length || 0,
-    failed: libraryContent?.filter(c => c.status === "failed").length || 0,
+    failed: libraryContent?.filter(c => (c.status as string) === "failed").length || 0,
     savings: usageLogs?.reduce((acc, log) => acc + (log.reused_from_cache ? 0.50 : 0), 0) || 0,
     cost: usageLogs?.reduce((acc, log) => acc + Number(log.estimated_cost || 0), 0) || 0
   };
