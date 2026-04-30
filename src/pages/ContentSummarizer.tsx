@@ -128,7 +128,7 @@ const ContentSummarizer = () => {
                     <div className="space-y-4">
                       <h4 className="font-bold flex items-center gap-2"><Brain className="h-4 w-4" /> Flashcards Sugeridos</h4>
                       <div className="grid grid-cols-1 gap-3">
-                        {selectedContent?.generated_flashcards?.map((card: any, i: number) => (
+                        {Array.isArray(selectedContent?.generated_flashcards) && selectedContent?.generated_flashcards?.map((card: any, i: number) => (
                           <div key={i} className="p-4 rounded-lg bg-muted/50 border text-sm">
                             <p className="font-bold mb-2">Q: {card.front || card.pergunta}</p>
                             <p className="opacity-70">A: {card.back || card.resposta}</p>
@@ -142,11 +142,11 @@ const ContentSummarizer = () => {
                     <div className="space-y-4">
                       <h4 className="font-bold flex items-center gap-2"><HelpCircle className="h-4 w-4" /> Quiz de Fixação</h4>
                       <div className="space-y-4">
-                        {selectedContent?.generated_quiz?.map((q: any, i: number) => (
+                        {Array.isArray(selectedContent?.generated_quiz) && selectedContent?.generated_quiz?.map((q: any, i: number) => (
                           <div key={i} className="space-y-2">
                             <p className="text-sm font-medium">{i+1}. {q.question || q.pergunta}</p>
                             <div className="grid grid-cols-1 gap-2">
-                              {(q.options || q.alternativas || []).map((opt: string, idx: number) => (
+                              {Array.isArray(q.options || q.alternativas) && (q.options || q.alternativas).map((opt: string, idx: number) => (
                                 <div key={idx} className="p-2 border rounded text-xs hover:bg-primary/5 cursor-pointer transition-colors">
                                   {opt}
                                 </div>
