@@ -727,6 +727,10 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
              </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="quality" className="space-y-4 py-4">
+          <PedagogicalQualityDashboard />
+        </TabsContent>
       </Tabs>
 
       {/* Content Review & NotebookLM Export Dialog */}
