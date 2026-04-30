@@ -3552,6 +3552,47 @@ export type Database = {
         }
         Relationships: []
       }
+      governance_audit_logs: {
+        Row: {
+          action: string
+          content_id: string
+          created_at: string | null
+          from_status: string | null
+          id: string
+          metadata: Json | null
+          to_status: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          content_id: string
+          created_at?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          to_status?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          content_id?: string
+          created_at?: string | null
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          to_status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "governance_audit_logs_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       granular_generator_runs: {
         Row: {
           ab_bucket: string | null
@@ -4230,8 +4271,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           discipline: string | null
+          double_reviewed: boolean | null
           estimated_cost: number | null
           exam_category: string | null
+          exported_at: string | null
+          exported_by: string | null
           generated_data: Json | null
           generated_feynman: string | null
           generated_flashcards: Json | null
@@ -4254,6 +4298,7 @@ export type Database = {
           metadata: Json | null
           notebooklm_audio_url: string | null
           notebooklm_export_text: string | null
+          notebooklm_export_version: string | null
           notebooklm_notes: string | null
           notebooklm_video_url: string | null
           processing_started_at: string | null
@@ -4277,8 +4322,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           discipline?: string | null
+          double_reviewed?: boolean | null
           estimated_cost?: number | null
           exam_category?: string | null
+          exported_at?: string | null
+          exported_by?: string | null
           generated_data?: Json | null
           generated_feynman?: string | null
           generated_flashcards?: Json | null
@@ -4301,6 +4349,7 @@ export type Database = {
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
+          notebooklm_export_version?: string | null
           notebooklm_notes?: string | null
           notebooklm_video_url?: string | null
           processing_started_at?: string | null
@@ -4324,8 +4373,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           discipline?: string | null
+          double_reviewed?: boolean | null
           estimated_cost?: number | null
           exam_category?: string | null
+          exported_at?: string | null
+          exported_by?: string | null
           generated_data?: Json | null
           generated_feynman?: string | null
           generated_flashcards?: Json | null
@@ -4348,6 +4400,7 @@ export type Database = {
           metadata?: Json | null
           notebooklm_audio_url?: string | null
           notebooklm_export_text?: string | null
+          notebooklm_export_version?: string | null
           notebooklm_notes?: string | null
           notebooklm_video_url?: string | null
           processing_started_at?: string | null
@@ -4501,6 +4554,80 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      medical_content_scores: {
+        Row: {
+          approved: boolean | null
+          clinical_safety_score: number | null
+          clinical_utility_score: number | null
+          content_id: string
+          created_at: string | null
+          depth_score: number | null
+          exam_utility_score: number | null
+          feynman_quality_score: number | null
+          final_score: number | null
+          flashcard_quality_score: number | null
+          guideline_adherence_score: number | null
+          hallucination_risk_score: number | null
+          id: string
+          pedagogical_clarity_score: number | null
+          quiz_quality_score: number | null
+          reliability_score: number | null
+          review_notes: string | null
+          reviewer_id: string
+          scientific_accuracy_score: number | null
+        }
+        Insert: {
+          approved?: boolean | null
+          clinical_safety_score?: number | null
+          clinical_utility_score?: number | null
+          content_id: string
+          created_at?: string | null
+          depth_score?: number | null
+          exam_utility_score?: number | null
+          feynman_quality_score?: number | null
+          final_score?: number | null
+          flashcard_quality_score?: number | null
+          guideline_adherence_score?: number | null
+          hallucination_risk_score?: number | null
+          id?: string
+          pedagogical_clarity_score?: number | null
+          quiz_quality_score?: number | null
+          reliability_score?: number | null
+          review_notes?: string | null
+          reviewer_id: string
+          scientific_accuracy_score?: number | null
+        }
+        Update: {
+          approved?: boolean | null
+          clinical_safety_score?: number | null
+          clinical_utility_score?: number | null
+          content_id?: string
+          created_at?: string | null
+          depth_score?: number | null
+          exam_utility_score?: number | null
+          feynman_quality_score?: number | null
+          final_score?: number | null
+          flashcard_quality_score?: number | null
+          guideline_adherence_score?: number | null
+          hallucination_risk_score?: number | null
+          id?: string
+          pedagogical_clarity_score?: number | null
+          quiz_quality_score?: number | null
+          reliability_score?: number | null
+          review_notes?: string | null
+          reviewer_id?: string
+          scientific_accuracy_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medical_content_scores_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       medical_domain_map: {
         Row: {
