@@ -27,7 +27,19 @@ import {
   MoreVertical,
   Filter,
   Zap,
-  UserCog
+  UserCog,
+  Youtube,
+  Globe,
+  Check,
+  X,
+  Copy,
+  ExternalLink,
+  ChevronRight,
+  ShieldCheck,
+  Video,
+  Music,
+  Download,
+  Share2
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,6 +50,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function AIStudio() {
   const queryClient = useQueryClient();
