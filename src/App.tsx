@@ -238,7 +238,8 @@ const App = () => (
                   <Route path="ai-audit-mode" element={<AIAuditMode />} />
                   <Route path="notebooklm" element={<NotebookLMDashboard />} />
                   <Route path="notebooklm-sync" element={<NotebookLMSync />} />
-                  <Route path="notebooklm-analytics" element={<NotebookLMAnalytics />} />
+                   <Route path="notebooklm-analytics" element={<NotebookLMAnalytics />} />
+                   <Route path="video-lessons" element={<VideoLessonsAdmin />} />
                </Route>
 
 
