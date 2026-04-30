@@ -338,12 +338,48 @@ const VideoLessonPlayer = () => {
               )}
             </div>
 
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{lesson.specialty}</Badge>
-                    <Badge variant="secondary">{lesson.topic}</Badge>
+            {/* FASE 2: Indicador de dificuldade + segmento atual */}
+            {currentSegment && (
+              <div className="rounded-xl border border-primary/10 bg-muted/30 p-3 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-2 text-sm min-w-0">
+                  <Badge variant="secondary" className="text-[10px]">
+                    Trecho {String(currentSegment.ordem).padStart(2, "0")}
+                  </Badge>
+                  <span className="font-medium truncate">
+                    {currentSegment.title || `Segmento ${currentSegment.ordem}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  {currentDifficulty && (
+                    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Dificuldade provável
+                    </Badge>
+                  )}
+                  {temporalEnabled && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 h-8"
+                      onClick={() => handleAskTutorAtSegment(currentSegment)}
+                    >
+                      <MessageSquare className="h-3 w-3" /> Perguntar ao Tutor neste trecho
+                    </Button>
+                  )}
+                  {smartReplayEnabled && currentDifficulty && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-1 h-8"
+                      onClick={() => handleReplaySegment(currentSegment)}
+                    >
+                      <RotateCcw className="h-3 w-3" /> Revisar trecho
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+
                     {lesson.is_gold_content && (
                       <Badge className="bg-yellow-500 text-black gap-1">
                         <Sparkles className="h-3 w-3" /> Ouro
