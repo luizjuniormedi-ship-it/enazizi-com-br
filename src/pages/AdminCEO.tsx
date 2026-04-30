@@ -125,7 +125,7 @@ export default function AdminCEO() {
         supabase.from("chronicle_osce_sessions").select("id")
           .gte("created_at", weekStart),
         // AI errors
-        supabase.from("ai_usage_logs").select("function_name, success, error_message")
+        supabase.from("ai_usage_logs" as any).select("function_name, success, error_message")
           .gte("created_at", weekStart).eq("success", false),
         // Total users
         supabase.from("profiles").select("*", { count: "exact", head: true }),
