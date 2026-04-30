@@ -207,6 +207,57 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_enterprise_usage_logs: {
+        Row: {
+          actor_key: string | null
+          actor_type: string
+          cache_hit: boolean | null
+          cost_estimate: number | null
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          model_tier: string | null
+          model_used: string | null
+          response_time_ms: number | null
+          success: boolean
+          tokens_used: number | null
+          user_id: string | null
+        }
+        Insert: {
+          actor_key?: string | null
+          actor_type?: string
+          cache_hit?: boolean | null
+          cost_estimate?: number | null
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          model_tier?: string | null
+          model_used?: string | null
+          response_time_ms?: number | null
+          success?: boolean
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          actor_key?: string | null
+          actor_type?: string
+          cache_hit?: boolean | null
+          cost_estimate?: number | null
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          model_tier?: string | null
+          model_used?: string | null
+          response_time_ms?: number | null
+          success?: boolean
+          tokens_used?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_generated_assets: {
         Row: {
           asset_type: string
@@ -371,57 +422,6 @@ export type Database = {
           plan_type?: string
           updated_at?: string
           user_id?: string
-        }
-        Relationships: []
-      }
-      ai_usage_logs: {
-        Row: {
-          actor_key: string | null
-          actor_type: string
-          cache_hit: boolean | null
-          cost_estimate: number | null
-          created_at: string
-          error_message: string | null
-          function_name: string
-          id: string
-          model_tier: string | null
-          model_used: string | null
-          response_time_ms: number | null
-          success: boolean
-          tokens_used: number | null
-          user_id: string | null
-        }
-        Insert: {
-          actor_key?: string | null
-          actor_type?: string
-          cache_hit?: boolean | null
-          cost_estimate?: number | null
-          created_at?: string
-          error_message?: string | null
-          function_name: string
-          id?: string
-          model_tier?: string | null
-          model_used?: string | null
-          response_time_ms?: number | null
-          success?: boolean
-          tokens_used?: number | null
-          user_id?: string | null
-        }
-        Update: {
-          actor_key?: string | null
-          actor_type?: string
-          cache_hit?: boolean | null
-          cost_estimate?: number | null
-          created_at?: string
-          error_message?: string | null
-          function_name?: string
-          id?: string
-          model_tier?: string | null
-          model_used?: string | null
-          response_time_ms?: number | null
-          success?: boolean
-          tokens_used?: number | null
-          user_id?: string | null
         }
         Relationships: []
       }
