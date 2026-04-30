@@ -148,7 +148,7 @@ export const PedagogicalQualityDashboard = () => {
               <span className="text-3xl font-bold text-red-600">{stats?.highRiskAlerts}</span>
               <AlertTriangle className="h-4 w-4 text-red-600" />
             </div>
-            <p className="text-[10px] text-red-500 font-bold mt-1">Conteúdos com score de risco > 4</p>
+            <p className="text-[10px] text-red-500 font-bold mt-1">Conteúdos com score de risco {'>'} 4</p>
           </CardContent>
         </Card>
 
