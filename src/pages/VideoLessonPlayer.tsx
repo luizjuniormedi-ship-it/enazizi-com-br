@@ -51,6 +51,8 @@ const VideoLessonPlayer = () => {
   const [quizFinished, setQuizFinished] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const lastLogTime = useRef(0);
+  const pauseStartTime = useRef<number | null>(null);
+  const hasNotifiedDifficulty = useRef<Set<string>>(new Set());
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ["video-lesson", id],
@@ -144,6 +146,22 @@ const VideoLessonPlayer = () => {
 
   const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
   const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
+  const difficultyLevel = currentSegmentAnalytics?.difficultyLevel || "baixa";
+
+  // Notificação de dificuldade (Fase 2.1)
+  useEffect(() => {
+    if (difficultyLevel === "alta" && currentSegment && !hasNotifiedDifficulty.current.has(currentSegment.id)) {
+      toast("Dificuldade detectada", {
+        description: "Você teve dificuldade neste trecho. Deseja revisar com o Tutor IA?",
+        action: {
+          label: "Abrir Tutor",
+          onClick: () => handleAskTutorAtSegment(currentSegment)
+        },
+        duration: 8000
+      });
+      hasNotifiedDifficulty.current.add(currentSegment.id);
+    }
+  }, [difficultyLevel, currentSegment]);
 
   useEffect(() => {
     if (progress?.watched_seconds) {
@@ -151,10 +169,25 @@ const VideoLessonPlayer = () => {
     }
   }, [progress]);
 
-  // Simulação de log de progresso
+  // Simulação de log de progresso e detecção de pausa longa
   useEffect(() => {
     let interval: any;
     if (isPlaying) {
+      // Se estava pausado, verifica se foi uma pausa longa (> 60s)
+      if (pauseStartTime.current) {
+        const pauseDuration = (Date.now() - pauseStartTime.current) / 1000;
+        if (pauseDuration > 60 && id) {
+          logEvent({
+            videoLessonId: id,
+            segmentId: currentSegment?.id,
+            eventType: "long_pause",
+            timestampSeconds: watchedSeconds,
+            durationMs: Math.floor(pauseDuration * 1000),
+          });
+        }
+        pauseStartTime.current = null;
+      }
+
       interval = setInterval(() => {
         setWatchedSeconds(prev => prev + 1);
         
@@ -164,9 +197,14 @@ const VideoLessonPlayer = () => {
           lastLogTime.current = watchedSeconds;
         }
       }, 1000);
+    } else {
+      // Quando pausa, registra o início
+      if (!pauseStartTime.current) {
+        pauseStartTime.current = Date.now();
+      }
     }
     return () => clearInterval(interval);
-  }, [isPlaying, watchedSeconds]);
+  }, [isPlaying, watchedSeconds, id, currentSegment?.id]);
 
   const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
 
@@ -264,6 +302,15 @@ const VideoLessonPlayer = () => {
       toast.success("Resposta correta!");
     } else {
       toast.error("Resposta incorreta. Veja a explicação.");
+      if (id) {
+        logEvent({
+          videoLessonId: id,
+          segmentId: currentSegment?.id,
+          eventType: "quiz_error",
+          timestampSeconds: watchedSeconds,
+          metadata: { question_index: currentQuizIndex }
+        });
+      }
     }
 
     if (currentQuizIndex + 1 < questions.length) {
@@ -359,8 +406,16 @@ const VideoLessonPlayer = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {currentDifficulty && (
-                    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30 gap-1">
-                      <AlertTriangle className="h-3 w-3" /> Dificuldade provável
+                    <Badge 
+                      className={cn(
+                        "gap-1",
+                        difficultyLevel === "alta" ? "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30" :
+                        difficultyLevel === "média" ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" :
+                        "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
+                      )}
+                    >
+                      <AlertTriangle className="h-3 w-3" /> 
+                      Dificuldade {difficultyLevel}
                     </Badge>
                   )}
                   {temporalEnabled && (
