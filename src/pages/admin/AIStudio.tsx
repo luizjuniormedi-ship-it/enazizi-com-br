@@ -1185,6 +1185,75 @@ INSTRUÇÃO PARA NOTEBOOKLM:
                   </div>
                 </TabsContent>
 
+                <TabsContent value="multimedia" className="mt-0 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="border-primary/10">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Music className="h-4 w-4 text-blue-500" />
+                          Vínculo de Áudio (NotebookLM)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">URL do Áudio Deep Dive</Label>
+                          <Input 
+                            placeholder="https://..." 
+                            defaultValue={selectedContent?.notebooklm_audio_url}
+                            onBlur={(e) => updateMultimedia.mutate({ contentId: selectedContent.id, audioUrl: e.target.value })}
+                          />
+                        </div>
+                        {selectedContent?.notebooklm_audio_url && (
+                          <div className="p-3 rounded bg-blue-500/5 border border-blue-500/20">
+                            <audio controls className="w-full h-8">
+                              <source src={selectedContent.notebooklm_audio_url} type="audio/mpeg" />
+                            </audio>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-primary/10">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Video className="h-4 w-4 text-purple-500" />
+                          Vínculo de Vídeo Overview
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">URL do Vídeo Overview</Label>
+                          <Input 
+                            placeholder="https://..." 
+                            defaultValue={selectedContent?.notebooklm_video_url}
+                            onBlur={(e) => updateMultimedia.mutate({ contentId: selectedContent.id, videoUrl: e.target.value })}
+                          />
+                        </div>
+                        {selectedContent?.notebooklm_video_url && (
+                          <div className="aspect-video rounded bg-black flex items-center justify-center">
+                            <Video className="h-8 w-8 text-white/20" />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card className="bg-muted/30 border-dashed">
+                    <CardContent className="py-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs font-bold uppercase">Status Multimídia</p>
+                          <p className="text-[10px] text-muted-foreground">{selectedContent?.media_status}</p>
+                        </div>
+                      </div>
+                      <Badge variant={selectedContent?.media_status === 'ready_for_students' ? 'default' : 'outline'}>
+                        {selectedContent?.media_status === 'ready_for_students' ? 'Liberado para Alunos' : 'Em Produção'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
                 <TabsContent value="notebooklm" className="mt-0 space-y-6">
                   <div className="p-6 rounded-xl border-2 border-dashed border-indigo-500/20 bg-indigo-500/5 space-y-6">
                     <div className="flex items-start gap-4">
