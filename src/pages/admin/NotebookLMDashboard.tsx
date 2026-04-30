@@ -143,6 +143,14 @@ export default function NotebookLMDashboard() {
           <h1 className="text-3xl font-bold tracking-tight">Dashboard NotebookLM</h1>
           <p className="text-muted-foreground">Gestão multimídia de áudio podcasts e guias conversacionais.</p>
         </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => window.location.href='/admin/notebooklm-sync'}>
+            <Link className="h-4 w-4 mr-2" /> Sincronização
+          </Button>
+          <Button variant="outline" onClick={() => window.location.href='/admin/notebooklm-analytics'}>
+            <BarChart3 className="h-4 w-4 mr-2" /> Analytics
+          </Button>
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
