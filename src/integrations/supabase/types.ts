@@ -385,6 +385,50 @@ export type Database = {
           },
         ]
       }
+      ai_operational_alerts: {
+        Row: {
+          alert_type: string
+          content_id: string | null
+          created_at: string | null
+          id: string
+          is_resolved: boolean | null
+          message: string
+          metadata: Json | null
+          resolved_at: string | null
+          severity: string
+        }
+        Insert: {
+          alert_type: string
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string
+        }
+        Update: {
+          alert_type?: string
+          content_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_resolved?: boolean | null
+          message?: string
+          metadata?: Json | null
+          resolved_at?: string | null
+          severity?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_operational_alerts_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_routing_decisions: {
         Row: {
           chosen_model: string | null
@@ -4267,6 +4311,8 @@ export type Database = {
       }
       master_content_library: {
         Row: {
+          audit_logs: Json | null
+          cached_from_id: string | null
           content_hash: string | null
           created_at: string
           created_by: string | null
@@ -4274,6 +4320,7 @@ export type Database = {
           double_reviewed: boolean | null
           estimated_cost: number | null
           exam_category: string | null
+          export_metadata: Json | null
           exported_at: string | null
           exported_by: string | null
           generated_data: Json | null
@@ -4285,6 +4332,7 @@ export type Database = {
           generated_summary: string | null
           generated_video_script: string | null
           hallucination_count: number | null
+          hallucination_risk_score: number | null
           id: string
           impact_score: number | null
           is_gold_standard: boolean | null
@@ -4307,6 +4355,7 @@ export type Database = {
           reliability_score: number | null
           retry_count: number | null
           reviewed_by: string | null
+          revision_history: Json | null
           source_type: string
           source_url: string | null
           status: Database["public"]["Enums"]["content_status"] | null
@@ -4318,6 +4367,8 @@ export type Database = {
           visibility: string | null
         }
         Insert: {
+          audit_logs?: Json | null
+          cached_from_id?: string | null
           content_hash?: string | null
           created_at?: string
           created_by?: string | null
@@ -4325,6 +4376,7 @@ export type Database = {
           double_reviewed?: boolean | null
           estimated_cost?: number | null
           exam_category?: string | null
+          export_metadata?: Json | null
           exported_at?: string | null
           exported_by?: string | null
           generated_data?: Json | null
@@ -4336,6 +4388,7 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           hallucination_count?: number | null
+          hallucination_risk_score?: number | null
           id?: string
           impact_score?: number | null
           is_gold_standard?: boolean | null
@@ -4358,6 +4411,7 @@ export type Database = {
           reliability_score?: number | null
           retry_count?: number | null
           reviewed_by?: string | null
+          revision_history?: Json | null
           source_type: string
           source_url?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
@@ -4369,6 +4423,8 @@ export type Database = {
           visibility?: string | null
         }
         Update: {
+          audit_logs?: Json | null
+          cached_from_id?: string | null
           content_hash?: string | null
           created_at?: string
           created_by?: string | null
@@ -4376,6 +4432,7 @@ export type Database = {
           double_reviewed?: boolean | null
           estimated_cost?: number | null
           exam_category?: string | null
+          export_metadata?: Json | null
           exported_at?: string | null
           exported_by?: string | null
           generated_data?: Json | null
@@ -4387,6 +4444,7 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           hallucination_count?: number | null
+          hallucination_risk_score?: number | null
           id?: string
           impact_score?: number | null
           is_gold_standard?: boolean | null
@@ -4409,6 +4467,7 @@ export type Database = {
           reliability_score?: number | null
           retry_count?: number | null
           reviewed_by?: string | null
+          revision_history?: Json | null
           source_type?: string
           source_url?: string | null
           status?: Database["public"]["Enums"]["content_status"] | null
@@ -4419,7 +4478,15 @@ export type Database = {
           updated_at?: string
           visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "master_content_library_cached_from_id_fkey"
+            columns: ["cached_from_id"]
+            isOneToOne: false
+            referencedRelation: "master_content_library"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       medical_ai_prompts: {
         Row: {
@@ -12084,6 +12151,16 @@ export type Database = {
           periodo: number
           user_id: string
         }[]
+      }
+      log_ai_alert: {
+        Args: {
+          p_content_id?: string
+          p_message: string
+          p_metadata?: Json
+          p_severity: string
+          p_type: string
+        }
+        Returns: string
       }
       match_tutor_memory: {
         Args: {
