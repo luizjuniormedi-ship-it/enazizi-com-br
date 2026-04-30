@@ -78,10 +78,16 @@ export default function AIStudio() {
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   
   // Review form states
-  const [reviewScore, setReviewScore] = useState(5);
+  // Review form states (0-10 scale)
+  const [reviewScore, setReviewScore] = useState(10);
   const [reviewLabel, setReviewLabel] = useState("Excelente");
-  const [reviewAccuracy, setReviewAccuracy] = useState(5);
-  const [reviewDidactic, setReviewDidactic] = useState(5);
+  const [reviewPrecision, setReviewPrecision] = useState(10);
+  const [reviewDidactic, setReviewDidactic] = useState(10);
+  const [reviewClarity, setReviewClarity] = useState(10);
+  const [reviewDepth, setReviewDepth] = useState(10);
+  const [reviewFlashcards, setReviewFlashcards] = useState(10);
+  const [reviewQuiz, setReviewQuiz] = useState(10);
+  const [reviewFeynman, setReviewFeynman] = useState(10);
   const [reviewHallucination, setReviewHallucination] = useState("none");
   const [reviewComments, setReviewComments] = useState("");
 
