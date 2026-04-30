@@ -234,19 +234,91 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
     <div className="container mx-auto p-6 space-y-8 animate-in fade-in duration-500">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">Enterprise</Badge>
+            <Badge variant="outline" className="text-[10px] border-indigo-500/20 text-indigo-500">NotebookLM Sync</Badge>
+          </div>
           <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Central de Produção IA
           </h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Gere, revise e publique conteúdos educacionais de alta fidelidade.
+            Geração de conteúdo pedagógico e sincronização com Google NotebookLM Pro.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button onClick={handleUpload} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Novo Conteúdo
-          </Button>
-          <Button variant="outline" className="gap-2">
+          <Dialog open={isUploadOpen} onOpenChange={setIsUploadOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shadow-glow-sm">
+                <Plus className="h-4 w-4" />
+                Novo Conteúdo
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] bg-card border-primary/10">
+              <DialogHeader>
+                <DialogTitle>Produzir Novo Material IA</DialogTitle>
+                <DialogDescription>
+                  Envie arquivos ou texto para gerar resumos, flashcards e simulados automaticamente.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-6 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Disciplina</Label>
+                    <Input placeholder="Ex: Cardiologia" value={newDiscipline} onChange={e => setNewDiscipline(e.target.value)} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Assunto</Label>
+                    <Input placeholder="Ex: Arritmias" value={newTopic} onChange={e => setNewTopic(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Título do Material</Label>
+                  <Input placeholder="Título identificador" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tipo de Fonte</Label>
+                  <Select value={newSourceType} onValueChange={setNewSourceType}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="text">Texto / Link</SelectItem>
+                      <SelectItem value="pdf">Documento PDF</SelectItem>
+                      <SelectItem value="youtube">Vídeo YouTube</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Conteúdo Bruto / Link</Label>
+                  <Textarea 
+                    placeholder="Cole o texto, link do YouTube ou descrição do arquivo..." 
+                    className="min-h-[150px] font-mono text-xs"
+                    value={newRawContent}
+                    onChange={e => setNewRawContent(e.target.value)}
+                  />
+                </div>
+                <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex gap-3">
+                  <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
+                  <p className="text-[11px] text-amber-500/80 italic">
+                    Ao confirmar, a IA Gemini Flash processará o conteúdo. O sistema verificará automaticamente se este material já existe na Biblioteca Mestre para evitar custos duplicados.
+                  </p>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsUploadOpen(false)}>Cancelar</Button>
+                <Button 
+                  onClick={() => createContent.mutate()} 
+                  disabled={createContent.isPending || !newTitle || !newRawContent}
+                  className="gap-2"
+                >
+                  {createContent.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Iniciar Produção IA
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Button variant="outline" onClick={() => setActiveTab("library")} className="gap-2">
             <Database className="h-4 w-4" />
             Biblioteca Mestre
           </Button>
