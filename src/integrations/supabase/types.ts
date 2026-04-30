@@ -4124,7 +4124,9 @@ export type Database = {
           generated_summary: string | null
           generated_video_script: string | null
           id: string
+          is_gold_standard: boolean | null
           last_error: string | null
+          manual_correction_log: Json | null
           max_retries: number | null
           metadata: Json | null
           notebooklm_audio_url: string | null
@@ -4134,6 +4136,7 @@ export type Database = {
           processing_started_at: string | null
           published_at: string | null
           raw_content: string | null
+          reliability_score: number | null
           retry_count: number | null
           reviewed_by: string | null
           source_type: string
@@ -4162,7 +4165,9 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           id?: string
+          is_gold_standard?: boolean | null
           last_error?: string | null
+          manual_correction_log?: Json | null
           max_retries?: number | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
@@ -4172,6 +4177,7 @@ export type Database = {
           processing_started_at?: string | null
           published_at?: string | null
           raw_content?: string | null
+          reliability_score?: number | null
           retry_count?: number | null
           reviewed_by?: string | null
           source_type: string
@@ -4200,7 +4206,9 @@ export type Database = {
           generated_summary?: string | null
           generated_video_script?: string | null
           id?: string
+          is_gold_standard?: boolean | null
           last_error?: string | null
+          manual_correction_log?: Json | null
           max_retries?: number | null
           metadata?: Json | null
           notebooklm_audio_url?: string | null
@@ -4210,6 +4218,7 @@ export type Database = {
           processing_started_at?: string | null
           published_at?: string | null
           raw_content?: string | null
+          reliability_score?: number | null
           retry_count?: number | null
           reviewed_by?: string | null
           source_type?: string
@@ -5618,36 +5627,57 @@ export type Database = {
       }
       pedagogical_reviews: {
         Row: {
+          clarity_score: number | null
           comments: string | null
           content_id: string | null
+          correction_count: number | null
+          depth_score: number | null
           didactic_score: number | null
+          feynman_quality_score: number | null
+          flashcards_quality_score: number | null
           hallucination_risk: string | null
           id: string
+          precision_score: number | null
           quality_label: string | null
+          quiz_quality_score: number | null
           reviewed_at: string | null
           reviewer_id: string | null
           scientific_accuracy_score: number | null
           score: number | null
         }
         Insert: {
+          clarity_score?: number | null
           comments?: string | null
           content_id?: string | null
+          correction_count?: number | null
+          depth_score?: number | null
           didactic_score?: number | null
+          feynman_quality_score?: number | null
+          flashcards_quality_score?: number | null
           hallucination_risk?: string | null
           id?: string
+          precision_score?: number | null
           quality_label?: string | null
+          quiz_quality_score?: number | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           scientific_accuracy_score?: number | null
           score?: number | null
         }
         Update: {
+          clarity_score?: number | null
           comments?: string | null
           content_id?: string | null
+          correction_count?: number | null
+          depth_score?: number | null
           didactic_score?: number | null
+          feynman_quality_score?: number | null
+          flashcards_quality_score?: number | null
           hallucination_risk?: string | null
           id?: string
+          precision_score?: number | null
           quality_label?: string | null
+          quiz_quality_score?: number | null
           reviewed_at?: string | null
           reviewer_id?: string | null
           scientific_accuracy_score?: number | null

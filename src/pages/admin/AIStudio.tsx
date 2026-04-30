@@ -78,10 +78,16 @@ export default function AIStudio() {
   const [isReviewOpen, setIsReviewOpen] = useState(false);
   
   // Review form states
-  const [reviewScore, setReviewScore] = useState(5);
+  // Review form states (0-10 scale)
+  const [reviewScore, setReviewScore] = useState(10);
   const [reviewLabel, setReviewLabel] = useState("Excelente");
-  const [reviewAccuracy, setReviewAccuracy] = useState(5);
-  const [reviewDidactic, setReviewDidactic] = useState(5);
+  const [reviewPrecision, setReviewPrecision] = useState(10);
+  const [reviewDidactic, setReviewDidactic] = useState(10);
+  const [reviewClarity, setReviewClarity] = useState(10);
+  const [reviewDepth, setReviewDepth] = useState(10);
+  const [reviewFlashcards, setReviewFlashcards] = useState(10);
+  const [reviewQuiz, setReviewQuiz] = useState(10);
+  const [reviewFeynman, setReviewFeynman] = useState(10);
   const [reviewHallucination, setReviewHallucination] = useState("none");
   const [reviewComments, setReviewComments] = useState("");
 
@@ -208,7 +214,12 @@ export default function AIStudio() {
       contentId: string, 
       score: number, 
       label: string, 
-      accuracy: number, 
+      precision: number,
+      clarity: number,
+      depth: number,
+      flashcards: number,
+      quiz: number,
+      feynman: number,
       didactic: number, 
       hallucination: string,
       comments: string 
@@ -220,7 +231,12 @@ export default function AIStudio() {
           reviewer_id: user?.id,
           score: reviewData.score,
           quality_label: reviewData.label,
-          scientific_accuracy_score: reviewData.accuracy,
+          precision_score: reviewData.precision,
+          clarity_score: reviewData.clarity,
+          depth_score: reviewData.depth,
+          flashcards_quality_score: reviewData.flashcards,
+          quiz_quality_score: reviewData.quiz,
+          feynman_quality_score: reviewData.feynman,
           didactic_score: reviewData.didactic,
           hallucination_risk: reviewData.hallucination,
           comments: reviewData.comments
@@ -228,12 +244,12 @@ export default function AIStudio() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Avaliação pedagógica registrada com sucesso!");
+      toast.success("Auditoria Médica registrada com sucesso!");
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
-      queryClient.invalidateQueries({ queryKey: ["pedagogical-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["pedagogical-stats-v2"] });
     },
     onError: (error) => {
-      toast.error("Erro ao salvar avaliação: " + error.message);
+      toast.error("Erro ao salvar auditoria: " + error.message);
     }
   });
 
@@ -926,12 +942,28 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
 
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Acurácia Científica (1-5)</Label>
-                          <Input type="number" min="1" max="5" value={reviewAccuracy} onChange={e => setReviewAccuracy(Number(e.target.value))} />
+                          <Label className="text-xs">Precisão Médica (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewPrecision} onChange={e => setReviewPrecision(Number(e.target.value))} />
                         </div>
                         <div className="space-y-2">
-                          <Label>Didática (1-5)</Label>
-                          <Input type="number" min="1" max="5" value={reviewDidactic} onChange={e => setReviewDidactic(Number(e.target.value))} />
+                          <Label className="text-xs">Didática (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewDidactic} onChange={e => setReviewDidactic(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Clareza (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewClarity} onChange={e => setReviewClarity(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Profundidade (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewDepth} onChange={e => setReviewDepth(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Flashcards (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewFlashcards} onChange={e => setReviewFlashcards(Number(e.target.value))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Quiz (0-10)</Label>
+                          <Input type="number" min="0" max="10" value={reviewQuiz} onChange={e => setReviewQuiz(Number(e.target.value))} />
                         </div>
                       </div>
 
@@ -966,9 +998,14 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                         onClick={() => {
                           submitReview.mutate({
                             contentId: selectedContent.id,
-                            score: Math.round((reviewAccuracy + reviewDidactic) / 2),
+                            score: Math.round((reviewPrecision + reviewDidactic + reviewClarity + reviewDepth) / 4),
                             label: reviewLabel,
-                            accuracy: reviewAccuracy,
+                            precision: reviewPrecision,
+                            clarity: reviewClarity,
+                            depth: reviewDepth,
+                            flashcards: reviewFlashcards,
+                            quiz: reviewQuiz,
+                            feynman: reviewFeynman,
                             didactic: reviewDidactic,
                             hallucination: reviewHallucination,
                             comments: reviewComments
