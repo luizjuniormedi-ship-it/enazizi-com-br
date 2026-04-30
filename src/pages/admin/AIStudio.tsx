@@ -650,6 +650,11 @@ ${content.generated_video_script || "Roteiro pendente."}
             </DialogContent>
           </Dialog>
 
+          <Button variant="outline" onClick={() => window.location.href='/admin/notebooklm-sync'} className="gap-2">
+            <Music className="h-4 w-4" />
+            Sync Multimídia
+          </Button>
+
           <Button variant="outline" onClick={() => window.location.href='/admin/ai-audit-mode'} className="gap-2">
             <ShieldCheck className="h-4 w-4" />
             Modo Auditoria
