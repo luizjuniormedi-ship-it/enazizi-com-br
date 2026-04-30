@@ -41,7 +41,11 @@ import {
   Download,
   Share2,
   TrendingUp,
-  RotateCcw
+  RotateCcw,
+  FileJson,
+  Activity,
+  DollarSign,
+  Package
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -67,6 +71,14 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/hooks/useAuth";
 import { PedagogicalQualityDashboard } from "@/components/admin/PedagogicalQualityDashboard";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
 
 export default function AIStudio() {
   const { user } = useAuth();
@@ -138,15 +150,80 @@ export default function AIStudio() {
     },
     onSuccess: (data) => {
       if (data?.success) {
-        toast.success(data.message || "Geração iniciada na fila de processamento.");
+        toast.success(data.message || "Geração concluída com sucesso.");
       } else {
         toast.info(data?.message || "Processamento em andamento.");
       }
       queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
       queryClient.invalidateQueries({ queryKey: ["ai-generation-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-usage-logs"] });
     },
     onError: (error) => {
-      toast.error("Erro ao iniciar geração: " + error.message);
+      toast.error("Erro no pipeline: " + error.message);
+    }
+  });
+
+  const { data: usageLogsData, isLoading: isLoadingLogs } = useQuery({
+    queryKey: ["ai-usage-logs-detailed"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_usage_logs")
+        .select("*, master_content_library(title, discipline)")
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: exportLogs } = useQuery({
+    queryKey: ["ai-export-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_export_logs")
+        .select("*, master_content_library(title)")
+        .order("created_at", { ascending: false });
+      if (error) return [];
+      return data;
+    }
+  });
+
+  const trackExport = useMutation({
+    mutationFn: async ({ contentId, destination }: { contentId: string, destination: string }) => {
+      const { error } = await supabase
+        .from("ai_export_logs")
+        .insert([{ content_id: contentId, user_id: user?.id, destination }]);
+      if (error) throw error;
+      
+      await supabase
+        .from("master_content_library")
+        .update({ media_status: 'exported_to_notebooklm' })
+        .eq('id', contentId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ai-export-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
+    }
+  });
+
+  const updateMultimedia = useMutation({
+    mutationFn: async ({ contentId, audioUrl, videoUrl }: { contentId: string, audioUrl?: string, videoUrl?: string }) => {
+      const status = audioUrl && videoUrl ? 'ready_for_students' : (audioUrl ? 'audio_linked' : 'none');
+      const { error } = await supabase
+        .from("master_content_library")
+        .update({ 
+          notebooklm_audio_url: audioUrl, 
+          notebooklm_video_url: videoUrl,
+          media_status: status,
+          media_added_by: user?.id,
+          media_added_at: new Date().toISOString()
+        })
+        .eq('id', contentId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Ativos multimídia atualizados!");
+      queryClient.invalidateQueries({ queryKey: ["master-content-library"] });
     }
   });
 
@@ -289,27 +366,40 @@ export default function AIStudio() {
 
   const handleCopyNotebookLM = (content: any) => {
     const text = `
-# EXPORTAÇÃO ENAZIZI -> NOTEBOOKLM
+# ENAZIZI MÉDICO -> NOTEBOOKLM EXPORT v1.0
+ID: ${content.id}
 Título: ${content.title}
 Disciplina: ${content.discipline}
+Especialidade: ${content.discipline}
+Data: ${new Date().toLocaleDateString('pt-BR')}
 
-## RESUMO TÉCNICO
+## OBJETIVOS DE APRENDIZAGEM
+- Compreender os mecanismos fundamentais de ${content.topic}.
+- Consolidar a conduta clínica baseada em diretrizes atuais.
+- Revisar pontos críticos para provas de residência.
+
+## RESUMO TÉCNICO PROFUNDO
 ${content.generated_summary || "Pendente"}
 
-## RESUMO FEYNMAN
+## EXPLICAÇÃO FEYNMAN (CONCEITUAL)
 ${content.generated_feynman || "Pendente"}
 
-## ROTEIRO DE VÍDEO / PODCAST
+## ROTEIRO DE ÁUDIO (PODCAST) / VÍDEO OVERVIEW
 ${content.generated_video_script || "Pendente"}
 
-## FLASHCARDS (FSRS)
+## FLASHCARDS PRINCIPAIS (CONSOLIDAÇÃO)
 ${JSON.stringify(content.generated_flashcards, null, 2)}
 
-## QUIZ
+## QUIZ DE AUTOAVALIAÇÃO
 ${JSON.stringify(content.generated_quiz, null, 2)}
+
+---
+INSTRUÇÃO PARA NOTEBOOKLM:
+"Com base nesta fonte, gere um 'Deep Dive Audio' focado na clareza didática para médicos e um 'Study Guide' que destaque as condutas terapêuticas mencionadas."
     `;
     navigator.clipboard.writeText(text);
-    toast.success("Pacote formatado copiado para o NotebookLM Pro!");
+    trackExport.mutate({ contentId: content.id, destination: 'notebooklm' });
+    toast.success("Pacote estruturado copiado para o NotebookLM!");
   };
 
   return (
@@ -582,7 +672,14 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
               className="px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
             >
               <ShieldCheck className="h-4 w-4 mr-2" />
-              Qualidade Pedagógica
+              Auditoria
+            </TabsTrigger>
+            <TabsTrigger 
+              value="logs" 
+              className="px-4 py-2 data-[state=active]:bg-primary/10 data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none"
+            >
+              <FileJson className="h-4 w-4 mr-2" />
+              Logs IA
             </TabsTrigger>
           </TabsList>
           
@@ -842,6 +939,71 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
           </div>
         </TabsContent>
 
+        <TabsContent value="logs" className="py-4">
+          <Card className="border-primary/10">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <FileJson className="h-5 w-5 text-primary" />
+                Rastreabilidade Gemini v1.0
+              </CardTitle>
+              <CardDescription>Logs detalhados de cada chamada de IA, latência e validação de JSON.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="w-[180px]">Timestamp</TableHead>
+                      <TableHead>Material</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>JSON</TableHead>
+                      <TableHead className="text-right">Tokens</TableHead>
+                      <TableHead className="text-right">Latência</TableHead>
+                      <TableHead className="text-right">Custo</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {usageLogsData?.map((log: any) => (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-[11px] font-mono">
+                          {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: ptBR })}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-xs truncate max-w-[200px]">{log.master_content_library?.title}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase">{log.master_content_library?.discipline}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {log.status === 'success' ? 
+                            <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 text-[10px]">Success</Badge> : 
+                            <Badge variant="destructive" className="text-[10px]">Failed</Badge>
+                          }
+                          {log.reused_from_cache && <Badge variant="outline" className="ml-1 text-[10px] border-blue-500/20 text-blue-500">Cache</Badge>}
+                        </TableCell>
+                        <TableCell>
+                          {log.json_validation_status === 'valid' && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                          {log.json_validation_status === 'repaired' && <Zap className="h-4 w-4 text-amber-500" />}
+                          {log.json_validation_status === 'failed' && <AlertCircle className="h-4 w-4 text-destructive" />}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {log.input_tokens + log.output_tokens || 0}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono">
+                          {log.latency_ms ? `${log.latency_ms}ms` : '-'}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-mono text-green-600">
+                          ${log.estimated_cost?.toFixed(5) || '0.00000'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="quality" className="space-y-4 py-4">
           <PedagogicalQualityDashboard />
         </TabsContent>
@@ -877,8 +1039,9 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                 <TabsTrigger value="feynman">Feynman</TabsTrigger>
                 <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
                  <TabsTrigger value="quiz">Quiz / Questões</TabsTrigger>
-                <TabsTrigger value="pedagogical" className="text-green-500">Revisão Pedagógica</TabsTrigger>
-                <TabsTrigger value="notebooklm" className="text-indigo-500">Google NotebookLM</TabsTrigger>
+                <TabsTrigger value="multimedia" className="text-blue-500">Multimídia</TabsTrigger>
+                <TabsTrigger value="pedagogical" className="text-green-500">Auditoria</TabsTrigger>
+                <TabsTrigger value="notebooklm" className="text-indigo-500">NotebookLM</TabsTrigger>
               </TabsList>
 
               <ScrollArea className="flex-1 p-6">
@@ -1020,6 +1183,75 @@ ${JSON.stringify(content.generated_quiz, null, 2)}
                       </p>
                     </div>
                   </div>
+                </TabsContent>
+
+                <TabsContent value="multimedia" className="mt-0 space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="border-primary/10">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Music className="h-4 w-4 text-blue-500" />
+                          Vínculo de Áudio (NotebookLM)
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">URL do Áudio Deep Dive</Label>
+                          <Input 
+                            placeholder="https://..." 
+                            defaultValue={selectedContent?.notebooklm_audio_url}
+                            onBlur={(e) => updateMultimedia.mutate({ contentId: selectedContent.id, audioUrl: e.target.value })}
+                          />
+                        </div>
+                        {selectedContent?.notebooklm_audio_url && (
+                          <div className="p-3 rounded bg-blue-500/5 border border-blue-500/20">
+                            <audio controls className="w-full h-8">
+                              <source src={selectedContent.notebooklm_audio_url} type="audio/mpeg" />
+                            </audio>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-primary/10">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <Video className="h-4 w-4 text-purple-500" />
+                          Vínculo de Vídeo Overview
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-xs">URL do Vídeo Overview</Label>
+                          <Input 
+                            placeholder="https://..." 
+                            defaultValue={selectedContent?.notebooklm_video_url}
+                            onBlur={(e) => updateMultimedia.mutate({ contentId: selectedContent.id, videoUrl: e.target.value })}
+                          />
+                        </div>
+                        {selectedContent?.notebooklm_video_url && (
+                          <div className="aspect-video rounded bg-black flex items-center justify-center">
+                            <Video className="h-8 w-8 text-white/20" />
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  <Card className="bg-muted/30 border-dashed">
+                    <CardContent className="py-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Package className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs font-bold uppercase">Status Multimídia</p>
+                          <p className="text-[10px] text-muted-foreground">{selectedContent?.media_status}</p>
+                        </div>
+                      </div>
+                      <Badge variant={selectedContent?.media_status === 'ready_for_students' ? 'default' : 'outline'}>
+                        {selectedContent?.media_status === 'ready_for_students' ? 'Liberado para Alunos' : 'Em Produção'}
+                      </Badge>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
 
                 <TabsContent value="notebooklm" className="mt-0 space-y-6">
