@@ -108,6 +108,45 @@ const VideoLessonPlayer = () => {
     }
   }, [progress]);
 
+  // Simulação de log de progresso
+  useEffect(() => {
+    let interval: any;
+    if (isPlaying) {
+      interval = setInterval(() => {
+        setWatchedSeconds(prev => prev + 1);
+        
+        // Log a cada 30 segundos ou na conclusão
+        if (watchedSeconds - lastLogTime.current >= 30) {
+          handleAction("heartbeat");
+          lastLogTime.current = watchedSeconds;
+        }
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isPlaying, watchedSeconds]);
+
+  const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
+
+  const handleAction = async (action: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from("video_lesson_usage_logs")
+      .insert({
+        video_lesson_id: id,
+        user_id: user.id,
+        action,
+        watched_seconds: watchedSeconds,
+        completion_rate: completionRate
+      });
+
+    if (error) console.error("Erro ao logar ação:", error);
+    
+    if (action === "complete") {
+      toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
+    }
+  };
 
   const handleQuizSubmit = async () => {
     if (selectedOption === null || !quiz) return;
