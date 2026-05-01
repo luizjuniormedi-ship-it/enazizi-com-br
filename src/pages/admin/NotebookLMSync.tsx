@@ -141,7 +141,11 @@ export default function NotebookLMSync() {
       // Sync status to library
       await supabase
         .from("master_content_library")
-        .update({ media_status: payload.media_status })
+        .update({ 
+          media_status: payload.media_status,
+          notebooklm_video_url: payload.video_url,
+          notebooklm_audio_url: payload.audio_url
+        })
         .eq("id", payload.content_id);
     },
     onSuccess: () => {
