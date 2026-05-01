@@ -43,6 +43,7 @@ const AdminModalityPanel = lazy(() => import("@/components/admin/AdminModalityPa
 const AdminHygieneDashboard = lazy(() => import("@/components/admin/AdminHygieneDashboard"));
 const AdminLargeUploadPanel = lazy(() => import("@/components/admin/AdminLargeUploadPanel"));
 const SpecialtyFrictionReport = lazy(() => import("@/pages/admin/SpecialtyFrictionReport"));
+const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
