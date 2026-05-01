@@ -53,7 +53,11 @@ export type FlagKey =
   | "multimodal_analytics_enabled"
   // Adaptive Video Library — FASE 3 Adaptive Intelligence
   | "adaptive_decisions_enabled"
-  | "preventive_tutor_enabled";
+  | "preventive_tutor_enabled"
+  // CME Integration Flags
+  | "cme_enabled"
+  | "tutor_cme_enabled"
+  | "cinematic_factory_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -113,6 +117,9 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   multimodal_analytics_enabled: false,
   adaptive_decisions_enabled: false,
   preventive_tutor_enabled: false,
+  cme_enabled: true,
+  tutor_cme_enabled: true,
+  cinematic_factory_enabled: true,
 };
 
 export const useFeatureFlags = () => {
