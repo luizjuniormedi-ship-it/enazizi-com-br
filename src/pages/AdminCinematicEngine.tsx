@@ -319,7 +319,7 @@ const AdminCinematicEngine = () => {
                           </td>
                           <td className="px-6 py-4 w-64">
                             <div className="space-y-1.5">
-                                <Progress value={job.status === 'completed' ? 100 : (job.status === 'processing' ? 50 : 10)} className="h-1.5" />
+                                <Progress value={job.status === 'completed' || job.status === 'ready' ? 100 : (['processing', 'rendering', 'cinematic_rendering'].includes(job.status) ? 50 : 10)} className="h-1.5" />
                                 {job.events && job.events.length > 0 && (
                                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1 animate-pulse">
                                     {(job.events[job.events.length - 1] as any).stage}: {(job.events[job.events.length - 1] as any).message}
