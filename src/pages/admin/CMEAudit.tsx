@@ -98,26 +98,62 @@ export default function CMEAudit() {
             </Table>
           )}
         </CardContent>
+        </Card>
+      </Card>
+
       <Card className="bg-zinc-900 border-zinc-800 mt-8">
         <CardHeader>
           <CardTitle className="text-white">Auditoria de Elegibilidade (Tutor IA)</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow className="border-zinc-800">
-                <TableHead className="text-zinc-400">Data</TableHead>
-                <TableHead className="text-zinc-400">Status</TableHead>
-                <TableHead className="text-zinc-400">Score</TableHead>
-                <TableHead className="text-zinc-400">Motivo</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              <EligibilityRows />
-            </TableBody>
-          </Table>
+          <EligibilityTable />
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function EligibilityTable() {
+  const { data: eligibilityLogs } = useQuery({
+    queryKey: ['cme-eligibility-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('cme_generation_eligibility_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow className="border-zinc-800">
+          <TableHead className="text-zinc-400">Data</TableHead>
+          <TableHead className="text-zinc-400">Status</TableHead>
+          <TableHead className="text-zinc-400">Score</TableHead>
+          <TableHead className="text-zinc-400">Motivo de Rejeição</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {eligibilityLogs?.map((log) => (
+          <TableRow key={log.id} className="border-zinc-800">
+            <TableCell className="text-zinc-300">
+              {format(new Date(log.created_at), 'dd/MM/yy HH:mm')}
+            </TableCell>
+            <TableCell>
+              <Badge variant={log.eligible ? "default" : "destructive"} className="text-[10px]">
+                {log.eligible ? "Elegível" : "Inelegível"}
+              </Badge>
+            </TableCell>
+            <TableCell className="text-zinc-300">{log.structure_score?.toFixed(2) || '0.00'}</TableCell>
+            <TableCell className="text-zinc-400 text-xs italic">{log.rejection_reason || '-'}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
