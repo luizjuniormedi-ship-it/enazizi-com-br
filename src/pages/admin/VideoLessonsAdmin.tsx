@@ -108,13 +108,22 @@ const VideoLessonsAdmin = () => {
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
+    if (newStatus === 'published') {
+      const validation = await validateVideoLessonPublication(id);
+      if (!validation.valid) {
+        toast.error("Publicação bloqueada: " + validation.errors.join(", "));
+        return;
+      }
+    }
+
     const { error } = await supabase
       .from("ai_video_lessons")
       .update({ 
         status: newStatus, 
         updated_at: new Date().toISOString(),
-        published_at: newStatus === 'published' ? new Date().toISOString() : undefined
-      })
+        published_at: newStatus === 'published' ? new Date().toISOString() : undefined,
+        media_status: newStatus === 'published' ? 'published' : undefined
+      } as any)
       .eq("id", id);
 
     if (error) {
