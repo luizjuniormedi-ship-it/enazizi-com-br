@@ -44,7 +44,6 @@ export const useTutorCME = () => {
   }, [supabaseClient]);
 
   const aggregateSessionContent = useCallback(async (conversationId: string) => {
-    // Use a direct query bypass if possible or simplify
     const query = (supabaseClient as any)
       .from("tutor_messages")
       .select("id, content, role, created_at");
@@ -57,10 +56,8 @@ export const useTutorCME = () => {
     if (error) throw error;
     if (!messages || messages.length === 0) throw new Error("Nenhuma mensagem encontrada na sessão.");
 
-    // 2. Consolidate content
     const fullText = messages.map(m => m.content).join("\n\n---\n\n");
     
-    // 3. Simple block detection (Logic for Phase 2: Pedagogical Blocks)
     const blocks: { type: string; title: string; content: string }[] = [];
     const sections = fullText.split("\n#").filter(s => s.trim().length > 0);
     
@@ -80,14 +77,13 @@ export const useTutorCME = () => {
       blocks.push({ type, title, content: section });
     });
 
-    // 4. Create Aggregation record
     const { data: aggregation, error: aggError } = await supabaseClient
       .from("cme_session_aggregations")
       .insert({
         tutor_session_id: conversationId as any,
         aggregated_content: fullText,
         total_blocks: blocks.length,
-        estimated_duration_seconds: blocks.length * 120, // Avg 2 mins per block
+        estimated_duration_seconds: blocks.length * 120,
         detected_topics: Array.from(new Set(blocks.map(b => b.title).slice(0, 5)))
       } as any)
       .select()
@@ -95,7 +91,6 @@ export const useTutorCME = () => {
 
     if (aggError) throw aggError;
 
-    // 5. Create Lesson Blocks
     const blockInserts = blocks.map((b, idx) => ({
       aggregation_id: aggregation.id,
       block_type: b.type,
@@ -124,6 +119,7 @@ export const useTutorCME = () => {
     conversationId: string;
     messageId?: string;
     isFullSession?: boolean;
+    onComplete?: (aggregationId: string) => void;
   }) => {
     setState({ status: 'queued', progress: 5, message: params.isFullSession ? "Agregando sessão completa..." : "Enfileirando projeto..." });
     toast.info(params.isFullSession ? "Consolidando toda a aula para o CME..." : "Iniciando transformação cinematográfica...");
@@ -144,7 +140,6 @@ export const useTutorCME = () => {
         setState(s => ({ ...s, aggregationId, progress: 10, message: "Sessão agregada. Criando projeto..." }));
       }
 
-      // 1. Criar Projeto CME
       const { data: project, error: projectError } = await supabaseClient
         .from("cme_video_projects")
         .insert({
@@ -169,7 +164,6 @@ export const useTutorCME = () => {
       if (projectError) throw projectError;
       const projectId = project.id;
       
-      // 2. Registrar Job de Renderização
       await supabaseClient.from("cme_render_jobs").insert({
         project_id: projectId,
         status: 'queued',
@@ -180,14 +174,12 @@ export const useTutorCME = () => {
       setState({ status: 'planning', progress: 15, projectId, aggregationId, message: "Mapeamento semântico..." });
       await logPipelineEvent(projectId, 'planning', 'in_progress', 15, `Iniciando mapeamento de ${params.isFullSession ? 'toda a sessão' : 'mensagem'}`);
 
-      // 3. Criar Vínculo Oficial (Origem)
       await supabaseClient.from("cme_tutor_origins").insert({
         tutor_session_id: params.conversationId as any,
         tutor_message_id: (params.messageId || crypto.randomUUID()) as any,
         cme_video_project_id: projectId
       } as any);
 
-      // 4. Criar Plano Semântico
       const { error: planError } = await supabaseClient
         .from("cme_semantic_plans")
         .insert({
@@ -210,6 +202,10 @@ export const useTutorCME = () => {
       toast.success(params.isFullSession ? "Sessão completa vinculada ao CME!" : "Projeto vinculado ao CME!");
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Cluster GPU: Gerando Scene Graph" }));
       await logPipelineEvent(projectId, 'rendering', 'in_progress', 50, "Aguardando worker GPU...");
+
+      if (params.onComplete && aggregationId) {
+        params.onComplete(aggregationId);
+      }
 
       return projectId;
     } catch (err: any) {
@@ -242,7 +238,7 @@ export const useTutorCME = () => {
     state,
     transformToVideo,
     retryRender,
-    logEligibility: async (p: any) => {}, // Kept for interface stability, actual logging handled in transform
+    logEligibility: async (p: any) => {},
     resetState: () => setState({ status: 'idle', progress: 0 })
   };
 };
