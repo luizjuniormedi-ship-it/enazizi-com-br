@@ -50,7 +50,7 @@ const AgentChat = ({
     topic, subtopic, specialty,
   });
 
-  // Upload handler — kept here because it touches many setters
+  // Upload handler
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !chat.user) return;
@@ -212,9 +212,6 @@ const AgentChat = ({
   const onToggleAutoSpeak = useCallback(() => chat.setAutoSpeak((v) => !v), [chat.setAutoSpeak]);
   const onToggleShowUploads = useCallback(() => chat.setShowUploads((v) => !v), [chat.setShowUploads]);
 
-  // Wrap setIsFullscreen toggle with proper signature for memoized children
-  useEffect(() => {}, []);
-
   const content = (
     <div className={`flex flex-col animate-fade-in min-w-0 w-full ${chat.isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full"}`}>
       <AgentHeader
@@ -304,6 +301,10 @@ const AgentChat = ({
         onSave={chat.handleSaveMessage}
         onLink={onLink}
         onRegenerateFromMemory={chat.regenerateFromMemory}
+        conversationId={chat.activeConversationId || undefined}
+        topic={topic}
+        subtopic={subtopic}
+        specialty={specialty}
       />
 
       <AgentInputBar

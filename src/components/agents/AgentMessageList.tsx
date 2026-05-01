@@ -21,6 +21,11 @@ interface AgentMessageListProps {
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
   onRegenerateFromMemory?: (question: string) => void;
+  /** CME integration props */
+  conversationId?: string;
+  topic?: string | null;
+  subtopic?: string | null;
+  specialty?: string | null;
 }
 
 const AgentMessageList = memo(
@@ -31,6 +36,7 @@ const AgentMessageList = memo(
         speakingMsgIdx, savingMsgIdx, savedMsgIdxs, hasOnSaveMessage,
         linkToAgent, selectedUploadIds, renderAssistantMessage,
         onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
+        conversationId, topic, subtopic, specialty
       },
       ref
     ) => (
@@ -58,6 +64,10 @@ const AgentMessageList = memo(
             onSave={onSave}
             onLink={onLink}
             onRegenerateFromMemory={onRegenerateFromMemory}
+            conversationId={conversationId}
+            topic={topic || undefined}
+            subtopic={subtopic || undefined}
+            specialty={specialty || undefined}
           />
         ))}
         {isLoading && messages[messages.length - 1]?.role === "user" && (
