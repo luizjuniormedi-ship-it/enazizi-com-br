@@ -137,9 +137,21 @@ const AdminCinematicEngine = () => {
         .from("cme_render_jobs")
         .select(`
           *,
-          project:cme_video_projects(title)
+          project:cme_video_projects(title, config),
+          events:cme_pipeline_events(*)
         `)
         .order("queued_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: tutorOrigins } = useQuery({
+    queryKey: ["cme-tutor-origins"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cme_tutor_origins")
+        .select("*");
       if (error) throw error;
       return data;
     }
@@ -158,13 +170,14 @@ const AdminCinematicEngine = () => {
   });
 
   const stats = {
-    active_renders: renderJobs?.filter(j => ['preparing', 'semantic_processing', 'cinematic_rendering'].includes(j.status)).length || 0,
+    active_renders: renderJobs?.filter(j => ['preparing', 'semantic_processing', 'cinematic_rendering', 'processing'].includes(j.status)).length || 0,
     queued_tasks: renderJobs?.filter(j => j.status === 'queued').length || 0,
     gpu_nodes: gpuWorkers?.filter(w => w.status === 'online').length || 0,
     total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0,
     avg_quality: "9.2 / 10",
     global_fatigue_index: "0.12",
-    director_ai_status: "Autonomous"
+    director_ai_status: "Autonomous",
+    tutor_origins_count: tutorOrigins?.length || 0
   };
 
   const getJobStatusBadge = (status: string) => {
@@ -173,6 +186,7 @@ const AdminCinematicEngine = () => {
       preparing: { label: "Preparando", color: "bg-blue-500/10 text-blue-600 border-blue-200 animate-pulse" },
       semantic_processing: { label: "Semântica", color: "bg-purple-500/10 text-purple-600 border-purple-200 animate-pulse" },
       cinematic_rendering: { label: "Renderizando", color: "bg-indigo-500/10 text-indigo-600 border-indigo-200 animate-pulse" },
+      processing: { label: "Processando", color: "bg-amber-500/10 text-amber-600 border-amber-200 animate-pulse" },
       completed: { label: "Concluído", color: "bg-green-500/10 text-green-600 border-green-200" },
       failed: { label: "Falhou", color: "bg-red-500/10 text-red-600 border-red-200" }
     };
@@ -281,8 +295,11 @@ const AdminCinematicEngine = () => {
                           <td className="px-6 py-4">
                             <div className="flex flex-col">
                               <span className="font-bold text-slate-700 text-sm">{job.project?.title || 'Unknown Project'}</span>
-                              <div className="flex items-center gap-1.5 mt-1">
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                                 <Badge variant="secondary" className="text-[9px] font-black px-1.5 h-4">{job.render_type}</Badge>
+                                {(job.project as any)?.config?.tutor_message_id && (
+                                  <Badge variant="outline" className="text-[9px] font-black px-1.5 h-4 border-amber-500/30 text-amber-600">ORIGIN: TUTOR IA</Badge>
+                                )}
                                 <span className="text-[10px] text-slate-400 font-mono">#{job.id.slice(0,8)}</span>
                               </div>
                             </div>
@@ -292,7 +309,12 @@ const AdminCinematicEngine = () => {
                           </td>
                           <td className="px-6 py-4 w-64">
                             <div className="space-y-1.5">
-                              <Progress value={job.status === 'completed' ? 100 : 42} className="h-1.5" />
+                                <Progress value={job.status === 'completed' ? 100 : (job.status === 'processing' ? 50 : 10)} className="h-1.5" />
+                                {job.events && job.events.length > 0 && (
+                                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1 animate-pulse">
+                                    {(job.events[job.events.length - 1] as any).stage}: {(job.events[job.events.length - 1] as any).message}
+                                  </p>
+                                )}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
