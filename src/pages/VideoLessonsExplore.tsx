@@ -208,9 +208,9 @@ const VideoLessonsExplore = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Qualquer Duração</SelectItem>
-                  <SelectItem value="short">Curto (< 10min)</SelectItem>
-                  <SelectItem value="medium">Médio (10-30min)</SelectItem>
-                  <SelectItem value="long">Longo (> 30min)</SelectItem>
+                  <SelectItem value="short">{"Curto (< 10min)"}</SelectItem>
+                  <SelectItem value="medium">{"Médio (10-30min)"}</SelectItem>
+                  <SelectItem value="long">{"Longo (> 30min)"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
