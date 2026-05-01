@@ -138,14 +138,17 @@ const AdminCinematicEngine = () => {
               <TabsTrigger value="pipeline" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Activity className="h-4 w-4" /> Queue
               </TabsTrigger>
+              <TabsTrigger value="references" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Layout className="h-4 w-4" /> Reference Benchmarks
+              </TabsTrigger>
               <TabsTrigger value="workers" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Server className="h-4 w-4" /> GPU Cluster
               </TabsTrigger>
               <TabsTrigger value="analytics" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <BarChart3 className="h-4 w-4" /> Analytics
               </TabsTrigger>
-              <TabsTrigger value="infrastructure" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
-                <Settings className="h-4 w-4" /> Orchestration
+              <TabsTrigger value="governance" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Shield className="h-4 w-4" /> Governance
               </TabsTrigger>
             </TabsList>
           </div>
