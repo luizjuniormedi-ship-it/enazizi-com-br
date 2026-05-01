@@ -417,41 +417,58 @@ const AdminCinematicEngine = () => {
                      <table className="w-full text-sm text-left">
                        <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 font-black tracking-widest border-b">
                          <tr>
-                           <th className="px-6 py-4">Reference Benchmark</th>
+                           <th className="px-6 py-4">Reference Name</th>
                            <th className="px-6 py-4">Type</th>
-                           <th className="px-6 py-4">Duration</th>
-                           <th className="px-6 py-4">Pacing Learning</th>
-                           <th className="px-6 py-4 text-right">Similarity Actions</th>
+                           <th className="px-6 py-4 text-center">Pacing</th>
+                           <th className="px-6 py-4 text-center">Retention Est.</th>
+                           <th className="px-6 py-4 text-center">Hotspots</th>
+                           <th className="px-6 py-4 text-right">Actions</th>
                          </tr>
                        </thead>
                        <tbody className="divide-y">
-                         {referenceProfiles?.map((profile) => (
+                         {referenceProfiles?.map((profile: any) => (
                            <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors group">
                              <td className="px-6 py-4">
-                               <div className="flex items-center gap-3">
-                                 <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-                                   <Film className="h-5 w-5" />
-                                 </div>
-                                 <div>
-                                   <p className="font-bold text-slate-700">{profile.reference_name}</p>
-                                   <p className="text-[10px] text-slate-400 font-mono">ID: {profile.id.slice(0,8)}</p>
-                                 </div>
+                               <div className="flex flex-col">
+                                 <span className="font-bold text-slate-700">{profile.reference_name}</span>
+                                 <span className="text-[10px] text-slate-400 font-mono">#{profile.id.slice(0,8)}</span>
                                </div>
                              </td>
                              <td className="px-6 py-4">
-                               <Badge variant="secondary" className="text-[9px] font-black uppercase px-2">{profile.reference_type}</Badge>
-                             </td>
-                             <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                               {Math.floor(profile.video_duration_seconds / 60)}:{(profile.video_duration_seconds % 60).toString().padStart(2,'0')}
+                               <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50">{profile.reference_type}</Badge>
                              </td>
                              <td className="px-6 py-4">
-                               <div className="flex gap-2">
-                                 <Badge variant="outline" className="text-[9px] border-emerald-200 text-emerald-600 bg-emerald-50">Narrative Pattern</Badge>
-                                 <Badge variant="outline" className="text-[9px] border-blue-200 text-blue-600 bg-blue-50">Cognitive Curve</Badge>
+                               <div className="flex flex-col items-center gap-1">
+                                 <div className="flex gap-0.5 h-3 items-end">
+                                    {[20, 40, 60, 30, 80, 50, 90, 40].map((h, i) => (
+                                      <div key={i} className="w-1 bg-primary/40 rounded-t-sm" style={{ height: `${h}%` }} />
+                                    ))}
+                                 </div>
+                                 <span className="text-[9px] font-bold text-slate-500 uppercase">Adaptive Pacing</span>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-center">
+                               <div className="inline-flex flex-col items-center">
+                                 <span className="text-sm font-black text-slate-700">92%</span>
+                                 <div className="flex items-center gap-1">
+                                   <TrendingUp className="h-2 w-2 text-green-500" />
+                                   <span className="text-[9px] font-bold text-green-600 uppercase">High</span>
+                                 </div>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-center">
+                               <div className="flex items-center justify-center gap-1">
+                                 <Badge variant="outline" className="bg-red-50 text-red-600 text-[9px] font-bold border-red-100">3 Fatigue Points</Badge>
+                                 <Badge variant="outline" className="bg-blue-50 text-blue-600 text-[9px] font-bold border-blue-100">2 Replays</Badge>
                                </div>
                              </td>
                              <td className="px-6 py-4 text-right">
-                               <Button size="sm" variant="ghost" className="font-bold text-xs">Use as Model</Button>
+                               <div className="flex items-center justify-end gap-2">
+                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" title="View Scoring Breakdown">
+                                   <Info className="h-4 w-4" />
+                                 </Button>
+                                 <Button size="sm" variant="ghost" className="font-bold text-xs h-8">Use as Model</Button>
+                               </div>
                              </td>
                            </tr>
                          ))}
