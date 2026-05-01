@@ -210,6 +210,7 @@ const VideoLessonsAdmin = () => {
     waitingVideo: lessons?.filter(l => l.status === 'exported_to_notebooklm').length || 0,
     waitingReview: lessons?.filter(l => l.status === 'video_review').length || 0,
     published: lessons?.filter(l => l.status === 'published').length || 0,
+    critical: lessons?.filter(l => (l.health_score || 0) < 50).length || 0
   };
 
   return (
