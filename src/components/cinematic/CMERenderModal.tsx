@@ -5,7 +5,7 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription 
-} from "@/components/ui/card";
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { 
