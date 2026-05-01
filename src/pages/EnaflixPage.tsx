@@ -40,6 +40,42 @@ export default function EnaflixPage() {
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
 
+  const { data: aiLessons } = useQuery({
+    queryKey: ["enaflix-ai-lessons"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_video_lessons")
+        .select("*")
+        .eq("status", "published")
+        .order("published_at", { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data;
+    }
+  });
+
+  const { data: usageLogs } = useQuery({
+    queryKey: ["enaflix-video-usage"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data } = await supabase
+        .from("video_lesson_usage_logs")
+        .select("video_lesson_id, completion_rate")
+        .eq("user_id", user.id);
+      return data || [];
+    }
+  });
+
+  const continueLessons = useMemo(() => {
+    if (!aiLessons || !usageLogs) return [];
+    const inProgressIds = usageLogs
+      .filter(log => Number(log.completion_rate) > 0 && Number(log.completion_rate) < 95)
+      .map(log => log.video_lesson_id);
+    
+    return aiLessons.filter(l => inProgressIds.includes(l.id));
+  }, [aiLessons, usageLogs]);
+
   useEffect(() => {
     const prev = document.title;
     document.title = "ENAFLIX — streaming inteligente do ENAZIZI";
