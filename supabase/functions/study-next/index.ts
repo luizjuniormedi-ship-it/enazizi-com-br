@@ -394,12 +394,12 @@ serve(async (req) => {
             imgDescription = `Seu desempenho em ${typeName} (${acc}%) pode melhorar → vamos praticar.`;
           }
         } else {
-          description = `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
+          imgDescription = `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
         }
       } else if (topic) {
-        description = `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`;
+        imgDescription = `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`;
       } else {
-        description = "Treino adaptativo de interpretação de imagens médicas.";
+        imgDescription = "Treino adaptativo de interpretação de imagens médicas.";
       }
 
       let imgScore = imgResult.score;
