@@ -279,15 +279,16 @@ const App = () => (
                     <Route path="cinematic-engine/:projectId" element={<AdminCinematicEngine />} />
                     <Route path="cme-origins" element={<CMEOrigins />} />
                     <Route path="cinematic-builder/:aggregationId" element={<CinematicBuilder />} />
-                    <Route path="cme-builder-audit" element={<CMEAudit />} />
-                    <Route path="cme-audit" element={<CMEAudit />} />
-                    <Route path="cme-executive" element={<CMEExecutiveDashboard />} />
-                    <Route path="gpu-fleet" element={<CMEGPUFleet />} />
-                    <Route path="render-queues" element={<CMERenderQueues />} />
-                    <Route path="cme-observability" element={<CMEObservability />} />
-                    <Route path="system-checklist" element={<SystemChecklist />} />
-                    <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
-                </Route>
+                     <Route path="cme-builder-audit" element={<CMEAudit />} />
+                     <Route path="cme-audit" element={<CMEAudit />} />
+                     <Route path="cme-executive" element={<CMEExecutiveDashboard />} />
+                     <Route path="gpu-fleet" element={<CMEGPUFleet />} />
+                     <Route path="render-queues" element={<CMERenderQueues />} />
+                     <Route path="cme-observability" element={<CMEObservability />} />
+                     <Route path="system-checklist" element={<SystemChecklist />} />
+                     <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
+                     <Route path="builder/:id" element={<CinematicBuilder />} />
+                 </Route>
 
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
