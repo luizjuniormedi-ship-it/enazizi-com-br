@@ -166,6 +166,7 @@ const AdminCinematicEngine = () => {
     const variants: Record<string, { label: string, color: string }> = {
       queued: { label: "Na fila", color: "bg-slate-500/10 text-slate-600 border-slate-200" },
       preparing: { label: "Preparando", color: "bg-blue-500/10 text-blue-600 border-blue-200 animate-pulse" },
+      semantic_processing: { label: "Semântica", color: "bg-purple-500/10 text-purple-600 border-purple-200 animate-pulse" },
       cinematic_rendering: { label: "Renderizando", color: "bg-indigo-500/10 text-indigo-600 border-indigo-200 animate-pulse" },
       completed: { label: "Concluído", color: "bg-green-500/10 text-green-600 border-green-200" },
       failed: { label: "Falhou", color: "bg-red-500/10 text-red-600 border-red-200" }
