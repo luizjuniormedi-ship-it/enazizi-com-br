@@ -300,14 +300,25 @@ export const useTutorCME = () => {
        await supabaseClient.from("cme_render_jobs").update({ status: 'queued' } as any).eq('project_id', pid);
        toast.success("Reiniciado");
     },
-    logEligibility: async (params: { messageId: string; eligible: boolean; reason?: string; score?: number }) => {
+    logEligibility: async (params: { 
+      messageId: string; 
+      eligible: boolean; 
+      rejectionReason?: string; 
+      structureScore?: number;
+      cognitiveDensity?: number;
+      metrics?: any;
+    }) => {
       try {
         await supabaseClient.from("cme_generation_eligibility_logs").insert({
           tutor_message_id: params.messageId,
           eligible: params.eligible,
-          rejection_reason: params.reason,
-          structure_score: params.score || 0,
-          metadata: { timestamp: new Date().toISOString() }
+          rejection_reason: params.rejectionReason,
+          structure_score: params.structureScore || 0,
+          cognitive_density: params.cognitiveDensity || 0,
+          metadata: { 
+            metrics: params.metrics,
+            timestamp: new Date().toISOString() 
+          }
         });
       } catch (e) {
         console.error("Eligibility log error:", e);
