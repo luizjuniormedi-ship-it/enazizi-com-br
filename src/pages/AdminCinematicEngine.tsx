@@ -38,6 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { 
   Dialog, 
