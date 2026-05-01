@@ -9,10 +9,10 @@ import { useTimeToAction } from "@/hooks/useTimeToAction";
 import DashboardSidebar from "./DashboardSidebar";
 import GlobalSearch from "./GlobalSearch";
 import NotificationBell from "@/components/dashboard/NotificationBell";
-import { Menu, LogOut, User, Shield, GraduationCap, Sun, Moon, ChevronDown, Brain, BarChart3, Building2,
+import { Menu, LogOut, User, Shield, GraduationCap, Building2, Sun, Moon, ChevronDown, Brain, BarChart3,
   Rocket, Lightbulb, FlipVertical, BookOpen, FileText, CalendarDays, Stethoscope, Siren, PenTool, Image,
   Trophy, Crown, Bot, TrendingUp, Map, AlertTriangle, Sparkles, BookMarked, Clock, Briefcase, Target, Zap,
-  Clapperboard
+  Clapperboard, Activity, Monitor
 } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import BottomTabBar from "./BottomTabBar";
@@ -226,6 +226,30 @@ const MobileNav = () => {
                     )}
                   >
                     <Shield className="h-4 w-4" /> Admin
+                  </Link>
+                  <Link
+                    to="/admin/cme-executive"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/cme-executive"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <Activity className="h-4 w-4" /> Monitor CME
+                  </Link>
+                  <Link
+                    to="/admin/ai-studio"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/ai-studio"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <Sparkles className="h-4 w-4" /> Produção IA
                   </Link>
                   <Link
                     to="/admin/ceo"
