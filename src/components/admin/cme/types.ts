@@ -13,7 +13,8 @@ export interface CMEGPUCluster {
 
 export interface CMEWorkerNode {
   id: string;
-  worker_name: string;
+  hostname: string;
+  gpu_name?: string;
   status: 'online' | 'offline' | 'busy' | 'maintenance';
   cluster_id?: string;
   vram_total_mb?: number;
