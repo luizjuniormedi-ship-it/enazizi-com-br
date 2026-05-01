@@ -27,7 +27,11 @@ import {
   Flame,
   Loader2,
   Monitor,
-  Volume2
+  Volume2,
+  ChevronDown,
+  ChevronUp,
+  Activity,
+  Gauge
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
