@@ -385,13 +385,13 @@ serve(async (req) => {
         const trend = snap?.trend;
         if (acc !== undefined) {
           if (trend === "declining") {
-            description = `Seu desempenho em ${typeName} está piorando (${acc}% de acerto) → hora de reforçar.`;
+            imgDescription = `Seu desempenho em ${typeName} está piorando (${acc}% de acerto) → hora de reforçar.`;
           } else if (trend === "improving" && acc > 70) {
-            description = `Você melhorou em ${typeName} (${acc}%), então vamos subir o nível.`;
+            imgDescription = `Você melhorou em ${typeName} (${acc}%), então vamos subir o nível.`;
           } else if (acc < 50) {
-            description = `Você está fraco em ${typeName} (${acc}% de acerto) → vamos treinar agora.`;
+            imgDescription = `Você está fraco em ${typeName} (${acc}% de acerto) → vamos treinar agora.`;
           } else {
-            description = `Seu desempenho em ${typeName} (${acc}%) pode melhorar → vamos praticar.`;
+            imgDescription = `Seu desempenho em ${typeName} (${acc}%) pode melhorar → vamos praticar.`;
           }
         } else {
           description = `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
