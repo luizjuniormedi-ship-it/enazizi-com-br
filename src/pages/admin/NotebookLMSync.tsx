@@ -338,6 +338,10 @@ export default function NotebookLMSync() {
               <Input value={notesUrl} onChange={e => setNotesUrl(e.target.value)} placeholder="URL do guia interactivo" />
             </div>
             <div className="space-y-2">
+              <Label>URL do Vídeo (Video Overview)</Label>
+              <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="URL do vídeo gerado" />
+            </div>
+            <div className="space-y-2">
               <Label>Status do Workflow Multimídia</Label>
               <Select value={mediaStatus} onValueChange={setMediaStatus}>
                 <SelectTrigger>
