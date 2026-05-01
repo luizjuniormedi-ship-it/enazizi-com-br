@@ -409,8 +409,8 @@ serve(async (req) => {
         : null;
       candidates.push({
         type: "image_quiz",
-        title,
-        description,
+        title: imgTitle,
+        description: imgDescription,
         targetType: "image_quiz",
         estimatedMinutes: 8,
         priorityScore: imgScore,
