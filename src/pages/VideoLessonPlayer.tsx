@@ -165,6 +165,10 @@ const VideoLessonPlayer = () => {
   // ───────────────── FASE 3: Adaptive Intelligence ─────────────────
   const { recommendation, resetRecommendation } = useVideoAdaptiveIntelligence(id!, currentSegment?.id || null);
   const { data: cognitiveState } = useCognitiveOrchestrator();
+  const { updateStudentAnalytics } = useCinematicEngine(lesson?.cme_project_id);
+
+  // Determina se é um vídeo CME proprietário
+  const isCMEVideo = !!lesson?.cme_project_id;
 
   const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
   const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
