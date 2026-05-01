@@ -425,15 +425,23 @@ const VideoLessonPlayer = () => {
           <ChevronLeft className="h-4 w-4" /> Voltar
         </Button>
         <div className="flex items-center gap-4">
-          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
-            Sincronização em Tempo Real Ativa
+          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 animate-pulse">
+            Sincronização Supabase Realtime Ativa
           </Badge>
-          <Button variant="outline" size="sm" className="gap-2 border-white/10" onClick={() => {
-            navigator.clipboard.writeText(`${window.location.origin}/videoaulas/${id}`);
-            toast.success("Link público copiado!");
-          }}>
-            <Share2 className="h-4 w-4" /> Compartilhar Preview
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-2 border-white/10" onClick={() => {
+              const url = `${window.location.origin}/videoaulas/${id}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Link público copiado!");
+            }}>
+              <Share2 className="h-4 w-4" /> Compartilhar Preview
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2 border-orange-500/30 text-orange-500" onClick={() => {
+              toast.info("Ativando Exam Sprint: Pacing acelerado e foco em questões.");
+            }}>
+              <Flame className="h-4 w-4" /> Exam Sprint
+            </Button>
+          </div>
         </div>
       </header>
 
