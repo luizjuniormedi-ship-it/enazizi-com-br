@@ -570,191 +570,120 @@ const VideoLessonPlayer = () => {
               ) : null}
 
               {(!isRendering && !isPlaceholder && playbackUrl) && (
+                <div className="relative w-full h-full">
+                  {(playbackUrl.endsWith('.m3u8') || !!hlsManifest || playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage')) ? (
+                    <video 
+                      id="video-player"
+                      src={playbackUrl}
+                      className="w-full h-full"
+                      controls
+                      autoPlay
+                      playsInline
+                      crossOrigin="anonymous"
+                      onPlay={() => {
+                        setIsPlaying(true);
+                        if (id) logEvent({
+                          videoLessonId: id,
+                          segmentId: currentSegment?.id ?? null,
+                          eventType: "play",
+                          timestampSeconds: watchedSeconds,
+                        });
+                      }}
+                    />
+                  ) : (
+                    <iframe 
+                      src={playbackUrl} 
+                      className="w-full h-full"
+                      allowFullScreen
+                      onLoad={() => {
+                        setIsPlaying(true);
+                        if (id) logEvent({
+                          videoLessonId: id,
+                          segmentId: currentSegment?.id ?? null,
+                          eventType: "play",
+                          timestampSeconds: watchedSeconds,
+                        });
+                      }}
+                    />
+                  )}
+                  
+                  {/* FASE 3 & 6: Scene Graph & Cinematic Overlays */}
+                  <div className="absolute inset-0 pointer-events-none z-10">
+                    {/* Dynamic Overlay Slot for Scene Graph reinforcement */}
+                    {currentSegment?.segment_type === 'clinical_case' && (
+                      <motion.div 
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="absolute top-4 right-4 bg-primary/90 text-white p-3 rounded-lg backdrop-blur-md border border-white/20 shadow-xl"
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-tighter">CME Case Insight</p>
+                        <p className="text-xs">Foco: Raciocínio Clínico</p>
+                      </motion.div>
+                    )}
+                  </div>
 
-                  const isHLS = playbackUrl.endsWith('.m3u8') || !!hlsManifest;
-                  const isDirectVideo = playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage');
-
-                  return (
-                    <div className="relative w-full h-full">
-                      {(isHLS || isDirectVideo) ? (
-                        <video 
-                          id="video-player"
-                          src={playbackUrl}
-                          className="w-full h-full"
-                          controls
-                          autoPlay
-                          playsInline
-                          crossOrigin="anonymous"
-                          onPlay={() => {
-                            setIsPlaying(true);
-                            if (id) logEvent({
-                              videoLessonId: id,
-                              segmentId: currentSegment?.id ?? null,
-                              eventType: "play",
-                              timestampSeconds: watchedSeconds,
-                            });
-                          }}
-                        />
-                      ) : (
-                        <iframe 
-                          src={playbackUrl} 
-                          className="w-full h-full"
-                          allowFullScreen
-                          onLoad={() => {
-                            setIsPlaying(true);
-                            if (id) logEvent({
-                              videoLessonId: id,
-                              segmentId: currentSegment?.id ?? null,
-                              eventType: "play",
-                              timestampSeconds: watchedSeconds,
-                            });
-                          }}
-                        />
-                      )}
-                      
-                      {/* FASE 3 & 6: Scene Graph & Cinematic Overlays */}
-                      <div className="absolute inset-0 pointer-events-none z-10">
-                        {/* Dynamic Overlay Slot for Scene Graph reinforcement */}
-                        {currentSegment?.segment_type === 'clinical_case' && (
-                          <motion.div 
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="absolute top-4 right-4 bg-primary/90 text-white p-3 rounded-lg backdrop-blur-md border border-white/20 shadow-xl"
-                          >
-                            <p className="text-[10px] font-bold uppercase tracking-tighter">CME Case Insight</p>
-                            <p className="text-xs">Foco: Raciocínio Clínico</p>
-                          </motion.div>
-                        )}
+                  {/* FASE 2: Cognitive Heat Overlay */}
+                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover/player:opacity-30 transition-opacity z-20">
+                    <div className="w-full h-full flex flex-col justify-end">
+                      <div className="h-4 w-full flex">
+                        {segments.map((seg) => {
+                          const analytics = getForSegment(seg.id);
+                          const friction = analytics?.difficultyLevel === 'alta' ? 'bg-red-500' : 
+                                           analytics?.difficultyLevel === 'média' ? 'bg-amber-500' : 'bg-green-500';
+                          return (
+                            <div 
+                              key={seg.id} 
+                              className={cn("h-full border-r border-black/20 flex-1 transition-all", friction)}
+                              title={`${seg.title}: Fricção ${analytics?.difficultyLevel || 'baixa'}`}
+                            />
+                          );
+                        })}
                       </div>
-
-                      {/* FASE 2: Cognitive Heat Overlay */}
-                      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover/player:opacity-30 transition-opacity z-20">
-                        <div className="w-full h-full flex flex-col justify-end">
-                          <div className="h-4 w-full flex">
-                            {segments.map((seg) => {
-                              const analytics = getForSegment(seg.id);
-                              const friction = analytics?.difficultyLevel === 'alta' ? 'bg-red-500' : 
-                                               analytics?.difficultyLevel === 'média' ? 'bg-amber-500' : 'bg-green-500';
-                              return (
-                                <div 
-                                  key={seg.id} 
-                                  className={cn("h-full border-r border-black/20 flex-1 transition-all", friction)}
-                                  title={`${seg.title}: Fricção ${analytics?.difficultyLevel || 'baixa'}`}
-                                />
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* FASE 2 & 6: Timeline Cognitiva com Hotspots & Hover Previews */}
-                      <div className="absolute bottom-16 left-4 right-4 group/timeline h-6 flex flex-col justify-end pointer-events-auto cursor-pointer z-30">
-                        <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden relative mb-2">
-                          {segments.map((seg) => {
-                            const analytics = getForSegment(seg.id);
-                            if (!analytics?.difficultyLikely) return null;
-                            
-                            const startPercent = ((seg.start_second || 0) / (lesson.duration_seconds || 1)) * 100;
-                            const widthPercent = (((seg.end_second || lesson.duration_seconds) - (seg.start_second || 0)) / (lesson.duration_seconds || 1)) * 100;
-                            
-                            return (
-                              <div 
-                                key={`hotspot-${seg.id}`}
-                                className="absolute h-full bg-red-500/60 animate-pulse"
-                                style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
-                              />
-                            );
-                          })}
-                          
-                          {/* Active Progress Bar */}
-                          <div 
-                            className="absolute top-0 left-0 h-full bg-primary z-10" 
-                            style={{ width: `${completionRate}%` }}
-                          />
-                        </div>
-
-                        {/* Hover Preview UI (Enterprise) */}
-                        <div className="absolute bottom-6 left-0 w-full h-20 pointer-events-none flex opacity-0 group-hover/timeline:opacity-100 transition-opacity">
-                          <div className="relative flex-1">
-                            <div className="absolute bottom-full left-[var(--hover-pos)] -translate-x-1/2 mb-2 p-1 bg-black/90 border border-white/20 rounded-lg overflow-hidden shadow-2xl w-40 aspect-video flex flex-col">
-                               <div className="flex-1 bg-slate-800 flex items-center justify-center">
-                                  <Film className="h-6 w-6 text-white/20" />
-                               </div>
-                               <div className="p-1 text-[8px] font-bold text-center uppercase tracking-widest text-primary">
-                                  Chapter Preview
-                               </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Status-based rendering if no real media is available
-                const mediaStatus = (lesson as any).media_status || 'queued';
-                
-                if (mediaStatus === 'rendering' || mediaStatus === 'processing') {
-                  return (
-                    <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
-                      <div className="relative">
-                        <Film className="h-20 w-20 text-primary/40 animate-pulse" />
-                        <Sparkles className="h-6 w-6 text-primary absolute -top-2 -right-2 animate-bounce" />
-                      </div>
-                      <div className="text-center space-y-2">
-                        <p className="text-white font-bold">Gerando Experiência Cinematográfica...</p>
-                        <p className="text-xs text-primary/60 font-medium uppercase tracking-widest">Status: {mediaStatus}</p>
-                      </div>
-                      <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-                        <motion.div 
-                          className="h-full bg-primary"
-                          animate={{ x: [-200, 200] }}
-                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                        />
-                      </div>
-                    </div>
-                  );
-                }
-
-                if (mediaStatus === 'failed') {
-                  return (
-                    <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-red-950/20">
-                      <AlertTriangle className="h-20 w-20 text-red-500/40" />
-                      <p className="text-white font-bold">Falha na Renderização do Vídeo</p>
-                      <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Tentar Novamente</Button>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-slate-900/50 p-6">
-                    <div className="relative">
-                      <Play className="h-20 w-20 text-primary/20" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                      </div>
-                    </div>
-                    <div className="text-center space-y-2 max-w-sm">
-                      <p className="text-white font-medium">Videoaula ainda em geração</p>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        O conteúdo de {(lesson as any).title} está sendo processado pelo motor cinematográfico. 
-                        O vídeo será liberado automaticamente após o render finalizar.
-                      </p>
-                      
-                      {lesson.pipeline_last_error && (
-                        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-left">
-                          <p className="text-[10px] text-red-400 font-bold uppercase mb-1 flex items-center gap-1">
-                            <AlertTriangle className="h-3 w-3" /> Log de Erro CME
-                          </p>
-                          <p className="text-[10px] text-red-300/80 line-clamp-2 italic">
-                            {lesson.pipeline_last_error}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </div>
-                );
-              })()}
+
+                  {/* FASE 2 & 6: Timeline Cognitiva com Hotspots & Hover Previews */}
+                  <div className="absolute bottom-16 left-4 right-4 group/timeline h-6 flex flex-col justify-end pointer-events-auto cursor-pointer z-30">
+                    <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden relative mb-2">
+                      {segments.map((seg) => {
+                        const analytics = getForSegment(seg.id);
+                        if (!analytics?.difficultyLikely) return null;
+                        
+                        const startPercent = ((seg.start_second || 0) / (lesson.duration_seconds || 1)) * 100;
+                        const widthPercent = (((seg.end_second || lesson.duration_seconds) - (seg.start_second || 0)) / (lesson.duration_seconds || 1)) * 100;
+                        
+                        return (
+                          <div 
+                            key={`hotspot-${seg.id}`}
+                            className="absolute h-full bg-red-500/60 animate-pulse"
+                            style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
+                          />
+                        );
+                      })}
+                      
+                      {/* Active Progress Bar */}
+                      <div 
+                        className="absolute top-0 left-0 h-full bg-primary z-10" 
+                        style={{ width: `${completionRate}%` }}
+                      />
+                    </div>
+
+                    {/* Hover Preview UI (Enterprise) */}
+                    <div className="absolute bottom-6 left-0 w-full h-20 pointer-events-none flex opacity-0 group-hover/timeline:opacity-100 transition-opacity">
+                      <div className="relative flex-1">
+                        <div className="absolute bottom-full left-[var(--hover-pos)] -translate-x-1/2 mb-2 p-1 bg-black/90 border border-white/20 rounded-lg overflow-hidden shadow-2xl w-40 aspect-video flex flex-col">
+                           <div className="flex-1 bg-slate-800 flex items-center justify-center">
+                              <Film className="h-6 w-6 text-white/20" />
+                           </div>
+                           <div className="p-1 text-[8px] font-bold text-center uppercase tracking-widest text-primary">
+                              Chapter Preview
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
