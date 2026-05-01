@@ -164,9 +164,15 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                   {error || "Ocorreu um erro inesperado durante a geração do vídeo."}
                 </p>
                 {currentStage === 'graphing' && (
-                  <p className="text-xs text-zinc-500 bg-black/40 p-3 rounded-lg border border-red-500/10">
-                    O planejamento pedagógico foi concluído, mas o Scene Graph não pôde ser salvo no banco de dados. Você pode tentar novamente ou gerar uma versão em slides.
-                  </p>
+                  <div className="bg-black/40 p-3 rounded-lg border border-red-500/10 space-y-2">
+                    <p className="text-xs text-zinc-500">
+                      O planejamento pedagógico foi concluído, mas o Scene Graph não pôde ser salvo no banco de dados.
+                    </p>
+                    <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-mono">
+                      <span className="bg-red-500/20 text-red-400 px-1 rounded">23502</span>
+                      <span className="uppercase tracking-tighter italic">Scene Graph Not Null Violation</span>
+                    </div>
+                  </div>
                 )}
                 <span className="text-[10px] mt-2 block opacity-50 uppercase tracking-tighter">
                   Error Code: {events.find(e => e.status === 'failed')?.metadata?.code || 'N/A'} | Stage: {currentStage}

@@ -243,6 +243,13 @@ export const useTutorCME = () => {
 
       setState(s => ({ ...s, status: 'graphing', progress: 40, message: "Gerando Scene Graph..." }));
       
+      const sceneGraphData = { 
+        title: params.title,
+        blocks_count: lessonBlocks.length,
+        generated_at: new Date().toISOString(),
+        hardened: true
+      };
+
       const sceneGraphPayload = {
         video_project_id: projectId,
         user_id: user.id,
@@ -250,12 +257,8 @@ export const useTutorCME = () => {
         visual_goal: 'high_engagement',
         status: 'ready',
         title: params.title,
-        graph_payload: { 
-          title: params.title,
-          blocks_count: lessonBlocks.length,
-          generated_at: new Date().toISOString(),
-          hardened: true
-        },
+        scene_graph: sceneGraphData, // Ensure canonical column is filled
+        graph_payload: sceneGraphData, // Ensure legacy/compatibility column is filled
         metadata: {
           specialty: params.specialty,
           topic: params.topic,
