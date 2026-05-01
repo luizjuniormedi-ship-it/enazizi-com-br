@@ -1220,6 +1220,13 @@ export type Database = {
             foreignKeyName: "ai_video_lessons_cme_project_id_fkey"
             columns: ["cme_project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "ai_video_lessons_cme_project_id_fkey"
+            columns: ["cme_project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -2216,6 +2223,13 @@ export type Database = {
             foreignKeyName: "cme_adaptive_interventions_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "cme_adaptive_interventions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -2396,6 +2410,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_audit_logs_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cme_audit_logs_aggregation_id_fkey"
             columns: ["aggregation_id"]
@@ -2725,6 +2746,13 @@ export type Database = {
             foreignKeyName: "cme_cognitive_pacing_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "cme_cognitive_pacing_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -2944,6 +2972,13 @@ export type Database = {
             foreignKeyName: "cme_governance_logs_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "cme_governance_logs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -3157,9 +3192,11 @@ export type Database = {
           block_type: string
           cognitive_density: number | null
           content: string
+          content_hash: string | null
           created_at: string
           estimated_minutes: number | null
           id: string
+          last_error: string | null
           scene_graph_data: Json | null
           source_message_ids: string[] | null
           title: string
@@ -3172,9 +3209,11 @@ export type Database = {
           block_type: string
           cognitive_density?: number | null
           content: string
+          content_hash?: string | null
           created_at?: string
           estimated_minutes?: number | null
           id?: string
+          last_error?: string | null
           scene_graph_data?: Json | null
           source_message_ids?: string[] | null
           title: string
@@ -3187,9 +3226,11 @@ export type Database = {
           block_type?: string
           cognitive_density?: number | null
           content?: string
+          content_hash?: string | null
           created_at?: string
           estimated_minutes?: number | null
           id?: string
+          last_error?: string | null
           scene_graph_data?: Json | null
           source_message_ids?: string[] | null
           title?: string
@@ -3197,6 +3238,13 @@ export type Database = {
           variant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_lesson_blocks_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cme_lesson_blocks_aggregation_id_fkey"
             columns: ["aggregation_id"]
@@ -3385,6 +3433,13 @@ export type Database = {
             foreignKeyName: "cme_multimodal_analytics_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "cme_multimodal_analytics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -3454,6 +3509,13 @@ export type Database = {
             foreignKeyName: "cme_narrative_scripts_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "cme_narrative_scripts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -3501,6 +3563,7 @@ export type Database = {
           id: string
           latency_ms: number | null
           message: string | null
+          metadata: Json | null
           progress: number | null
           project_id: string | null
           stage: string
@@ -3512,6 +3575,7 @@ export type Database = {
           id?: string
           latency_ms?: number | null
           message?: string | null
+          metadata?: Json | null
           progress?: number | null
           project_id?: string | null
           stage: string
@@ -3523,6 +3587,7 @@ export type Database = {
           id?: string
           latency_ms?: number | null
           message?: string | null
+          metadata?: Json | null
           progress?: number | null
           project_id?: string | null
           stage?: string
@@ -3530,6 +3595,13 @@ export type Database = {
           worker_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_pipeline_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
           {
             foreignKeyName: "cme_pipeline_events_project_id_fkey"
             columns: ["project_id"]
@@ -3730,6 +3802,13 @@ export type Database = {
           reviewer_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_quality_reviews_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cme_quality_reviews_aggregation_id_fkey"
             columns: ["aggregation_id"]
@@ -4037,6 +4116,7 @@ export type Database = {
           retention_projection: number | null
           retry_count: number | null
           started_at: string | null
+          started_rendering_at: string | null
           status: string
           thumbnail_url: string | null
           updated_at: string
@@ -4077,6 +4157,7 @@ export type Database = {
           retention_projection?: number | null
           retry_count?: number | null
           started_at?: string | null
+          started_rendering_at?: string | null
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
@@ -4117,6 +4198,7 @@ export type Database = {
           retention_projection?: number | null
           retry_count?: number | null
           started_at?: string | null
+          started_rendering_at?: string | null
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
@@ -4138,6 +4220,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "cme_render_jobs"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
           },
           {
             foreignKeyName: "cme_render_jobs_project_id_fkey"
@@ -4201,6 +4290,13 @@ export type Database = {
           variant_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_render_lineage_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cme_render_lineage_aggregation_id_fkey"
             columns: ["aggregation_id"]
@@ -4529,6 +4625,13 @@ export type Database = {
             foreignKeyName: "cme_semantic_plans_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "cme_semantic_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -4632,6 +4735,13 @@ export type Database = {
             foreignKeyName: "cme_session_variants_aggregation_id_fkey"
             columns: ["aggregation_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_session_variants_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
             referencedRelation: "cme_session_aggregations"
             referencedColumns: ["id"]
           },
@@ -4663,6 +4773,13 @@ export type Database = {
           tutor_session_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_tutor_origins_cme_video_project_id_fkey"
+            columns: ["cme_video_project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
           {
             foreignKeyName: "cme_tutor_origins_cme_video_project_id_fkey"
             columns: ["cme_video_project_id"]
@@ -4764,6 +4881,13 @@ export type Database = {
             foreignKeyName: "cme_video_assets_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["video_project_id"]
+          },
+          {
+            foreignKeyName: "cme_video_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
@@ -4828,6 +4952,13 @@ export type Database = {
           validation_checks?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_video_projects_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cme_video_projects_aggregation_id_fkey"
             columns: ["aggregation_id"]
@@ -16199,6 +16330,31 @@ export type Database = {
       }
     }
     Views: {
+      cme_session_aggregation_summary: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          error_message: string | null
+          id: string | null
+          project_title: string | null
+          render_stage: string | null
+          render_status: string | null
+          started_at: string | null
+          status: string | null
+          total_blocks: number | null
+          tutor_session_id: string | null
+          video_project_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_session_aggregations_tutor_session_id_fkey"
+            columns: ["tutor_session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mnemonic_utility_agg: {
         Row: {
           avg_rating: number | null
