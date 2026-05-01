@@ -111,6 +111,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   smart_replay_enabled: false,
   tutor_temporal_enabled: false,
   multimodal_analytics_enabled: false,
+  adaptive_decisions_enabled: false,
+  preventive_tutor_enabled: false,
 };
 
 export const useFeatureFlags = () => {
