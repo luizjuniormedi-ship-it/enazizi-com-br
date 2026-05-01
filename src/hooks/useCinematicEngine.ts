@@ -121,7 +121,8 @@ export function useCinematicEngine(projectId?: string) {
           avg_pacing_efficiency: metrics.avg_pacing_efficiency,
           stress_spikes: metrics.stress_spikes,
           chapter_retention: metrics.chapter_retention,
-          updated_at: new Date().toISOString() as any
+          // @ts-ignore
+          updated_at: new Date().toISOString()
         })
         .eq("id", existing.id);
       if (error) throw error;
