@@ -8,8 +8,14 @@ import {
   Thermometer, 
   Activity, 
   RefreshCcw,
-  Power
+  Power,
+  TrendingUp,
+  AlertCircle,
+  Zap,
+  ArrowUpRight,
+  ArrowDownRight
 } from "lucide-react";
+import { useAutoScaling } from "@/hooks/useAutoScaling";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
