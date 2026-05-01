@@ -249,6 +249,8 @@ const App = () => (
                    <Route path="video-lessons/:id" element={<VideoLessonDetailsAdmin />} />
                    <Route path="specialty-friction" element={<SpecialtyFrictionReport />} />
                    <Route path="ingestion-network" element={<OfficialExamIngestion />} />
+                   <Route path="knowledge-graph" element={<MedicalKnowledgeGraph />} />
+                   <Route path="adaptive-engine" element={<AdaptiveEngineAdmin />} />
                    <Route path="system-checklist" element={<SystemChecklist />} />
                </Route>
 
