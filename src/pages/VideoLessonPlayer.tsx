@@ -454,6 +454,11 @@ const VideoLessonPlayer = () => {
             }}>
               <Share2 className="h-4 w-4" /> Compartilhar Preview
             </Button>
+            <Button variant="outline" size="sm" className="gap-2 border-primary/30 text-primary" onClick={() => {
+              toast.info("Ajustando Pacing: Ativando modo didático amplificado.");
+            }}>
+              <Volume2 className="h-4 w-4" /> Voz Feynman
+            </Button>
             <Button variant="outline" size="sm" className="gap-2 border-orange-500/30 text-orange-500" onClick={() => {
               toast.info("Ativando Exam Sprint: Pacing acelerado e foco em questões.");
             }}>
