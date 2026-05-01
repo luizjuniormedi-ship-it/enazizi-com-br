@@ -8,6 +8,7 @@ import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer
 import { adjustMemoryQuality } from "@/lib/tutor/tutorMemory";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
 import { useTutorCME } from "@/hooks/useTutorCME";
+import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { 
   Dialog, 
   DialogContent, 
@@ -63,12 +64,22 @@ const AgentMessageItem = memo(
     const navigate = useNavigate();
     const { state, transformToVideo, resetState } = useTutorCME();
 
-    // Filtra blocos cognitivos válidos (não-vazios)
-    const cognitiveBlocks = useMemo(
+    // Filtra blocos cognitivos válidos vindos da memória
+    const memoryCognitiveBlocks = useMemo(
       () => (Array.isArray(msg.memoryBlocks) ? msg.memoryBlocks.filter(Boolean) : []),
       [msg.memoryBlocks],
     );
+
+    // NOVO: extrai blocos JSON embutidos no markdown (stream do Tutor)
+    const { cleanedMarkdown, inlineBlocks } = useMemo(() => {
+      if (msg.role !== "assistant") return { cleanedMarkdown: msg.content, inlineBlocks: [] };
+      const { cleanedMarkdown, blocks } = extractInlineTutorBlocks(msg.content);
+      return { cleanedMarkdown, inlineBlocks: blocks };
+    }, [msg.role, msg.content]);
+
+    const cognitiveBlocks = memoryCognitiveBlocks.length > 0 ? memoryCognitiveBlocks : inlineBlocks;
     const hasCognitiveBlocks = cognitiveBlocks.length > 0;
+    const renderedMarkdown = cleanedMarkdown || msg.content;
 
     // Critérios para o botão CME: msg longa da IA com estrutura de blocos
     const showCMEButton = msg.role === "assistant" && 
@@ -108,21 +119,29 @@ const AgentMessageItem = memo(
         >
           {msg.role === "assistant" ? (
             <>
-              {hasCognitiveBlocks ? (
-                <TutorBlockRenderer
-                  blocks={cognitiveBlocks}
-                  onQuizAnswered={({ correct }) => {
-                    if (!msg.memoryId) return;
-                    adjustMemoryQuality(msg.memoryId, correct ? 3 : -5).catch(() => {});
-                  }}
-                />
-              ) : renderAssistantMessage ? (
-                renderAssistantMessage(msg.content)
-              ) : (
-                <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
-                  <ReactMarkdown components={markdownComponents}>{msg.content}</ReactMarkdown>
+              {/* Markdown limpo (sem o JSON cru dos blocos extraídos) */}
+              {renderedMarkdown && renderedMarkdown.trim().length > 0 && (
+                renderAssistantMessage ? (
+                  renderAssistantMessage(renderedMarkdown)
+                ) : (
+                  <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
+                    <ReactMarkdown components={markdownComponents}>{renderedMarkdown}</ReactMarkdown>
+                  </div>
+                )
+              )}
+              {/* Blocos cognitivos (memória ou extraídos do stream) */}
+              {hasCognitiveBlocks && (
+                <div className="mt-3">
+                  <TutorBlockRenderer
+                    blocks={cognitiveBlocks}
+                    onQuizAnswered={({ correct }) => {
+                      if (!msg.memoryId) return;
+                      adjustMemoryQuality(msg.memoryId, correct ? 3 : -5).catch(() => {});
+                    }}
+                  />
                 </div>
               )}
+
               {msg.memoryId && msg.sourceQuestion && (
                 <div className="mt-3">
                   <MemoryReuseBadge
