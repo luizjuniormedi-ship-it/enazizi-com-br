@@ -115,8 +115,7 @@ const VideoLessonPlayer = () => {
 
     console.log(`[CME Audit] State: ${state}, URL: ${playbackUrl}`);
 
-    // @ts-ignore
-    await supabase.from("cme_playback_audit_logs").insert({
+    await supabase.from("cme_playback_audit_logs" as any).insert({
       video_lesson_id: id,
       user_id: user?.id,
       selected_url: playbackUrl,
@@ -124,7 +123,7 @@ const VideoLessonPlayer = () => {
       player_state: state,
       error_message: errorMessage,
       load_time_ms: Date.now() - loadStartTime.current
-    });
+    } as any);
   };
 
   useEffect(() => {
