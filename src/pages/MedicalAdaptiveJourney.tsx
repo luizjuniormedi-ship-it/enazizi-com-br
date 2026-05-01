@@ -8,6 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CognitiveSessionController } from "@/components/CognitiveSessionController";
 import { CognitiveRhythmMonitor } from "@/components/CognitiveRhythmMonitor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CognitiveSchedulerMonitor } from "@/components/CognitiveSchedulerMonitor";
 
 export default function MedicalAdaptiveJourney() {
   const { data: events, isLoading } = useAdaptiveJourney();
@@ -41,6 +42,9 @@ export default function MedicalAdaptiveJourney() {
           </TabsTrigger>
           <TabsTrigger value="longitudinal" className="text-xs gap-2">
             <Clock className="h-3.5 w-3.5" /> Ritmo Longitudinal
+          </TabsTrigger>
+          <TabsTrigger value="scheduler" className="text-xs gap-2">
+            <Calendar className="h-3.5 w-3.5" /> Orquestrador
           </TabsTrigger>
         </TabsList>
 
@@ -123,6 +127,10 @@ export default function MedicalAdaptiveJourney() {
 
         <TabsContent value="longitudinal">
           <CognitiveRhythmMonitor />
+        </TabsContent>
+
+        <TabsContent value="scheduler">
+          <CognitiveSchedulerMonitor />
         </TabsContent>
       </Tabs>
     </div>
