@@ -215,7 +215,8 @@ export const useTutorCME = () => {
       const projectId = project.id;
       setState(s => ({ ...s, projectId, progress: 20, message: "Projeto criado..." }));
 
-      await logPipelineEvent(projectId, 'planning', 'completed', 30, "Mapeamento concluído", aggregationId || undefined);
+      await logPipelineEvent(projectId, 'planning', 'completed', 30, "Mapeamento semântico concluído", aggregationId || undefined);
+      await logPipelineEvent(projectId, 'mapping', 'completed', 35, "Knowledge Mapping pronto", aggregationId || undefined);
 
       // Scene Graph Generation (Real DB Entries)
       setState(s => ({ ...s, status: 'graphing', progress: 40, message: "Gerando Scene Graph..." }));
