@@ -468,6 +468,7 @@ const VideoLessonPlayer = () => {
         </div>
       </header>
 
+      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-6">
             <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative border border-primary/20 group/player ring-1 ring-white/10">
@@ -671,330 +672,144 @@ const VideoLessonPlayer = () => {
                   </div>
                 );
               })()}
-              {completionRate >= 95 && (
-                <div className="absolute top-4 right-4 animate-bounce">
-                  <Badge className="bg-green-500 gap-1">
-                    <CheckCircle className="h-3 w-3" /> Concluído
-                  </Badge>
-                </div>
-              )}
-
-              {/* FASE 4: Recomendações Adaptativas ACE */}
-              {!shadowMode && recommendations.length > 0 && (
-                <div className="absolute bottom-4 right-4 z-50 w-80">
-                  <AdaptiveRecommendationCard 
-                    recommendation={recommendations[0]}
-                    onAccept={acceptRecommendation}
-                    onIgnore={ignoreRecommendation}
-                  />
-                </div>
-              )}
-
-              {/* FASE 3: Trigger Preventivo */}
-              <PreventiveTutorTrigger 
-                recommendation={recommendation}
-                onAccept={() => currentSegment && handleAskTutorAtSegment(currentSegment)}
-                onClose={resetRecommendation}
-              />
             </div>
-            {/* FASE 2: Smart Replay & Adaptive Recovery */}
-            {currentSegmentAnalytics?.difficultyLevel === 'alta' && isPlaying && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="absolute top-20 left-1/2 -translate-x-1/2 z-40"
-              >
-                <div className="bg-red-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 border border-white/20">
-                  <RotateCcw className="h-4 w-4 animate-spin-slow" />
-                  <span className="text-xs font-bold uppercase tracking-wider">Alta Fricção: Ativando Adaptive Recovery...</span>
-                  <Button 
-                    size="sm" 
-                    variant="ghost" 
-                    className="h-6 text-[10px] text-white hover:bg-white/20"
-                    onClick={() => handleReplaySegment(currentSegment!)}
-                  >
-                    Smart Replay
-                  </Button>
-                </div>
-              </motion.div>
-            )}
 
-            {/* Alerta de Orquestração Cognitiva */}
-            {cognitiveState?.current_session_mode === 'recovery' && (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3"
-              >
-                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-600">
-                  <ShieldCheck className="h-4 w-4" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-bold text-blue-700">Foco Zen Ativado</p>
-                  <p className="text-[10px] text-blue-600/80 italic">
-                    Detectamos aumento de fadiga cognitiva. O ENAZIZI reduziu a intensidade da sessão para preservar sua retenção.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-            
-            {/* CME Personalization & Exam Sprint Banner */}
-            {isCMEVideo && (
-              <motion.div 
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4"
-              >
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2">
+              <div className="space-y-1">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold">Otimização Multimodal CME Ativa</p>
-                    <p className="text-[10px] text-muted-foreground italic">Ritmo e narrativa adaptados ao seu perfil de retenção.</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 text-[10px] gap-1 border-orange-500/30 text-orange-500 hover:bg-orange-500/10"
-                    onClick={() => toast.info("Ativando Exam Sprint: Foco em pegadinhas e alta densidade de prova.")}
-                  >
-                    <Flame className="h-3 w-3" /> Exam Sprint
-                  </Button>
-                  <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1">
-                    <Settings className="h-3 w-3" /> Ajustar Pacing
-                  </Button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* FASE 2: Indicador de dificuldade + segmento atual */}
-            {currentSegment && (
-              <div className="rounded-xl border border-primary/10 bg-muted/30 p-3 flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2 text-sm min-w-0">
-                  <Badge variant="secondary" className="text-[10px]">
-                    Trecho {String(currentSegment.ordem).padStart(2, "0")}
+                  <h1 className="text-2xl font-bold tracking-tight">{lesson.title}</h1>
+                  <Badge variant="outline" className="text-emerald-400 border-emerald-400/20 bg-emerald-400/5">
+                    9.4 CME Score
                   </Badge>
-                  <span className="font-medium truncate">
-                    {currentSegment.title || `Segmento ${currentSegment.ordem}`}
-                  </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  {currentDifficulty && (
-                    <Badge 
-                      className={cn(
-                        "gap-1",
-                        difficultyLevel === "alta" ? "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30" :
-                        difficultyLevel === "média" ? "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30" :
-                        "bg-blue-500/15 text-blue-700 dark:text-blue-400 border-blue-500/30"
-                      )}
-                    >
-                      <AlertTriangle className="h-3 w-3" /> 
-                      Dificuldade {difficultyLevel}
-                    </Badge>
-                  )}
-                  {temporalEnabled && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1 h-8"
-                      onClick={() => handleAskTutorAtSegment(currentSegment)}
-                    >
-                      <MessageSquare className="h-3 w-3" /> Perguntar ao Tutor neste trecho
-                    </Button>
-                  )}
-                  {smartReplayEnabled && currentDifficulty && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1 h-8"
-                      onClick={() => handleReplaySegment(currentSegment)}
-                    >
-                      <RotateCcw className="h-3 w-3" /> Revisar trecho
-                    </Button>
-                  )}
+                <div className="flex items-center gap-4 text-sm text-white/50">
+                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {Math.floor(lesson.duration_seconds / 60)}:{(lesson.duration_seconds % 60).toString().padStart(2, '0')}</span>
+                  <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> {lesson.specialty}</span>
+                  <span className="flex items-center gap-1.5"><BrainCircuit className="h-4 w-4" /> IA Multimodal</span>
                 </div>
               </div>
-            )}
-
-            <div className="space-y-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{lesson.specialty}</Badge>
-                    <Badge variant="secondary">{lesson.topic}</Badge>
-                    {lesson.is_gold_content && (
-                      <Badge className="bg-yellow-500 text-black gap-1">
-                        <Sparkles className="h-3 w-3" /> Ouro
-                      </Badge>
-                    )}
-                  </div>
-                  <h1 className="text-3xl font-bold">{lesson.title}</h1>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="icon"><Share2 className="h-4 w-4" /></Button>
-                  <Button 
-                    className="gap-2" 
-                    onClick={() => {
-                      handleAction("complete");
-                      if (id) logEvent({
-                        videoLessonId: id,
-                        segmentId: currentSegment?.id ?? null,
-                        eventType: "complete",
-                        timestampSeconds: watchedSeconds,
-                      });
-                    }}
-                    disabled={completionRate < 90}
-                  >
-                    <CheckCircle className="h-4 w-4" /> Finalizar Aula
-                  </Button>
-                </div>
+              <div className="flex items-center gap-2">
+                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><Settings className="h-5 w-5" /></Button>
+                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><Share2 className="h-5 w-5" /></Button>
+                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><ArrowRight className="h-5 w-5" /></Button>
               </div>
-
-              <div className="flex flex-wrap items-center gap-6 text-sm text-muted-foreground bg-muted/30 p-4 rounded-xl border border-primary/5">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <span>Duração: {Math.floor(lesson.duration_seconds / 60)}min</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Layers className="h-4 w-4 text-primary" />
-                  <span>Nível: {lesson.difficulty_level || 'Intermediário'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <BrainCircuit className="h-4 w-4 text-primary" />
-                  <span>Gerada por Tutor IA</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-yellow-500" />
-                  <span>FSRS Pronto</span>
-                </div>
-              </div>
-
-              <Tabs defaultValue="overview" className="w-full">
-                <TabsList className="w-full justify-start border-b rounded-none bg-transparent h-auto p-0 mb-6">
-                  <TabsTrigger value="overview" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3">Resumo</TabsTrigger>
-                  <TabsTrigger value="objectives" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3">Objetivos</TabsTrigger>
-                  <TabsTrigger value="resources" className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-6 py-3">Materiais & Quiz</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="overview" className="mt-0 space-y-4">
-                  <div className="prose prose-sm max-w-none text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {lesson.description || lesson.tutor_lesson_summary}
-                  </div>
-                  {lesson.notebooklm_notebook_url && (
-                    <Button variant="outline" className="w-full mt-4 gap-2" onClick={() => {
-                      handleAction("open_notebooklm");
-                      window.open(lesson.notebooklm_notebook_url, '_blank');
-                    }}>
-                      <ExternalLink className="h-4 w-4" /> Abrir Workspace NotebookLM
-                    </Button>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="objectives" className="mt-0">
-                  <ul className="space-y-3">
-                    {lesson.learning_objectives?.map((obj: string, i: number) => (
-                      <li key={i} className="flex gap-3 items-start">
-                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-muted-foreground">{obj}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </TabsContent>
-
-                <TabsContent value="resources" className="mt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Card 
-                      className="cursor-pointer hover:border-primary/50 transition-colors bg-gradient-to-br from-background to-primary/5"
-                      onClick={() => navigate("/dashboard/mission")}
-                    >
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <Layers className="h-4 w-4 text-primary" /> Flashcards & FSRS
-                        </CardTitle>
-                        <CardDescription>Revise o conteúdo usando repetição espaçada.</CardDescription>
-                      </CardHeader>
-                    </Card>
-                    <Card 
-                      className={`cursor-pointer hover:border-primary/50 transition-colors ${quiz ? 'bg-gradient-to-br from-background to-orange-500/5' : 'opacity-50 cursor-not-allowed'}`}
-                      onClick={() => quiz && setShowQuiz(true)}
-                    >
-                      <CardHeader className="p-4">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <HelpCircle className="h-4 w-4 text-orange-500" /> Quiz Rápido
-                        </CardTitle>
-                        <CardDescription>
-                          {quiz ? `${quiz.questions?.length || 0} questões sobre esta aula.` : 'Nenhum quiz disponível.'}
-                        </CardDescription>
-                      </CardHeader>
-                    </Card>
-                  </div>
-                </TabsContent>
-              </Tabs>
             </div>
+
+            <Tabs defaultValue="conteudo" className="w-full">
+              <TabsList className="bg-transparent border-b border-white/5 w-full justify-start rounded-none h-12 p-0 gap-8">
+                <TabsTrigger value="conteudo" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 font-bold text-sm">Visão Geral</TabsTrigger>
+                <TabsTrigger value="segmentos" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 font-bold text-sm">Capítulos IA</TabsTrigger>
+                <TabsTrigger value="notas" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-0 font-bold text-sm">Notas & Flashcards</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="conteudo" className="py-6 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Resumo do Tutor</h3>
+                    <p className="text-white/70 leading-relaxed text-sm">
+                      {lesson.tutor_lesson_summary || "O Tutor IA está preparando o resumo cinematográfico desta aula."}
+                    </p>
+                  </div>
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold flex items-center gap-2"><Target className="h-5 w-4 text-primary" /> Objetivos de Aprendizado</h3>
+                    <ul className="space-y-2">
+                      {lesson.learning_objectives?.map((obj: string, i: number) => (
+                        <li key={i} className="flex gap-3 text-sm text-white/70">
+                          <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          {obj}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="segmentos" className="py-6">
+                <VideoSegmentList 
+                  segments={segments} 
+                  onSelect={handleSelectSegment}
+                  onAskTutor={handleAskTutorAtSegment}
+                  onReplay={handleReplaySegment}
+                  currentSecond={watchedSeconds}
+                  currentDifficulty={currentDifficulty}
+                />
+              </TabsContent>
+            </Tabs>
           </div>
 
           <div className="space-y-6">
-            <Card className="border-primary/20 shadow-lg relative overflow-hidden group">
-              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover:opacity-20 transition-opacity">
-                <BrainCircuit className="h-20 w-20" />
-              </div>
-              <CardHeader className="bg-primary/5">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <MessageSquare className="h-5 w-5 text-primary" />
-                  Perguntar ao Tutor IA
-                </CardTitle>
-                <CardDescription>Tire dúvidas em tempo real.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="bg-muted/50 rounded-lg p-3 text-xs italic border-l-2 border-primary">
-                  "O Tutor analisou esta aula e a memória original para te ajudar agora."
-                </div>
-                <Button className="w-full gap-2 py-6 text-lg shadow-md" onClick={() => {
-                  handleAction("open_tutor");
-                  navigate(`/dashboard/mentor?context=${lesson.id}&session=${lesson.tutor_session_id || ''}`);
-                }}>
-                  Conversar com Tutor <ArrowRight className="h-5 w-5" />
-                </Button>
-              </CardContent>
+            {/* FASE 6: Observability UI inside Player */}
+            <Card className="bg-slate-900/40 border-white/5 shadow-2xl">
+               <CardHeader className="pb-2">
+                  <CardTitle className="text-xs font-black uppercase tracking-widest text-primary flex items-center justify-between">
+                     Director AI Telemetry
+                     <Activity className="h-3 w-3" />
+                  </CardTitle>
+               </CardHeader>
+               <CardContent className="space-y-3">
+                  <div className="flex justify-between text-[10px]">
+                     <span className="text-white/40">Visual Grammar</span>
+                     <span className="text-white font-bold uppercase">{lesson.specialty}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                     <span className="text-white/40">Cognitive Pacing</span>
+                     <span className="text-emerald-400 font-bold">Optimal</span>
+                  </div>
+                  <div className="pt-2">
+                     <div className="flex justify-between text-[8px] uppercase font-bold text-white/30 mb-1">
+                        <span>Buffer Health</span>
+                        <span>Low Latency</span>
+                     </div>
+                     <Progress value={92} className="h-0.5 bg-white/5" />
+                  </div>
+               </CardContent>
             </Card>
 
-            {/* FASE 2: Lista de segmentos (oculta se vídeo não for segmentado) */}
-            {segments.length > 0 && (
-              <VideoSegmentList
-                segments={segments}
-                currentSegmentId={currentSegment?.id ?? null}
-                onSelectSegment={handleSelectSegment}
-                onAskTutor={handleAskTutorAtSegment}
-                onReplaySegment={handleReplaySegment}
-                getAnalytics={getForSegment}
-                smartReplayEnabled={smartReplayEnabled}
-                tutorTemporalEnabled={temporalEnabled}
-              />
-            )}
+            <PreventiveTutorTrigger 
+              videoLessonId={id!} 
+              currentSegmentId={currentSegment?.id || null} 
+              watchedSeconds={watchedSeconds}
+            />
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">Progresso Educacional</CardTitle>
+            <AnimatePresence>
+              {recommendation && (
+                <AdaptiveRecommendationCard 
+                  recommendation={recommendation}
+                  onAccept={() => acceptRecommendation(recommendation.id)}
+                  onIgnore={() => ignoreRecommendation(recommendation.id)}
+                />
+              )}
+            </AnimatePresence>
+
+            <Card className="bg-white/5 border-white/5 shadow-2xl overflow-hidden group">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-sm font-bold flex items-center gap-2">
+                  <BrainCircuit className="h-4 w-4 text-primary" /> Seu Progresso Cognitivo
+                </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Vídeo Assistido</span>
-                  <span className="font-medium text-primary">{Math.floor(completionRate)}%</span>
-                </div>
-                <Progress value={completionRate} className="h-2" />
-                
-                <div className="pt-4 border-t space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-4 w-4 text-muted-foreground" />
-                      <span>Resumo da Aula</span>
+              <CardContent>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-xs font-medium">
+                      <span className="text-white/50 uppercase tracking-widest">Mastery Estimada</span>
+                      <span className="text-primary font-bold">85%</span>
                     </div>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <Progress value={85} className="h-1 bg-white/10" />
                   </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-center">
+                       <p className="text-[10px] text-white/40 uppercase font-black mb-1">Fatigue</p>
+                       <p className="text-sm font-bold">Low</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-center">
+                       <p className="text-[10px] text-white/40 uppercase font-black mb-1">Retention</p>
+                       <p className="text-sm font-bold text-emerald-400">High</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-white/5 space-y-4">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <HelpCircle className="h-4 w-4 text-muted-foreground" />
