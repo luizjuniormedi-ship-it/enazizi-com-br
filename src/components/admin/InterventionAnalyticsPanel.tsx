@@ -188,7 +188,6 @@ export default function InterventionAnalyticsPanel() {
               Políticas de Governança
             </Button>
             <div className="flex items-center gap-1">
-            <div className="flex items-center gap-1">
               {[7, 14, 30].map((d) => (
                 <Button
                   key={d}
