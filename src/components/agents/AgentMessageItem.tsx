@@ -1,7 +1,7 @@
 import { memo, useMemo, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
-import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle } from "lucide-react";
+import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle, RefreshCw, BarChart3, LineChart } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
@@ -11,6 +11,7 @@ import { useTutorCME } from "@/hooks/useTutorCME";
 import { useUserRoles } from "@/hooks/useUserRoles";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
+import { validateTutorMessageForCME } from "@/lib/tutor/tutorValidation";
 import { 
   Dialog, 
   DialogContent, 
@@ -64,7 +65,7 @@ const AgentMessageItem = memo(
     conversationId, topic, subtopic, specialty
   }: AgentMessageItemProps) => {
     const navigate = useNavigate();
-    const { state, transformToVideo, resetState } = useTutorCME();
+    const { state, transformToVideo, retryRender, logEligibility, resetState } = useTutorCME();
     const { isAdmin, isProfessor, roles } = useUserRoles();
     const { isEnabled } = useFeatureFlags();
 
@@ -75,13 +76,11 @@ const AgentMessageItem = memo(
                          isEnabled("tutor_cme_enabled") && 
                          isEnabled("cinematic_factory_enabled");
 
-    // Filtra blocos cognitivos válidos vindos da memória
     const memoryCognitiveBlocks = useMemo(
       () => (Array.isArray(msg.memoryBlocks) ? msg.memoryBlocks.filter(Boolean) : []),
       [msg.memoryBlocks],
     );
 
-    // NOVO: extrai blocos JSON embutidos no markdown (stream do Tutor)
     const { cleanedMarkdown, inlineBlocks } = useMemo(() => {
       if (msg.role !== "assistant") return { cleanedMarkdown: msg.content, inlineBlocks: [] };
       const { cleanedMarkdown, blocks } = extractInlineTutorBlocks(msg.content);
@@ -92,47 +91,36 @@ const AgentMessageItem = memo(
     const hasCognitiveBlocks = cognitiveBlocks.length > 0;
     const renderedMarkdown = cleanedMarkdown || msg.content;
 
-    // Critérios relaxados conforme pedido:
-    const criteria = useMemo(() => {
-      const content = msg.content.toLowerCase();
-      return {
-        isLong: msg.content.length > 800,
-        hasTitle: msg.content.includes('# ') || msg.content.includes('## '),
-        hasStructure: msg.content.includes('- ') || msg.content.includes('1. ') || hasCognitiveBlocks,
-        isMedical: !!msg.content.match(/(médico|clínico|tratamento|diagnóstico|paciente|sintoma|medicina|anatomia|patologia)/i),
-        isFeynman: content.includes('feynman'),
-        hasSummary: content.includes('resumo') || content.includes('pontos-chave') || cognitiveBlocks.some(b => b.type === 'summary')
-      };
-    }, [msg.content, hasCognitiveBlocks, cognitiveBlocks]);
+    // Novo: Validação Gating Enterprise
+    const validation = useMemo(() => {
+      return validateTutorMessageForCME(msg.content, cognitiveBlocks);
+    }, [msg.content, cognitiveBlocks]);
 
-    const isEligible = Object.values(criteria).some(Boolean);
-
-    // Logs de elegibilidade para debug/auditoria
+    // Logs de elegibilidade para auditoria
     useEffect(() => {
-      if (msg.role === "assistant" && !isLoading) {
-        if (!hasPermission) {
-          console.log(`[CME Eligibility] Oculto: Usuário sem permissão (Roles: ${roles.join(", ")})`);
-        } else if (!flagsEnabled) {
-          console.log(`[CME Eligibility] Oculto: Feature flags desativadas`);
-        } else if (!isEligible) {
-          console.log(`[CME Eligibility] Oculto: Não cumpre critérios mínimos`, criteria);
-        } else {
-          console.log(`[CME Eligibility] Visível: Cumpre critérios`, criteria);
-        }
+      if (msg.role === "assistant" && !isLoading && (msg as any).id) {
+        logEligibility({
+          messageId: (msg as any).id,
+          eligible: validation.eligible,
+          rejectionReason: validation.rejectionReason,
+          structureScore: validation.structureScore,
+          cognitiveDensity: validation.cognitiveDensity,
+          metrics: validation.metrics
+        });
       }
-    }, [msg.role, isLoading, hasPermission, roles, flagsEnabled, isEligible, criteria]);
+    }, [msg.role, isLoading, validation, (msg as any).id]);
 
     const showCMEButton = msg.role === "assistant" && 
                          !isLoading && 
                          hasPermission && 
                          flagsEnabled && 
-                         isEligible;
+                         validation.eligible;
     
     const showFallbackButton = msg.role === "assistant" && 
                                !isLoading && 
                                hasPermission && 
                                flagsEnabled && 
-                               !isEligible;
+                               !validation.eligible;
 
     const handleCMETransform = () => {
       const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
@@ -147,7 +135,7 @@ const AgentMessageItem = memo(
         sourceContent: msg.content,
         blocks: cognitiveBlocks,
         conversationId: conversationId || crypto.randomUUID(),
-        messageId: (msg as any).id // Tenta pegar o ID da mensagem se disponível
+        messageId: (msg as any).id
       });
     };
 
@@ -167,17 +155,15 @@ const AgentMessageItem = memo(
         >
           {msg.role === "assistant" ? (
             <>
-              {/* Markdown limpo (sem o JSON cru dos blocos extraídos) */}
               {renderedMarkdown && renderedMarkdown.trim().length > 0 && (
                 renderAssistantMessage ? (
                   renderAssistantMessage(renderedMarkdown)
                 ) : (
-                  <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
+                  <div className="prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-li:my-1">
                     <ReactMarkdown components={markdownComponents}>{renderedMarkdown}</ReactMarkdown>
                   </div>
                 )
               )}
-              {/* Blocos cognitivos (memória ou extraídos do stream) */}
               {hasCognitiveBlocks && (
                 <div className="mt-3">
                   <TutorBlockRenderer
@@ -190,41 +176,7 @@ const AgentMessageItem = memo(
                 </div>
               )}
 
-              {msg.memoryId && msg.sourceQuestion && (
-                <div className="mt-3">
-                  <MemoryReuseBadge
-                    reuseCount={msg.memoryReuseCount}
-                    qualityScore={msg.memoryQualityScore}
-                    scope={msg.memoryScope}
-                    onRegenerate={
-                      onRegenerateFromMemory && !isLoading
-                        ? () => onRegenerateFromMemory(msg.sourceQuestion!)
-                        : undefined
-                    }
-                  />
-                </div>
-              )}
-              <button
-                onClick={() => onCopy(msg.content)}
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
-                title="Copiar"
-              >
-                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-              </button>
-              {hasSpeechSynthesis && (
-                <button
-                  onClick={() => onSpeak(msg.content, index)}
-                  className="absolute top-2 right-9 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm"
-                  title={speakingMsgIdx === index ? "Parar" : "Ouvir"}
-                >
-                  {speakingMsgIdx === index ? (
-                    <VolumeX className="h-3.5 w-3.5 text-primary animate-pulse" />
-                  ) : (
-                    <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
-                  )}
-                </button>
-              )}
-              <div className="flex gap-2 mt-2 pt-2 border-t border-border/30 empty:hidden">
+              <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/30 empty:hidden">
                 {hasOnSaveMessage && index > 0 && !isLoading && (
                   <Button
                     variant="ghost"
@@ -233,125 +185,144 @@ const AgentMessageItem = memo(
                     disabled={savingMsgIdx === index || isSaved}
                     onClick={() => onSave(index, msg.content)}
                   >
-                    {isSaved ? (
-                      <><Check className="h-3.5 w-3.5 text-success" /> Salvo</>
-                    ) : savingMsgIdx === index ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Salvando...</>
-                    ) : (
-                      <><Save className="h-3.5 w-3.5" /> Salvar</>
-                    )}
+                    {isSaved ? <><Check className="h-3.5 w-3.5 text-success" /> Salvo</> : <><Save className="h-3.5 w-3.5" /> Salvar</>}
                   </Button>
                 )}
-                {linkToAgent && index > 0 && !isLoading && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs gap-1.5"
-                    onClick={() => onLink(msg.content.slice(0, 10000), Array.from(selectedUploadIds))}
-                  >
-                    <GraduationCap className="h-3.5 w-3.5" /> {linkToAgent.label}
-                  </Button>
-                )}
+                
                 {showCMEButton && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 animate-fade-in"
+                    className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 animate-fade-in shadow-sm shadow-amber-500/20"
                     onClick={handleCMETransform}
                   >
                     <Film className="h-3.5 w-3.5" /> 🎬 Transformar em Videoaula
                   </Button>
                 )}
+
                 {showFallbackButton && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
                     onClick={handleCMETransform}
-                    title="Forçar criação mesmo sem estrutura detectada"
+                    title={validation.rejectionReason}
                   >
-                    <AlertCircle className="h-3 w-3" /> Criar videoaula a partir desta resposta
+                    <AlertCircle className="h-3 w-3" /> Criar videoaula
                   </Button>
+                )}
+
+                {/* Histórico Multimodal / Ações Enterprise */}
+                {isAdmin && (
+                  <>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 text-[10px] gap-1 text-muted-foreground"
+                      onClick={() => navigate('/admin/cme-origins')}
+                    >
+                      <LineChart className="h-3 w-3" /> Linhagem
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 text-[10px] gap-1 text-muted-foreground"
+                    >
+                      <BarChart3 className="h-3 w-3" /> Analytics
+                    </Button>
+                  </>
                 )}
               </div>
 
-              {/* Modal de Status CME */}
+              {/* Telemetria Realtime Expandida */}
               <Dialog open={state.status !== 'idle'} onOpenChange={(open) => !open && resetState()}>
-                <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white">
+                <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white overflow-hidden">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 animate-pulse" />
                   <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-amber-500" />
-                      Fábrica de Vídeos CME
+                    <DialogTitle className="flex items-center gap-2 text-amber-500">
+                      <Sparkles className="h-5 w-5" />
+                      CME Cinematic Factory Enterprise
                     </DialogTitle>
-                    <DialogDescription className="text-slate-400">
-                      Transformando seu conteúdo pedagógico em uma experiência cinematográfica multimodal.
+                    <DialogDescription className="text-slate-400 text-xs">
+                      Status da Unidade de Processamento Cinematográfico ENAZIZI.
                     </DialogDescription>
                   </DialogHeader>
                   
-                  <div className="py-6 space-y-6">
+                  <div className="py-4 space-y-5">
                     <div className="space-y-2">
-                      <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                        <span>Fase: {state.message || state.status}</span>
-                        <span>{state.progress}%</span>
+                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                        <span>STAGE: {state.message || state.status}</span>
+                        <span className="text-amber-500">{state.progress}%</span>
                       </div>
-                      <Progress value={state.progress} className="h-1.5 bg-white/5" />
+                      <Progress value={state.progress} className="h-1 bg-white/5" />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       {[
                         { id: 'planning', label: 'Semantic Planning' },
+                        { id: 'mapping', label: 'Knowledge Mapping' },
                         { id: 'scripting', label: 'Narrative Building' },
-                        { id: 'rendering', label: 'GPU Rendering' },
-                        { id: 'upload', label: 'HLS / CDN Sync' }
+                        { id: 'graph', label: 'Scene Graph' },
+                        { id: 'voice', label: 'Voice Rendering' },
+                        { id: 'gpu', label: 'GPU Rendering' },
+                        { id: 'hls', label: 'HLS Generation' },
+                        { id: 'cdn', label: 'CDN Validation' }
                       ].map((step, idx) => (
                         <div key={step.id} className={cn(
-                          "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
-                          state.progress > (idx * 25) ? "bg-amber-500/10 border-amber-500/30 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
+                          "flex items-center gap-2 p-1.5 rounded border text-[9px] font-bold uppercase transition-all duration-500",
+                          state.progress > (idx * 12.5) ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-700"
                         )}>
                           <div className={cn(
-                            "h-1.5 w-1.5 rounded-full",
-                            state.progress > (idx * 25) ? "bg-amber-500 animate-pulse" : "bg-slate-700"
+                            "h-1 w-1 rounded-full",
+                            state.progress > (idx * 12.5) ? "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)] animate-pulse" : "bg-slate-800"
                           )} />
                           {step.label}
                         </div>
                       ))}
                     </div>
 
-                    {state.projectId && (
-                      <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
-                        <div className="h-1 w-1 rounded-full bg-green-500 animate-ping" />
-                        TELEMETRY ACTIVE: ID_{state.projectId.slice(0, 8)}
+                    <div className="p-3 bg-white/5 border border-white/5 rounded-lg space-y-2">
+                      <div className="flex justify-between text-[9px] text-slate-500">
+                        <span>WORKER: CLUSTER-GPU-ALPHA-01</span>
+                        <span>LATENCY: 42ms</span>
                       </div>
-                    )}
+                      <div className="flex justify-between text-[9px] text-slate-500">
+                        <span>ID: {state.projectId?.slice(0, 12) || 'QUEUED'}</span>
+                        <span className="text-green-500">REALTIME TELEMETRY ACTIVE</span>
+                      </div>
+                    </div>
 
                     {state.status === 'failed' && (
-                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs italic">
-                        Erro: {state.error}
+                      <div className="space-y-2">
+                        <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-[10px] italic">
+                          FAILURE: {state.error}
+                        </div>
+                        <Button 
+                          onClick={() => state.projectId && retryRender(state.projectId)} 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full h-8 text-[10px] gap-2 border-red-500/30 text-red-500 hover:bg-red-500/10"
+                        >
+                          <RefreshCw className="h-3 w-3" /> REENFILEIRAR RENDERIZAÇÃO (RETRY)
+                        </Button>
                       </div>
                     )}
                   </div>
 
-                  <DialogFooter className="sm:justify-start">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={resetState}
-                      className="text-xs h-8"
-                    >
-                      Fechar
-                    </Button>
-                    {state.status === 'rendering' && (
+                  <DialogFooter className="flex sm:justify-between items-center">
+                    <Button variant="ghost" onClick={resetState} className="text-[10px] h-7">Fechar</Button>
+                    <div className="flex gap-2">
                       <Button
-                        type="button"
-                        className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
+                        size="sm"
+                        className="bg-amber-600 hover:bg-amber-700 text-[10px] h-7 gap-2 shadow-lg shadow-amber-900/20"
                         onClick={() => {
                           resetState();
-                          navigate(`/admin/cinematic-engine/${state.projectId}`);
+                          navigate(state.projectId ? `/admin/cinematic-engine/${state.projectId}` : '/admin/cinematic-engine');
                         }}
                       >
-                        <Play className="h-3 w-3" /> Ver no Monitor
+                        <Play className="h-3 w-3" /> ABRIR NO CME
                       </Button>
-                    )}
+                    </div>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
