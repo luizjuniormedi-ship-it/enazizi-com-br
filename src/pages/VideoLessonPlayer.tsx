@@ -415,14 +415,14 @@ const VideoLessonPlayer = () => {
   if (!lesson) return <div className="p-8">Aula não encontrada.</div>;
 
   return (
-    <div className="min-h-screen bg-background animate-in fade-in duration-500 pb-20">
+    <div className="min-h-screen bg-[#0a0a12] text-white animate-in fade-in duration-500 pb-20">
       <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
         <Button 
           variant="ghost" 
-          className="gap-2 -ml-2 mb-2" 
-          onClick={() => navigate("/videoaulas")}
+          className="gap-2 -ml-2 mb-2 text-white/70 hover:text-white hover:bg-white/10" 
+          onClick={() => navigate("/dashboard/videoaulas")}
         >
-          <ChevronLeft className="h-4 w-4" /> Voltar para Biblioteca
+          <ChevronLeft className="h-4 w-4" /> Voltar para Videoaulas
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
