@@ -132,6 +132,16 @@ const VideoLessonPlayer = () => {
     enabled: !!lesson
   });
 
+  // FASE 5: Regression Suite Verification (Client-side check)
+  useEffect(() => {
+    if (lesson?.status === 'published' && (lesson as any).health_score < 50) {
+      toast.error("Instabilidade de Playback Detectada", {
+        description: "Esta mídia apresenta falhas de regressão e pode não carregar corretamente.",
+        duration: 10000
+      });
+    }
+  }, [lesson]);
+
   // ───────────────── FASE 2: Adaptive Video ─────────────────
   // Carrega segmentos da videoaula (se houver). Compatível com vídeos sem segmentação.
   const { data: segments = [] } = useQuery<VideoSegment[]>({
