@@ -7,17 +7,14 @@ import {
   Cpu, 
   Thermometer, 
   Activity, 
-  AlertTriangle, 
-  CheckCircle2, 
-  XCircle,
   RefreshCcw,
-  Power,
-  Database
+  Power
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { CMEGPUCluster, CMEWorkerNode } from "./types";
 
@@ -31,7 +28,7 @@ export const GPUFleetPanel = () => {
         .from("cme_gpu_clusters")
         .select("*");
       if (error) throw error;
-      return data as CMEGPUCluster[];
+      return data as unknown as CMEGPUCluster[];
     }
   });
 
@@ -41,9 +38,9 @@ export const GPUFleetPanel = () => {
       const { data, error } = await supabase
         .from("cme_worker_nodes")
         .select("*")
-        .order("worker_name");
+        .order("hostname");
       if (error) throw error;
-      return data as CMEWorkerNode[];
+      return data as unknown as CMEWorkerNode[];
     }
   });
 
@@ -64,7 +61,7 @@ export const GPUFleetPanel = () => {
               current.map(w => w.id === payload.new.id ? { ...w, ...payload.new } : w)
             );
           } else if (payload.eventType === 'INSERT') {
-            setRealtimeWorkers(current => [...current, payload.new as CMEWorkerNode]);
+            setRealtimeWorkers(current => [...current, payload.new as unknown as CMEWorkerNode]);
           } else if (payload.eventType === 'DELETE') {
             setRealtimeWorkers(current => current.filter(w => w.id !== payload.old.id));
           }
@@ -169,7 +166,7 @@ export const GPUFleetPanel = () => {
                         <Server className="h-5 w-5" />
                       </div>
                       <div>
-                        <p className="font-black text-slate-800 tracking-tight">{worker.worker_name}</p>
+                        <p className="font-black text-slate-800 tracking-tight">{worker.hostname}</p>
                         <div className="flex items-center gap-1.5 mt-0.5">
                           {getStatusBadge(worker.status)}
                           {worker.is_draining && <Badge variant="outline" className="text-orange-600 border-orange-200 bg-orange-50 text-[9px]">DRAINING</Badge>}
@@ -199,7 +196,9 @@ export const GPUFleetPanel = () => {
                         <span className="flex items-center gap-1"><Thermometer className="h-3 w-3" /> TEMP</span>
                         <span>{worker.temperature_c || 0}°C</span>
                       </div>
-                      <Progress value={(worker.temperature_c || 0)} max={100} className="h-1.5" 
+                      <Progress 
+                        value={(worker.temperature_c || 0)} 
+                        className="h-1.5" 
                         indicatorClassName={cn(
                           (worker.temperature_c || 0) > 80 ? "bg-red-500" : (worker.temperature_c || 0) > 70 ? "bg-orange-500" : "bg-emerald-500"
                         )}
