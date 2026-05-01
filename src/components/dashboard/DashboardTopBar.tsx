@@ -83,9 +83,6 @@ function DashboardTopBar() {
           <PaceIcon className="h-3 w-3" />
           {paceCfg.label}
         </Badge>
-          <PaceIcon className="h-3 w-3" />
-          {paceCfg.label}
-        </Badge>
         {streak > 0 && (
           <Badge variant="outline" className="gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-lg border-0 bg-warning/15 text-warning shadow-[0_0_12px_rgba(245,158,11,0.15)]">
             <Flame className="h-3 w-3 fill-warning" />
