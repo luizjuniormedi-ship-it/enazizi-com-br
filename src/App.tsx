@@ -282,6 +282,9 @@ const App = () => (
                     <Route path="cme-builder-audit" element={<CMEAudit />} />
                     <Route path="cme-audit" element={<CMEAudit />} />
                     <Route path="cme-executive" element={<CMEExecutiveDashboard />} />
+                    <Route path="gpu-fleet" element={<CMEGPUFleet />} />
+                    <Route path="render-queues" element={<CMERenderQueues />} />
+                    <Route path="cme-observability" element={<CMEObservability />} />
                     <Route path="system-checklist" element={<SystemChecklist />} />
 
                 </Route>
