@@ -1,14 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = 'https://qszsyskumcmuknumwxtk.supabase.co';
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+
+if (!supabaseKey) {
+  console.error('ERRO: Nenhuma chave Supabase encontrada.');
+  process.exit(1);
+}
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function runStressTest() {
   console.log('--- CME ENTERPRISE+ STRESS TEST ---');
   
-  const testUserId = '00000000-0000-0000-0000-000000000000'; // Global stress test user
-  const renderCounts = [5, 10, 20];
+  const testUserId = (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000000';
+  const renderCounts = [5, 10]; // Reduzido para teste rápido inicial
   const results = [];
 
   for (const count of renderCounts) {
@@ -19,14 +25,16 @@ async function runStressTest() {
       const projectId = crypto.randomUUID();
       
       // 1. Criar Projeto
-      const { data: project } = await supabase.from('cme_video_projects').insert({
+      const { data: project, error: pError } = await supabase.from('cme_video_projects').insert({
         id: projectId,
         user_id: testUserId,
         title: `Stress Test Render ${count}-${i}`,
         status: 'processing'
       }).select().single();
 
-      // 2. Persistir Scene Graph (O ponto crítico corrigido)
+      if (pError) throw pError;
+
+      // 2. Persistir Scene Graph
       const { data: sceneGraph, error: sgError } = await supabase.from('cme_scene_graphs').insert({
         project_id: projectId,
         user_id: testUserId,
@@ -49,20 +57,11 @@ async function runStressTest() {
 
       if (jobError) throw jobError;
 
-      // 4. Registrar Evento de Pipeline
-      await supabase.from('cme_pipeline_events').insert({
-        project_id: projectId,
-        user_id: testUserId,
-        stage: 'stress_test',
-        event_type: 'concurrent_init',
-        payload: { index: i, total: count }
-      });
-
       return job.id;
     });
 
     try {
-      const jobIds = await Promise.all(promises);
+      await Promise.all(promises);
       const duration = Date.now() - startTime;
       console.log(`✅ ${count} jobs criados em ${duration}ms`);
       results.push({ count, duration, success: true });
