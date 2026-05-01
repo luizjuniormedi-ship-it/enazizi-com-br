@@ -543,19 +543,50 @@ const AdminCinematicEngine = () => {
 
           <TabsContent value="factory" className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <Card className="lg:col-span-2 border-none shadow-sm">
-                <CardHeader>
+              <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
+                <CardHeader className="bg-white border-b">
                   <CardTitle className="text-lg font-black tracking-tight">Granular Scene Graph Orchestrator</CardTitle>
                   <CardDescription className="text-xs font-bold uppercase opacity-60">Visual composition of medical narrative nodes</CardDescription>
                 </CardHeader>
-                <CardContent className="p-0">
-                  <div className="p-12 text-center space-y-4">
-                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto">
-                      <Waves className="h-10 w-10 text-slate-300" />
-                    </div>
-                    <p className="text-sm font-bold text-slate-400">Select a project to visualize and edit its Scene Graph nodes.</p>
-                    <Button variant="outline" size="sm">Open Factory Blueprint</Button>
-                  </div>
+                <CardContent className="p-6">
+                   <div className="space-y-4">
+                     <div className="flex items-center justify-between mb-6">
+                        <Badge variant="outline" className="font-mono text-[10px]">Graph ID: SG-2026-X1</Badge>
+                        <div className="flex gap-2">
+                           <Button size="sm" variant="outline" className="h-8 gap-1.5"><Plus className="h-3 w-3" /> Add Scene</Button>
+                           <Button size="sm" variant="outline" className="h-8 gap-1.5"><Waves className="h-3 w-3" /> Transition</Button>
+                        </div>
+                     </div>
+
+                     <div className="relative h-[400px] bg-slate-50 rounded-2xl border border-dashed border-slate-200 flex flex-col p-4 overflow-y-auto">
+                        {[
+                          { time: '00:00 - 00:15', type: 'intro', label: 'Cinematic Intro (Logo + Title)', intensity: 1.2 },
+                          { time: '00:15 - 02:30', type: 'clinical_case', label: 'Patient Presentation: Anemia', intensity: 3.5 },
+                          { time: '02:30 - 02:35', type: 'transition', label: 'Semantic Zoom to Kidney', intensity: 2.0 },
+                          { time: '02:35 - 05:00', type: 'pathophysiology', label: 'EPO Production Mechanism', intensity: 4.8 },
+                          { time: '05:00 - 05:45', type: 'reinforcement', label: 'FSRS Quiz Node', intensity: 2.5 }
+                        ].map((node, i) => (
+                          <div key={i} className="flex items-center gap-4 mb-3 p-3 bg-white rounded-xl border shadow-sm group hover:border-primary/50 transition-all cursor-move">
+                            <div className="w-12 h-12 rounded-lg bg-slate-100 flex items-center justify-center font-mono text-[8px] text-slate-400">
+                               {node.time.split(' - ')[0]}
+                            </div>
+                            <div className="flex-1">
+                               <p className="text-xs font-black text-slate-800 uppercase tracking-tight">{node.label}</p>
+                               <div className="flex gap-2 mt-1">
+                                  <Badge variant="secondary" className="text-[8px] h-3.5">{node.type}</Badge>
+                                  <div className="flex items-center gap-1">
+                                     <div className="h-1 w-12 bg-slate-100 rounded-full overflow-hidden">
+                                        <div className="h-full bg-primary" style={{ width: `${(node.intensity/5)*100}%` }} />
+                                     </div>
+                                     <span className="text-[8px] text-slate-400">Load: {node.intensity}</span>
+                                  </div>
+                               </div>
+                            </div>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 opacity-0 group-hover:opacity-100"><Settings className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        ))}
+                     </div>
+                   </div>
                 </CardContent>
               </Card>
 
