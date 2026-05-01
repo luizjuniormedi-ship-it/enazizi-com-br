@@ -397,7 +397,7 @@ const AdminCinematicEngine = () => {
                   <CardTitle className="text-lg font-black tracking-tight">Cinematic Reference Library</CardTitle>
                   <CardDescription className="text-xs font-bold uppercase opacity-60">High-retention benchmarks for learned pacing and narrative</CardDescription>
                 </div>
-                <Button className="gap-2 font-bold">
+                <Button className="gap-2 font-bold" onClick={() => setIsUploadDialogOpen(true)}>
                   <Plus className="h-4 w-4" /> Add Benchmark
                 </Button>
               </CardHeader>
