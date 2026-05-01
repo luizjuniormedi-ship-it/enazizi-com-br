@@ -25,7 +25,10 @@ export type Database = {
           friction_score_snapshot: number | null
           id: string
           metadata: Json | null
+          outcome_metrics: Json | null
+          post_intervention_outcome: string | null
           recommendation_text: string | null
+          resolved_at: string | null
           status: string | null
           trigger_type: string
           user_id: string | null
@@ -41,7 +44,10 @@ export type Database = {
           friction_score_snapshot?: number | null
           id?: string
           metadata?: Json | null
+          outcome_metrics?: Json | null
+          post_intervention_outcome?: string | null
           recommendation_text?: string | null
+          resolved_at?: string | null
           status?: string | null
           trigger_type: string
           user_id?: string | null
@@ -57,7 +63,10 @@ export type Database = {
           friction_score_snapshot?: number | null
           id?: string
           metadata?: Json | null
+          outcome_metrics?: Json | null
+          post_intervention_outcome?: string | null
           recommendation_text?: string | null
+          resolved_at?: string | null
           status?: string | null
           trigger_type?: string
           user_id?: string | null
@@ -76,6 +85,54 @@ export type Database = {
             columns: ["video_lesson_id"]
             isOneToOne: false
             referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adaptive_path_logs: {
+        Row: {
+          adjustment_type: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          new_path_node_id: string | null
+          original_path_node_id: string | null
+          trigger_reason: string
+          user_id: string
+        }
+        Insert: {
+          adjustment_type: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          new_path_node_id?: string | null
+          original_path_node_id?: string | null
+          trigger_reason: string
+          user_id: string
+        }
+        Update: {
+          adjustment_type?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          new_path_node_id?: string | null
+          original_path_node_id?: string | null
+          trigger_reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adaptive_path_logs_new_path_node_id_fkey"
+            columns: ["new_path_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adaptive_path_logs_original_path_node_id_fkey"
+            columns: ["original_path_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
             referencedColumns: ["id"]
           },
         ]
@@ -9531,6 +9588,53 @@ export type Database = {
             columns: ["scenario_id"]
             isOneToOne: false
             referencedRelation: "clinical_scenarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_mastery_metrics: {
+        Row: {
+          clinical_score: number | null
+          dependency_factor: number | null
+          id: string
+          last_updated_at: string | null
+          node_id: string
+          retention_stability: number | null
+          speed_factor: number | null
+          theoretical_score: number | null
+          transfer_score: number | null
+          user_id: string
+        }
+        Insert: {
+          clinical_score?: number | null
+          dependency_factor?: number | null
+          id?: string
+          last_updated_at?: string | null
+          node_id: string
+          retention_stability?: number | null
+          speed_factor?: number | null
+          theoretical_score?: number | null
+          transfer_score?: number | null
+          user_id: string
+        }
+        Update: {
+          clinical_score?: number | null
+          dependency_factor?: number | null
+          id?: string
+          last_updated_at?: string | null
+          node_id?: string
+          retention_stability?: number | null
+          speed_factor?: number | null
+          theoretical_score?: number | null
+          transfer_score?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_mastery_metrics_node_id_fkey"
+            columns: ["node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
             referencedColumns: ["id"]
           },
         ]
