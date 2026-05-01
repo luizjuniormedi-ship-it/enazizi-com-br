@@ -14,6 +14,90 @@ export type Database = {
   }
   public: {
     Tables: {
+      adaptive_interventions: {
+        Row: {
+          action_taken: string
+          context_node_id: string | null
+          created_at: string | null
+          effectiveness_score: number | null
+          id: string
+          metadata: Json | null
+          trigger_type: string
+          user_id: string | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          action_taken: string
+          context_node_id?: string | null
+          created_at?: string | null
+          effectiveness_score?: number | null
+          id?: string
+          metadata?: Json | null
+          trigger_type: string
+          user_id?: string | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          action_taken?: string
+          context_node_id?: string | null
+          created_at?: string | null
+          effectiveness_score?: number | null
+          id?: string
+          metadata?: Json | null
+          trigger_type?: string
+          user_id?: string | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adaptive_interventions_context_node_id_fkey"
+            columns: ["context_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adaptive_interventions_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adaptive_student_profiles: {
+        Row: {
+          cognitive_load_estimate: number | null
+          id: string
+          last_intervention_at: string | null
+          mastery_map: Json | null
+          overall_friction_score: number | null
+          preferred_modality: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          cognitive_load_estimate?: number | null
+          id?: string
+          last_intervention_at?: string | null
+          mastery_map?: Json | null
+          overall_friction_score?: number | null
+          preferred_modality?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          cognitive_load_estimate?: number | null
+          id?: string
+          last_intervention_at?: string | null
+          mastery_map?: Json | null
+          overall_friction_score?: number | null
+          preferred_modality?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -4259,6 +4343,84 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_edges: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          relationship_type: string
+          source_node_id: string | null
+          strength: number | null
+          target_node_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          relationship_type: string
+          source_node_id?: string | null
+          strength?: number | null
+          target_node_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          relationship_type?: string
+          source_node_id?: string | null
+          strength?: number | null
+          target_node_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_edges_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_edges_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_nodes: {
+        Row: {
+          category: string
+          code: string
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          name: string
+          specialty: string
+        }
+        Insert: {
+          category: string
+          code: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          specialty: string
+        }
+        Update: {
+          category?: string
+          code?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          specialty?: string
+        }
+        Relationships: []
+      }
       lesson_doubts: {
         Row: {
           created_at: string
@@ -4355,6 +4517,7 @@ export type Database = {
           has_quiz: boolean | null
           id: string
           key_points: Json | null
+          knowledge_node_id: string | null
           lesson_id: string
           ordem: number
           segment_type: string | null
@@ -4373,6 +4536,7 @@ export type Database = {
           has_quiz?: boolean | null
           id?: string
           key_points?: Json | null
+          knowledge_node_id?: string | null
           lesson_id: string
           ordem?: number
           segment_type?: string | null
@@ -4391,6 +4555,7 @@ export type Database = {
           has_quiz?: boolean | null
           id?: string
           key_points?: Json | null
+          knowledge_node_id?: string | null
           lesson_id?: string
           ordem?: number
           segment_type?: string | null
@@ -4401,6 +4566,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "lesson_segments_knowledge_node_id_fkey"
+            columns: ["knowledge_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lesson_segments_lesson_id_fkey"
             columns: ["lesson_id"]
@@ -11962,6 +12134,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          knowledge_node_id: string | null
           questions: Json
           updated_at: string
           video_lesson_id: string
@@ -11969,6 +12142,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          knowledge_node_id?: string | null
           questions: Json
           updated_at?: string
           video_lesson_id: string
@@ -11976,11 +12150,19 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          knowledge_node_id?: string | null
           questions?: Json
           updated_at?: string
           video_lesson_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "video_lesson_quizzes_knowledge_node_id_fkey"
+            columns: ["knowledge_node_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "video_lesson_quizzes_video_lesson_id_fkey"
             columns: ["video_lesson_id"]
