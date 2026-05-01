@@ -419,6 +419,13 @@ const VideoLessonPlayer = () => {
                   </Badge>
                 </div>
               )}
+
+              {/* FASE 3: Trigger Preventivo */}
+              <PreventiveTutorTrigger 
+                recommendation={recommendation}
+                onAccept={() => currentSegment && handleAskTutorAtSegment(currentSegment)}
+                onClose={resetRecommendation}
+              />
             </div>
 
             {/* FASE 2: Indicador de dificuldade + segmento atual */}
