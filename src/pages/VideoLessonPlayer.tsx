@@ -505,6 +505,28 @@ const VideoLessonPlayer = () => {
                 </div>
               </motion.div>
             )}
+            
+            {/* CME Personalization Banner */}
+            {isCMEVideo && (
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">Otimização Multimodal CME Ativa</p>
+                    <p className="text-[10px] text-muted-foreground italic">Ritmo e narrativa adaptados ao seu perfil de retenção.</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1">
+                  <Settings className="h-3 w-3" /> Ajustar Pacing
+                </Button>
+              </motion.div>
+            )}
 
             {/* FASE 2: Indicador de dificuldade + segmento atual */}
             {currentSegment && (
