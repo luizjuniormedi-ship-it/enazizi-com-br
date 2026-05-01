@@ -122,6 +122,7 @@ const AdaptiveEngineAdmin = lazyWithRetry(() => import("./pages/admin/AdaptiveEn
 const AdminInterventionPolicies = lazyWithRetry(() => import("./pages/admin/AdminInterventionPolicies"), "AdminInterventionPolicies");
 const AdminAdaptiveExperiments = lazyWithRetry(() => import("./pages/admin/AdminAdaptiveExperiments"), "AdminAdaptiveExperiments");
 const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicEngine"), "AdminCinematicEngine");
+const CMEStatus = lazyWithRetry(() => import("./pages/admin/CMEStatus"), "CMEStatus");
 
 
 
@@ -239,6 +240,7 @@ const App = () => (
                 <Route path="classification" element={<ClassificationBackfill />} />
                 <Route path="classification-runner" element={<ClassificationRunner />} />
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
+                <Route path="cme-status" element={<CMEStatus />} />
                 <Route path="curriculum-coverage" element={<CurriculumCoverage />} />
                 <Route path="granular-generator" element={<GranularGeneratorMonitor />} />
                 <Route path="generator-telemetry" element={<GeneratorTelemetry />} />
