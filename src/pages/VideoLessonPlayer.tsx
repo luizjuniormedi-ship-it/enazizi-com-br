@@ -780,13 +780,9 @@ const VideoLessonPlayer = () => {
                   recommendation={{
                     id: 'rec',
                     recommendation_text: recommendation.description,
-                    action_taken: 'none',
+                    action_taken: 'suggest_tutor',
                     action_payload: {},
-                    trigger_type: recommendation.type,
-                    title: recommendation.title,
-                    description: recommendation.description,
-                    priority: recommendation.priority,
-                    type: recommendation.type
+                    trigger_type: recommendation.type
                   }}
                   onAccept={() => acceptRecommendation('rec')}
                   onIgnore={() => ignoreRecommendation('rec')}
