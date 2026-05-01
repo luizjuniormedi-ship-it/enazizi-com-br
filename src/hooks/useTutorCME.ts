@@ -218,7 +218,7 @@ export const useTutorCME = () => {
       toast.error("Falha ao transformar em vídeo: " + err.message);
       return null;
     }
-  }, [aggregateSessionContent, logPipelineEvent]);
+  }, [aggregateSessionContent, logPipelineEvent, supabaseClient]);
 
   const retryRender = useCallback(async (projectId: string) => {
     setState({ status: 'queued', progress: 10, projectId, message: "Reiniciando renderização..." });
