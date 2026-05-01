@@ -181,6 +181,41 @@ const ChatGPT = () => {
     }
   }, [missionContext, user, missionData, tutorMode]);
 
+  // Temporal/Hotspot context auto-start (from VideoLessonPlayer)
+  useEffect(() => {
+    if (!user || !searchParams.get("video_ts")) return;
+    
+    const videoTs = searchParams.get("video_ts");
+    const videoSegmentId = searchParams.get("video_segment");
+    const hotspotType = searchParams.get("hotspot_type");
+    
+    // Read persistent context from storage
+    const { readContext, temporalEnabled } = useTutorTemporalContext();
+    const ctx = readContext();
+    
+    if (temporalEnabled && ctx && !studyStarted) {
+      const topicToStudy = ctx.topic || ctx.segment_title || "Revisão de Vídeo";
+      const timestamp = Math.floor(Number(videoTs));
+      const minutes = Math.floor(timestamp / 60);
+      const seconds = timestamp % 60;
+      
+      const prompt = `CONTEXTO TEMPORAL — Vídeo: ${ctx.video_lesson_id}. ` +
+        `O aluno pausou aos ${minutes}:${seconds.toString().padStart(2, '0')} (Segmento: ${ctx.segment_title || 'Não identificado'}). ` +
+        `O objetivo é tirar uma dúvida específica deste trecho. ` +
+        `Contexto do segmento: ${ctx.segment_summary || 'Resumo indisponível'}. ` +
+        `Pontos-chave: ${ctx.segment_key_points?.join(', ') || 'N/A'}. ` +
+        `Por favor, ajude o aluno com base neste contexto específico, mantendo o Protocolo ENAZIZI.`;
+
+      setStudyStarted(true);
+      setMetricsCollapsed(true);
+      setCurrentTopic(topicToStudy);
+      setTopic(topicToStudy);
+      setEnaziziStep(10); // Discussion phase
+      
+      setTimeout(() => sendMessage(ensureSequentialInitialMessage(prompt)), 500);
+    }
+  }, [searchParams, user]);
+
   // StudyContext-driven auto-start (from guided flows via URL params)
   const studyCtx = useStudyContext();
   const ctxHandled = useRef(false);
