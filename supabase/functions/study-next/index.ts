@@ -133,6 +133,23 @@ serve(async (req) => {
           .eq("is_latest", true)
           .limit(50),
         "mnemonic_results"),
+      safeQuery<any[]>(db, (c) =>
+        c.from("adaptive_experiments")
+          .select("id, variants")
+          .eq("status", "active")
+          .limit(10),
+        "active_experiments"),
+      safeQuery<any[]>(db, (c) =>
+        c.from("user_experiment_assignments")
+          .select("experiment_id, variant_id")
+          .eq("user_id", userId),
+        "user_assignments"),
+      safeQuery<any>(db, (c) =>
+        c.from("adaptive_student_profiles")
+          .select("cognitive_stress_index, recovery_mode_active")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        "cognitive_state"),
     ]);
 
     const reviews = pendingReviews ?? [];
