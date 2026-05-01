@@ -159,7 +159,10 @@ const VideoLessonsAdmin = () => {
     if (newStatus === 'published') {
       const validation = await validateVideoLessonPublication(id);
       if (!validation.valid) {
-        toast.error("Publicação bloqueada: " + validation.errors.join(", "));
+        toast.error("Publicação bloqueada", {
+          description: validation.errors.join(", "),
+          duration: 5000
+        });
         return;
       }
     }
@@ -170,7 +173,6 @@ const VideoLessonsAdmin = () => {
         status: newStatus, 
         updated_at: new Date().toISOString(),
         published_at: newStatus === 'published' ? new Date().toISOString() : undefined,
-        media_status: newStatus === 'published' ? 'published' : undefined
       } as any)
       .eq("id", id);
 

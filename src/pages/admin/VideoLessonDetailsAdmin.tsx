@@ -9,7 +9,12 @@ import {
   ShieldCheck,
   Calendar,
   Layers,
-  Clock
+  Clock,
+  Play,
+  RefreshCcw,
+  Zap,
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -103,10 +108,56 @@ const VideoLessonDetailsAdmin = () => {
                 {lesson.difficulty_level || "Intermediário"}
               </p>
             </div>
-            <div className="pt-4 border-t">
-              <Button variant="ghost" className="w-full justify-start gap-2 h-9 text-xs" onClick={() => navigate(`/admin/tutor-memory?lesson=${lesson.tutor_lesson_id}`)}>
-                <FileText className="h-3 w-3" /> Ver Memória da Aula (Tutor)
-              </Button>
+            <div className="pt-4 border-t space-y-2">
+              <p className="text-xs text-muted-foreground uppercase font-semibold mb-2">Ações de Governança CME</p>
+              
+              <div className="flex flex-col gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2 h-9 text-xs border-primary/20 hover:bg-primary/5"
+                  onClick={async () => {
+                    toast.loading("Iniciando re-renderização via CME Engine...");
+                    const { error } = await supabase.from('cme_media_reprocessing_jobs').insert({
+                      video_lesson_id: lesson.id,
+                      reprocess_status: 'queued',
+                      failure_reason: 'Solicitação manual de re-render'
+                    });
+                    
+                    if (!error) {
+                      await supabase.from('ai_video_lessons').update({ media_status: 'rendering' as any }).eq('id', lesson.id);
+                      toast.success("Vídeo enfileirado para renderização!");
+                    } else {
+                      toast.error("Erro ao enfileirar: " + error.message);
+                    }
+                  }}
+                >
+                  <RefreshCcw className="h-3 w-3" /> Gerar vídeo agora (IA)
+                </Button>
+
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2 h-9 text-xs border-amber-500/20 hover:bg-amber-500/5 text-amber-600"
+                  onClick={async () => {
+                    const testUrl = "https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+                    const { error } = await supabase
+                      .from('ai_video_lessons')
+                      .update({ 
+                        video_url: testUrl, 
+                        media_status: 'ready' as any,
+                        health_score: 95
+                      })
+                      .eq('id', lesson.id);
+                    
+                    if (!error) toast.success("Vídeo temporário vinculado com sucesso!");
+                  }}
+                >
+                  <Zap className="h-3 w-3" /> Usar vídeo temporário de teste
+                </Button>
+
+                <Button variant="ghost" className="w-full justify-start gap-2 h-9 text-xs" onClick={() => navigate(`/admin/tutor-memory?lesson=${lesson.tutor_lesson_id}`)}>
+                  <FileText className="h-3 w-3" /> Ver Memória da Aula (Tutor)
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
