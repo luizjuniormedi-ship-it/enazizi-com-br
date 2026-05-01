@@ -555,23 +555,45 @@ const VideoLessonPlayer = () => {
                         </div>
                       </div>
 
-                      {/* FASE 2: Timeline Cognitiva com Hotspots */}
-                      <div className="absolute bottom-16 left-4 right-4 h-1 bg-white/20 rounded-full overflow-hidden pointer-events-none z-20">
-                        {segments.map((seg) => {
-                          const analytics = getForSegment(seg.id);
-                          if (!analytics?.difficultyLikely) return null;
+                      {/* FASE 2 & 6: Timeline Cognitiva com Hotspots & Hover Previews */}
+                      <div className="absolute bottom-16 left-4 right-4 group/timeline h-6 flex flex-col justify-end pointer-events-auto cursor-pointer z-30">
+                        <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden relative mb-2">
+                          {segments.map((seg) => {
+                            const analytics = getForSegment(seg.id);
+                            if (!analytics?.difficultyLikely) return null;
+                            
+                            const startPercent = ((seg.start_second || 0) / (lesson.duration_seconds || 1)) * 100;
+                            const widthPercent = (((seg.end_second || lesson.duration_seconds) - (seg.start_second || 0)) / (lesson.duration_seconds || 1)) * 100;
+                            
+                            return (
+                              <div 
+                                key={`hotspot-${seg.id}`}
+                                className="absolute h-full bg-red-500/60 animate-pulse"
+                                style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
+                              />
+                            );
+                          })}
                           
-                          const startPercent = ((seg.start_second || 0) / (lesson.duration_seconds || 1)) * 100;
-                          const widthPercent = (((seg.end_second || lesson.duration_seconds) - (seg.start_second || 0)) / (lesson.duration_seconds || 1)) * 100;
-                          
-                          return (
-                            <div 
-                              key={`hotspot-${seg.id}`}
-                              className="absolute h-full bg-red-500/60 animate-pulse"
-                              style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
-                            />
-                          );
-                        })}
+                          {/* Active Progress Bar */}
+                          <div 
+                            className="absolute top-0 left-0 h-full bg-primary z-10" 
+                            style={{ width: `${completionRate}%` }}
+                          />
+                        </div>
+
+                        {/* Hover Preview UI (Enterprise) */}
+                        <div className="absolute bottom-6 left-0 w-full h-20 pointer-events-none flex opacity-0 group-hover/timeline:opacity-100 transition-opacity">
+                          <div className="relative flex-1">
+                            <div className="absolute bottom-full left-[var(--hover-pos)] -translate-x-1/2 mb-2 p-1 bg-black/90 border border-white/20 rounded-lg overflow-hidden shadow-2xl w-40 aspect-video flex flex-col">
+                               <div className="flex-1 bg-slate-800 flex items-center justify-center">
+                                  <Film className="h-6 w-6 text-white/20" />
+                               </div>
+                               <div className="p-1 text-[8px] font-bold text-center uppercase tracking-widest text-primary">
+                                  Chapter Preview
+                               </div>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
