@@ -14,22 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      adaptive_governance_logs: {
+        Row: {
+          action_type: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          policy_id: string | null
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          policy_id?: string | null
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          policy_id?: string | null
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adaptive_governance_logs_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "intervention_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       adaptive_interventions: {
         Row: {
           action_payload: Json | null
           action_taken: string
+          confidence_score: number | null
           context_node_id: string | null
           created_at: string | null
           effectiveness_score: number | null
           estimated_time_min: number | null
+          evidence_score: number | null
           friction_score_snapshot: number | null
+          historical_effectiveness_snapshot: number | null
           id: string
           metadata: Json | null
           outcome_metrics: Json | null
+          policy_id: string | null
           post_intervention_outcome: string | null
           recommendation_text: string | null
           resolved_at: string | null
+          severity: string | null
           status: string | null
+          trigger_count: number | null
           trigger_type: string
           user_id: string | null
           video_lesson_id: string | null
@@ -37,18 +81,24 @@ export type Database = {
         Insert: {
           action_payload?: Json | null
           action_taken: string
+          confidence_score?: number | null
           context_node_id?: string | null
           created_at?: string | null
           effectiveness_score?: number | null
           estimated_time_min?: number | null
+          evidence_score?: number | null
           friction_score_snapshot?: number | null
+          historical_effectiveness_snapshot?: number | null
           id?: string
           metadata?: Json | null
           outcome_metrics?: Json | null
+          policy_id?: string | null
           post_intervention_outcome?: string | null
           recommendation_text?: string | null
           resolved_at?: string | null
+          severity?: string | null
           status?: string | null
+          trigger_count?: number | null
           trigger_type: string
           user_id?: string | null
           video_lesson_id?: string | null
@@ -56,18 +106,24 @@ export type Database = {
         Update: {
           action_payload?: Json | null
           action_taken?: string
+          confidence_score?: number | null
           context_node_id?: string | null
           created_at?: string | null
           effectiveness_score?: number | null
           estimated_time_min?: number | null
+          evidence_score?: number | null
           friction_score_snapshot?: number | null
+          historical_effectiveness_snapshot?: number | null
           id?: string
           metadata?: Json | null
           outcome_metrics?: Json | null
+          policy_id?: string | null
           post_intervention_outcome?: string | null
           recommendation_text?: string | null
           resolved_at?: string | null
+          severity?: string | null
           status?: string | null
+          trigger_count?: number | null
           trigger_type?: string
           user_id?: string | null
           video_lesson_id?: string | null
@@ -78,6 +134,13 @@ export type Database = {
             columns: ["context_node_id"]
             isOneToOne: false
             referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adaptive_interventions_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "intervention_policies"
             referencedColumns: ["id"]
           },
           {
@@ -140,8 +203,11 @@ export type Database = {
       adaptive_student_profiles: {
         Row: {
           cognitive_load_estimate: number | null
+          cognitive_stress_index: number | null
           id: string
+          intervention_frequency_score: number | null
           last_intervention_at: string | null
+          last_policy_violation_at: string | null
           mastery_map: Json | null
           overall_friction_score: number | null
           preferred_modality: string | null
@@ -150,8 +216,11 @@ export type Database = {
         }
         Insert: {
           cognitive_load_estimate?: number | null
+          cognitive_stress_index?: number | null
           id?: string
+          intervention_frequency_score?: number | null
           last_intervention_at?: string | null
+          last_policy_violation_at?: string | null
           mastery_map?: Json | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
@@ -160,8 +229,11 @@ export type Database = {
         }
         Update: {
           cognitive_load_estimate?: number | null
+          cognitive_stress_index?: number | null
           id?: string
+          intervention_frequency_score?: number | null
           last_intervention_at?: string | null
+          last_policy_violation_at?: string | null
           mastery_map?: Json | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
@@ -4367,6 +4439,48 @@ export type Database = {
           penalty_until?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      intervention_policies: {
+        Row: {
+          cooldown_minutes: number | null
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          max_per_day: number | null
+          max_per_session: number | null
+          min_confidence_score: number | null
+          name: string
+          severity_level: string | null
+          trigger_type: string
+        }
+        Insert: {
+          cooldown_minutes?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_per_day?: number | null
+          max_per_session?: number | null
+          min_confidence_score?: number | null
+          name: string
+          severity_level?: string | null
+          trigger_type: string
+        }
+        Update: {
+          cooldown_minutes?: number | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          max_per_day?: number | null
+          max_per_session?: number | null
+          min_confidence_score?: number | null
+          name?: string
+          severity_level?: string | null
+          trigger_type?: string
         }
         Relationships: []
       }
