@@ -2174,6 +2174,36 @@ export type Database = {
         }
         Relationships: []
       }
+      cme_adaptive_generation_profiles: {
+        Row: {
+          fsrs_data: Json | null
+          id: string
+          last_updated: string | null
+          preferred_depth: number | null
+          preferred_pacing: number | null
+          user_id: string | null
+          visual_preference: string | null
+        }
+        Insert: {
+          fsrs_data?: Json | null
+          id?: string
+          last_updated?: string | null
+          preferred_depth?: number | null
+          preferred_pacing?: number | null
+          user_id?: string | null
+          visual_preference?: string | null
+        }
+        Update: {
+          fsrs_data?: Json | null
+          id?: string
+          last_updated?: string | null
+          preferred_depth?: number | null
+          preferred_pacing?: number | null
+          user_id?: string | null
+          visual_preference?: string | null
+        }
+        Relationships: []
+      }
       cme_adaptive_interventions: {
         Row: {
           ace_decision_id: string | null
@@ -2702,6 +2732,66 @@ export type Database = {
           },
         ]
       }
+      cme_cognitive_analysis: {
+        Row: {
+          active_recall_score: number | null
+          cognitive_density: number | null
+          created_at: string | null
+          feynman_depth: number | null
+          generation_id: string | null
+          id: string
+          learner_profile: string | null
+          metadata: Json | null
+          overload_risk: number | null
+          pacing_score: number | null
+          retention_prediction: number | null
+          visual_complexity: number | null
+        }
+        Insert: {
+          active_recall_score?: number | null
+          cognitive_density?: number | null
+          created_at?: string | null
+          feynman_depth?: number | null
+          generation_id?: string | null
+          id?: string
+          learner_profile?: string | null
+          metadata?: Json | null
+          overload_risk?: number | null
+          pacing_score?: number | null
+          retention_prediction?: number | null
+          visual_complexity?: number | null
+        }
+        Update: {
+          active_recall_score?: number | null
+          cognitive_density?: number | null
+          created_at?: string | null
+          feynman_depth?: number | null
+          generation_id?: string | null
+          id?: string
+          learner_profile?: string | null
+          metadata?: Json | null
+          overload_risk?: number | null
+          pacing_score?: number | null
+          retention_prediction?: number | null
+          visual_complexity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_cognitive_analysis_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregation_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_cognitive_analysis_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_cognitive_pacing: {
         Row: {
           created_at: string
@@ -3190,6 +3280,42 @@ export type Database = {
         }
         Relationships: []
       }
+      cme_learning_feedback: {
+        Row: {
+          chapter_id: string | null
+          completion_rate: number | null
+          created_at: string | null
+          engagement_score: number | null
+          id: string
+          replay_count: number | null
+          technical_depth_feedback: string | null
+          user_id: string | null
+          video_id: string | null
+        }
+        Insert: {
+          chapter_id?: string | null
+          completion_rate?: number | null
+          created_at?: string | null
+          engagement_score?: number | null
+          id?: string
+          replay_count?: number | null
+          technical_depth_feedback?: string | null
+          user_id?: string | null
+          video_id?: string | null
+        }
+        Update: {
+          chapter_id?: string | null
+          completion_rate?: number | null
+          created_at?: string | null
+          engagement_score?: number | null
+          id?: string
+          replay_count?: number | null
+          technical_depth_feedback?: string | null
+          user_id?: string | null
+          video_id?: string | null
+        }
+        Relationships: []
+      }
       cme_lesson_blocks: {
         Row: {
           aggregation_id: string
@@ -3625,6 +3751,38 @@ export type Database = {
           },
         ]
       }
+      cme_pipeline_snapshots: {
+        Row: {
+          created_at: string | null
+          id: string
+          render_job_id: string | null
+          state_data: Json
+          step_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          render_job_id?: string | null
+          state_data: Json
+          step_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          render_job_id?: string | null
+          state_data?: Json
+          step_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_pipeline_snapshots_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_playback_audit_logs: {
         Row: {
           created_at: string | null
@@ -3828,6 +3986,48 @@ export type Database = {
             columns: ["aggregation_id"]
             isOneToOne: false
             referencedRelation: "cme_session_aggregations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_recovery_runs: {
+        Row: {
+          created_at: string | null
+          id: string
+          incident_id: string | null
+          recovery_strategy: string | null
+          render_job_id: string | null
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          recovery_strategy?: string | null
+          render_job_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          recovery_strategy?: string | null
+          render_job_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_recovery_runs_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "cme_system_incidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_recovery_runs_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -4944,6 +5144,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cme_system_incidents: {
+        Row: {
+          component: string
+          created_at: string | null
+          error_code: string | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          resolved: boolean | null
+          resolved_at: string | null
+          severity: Database["public"]["Enums"]["cme_incident_severity"] | null
+          stack_trace: string | null
+        }
+        Insert: {
+          component: string
+          created_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["cme_incident_severity"] | null
+          stack_trace?: string | null
+        }
+        Update: {
+          component?: string
+          created_at?: string | null
+          error_code?: string | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: Database["public"]["Enums"]["cme_incident_severity"] | null
+          stack_trace?: string | null
+        }
+        Relationships: []
       }
       cme_timeline_clips: {
         Row: {
@@ -17460,6 +17699,7 @@ export type Database = {
         | "feynman"
         | "review"
         | "summary"
+      cme_incident_severity: "low" | "medium" | "high" | "critical"
       cme_render_status:
         | "queued"
         | "planning"
@@ -17704,6 +17944,7 @@ export const Constants = {
         "review",
         "summary",
       ],
+      cme_incident_severity: ["low", "medium", "high", "critical"],
       cme_render_status: [
         "queued",
         "planning",
