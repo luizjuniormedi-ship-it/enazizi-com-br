@@ -1101,6 +1101,7 @@ export type Database = {
           last_validation_at: string | null
           learning_objectives: string[] | null
           media_status: string | null
+          narrative_clarity_score: number | null
           notebooklm_export_text: string | null
           notebooklm_notebook_url: string | null
           notebooklm_video_url: string | null
@@ -1122,6 +1123,7 @@ export type Database = {
           updated_at: string
           video_url: string | null
           visibility: string
+          visual_fatigue_score: number | null
         }
         Insert: {
           active_incident_count?: number | null
@@ -1144,6 +1146,7 @@ export type Database = {
           last_validation_at?: string | null
           learning_objectives?: string[] | null
           media_status?: string | null
+          narrative_clarity_score?: number | null
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
           notebooklm_video_url?: string | null
@@ -1165,6 +1168,7 @@ export type Database = {
           updated_at?: string
           video_url?: string | null
           visibility?: string
+          visual_fatigue_score?: number | null
         }
         Update: {
           active_incident_count?: number | null
@@ -1187,6 +1191,7 @@ export type Database = {
           last_validation_at?: string | null
           learning_objectives?: string[] | null
           media_status?: string | null
+          narrative_clarity_score?: number | null
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
           notebooklm_video_url?: string | null
@@ -1208,6 +1213,7 @@ export type Database = {
           updated_at?: string
           video_url?: string | null
           visibility?: string
+          visual_fatigue_score?: number | null
         }
         Relationships: [
           {
@@ -2657,6 +2663,63 @@ export type Database = {
           },
         ]
       }
+      cme_director_decisions: {
+        Row: {
+          cognitive_goal: string | null
+          created_at: string | null
+          decision_type: string
+          expected_retention_gain: number | null
+          id: string
+          metadata: Json | null
+          pacing_adjustment: number | null
+          reasoning: string | null
+          render_job_id: string | null
+          scene_node_id: string | null
+          visual_goal: string | null
+        }
+        Insert: {
+          cognitive_goal?: string | null
+          created_at?: string | null
+          decision_type: string
+          expected_retention_gain?: number | null
+          id?: string
+          metadata?: Json | null
+          pacing_adjustment?: number | null
+          reasoning?: string | null
+          render_job_id?: string | null
+          scene_node_id?: string | null
+          visual_goal?: string | null
+        }
+        Update: {
+          cognitive_goal?: string | null
+          created_at?: string | null
+          decision_type?: string
+          expected_retention_gain?: number | null
+          id?: string
+          metadata?: Json | null
+          pacing_adjustment?: number | null
+          reasoning?: string | null
+          render_job_id?: string | null
+          scene_node_id?: string | null
+          visual_goal?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_director_decisions_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_director_decisions_scene_node_id_fkey"
+            columns: ["scene_node_id"]
+            isOneToOne: false
+            referencedRelation: "cme_scene_graph_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_exam_sprint_profiles: {
         Row: {
           created_at: string | null
@@ -3293,6 +3356,56 @@ export type Database = {
           },
         ]
       }
+      cme_quality_analysis: {
+        Row: {
+          analysis_payload: Json | null
+          continuity_score: number | null
+          created_at: string | null
+          drift_probability: number | null
+          fatigue_score: number | null
+          id: string
+          is_safe_for_publication: boolean | null
+          overload_score: number | null
+          quality_score: number
+          retention_projection: number | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          analysis_payload?: Json | null
+          continuity_score?: number | null
+          created_at?: string | null
+          drift_probability?: number | null
+          fatigue_score?: number | null
+          id?: string
+          is_safe_for_publication?: boolean | null
+          overload_score?: number | null
+          quality_score: number
+          retention_projection?: number | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          analysis_payload?: Json | null
+          continuity_score?: number | null
+          created_at?: string | null
+          drift_probability?: number | null
+          fatigue_score?: number | null
+          id?: string
+          is_safe_for_publication?: boolean | null
+          overload_score?: number | null
+          quality_score?: number
+          retention_projection?: number | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_quality_analysis_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_reference_uploads: {
         Row: {
           analysis_logs: Json | null
@@ -3457,6 +3570,50 @@ export type Database = {
           },
         ]
       }
+      cme_render_cluster_metrics: {
+        Row: {
+          active_jobs: number | null
+          created_at: string | null
+          gpu_temperature: number | null
+          id: string
+          queue_pressure: number | null
+          render_latency_ms: number | null
+          thermal_state: string | null
+          vram_usage_mb: number | null
+          worker_id: string | null
+        }
+        Insert: {
+          active_jobs?: number | null
+          created_at?: string | null
+          gpu_temperature?: number | null
+          id?: string
+          queue_pressure?: number | null
+          render_latency_ms?: number | null
+          thermal_state?: string | null
+          vram_usage_mb?: number | null
+          worker_id?: string | null
+        }
+        Update: {
+          active_jobs?: number | null
+          created_at?: string | null
+          gpu_temperature?: number | null
+          id?: string
+          queue_pressure?: number | null
+          render_latency_ms?: number | null
+          thermal_state?: string | null
+          vram_usage_mb?: number | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_cluster_metrics_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "cme_gpu_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_render_failures: {
         Row: {
           auto_fix_applied: boolean | null
@@ -3522,6 +3679,7 @@ export type Database = {
           cinematic_quality_score: number | null
           cinematic_score: number | null
           completed_at: string | null
+          director_ai_id: string | null
           distributed_chunks: number | null
           estimated_cost_cents: number | null
           estimated_vram_mb: number | null
@@ -3550,6 +3708,8 @@ export type Database = {
           thumbnail_url: string | null
           updated_at: string
           variant_type: string | null
+          visual_grammar_id: string | null
+          voice_profile_id: string | null
         }
         Insert: {
           adaptive_profile_snapshot?: Json | null
@@ -3559,6 +3719,7 @@ export type Database = {
           cinematic_quality_score?: number | null
           cinematic_score?: number | null
           completed_at?: string | null
+          director_ai_id?: string | null
           distributed_chunks?: number | null
           estimated_cost_cents?: number | null
           estimated_vram_mb?: number | null
@@ -3587,6 +3748,8 @@ export type Database = {
           thumbnail_url?: string | null
           updated_at?: string
           variant_type?: string | null
+          visual_grammar_id?: string | null
+          voice_profile_id?: string | null
         }
         Update: {
           adaptive_profile_snapshot?: Json | null
@@ -3596,6 +3759,7 @@ export type Database = {
           cinematic_quality_score?: number | null
           cinematic_score?: number | null
           completed_at?: string | null
+          director_ai_id?: string | null
           distributed_chunks?: number | null
           estimated_cost_cents?: number | null
           estimated_vram_mb?: number | null
@@ -3624,6 +3788,8 @@ export type Database = {
           thumbnail_url?: string | null
           updated_at?: string
           variant_type?: string | null
+          visual_grammar_id?: string | null
+          voice_profile_id?: string | null
         }
         Relationships: [
           {
@@ -3652,6 +3818,20 @@ export type Database = {
             columns: ["reference_profile_id"]
             isOneToOne: false
             referencedRelation: "cme_cinematic_reference_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_jobs_visual_grammar_id_fkey"
+            columns: ["visual_grammar_id"]
+            isOneToOne: false
+            referencedRelation: "cme_visual_grammar_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_jobs_voice_profile_id_fkey"
+            columns: ["voice_profile_id"]
+            isOneToOne: false
+            referencedRelation: "cme_voice_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -4090,6 +4270,45 @@ export type Database = {
           },
         ]
       }
+      cme_visual_grammar_profiles: {
+        Row: {
+          animation_rules: Json | null
+          cognitive_density: number | null
+          created_at: string | null
+          grammar_type: string
+          id: string
+          motion_profile: string | null
+          overlay_density: number | null
+          pacing_rules: Json | null
+          specialty: string
+          transition_profile: string | null
+        }
+        Insert: {
+          animation_rules?: Json | null
+          cognitive_density?: number | null
+          created_at?: string | null
+          grammar_type: string
+          id?: string
+          motion_profile?: string | null
+          overlay_density?: number | null
+          pacing_rules?: Json | null
+          specialty: string
+          transition_profile?: string | null
+        }
+        Update: {
+          animation_rules?: Json | null
+          cognitive_density?: number | null
+          created_at?: string | null
+          grammar_type?: string
+          id?: string
+          motion_profile?: string | null
+          overlay_density?: number | null
+          pacing_rules?: Json | null
+          specialty?: string
+          transition_profile?: string | null
+        }
+        Relationships: []
+      }
       cme_voice_assets: {
         Row: {
           audio_url: string | null
@@ -4148,6 +4367,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cme_voice_profiles: {
+        Row: {
+          cognitive_load_profile: string | null
+          created_at: string | null
+          emotional_intensity: number | null
+          id: string
+          pause_density: number
+          profile_name: string
+          pronunciation_style: string | null
+          reinforcement_style: string | null
+          speaking_speed: number
+        }
+        Insert: {
+          cognitive_load_profile?: string | null
+          created_at?: string | null
+          emotional_intensity?: number | null
+          id?: string
+          pause_density?: number
+          profile_name: string
+          pronunciation_style?: string | null
+          reinforcement_style?: string | null
+          speaking_speed?: number
+        }
+        Update: {
+          cognitive_load_profile?: string | null
+          created_at?: string | null
+          emotional_intensity?: number | null
+          id?: string
+          pause_density?: number
+          profile_name?: string
+          pronunciation_style?: string | null
+          reinforcement_style?: string | null
+          speaking_speed?: number
+        }
+        Relationships: []
       }
       cognitive_drift_logs: {
         Row: {
