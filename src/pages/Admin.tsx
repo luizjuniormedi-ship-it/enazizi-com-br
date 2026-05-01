@@ -677,6 +677,7 @@ const Admin = () => {
             {activeSection === "scraping" && <AdminWebScrapingPanel />}
             {activeSection === "qa" && <AdminQAPanel />}
             {activeSection === "ai-studio" && <AIStudio />}
+            {activeSection === "system-checklist" && <SystemChecklist />}
 
             {/* Communication */}
             {activeSection === "messages" && <AdminMessagesPanel />}
