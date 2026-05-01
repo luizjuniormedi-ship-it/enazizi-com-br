@@ -48,6 +48,7 @@ import {
 import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommendationCard";
 import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
+import { useCinematicEngine } from "@/hooks/useCinematicEngine";
 
 const VideoLessonPlayer = () => {
   const { id } = useParams();
