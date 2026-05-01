@@ -395,6 +395,9 @@ const VideoLessonsAdmin = () => {
                               <DropdownMenuItem className="gap-2" onClick={() => navigate(`/admin/video-lessons/${lesson.id}`)}>
                                 <BarChart3 className="h-4 w-4" /> Detalhes & Analytics
                               </DropdownMenuItem>
+                              <DropdownMenuItem className="gap-2" onClick={() => navigate('/admin/cme-status')}>
+                                <Activity className="h-4 w-4" /> Ver Saúde CDN (CME)
+                              </DropdownMenuItem>
                               <DropdownMenuItem className="gap-2" onClick={() => window.open(`/videoaulas/${lesson.id}`, '_blank')}>
                                 <ExternalLink className="h-4 w-4" /> Visualizar (Aluno)
                               </DropdownMenuItem>
