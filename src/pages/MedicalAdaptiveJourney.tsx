@@ -5,6 +5,7 @@ import { useAdaptiveJourney, useCognitiveHistory } from "@/hooks/useAdaptiveJour
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { CognitiveSessionController } from "@/components/CognitiveSessionController";
 
 export default function MedicalAdaptiveJourney() {
   const { data: events, isLoading } = useAdaptiveJourney();
