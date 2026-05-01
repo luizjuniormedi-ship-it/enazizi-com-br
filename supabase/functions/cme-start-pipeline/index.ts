@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1"
 
@@ -14,14 +15,15 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { tutorSessionId, mode } = await req.json()
-    const { data: { user } } = await supabaseClient.auth.getUser()
+    const authHeader = req.headers.get('Authorization')
+    const { data: { user } } = await supabaseClient.auth.getUser(authHeader?.replace('Bearer ', ''))
 
     if (!user) throw new Error('Unauthorized')
+
+    const { tutorSessionId, mode } = await req.json()
 
     // 1. Fetch entire Tutor Session
     const { data: session } = await supabaseClient
@@ -38,10 +40,8 @@ serve(async (req) => {
 
     if (!messages || messages.length === 0) throw new Error('No content found in session')
 
-    // 2. Aggregate Content
+    // 2. Create Aggregation
     const fullText = messages.map(m => m.content).join("\n\n---\n\n")
-    
-    // 3. Create Session Aggregation
     const { data: aggregation, error: aggError } = await supabaseClient
       .from('cme_session_aggregations')
       .insert({
@@ -58,71 +58,47 @@ serve(async (req) => {
 
     if (aggError) throw aggError
 
-    // 4. Generate Blocks (Pedagogical Chapters)
-    const blocks = []
-    const sections = fullText.split("\n#").filter(s => s.trim())
-    
-    for (let i = 0; i < Math.min(sections.length, 10); i++) {
-      const section = sections[i]
-      const title = section.split("\n")[0].replace(/^#+\s*/, "").trim() || `Capítulo ${i+1}`
-      blocks.push({
-        aggregation_id: aggregation.id,
-        block_type: i === 0 ? 'introduction' : (i === sections.length - 1 ? 'summary' : 'physiology'),
-        title,
-        content: section,
-        order_index: i,
-        estimated_minutes: 2,
-        cognitive_density: 0.8
-      })
-    }
-
-    if (blocks.length === 0) {
-      blocks.push({
-        aggregation_id: aggregation.id,
-        block_type: 'introduction',
-        title: 'Introdução ao Tema',
-        content: fullText.substring(0, 1000),
-        order_index: 0,
-        estimated_minutes: 5,
-        cognitive_density: 0.7
-      })
-    }
-
-    await supabaseClient.from('cme_lesson_blocks').insert(blocks)
-
-    // 5. Create Render Job
-    const { data: renderJob } = await supabaseClient
-      .from('cme_render_jobs')
+    // 3. Create Project
+    const { data: project } = await supabaseClient
+      .from('cme_video_projects')
       .insert({
         aggregation_id: aggregation.id,
-        status: 'queued',
-        render_stage: 'planning',
-        progress: 0
+        user_id: user.id,
+        title: aggregation.title,
+        status: 'draft',
+        config: { mode: mode || 'standard' }
       })
       .select()
       .single()
 
-    // 6. Log Initial Event
-    await supabaseClient.from('cme_pipeline_events').insert({
-      aggregation_id: aggregation.id,
-      render_job_id: renderJob?.id,
-      stage: 'aggregation',
-      status: 'completed',
-      progress: 10,
-      message: 'Sessão médica agregada e capítulos detectados.'
+    // 4. Start Enterprise Orchestrator
+    const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/cme-orchestrator`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${authHeader?.replace('Bearer ', '')}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        action: 'start_pipeline',
+        projectId: project.id,
+        payload: { source: 'tutor_ia', session_id: tutorSessionId }
+      })
     })
 
-    // 7. Update Aggregation Status
-    await supabaseClient.from('cme_session_aggregations')
-      .update({ aggregation_status: 'blocks_generated' })
-      .eq('id', aggregation.id)
+    const orchestratorResult = await response.json()
 
     return new Response(
-      JSON.stringify({ success: true, aggregationId: aggregation.id, renderJobId: renderJob?.id }),
+      JSON.stringify({ 
+        success: true, 
+        aggregationId: aggregation.id, 
+        projectId: project.id,
+        jobId: orchestratorResult.jobId 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
   } catch (error) {
+    console.error("[CME Start Pipeline Error]", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
