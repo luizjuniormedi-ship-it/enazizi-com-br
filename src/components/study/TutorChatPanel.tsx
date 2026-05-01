@@ -177,30 +177,68 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
     navigate(`/dashboard/sessao-estudo?${params.toString()}`);
   };
 
+  const transformFullSession = () => {
+    if (!context.topic) return;
+    const params = new URLSearchParams();
+    params.set("mode", "full_session");
+    params.set("topic", context.topic);
+    if (context.specialty) params.set("specialty", context.specialty);
+    // This will open the builder which will handle the aggregation
+    navigate(`/admin/cinematic-builder/new?${params.toString()}`);
+  };
+
   return (
     <div className={cn("flex flex-col h-full min-h-0 bg-background/95 backdrop-blur-xl", className)}>
       {/* Context header — Premium Cockpit style */}
-      <div className="px-4 py-4 border-b border-white/5 bg-card/40 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="h-8 w-8 rounded-xl bg-primary/15 flex items-center justify-center text-primary shadow-glow-sm">
-            <Sparkles className="h-4.5 w-4.5" />
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-[13px] font-black tracking-tight uppercase leading-none">Tutor Mentor</h3>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              {context.topic && (
-                <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[140px] uppercase tracking-wide">
-                  {context.topic}
-                </span>
-              )}
+      <div className="px-4 py-4 border-b border-white/5 bg-card/40 flex flex-col gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-8 w-8 rounded-xl bg-primary/15 flex items-center justify-center text-primary shadow-glow-sm">
+              <Sparkles className="h-4.5 w-4.5" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-[13px] font-black tracking-tight uppercase leading-none">Tutor Mentor</h3>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                {context.topic && (
+                  <span className="text-[10px] font-bold text-muted-foreground truncate max-w-[140px] uppercase tracking-wide">
+                    {context.topic}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+          
+          <div className="flex items-center gap-2">
+            {showStudySessionCTA && context.topic && (
+              <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2 border-primary/20 text-primary hover:bg-primary/10 rounded-xl" onClick={goToSession}>
+                <ArrowUpRight className="h-3.5 w-3.5" />
+                INICIAR SESSÃO
+              </Button>
+            )}
+          </div>
         </div>
-        {showStudySessionCTA && context.topic && (
-          <Button variant="outline" size="sm" className="h-8 text-[11px] font-bold gap-2 border-primary/20 text-primary hover:bg-primary/10 rounded-xl" onClick={goToSession}>
-            <ArrowUpRight className="h-3.5 w-3.5" />
-            INICIAR SESSÃO
-          </Button>
+
+        {/* CME Transformation Buttons — Premium Netflix-style glow */}
+        {context.topic && (
+          <div className="flex gap-2">
+            <Button 
+              variant="default" 
+              size="sm" 
+              className="flex-1 h-9 text-[10px] font-black gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 shadow-lg shadow-orange-900/20 border-none transition-all group active:scale-95"
+              onClick={transformFullSession}
+            >
+              <Clapperboard className="h-3.5 w-3.5 group-hover:animate-bounce" />
+              TRANSFORMAR SESSÃO COMPLETA
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 px-3 text-[10px] font-black gap-2 rounded-xl border-primary/30 text-primary hover:bg-primary/10 backdrop-blur-md transition-all active:scale-95"
+            >
+              <Play className="h-3.5 w-3.5" />
+              ULTIMA RESPOSTA
+            </Button>
+          </div>
         )}
       </div>
 
