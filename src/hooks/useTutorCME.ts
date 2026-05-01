@@ -97,7 +97,7 @@ export const useTutorCME = () => {
   const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string, aggregationId?: string) => {
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
-      await supabaseClient.from("cme_pipeline_events").insert({
+      await supabaseClient.from("cme_pipeline_events").insert([{
         project_id: projectId,
         aggregation_id: aggregationId,
         stage,
@@ -105,7 +105,8 @@ export const useTutorCME = () => {
         progress,
         message,
         user_id: user?.id
-      });
+      } as any]);
+... keep existing code
       
       if (aggregationId) {
         await supabaseClient.from("cme_session_aggregations")
