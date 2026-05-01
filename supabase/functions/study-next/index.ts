@@ -370,13 +370,13 @@ serve(async (req) => {
       };
       const typeName = targetType ? (IMAGE_TYPE_NAMES[targetType] || targetType.toUpperCase()) : null;
 
-      const title = typeName
+      const imgTitle = typeName
         ? `Treino visual: ${typeName}`
         : topic
           ? `Treino visual: ${topic.tema}`
           : "Treino de interpretação visual";
 
-      let description: string;
+      let imgDescription: string;
       if (targetType && typeName) {
         const snap = Array.isArray(visualSnapshots)
           ? visualSnapshots.find((s: any) => s.image_type === targetType)
@@ -385,21 +385,21 @@ serve(async (req) => {
         const trend = snap?.trend;
         if (acc !== undefined) {
           if (trend === "declining") {
-            description = `Seu desempenho em ${typeName} está piorando (${acc}% de acerto) → hora de reforçar.`;
+            imgDescription = `Seu desempenho em ${typeName} está piorando (${acc}% de acerto) → hora de reforçar.`;
           } else if (trend === "improving" && acc > 70) {
-            description = `Você melhorou em ${typeName} (${acc}%), então vamos subir o nível.`;
+            imgDescription = `Você melhorou em ${typeName} (${acc}%), então vamos subir o nível.`;
           } else if (acc < 50) {
-            description = `Você está fraco em ${typeName} (${acc}% de acerto) → vamos treinar agora.`;
+            imgDescription = `Você está fraco em ${typeName} (${acc}% de acerto) → vamos treinar agora.`;
           } else {
-            description = `Seu desempenho em ${typeName} (${acc}%) pode melhorar → vamos praticar.`;
+            imgDescription = `Seu desempenho em ${typeName} (${acc}%) pode melhorar → vamos praticar.`;
           }
         } else {
-          description = `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
+          imgDescription = `Seu desempenho em ${typeName} precisa de reforço. Vamos treinar com questões de imagem.`;
         }
       } else if (topic) {
-        description = `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`;
+        imgDescription = `Você vem errando interpretação de ${topic.tema}${topic.subtema ? ` (${topic.subtema})` : ""}. Vamos reforçar com questões de imagem.`;
       } else {
-        description = "Treino adaptativo de interpretação de imagens médicas.";
+        imgDescription = "Treino adaptativo de interpretação de imagens médicas.";
       }
 
       let imgScore = imgResult.score;
@@ -409,8 +409,8 @@ serve(async (req) => {
         : null;
       candidates.push({
         type: "image_quiz",
-        title,
-        description,
+        title: imgTitle,
+        description: imgDescription,
         targetType: "image_quiz",
         estimatedMinutes: 8,
         priorityScore: imgScore,
@@ -541,7 +541,7 @@ serve(async (req) => {
       }
     }
 
-    const recommendation = candidates[0];
+    // Redefinição removida para evitar conflito de identificador
     const alternativeActions = pickDiverseAlternatives(candidates, recommendation.type);
 
     // ── Justification ──
