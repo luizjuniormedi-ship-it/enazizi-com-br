@@ -624,6 +624,67 @@ const AdminCinematicEngine = () => {
                 </Card>
               </div>
             </div>
+          <TabsContent value="observability" className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <Card className="border-none shadow-sm bg-slate-900 text-white">
+                <CardHeader>
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-primary flex items-center justify-between">
+                    CDN Health (R2/S3)
+                    <Globe className="h-4 w-4" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-bold uppercase text-slate-400">Availability</span>
+                    <span className="text-xl font-black text-emerald-400">99.99%</span>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[8px] uppercase font-bold text-slate-500">
+                       <span>Traffic Load</span>
+                       <span>Low</span>
+                    </div>
+                    <Progress value={20} className="h-1 bg-white/10" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center justify-between">
+                    Cognitive Heatmaps
+                    <Brain className="h-4 w-4 text-primary" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="h-20 w-full bg-slate-50 rounded-lg flex items-end gap-1 p-2 overflow-hidden border">
+                    {[40, 60, 20, 90, 80, 50, 30, 45, 70, 85, 20, 10].map((h, i) => (
+                      <div key={i} className={cn("flex-1 rounded-t-sm", h > 70 ? "bg-red-400" : h > 40 ? "bg-amber-400" : "bg-emerald-400")} style={{ height: `${h}%` }} />
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic font-bold">Aggregate student fatigue zones detected in the last 24h.</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-500 flex items-center justify-between">
+                    Audio/Voice Engine
+                    <Volume2 className="h-4 w-4 text-primary" />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                       <Mic2 className="h-4 w-4 text-primary" />
+                    </div>
+                    <div>
+                       <p className="text-xs font-black">Neural Voice: "Dr. Elena"</p>
+                       <p className="text-[9px] text-slate-400 uppercase font-bold">Latency: 85ms</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="optimizations" className="space-y-4">
