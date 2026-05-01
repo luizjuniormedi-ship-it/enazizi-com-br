@@ -44,18 +44,24 @@ const CinematicSessionBuilder = () => {
           blocks:cme_lesson_blocks(*)
         `)
         .eq("id", aggregationId)
-        .single();
+        .maybeSingle(); // Usar maybeSingle para evitar erro se não existir
       
       if (error) {
         console.error("[CME] Error fetching aggregation:", error);
         throw error;
       }
       
+      if (!data) {
+        console.warn("[CME] Aggregation not found");
+        throw new Error("Agregação não encontrada");
+      }
+      
       console.log(`[CME] Aggregation loaded with ${data?.blocks?.length || 0} blocks`);
       return data;
     },
     enabled: !!aggregationId,
-    retry: 1
+    retry: 2, // Aumentar retry para dar tempo de inserção assíncrona
+    staleTime: 0
   });
 
   if (aggLoading) {
