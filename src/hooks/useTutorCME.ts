@@ -269,7 +269,8 @@ export const useTutorCME = () => {
         .single();
 
       if (sgError) {
-        console.error("CME Persistence Audit - Scene Graph Failed:", {
+        const techReason = `[${sgError.code}] ${sgError.message}${sgError.details ? ` (${sgError.details})` : ''}`;
+        console.error("CME Scene Graph Persistence Failed:", {
           code: sgError.code,
           message: sgError.message,
           details: sgError.details,
@@ -277,16 +278,16 @@ export const useTutorCME = () => {
           payload: sceneGraphPayload
         });
         
-        const technicalReason = `[${sgError.code}] ${sgError.message}`;
         await reportIncident("CME_SceneGraph_Persistence", {
           message: "Falha ao persistir Scene Graph.",
-          technical_reason: technicalReason,
+          technical_reason: techReason,
           details: sgError.details,
           code: sgError.code,
-          stack: new Error().stack
+          hint: sgError.hint,
+          payload_keys: Object.keys(sceneGraphPayload)
         });
 
-        throw new Error(`Falha ao persistir Scene Graph: ${technicalReason}`);
+        throw new Error(`Falha ao persistir Scene Graph: ${techReason}`);
       }
 
       if (sceneGraph && lessonBlocks.length > 0) {
@@ -302,25 +303,28 @@ export const useTutorCME = () => {
           render_payload: { content: block.content }
         }));
         
-        const { error: nodesError } = await supabaseClient.from("cme_scene_graph_nodes").insert(nodes as any);
+        const { error: nodesError } = await supabaseClient
+          .from("cme_scene_graph_nodes")
+          .insert(nodes as any);
         
         if (nodesError) {
-          console.error("CME Persistence Audit - Scene Nodes Failed:", {
+          const techReason = `[${nodesError.code}] ${nodesError.message}${nodesError.details ? ` (${nodesError.details})` : ''}`;
+          console.error("CME Scene Nodes Persistence Failed:", {
             code: nodesError.code,
             message: nodesError.message,
             details: nodesError.details,
             payload: nodes
           });
           
-          const technicalReason = `[${nodesError.code}] ${nodesError.message}`;
           await reportIncident("CME_SceneNodes_Persistence", {
             message: "Falha ao persistir Scene Graph Nodes.",
-            technical_reason: technicalReason,
+            technical_reason: techReason,
             details: nodesError.details,
-            code: nodesError.code
+            code: nodesError.code,
+            payload_count: nodes.length
           });
 
-          throw new Error(`Falha ao persistir Scene Graph Nodes: ${technicalReason}`);
+          throw new Error(`Falha ao persistir Scene Graph Nodes: ${techReason}`);
         }
       }
 
