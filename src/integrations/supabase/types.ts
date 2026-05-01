@@ -6054,6 +6054,45 @@ export type Database = {
         }
         Relationships: []
       }
+      multimodal_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          created_by: string | null
+          error_message: string | null
+          id: string
+          latency_ms: number | null
+          module: string
+          payload: Json | null
+          response: Json | null
+          status: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          module: string
+          payload?: Json | null
+          response?: Json | null
+          status: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          latency_ms?: number | null
+          module?: string
+          payload?: Json | null
+          response?: Json | null
+          status?: string
+        }
+        Relationships: []
+      }
       multimodal_batches: {
         Row: {
           avg_editorial_score: number | null
@@ -6093,6 +6132,33 @@ export type Database = {
           total_auto_corrected?: number
           total_questions?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      multimodal_health_status: {
+        Row: {
+          id: string
+          last_check_at: string | null
+          last_error: string | null
+          metadata: Json | null
+          module_name: string
+          status: string
+        }
+        Insert: {
+          id?: string
+          last_check_at?: string | null
+          last_error?: string | null
+          metadata?: Json | null
+          module_name: string
+          status: string
+        }
+        Update: {
+          id?: string
+          last_check_at?: string | null
+          last_error?: string | null
+          metadata?: Json | null
+          module_name?: string
+          status?: string
         }
         Relationships: []
       }
@@ -9817,6 +9883,39 @@ export type Database = {
         }
         Relationships: []
       }
+      system_checklist_runs: {
+        Row: {
+          created_by: string | null
+          finished_at: string | null
+          id: string
+          results: Json | null
+          run_type: string
+          started_at: string | null
+          status: string
+          summary: string | null
+        }
+        Insert: {
+          created_by?: string | null
+          finished_at?: string | null
+          id?: string
+          results?: Json | null
+          run_type: string
+          started_at?: string | null
+          status: string
+          summary?: string | null
+        }
+        Update: {
+          created_by?: string | null
+          finished_at?: string | null
+          id?: string
+          results?: Json | null
+          run_type?: string
+          started_at?: string | null
+          status?: string
+          summary?: string | null
+        }
+        Relationships: []
+      }
       system_flag_audit: {
         Row: {
           changed_at: string
@@ -12870,6 +12969,18 @@ export type Database = {
           p_type: string
         }
         Returns: string
+      }
+      log_multimodal_audit: {
+        Args: {
+          p_action: string
+          p_error?: string
+          p_latency_ms: number
+          p_module: string
+          p_payload: Json
+          p_response: Json
+          p_status: string
+        }
+        Returns: undefined
       }
       match_tutor_memory: {
         Args: {
