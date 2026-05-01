@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { TutorBlock } from "@/types/tutor";
@@ -13,11 +13,12 @@ export interface CMEProjectState {
 }
 
 export const useTutorCME = () => {
+  const supabaseClient = useMemo(() => supabase, []);
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
 
   const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string) => {
     try {
-      await supabase.from("cme_pipeline_events").insert({
+      await supabaseClient.from("cme_pipeline_events").insert({
         project_id: projectId,
         stage,
         status,
@@ -28,7 +29,7 @@ export const useTutorCME = () => {
       
       if (status === 'completed' || status === 'failed' || status === 'in_progress') {
         const jobStatus = status === 'completed' ? 'completed' : (status === 'failed' ? 'failed' : 'processing');
-        await supabase.from("cme_render_jobs")
+        await supabaseClient.from("cme_render_jobs")
           .update({ 
             status: jobStatus,
             stage: stage,
@@ -80,7 +81,7 @@ export const useTutorCME = () => {
     });
 
     // 4. Create Aggregation record
-    const { data: aggregation, error: aggError } = await supabase
+    const { data: aggregation, error: aggError } = await supabaseClient
       .from("cme_session_aggregations")
       .insert({
         tutor_session_id: conversationId as any,
@@ -104,14 +105,14 @@ export const useTutorCME = () => {
       estimated_minutes: 2
     }));
 
-    const { error: blocksError } = await supabase
+    const { error: blocksError } = await supabaseClient
       .from("cme_lesson_blocks")
       .insert(blockInserts as any);
 
     if (blocksError) throw blocksError;
 
     return { aggregation, blocks };
-  }, [supabase]);
+  }, [supabaseClient]);
 
   const transformToVideo = useCallback(async (params: {
     title: string;
@@ -128,7 +129,7 @@ export const useTutorCME = () => {
     toast.info(params.isFullSession ? "Consolidando toda a aula para o CME..." : "Iniciando transformação cinematográfica...");
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
       let aggregationId = null;
@@ -144,7 +145,7 @@ export const useTutorCME = () => {
       }
 
       // 1. Criar Projeto CME
-      const { data: project, error: projectError } = await supabase
+      const { data: project, error: projectError } = await supabaseClient
         .from("cme_video_projects")
         .insert({
           title: params.title,
@@ -169,7 +170,7 @@ export const useTutorCME = () => {
       const projectId = project.id;
       
       // 2. Registrar Job de Renderização
-      await supabase.from("cme_render_jobs").insert({
+      await supabaseClient.from("cme_render_jobs").insert({
         project_id: projectId,
         status: 'queued',
         stage: 'planning',
@@ -180,14 +181,14 @@ export const useTutorCME = () => {
       await logPipelineEvent(projectId, 'planning', 'in_progress', 15, `Iniciando mapeamento de ${params.isFullSession ? 'toda a sessão' : 'mensagem'}`);
 
       // 3. Criar Vínculo Oficial (Origem)
-      await supabase.from("cme_tutor_origins").insert({
+      await supabaseClient.from("cme_tutor_origins").insert({
         tutor_session_id: params.conversationId as any,
         tutor_message_id: (params.messageId || crypto.randomUUID()) as any,
         cme_video_project_id: projectId
       } as any);
 
       // 4. Criar Plano Semântico
-      const { error: planError } = await supabase
+      const { error: planError } = await supabaseClient
         .from("cme_semantic_plans")
         .insert({
           project_id: projectId,
@@ -222,7 +223,7 @@ export const useTutorCME = () => {
   const retryRender = useCallback(async (projectId: string) => {
     setState({ status: 'queued', progress: 10, projectId, message: "Reiniciando renderização..." });
     try {
-      await supabase.from("cme_render_jobs")
+      await supabaseClient.from("cme_render_jobs")
         .update({ 
           status: 'queued', 
           stage: 'planning', 
