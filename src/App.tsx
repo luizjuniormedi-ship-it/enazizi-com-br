@@ -129,6 +129,8 @@ const CMEMediaMonitor = lazyWithRetry(() => import("./pages/admin/CMEMediaMonito
 const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEOrigins");
 const CinematicSessionBuilder = lazyWithRetry(() => import("./pages/admin/CinematicSessionBuilder"), "CinematicSessionBuilder");
 const CinematicBuilder = lazyWithRetry(() => import("./pages/admin/CinematicBuilder"), "CinematicBuilder");
+const CMEExecutiveDashboard = lazyWithRetry(() => import("./pages/admin/cme/ExecutiveDashboard"), "CMEExecutiveDashboard");
+
 
 
 
@@ -276,7 +278,9 @@ const App = () => (
                     <Route path="cinematic-builder/:aggregationId" element={<CinematicBuilder />} />
                     <Route path="cme-builder-audit" element={<CMEAudit />} />
                     <Route path="cme-audit" element={<CMEAudit />} />
+                    <Route path="cme-executive" element={<CMEExecutiveDashboard />} />
                     <Route path="system-checklist" element={<SystemChecklist />} />
+
                 </Route>
                 <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
 
