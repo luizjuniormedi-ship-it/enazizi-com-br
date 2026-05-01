@@ -3083,6 +3083,59 @@ export type Database = {
           },
         ]
       }
+      cme_lesson_blocks: {
+        Row: {
+          aggregation_id: string
+          block_order: number
+          block_type: string
+          cognitive_density: number | null
+          content: string
+          created_at: string
+          estimated_minutes: number | null
+          id: string
+          scene_graph_data: Json | null
+          source_message_ids: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          aggregation_id: string
+          block_order: number
+          block_type: string
+          cognitive_density?: number | null
+          content: string
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          scene_graph_data?: Json | null
+          source_message_ids?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          aggregation_id?: string
+          block_order?: number
+          block_type?: string
+          cognitive_density?: number | null
+          content?: string
+          created_at?: string
+          estimated_minutes?: number | null
+          id?: string
+          scene_graph_data?: Json | null
+          source_message_ids?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_lesson_blocks_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_media_reprocessing_jobs: {
         Row: {
           created_at: string | null
@@ -4247,6 +4300,53 @@ export type Database = {
           },
         ]
       }
+      cme_session_aggregations: {
+        Row: {
+          aggregated_content: string
+          created_at: string
+          detected_topics: string[] | null
+          estimated_duration_seconds: number | null
+          id: string
+          metadata: Json | null
+          narrative_density: number | null
+          total_blocks: number | null
+          tutor_session_id: string
+          updated_at: string
+        }
+        Insert: {
+          aggregated_content: string
+          created_at?: string
+          detected_topics?: string[] | null
+          estimated_duration_seconds?: number | null
+          id?: string
+          metadata?: Json | null
+          narrative_density?: number | null
+          total_blocks?: number | null
+          tutor_session_id: string
+          updated_at?: string
+        }
+        Update: {
+          aggregated_content?: string
+          created_at?: string
+          detected_topics?: string[] | null
+          estimated_duration_seconds?: number | null
+          id?: string
+          metadata?: Json | null
+          narrative_density?: number | null
+          total_blocks?: number | null
+          tutor_session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_session_aggregations_tutor_session_id_fkey"
+            columns: ["tutor_session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_tutor_origins: {
         Row: {
           cme_video_project_id: string | null
@@ -4381,6 +4481,7 @@ export type Database = {
       }
       cme_video_projects: {
         Row: {
+          aggregation_id: string | null
           config: Json | null
           created_at: string
           fatigue_risk_score: number | null
@@ -4399,6 +4500,7 @@ export type Database = {
           validation_checks: Json | null
         }
         Insert: {
+          aggregation_id?: string | null
           config?: Json | null
           created_at?: string
           fatigue_risk_score?: number | null
@@ -4417,6 +4519,7 @@ export type Database = {
           validation_checks?: Json | null
         }
         Update: {
+          aggregation_id?: string | null
           config?: Json | null
           created_at?: string
           fatigue_risk_score?: number | null
@@ -4435,6 +4538,13 @@ export type Database = {
           validation_checks?: Json | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_video_projects_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cme_video_projects_topic_id_fkey"
             columns: ["topic_id"]

@@ -122,9 +122,10 @@ const AgentMessageItem = memo(
                                flagsEnabled && 
                                !validation.eligible;
 
-    const handleCMETransform = () => {
+    const handleCMETransform = (isFullSession: boolean = false) => {
       const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
-      const title = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
+      const baseTitle = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
+      const title = isFullSession ? `🎬 Videoaula Completa: ${baseTitle}` : baseTitle;
       const summary = summaryBlock?.payload?.bullets?.join(". ") || msg.content.slice(0, 300);
 
       transformToVideo({
@@ -135,7 +136,8 @@ const AgentMessageItem = memo(
         sourceContent: msg.content,
         blocks: cognitiveBlocks,
         conversationId: conversationId || crypto.randomUUID(),
-        messageId: (msg as any).id
+        messageId: (msg as any).id,
+        isFullSession
       });
     };
 
@@ -190,14 +192,25 @@ const AgentMessageItem = memo(
                 )}
                 
                 {showCMEButton && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 animate-fade-in shadow-sm shadow-amber-500/20"
-                    onClick={handleCMETransform}
-                  >
-                    <Film className="h-3.5 w-3.5" /> 🎬 Transformar em Videoaula
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 animate-fade-in shadow-sm shadow-amber-500/20"
+                      onClick={() => handleCMETransform(true)}
+                    >
+                      <Film className="h-3.5 w-3.5" /> 🎬 Transformar Sessão Completa em Videoaula
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
+                      onClick={() => handleCMETransform(false)}
+                      title="Transformar apenas esta resposta em vídeo"
+                    >
+                      <Sparkles className="h-3 w-3" /> Apenas esta resposta
+                    </Button>
+                  </div>
                 )}
 
                 {showFallbackButton && (
@@ -205,7 +218,7 @@ const AgentMessageItem = memo(
                     variant="ghost"
                     size="sm"
                     className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
-                    onClick={handleCMETransform}
+                    onClick={() => handleCMETransform(false)}
                     title={validation.rejectionReason}
                   >
                     <AlertCircle className="h-3 w-3" /> Criar videoaula
