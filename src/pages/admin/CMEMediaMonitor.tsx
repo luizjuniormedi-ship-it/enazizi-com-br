@@ -82,6 +82,9 @@ const CMEMediaMonitor = () => {
     toast.loading(`Iniciando re-renderização de ${lesson.title}...`);
     
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Ação permitida apenas para administradores autenticados.");
+
       const newProjectId = crypto.randomUUID();
       
       // 1. Criar novo projeto cinematográfico
@@ -91,7 +94,8 @@ const CMEMediaMonitor = () => {
           id: newProjectId,
           title: `Reprocessamento: ${lesson.title}`,
           status: 'active',
-          target_audience: 'medical_students'
+          target_audience: 'medical_students',
+          user_id: user.id
         } as any);
 
       if (projectError) throw projectError;
@@ -122,7 +126,8 @@ const CMEMediaMonitor = () => {
           status: 'processing',
           render_stage: 'scene_generation',
           priority: 20,
-          gpu_required: true
+          gpu_required: true,
+          user_id: user.id
         } as any);
 
       if (jobError) throw jobError;
