@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BrainCircuit, Activity, Zap, ShieldCheck, History, Info, TrendingUp, Sparkles } from "lucide-react";
+import { BrainCircuit, Activity, Zap, ShieldCheck, History, Info, TrendingUp, Sparkles, Sliders, Check } from "lucide-react";
 import { useAdaptiveJourney, useCognitiveHistory } from "@/hooks/useAdaptiveJourney";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -95,8 +95,53 @@ export default function MedicalAdaptiveJourney() {
               Variação de carga cognitiva nos últimos 7 dias
             </div>
           </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Sliders className="h-4 w-4 text-primary" /> Intensidade ACE
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-col gap-2">
+                <IntensityOption 
+                  label="Silencioso" 
+                  description="Menos intervenções, foco em autonomia."
+                  active={false}
+                />
+                <IntensityOption 
+                  label="Equilibrado" 
+                  description="Otimização padrão do motor adaptativo."
+                  active={true}
+                />
+                <IntensityOption 
+                  label="Intenso" 
+                  description="Máxima proatividade e micro-revisões."
+                  active={false}
+                />
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-2">
+                Define a frequência com que o motor ACE sugere mudanças de rota.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
+    </div>
+  );
+}
+
+function IntensityOption({ label, description, active }: { label: string; description: string; active: boolean }) {
+  return (
+    <div className={cn(
+      "p-3 rounded-lg border transition-all cursor-pointer",
+      active ? "bg-primary/10 border-primary/40 ring-1 ring-primary/20" : "bg-muted/30 hover:bg-muted/50"
+    )}>
+      <div className="flex items-center justify-between">
+        <span className={cn("text-xs font-bold", active ? "text-primary" : "text-foreground")}>{label}</span>
+        {active && <Check className="h-3 w-3 text-primary" />}
+      </div>
+      <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">{description}</p>
     </div>
   );
 }
