@@ -150,6 +150,9 @@ const VideoLessonPlayer = () => {
     return found ?? segments[0];
   }, [segments, watchedSeconds]);
 
+  // ───────────────── FASE 3: Adaptive Intelligence ─────────────────
+  const { recommendation, resetRecommendation } = useVideoAdaptiveIntelligence(id!, currentSegment?.id || null);
+
   const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
   const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
   const difficultyLevel = currentSegmentAnalytics?.difficultyLevel || "baixa";
