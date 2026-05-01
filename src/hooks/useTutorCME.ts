@@ -245,15 +245,27 @@ export const useTutorCME = () => {
 
       await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado", aggregationId || undefined);
 
-      // Render Job
-      await supabaseClient.from("cme_render_jobs").insert({
-        project_id: projectId,
-        status: 'queued',
-        render_stage: 'gpu_rendering',
-        priority: 1
-      } as any);
-
+      // Render Job via Orchestrator
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Cluster GPU: Aguardando..." }));
+      
+      const { data: orchestratorResult, error: orchError } = await supabaseClient.functions.invoke('cme-orchestrator', {
+        body: { 
+          action: 'start_render', 
+          projectId,
+          payload: { priority: 1, title: params.title }
+        }
+      });
+
+      if (orchError || !orchestratorResult?.success) {
+        console.warn("Orchestrator call failed, falling back to direct insert", orchError);
+        await supabaseClient.from("cme_render_jobs").insert({
+          project_id: projectId,
+          status: 'queued',
+          render_stage: 'gpu_rendering',
+          priority: 1
+        } as any);
+      }
+
       await logPipelineEvent(projectId, 'rendering', 'in_progress', 50, "Render enfileirado", aggregationId || undefined);
 
       // Auto-navigate to Builder if it's a full session
