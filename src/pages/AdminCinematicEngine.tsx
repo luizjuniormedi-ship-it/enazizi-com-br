@@ -291,7 +291,7 @@ const AdminCinematicEngine = () => {
                                   <Badge className="bg-primary/10 text-primary border-primary/20 font-black text-[10px]">
                                     {job.quality_scores[0].overall_cinematic_score?.toFixed(1) || '0.0'}
                                   </Badge>
-                                  <Button size="icon" variant="ghost" className="h-6 w-6" title={job.quality_scores[0].scoring_explanation?.reason || "View Explanation"}>
+                                  <Button size="icon" variant="ghost" className="h-6 w-6" title={(job.quality_scores?.[0]?.scoring_explanation as any)?.reason || "View Explanation"}>
                                     <Info className="h-3 w-3" />
                                   </Button>
                                 </div>
