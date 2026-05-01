@@ -112,8 +112,58 @@ const CinematicSessionBuilder = () => {
           
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="font-mono text-[10px]">ID: {aggregationId?.slice(0, 8)}</Badge>
-            <Button className="gap-2 font-bold shadow-lg shadow-primary/20">
-              <Play className="h-4 w-4" /> Start Rendering
+            <Button 
+              className="gap-2 font-bold shadow-lg shadow-primary/20"
+              onClick={async () => {
+                if (!aggregationId) return;
+                
+                // 1. First ensure we have a project for this aggregation
+                const { data: project } = await supabase
+                  .from('cme_video_projects')
+                  .select('id')
+                  .eq('aggregation_id', aggregationId)
+                  .maybeSingle();
+                
+                let projectId = project?.id;
+                
+                if (!projectId) {
+                  const { data: newProject, error } = await supabase
+                    .from('cme_video_projects')
+                    .insert({
+                      aggregation_id: aggregationId,
+                      user_id: (await supabase.auth.getUser()).data.user?.id,
+                      title: aggregation?.title || 'Video Project',
+                      status: 'draft'
+                    } as any)
+                    .select()
+                    .single();
+                  
+                  if (error) {
+                    toast.error("Failed to create project");
+                    return;
+                  }
+                  projectId = newProject.id;
+                }
+
+                toast.info("Iniciando Pipeline Enterprise CME...");
+                
+                const { data, error } = await supabase.functions.invoke('cme-orchestrator', {
+                  body: { 
+                    action: 'start_pipeline', 
+                    projectId,
+                    payload: { mode: 'enterprise' }
+                  }
+                });
+
+                if (error) {
+                  toast.error("Erro ao iniciar pipeline: " + error.message);
+                } else {
+                  toast.success("Pipeline CME iniciado com sucesso!");
+                  navigate(`/admin/cinematic-engine/${projectId}`);
+                }
+              }}
+            >
+              <Play className="h-4 w-4" /> Start Enterprise Pipeline
             </Button>
           </div>
         </div>

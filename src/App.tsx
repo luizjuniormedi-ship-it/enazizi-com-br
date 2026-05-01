@@ -130,6 +130,9 @@ const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEO
 const CinematicSessionBuilder = lazyWithRetry(() => import("./pages/admin/CinematicSessionBuilder"), "CinematicSessionBuilder");
 const CinematicBuilder = lazyWithRetry(() => import("./pages/admin/CinematicBuilder"), "CinematicBuilder");
 const CMEExecutiveDashboard = lazyWithRetry(() => import("./pages/admin/cme/ExecutiveDashboard"), "CMEExecutiveDashboard");
+const CMEGPUFleet = lazyWithRetry(() => import("./pages/admin/cme/GPUFleet"), "CMEGPUFleet");
+const CMERenderQueues = lazyWithRetry(() => import("./pages/admin/cme/RenderQueues"), "CMERenderQueues");
+const CMEObservability = lazyWithRetry(() => import("./pages/admin/cme/Observability"), "CMEObservability");
 
 
 
@@ -279,6 +282,9 @@ const App = () => (
                     <Route path="cme-builder-audit" element={<CMEAudit />} />
                     <Route path="cme-audit" element={<CMEAudit />} />
                     <Route path="cme-executive" element={<CMEExecutiveDashboard />} />
+                    <Route path="gpu-fleet" element={<CMEGPUFleet />} />
+                    <Route path="render-queues" element={<CMERenderQueues />} />
+                    <Route path="cme-observability" element={<CMEObservability />} />
                     <Route path="system-checklist" element={<SystemChecklist />} />
 
                 </Route>

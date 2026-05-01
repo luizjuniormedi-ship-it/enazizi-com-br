@@ -40,8 +40,13 @@ import {
   Palette,
   Eye,
   Thermometer,
-  Layers
+  Layers,
+  Network
 } from "lucide-react";
+import { GPUFleetPanel } from "@/components/admin/cme/GPUFleetPanel";
+import { RenderQueuesPanel } from "@/components/admin/cme/RenderQueuesPanel";
+import { LineageGraph2 } from "@/components/admin/cme/LineageGraph2";
+import { CMEObservabilityPanel } from "@/components/admin/cme/ObservabilityPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -256,26 +261,40 @@ const AdminCinematicEngine = () => {
               <TabsTrigger value="pipeline" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Activity className="h-4 w-4" /> Queue
               </TabsTrigger>
-              <TabsTrigger value="director" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
-                <Camera className="h-4 w-4" /> Director AI
+              <TabsTrigger value="fleet" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Cpu className="h-4 w-4" /> GPU Fleet
               </TabsTrigger>
-              <TabsTrigger value="grammar" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
-                <Scissors className="h-4 w-4" /> Visual Grammar
+              <TabsTrigger value="queues" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Layers className="h-4 w-4" /> Orchestrator
               </TabsTrigger>
-              <TabsTrigger value="factory" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
-                <Waves className="h-4 w-4" /> Scene Factory
+              <TabsTrigger value="lineage" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Network className="h-4 w-4" /> Lineage 2.0
               </TabsTrigger>
               <TabsTrigger value="observability" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Monitor className="h-4 w-4" /> Observability
-              </TabsTrigger>
-              <TabsTrigger value="optimizations" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
-                <Brain className="h-4 w-4" /> Auto-Optimization
               </TabsTrigger>
               <TabsTrigger value="governance" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Shield className="h-4 w-4" /> Governance
               </TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="fleet" className="space-y-4">
+            <GPUFleetPanel />
+          </TabsContent>
+
+          <TabsContent value="queues" className="space-y-4">
+            <RenderQueuesPanel />
+          </TabsContent>
+
+          <TabsContent value="lineage" className="space-y-4">
+             <LineageGraph2 />
+          </TabsContent>
+
+          <TabsContent value="observability" className="space-y-4">
+             <CMEObservabilityPanel />
+          </TabsContent>
+
 
           <TabsContent value="pipeline" className="space-y-4">
             <Card className="border-none shadow-sm overflow-hidden">

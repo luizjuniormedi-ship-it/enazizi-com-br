@@ -167,7 +167,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                 <Button onClick={openBuilder} variant="outline" className="border-amber-500/20 hover:bg-amber-500/10 text-amber-500">
                   <ExternalLink className="mr-2 h-4 w-4" /> Ir para o Builder
                 </Button>
-                <Button onClick={() => window.location.reload()} variant="ghost" className="text-zinc-500">Tentar novamente</Button>
+                <Button onClick={() => navigate('/admin/gpu-fleet')} variant="ghost" className="text-zinc-500 underline">Ver status do Cluster GPU</Button>
               </div>
             </div>
           )}

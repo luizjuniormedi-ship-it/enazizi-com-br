@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { GPUFleetPanel } from "@/components/admin/cme/GPUFleetPanel";
 
 const CMEStatusPage = () => {
   const navigate = useNavigate();
@@ -268,25 +269,7 @@ const CMEStatusPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {[
-              { id: 'worker-01', region: 'us-east', load: 45, status: 'online' },
-              { id: 'worker-02', region: 'us-west', load: 12, status: 'online' },
-              { id: 'worker-gpu-high', region: 'sa-east', load: 88, status: 'busy' }
-            ].map(worker => (
-              <div key={worker.id} className="flex items-center justify-between p-2 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  <div className={cn("h-2 w-2 rounded-full", worker.status === 'online' ? 'bg-emerald-500' : 'bg-amber-500')} />
-                  <div>
-                    <div className="text-xs font-bold uppercase">{worker.id}</div>
-                    <div className="text-[10px] text-muted-foreground">{worker.region}</div>
-                  </div>
-                </div>
-                <div className="w-24 space-y-1">
-                  <div className="text-[10px] text-right">{worker.load}% load</div>
-                  <Progress value={worker.load} className="h-1" />
-                </div>
-              </div>
-            ))}
+            <GPUFleetPanel />
           </CardContent>
         </Card>
 
