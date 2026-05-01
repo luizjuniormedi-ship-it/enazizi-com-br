@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BrainCircuit, Activity, Zap, ShieldCheck, History, Info, TrendingUp, Sparkles, Sliders, Check, Clock } from "lucide-react";
+import { BrainCircuit, Activity, Zap, ShieldCheck, History, Info, TrendingUp, Sparkles, Sliders, Check, Clock, Calendar } from "lucide-react";
 import { useAdaptiveJourney, useCognitiveHistory } from "@/hooks/useAdaptiveJourney";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { CognitiveSessionController } from "@/components/CognitiveSessionController";
 import { CognitiveRhythmMonitor } from "@/components/CognitiveRhythmMonitor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CognitiveSchedulerMonitor } from "@/components/CognitiveSchedulerMonitor";
+import CognitiveSchedulerMonitor from "@/components/CognitiveSchedulerMonitor";
 
 export default function MedicalAdaptiveJourney() {
   const { data: events, isLoading } = useAdaptiveJourney();
