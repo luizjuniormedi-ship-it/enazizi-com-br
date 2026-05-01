@@ -98,6 +98,8 @@ const InstitutionalDashboard = lazyWithRetry(() => import("./pages/Institutional
 const ProficiencyPilotPage = lazyWithRetry(() => import("./pages/ProficiencyPilotPage"), "ProficiencyPilotPage");
 const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixPage");
 const EnaflixCatalogPage = lazyWithRetry(() => import("./pages/EnaflixCatalogPage"), "EnaflixCatalogPage");
+const PublicVideoLesson = lazyWithRetry(() => import("./pages/PublicVideoLesson"), "PublicVideoLesson");
+const VideoLessonsExplore = lazyWithRetry(() => import("./pages/VideoLessonsExplore"), "VideoLessonsExplore");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowcase"), "CognitiveShowcase");
@@ -156,10 +158,11 @@ const App = () => (
           <CinematicRouteTransition>
             <Suspense fallback={<PageLoader />}>
               <Routes>
-              <Route path="/" element={<Index />} />
-               <Route path="/login" element={<Login />} />
-               <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
-               <Route path="/register" element={<Register />} />
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/videoaulas/:id" element={<PublicVideoLesson />} />
+                <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
+                <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="cronograma" element={<PreserveQueryNavigate to="/dashboard/planner" />} />
@@ -180,6 +183,7 @@ const App = () => (
                 <Route path="resumos" element={<ContentSummarizer />} />
                  <Route path="apostilas" element={<StudyGuides />} />
                  <Route path="videoaulas" element={<VideoLessonsLibrary />} />
+                 <Route path="videoaulas/explorar" element={<VideoLessonsExplore />} />
                  <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
                 
                 <Route path="coach" element={<MotivationalCoach />} />
