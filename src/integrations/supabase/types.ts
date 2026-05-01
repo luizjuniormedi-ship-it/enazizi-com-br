@@ -2241,6 +2241,50 @@ export type Database = {
           },
         ]
       }
+      cme_adaptive_timing_maps: {
+        Row: {
+          fatigue_protection_map: Json | null
+          generated_at: string
+          id: string
+          lesson_id: string | null
+          pacing_curve: Json | null
+          recovery_curve: Json | null
+          reinforcement_curve: Json | null
+          semantic_revisit_map: Json | null
+          variant_type: string | null
+        }
+        Insert: {
+          fatigue_protection_map?: Json | null
+          generated_at?: string
+          id?: string
+          lesson_id?: string | null
+          pacing_curve?: Json | null
+          recovery_curve?: Json | null
+          reinforcement_curve?: Json | null
+          semantic_revisit_map?: Json | null
+          variant_type?: string | null
+        }
+        Update: {
+          fatigue_protection_map?: Json | null
+          generated_at?: string
+          id?: string
+          lesson_id?: string | null
+          pacing_curve?: Json | null
+          recovery_curve?: Json | null
+          reinforcement_curve?: Json | null
+          semantic_revisit_map?: Json | null
+          variant_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_adaptive_timing_maps_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_benchmark_audit: {
         Row: {
           action_type: string
@@ -2515,6 +2559,50 @@ export type Database = {
           },
         ]
       }
+      cme_explainable_scores: {
+        Row: {
+          contributing_factors: Json | null
+          detected_risks: Json | null
+          explanation: string | null
+          generated_at: string
+          id: string
+          optimization_recommendations: Json | null
+          render_job_id: string | null
+          score_type: string
+          score_value: number
+        }
+        Insert: {
+          contributing_factors?: Json | null
+          detected_risks?: Json | null
+          explanation?: string | null
+          generated_at?: string
+          id?: string
+          optimization_recommendations?: Json | null
+          render_job_id?: string | null
+          score_type: string
+          score_value: number
+        }
+        Update: {
+          contributing_factors?: Json | null
+          detected_risks?: Json | null
+          explanation?: string | null
+          generated_at?: string
+          id?: string
+          optimization_recommendations?: Json | null
+          render_job_id?: string | null
+          score_type?: string
+          score_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_explainable_scores_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_governance_logs: {
         Row: {
           comments: string | null
@@ -2555,6 +2643,50 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_governance_reviews: {
+        Row: {
+          approved_at: string | null
+          blocking_reasons: Json | null
+          created_at: string
+          id: string
+          lesson_id: string | null
+          review_notes: string | null
+          review_status: string | null
+          review_type: string
+          reviewer_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          blocking_reasons?: Json | null
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          review_notes?: string | null
+          review_status?: string | null
+          review_type: string
+          reviewer_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          blocking_reasons?: Json | null
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          review_notes?: string | null
+          review_status?: string | null
+          review_type?: string
+          reviewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_governance_reviews_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -2762,6 +2894,59 @@ export type Database = {
             columns: ["semantic_plan_id"]
             isOneToOne: false
             referencedRelation: "cme_semantic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_playback_hotspots: {
+        Row: {
+          abandon_density: number | null
+          fatigue_density: number | null
+          friction_score: number | null
+          generated_at: string
+          hotspot_type: string
+          id: string
+          lesson_id: string | null
+          quiz_error_density: number | null
+          replay_density: number | null
+          retention_drop: number | null
+          segment_id: string | null
+          tutor_density: number | null
+        }
+        Insert: {
+          abandon_density?: number | null
+          fatigue_density?: number | null
+          friction_score?: number | null
+          generated_at?: string
+          hotspot_type: string
+          id?: string
+          lesson_id?: string | null
+          quiz_error_density?: number | null
+          replay_density?: number | null
+          retention_drop?: number | null
+          segment_id?: string | null
+          tutor_density?: number | null
+        }
+        Update: {
+          abandon_density?: number | null
+          fatigue_density?: number | null
+          friction_score?: number | null
+          generated_at?: string
+          hotspot_type?: string
+          id?: string
+          lesson_id?: string | null
+          quiz_error_density?: number | null
+          replay_density?: number | null
+          retention_drop?: number | null
+          segment_id?: string | null
+          tutor_density?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_playback_hotspots_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -3261,6 +3446,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cme_v3_feature_flags: {
+        Row: {
+          is_enabled: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          is_enabled?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          is_enabled?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       cme_video_assets: {
         Row: {
