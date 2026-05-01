@@ -35,8 +35,20 @@ export function useVideoAdaptiveIntelligence(videoLessonId: string, segmentId: s
       const replays = events.filter(e => e.event_type === 'replay').length;
       const longPauses = events.filter(e => e.event_type === 'long_pause').length;
       const quizErrors = events.filter(e => e.event_type === 'quiz_error').length;
+      const frictionScore = (replays * 2) + longPauses + (quizErrors * 3);
 
-      // Heurística de decisão adaptativa
+      // Trigger actual ACE evaluation via RPC if friction is significant
+      if (frictionScore >= 4) {
+        await supabase.rpc('evaluate_adaptive_intervention', {
+          p_user_id: user.id,
+          p_trigger_type: quizErrors >= 1 ? 'quiz_fail_streak' : 'high_friction',
+          p_node_id: null, 
+          p_lesson_id: videoLessonId,
+          p_friction_score: frictionScore
+        });
+      }
+
+      // Legacy notification logic (Preventive Tutor)
       if (replays >= 2 || (replays >= 1 && longPauses >= 1) || quizErrors >= 1) {
         const rec: AdaptiveRecommendation = {
           type: quizErrors >= 1 ? 'review' : 'tutor_hint',
@@ -47,15 +59,6 @@ export function useVideoAdaptiveIntelligence(videoLessonId: string, segmentId: s
           priority: 0.8
         };
         setRecommendation(rec);
-        
-        // Log da decisão (Shadow Decision)
-        await supabase.from('assistant_decisions').insert([{
-          user_id: user.id,
-          source_module: 'adaptive_video_v3',
-          decision_type: 'shadow-decision',
-          justification: `Friction detected: replays=${replays}, pauses=${longPauses}, errors=${quizErrors}`,
-          decision_output: { recommendation: rec, applied: false } as any
-        }]);
       } else {
         setRecommendation(null);
       }
