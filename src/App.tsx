@@ -125,6 +125,8 @@ const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicE
 const CMEStatus = lazyWithRetry(() => import("./pages/admin/CMEStatus"), "CMEStatus");
 const CMEIncidents = lazyWithRetry(() => import("./pages/admin/CMEIncidents"), "CMEIncidents");
 const CMEMediaMonitor = lazyWithRetry(() => import("./pages/admin/CMEMediaMonitor"), "CMEMediaMonitor");
+const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEOrigins");
+
 
 
 const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
@@ -266,9 +268,10 @@ const App = () => (
                    <Route path="adaptive-engine" element={<AdaptiveEngineAdmin />} />
                    <Route path="intervention-policies" element={<AdminInterventionPolicies />} />
                    <Route path="adaptive-experiments" element={<AdminAdaptiveExperiments />} />
-                   <Route path="cinematic-engine" element={<AdminCinematicEngine />} />
-                   <Route path="system-checklist" element={<SystemChecklist />} />
-               </Route>
+                    <Route path="cinematic-engine/:projectId" element={<AdminCinematicEngine />} />
+                    <Route path="cme-origins" element={<CMEOrigins />} />
+                    <Route path="system-checklist" element={<SystemChecklist />} />
+                </Route>
                 <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
 
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>

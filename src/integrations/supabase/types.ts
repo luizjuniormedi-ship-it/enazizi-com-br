@@ -2805,6 +2805,39 @@ export type Database = {
           },
         ]
       }
+      cme_generation_eligibility_logs: {
+        Row: {
+          cognitive_density: number | null
+          created_at: string | null
+          eligible: boolean
+          id: string
+          metadata: Json | null
+          rejection_reason: string | null
+          structure_score: number | null
+          tutor_message_id: string
+        }
+        Insert: {
+          cognitive_density?: number | null
+          created_at?: string | null
+          eligible: boolean
+          id?: string
+          metadata?: Json | null
+          rejection_reason?: string | null
+          structure_score?: number | null
+          tutor_message_id: string
+        }
+        Update: {
+          cognitive_density?: number | null
+          created_at?: string | null
+          eligible?: boolean
+          id?: string
+          metadata?: Json | null
+          rejection_reason?: string | null
+          structure_score?: number | null
+          tutor_message_id?: string
+        }
+        Relationships: []
+      }
       cme_governance_logs: {
         Row: {
           comments: string | null
@@ -4350,7 +4383,13 @@ export type Database = {
         Row: {
           config: Json | null
           created_at: string
+          fatigue_risk_score: number | null
+          health_score: number | null
           id: string
+          lineage_path: string | null
+          narrative_coherence_score: number | null
+          overload_score: number | null
+          quality_ai_metadata: Json | null
           quality_score: number | null
           status: string
           target_audience: string | null
@@ -4362,7 +4401,13 @@ export type Database = {
         Insert: {
           config?: Json | null
           created_at?: string
+          fatigue_risk_score?: number | null
+          health_score?: number | null
           id?: string
+          lineage_path?: string | null
+          narrative_coherence_score?: number | null
+          overload_score?: number | null
+          quality_ai_metadata?: Json | null
           quality_score?: number | null
           status?: string
           target_audience?: string | null
@@ -4374,7 +4419,13 @@ export type Database = {
         Update: {
           config?: Json | null
           created_at?: string
+          fatigue_risk_score?: number | null
+          health_score?: number | null
           id?: string
+          lineage_path?: string | null
+          narrative_coherence_score?: number | null
+          overload_score?: number | null
+          quality_ai_metadata?: Json | null
           quality_score?: number | null
           status?: string
           target_audience?: string | null

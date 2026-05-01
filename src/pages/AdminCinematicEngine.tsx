@@ -133,14 +133,21 @@ const AdminCinematicEngine = () => {
   const { data: renderJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ["cme-render-jobs"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("cme_render_jobs")
         .select(`
           *,
           project:cme_video_projects(title, config),
           events:cme_pipeline_events(*)
-        `)
-        .order("queued_at", { ascending: false });
+        `);
+      
+      const params = new URLSearchParams(window.location.search);
+      const projectId = window.location.pathname.split('/').pop();
+      if (projectId && projectId !== 'cinematic-engine') {
+        query = query.eq('project_id', projectId);
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     }
@@ -184,10 +191,13 @@ const AdminCinematicEngine = () => {
     const variants: Record<string, { label: string, color: string }> = {
       queued: { label: "Na fila", color: "bg-slate-500/10 text-slate-600 border-slate-200" },
       preparing: { label: "Preparando", color: "bg-blue-500/10 text-blue-600 border-blue-200 animate-pulse" },
+      planning: { label: "Planejamento", color: "bg-blue-500/10 text-blue-600 border-blue-200" },
       semantic_processing: { label: "Semântica", color: "bg-purple-500/10 text-purple-600 border-purple-200 animate-pulse" },
       cinematic_rendering: { label: "Renderizando", color: "bg-indigo-500/10 text-indigo-600 border-indigo-200 animate-pulse" },
+      rendering: { label: "Renderizando", color: "bg-indigo-500/10 text-indigo-600 border-indigo-200 animate-pulse" },
       processing: { label: "Processando", color: "bg-amber-500/10 text-amber-600 border-amber-200 animate-pulse" },
       completed: { label: "Concluído", color: "bg-green-500/10 text-green-600 border-green-200" },
+      ready: { label: "Pronto", color: "bg-green-500/10 text-green-600 border-green-200" },
       failed: { label: "Falhou", color: "bg-red-500/10 text-red-600 border-red-200" }
     };
     const cfg = variants[status] || { label: status, color: "bg-slate-500/10 text-slate-600" };
@@ -309,7 +319,7 @@ const AdminCinematicEngine = () => {
                           </td>
                           <td className="px-6 py-4 w-64">
                             <div className="space-y-1.5">
-                                <Progress value={job.status === 'completed' ? 100 : (job.status === 'processing' ? 50 : 10)} className="h-1.5" />
+                                <Progress value={job.status === 'completed' || job.status === 'ready' ? 100 : (['processing', 'rendering', 'cinematic_rendering'].includes(job.status) ? 50 : 10)} className="h-1.5" />
                                 {job.events && job.events.length > 0 && (
                                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-tight mt-1 animate-pulse">
                                     {(job.events[job.events.length - 1] as any).stage}: {(job.events[job.events.length - 1] as any).message}
