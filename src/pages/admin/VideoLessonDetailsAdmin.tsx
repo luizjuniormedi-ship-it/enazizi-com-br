@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { VideoAnalyticsDrilldown } from "@/components/admin/VideoAnalyticsDrilldown";
+import CognitiveHeatmap from "@/components/admin/CognitiveHeatmap";
 import { toast } from "sonner";
 
 const VideoLessonDetailsAdmin = () => {
@@ -110,8 +111,9 @@ const VideoLessonDetailsAdmin = () => {
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           <VideoAnalyticsDrilldown videoLessonId={lesson.id} />
+          <CognitiveHeatmap videoLessonId={lesson.id} />
         </div>
       </div>
     </div>

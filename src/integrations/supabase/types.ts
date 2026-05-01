@@ -4063,6 +4063,47 @@ export type Database = {
         }
         Relationships: []
       }
+      ingestion_pipeline_runs: {
+        Row: {
+          finished_at: string | null
+          id: string
+          logs: string | null
+          run_type: string
+          source_id: string | null
+          started_at: string | null
+          stats: Json | null
+          status: string | null
+        }
+        Insert: {
+          finished_at?: string | null
+          id?: string
+          logs?: string | null
+          run_type: string
+          source_id?: string | null
+          started_at?: string | null
+          stats?: Json | null
+          status?: string | null
+        }
+        Update: {
+          finished_at?: string | null
+          id?: string
+          logs?: string | null
+          run_type?: string
+          source_id?: string | null
+          started_at?: string | null
+          stats?: Json | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingestion_pipeline_runs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       institution_members: {
         Row: {
           id: string
@@ -6236,6 +6277,127 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      official_exam_files: {
+        Row: {
+          checksum_sha256: string | null
+          created_at: string | null
+          file_name: string
+          file_url: string
+          id: string
+          metadata: Json | null
+          source_id: string | null
+          status: string | null
+          storage_path: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          checksum_sha256?: string | null
+          created_at?: string | null
+          file_name: string
+          file_url: string
+          id?: string
+          metadata?: Json | null
+          source_id?: string | null
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          checksum_sha256?: string | null
+          created_at?: string | null
+          file_name?: string
+          file_url?: string
+          id?: string
+          metadata?: Json | null
+          source_id?: string | null
+          status?: string | null
+          storage_path?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_files_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_exam_questions: {
+        Row: {
+          alternativas: Json
+          confidence_score: number | null
+          created_at: string | null
+          disciplina: string | null
+          enunciado: string
+          file_id: string | null
+          id: string
+          metadata: Json | null
+          question_number: number | null
+          resposta: string
+        }
+        Insert: {
+          alternativas: Json
+          confidence_score?: number | null
+          created_at?: string | null
+          disciplina?: string | null
+          enunciado: string
+          file_id?: string | null
+          id?: string
+          metadata?: Json | null
+          question_number?: number | null
+          resposta: string
+        }
+        Update: {
+          alternativas?: Json
+          confidence_score?: number | null
+          created_at?: string | null
+          disciplina?: string | null
+          enunciado?: string
+          file_id?: string | null
+          id?: string
+          metadata?: Json | null
+          question_number?: number | null
+          resposta?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "official_exam_questions_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "official_exam_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      official_exam_sources: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+          url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+          url?: string | null
+        }
+        Relationships: []
       }
       orchestrator_outcomes: {
         Row: {
@@ -11592,6 +11754,57 @@ export type Database = {
         }
         Relationships: []
       }
+      video_cognitive_heatmaps: {
+        Row: {
+          avg_retention: number | null
+          friction_score: number | null
+          id: string
+          last_updated: string | null
+          segment_id: string | null
+          total_abandons: number | null
+          total_replays: number | null
+          total_tutor_opens: number | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          avg_retention?: number | null
+          friction_score?: number | null
+          id?: string
+          last_updated?: string | null
+          segment_id?: string | null
+          total_abandons?: number | null
+          total_replays?: number | null
+          total_tutor_opens?: number | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          avg_retention?: number | null
+          friction_score?: number | null
+          id?: string
+          last_updated?: string | null
+          segment_id?: string | null
+          total_abandons?: number | null
+          total_replays?: number | null
+          total_tutor_opens?: number | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_cognitive_heatmaps_segment_id_fkey"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_cognitive_heatmaps_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       video_lesson_quiz_attempts: {
         Row: {
           answers: Json
@@ -12757,6 +12970,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      refresh_video_cognitive_heatmap: {
+        Args: { p_video_lesson_id: string }
+        Returns: undefined
       }
       student_has_clinical_case_result: {
         Args: { _case_id: string; _user_id: string }

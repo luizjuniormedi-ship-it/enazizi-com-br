@@ -15,6 +15,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Clock,
+  Database,
   FileText,
   FlipVertical,
   AlertTriangle,
@@ -549,8 +550,15 @@ const DashboardSidebar = () => {
                     active={location.pathname === "/admin/medical-governance"}
                     variant="muted"
                   />
+                  <SidebarLink
+                    to="/admin/ingestion-network"
+                    icon={Database}
+                    label="Ingestion Network"
+                    description="Ingestão Automática de Provas Oficiais"
+                    active={location.pathname === "/admin/ingestion-network"}
+                    variant="muted"
+                  />
                 </>
-
               )}
               {showInstitutional && (
                 <SidebarLink

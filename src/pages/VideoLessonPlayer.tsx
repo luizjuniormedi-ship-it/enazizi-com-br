@@ -25,7 +25,9 @@ import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
 import { useVideoSegmentAnalytics } from "@/hooks/useVideoSegmentAnalytics";
 import { useTutorTemporalContext } from "@/hooks/useTutorTemporalContext";
+import { useVideoAdaptiveIntelligence } from "@/hooks/useVideoAdaptiveIntelligence";
 import { VideoSegmentList, type VideoSegment } from "@/components/video-library/VideoSegmentList";
+import PreventiveTutorTrigger from "@/components/video-library/PreventiveTutorTrigger";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -133,7 +135,7 @@ const VideoLessonPlayer = () => {
   const { logEvent } = useVideoSegmentEvents();
   const { getForSegment, smartReplayEnabled, analyticsEnabled } = useVideoSegmentAnalytics(id);
   const { temporalEnabled, buildContext } = useTutorTemporalContext();
-
+  
   // Determina o segmento "atual" baseado em watchedSeconds (fallback p/ primeiro)
   const currentSegment = useMemo<VideoSegment | null>(() => {
     if (!segments || segments.length === 0) return null;
@@ -144,6 +146,9 @@ const VideoLessonPlayer = () => {
     });
     return found ?? segments[0];
   }, [segments, watchedSeconds]);
+
+  // ───────────────── FASE 3: Adaptive Intelligence ─────────────────
+  const { recommendation, resetRecommendation } = useVideoAdaptiveIntelligence(id!, currentSegment?.id || null);
 
   const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
   const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
@@ -414,6 +419,13 @@ const VideoLessonPlayer = () => {
                   </Badge>
                 </div>
               )}
+
+              {/* FASE 3: Trigger Preventivo */}
+              <PreventiveTutorTrigger 
+                recommendation={recommendation}
+                onAccept={() => currentSegment && handleAskTutorAtSegment(currentSegment)}
+                onClose={resetRecommendation}
+              />
             </div>
 
             {/* FASE 2: Indicador de dificuldade + segmento atual */}

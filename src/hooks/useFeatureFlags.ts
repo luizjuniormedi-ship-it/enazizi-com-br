@@ -50,7 +50,10 @@ export type FlagKey =
   | "adaptive_video_enabled"
   | "smart_replay_enabled"
   | "tutor_temporal_enabled"
-  | "multimodal_analytics_enabled";
+  | "multimodal_analytics_enabled"
+  // Adaptive Video Library — FASE 3 Adaptive Intelligence
+  | "adaptive_decisions_enabled"
+  | "preventive_tutor_enabled";
 
 export interface SystemFlag {
   flag_key: string;
@@ -108,6 +111,8 @@ const SAFE_DEFAULTS: Record<FlagKey, boolean> = {
   smart_replay_enabled: false,
   tutor_temporal_enabled: false,
   multimodal_analytics_enabled: false,
+  adaptive_decisions_enabled: false,
+  preventive_tutor_enabled: false,
 };
 
 export const useFeatureFlags = () => {
