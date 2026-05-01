@@ -688,6 +688,7 @@ const Admin = () => {
                 <AdminBIPanel callAdmin={callAdmin} />
               </div>
             )}
+            {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
             {activeSection === "feedbacks" && <AdminFeedbackPanel />}
             {activeSection === "audit" && <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />}
 
