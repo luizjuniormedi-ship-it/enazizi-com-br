@@ -90,6 +90,9 @@ const VideoLessonPlayer = () => {
     shadowMode 
   } = useAdaptiveEngine(id);
 
+  const { trackViewing, updateNeuroanalytics, profile } = useNeuroanalytics(id);
+  const { trackAction } = useTelemetry();
+
   const { data: lesson, isLoading } = useQuery({
     queryKey: ["video-lesson", id],
     queryFn: async () => {
