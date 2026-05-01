@@ -128,6 +128,7 @@ const CMEIncidents = lazyWithRetry(() => import("./pages/admin/CMEIncidents"), "
 const CMEMediaMonitor = lazyWithRetry(() => import("./pages/admin/CMEMediaMonitor"), "CMEMediaMonitor");
 const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEOrigins");
 const CinematicSessionBuilder = lazyWithRetry(() => import("./pages/admin/CinematicSessionBuilder"), "CinematicSessionBuilder");
+const CinematicBuilder = lazyWithRetry(() => import("./pages/admin/CinematicBuilder"), "CinematicBuilder");
 
 
 
