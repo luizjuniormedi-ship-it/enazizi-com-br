@@ -5304,6 +5304,7 @@ export type Database = {
           render_payload: Json
           scene_graph_id: string | null
           semantic_role: string | null
+          sequence_order: number | null
           start_second: number
           title: string | null
           transition_profile: string | null
@@ -5321,6 +5322,7 @@ export type Database = {
           render_payload: Json
           scene_graph_id?: string | null
           semantic_role?: string | null
+          sequence_order?: number | null
           start_second: number
           title?: string | null
           transition_profile?: string | null
@@ -5338,6 +5340,7 @@ export type Database = {
           render_payload?: Json
           scene_graph_id?: string | null
           semantic_role?: string | null
+          sequence_order?: number | null
           start_second?: number
           title?: string | null
           transition_profile?: string | null
@@ -5377,6 +5380,8 @@ export type Database = {
           scene_type: string | null
           semantic_plan_id: string | null
           session_id: string | null
+          status: string | null
+          title: string | null
           transition_type: string | null
           updated_at: string | null
           user_id: string | null
@@ -5408,6 +5413,8 @@ export type Database = {
           scene_type?: string | null
           semantic_plan_id?: string | null
           session_id?: string | null
+          status?: string | null
+          title?: string | null
           transition_type?: string | null
           updated_at?: string | null
           user_id?: string | null
@@ -5439,6 +5446,8 @@ export type Database = {
           scene_type?: string | null
           semantic_plan_id?: string | null
           session_id?: string | null
+          status?: string | null
+          title?: string | null
           transition_type?: string | null
           updated_at?: string | null
           user_id?: string | null
