@@ -143,7 +143,7 @@ const PublicVideoLesson = () => {
                 {lesson.title}
               </h1>
               <div className="flex items-center gap-4 text-white/40 text-sm">
-                <span className="flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Score CME: {lesson.cme_score || '8.8'}</span>
+                <span className="flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Score CME: {(lesson as any).cme_score || '8.8'}</span>
                 <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> Retenção IA: 94%</span>
               </div>
               <p className="text-xl text-white/60 leading-relaxed">
