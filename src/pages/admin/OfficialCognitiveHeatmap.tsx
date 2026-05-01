@@ -139,7 +139,7 @@ const GlobalCognitiveHeatmap = () => {
               <Clock className="h-4 w-4 text-blue-500" />
             </div>
             <p className="text-2xl font-bold mt-2">
-              {criticalVideos?.length 
+              {criticalVideos && criticalVideos.length > 0
                 ? (criticalVideos.reduce((a: any, b: any) => a + b.replays, 0) / criticalVideos.length).toFixed(1)
                 : "0"}
             </p>
