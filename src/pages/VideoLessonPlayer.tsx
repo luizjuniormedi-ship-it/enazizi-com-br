@@ -23,7 +23,8 @@ import {
   AlertTriangle,
   RotateCcw,
   Film,
-  Settings
+  Settings,
+  Flame
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
@@ -425,15 +426,23 @@ const VideoLessonPlayer = () => {
           <ChevronLeft className="h-4 w-4" /> Voltar
         </Button>
         <div className="flex items-center gap-4">
-          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
-            Sincronização em Tempo Real Ativa
+          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5 animate-pulse">
+            Sincronização Supabase Realtime Ativa
           </Badge>
-          <Button variant="outline" size="sm" className="gap-2 border-white/10" onClick={() => {
-            navigator.clipboard.writeText(`${window.location.origin}/videoaulas/${id}`);
-            toast.success("Link público copiado!");
-          }}>
-            <Share2 className="h-4 w-4" /> Compartilhar Preview
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-2 border-white/10" onClick={() => {
+              const url = `${window.location.origin}/videoaulas/${id}`;
+              navigator.clipboard.writeText(url);
+              toast.success("Link público copiado!");
+            }}>
+              <Share2 className="h-4 w-4" /> Compartilhar Preview
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2 border-orange-500/30 text-orange-500" onClick={() => {
+              toast.info("Ativando Exam Sprint: Pacing acelerado e foco em questões.");
+            }}>
+              <Flame className="h-4 w-4" /> Exam Sprint
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -589,12 +598,12 @@ const VideoLessonPlayer = () => {
               </motion.div>
             )}
             
-            {/* CME Personalization Banner */}
+            {/* CME Personalization & Exam Sprint Banner */}
             {isCMEVideo && (
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between"
+                className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex flex-col md:flex-row md:items-center justify-between gap-4"
               >
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
@@ -605,9 +614,20 @@ const VideoLessonPlayer = () => {
                     <p className="text-[10px] text-muted-foreground italic">Ritmo e narrativa adaptados ao seu perfil de retenção.</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1">
-                  <Settings className="h-3 w-3" /> Ajustar Pacing
-                </Button>
+                
+                <div className="flex items-center gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 text-[10px] gap-1 border-orange-500/30 text-orange-500 hover:bg-orange-500/10"
+                    onClick={() => toast.info("Ativando Exam Sprint: Foco em pegadinhas e alta densidade de prova.")}
+                  >
+                    <Flame className="h-3 w-3" /> Exam Sprint
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1">
+                    <Settings className="h-3 w-3" /> Ajustar Pacing
+                  </Button>
+                </div>
               </motion.div>
             )}
 

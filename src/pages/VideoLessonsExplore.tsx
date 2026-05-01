@@ -20,8 +20,10 @@ import {
   ArrowUpDown,
   BarChart3,
   SearchCode,
-  Video
+  Video,
+  RotateCcw
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +47,11 @@ const VideoLessonsExplore = () => {
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
+  // Fase 1: Novos filtros
+  const [durationFilter, setDurationFilter] = useState("all");
+  const [examSprintOnly, setExamSprintOnly] = useState(false);
+  const [recoveryOnly, setRecoveryOnly] = useState(false);
+  
   const navigate = useNavigate();
 
   const { data: lessons, isLoading } = useQuery({
@@ -52,7 +59,10 @@ const VideoLessonsExplore = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ai_video_lessons")
-        .select("*")
+        .select(`
+          *,
+          cme_exam_sprint_profiles(id, sprint_score, sprint_duration)
+        `)
         .eq("status", "published")
         .order("published_at", { ascending: false });
 
@@ -91,28 +101,48 @@ const VideoLessonsExplore = () => {
     if (!lessons) return [];
     
     let result = lessons.filter(lesson => {
-      const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lesson.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lesson.topic.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchStr = `${lesson.title} ${lesson.specialty} ${lesson.topic} ${lesson.subtopic || ""} ${(lesson as any).professor || ""}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
       
       const matchesSpecialty = specialtyFilter === "all" || lesson.specialty === specialtyFilter;
       const matchesDifficulty = difficultyFilter === "all" || lesson.difficulty_level === difficultyFilter;
       
+      const duration = lesson.duration_seconds || 0;
+      let matchesDuration = true;
+      if (durationFilter === "short") matchesDuration = duration <= 600; // 10 min
+      if (durationFilter === "medium") matchesDuration = duration > 600 && duration <= 1800; // 10-30 min
+      if (durationFilter === "long") matchesDuration = duration > 1800; // > 30 min
+
       let matchesCategory = true;
       if (activeCategory === "gold") matchesCategory = !!lesson.is_gold_content;
-      if (activeCategory === "exam_sprint") matchesCategory = lesson.title.toLowerCase().includes("sprint") || (lesson as any).cme_profile === "exam_sprint";
-      if (activeCategory === "recovery") matchesCategory = (lesson as any).adaptive_mode === "recovery";
+      if (activeCategory === "exam_sprint" || examSprintOnly) {
+        const hasSprint = (lesson as any).cme_exam_sprint_profiles?.length > 0 || lesson.title.toLowerCase().includes("sprint");
+        if (activeCategory === "exam_sprint" || examSprintOnly) matchesCategory = hasSprint;
+      }
+      if (activeCategory === "recovery" || recoveryOnly) {
+        const isRecovery = (lesson as any).adaptive_mode === "recovery" || (lesson as any).cme_profile === "recovery";
+        if (activeCategory === "recovery" || recoveryOnly) matchesCategory = isRecovery;
+      }
       
-      return matchesSearch && matchesSpecialty && matchesDifficulty && matchesCategory;
+      // Filtros Cognitivos (ACE)
+      if (activeCategory === "recommended") matchesCategory = !!(lesson as any).recommended_by_ace;
+      if (activeCategory === "fsrs") matchesCategory = !!(lesson as any).fsrs_review_pending;
+      if (activeCategory === "friction") matchesCategory = (Number((lesson as any).friction_score) || 0) > 70;
+      if (activeCategory === "low_mastery") matchesCategory = (Number((lesson as any).mastery_score) || 0) < 50;
+      
+      return matchesSearch && matchesSpecialty && matchesDifficulty && matchesDuration && matchesCategory;
     });
 
     // Sorting logic
     if (sortBy === "retention") result.sort((a, b) => (Number((b as any).avg_retention) || 0) - (Number((a as any).avg_retention) || 0));
     if (sortBy === "watched") result.sort((a, b) => (Number((b as any).view_count) || 0) - (Number((a as any).view_count) || 0));
     if (sortBy === "score") result.sort((a, b) => (Number((b as any).cme_score) || 0) - (Number((a as any).cme_score) || 0));
+    if (sortBy === "recent") result.sort((a, b) => new Date(b.published_at || "").getTime() - new Date(a.published_at || "").getTime());
+    if (sortBy === "replay") result.sort((a, b) => (Number((b as any).replay_rate) || 0) - (Number((a as any).replay_rate) || 0));
+    if (sortBy === "abandon") result.sort((a, b) => (Number((b as any).abandon_rate) || 0) - (Number((a as any).abandon_rate) || 0));
 
     return result;
-  }, [lessons, searchTerm, specialtyFilter, difficultyFilter, activeCategory, sortBy]);
+  }, [lessons, searchTerm, specialtyFilter, difficultyFilter, activeCategory, sortBy, durationFilter, examSprintOnly, recoveryOnly]);
 
   const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
 
@@ -173,6 +203,40 @@ const VideoLessonsExplore = () => {
                   <SelectItem value="advanced">Avançado</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select value={durationFilter} onValueChange={setDurationFilter}>
+                <SelectTrigger className="bg-white/5 border-white/10 h-11">
+                  <SelectValue placeholder="Duração" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer Duração</SelectItem>
+                  <SelectItem value="short">{"Curto (< 10min)"}</SelectItem>
+                  <SelectItem value="medium">{"Médio (10-30min)"}</SelectItem>
+                  <SelectItem value="long">{"Longo (> 30min)"}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-white/40 uppercase tracking-widest flex items-center gap-2">
+              <Zap className="h-4 w-4" /> Modos de Entrega
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              <Button 
+                variant={examSprintOnly ? "default" : "outline"} 
+                className={cn("justify-start gap-3 h-11 border-white/10", examSprintOnly && "bg-orange-500 hover:bg-orange-600")}
+                onClick={() => setExamSprintOnly(!examSprintOnly)}
+              >
+                <Flame className="h-4 w-4" /> Exam Sprint
+              </Button>
+              <Button 
+                variant={recoveryOnly ? "default" : "outline"} 
+                className={cn("justify-start gap-3 h-11 border-white/10", recoveryOnly && "bg-blue-600 hover:bg-blue-700")}
+                onClick={() => setRecoveryOnly(!recoveryOnly)}
+              >
+                <RotateCcw className="h-4 w-4" /> Recovery Mode
+              </Button>
             </div>
           </div>
 
@@ -231,6 +295,7 @@ const VideoLessonsExplore = () => {
                 <TabsTrigger value="gold">Conteúdo Ouro</TabsTrigger>
                 <TabsTrigger value="exam_sprint">Exam Sprint</TabsTrigger>
                 <TabsTrigger value="recovery">Recovery Mode</TabsTrigger>
+                <TabsTrigger value="low_mastery">Baixa Maestria</TabsTrigger>
               </TabsList>
             </Tabs>
 

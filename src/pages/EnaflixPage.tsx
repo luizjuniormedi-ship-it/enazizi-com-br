@@ -10,6 +10,8 @@
  * Sem sidebar, sem header sólido, sem caixas administrativas.
  */
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 import { ENAFLIX_MODULES, type EnaflixModule } from "@/data/enaflix/enaflixModules";
@@ -18,6 +20,7 @@ import { EnaflixOverlayNav } from "@/components/enaflix/EnaflixOverlayNav";
 import { EnaflixBillboardRotator } from "@/components/enaflix/EnaflixBillboardRotator";
 import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
+import { EnaflixSectionRowVideo } from "@/components/enaflix/EnaflixSectionRowVideo";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
 import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -38,6 +41,42 @@ export default function EnaflixPage() {
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
+
+  const { data: aiLessons } = useQuery({
+    queryKey: ["enaflix-ai-lessons"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ai_video_lessons")
+        .select("*")
+        .eq("status", "published")
+        .order("published_at", { ascending: false })
+        .limit(10);
+      if (error) return [];
+      return data;
+    }
+  });
+
+  const { data: usageLogs } = useQuery({
+    queryKey: ["enaflix-video-usage"],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      const { data } = await supabase
+        .from("video_lesson_usage_logs")
+        .select("video_lesson_id, completion_rate")
+        .eq("user_id", user.id);
+      return data || [];
+    }
+  });
+
+  const continueLessons = useMemo(() => {
+    if (!aiLessons || !usageLogs) return [];
+    const inProgressIds = usageLogs
+      .filter(log => Number(log.completion_rate) > 0 && Number(log.completion_rate) < 95)
+      .map(log => log.video_lesson_id);
+    
+    return aiLessons.filter(l => inProgressIds.includes(l.id));
+  }, [aiLessons, usageLogs]);
 
   useEffect(() => {
     const prev = document.title;
@@ -216,15 +255,38 @@ export default function EnaflixPage() {
               // Prioridade: Continuar → Recomendados IA → Videoaulas IA → Mais usados → 1 categoria rotativa.
               const rows: React.ReactNode[] = [];
 
-              if (continueModules.length > 0) {
+              if (continueModules.length > 0 || continueLessons.length > 0) {
                 rows.push(
-                  <EnaflixSectionRow
-                    key="continue"
-                    title="Continuar de onde parou"
-                    subtitle="Retome sua jornada"
-                    modules={continueModules}
-                    onNavigate={handleNavigate}
-                  />,
+                  <div key="continue-container" className="space-y-8">
+                    {continueModules.length > 0 && (
+                      <EnaflixSectionRow
+                        key="continue"
+                        title="Continuar de onde parou"
+                        subtitle="Módulos e ferramentas que você estava usando"
+                        modules={continueModules}
+                        onNavigate={handleNavigate}
+                      />
+                    )}
+                    {continueLessons.length > 0 && (
+                      <EnaflixSectionRowVideo
+                        key="continue-lessons"
+                        title="Continuar Assistindo"
+                        subtitle="Suas videoaulas IA em andamento"
+                        lessons={continueLessons}
+                      />
+                    )}
+                  </div>
+                );
+              }
+
+              if (aiLessons && aiLessons.length > 0 && rows.length < 5) {
+                rows.push(
+                  <EnaflixSectionRowVideo
+                    key="ai-videoaulas"
+                    title="Videoaulas IA (CME)"
+                    subtitle="Conteúdo médico cinematográfico personalizado"
+                    lessons={aiLessons}
+                  />
                 );
               }
 
@@ -235,19 +297,6 @@ export default function EnaflixPage() {
                     title="Recomendados pela IA"
                     subtitle="Sugestões inteligentes do ENAZIZI"
                     modules={recommendedModules}
-                    onNavigate={handleNavigate}
-                  />,
-                );
-              }
-
-              const videoaulasModules = visibleModules.filter((m) => m.category === "videoaulas");
-              if (videoaulasModules.length > 0 && rows.length < 5) {
-                rows.push(
-                  <EnaflixSectionRow
-                    key="videoaulas"
-                    title="Videoaulas IA"
-                    subtitle="Conteúdo médico cinematográfico"
-                    modules={videoaulasModules}
                     onNavigate={handleNavigate}
                   />,
                 );
