@@ -11,6 +11,8 @@ import {
   TrendingDown,
   Minus,
   Sparkles,
+  Info,
+  BrainCircuit,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +21,8 @@ import type { StudyNextRecommendation, AdaptiveState } from "@/hooks/useStudyNex
 import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { approvalToneClass, getApprovalFocus } from "@/engines/approvalEngine";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useNavigate } from "react-router-dom";
 
 const TYPE_CONFIG: Record<string, { label: string; icon: string; cta?: string }> = {
   review: { label: "Revisão", icon: "🔄" },
@@ -53,6 +57,7 @@ function CinematicMissionHero({
   onRefresh,
   onShowAlternatives,
 }: Props) {
+  const navigate = useNavigate();
   const cfg = TYPE_CONFIG[recommendation.type] || TYPE_CONFIG.free_study;
   const prediction = useApprovalPrediction();
   const { data: dashData } = useDashboardData();
@@ -169,9 +174,31 @@ function CinematicMissionHero({
               transition={{ delay: 0.1, duration: 0.5 }}
               className="space-y-1"
             >
-              <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-module">
-                <Sparkles className="h-3 w-3" />
-                Sua missão de hoje
+              <div className="flex items-center justify-between w-full">
+                <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-module">
+                  <Sparkles className="h-3 w-3" />
+                  Sua missão de hoje
+                </div>
+                
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 gap-1.5 text-[10px] uppercase font-bold text-muted-foreground/60 hover:text-primary transition-colors"
+                        onClick={() => navigate("/dashboard/minha-jornada")}
+                      >
+                        <BrainCircuit className="h-3 w-3" />
+                        Transparência ACE
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="left" className="max-w-[240px] text-xs">
+                      Esta recomendação foi personalizada pelo motor ACE com base no seu histórico cognitivo. 
+                      Clique para ver o detalhamento da sua jornada adaptativa.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               <h2 className="text-base sm:text-lg text-muted-foreground font-medium">
                 {firstName ? `${firstName}, seu resumo para hoje.` : "Seu resumo para hoje."}
@@ -189,14 +216,28 @@ function CinematicMissionHero({
             </motion.h1>
 
             {/* Descrição */}
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.3, duration: 0.5 }}
-              className="text-sm sm:text-[15px] text-muted-foreground/90 leading-relaxed line-clamp-2 max-w-xl font-medium"
-            >
-              {recommendation.description}
-            </motion.p>
+            <div className="space-y-2">
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="text-sm sm:text-[15px] text-muted-foreground/90 leading-relaxed line-clamp-2 max-w-xl font-medium"
+              >
+                {recommendation.description}
+              </motion.p>
+              
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.35 }}
+                className="flex items-start gap-1.5 p-2 rounded-lg bg-primary/5 border border-primary/10 max-w-md"
+              >
+                <Info className="h-3 w-3 mt-0.5 text-primary shrink-0" />
+                <p className="text-[11px] text-muted-foreground leading-tight italic">
+                  "Por que isso? {adaptiveState?.justification || 'Ajuste adaptativo baseado no seu ritmo de aprendizado atual.'}"
+                </p>
+              </motion.div>
+            </div>
 
             {/* Foco preditivo */}
             {focus && (
