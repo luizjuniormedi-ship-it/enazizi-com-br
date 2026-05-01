@@ -382,14 +382,36 @@ const AdminCinematicEngine = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="analytics" className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
-            Multimodal Retention Scores & Fatigue-Aware Analytics Layer
+          <TabsContent value="analytics" className="space-y-4">
+            <Card className="border-none shadow-sm">
+              <CardHeader className="bg-white border-b">
+                <CardTitle className="text-lg font-black tracking-tight">Multimodal Analytics & Friction Engine</CardTitle>
+                <CardDescription className="text-xs font-bold uppercase opacity-60">High-fidelity tracking of cinematic retention and fatigue reduction</CardDescription>
+              </CardHeader>
+              <CardContent className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
+                 <BarChart3 className="h-12 w-12 mb-4 opacity-20" />
+                 <p>Real-time friction maps and ACE feedback loop status.</p>
+              </CardContent>
+            </Card>
           </TabsContent>
           
-          <TabsContent value="governance" className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold text-center px-12">
-            <Shield className="h-12 w-12 mb-4 opacity-20" />
-            <p className="font-bold text-sm uppercase tracking-tighter">Publication Guardian Active</p>
-            <p className="text-xs mt-2">Mandatory medical, semantic, and cinematic review workflow for all CME outputs.</p>
+          <TabsContent value="governance" className="space-y-4">
+             <Card className="border-none shadow-sm overflow-hidden">
+                <CardHeader className="bg-white border-b flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle className="text-lg font-black tracking-tight">CME Governance Workflow</CardTitle>
+                    <CardDescription className="text-xs font-bold uppercase opacity-60">Mandatory medical, semantic, and cinematic verification queue</CardDescription>
+                  </div>
+                  <Badge className="bg-red-500/10 text-red-600 border-red-200 uppercase font-black text-[10px]">Publication Guardian Active</Badge>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="p-12 text-center text-slate-400 italic font-bold">
+                    <Shield className="h-12 w-12 mb-4 opacity-20 mx-auto" />
+                    <p className="font-bold text-sm uppercase tracking-tighter">Review Queue Management</p>
+                    <p className="text-xs font-normal max-w-md mx-auto mt-2">All CME outputs must undergo semantic, narrative, and medical review before public release.</p>
+                  </div>
+                </CardContent>
+             </Card>
           </TabsContent>
         </Tabs>
       </div>
