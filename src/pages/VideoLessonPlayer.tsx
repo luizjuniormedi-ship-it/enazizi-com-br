@@ -545,7 +545,7 @@ const VideoLessonPlayer = () => {
                 // Status-based rendering if no real media is available
                 const mediaStatus = (lesson as any).media_status || 'queued';
                 
-                if (mediaStatus === 'rendering' || mediaStatus === 'processing' || isCMEVideo) {
+                if (mediaStatus === 'rendering' || mediaStatus === 'processing') {
                   return (
                     <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
                       <div className="relative">
