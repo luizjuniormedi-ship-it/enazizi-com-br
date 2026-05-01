@@ -334,15 +334,18 @@ export type Database = {
       }
       adaptive_student_profiles: {
         Row: {
+          circadian_intelligence_active: boolean | null
           cognitive_load_estimate: number | null
           cognitive_stress_index: number | null
           current_session_mode: string | null
+          drift_score: number | null
           fatigue_index: number | null
           id: string
           intervention_frequency_score: number | null
           last_intervention_at: string | null
           last_policy_violation_at: string | null
           last_recovery_at: string | null
+          longitudinal_patterns: Json | null
           mastery_map: Json | null
           multimodal_preference_score: Json | null
           orchestration_intensity: string | null
@@ -355,15 +358,18 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          circadian_intelligence_active?: boolean | null
           cognitive_load_estimate?: number | null
           cognitive_stress_index?: number | null
           current_session_mode?: string | null
+          drift_score?: number | null
           fatigue_index?: number | null
           id?: string
           intervention_frequency_score?: number | null
           last_intervention_at?: string | null
           last_policy_violation_at?: string | null
           last_recovery_at?: string | null
+          longitudinal_patterns?: Json | null
           mastery_map?: Json | null
           multimodal_preference_score?: Json | null
           orchestration_intensity?: string | null
@@ -376,15 +382,18 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          circadian_intelligence_active?: boolean | null
           cognitive_load_estimate?: number | null
           cognitive_stress_index?: number | null
           current_session_mode?: string | null
+          drift_score?: number | null
           fatigue_index?: number | null
           id?: string
           intervention_frequency_score?: number | null
           last_intervention_at?: string | null
           last_policy_violation_at?: string | null
           last_recovery_at?: string | null
+          longitudinal_patterns?: Json | null
           mastery_map?: Json | null
           multimodal_preference_score?: Json | null
           orchestration_intensity?: string | null
@@ -1986,6 +1995,75 @@ export type Database = {
           specialty?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cognitive_drift_logs: {
+        Row: {
+          detected_at: string | null
+          drift_type: string
+          evidence: Json | null
+          id: string
+          mitigation_action: string | null
+          severity: number | null
+          user_id: string
+        }
+        Insert: {
+          detected_at?: string | null
+          drift_type: string
+          evidence?: Json | null
+          id?: string
+          mitigation_action?: string | null
+          severity?: number | null
+          user_id: string
+        }
+        Update: {
+          detected_at?: string | null
+          drift_type?: string
+          evidence?: Json | null
+          id?: string
+          mitigation_action?: string | null
+          severity?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cognitive_rhythm_snapshots: {
+        Row: {
+          avg_accuracy: number | null
+          avg_fatigue_index: number | null
+          avg_stress_index: number | null
+          day_of_week: number | null
+          hour_of_day: number | null
+          id: string
+          retention_efficiency: number | null
+          sample_size: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          avg_accuracy?: number | null
+          avg_fatigue_index?: number | null
+          avg_stress_index?: number | null
+          day_of_week?: number | null
+          hour_of_day?: number | null
+          id?: string
+          retention_efficiency?: number | null
+          sample_size?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          avg_accuracy?: number | null
+          avg_fatigue_index?: number | null
+          avg_stress_index?: number | null
+          day_of_week?: number | null
+          hour_of_day?: number | null
+          id?: string
+          retention_efficiency?: number | null
+          sample_size?: number | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -13757,6 +13835,7 @@ export type Database = {
         Args: { _assignment_id: string; _user_id: string }
         Returns: boolean
       }
+      sync_cognitive_rhythm: { Args: { p_user_id: string }; Returns: undefined }
       tutor_memory_adjust_quality: {
         Args: { _delta: number; _memory_id: string }
         Returns: undefined

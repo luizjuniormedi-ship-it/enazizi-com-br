@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Brain, Activity, Clock, Zap, Target, MousePointer2, AlertTriangle, TrendingUp, History } from "lucide-react";
+import { Brain, Activity, Clock, Zap, Target, MousePointer2, AlertTriangle, TrendingUp, History, LineChart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Progress } from "@/components/ui/progress";
@@ -127,11 +127,62 @@ export default function AdminCognitiveOrchestrator() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <SessionTimelineMonitor />
-        <RetentionByModeCard />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <SessionTimelineMonitor />
+        </div>
+        <div className="lg:col-span-1 space-y-4">
+          <RetentionByModeCard />
+          <CognitiveDriftMonitor />
+        </div>
       </div>
     </div>
+  );
+}
+
+function CognitiveDriftMonitor() {
+  const { data: driftLogs } = useQuery({
+    queryKey: ["admin-drift-logs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cognitive_drift_logs")
+        .select(`
+          *,
+          profiles (display_name)
+        `)
+        .order("detected_at", { ascending: false })
+        .limit(10);
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm font-bold flex items-center gap-2">
+          <LineChart className="h-4 w-4 text-orange-500" />
+          Cognitive Drift Detection
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {(!driftLogs || driftLogs.length === 0) ? (
+          <p className="text-[10px] text-muted-foreground italic text-center py-4">Nenhum drift detectado na rede.</p>
+        ) : (
+          driftLogs.map((log: any) => (
+            <div key={log.id} className="p-2 rounded-lg border border-orange-200 bg-orange-500/5 space-y-1">
+              <div className="flex justify-between items-start">
+                <span className="text-[10px] font-bold">{log.profiles?.display_name}</span>
+                <Badge variant="outline" className="text-[8px] uppercase border-orange-300 text-orange-700">
+                  {log.drift_type}
+                </Badge>
+              </div>
+              <p className="text-[9px] text-muted-foreground leading-tight">Ação: {log.mitigation_action}</p>
+            </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BrainCircuit, Activity, Zap, ShieldCheck, History, Info, TrendingUp, Sparkles, Sliders, Check } from "lucide-react";
+import { BrainCircuit, Activity, Zap, ShieldCheck, History, Info, TrendingUp, Sparkles, Sliders, Check, Clock } from "lucide-react";
 import { useAdaptiveJourney, useCognitiveHistory } from "@/hooks/useAdaptiveJourney";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { CognitiveSessionController } from "@/components/CognitiveSessionController";
+import { CognitiveRhythmMonitor } from "@/components/CognitiveRhythmMonitor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function MedicalAdaptiveJourney() {
   const { data: events, isLoading } = useAdaptiveJourney();
@@ -32,81 +34,97 @@ export default function MedicalAdaptiveJourney() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <section className="space-y-4">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-              <History className="h-4 w-4" /> Timeline de Ajustes
-            </h3>
-            {events?.length === 0 ? (
-              <Card className="p-12 text-center border-dashed">
-                <p className="text-muted-foreground italic">Sua jornada ainda está sendo calibrada.</p>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {events?.map((event) => (
-                  <JourneyEventCard key={event.id} event={event} />
-                ))}
-              </div>
-            )}
-          </section>
-        </div>
+      <Tabs defaultValue="session" className="space-y-6">
+        <TabsList className="bg-muted/50 p-1">
+          <TabsTrigger value="session" className="text-xs gap-2">
+            <Zap className="h-3.5 w-3.5" /> Sessão Atual
+          </TabsTrigger>
+          <TabsTrigger value="longitudinal" className="text-xs gap-2">
+            <Clock className="h-3.5 w-3.5" /> Ritmo Longitudinal
+          </TabsTrigger>
+        </TabsList>
 
-        <div className="lg:col-span-1 space-y-6">
-          <CognitiveSessionController />
-
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Activity className="h-4 w-4 text-primary" /> Histórico de Stress
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="h-40 flex items-end gap-1 px-4">
-              {/* Mock visualization of history */}
-              {[40, 30, 25, 60, 45, 30, 20, 35, 15, 25].map((val, i) => (
-                <div 
-                  key={i} 
-                  className="flex-1 bg-primary/20 rounded-t-sm transition-all hover:bg-primary/40"
-                  style={{ height: `${val}%` }}
-                />
-              ))}
-            </CardContent>
-            <div className="px-4 pb-4 text-[10px] text-muted-foreground text-center">
-              Variação de carga cognitiva nos últimos 7 dias
+        <TabsContent value="session">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <section className="space-y-4">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                  <History className="h-4 w-4" /> Timeline de Ajustes
+                </h3>
+                {events?.length === 0 ? (
+                  <Card className="p-12 text-center border-dashed">
+                    <p className="text-muted-foreground italic">Sua jornada ainda está sendo calibrada.</p>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {events?.map((event) => (
+                      <JourneyEventCard key={event.id} event={event} />
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
-          </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Sliders className="h-4 w-4 text-primary" /> Intensidade ACE
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-col gap-2">
-                <IntensityOption 
-                  label="Silencioso" 
-                  description="Menos intervenções, foco em autonomia."
-                  active={false}
-                />
-                <IntensityOption 
-                  label="Equilibrado" 
-                  description="Otimização padrão do motor adaptativo."
-                  active={true}
-                />
-                <IntensityOption 
-                  label="Intenso" 
-                  description="Máxima proatividade e micro-revisões."
-                  active={false}
-                />
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-2">
-                Define a frequência com que o motor ACE sugere mudanças de rota.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+            <div className="lg:col-span-1 space-y-6">
+              <CognitiveSessionController />
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" /> Histórico de Stress
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="h-40 flex items-end gap-1 px-4">
+                  {[40, 30, 25, 60, 45, 30, 20, 35, 15, 25].map((val, i) => (
+                    <div 
+                      key={i} 
+                      className="flex-1 bg-primary/20 rounded-t-sm transition-all hover:bg-primary/40"
+                      style={{ height: `${val}%` }}
+                    />
+                  ))}
+                </CardContent>
+                <div className="px-4 pb-4 text-[10px] text-muted-foreground text-center">
+                  Variação de carga cognitiva nos últimos 7 dias
+                </div>
+              </Card>
+
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center gap-2">
+                    <Sliders className="h-4 w-4 text-primary" /> Intensidade ACE
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex flex-col gap-2">
+                    <IntensityOption 
+                      label="Silencioso" 
+                      description="Menos intervenções, foco em autonomia."
+                      active={false}
+                    />
+                    <IntensityOption 
+                      label="Equilibrado" 
+                      description="Otimização padrão do motor adaptativo."
+                      active={true}
+                    />
+                    <IntensityOption 
+                      label="Intenso" 
+                      description="Máxima proatividade e micro-revisões."
+                      active={false}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-2">
+                    Define a frequência com que o motor ACE sugere mudanças de rota.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="longitudinal">
+          <CognitiveRhythmMonitor />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
