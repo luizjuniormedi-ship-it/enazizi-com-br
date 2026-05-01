@@ -299,6 +299,126 @@ export type Database = {
           },
         ]
       }
+      adaptive_schedule_adjustments: {
+        Row: {
+          cognitive_state: Json | null
+          created_at: string | null
+          id: string
+          new_schedule: Json | null
+          previous_schedule: Json | null
+          projected_gain: number | null
+          reason: string | null
+          trigger_type: string | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_state?: Json | null
+          created_at?: string | null
+          id?: string
+          new_schedule?: Json | null
+          previous_schedule?: Json | null
+          projected_gain?: number | null
+          reason?: string | null
+          trigger_type?: string | null
+          user_id: string
+        }
+        Update: {
+          cognitive_state?: Json | null
+          created_at?: string | null
+          id?: string
+          new_schedule?: Json | null
+          previous_schedule?: Json | null
+          projected_gain?: number | null
+          reason?: string | null
+          trigger_type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adaptive_schedule_profiles: {
+        Row: {
+          circadian_profile: string | null
+          cognitive_resilience_score: number | null
+          created_at: string | null
+          drift_sensitivity: number | null
+          fatigue_threshold: number | null
+          id: string
+          last_recalculated_at: string | null
+          modality_preferences: Json | null
+          optimal_study_windows: Json | null
+          preferred_session_duration: number | null
+          recovery_efficiency: number | null
+          user_id: string
+        }
+        Insert: {
+          circadian_profile?: string | null
+          cognitive_resilience_score?: number | null
+          created_at?: string | null
+          drift_sensitivity?: number | null
+          fatigue_threshold?: number | null
+          id?: string
+          last_recalculated_at?: string | null
+          modality_preferences?: Json | null
+          optimal_study_windows?: Json | null
+          preferred_session_duration?: number | null
+          recovery_efficiency?: number | null
+          user_id: string
+        }
+        Update: {
+          circadian_profile?: string | null
+          cognitive_resilience_score?: number | null
+          created_at?: string | null
+          drift_sensitivity?: number | null
+          fatigue_threshold?: number | null
+          id?: string
+          last_recalculated_at?: string | null
+          modality_preferences?: Json | null
+          optimal_study_windows?: Json | null
+          preferred_session_duration?: number | null
+          recovery_efficiency?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adaptive_schedule_simulations: {
+        Row: {
+          created_at: string | null
+          estimated_mastery_gain: number | null
+          id: string
+          predicted_drift: number | null
+          predicted_fatigue: number | null
+          predicted_overload: number | null
+          predicted_retention: number | null
+          recommended_sequence: Json | null
+          simulation_confidence: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          estimated_mastery_gain?: number | null
+          id?: string
+          predicted_drift?: number | null
+          predicted_fatigue?: number | null
+          predicted_overload?: number | null
+          predicted_retention?: number | null
+          recommended_sequence?: Json | null
+          simulation_confidence?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          estimated_mastery_gain?: number | null
+          id?: string
+          predicted_drift?: number | null
+          predicted_fatigue?: number | null
+          predicted_overload?: number | null
+          predicted_retention?: number | null
+          recommended_sequence?: Json | null
+          simulation_confidence?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       adaptive_session_logs: {
         Row: {
           cognitive_snapshot: Json | null
@@ -2093,6 +2213,51 @@ export type Database = {
           load_index?: number
           session_id?: string | null
           stress_index?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cognitive_window_performance: {
+        Row: {
+          drift_rate: number | null
+          fatigue_score: number | null
+          hour_window: number | null
+          id: string
+          replay_rate: number | null
+          retention_score: number | null
+          sample_size: number | null
+          specialty: string | null
+          stress_score: number | null
+          tutor_dependency: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          drift_rate?: number | null
+          fatigue_score?: number | null
+          hour_window?: number | null
+          id?: string
+          replay_rate?: number | null
+          retention_score?: number | null
+          sample_size?: number | null
+          specialty?: string | null
+          stress_score?: number | null
+          tutor_dependency?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          drift_rate?: number | null
+          fatigue_score?: number | null
+          hour_window?: number | null
+          id?: string
+          replay_rate?: number | null
+          retention_score?: number | null
+          sample_size?: number | null
+          specialty?: string | null
+          stress_score?: number | null
+          tutor_dependency?: number | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
