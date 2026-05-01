@@ -244,6 +244,7 @@ const App = () => (
                    <Route path="notebooklm-analytics" element={<NotebookLMAnalytics />} />
                    <Route path="video-lessons" element={<VideoLessonsAdmin />} />
                    <Route path="video-lessons/:id" element={<VideoLessonDetailsAdmin />} />
+                   <Route path="specialty-friction" element={<SpecialtyFrictionReport />} />
                    <Route path="ingestion-network" element={<OfficialExamIngestion />} />
                </Route>
 
