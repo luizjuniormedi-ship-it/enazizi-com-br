@@ -100,7 +100,7 @@ export const useTutorCME = () => {
     };
   }, [state.projectId, state.status, supabaseClient, checkWorkerHealth]);
 
-  const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string, aggregationId?: string) => {
+  const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string, aggregationId?: string, metadata?: any) => {
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
       await supabaseClient.from("cme_pipeline_events").insert([{
@@ -110,7 +110,8 @@ export const useTutorCME = () => {
         status,
         progress,
         message,
-        user_id: user?.id
+        user_id: user?.id,
+        metadata: metadata || {}
       } as any]);
       
       if (aggregationId) {
