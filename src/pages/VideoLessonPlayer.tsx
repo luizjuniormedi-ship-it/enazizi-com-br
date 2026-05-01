@@ -43,6 +43,9 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 
+import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommendationCard";
+import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";
+
 const VideoLessonPlayer = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -56,6 +59,14 @@ const VideoLessonPlayer = () => {
   const lastLogTime = useRef(0);
   const pauseStartTime = useRef<number | null>(null);
   const hasNotifiedDifficulty = useRef<Set<string>>(new Set());
+  
+  const { 
+    recommendations, 
+    acceptRecommendation, 
+    ignoreRecommendation, 
+    triggerEvaluation,
+    shadowMode 
+  } = useAdaptiveEngine(id);
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ["video-lesson", id],
@@ -417,6 +428,17 @@ const VideoLessonPlayer = () => {
                   <Badge className="bg-green-500 gap-1">
                     <CheckCircle className="h-3 w-3" /> Concluído
                   </Badge>
+                </div>
+              )}
+
+              {/* FASE 4: Recomendações Adaptativas ACE */}
+              {!shadowMode && recommendations.length > 0 && (
+                <div className="absolute bottom-4 right-4 z-50 w-80">
+                  <AdaptiveRecommendationCard 
+                    recommendation={recommendations[0]}
+                    onAccept={acceptRecommendation}
+                    onIgnore={ignoreRecommendation}
+                  />
                 </div>
               )}
 
