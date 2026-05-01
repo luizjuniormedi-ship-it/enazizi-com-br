@@ -319,5 +319,4 @@ const GlobalCognitiveHeatmap = () => {
 };
 
 export default GlobalCognitiveHeatmap;
-
 import { ScrollArea } from "@/components/ui/scroll-area";
