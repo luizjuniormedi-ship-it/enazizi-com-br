@@ -2338,6 +2338,38 @@ export type Database = {
           },
         ]
       }
+      cme_attention_maps: {
+        Row: {
+          cognitive_load_curve: Json
+          created_at: string | null
+          heatmap_data: Json
+          id: string
+          lineage_id: string | null
+        }
+        Insert: {
+          cognitive_load_curve: Json
+          created_at?: string | null
+          heatmap_data: Json
+          id?: string
+          lineage_id?: string | null
+        }
+        Update: {
+          cognitive_load_curve?: Json
+          created_at?: string | null
+          heatmap_data?: Json
+          id?: string
+          lineage_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_attention_maps_lineage_id_fkey"
+            columns: ["lineage_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_lineage"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_autonomous_optimizations: {
         Row: {
           applied_at: string | null
@@ -3097,6 +3129,7 @@ export type Database = {
           source_message_ids: string[] | null
           title: string
           updated_at: string
+          variant_id: string | null
         }
         Insert: {
           aggregation_id: string
@@ -3111,6 +3144,7 @@ export type Database = {
           source_message_ids?: string[] | null
           title: string
           updated_at?: string
+          variant_id?: string | null
         }
         Update: {
           aggregation_id?: string
@@ -3125,6 +3159,7 @@ export type Database = {
           source_message_ids?: string[] | null
           title?: string
           updated_at?: string
+          variant_id?: string | null
         }
         Relationships: [
           {
@@ -3132,6 +3167,13 @@ export type Database = {
             columns: ["aggregation_id"]
             isOneToOne: false
             referencedRelation: "cme_session_aggregations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_lesson_blocks_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_variants"
             referencedColumns: ["id"]
           },
         ]
@@ -3389,6 +3431,35 @@ export type Database = {
           },
         ]
       }
+      cme_overlay_clusters: {
+        Row: {
+          block_id: string | null
+          cluster_data: Json
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          block_id?: string | null
+          cluster_data: Json
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          block_id?: string | null
+          cluster_data?: Json
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_overlay_clusters_block_id_fkey"
+            columns: ["block_id"]
+            isOneToOne: false
+            referencedRelation: "cme_lesson_blocks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_pipeline_events: {
         Row: {
           created_at: string
@@ -3576,6 +3647,59 @@ export type Database = {
             columns: ["video_lesson_id"]
             isOneToOne: false
             referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_quality_reviews: {
+        Row: {
+          aggregation_id: string | null
+          approved: boolean | null
+          continuity_score: number | null
+          created_at: string | null
+          drift_score: number | null
+          fatigue_score: number | null
+          id: string
+          narrative_score: number | null
+          pacing_score: number | null
+          quality_score: number | null
+          review_notes: string | null
+          reviewer_id: string | null
+        }
+        Insert: {
+          aggregation_id?: string | null
+          approved?: boolean | null
+          continuity_score?: number | null
+          created_at?: string | null
+          drift_score?: number | null
+          fatigue_score?: number | null
+          id?: string
+          narrative_score?: number | null
+          pacing_score?: number | null
+          quality_score?: number | null
+          review_notes?: string | null
+          reviewer_id?: string | null
+        }
+        Update: {
+          aggregation_id?: string | null
+          approved?: boolean | null
+          continuity_score?: number | null
+          created_at?: string | null
+          drift_score?: number | null
+          fatigue_score?: number | null
+          id?: string
+          narrative_score?: number | null
+          pacing_score?: number | null
+          quality_score?: number | null
+          review_notes?: string | null
+          reviewer_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_quality_reviews_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregations"
             referencedColumns: ["id"]
           },
         ]
@@ -4010,6 +4134,54 @@ export type Database = {
           },
         ]
       }
+      cme_render_lineage: {
+        Row: {
+          aggregation_id: string | null
+          created_at: string | null
+          id: string
+          output_url: string | null
+          parent_render_id: string | null
+          render_job_id: string | null
+          scene_graph_id: string | null
+          variant_id: string | null
+        }
+        Insert: {
+          aggregation_id?: string | null
+          created_at?: string | null
+          id?: string
+          output_url?: string | null
+          parent_render_id?: string | null
+          render_job_id?: string | null
+          scene_graph_id?: string | null
+          variant_id?: string | null
+        }
+        Update: {
+          aggregation_id?: string | null
+          created_at?: string | null
+          id?: string
+          output_url?: string | null
+          parent_render_id?: string | null
+          render_job_id?: string | null
+          scene_graph_id?: string | null
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_lineage_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_lineage_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_variants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_render_outputs: {
         Row: {
           codec: string | null
@@ -4220,6 +4392,33 @@ export type Database = {
           },
         ]
       }
+      cme_scene_transitions: {
+        Row: {
+          created_at: string | null
+          duration_ms: number | null
+          from_node_id: string | null
+          id: string
+          to_node_id: string | null
+          transition_type: string
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number | null
+          from_node_id?: string | null
+          id?: string
+          to_node_id?: string | null
+          transition_type: string
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number | null
+          from_node_id?: string | null
+          id?: string
+          to_node_id?: string | null
+          transition_type?: string
+        }
+        Relationships: []
+      }
       cme_semantic_plans: {
         Row: {
           clinical_priority_points: string[] | null
@@ -4343,6 +4542,50 @@ export type Database = {
             columns: ["tutor_session_id"]
             isOneToOne: false
             referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_session_variants: {
+        Row: {
+          aggregation_id: string | null
+          cognitive_density: number | null
+          created_at: string | null
+          id: string
+          pacing_profile: Json | null
+          retention_projection: number | null
+          target_duration: number | null
+          variant_type: string
+          voice_profile: string | null
+        }
+        Insert: {
+          aggregation_id?: string | null
+          cognitive_density?: number | null
+          created_at?: string | null
+          id?: string
+          pacing_profile?: Json | null
+          retention_projection?: number | null
+          target_duration?: number | null
+          variant_type: string
+          voice_profile?: string | null
+        }
+        Update: {
+          aggregation_id?: string | null
+          cognitive_density?: number | null
+          created_at?: string | null
+          id?: string
+          pacing_profile?: Json | null
+          retention_projection?: number | null
+          target_duration?: number | null
+          variant_type?: string
+          voice_profile?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_session_variants_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregations"
             referencedColumns: ["id"]
           },
         ]
