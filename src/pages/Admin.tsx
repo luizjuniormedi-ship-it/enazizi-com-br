@@ -108,6 +108,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "telegram", label: "Telegram", icon: Send },
       ],
     },
+    {
       title: "Intelligence Engine",
       icon: BrainCircuit,
       items: [
