@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -43,6 +43,7 @@ const AdminModalityPanel = lazy(() => import("@/components/admin/AdminModalityPa
 const AdminHygieneDashboard = lazy(() => import("@/components/admin/AdminHygieneDashboard"));
 const AdminLargeUploadPanel = lazy(() => import("@/components/admin/AdminLargeUploadPanel"));
 const SpecialtyFrictionReport = lazy(() => import("@/pages/admin/SpecialtyFrictionReport"));
+const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -91,6 +92,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "scraping", label: "Web Scraping", icon: HardDrive },
         { key: "qa", label: "QA Bot", icon: Bug },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
+        { key: "system-checklist", label: "System Checklist", icon: ShieldCheck },
       ],
     },
     {
@@ -675,6 +677,7 @@ const Admin = () => {
             {activeSection === "scraping" && <AdminWebScrapingPanel />}
             {activeSection === "qa" && <AdminQAPanel />}
             {activeSection === "ai-studio" && <AIStudio />}
+            {activeSection === "system-checklist" && <SystemChecklist />}
 
             {/* Communication */}
             {activeSection === "messages" && <AdminMessagesPanel />}
