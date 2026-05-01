@@ -56,7 +56,7 @@ interface TutorMessageItemProps {
 
 const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty }: TutorMessageItemProps) => {
   const navigate = useNavigate();
-  const { state, transformToVideo, resetState } = useTutorCME();
+  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState } = useTutorCME();
   const { isAdmin, isProfessor, roles } = useUserRoles();
   const { isEnabled } = useFeatureFlags();
 
@@ -207,9 +207,9 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { id: 'planning', label: 'Semantic Planning' },
-                      { id: 'scripting', label: 'Narrative Building' },
-                      { id: 'graphing', label: 'Scene Graph' },
-                      { id: 'rendering', label: 'GPU Rendering' }
+                      { id: 'mapping', label: 'Knowledge Mapping' },
+                      { id: 'graphing', label: 'Scene Graphing' },
+                      { id: 'rendering', label: 'Cinematic Render' }
                     ].map((step, idx) => (
                       <div key={step.id} className={cn(
                         "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
@@ -225,15 +225,38 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     ))}
                   </div>
 
-                  {state.isStuck && state.status === 'rendering' && (
-                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1">
-                      <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold">
-                        <AlertCircle className="h-3 w-3" />
-                        WORKER OFFLINE
+                  {workerHealth && (
+                    <div className="flex items-center gap-4 px-2 py-1 bg-white/5 rounded border border-white/10 text-[9px] text-slate-400">
+                      <div className="flex items-center gap-1">
+                        <div className={cn("h-1 w-1 rounded-full", workerHealth.workers_online > 0 ? "bg-green-500" : "bg-red-500")} />
+                        GPU Workers: {workerHealth.workers_online}
                       </div>
-                      <p className="text-[9px] text-blue-300/70 italic">
-                        Renderização automática pendente de worker GPU real. O projeto está pronto para edição no Builder.
+                      {workerHealth.workers_online > 0 && (
+                        <>
+                          <div>VRAM: {Math.round((workerHealth.used_vram_mb / workerHealth.total_vram_mb) * 100)}%</div>
+                          <div>Load: {Math.round(workerHealth.avg_load)}%</div>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {state.isStuck && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2">
+                      <div className="flex items-center gap-2 text-amber-400 text-[10px] font-bold">
+                        <AlertCircle className="h-3 w-3" />
+                        PIPELINE EM ESPERA (STANDBY)
+                      </div>
+                      <p className="text-[9px] text-amber-300/70 italic">
+                        O cluster GPU está com alta demanda ou offline. Você pode aguardar ou usar o fallback pedagógico instantâneo.
                       </p>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="w-full h-7 text-[10px] bg-amber-500/20 border-amber-500/30 text-amber-500 hover:bg-amber-500/30"
+                        onClick={() => state.projectId && triggerPedagogicalFallback(state.projectId)}
+                      >
+                        Ativar Fallback de Slides
+                      </Button>
                     </div>
                   )}
 
