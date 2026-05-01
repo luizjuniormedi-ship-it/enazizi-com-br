@@ -3203,6 +3203,7 @@ export type Database = {
           provider: string
           region: string
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -3213,6 +3214,7 @@ export type Database = {
           provider: string
           region: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -3223,6 +3225,7 @@ export type Database = {
           provider?: string
           region?: string
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -4080,6 +4083,7 @@ export type Database = {
           name: string
           retry_policy_id: string | null
           timeout_seconds: number | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -4088,6 +4092,7 @@ export type Database = {
           name: string
           retry_policy_id?: string | null
           timeout_seconds?: number | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -4096,6 +4101,7 @@ export type Database = {
           name?: string
           retry_policy_id?: string | null
           timeout_seconds?: number | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -5095,6 +5101,7 @@ export type Database = {
           max_concurrency: number | null
           name: string
           priority_id: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -5104,6 +5111,7 @@ export type Database = {
           max_concurrency?: number | null
           name: string
           priority_id?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -5113,6 +5121,7 @@ export type Database = {
           max_concurrency?: number | null
           name?: string
           priority_id?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -6030,6 +6039,7 @@ export type Database = {
           title: string
           topic_id: string | null
           updated_at: string
+          user_id: string | null
           validation_checks: Json | null
         }
         Insert: {
@@ -6049,6 +6059,7 @@ export type Database = {
           title: string
           topic_id?: string | null
           updated_at?: string
+          user_id?: string | null
           validation_checks?: Json | null
         }
         Update: {
@@ -6068,6 +6079,7 @@ export type Database = {
           title?: string
           topic_id?: string | null
           updated_at?: string
+          user_id?: string | null
           validation_checks?: Json | null
         }
         Relationships: [
