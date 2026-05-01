@@ -500,8 +500,45 @@ serve(async (req) => {
       priorityScore: scoreFreeStudy(ctx),
     });
 
+    // ── Cognitive Fatigue Recovery Logic ──
+    if (cognitiveStress > 0.8 || recoveryActive) {
+      // Penalize pro-active/heavy interventions when stress is high
+      candidates.forEach(c => {
+        if (c.type === 'mnemonic' || c.type === 'image_quiz') {
+          c.priorityScore *= 0.7; // 30% reduction for heavy cognitive tasks
+        }
+        if (c.type === 'free_study') {
+          c.priorityScore *= 1.2; // Favor free exploration
+        }
+      });
+    }
+
+    // ── Adaptive Experimentation Assignment ──
+    const activeExps = (active_experiments as any) || [];
+    const userAss = new Map((user_assignments as any[] || []).map(a => [a.experiment_id, a.variant_id]));
+    
     // ── Sort and pick ──
     candidates.sort((a, b) => b.priorityScore - a.priorityScore);
+
+    let recommendation = candidates[0];
+    
+    // Assign user to active experiments if they match the trigger
+    for (const exp of activeExps) {
+      if (!userAss.has(exp.id)) {
+        // Simple random assignment for A/B (deterministic-ish)
+        const variants = exp.variants as any[];
+        const variant = variants[Math.floor(Math.random() * variants.length)];
+        
+        // Fire-and-forget assignment
+        db.from("user_experiment_assignments").insert({
+          user_id: userId,
+          experiment_id: exp.id,
+          variant_id: variant.id
+        }).then(() => {});
+        
+        userAss.set(exp.id, variant.id);
+      }
+    }
 
     const recommendation = candidates[0];
     const alternativeActions = pickDiverseAlternatives(candidates, recommendation.type);
