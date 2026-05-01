@@ -133,14 +133,21 @@ const AdminCinematicEngine = () => {
   const { data: renderJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ["cme-render-jobs"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("cme_render_jobs")
         .select(`
           *,
           project:cme_video_projects(title, config),
           events:cme_pipeline_events(*)
-        `)
-        .order("queued_at", { ascending: false });
+        `);
+      
+      const params = new URLSearchParams(window.location.search);
+      const projectId = window.location.pathname.split('/').pop();
+      if (projectId && projectId !== 'cinematic-engine') {
+        query = query.eq('project_id', projectId);
+      }
+      
+      const { data, error } = await query.order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     }
