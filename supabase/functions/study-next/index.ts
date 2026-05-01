@@ -376,7 +376,7 @@ serve(async (req) => {
           ? `Treino visual: ${topic.tema}`
           : "Treino de interpretação visual";
 
-      let description: string;
+      let imgDescription: string;
       if (targetType && typeName) {
         const snap = Array.isArray(visualSnapshots)
           ? visualSnapshots.find((s: any) => s.image_type === targetType)
