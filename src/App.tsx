@@ -130,6 +130,9 @@ const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEO
 const CinematicSessionBuilder = lazyWithRetry(() => import("./pages/admin/CinematicSessionBuilder"), "CinematicSessionBuilder");
 const CinematicBuilder = lazyWithRetry(() => import("./pages/admin/CinematicBuilder"), "CinematicBuilder");
 const CMEExecutiveDashboard = lazyWithRetry(() => import("./pages/admin/cme/ExecutiveDashboard"), "CMEExecutiveDashboard");
+const CMEGPUFleet = lazyWithRetry(() => import("./pages/admin/cme/GPUFleet"), "CMEGPUFleet");
+const CMERenderQueues = lazyWithRetry(() => import("./pages/admin/cme/RenderQueues"), "CMERenderQueues");
+const CMEObservability = lazyWithRetry(() => import("./pages/admin/cme/Observability"), "CMEObservability");
 
 
 
