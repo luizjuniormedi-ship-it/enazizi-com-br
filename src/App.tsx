@@ -242,6 +242,7 @@ const App = () => (
                 <Route path="classification-runner" element={<ClassificationRunner />} />
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="cme-status" element={<CMEStatus />} />
+                <Route path="cme-incidents" element={<CMEIncidents />} />
                 <Route path="curriculum-coverage" element={<CurriculumCoverage />} />
                 <Route path="granular-generator" element={<GranularGeneratorMonitor />} />
                 <Route path="generator-telemetry" element={<GeneratorTelemetry />} />
