@@ -110,6 +110,7 @@ const NotebookLMSync = lazyWithRetry(() => import("./pages/admin/NotebookLMSync"
 const NotebookLMAnalytics = lazyWithRetry(() => import("./pages/admin/NotebookLMAnalytics"), "NotebookLMAnalytics");
 const VideoLessonsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonsAdmin"), "VideoLessonsAdmin");
 const VideoLessonDetailsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonDetailsAdmin"), "VideoLessonDetailsAdmin");
+const OfficialExamIngestion = lazyWithRetry(() => import("./pages/admin/OfficialExamIngestion"), "OfficialExamIngestion");
 const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibrary"), "VideoLessonsLibrary");
 const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"), "VideoLessonPlayer");
 
