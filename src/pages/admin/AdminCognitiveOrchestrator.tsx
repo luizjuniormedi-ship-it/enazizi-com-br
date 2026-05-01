@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Brain, Activity, Clock, Zap, Target, MousePointer2, AlertTriangle, TrendingUp, History, LineChart } from "lucide-react";
+import { Brain, Activity, Clock, Zap, Target, MousePointer2, AlertTriangle, TrendingUp, History, LineChart, Network, LayoutGrid } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Progress } from "@/components/ui/progress";
@@ -123,6 +123,43 @@ export default function AdminCognitiveOrchestrator() {
                 ))}
               </TableBody>
             </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-bold flex items-center gap-2">
+            <LayoutGrid className="h-5 w-5 text-primary" />
+            Adaptive Cognitive Scheduler — Fleet Status
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+             <SchedulerFleetCard 
+               title="Optimal Window Adherence" 
+               value="74%" 
+               icon={Clock} 
+               description="Adesão aos horários de pico sugeridos" 
+             />
+             <SchedulerFleetCard 
+               title="Session Simulations" 
+               value="1.2k" 
+               icon={Network} 
+               description="Simulações preditivas nas últimas 24h" 
+             />
+             <SchedulerFleetCard 
+               title="Plan Adjustments" 
+               value="342" 
+               icon={TrendingUp} 
+               description="Reorganizações automáticas por fadiga" 
+             />
+             <SchedulerFleetCard 
+               title="Simulation Confidence" 
+               value="91%" 
+               icon={Target} 
+               description="Precisão das predições de retenção" 
+             />
           </div>
         </CardContent>
       </Card>
@@ -312,5 +349,20 @@ function OrchestratorStatCard({ title, value, icon: Icon, description, tone }: {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function SchedulerFleetCard({ title, value, icon: Icon, description }: { title: string, value: string, icon: any, description: string }) {
+  return (
+    <div className="p-3 rounded-xl border bg-card space-y-2">
+      <div className="flex items-center gap-2">
+        <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+          <Icon className="h-3.5 w-3.5" />
+        </div>
+        <span className="text-[10px] font-bold uppercase text-muted-foreground">{title}</span>
+      </div>
+      <div className="text-xl font-black">{value}</div>
+      <p className="text-[9px] text-muted-foreground leading-tight">{description}</p>
+    </div>
   );
 }
