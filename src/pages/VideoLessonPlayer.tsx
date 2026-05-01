@@ -31,7 +31,8 @@ import {
   ChevronDown,
   ChevronUp,
   Activity,
-  Gauge
+  Gauge,
+  Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
