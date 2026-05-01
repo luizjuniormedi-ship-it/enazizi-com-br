@@ -564,20 +564,45 @@ serve(async (req) => {
       confidence_score: recommendation.priorityScore,
     });
 
-    // ── Closed Loop: Log as Adaptive Intervention if relevant ──
+    // ── Closed Loop: Log as Adaptive Intervention with Policy Governance ──
     if (recommendation.priorityScore > 80) {
       try {
-        await logAdaptiveIntervention(db, {
-          user_id: userId,
-          trigger_type: recommendation.type,
-          action_taken: recommendation.title,
-          friction_score_snapshot: Math.max(0, (150 - (recommendation.priorityScore || 0)) / 150),
-          recommendation_text: justification,
-          action_payload: (recommendation.contextPayload || {}) as Record<string, unknown>,
-          status: 'pending',
-        });
+        // Find matching policy (Heuristic for edge)
+        const { data: policies } = await db
+          .from("intervention_policies")
+          .select("id, severity_level, min_confidence_score")
+          .eq("trigger_type", recommendation.type)
+          .eq("is_active", true);
+        
+        const policy = policies?.[0];
+        const confidence = (recommendation.priorityScore || 0) / 150;
+
+        if (!policy || confidence >= (policy.min_confidence_score || 0.7)) {
+          await logAdaptiveIntervention(db, {
+            user_id: userId,
+            trigger_type: recommendation.type,
+            action_taken: recommendation.title,
+            policy_id: policy?.id,
+            severity: policy?.severity_level || 'low',
+            confidence_score: confidence,
+            evidence_score: (errors.length + reviews.length) / 20, // Proxy for evidence
+            friction_score_snapshot: Math.max(0, (150 - (recommendation.priorityScore || 0)) / 150),
+            recommendation_text: justification,
+            action_payload: (recommendation.contextPayload || {}) as Record<string, unknown>,
+            status: 'pending',
+          });
+        } else {
+          // Log block by governance
+          await db.from("adaptive_governance_logs").insert({
+            user_id: userId,
+            policy_id: policy.id,
+            action_type: 'intervention_blocked',
+            reason: `Confidence score ${confidence.toFixed(2)} below threshold ${policy.min_confidence_score}`,
+            metadata: { recommendation: recommendation.title }
+          });
+        }
       } catch (e) {
-        console.warn("[study-next] logAdaptiveIntervention failed:", e);
+        console.warn("[study-next] Governance loop failed:", e);
       }
     }
 

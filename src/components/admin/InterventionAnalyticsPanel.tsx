@@ -8,6 +8,7 @@
  * Não altera o Intervention Engine, telemetria ou Alert Orchestrator.
  */
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -158,6 +159,7 @@ function HighlightCard({
 }
 
 export default function InterventionAnalyticsPanel() {
+  const navigate = useNavigate();
   const [windowDays, setWindowDays] = useState(7);
   const { data, isLoading, isError, refetch, isFetching } =
     useInterventionAnalytics(windowDays);
@@ -172,10 +174,20 @@ export default function InterventionAnalyticsPanel() {
             <Sparkles className="h-4 w-4" />
             Intervention Engine — Métricas
             <Badge variant="outline" className="ml-1 text-[10px]">
-              {windowDays}d
+            {windowDays}d
             </Badge>
           </CardTitle>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs gap-1.5"
+              onClick={() => navigate("/admin/intervention-policies")}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Políticas de Governança
+            </Button>
+            <div className="flex items-center gap-1">
             {[7, 14, 30].map((d) => (
               <Button
                 key={d}
