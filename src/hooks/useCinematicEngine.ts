@@ -158,7 +158,7 @@ export function useCinematicEngine(projectId?: string) {
         .select("*")
         .order("generated_at", { ascending: false });
       if (error) throw error;
-      return data;
+      return data as unknown as CMEReferenceProfile[];
     }
   });
 
