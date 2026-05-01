@@ -141,7 +141,11 @@ export default function NotebookLMSync() {
       // Sync status to library
       await supabase
         .from("master_content_library")
-        .update({ media_status: payload.media_status })
+        .update({ 
+          media_status: payload.media_status,
+          notebooklm_video_url: payload.video_url,
+          notebooklm_audio_url: payload.audio_url
+        })
         .eq("id", payload.content_id);
     },
     onSuccess: () => {
@@ -336,6 +340,10 @@ export default function NotebookLMSync() {
             <div className="space-y-2">
               <Label>URL do Guia de Notas / PDF Complementar</Label>
               <Input value={notesUrl} onChange={e => setNotesUrl(e.target.value)} placeholder="URL do guia interactivo" />
+            </div>
+            <div className="space-y-2">
+              <Label>URL do Vídeo (Video Overview)</Label>
+              <Input value={videoUrl} onChange={e => setVideoUrl(e.target.value)} placeholder="URL do vídeo gerado" />
             </div>
             <div className="space-y-2">
               <Label>Status do Workflow Multimídia</Label>

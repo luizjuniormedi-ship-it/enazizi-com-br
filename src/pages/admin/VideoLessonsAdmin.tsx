@@ -167,8 +167,11 @@ const VideoLessonsAdmin = () => {
           <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/notebooklm-analytics')}>
             <BarChart3 className="h-4 w-4" /> Analytics
           </Button>
-          <Button className="gap-2">
-            <Plus className="h-4 w-4" /> Nova Videoaula
+          <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/notebooklm-sync')}>
+            <ExternalLink className="h-4 w-4" /> NotebookLM Sync
+          </Button>
+          <Button className="gap-2" onClick={() => navigate('/admin/ai-studio')}>
+            <Plus className="h-4 w-4" /> Nova Videoaula (AI Studio)
           </Button>
         </div>
       </div>
