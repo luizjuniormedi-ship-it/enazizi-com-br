@@ -208,26 +208,39 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     {[
                       { id: 'planning', label: 'Semantic Planning' },
                       { id: 'scripting', label: 'Narrative Building' },
-                      { id: 'rendering', label: 'GPU Rendering' },
-                      { id: 'upload', label: 'HLS / CDN Sync' }
+                      { id: 'graphing', label: 'Scene Graph' },
+                      { id: 'rendering', label: 'GPU Rendering' }
                     ].map((step, idx) => (
                       <div key={step.id} className={cn(
                         "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
-                        state.progress > (idx * 25) ? "bg-amber-500/10 border-amber-500/30 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
+                        state.progress > (idx * 25) || state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
                       )}>
                         <div className={cn(
                           "h-1.5 w-1.5 rounded-full",
-                          state.progress > (idx * 25) ? "bg-amber-500 animate-pulse" : "bg-slate-700"
+                          state.status === step.id ? "bg-amber-500 animate-pulse" : 
+                          state.progress > (idx * 25) ? "bg-amber-500" : "bg-slate-700"
                         )} />
                         {step.label}
                       </div>
                     ))}
                   </div>
 
+                  {state.isStuck && state.status === 'rendering' && (
+                    <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1">
+                      <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold">
+                        <AlertCircle className="h-3 w-3" />
+                        WORKER OFFLINE
+                      </div>
+                      <p className="text-[9px] text-blue-300/70 italic">
+                        Renderização automática pendente de worker GPU real. O projeto está pronto para edição no Builder.
+                      </p>
+                    </div>
+                  )}
+
                   {state.projectId && (
                     <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
-                      <div className="h-1 w-1 rounded-full bg-green-500 animate-ping" />
-                      TELEMETRY ACTIVE: ID_{state.projectId.slice(0, 8)}
+                      <div className={cn("h-1 w-1 rounded-full bg-green-500", !state.isStuck && "animate-ping")} />
+                      TELEMETRY: {state.isStuck ? 'STANDBY' : 'ACTIVE'} | ID_{state.projectId.slice(0, 8)}
                     </div>
                   )}
 
