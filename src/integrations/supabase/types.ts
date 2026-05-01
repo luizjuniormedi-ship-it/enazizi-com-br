@@ -2241,6 +2241,182 @@ export type Database = {
           },
         ]
       }
+      cme_cinematic_quality_score: {
+        Row: {
+          created_at: string
+          drift_reduction_score: number | null
+          estimated_retention_score: number | null
+          fatigue_protection_score: number | null
+          id: string
+          multimodal_continuity_score: number | null
+          narrative_flow_score: number | null
+          overall_cinematic_score: number | null
+          pacing_efficiency_score: number | null
+          render_job_id: string | null
+          reviewer_notes: string | null
+          verdict: string | null
+        }
+        Insert: {
+          created_at?: string
+          drift_reduction_score?: number | null
+          estimated_retention_score?: number | null
+          fatigue_protection_score?: number | null
+          id?: string
+          multimodal_continuity_score?: number | null
+          narrative_flow_score?: number | null
+          overall_cinematic_score?: number | null
+          pacing_efficiency_score?: number | null
+          render_job_id?: string | null
+          reviewer_notes?: string | null
+          verdict?: string | null
+        }
+        Update: {
+          created_at?: string
+          drift_reduction_score?: number | null
+          estimated_retention_score?: number | null
+          fatigue_protection_score?: number | null
+          id?: string
+          multimodal_continuity_score?: number | null
+          narrative_flow_score?: number | null
+          overall_cinematic_score?: number | null
+          pacing_efficiency_score?: number | null
+          render_job_id?: string | null
+          reviewer_notes?: string | null
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_cinematic_quality_score_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_cinematic_reference_profiles: {
+        Row: {
+          chapter_profile: Json | null
+          cinematic_curve: Json | null
+          cognitive_curve: Json | null
+          emotional_curve: Json | null
+          fatigue_protection_profile: Json | null
+          generated_at: string
+          id: string
+          narrative_profile: Json | null
+          pacing_profile: Json | null
+          reference_name: string
+          reference_type: string | null
+          replay_hotspot_profile: Json | null
+          retention_profile: Json | null
+          semantic_focus_map: Json | null
+          storytelling_profile: Json | null
+          transition_profile: Json | null
+          video_duration_seconds: number | null
+          visual_attention_profile: Json | null
+          visual_density_profile: Json | null
+        }
+        Insert: {
+          chapter_profile?: Json | null
+          cinematic_curve?: Json | null
+          cognitive_curve?: Json | null
+          emotional_curve?: Json | null
+          fatigue_protection_profile?: Json | null
+          generated_at?: string
+          id?: string
+          narrative_profile?: Json | null
+          pacing_profile?: Json | null
+          reference_name: string
+          reference_type?: string | null
+          replay_hotspot_profile?: Json | null
+          retention_profile?: Json | null
+          semantic_focus_map?: Json | null
+          storytelling_profile?: Json | null
+          transition_profile?: Json | null
+          video_duration_seconds?: number | null
+          visual_attention_profile?: Json | null
+          visual_density_profile?: Json | null
+        }
+        Update: {
+          chapter_profile?: Json | null
+          cinematic_curve?: Json | null
+          cognitive_curve?: Json | null
+          emotional_curve?: Json | null
+          fatigue_protection_profile?: Json | null
+          generated_at?: string
+          id?: string
+          narrative_profile?: Json | null
+          pacing_profile?: Json | null
+          reference_name?: string
+          reference_type?: string | null
+          replay_hotspot_profile?: Json | null
+          retention_profile?: Json | null
+          semantic_focus_map?: Json | null
+          storytelling_profile?: Json | null
+          transition_profile?: Json | null
+          video_duration_seconds?: number | null
+          visual_attention_profile?: Json | null
+          visual_density_profile?: Json | null
+        }
+        Relationships: []
+      }
+      cme_cinematic_similarity_reports: {
+        Row: {
+          cinematic_similarity_score: number | null
+          fatigue_similarity_score: number | null
+          generated_at: string
+          id: string
+          metadata: Json | null
+          narrative_similarity_score: number | null
+          overall_similarity_score: number | null
+          pacing_similarity_score: number | null
+          reference_profile_id: string | null
+          render_job_id: string | null
+          retention_similarity_score: number | null
+        }
+        Insert: {
+          cinematic_similarity_score?: number | null
+          fatigue_similarity_score?: number | null
+          generated_at?: string
+          id?: string
+          metadata?: Json | null
+          narrative_similarity_score?: number | null
+          overall_similarity_score?: number | null
+          pacing_similarity_score?: number | null
+          reference_profile_id?: string | null
+          render_job_id?: string | null
+          retention_similarity_score?: number | null
+        }
+        Update: {
+          cinematic_similarity_score?: number | null
+          fatigue_similarity_score?: number | null
+          generated_at?: string
+          id?: string
+          metadata?: Json | null
+          narrative_similarity_score?: number | null
+          overall_similarity_score?: number | null
+          pacing_similarity_score?: number | null
+          reference_profile_id?: string | null
+          render_job_id?: string | null
+          retention_similarity_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_cinematic_similarity_reports_reference_profile_id_fkey"
+            columns: ["reference_profile_id"]
+            isOneToOne: false
+            referencedRelation: "cme_cinematic_reference_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_cinematic_similarity_reports_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_cognitive_pacing: {
         Row: {
           created_at: string
@@ -2656,6 +2832,7 @@ export type Database = {
           adaptive_variant: string | null
           chapter_manifest: Json | null
           chunk_composition_status: string | null
+          cinematic_quality_score: number | null
           cinematic_score: number | null
           completed_at: string | null
           distributed_chunks: number | null
@@ -2672,6 +2849,7 @@ export type Database = {
           priority: number | null
           project_id: string | null
           queued_at: string
+          reference_profile_id: string | null
           render_checkpoints: Json | null
           render_duration_ms: number | null
           render_metadata: Json | null
@@ -2691,6 +2869,7 @@ export type Database = {
           adaptive_variant?: string | null
           chapter_manifest?: Json | null
           chunk_composition_status?: string | null
+          cinematic_quality_score?: number | null
           cinematic_score?: number | null
           completed_at?: string | null
           distributed_chunks?: number | null
@@ -2707,6 +2886,7 @@ export type Database = {
           priority?: number | null
           project_id?: string | null
           queued_at?: string
+          reference_profile_id?: string | null
           render_checkpoints?: Json | null
           render_duration_ms?: number | null
           render_metadata?: Json | null
@@ -2726,6 +2906,7 @@ export type Database = {
           adaptive_variant?: string | null
           chapter_manifest?: Json | null
           chunk_composition_status?: string | null
+          cinematic_quality_score?: number | null
           cinematic_score?: number | null
           completed_at?: string | null
           distributed_chunks?: number | null
@@ -2742,6 +2923,7 @@ export type Database = {
           priority?: number | null
           project_id?: string | null
           queued_at?: string
+          reference_profile_id?: string | null
           render_checkpoints?: Json | null
           render_duration_ms?: number | null
           render_metadata?: Json | null
@@ -2776,6 +2958,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_jobs_reference_profile_id_fkey"
+            columns: ["reference_profile_id"]
+            isOneToOne: false
+            referencedRelation: "cme_cinematic_reference_profiles"
             referencedColumns: ["id"]
           },
         ]
