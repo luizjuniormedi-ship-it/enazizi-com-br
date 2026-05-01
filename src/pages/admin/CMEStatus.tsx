@@ -34,6 +34,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const CMEStatusPage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: lessons, isLoading: isLoadingLessons, refetch } = useQuery({
