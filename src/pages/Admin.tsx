@@ -48,6 +48,7 @@ const AdaptiveEngineAdmin = lazy(() => import("@/pages/admin/AdaptiveEngineAdmin
 const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
 const AdminInterventionPolicies = lazy(() => import("@/pages/admin/AdminInterventionPolicies"));
 const AdminAdaptiveExperiments = lazy(() => import("@/pages/admin/AdminAdaptiveExperiments"));
+const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/IntelligenceOverviewPanel"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -112,6 +113,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       title: "Intelligence Engine",
       icon: BrainCircuit,
       items: [
+        { key: "intelligence-overview", label: "Visão Geral IA", icon: LayoutDashboard },
         { key: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch },
         { key: "adaptive-engine", label: "ACE Engine", icon: BrainCircuit },
         { key: "intervention-policies", label: "Governança/Políticas", icon: ShieldCheck },
@@ -694,6 +696,7 @@ const Admin = () => {
             {activeSection === "system-checklist" && <SystemChecklist />}
 
             {/* Intelligence Engine */}
+            {activeSection === "intelligence-overview" && <IntelligenceOverviewPanel />}
             {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
             {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
             {activeSection === "intervention-policies" && <AdminInterventionPolicies />}
