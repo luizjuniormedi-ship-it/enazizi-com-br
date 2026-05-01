@@ -769,7 +769,15 @@ Comece agora pelo Passo 1.`;
             </div>
           )}
 
-          <TutorMessageList ref={scrollRef} messages={messages} isLoading={isLoading} onCopy={copyToClipboard} />
+          <TutorMessageList 
+            ref={scrollRef} 
+            messages={messages} 
+            isLoading={isLoading} 
+            onCopy={copyToClipboard}
+            conversationId={activeConversationId || undefined}
+            topic={currentTopic}
+            specialty={searchParams.get("specialty") || undefined}
+          />
 
           {/* Próximo passo fixo — só após concluir todos os blocos de explicação (step >= 8) */}
           {messages.length > 1 && !isLoading && enaziziStep >= 8 && (
