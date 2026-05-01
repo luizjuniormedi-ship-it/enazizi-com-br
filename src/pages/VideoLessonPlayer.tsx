@@ -451,86 +451,139 @@ const VideoLessonPlayer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-primary/10">
-              {lesson.video_url || (lesson as any).notebooklm_video_url ? (
-                <div className="relative w-full h-full group">
-                  <iframe 
-                    src={lesson.video_url || (lesson as any).notebooklm_video_url} 
-                    className="w-full h-full"
-                    allowFullScreen
-                    onLoad={() => {
-                      setIsPlaying(true);
-                      if (id) logEvent({
-                        videoLessonId: id,
-                        segmentId: currentSegment?.id ?? null,
-                        eventType: "play",
-                        timestampSeconds: watchedSeconds,
-                      });
-                    }}
-                  />
-                  
-                  {/* FASE 2: Cognitive Heat Overlay visual no player */}
-                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-30 transition-opacity">
-                    <div className="w-full h-full flex flex-col justify-end">
-                      <div className="h-4 w-full flex">
+              {(() => {
+                const playbackUrl = (lesson as any).hls_url || 
+                                   lesson.video_url || 
+                                   (lesson as any).playback_url ||
+                                   (lesson as any).notebooklm_video_url;
+
+                // Anti-placeholder logic: ignore example.com or dummy URLs
+                const isPlaceholder = !playbackUrl || 
+                                     playbackUrl.includes('example.com') || 
+                                     playbackUrl.includes('placeholder') ||
+                                     playbackUrl.includes('dummy');
+
+                if (!isPlaceholder && playbackUrl) {
+                  return (
+                    <div className="relative w-full h-full group">
+                      {playbackUrl.endsWith('.m3u8') ? (
+                        <video 
+                          id="video-player"
+                          src={playbackUrl}
+                          className="w-full h-full"
+                          controls
+                          autoPlay
+                          onPlay={() => {
+                            setIsPlaying(true);
+                            if (id) logEvent({
+                              videoLessonId: id,
+                              segmentId: currentSegment?.id ?? null,
+                              eventType: "play",
+                              timestampSeconds: watchedSeconds,
+                            });
+                          }}
+                        />
+                      ) : (
+                        <iframe 
+                          src={playbackUrl} 
+                          className="w-full h-full"
+                          allowFullScreen
+                          onLoad={() => {
+                            setIsPlaying(true);
+                            if (id) logEvent({
+                              videoLessonId: id,
+                              segmentId: currentSegment?.id ?? null,
+                              eventType: "play",
+                              timestampSeconds: watchedSeconds,
+                            });
+                          }}
+                        />
+                      )}
+                      
+                      {/* FASE 2: Cognitive Heat Overlay visual no player */}
+                      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-30 transition-opacity">
+                        <div className="w-full h-full flex flex-col justify-end">
+                          <div className="h-4 w-full flex">
+                            {segments.map((seg) => {
+                              const analytics = getForSegment(seg.id);
+                              const friction = analytics?.difficultyLevel === 'alta' ? 'bg-red-500' : 
+                                              analytics?.difficultyLevel === 'média' ? 'bg-amber-500' : 'bg-green-500';
+                              return (
+                                <div 
+                                  key={seg.id} 
+                                  className={cn("h-full border-r border-black/20 flex-1 transition-all", friction)}
+                                  title={`${seg.title}: Fricção ${analytics?.difficultyLevel || 'baixa'}`}
+                                />
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* FASE 2: Timeline Cognitiva com Hotspots */}
+                      <div className="absolute bottom-16 left-4 right-4 h-1 bg-white/20 rounded-full overflow-hidden pointer-events-none">
                         {segments.map((seg) => {
                           const analytics = getForSegment(seg.id);
-                          const friction = analytics?.difficultyLevel === 'alta' ? 'bg-red-500' : 
-                                          analytics?.difficultyLevel === 'média' ? 'bg-amber-500' : 'bg-green-500';
+                          if (!analytics?.difficultyLikely) return null;
+                          
+                          const startPercent = ((seg.start_second || 0) / (lesson.duration_seconds || 1)) * 100;
+                          const widthPercent = (((seg.end_second || lesson.duration_seconds) - (seg.start_second || 0)) / (lesson.duration_seconds || 1)) * 100;
+                          
                           return (
                             <div 
-                              key={seg.id} 
-                              className={cn("h-full border-r border-black/20 flex-1 transition-all", friction)}
-                              title={`${seg.title}: Fricção ${analytics?.difficultyLevel || 'baixa'}`}
+                              key={`hotspot-${seg.id}`}
+                              className="absolute h-full bg-red-500/60 animate-pulse"
+                              style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
                             />
                           );
                         })}
                       </div>
                     </div>
-                  </div>
+                  );
+                }
 
-                  {/* FASE 2: Timeline Cognitiva com Hotspots */}
-                  <div className="absolute bottom-16 left-4 right-4 h-1 bg-white/20 rounded-full overflow-hidden pointer-events-none">
-                    {segments.map((seg) => {
-                      const analytics = getForSegment(seg.id);
-                      if (!analytics?.difficultyLikely) return null;
-                      
-                      const startPercent = ((seg.start_second || 0) / (lesson.duration_seconds || 1)) * 100;
-                      const widthPercent = (((seg.end_second || lesson.duration_seconds) - (seg.start_second || 0)) / (lesson.duration_seconds || 1)) * 100;
-                      
-                      return (
-                        <div 
-                          key={`hotspot-${seg.id}`}
-                          className="absolute h-full bg-red-500/60 animate-pulse"
-                          style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
+                // Status-based rendering if no real media is available
+                const mediaStatus = (lesson as any).media_status || 'queued';
+                
+                if (mediaStatus === 'rendering' || mediaStatus === 'processing' || isCMEVideo) {
+                  return (
+                    <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
+                      <div className="relative">
+                        <Film className="h-20 w-20 text-primary/40 animate-pulse" />
+                        <Sparkles className="h-6 w-6 text-primary absolute -top-2 -right-2 animate-bounce" />
+                      </div>
+                      <div className="text-center space-y-2">
+                        <p className="text-white font-bold">Gerando Experiência Cinematográfica...</p>
+                        <p className="text-xs text-primary/60 font-medium uppercase tracking-widest">Status: {mediaStatus}</p>
+                      </div>
+                      <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+                        <motion.div 
+                          className="h-full bg-primary"
+                          animate={{ x: [-200, 200] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                         />
-                      );
-                    })}
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (mediaStatus === 'failed') {
+                  return (
+                    <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-red-950/20">
+                      <AlertTriangle className="h-20 w-20 text-red-500/40" />
+                      <p className="text-white font-bold">Falha na Renderização do Vídeo</p>
+                      <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Tentar Novamente</Button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
+                    <Play className="h-20 w-20 text-primary/40" />
+                    <p className="text-muted-foreground">Vídeo em processamento ou aguardando mídia real...</p>
                   </div>
-                </div>
-              ) : isCMEVideo ? (
-                <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
-                  <div className="relative">
-                    <Film className="h-20 w-20 text-primary/40 animate-pulse" />
-                    <Sparkles className="h-6 w-6 text-primary absolute -top-2 -right-2 animate-bounce" />
-                  </div>
-                  <div className="text-center space-y-2">
-                    <p className="text-white font-bold">Gerando Experiência Cinematográfica...</p>
-                    <p className="text-xs text-primary/60 font-medium uppercase tracking-widest">ENAZIZI Cinematic Medical Engine</p>
-                  </div>
-                  <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
-                    <motion.div 
-                      className="h-full bg-primary"
-                      animate={{ x: [-200, 200] }}
-                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
-                  <Play className="h-20 w-20 text-primary/40" />
-                  <p className="text-muted-foreground">Vídeo em processamento pelo NotebookLM...</p>
-                </div>
-              )}
+                );
+              })()}
               {completionRate >= 95 && (
                 <div className="absolute top-4 right-4 animate-bounce">
                   <Badge className="bg-green-500 gap-1">
