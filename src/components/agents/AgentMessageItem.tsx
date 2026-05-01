@@ -1,13 +1,15 @@
-import { memo, useMemo } from "react";
+import { memo, useMemo, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
-import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles } from "lucide-react";
+import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
 import { adjustMemoryQuality } from "@/lib/tutor/tutorMemory";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
 import { useTutorCME } from "@/hooks/useTutorCME";
+import { useUserRoles } from "@/hooks/useUserRoles";
+import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { 
   Dialog, 
@@ -63,6 +65,15 @@ const AgentMessageItem = memo(
   }: AgentMessageItemProps) => {
     const navigate = useNavigate();
     const { state, transformToVideo, resetState } = useTutorCME();
+    const { isAdmin, isProfessor, roles } = useUserRoles();
+    const { isEnabled } = useFeatureFlags();
+
+    const isCoordinator = roles.includes("coordenador") || roles.includes("coordinator");
+    const hasPermission = isAdmin || isProfessor || isCoordinator;
+
+    const flagsEnabled = isEnabled("cme_enabled") && 
+                         isEnabled("tutor_cme_enabled") && 
+                         isEnabled("cinematic_factory_enabled");
 
     // Filtra blocos cognitivos válidos vindos da memória
     const memoryCognitiveBlocks = useMemo(
@@ -81,11 +92,47 @@ const AgentMessageItem = memo(
     const hasCognitiveBlocks = cognitiveBlocks.length > 0;
     const renderedMarkdown = cleanedMarkdown || msg.content;
 
-    // Critérios para o botão CME: msg longa da IA com estrutura de blocos
+    // Critérios relaxados conforme pedido:
+    const criteria = useMemo(() => {
+      const content = msg.content.toLowerCase();
+      return {
+        isLong: msg.content.length > 800,
+        hasTitle: msg.content.includes('# ') || msg.content.includes('## '),
+        hasStructure: msg.content.includes('- ') || msg.content.includes('1. ') || hasCognitiveBlocks,
+        isMedical: !!msg.content.match(/(médico|clínico|tratamento|diagnóstico|paciente|sintoma|medicina|anatomia|patologia)/i),
+        isFeynman: content.includes('feynman'),
+        hasSummary: content.includes('resumo') || content.includes('pontos-chave') || cognitiveBlocks.some(b => b.type === 'summary')
+      };
+    }, [msg.content, hasCognitiveBlocks, cognitiveBlocks]);
+
+    const isEligible = Object.values(criteria).some(Boolean);
+
+    // Logs de elegibilidade para debug/auditoria
+    useEffect(() => {
+      if (msg.role === "assistant" && !isLoading) {
+        if (!hasPermission) {
+          console.log(`[CME Eligibility] Oculto: Usuário sem permissão (Roles: ${roles.join(", ")})`);
+        } else if (!flagsEnabled) {
+          console.log(`[CME Eligibility] Oculto: Feature flags desativadas`);
+        } else if (!isEligible) {
+          console.log(`[CME Eligibility] Oculto: Não cumpre critérios mínimos`, criteria);
+        } else {
+          console.log(`[CME Eligibility] Visível: Cumpre critérios`, criteria);
+        }
+      }
+    }, [msg.role, isLoading, hasPermission, roles, flagsEnabled, isEligible, criteria]);
+
     const showCMEButton = msg.role === "assistant" && 
-                         msg.content.length > 800 && 
-                         hasCognitiveBlocks &&
-                         !isLoading;
+                         !isLoading && 
+                         hasPermission && 
+                         flagsEnabled && 
+                         isEligible;
+    
+    const showFallbackButton = msg.role === "assistant" && 
+                               !isLoading && 
+                               hasPermission && 
+                               flagsEnabled && 
+                               !isEligible;
 
     const handleCMETransform = () => {
       const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
@@ -209,10 +256,21 @@ const AgentMessageItem = memo(
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                    className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 animate-fade-in"
                     onClick={handleCMETransform}
                   >
                     <Film className="h-3.5 w-3.5" /> 🎬 Transformar em Videoaula
+                  </Button>
+                )}
+                {showFallbackButton && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
+                    onClick={handleCMETransform}
+                    title="Forçar criação mesmo sem estrutura detectada"
+                  >
+                    <AlertCircle className="h-3 w-3" /> Criar videoaula a partir desta resposta
                   </Button>
                 )}
               </div>
