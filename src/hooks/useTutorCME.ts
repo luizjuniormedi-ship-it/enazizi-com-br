@@ -76,28 +76,28 @@ export const useTutorCME = () => {
         tutor_session_id: params.conversationId as any,
         tutor_message_id: (params.messageId || crypto.randomUUID()) as any,
         cme_video_project_id: projectId
-      });
+      } as any);
 
       // 3. Criar Plano Semântico
       const { error: planError } = await supabase
         .from("cme_semantic_plans")
         .insert({
           project_id: projectId,
-          content_outline: {
+          semantic_outline: {
             summary: params.summary,
             blocks_count: params.blocks.length,
             original_context: params.sourceContent.slice(0, 5000)
           },
-          pedagogical_intent: "cinematic_reinforcement",
-          complexity_level: "high"
-        });
+          specialty: params.specialty,
+          topic: params.topic
+        } as any);
 
       if (planError) throw planError;
       
       setState({ status: 'scripting', progress: 30, projectId, message: "Gerando narrativa visual..." });
       await logPipelineEvent(projectId, 'scripting', 'completed', 30, "Narrativa concluída");
 
-      // 4. Registrar Job de Renderização (Simulando o início do pipeline GPU)
+      // 4. Registrar Job de Renderização
       const { error: jobError } = await supabase
         .from("cme_render_jobs")
         .insert({
@@ -113,7 +113,7 @@ export const useTutorCME = () => {
             blocks: params.blocks,
             origin_message_id: params.messageId
           }
-        });
+        } as any);
 
       if (jobError) throw jobError;
       
