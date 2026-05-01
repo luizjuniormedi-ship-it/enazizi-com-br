@@ -150,10 +150,23 @@ export function useCinematicEngine(projectId?: string) {
     }
   };
 
+  const referenceProfilesQuery = useQuery({
+    queryKey: ["cme-reference-profiles"],
+    queryFn: async (): Promise<CMEReferenceProfile[]> => {
+      const { data, error } = await supabase
+        .from("cme_cinematic_reference_profiles")
+        .select("*")
+        .order("generated_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
   return {
     project: projectQuery.data,
     renderJobs: renderJobsQuery.data,
-    isLoading: projectQuery.isLoading || renderJobsQuery.isLoading,
+    referenceProfiles: referenceProfilesQuery.data,
+    isLoading: projectQuery.isLoading || renderJobsQuery.isLoading || referenceProfilesQuery.isLoading,
     startRender,
     updateStudentAnalytics
   };
