@@ -32,6 +32,18 @@ export interface CMENarrativeScript {
   pacing_hints: any;
 }
 
+export interface CMERenderJob {
+  id: string;
+  project_id: string;
+  render_type: string;
+  status: string;
+  priority: number;
+  gpu_worker_id?: string;
+  output_url?: string;
+  thumbnail_url?: string;
+  chapter_manifest?: any;
+}
+
 export function useCinematicEngine(projectId?: string) {
   const { user } = useAuth();
 
@@ -53,42 +65,28 @@ export function useCinematicEngine(projectId?: string) {
     }
   });
 
-  const semanticPlanQuery = useQuery({
-    queryKey: ["cme-semantic-plan", projectId],
+  const renderJobsQuery = useQuery({
+    queryKey: ["cme-render-jobs", projectId],
     enabled: !!projectId,
-    queryFn: async (): Promise<CMESemanticPlan> => {
+    queryFn: async (): Promise<CMERenderJob[]> => {
       const { data, error } = await supabase
-        .from("cme_semantic_plans")
+        .from("cme_render_jobs")
         .select("*")
         .eq("project_id", projectId!)
-        .single();
+        .order("queued_at", { ascending: false });
       if (error) throw error;
       return data;
     }
   });
 
-  const analyticsQuery = useQuery({
-    queryKey: ["cme-analytics", projectId, user?.id],
-    enabled: !!projectId && !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("cme_multimodal_analytics")
-        .select("*")
-        .eq("project_id", projectId!)
-        .eq("student_id", user!.id)
-        .maybeSingle();
-      if (error) throw error;
-      return data;
-    }
-  });
-
-  const startGeneration = async (topicId: string, title: string) => {
+  const startRender = async (projectId: string, type: string = 'full_lecture', priority: number = 50) => {
     const { data, error } = await supabase
-      .from("cme_video_projects")
+      .from("cme_render_jobs")
       .insert({
-        title,
-        topic_id: topicId,
-        status: "planning"
+        project_id: projectId,
+        render_type: type,
+        status: "queued",
+        priority
       })
       .select()
       .single();
@@ -123,6 +121,8 @@ export function useCinematicEngine(projectId?: string) {
           avg_pacing_efficiency: metrics.avg_pacing_efficiency,
           stress_spikes: metrics.stress_spikes,
           chapter_retention: metrics.chapter_retention,
+          // @ts-ignore
+          updated_at: new Date().toISOString()
         })
         .eq("id", existing.id);
       if (error) throw error;
@@ -140,10 +140,9 @@ export function useCinematicEngine(projectId?: string) {
 
   return {
     project: projectQuery.data,
-    semanticPlan: semanticPlanQuery.data,
-    studentAnalytics: analyticsQuery.data,
-    isLoading: projectQuery.isLoading || semanticPlanQuery.isLoading,
-    startGeneration,
+    renderJobs: renderJobsQuery.data,
+    isLoading: projectQuery.isLoading || renderJobsQuery.isLoading,
+    startRender,
     updateStudentAnalytics
   };
 }
