@@ -188,21 +188,23 @@ export default function InterventionAnalyticsPanel() {
               Políticas de Governança
             </Button>
             <div className="flex items-center gap-1">
-            {[7, 14, 30].map((d) => (
-              <Button
-                key={d}
-                size="sm"
-                variant={windowDays === d ? "default" : "ghost"}
-                className="h-7 px-2 text-xs"
-                onClick={() => setWindowDays(d)}
-              >
-                {d}d
-              </Button>
-            ))}
+            <div className="flex items-center gap-1">
+              {[7, 14, 30].map((d) => (
+                <Button
+                  key={d}
+                  size="sm"
+                  variant={windowDays === d ? "default" : "ghost"}
+                  className="h-7 px-2 text-xs"
+                  onClick={() => setWindowDays(d)}
+                >
+                  {d}d
+                </Button>
+              ))}
+            </div>
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-xs gap-1"
+              className="h-7 px-2 text-xs gap-1.5"
               onClick={() => refetch()}
               disabled={isFetching}
             >
