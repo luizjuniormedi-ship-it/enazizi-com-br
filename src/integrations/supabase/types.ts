@@ -455,6 +455,7 @@ export type Database = {
       adaptive_student_profiles: {
         Row: {
           circadian_intelligence_active: boolean | null
+          cme_preferences: Json | null
           cognitive_load_estimate: number | null
           cognitive_stress_index: number | null
           current_session_mode: string | null
@@ -479,6 +480,7 @@ export type Database = {
         }
         Insert: {
           circadian_intelligence_active?: boolean | null
+          cme_preferences?: Json | null
           cognitive_load_estimate?: number | null
           cognitive_stress_index?: number | null
           current_session_mode?: string | null
@@ -503,6 +505,7 @@ export type Database = {
         }
         Update: {
           circadian_intelligence_active?: boolean | null
+          cme_preferences?: Json | null
           cognitive_load_estimate?: number | null
           cognitive_stress_index?: number | null
           current_session_mode?: string | null
@@ -2117,6 +2120,250 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      cme_cognitive_pacing: {
+        Row: {
+          created_at: string
+          fatigue_protection_points: number[] | null
+          id: string
+          intensity_curve: Json
+          project_id: string | null
+          timeline_events: Json
+        }
+        Insert: {
+          created_at?: string
+          fatigue_protection_points?: number[] | null
+          id?: string
+          intensity_curve: Json
+          project_id?: string | null
+          timeline_events: Json
+        }
+        Update: {
+          created_at?: string
+          fatigue_protection_points?: number[] | null
+          id?: string
+          intensity_curve?: Json
+          project_id?: string | null
+          timeline_events?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_cognitive_pacing_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_multimodal_analytics: {
+        Row: {
+          avg_pacing_efficiency: number | null
+          chapter_retention: Json | null
+          completion_rate: number | null
+          created_at: string
+          id: string
+          project_id: string | null
+          replay_count: number | null
+          stress_spikes: Json | null
+          student_id: string | null
+          watch_time_seconds: number
+        }
+        Insert: {
+          avg_pacing_efficiency?: number | null
+          chapter_retention?: Json | null
+          completion_rate?: number | null
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          replay_count?: number | null
+          stress_spikes?: Json | null
+          student_id?: string | null
+          watch_time_seconds?: number
+        }
+        Update: {
+          avg_pacing_efficiency?: number | null
+          chapter_retention?: Json | null
+          completion_rate?: number | null
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          replay_count?: number | null
+          stress_spikes?: Json | null
+          student_id?: string | null
+          watch_time_seconds?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_multimodal_analytics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_multimodal_analytics_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "adaptive_student_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      cme_narrative_scripts: {
+        Row: {
+          chapters: Json
+          cinematic_script: Json
+          created_at: string
+          id: string
+          pacing_hints: Json | null
+          project_id: string | null
+        }
+        Insert: {
+          chapters: Json
+          cinematic_script: Json
+          created_at?: string
+          id?: string
+          pacing_hints?: Json | null
+          project_id?: string | null
+        }
+        Update: {
+          chapters?: Json
+          cinematic_script?: Json
+          created_at?: string
+          id?: string
+          pacing_hints?: Json | null
+          project_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_narrative_scripts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_semantic_plans: {
+        Row: {
+          clinical_priority_points: string[] | null
+          cognitive_difficulty_map: Json | null
+          created_at: string
+          exam_priority_points: string[] | null
+          id: string
+          prerequisite_graph: Json | null
+          project_id: string | null
+          retention_hotspots: Json | null
+          semantic_outline: Json
+        }
+        Insert: {
+          clinical_priority_points?: string[] | null
+          cognitive_difficulty_map?: Json | null
+          created_at?: string
+          exam_priority_points?: string[] | null
+          id?: string
+          prerequisite_graph?: Json | null
+          project_id?: string | null
+          retention_hotspots?: Json | null
+          semantic_outline: Json
+        }
+        Update: {
+          clinical_priority_points?: string[] | null
+          cognitive_difficulty_map?: Json | null
+          created_at?: string
+          exam_priority_points?: string[] | null
+          id?: string
+          prerequisite_graph?: Json | null
+          project_id?: string | null
+          retention_hotspots?: Json | null
+          semantic_outline?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_semantic_plans_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_video_assets: {
+        Row: {
+          asset_type: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          url: string
+        }
+        Insert: {
+          asset_type: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          url: string
+        }
+        Update: {
+          asset_type?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_video_assets_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_video_projects: {
+        Row: {
+          config: Json | null
+          created_at: string
+          id: string
+          status: string
+          target_audience: string | null
+          title: string
+          topic_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          id?: string
+          status?: string
+          target_audience?: string | null
+          title: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          id?: string
+          status?: string
+          target_audience?: string | null
+          title?: string
+          topic_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_video_projects_topic_id_fkey"
+            columns: ["topic_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cognitive_drift_logs: {
         Row: {

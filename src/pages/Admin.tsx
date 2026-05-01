@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -50,6 +50,7 @@ const AdminInterventionPolicies = lazy(() => import("@/pages/admin/AdminInterven
 const AdminAdaptiveExperiments = lazy(() => import("@/pages/admin/AdminAdaptiveExperiments"));
 const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/IntelligenceOverviewPanel"));
 const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCognitiveOrchestrator"));
+const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -90,6 +91,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: FileText,
       items: [
         { key: "pipeline", label: "Pipeline", icon: Layers },
+        { key: "cinematic-engine", label: "Cinematic (CME)", icon: Film },
         { key: "questions", label: "Questões", icon: FileText },
         { key: "image-upgrade", label: "Upgrade Imagem", icon: ImageIcon },
         { key: "image-review", label: "Review Imagem", icon: ImageIcon },
@@ -687,6 +689,7 @@ const Admin = () => {
 
             {/* Content */}
             {activeSection === "pipeline" && <AdminPipelineMonitor />}
+            {activeSection === "cinematic-engine" && <AdminCinematicEngine />}
             {activeSection === "questions" && <AdminQuestionReviewPanel />}
             {activeSection === "image-upgrade" && <ImageQuestionUpgradePanel />}
             {activeSection === "image-review" && <AdminImageQuestionReviewPanel />}

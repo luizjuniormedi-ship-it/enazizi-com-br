@@ -21,7 +21,9 @@ import {
   Sparkles,
   Zap,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Film,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
@@ -48,6 +50,7 @@ import {
 import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommendationCard";
 import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
+import { useCinematicEngine } from "@/hooks/useCinematicEngine";
 
 const VideoLessonPlayer = () => {
   const { id } = useParams();
@@ -164,6 +167,10 @@ const VideoLessonPlayer = () => {
   // ───────────────── FASE 3: Adaptive Intelligence ─────────────────
   const { recommendation, resetRecommendation } = useVideoAdaptiveIntelligence(id!, currentSegment?.id || null);
   const { data: cognitiveState } = useCognitiveOrchestrator();
+  const { updateStudentAnalytics } = useCinematicEngine((lesson as any)?.cme_project_id);
+
+  // Determina se é um vídeo CME proprietário
+  const isCMEVideo = !!(lesson as any)?.cme_project_id;
 
   const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
   const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
@@ -256,6 +263,15 @@ const VideoLessonPlayer = () => {
       });
 
     if (error) console.error("Erro ao logar ação:", error);
+    
+    // Sincronização com CME Analytics
+    if (isCMEVideo && (lesson as any).cme_project_id) {
+      updateStudentAnalytics((lesson as any).cme_project_id, {
+        watch_time_seconds: action === "heartbeat" ? 30 : 0,
+        replay_count: action === "replay" ? 1 : 0,
+        completion_rate: completionRate
+      });
+    }
     
     if (action === "complete") {
       toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
@@ -421,6 +437,24 @@ const VideoLessonPlayer = () => {
                     });
                   }}
                 />
+              ) : isCMEVideo ? (
+                <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
+                  <div className="relative">
+                    <Film className="h-20 w-20 text-primary/40 animate-pulse" />
+                    <Sparkles className="h-6 w-6 text-primary absolute -top-2 -right-2 animate-bounce" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-white font-bold">Gerando Experiência Cinematográfica...</p>
+                    <p className="text-xs text-primary/60 font-medium uppercase tracking-widest">ENAZIZI Cinematic Medical Engine</p>
+                  </div>
+                  <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-primary"
+                      animate={{ x: [-200, 200] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    />
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
                   <Play className="h-20 w-20 text-primary/40" />
@@ -470,6 +504,28 @@ const VideoLessonPlayer = () => {
                     Detectamos aumento de fadiga cognitiva. O ENAZIZI reduziu a intensidade da sessão para preservar sua retenção.
                   </p>
                 </div>
+              </motion.div>
+            )}
+            
+            {/* CME Personalization Banner */}
+            {isCMEVideo && (
+              <motion.div 
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="p-3 rounded-xl bg-primary/5 border border-primary/10 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold">Otimização Multimodal CME Ativa</p>
+                    <p className="text-[10px] text-muted-foreground italic">Ritmo e narrativa adaptados ao seu perfil de retenção.</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" className="h-7 text-[10px] gap-1">
+                  <Settings className="h-3 w-3" /> Ajustar Pacing
+                </Button>
               </motion.div>
             )}
 
