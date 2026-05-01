@@ -16,34 +16,49 @@ export type Database = {
     Tables: {
       adaptive_interventions: {
         Row: {
+          action_payload: Json | null
           action_taken: string
           context_node_id: string | null
           created_at: string | null
           effectiveness_score: number | null
+          estimated_time_min: number | null
+          friction_score_snapshot: number | null
           id: string
           metadata: Json | null
+          recommendation_text: string | null
+          status: string | null
           trigger_type: string
           user_id: string | null
           video_lesson_id: string | null
         }
         Insert: {
+          action_payload?: Json | null
           action_taken: string
           context_node_id?: string | null
           created_at?: string | null
           effectiveness_score?: number | null
+          estimated_time_min?: number | null
+          friction_score_snapshot?: number | null
           id?: string
           metadata?: Json | null
+          recommendation_text?: string | null
+          status?: string | null
           trigger_type: string
           user_id?: string | null
           video_lesson_id?: string | null
         }
         Update: {
+          action_payload?: Json | null
           action_taken?: string
           context_node_id?: string | null
           created_at?: string | null
           effectiveness_score?: number | null
+          estimated_time_min?: number | null
+          friction_score_snapshot?: number | null
           id?: string
           metadata?: Json | null
+          recommendation_text?: string | null
+          status?: string | null
           trigger_type?: string
           user_id?: string | null
           video_lesson_id?: string | null
@@ -12982,6 +12997,17 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      evaluate_adaptive_intervention: {
+        Args: {
+          p_friction_score: number
+          p_lesson_id: string
+          p_metadata?: Json
+          p_node_id: string
+          p_trigger_type: string
+          p_user_id: string
+        }
+        Returns: string
       }
       get_banca_coverage_report: {
         Args: never
