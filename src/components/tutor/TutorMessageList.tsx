@@ -8,10 +8,13 @@ interface TutorMessageListProps {
   messages: Msg[];
   isLoading: boolean;
   onCopy: (text: string) => void;
+  conversationId?: string;
+  topic?: string;
+  specialty?: string;
 }
 
 const TutorMessageList = forwardRef<HTMLDivElement, TutorMessageListProps>(
-  ({ messages, isLoading, onCopy }, ref) => {
+  ({ messages, isLoading, onCopy, conversationId, topic, specialty }, ref) => {
     const handleCopy = useCallback((text: string) => onCopy(text), [onCopy]);
 
     return (
@@ -39,7 +42,15 @@ const TutorMessageList = forwardRef<HTMLDivElement, TutorMessageListProps>(
         {/* Conteúdo (acima da atmosfera) */}
         <div className="relative space-y-3 sm:space-y-4">
           {messages.map((msg, i) => (
-            <TutorMessageItem key={i} msg={msg} onCopy={handleCopy} />
+            <TutorMessageItem 
+              key={i} 
+              msg={msg} 
+              onCopy={handleCopy} 
+              isLoading={isLoading}
+              conversationId={conversationId}
+              topic={topic}
+              specialty={specialty}
+            />
           ))}
 
           {isLoading && messages[messages.length - 1]?.role === "user" && (

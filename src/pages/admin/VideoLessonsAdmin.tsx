@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { validateVideoLessonPublication } from "@/lib/multimodal-qa";
+import { useTutorCME } from "@/hooks/useTutorCME";
 import { 
   Video, 
   Search, 
@@ -21,7 +22,10 @@ import {
   BrainCircuit,
   Award,
   Activity,
-  ShieldAlert
+  ShieldAlert,
+  Film,
+  Sparkles,
+  Play
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,6 +52,15 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +70,8 @@ const VideoLessonsAdmin = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
   const [mediaFilter, setMediaFilter] = useState("all");
+  
+  const { state: cmeState, transformToVideo, resetState: resetCme } = useTutorCME();
 
   const { data: lessons, isLoading, refetch } = useQuery({
     queryKey: ["admin-video-lessons"],
@@ -153,35 +168,6 @@ const VideoLessonsAdmin = () => {
         )}
       </div>
     );
-  };
-
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    if (newStatus === 'published') {
-      const validation = await validateVideoLessonPublication(id);
-      if (!validation.valid) {
-        toast.error("Publicação bloqueada", {
-          description: validation.errors.join(", "),
-          duration: 5000
-        });
-        return;
-      }
-    }
-
-    const { error } = await supabase
-      .from("ai_video_lessons")
-      .update({ 
-        status: newStatus, 
-        updated_at: new Date().toISOString(),
-        published_at: newStatus === 'published' ? new Date().toISOString() : undefined,
-      } as any)
-      .eq("id", id);
-
-    if (error) {
-      toast.error("Erro ao atualizar status: " + error.message);
-    } else {
-      toast.success(`Status atualizado para ${newStatus}!`);
-      refetch();
-    }
   };
 
   const toggleGoldContent = async (id: string, current: boolean) => {
@@ -408,28 +394,25 @@ const VideoLessonsAdmin = () => {
                                 <ExternalLink className="h-4 w-4" /> Visualizar (Aluno)
                               </DropdownMenuItem>
                               <DropdownMenuItem className="gap-2" onClick={() => toggleGoldContent(lesson.id, lesson.is_gold_content)}>
-                                <Star className={`h-4 w-4 ${lesson.is_gold_content ? 'fill-yellow-500 text-yellow-500' : ''}`} /> 
-                                {lesson.is_gold_content ? 'Remover Destaque' : 'Destacar (Ouro)'}
+                                <Star className="h-4 w-4" /> {lesson.is_gold_content ? 'Remover Destaque' : 'Marcar como Ouro'}
                               </DropdownMenuItem>
-                              {lesson.status === 'video_review' && (
+                              {lesson.status === 'tutor_lesson_saved' && (
                                 <DropdownMenuItem 
-                                  className="gap-2 text-green-600"
-                                  onClick={() => handleStatusChange(lesson.id, 'approved')}
+                                  className="gap-2 text-amber-500 font-bold" 
+                                  onClick={() => transformToVideo({
+                                    title: lesson.title,
+                                    specialty: lesson.specialty,
+                                    topic: lesson.topic,
+                                    summary: lesson.tutor_lesson_summary || lesson.description || "",
+                                    sourceContent: lesson.notebooklm_export_text || lesson.tutor_lesson_summary || "",
+                                    blocks: [], 
+                                    conversationId: lesson.tutor_session_id || crypto.randomUUID(),
+                                    messageId: undefined
+                                  })}
                                 >
-                                  <CheckCircle2 className="h-4 w-4" /> Aprovar Vídeo
+                                  <Film className="h-4 w-4" /> 🎬 Transformar em Videoaula
                                 </DropdownMenuItem>
                               )}
-                              {(lesson.status === 'approved' || lesson.status === 'draft') && (
-                                <DropdownMenuItem 
-                                  className="gap-2 text-blue-600"
-                                  onClick={() => handleStatusChange(lesson.id, 'published')}
-                                >
-                                  <ExternalLink className="h-4 w-4" /> Publicar Aula
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem className="gap-2 text-red-600">
-                                <AlertCircle className="h-4 w-4" /> Arquivar
-                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -442,6 +425,87 @@ const VideoLessonsAdmin = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Status CME */}
+      <Dialog open={cmeState.status !== 'idle'} onOpenChange={(open) => !open && resetCme()}>
+        <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-amber-500" />
+              Fábrica de Vídeos CME
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Transformando sua aula salva em uma experiência cinematográfica multimodal.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-6 space-y-6">
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                <span>Fase: {cmeState.message || cmeState.status}</span>
+                <span>{cmeState.progress}%</span>
+              </div>
+              <Progress value={cmeState.progress} className="h-1.5 bg-white/5" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: 'planning', label: 'Semantic Planning' },
+                { id: 'scripting', label: 'Narrative Building' },
+                { id: 'rendering', label: 'GPU Rendering' },
+                { id: 'upload', label: 'HLS / CDN Sync' }
+              ].map((step, idx) => (
+                <div key={step.id} className={cn(
+                  "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
+                  cmeState.progress > (idx * 25) ? "bg-amber-500/10 border-amber-500/30 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
+                )}>
+                  <div className={cn(
+                    "h-1.5 w-1.5 rounded-full",
+                    cmeState.progress > (idx * 25) ? "bg-amber-500 animate-pulse" : "bg-slate-700"
+                  )} />
+                  {step.label}
+                </div>
+              ))}
+            </div>
+
+            {cmeState.projectId && (
+              <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
+                <div className="h-1 w-1 rounded-full bg-green-500 animate-ping" />
+                TELEMETRY ACTIVE: ID_{cmeState.projectId.slice(0, 8)}
+              </div>
+            )}
+
+            {cmeState.status === 'failed' && (
+              <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs italic">
+                Erro: {cmeState.error}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-start">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={resetCme}
+              className="text-xs h-8"
+            >
+              Fechar
+            </Button>
+            {cmeState.status === 'rendering' && (
+              <Button
+                type="button"
+                className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
+                onClick={() => {
+                  resetCme();
+                  navigate(`/admin/cinematic-engine/${cmeState.projectId}`);
+                }}
+              >
+                <Play className="h-3 w-3" /> Ver no Monitor
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
