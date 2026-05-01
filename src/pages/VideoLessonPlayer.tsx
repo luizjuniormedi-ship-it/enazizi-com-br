@@ -22,7 +22,8 @@ import {
   Zap,
   AlertTriangle,
   RotateCcw,
-  Film
+  Film,
+  Settings
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
