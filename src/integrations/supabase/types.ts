@@ -2121,6 +2121,67 @@ export type Database = {
         }
         Relationships: []
       }
+      cme_adaptive_interventions: {
+        Row: {
+          ace_decision_id: string | null
+          chapter_ref: string | null
+          created_at: string
+          efficacy_score: number | null
+          friction_type: string
+          id: string
+          intervention_type: string | null
+          project_id: string | null
+          student_id: string | null
+          variant_id: string | null
+        }
+        Insert: {
+          ace_decision_id?: string | null
+          chapter_ref?: string | null
+          created_at?: string
+          efficacy_score?: number | null
+          friction_type: string
+          id?: string
+          intervention_type?: string | null
+          project_id?: string | null
+          student_id?: string | null
+          variant_id?: string | null
+        }
+        Update: {
+          ace_decision_id?: string | null
+          chapter_ref?: string | null
+          created_at?: string
+          efficacy_score?: number | null
+          friction_type?: string
+          id?: string
+          intervention_type?: string | null
+          project_id?: string | null
+          student_id?: string | null
+          variant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_adaptive_interventions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_adaptive_interventions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "adaptive_student_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "cme_adaptive_interventions_variant_id_fkey"
+            columns: ["variant_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_adaptive_pacing_maps: {
         Row: {
           cognitive_load_curve: Json | null
@@ -2208,6 +2269,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "cme_cognitive_pacing_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_governance_logs: {
+        Row: {
+          comments: string | null
+          created_at: string
+          from_status: string | null
+          id: string
+          metadata: Json | null
+          project_id: string | null
+          reviewer_id: string | null
+          to_status: string
+          verdict: string | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          reviewer_id?: string | null
+          to_status: string
+          verdict?: string | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          metadata?: Json | null
+          project_id?: string | null
+          reviewer_id?: string | null
+          to_status?: string
+          verdict?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_governance_logs_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "cme_video_projects"
@@ -2422,6 +2527,73 @@ export type Database = {
           },
         ]
       }
+      cme_render_chunks: {
+        Row: {
+          chunk_order: number
+          created_at: string
+          duration_ms: number | null
+          error_log: string | null
+          id: string
+          output_url: string | null
+          render_job_id: string | null
+          retry_count: number | null
+          scene_id: string | null
+          status: string
+          updated_at: string
+          worker_id: string | null
+        }
+        Insert: {
+          chunk_order: number
+          created_at?: string
+          duration_ms?: number | null
+          error_log?: string | null
+          id?: string
+          output_url?: string | null
+          render_job_id?: string | null
+          retry_count?: number | null
+          scene_id?: string | null
+          status?: string
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Update: {
+          chunk_order?: number
+          created_at?: string
+          duration_ms?: number | null
+          error_log?: string | null
+          id?: string
+          output_url?: string | null
+          render_job_id?: string | null
+          retry_count?: number | null
+          scene_id?: string | null
+          status?: string
+          updated_at?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_chunks_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_chunks_scene_id_fkey"
+            columns: ["scene_id"]
+            isOneToOne: false
+            referencedRelation: "cme_scene_graphs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_chunks_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "cme_gpu_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_render_failures: {
         Row: {
           auto_fix_applied: boolean | null
@@ -2483,6 +2655,7 @@ export type Database = {
           adaptive_profile_snapshot: Json | null
           adaptive_variant: string | null
           chapter_manifest: Json | null
+          chunk_composition_status: string | null
           cinematic_score: number | null
           completed_at: string | null
           distributed_chunks: number | null
@@ -2494,6 +2667,7 @@ export type Database = {
           id: string
           output_url: string | null
           pacing_efficiency_score: number | null
+          parent_job_id: string | null
           preview_url: string | null
           priority: number | null
           project_id: string | null
@@ -2510,11 +2684,13 @@ export type Database = {
           status: string
           thumbnail_url: string | null
           updated_at: string
+          variant_type: string | null
         }
         Insert: {
           adaptive_profile_snapshot?: Json | null
           adaptive_variant?: string | null
           chapter_manifest?: Json | null
+          chunk_composition_status?: string | null
           cinematic_score?: number | null
           completed_at?: string | null
           distributed_chunks?: number | null
@@ -2526,6 +2702,7 @@ export type Database = {
           id?: string
           output_url?: string | null
           pacing_efficiency_score?: number | null
+          parent_job_id?: string | null
           preview_url?: string | null
           priority?: number | null
           project_id?: string | null
@@ -2542,11 +2719,13 @@ export type Database = {
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
+          variant_type?: string | null
         }
         Update: {
           adaptive_profile_snapshot?: Json | null
           adaptive_variant?: string | null
           chapter_manifest?: Json | null
+          chunk_composition_status?: string | null
           cinematic_score?: number | null
           completed_at?: string | null
           distributed_chunks?: number | null
@@ -2558,6 +2737,7 @@ export type Database = {
           id?: string
           output_url?: string | null
           pacing_efficiency_score?: number | null
+          parent_job_id?: string | null
           preview_url?: string | null
           priority?: number | null
           project_id?: string | null
@@ -2574,6 +2754,7 @@ export type Database = {
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
+          variant_type?: string | null
         }
         Relationships: [
           {
@@ -2581,6 +2762,13 @@ export type Database = {
             columns: ["gpu_worker_id"]
             isOneToOne: false
             referencedRelation: "cme_gpu_workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_jobs_parent_job_id_fkey"
+            columns: ["parent_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
             referencedColumns: ["id"]
           },
           {
@@ -2806,31 +2994,37 @@ export type Database = {
           config: Json | null
           created_at: string
           id: string
+          quality_score: number | null
           status: string
           target_audience: string | null
           title: string
           topic_id: string | null
           updated_at: string
+          validation_checks: Json | null
         }
         Insert: {
           config?: Json | null
           created_at?: string
           id?: string
+          quality_score?: number | null
           status?: string
           target_audience?: string | null
           title: string
           topic_id?: string | null
           updated_at?: string
+          validation_checks?: Json | null
         }
         Update: {
           config?: Json | null
           created_at?: string
           id?: string
+          quality_score?: number | null
           status?: string
           target_audience?: string | null
           title?: string
           topic_id?: string | null
           updated_at?: string
+          validation_checks?: Json | null
         }
         Relationships: [
           {
