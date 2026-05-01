@@ -50,6 +50,7 @@ const AdminInterventionPolicies = lazy(() => import("@/pages/admin/AdminInterven
 const AdminAdaptiveExperiments = lazy(() => import("@/pages/admin/AdminAdaptiveExperiments"));
 const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/IntelligenceOverviewPanel"));
 const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCognitiveOrchestrator"));
+const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
