@@ -14,6 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
+      adaptive_experiment_efficacy: {
+        Row: {
+          avg_improvement_score: number | null
+          experiment_id: string | null
+          friction_reduction_score: number | null
+          id: string
+          retention_lift: number | null
+          sample_size: number | null
+          updated_at: string | null
+          variant_id: string
+        }
+        Insert: {
+          avg_improvement_score?: number | null
+          experiment_id?: string | null
+          friction_reduction_score?: number | null
+          id?: string
+          retention_lift?: number | null
+          sample_size?: number | null
+          updated_at?: string | null
+          variant_id: string
+        }
+        Update: {
+          avg_improvement_score?: number | null
+          experiment_id?: string | null
+          friction_reduction_score?: number | null
+          id?: string
+          retention_lift?: number | null
+          sample_size?: number | null
+          updated_at?: string | null
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adaptive_experiment_efficacy_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "adaptive_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      adaptive_experiments: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: string | null
+          target_metric: string
+          variants: Json
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: string | null
+          target_metric: string
+          variants: Json
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: string | null
+          target_metric?: string
+          variants?: Json
+        }
+        Relationships: []
+      }
       adaptive_governance_logs: {
         Row: {
           action_type: string
@@ -62,6 +139,8 @@ export type Database = {
           effectiveness_score: number | null
           estimated_time_min: number | null
           evidence_score: number | null
+          experiment_id: string | null
+          experiment_variant_id: string | null
           friction_score_snapshot: number | null
           historical_effectiveness_snapshot: number | null
           id: string
@@ -87,6 +166,8 @@ export type Database = {
           effectiveness_score?: number | null
           estimated_time_min?: number | null
           evidence_score?: number | null
+          experiment_id?: string | null
+          experiment_variant_id?: string | null
           friction_score_snapshot?: number | null
           historical_effectiveness_snapshot?: number | null
           id?: string
@@ -112,6 +193,8 @@ export type Database = {
           effectiveness_score?: number | null
           estimated_time_min?: number | null
           evidence_score?: number | null
+          experiment_id?: string | null
+          experiment_variant_id?: string | null
           friction_score_snapshot?: number | null
           historical_effectiveness_snapshot?: number | null
           id?: string
@@ -134,6 +217,13 @@ export type Database = {
             columns: ["context_node_id"]
             isOneToOne: false
             referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adaptive_interventions_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "adaptive_experiments"
             referencedColumns: ["id"]
           },
           {
@@ -208,9 +298,11 @@ export type Database = {
           intervention_frequency_score: number | null
           last_intervention_at: string | null
           last_policy_violation_at: string | null
+          last_recovery_at: string | null
           mastery_map: Json | null
           overall_friction_score: number | null
           preferred_modality: string | null
+          recovery_mode_active: boolean | null
           updated_at: string | null
           user_id: string | null
         }
@@ -221,9 +313,11 @@ export type Database = {
           intervention_frequency_score?: number | null
           last_intervention_at?: string | null
           last_policy_violation_at?: string | null
+          last_recovery_at?: string | null
           mastery_map?: Json | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
+          recovery_mode_active?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -234,9 +328,11 @@ export type Database = {
           intervention_frequency_score?: number | null
           last_intervention_at?: string | null
           last_policy_violation_at?: string | null
+          last_recovery_at?: string | null
           mastery_map?: Json | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
+          recovery_mode_active?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -9710,9 +9806,12 @@ export type Database = {
         Row: {
           clinical_score: number | null
           dependency_factor: number | null
+          false_mastery_risk: number | null
           id: string
           last_updated_at: string | null
           node_id: string
+          overload_risk: number | null
+          retention_projection: number | null
           retention_stability: number | null
           speed_factor: number | null
           theoretical_score: number | null
@@ -9722,9 +9821,12 @@ export type Database = {
         Insert: {
           clinical_score?: number | null
           dependency_factor?: number | null
+          false_mastery_risk?: number | null
           id?: string
           last_updated_at?: string | null
           node_id: string
+          overload_risk?: number | null
+          retention_projection?: number | null
           retention_stability?: number | null
           speed_factor?: number | null
           theoretical_score?: number | null
@@ -9734,9 +9836,12 @@ export type Database = {
         Update: {
           clinical_score?: number | null
           dependency_factor?: number | null
+          false_mastery_risk?: number | null
           id?: string
           last_updated_at?: string | null
           node_id?: string
+          overload_risk?: number | null
+          retention_projection?: number | null
           retention_stability?: number | null
           speed_factor?: number | null
           theoretical_score?: number | null
@@ -11853,6 +11958,38 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_experiment_assignments: {
+        Row: {
+          assigned_at: string | null
+          experiment_id: string
+          id: string
+          user_id: string
+          variant_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          experiment_id: string
+          id?: string
+          user_id: string
+          variant_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          experiment_id?: string
+          id?: string
+          user_id?: string
+          variant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_experiment_assignments_experiment_id_fkey"
+            columns: ["experiment_id"]
+            isOneToOne: false
+            referencedRelation: "adaptive_experiments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_feedback: {
         Row: {
