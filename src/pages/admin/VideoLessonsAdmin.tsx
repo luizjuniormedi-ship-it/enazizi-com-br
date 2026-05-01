@@ -47,6 +47,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const VideoLessonsAdmin = () => {
   const navigate = useNavigate();
@@ -329,7 +330,7 @@ const VideoLessonsAdmin = () => {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {getStatusBadge(lesson.status)}
+                            {getStatusBadge(lesson)}
                             <div className="text-[10px] text-muted-foreground px-1 uppercase tracking-wider">
                               {lesson.visibility || 'Public'}
                             </div>
