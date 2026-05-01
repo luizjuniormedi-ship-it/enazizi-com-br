@@ -92,6 +92,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "scraping", label: "Web Scraping", icon: HardDrive },
         { key: "qa", label: "QA Bot", icon: Bug },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
+        { key: "system-checklist", label: "System Checklist", icon: ShieldCheck },
       ],
     },
     {
