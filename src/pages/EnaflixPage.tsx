@@ -10,6 +10,8 @@
  * Sem sidebar, sem header sólido, sem caixas administrativas.
  */
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 
 import { ENAFLIX_MODULES, type EnaflixModule } from "@/data/enaflix/enaflixModules";
