@@ -166,6 +166,10 @@ export const useDashboardData = () => {
           imageQuizAttempts: imageQuizRes.count || 0,
           diagnosticCompleted: diagnosticRes.count || 0,
           chatConversations: chroniclesRes.count || 0,
+          retentionScore: Number(adaptiveProfileRes.data?.retention_score) || 0,
+          fatigueScore: 0, // Will be updated by real-time neuroanalytics
+          engagementScore: 0,
+          overloadThreshold: Number(adaptiveProfileRes.data?.overload_threshold) || 0.8,
         };
 
         // Build stats
