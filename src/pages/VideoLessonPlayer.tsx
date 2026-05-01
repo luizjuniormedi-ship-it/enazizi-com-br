@@ -74,6 +74,8 @@ const VideoLessonPlayer = () => {
   const lastLogTime = useRef(0);
   const pauseStartTime = useRef<number | null>(null);
   const hasNotifiedDifficulty = useRef<Set<string>>(new Set());
+  const loadStartTime = useRef(Date.now());
+  const hasLoggedReady = useRef(false);
   
   const { 
     recommendations, 
@@ -94,11 +96,47 @@ const VideoLessonPlayer = () => {
 
       if (error) {
         toast.error("Erro ao carregar videoaula: " + error.message);
+        logPlaybackAudit("error", error.message);
         throw error;
       }
       return data;
     }
   });
+
+  const logPlaybackAudit = async (state: string, errorMessage?: string) => {
+    if (!id) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    const hlsManifest = (lesson as any)?.hls_manifest_url;
+    const playbackUrl = hlsManifest || 
+                       (lesson as any)?.hls_url || 
+                       lesson?.video_url || 
+                       (lesson as any)?.playback_url;
+
+    console.log(`[CME Audit] State: ${state}, URL: ${playbackUrl}`);
+
+    await supabase.from("cme_playback_audit_logs" as any).insert({
+      video_lesson_id: id,
+      user_id: user?.id,
+      selected_url: playbackUrl,
+      media_status: lesson?.media_status,
+      player_state: state,
+      error_message: errorMessage,
+      load_time_ms: Date.now() - loadStartTime.current
+    } as any);
+  };
+
+  useEffect(() => {
+    if (!isLoading && lesson && !hasLoggedReady.current) {
+      if (lesson.media_status === 'ready' || lesson.media_status === 'published') {
+        logPlaybackAudit("ready");
+        hasLoggedReady.current = true;
+      } else {
+        logPlaybackAudit(lesson.media_status || "unknown_status");
+      }
+    }
+  }, [isLoading, lesson]);
+
 
   const { data: quiz } = useQuery({
     queryKey: ["video-lesson-quiz", id],
@@ -445,6 +483,7 @@ const VideoLessonPlayer = () => {
                          
       if (!playbackUrl) {
         setMediaTimeout(true);
+        logPlaybackAudit("timeout", "Media source not found within 8s");
       }
     }, 8000);
 
