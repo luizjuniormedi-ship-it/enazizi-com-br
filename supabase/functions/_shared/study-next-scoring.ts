@@ -480,6 +480,30 @@ export function buildJustification(
   return parts.join(". ") + ".";
 }
 
+/**
+ * Enhanced explainable justification for students.
+ */
+export function buildExplainableJustification(
+  counts: any,
+  ctx: ScoringContext,
+  chosenType: string,
+): string {
+  if (chosenType === "mnemonic") {
+    return "Detectamos erros repetidos em termos técnicos. Este mnemônico ajudará na consolidação de longo prazo.";
+  }
+  if (chosenType === "image_quiz") {
+    return "Sua precisão em interpretação visual variou recentemente. Praticar com imagens reais aumentará sua segurança clínica.";
+  }
+  if (ctx.recoveryActive) {
+    return "Seu ritmo de estudo está intenso. Sugerimos uma sessão equilibrada para evitar fadiga e manter a retenção.";
+  }
+  if (ctx.approvalZone === "critico") {
+    return "Para estabilizar sua base, o ACE priorizou revisões de temas essenciais que apresentam maior risco de esquecimento.";
+  }
+  
+  return buildJustification(counts, ctx, chosenType);
+}
+
 // ─── Diverse alternatives picker ─────────────────────────────────────
 
 export interface ScoredCandidate {
