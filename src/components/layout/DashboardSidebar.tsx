@@ -33,6 +33,7 @@ import {
   PanelLeftOpen,
   RotateCcw,
   TrendingUp,
+  BrainCircuit,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -413,6 +414,13 @@ const DashboardSidebar = () => {
               label="Hoje"
               description="Panorama do dia: progresso, ritmo e contexto"
               active={location.pathname === "/dashboard"}
+            />
+            <SidebarLink
+              to="/dashboard/minha-jornada"
+              icon={BrainCircuit}
+              label="Minha Jornada"
+              description="Transparência ACE: entenda como seu aprendizado está sendo otimizado"
+              active={location.pathname === "/dashboard/minha-jornada"}
             />
 
             {/* ─── 2. ESTUDAR (executar) ─── */}
