@@ -33,6 +33,7 @@ import TutorMessageList from "@/components/tutor/TutorMessageList";
 import TutorInputBar from "@/components/tutor/TutorInputBar";
 import TutorNextStepBlock from "@/components/tutor/TutorNextStepBlock";
 import { useSpeechToText } from "@/hooks/tutor/useSpeechToText";
+import { useTutorTemporalContext } from "@/hooks/useTutorTemporalContext";
 
 const ChatGPT = () => {
   const { user } = useAuth();
