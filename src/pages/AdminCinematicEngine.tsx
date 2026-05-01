@@ -33,7 +33,14 @@ import {
   Target,
   Monitor,
   Volume2,
-  Globe
+  Globe,
+  Camera,
+  Scissors,
+  Type,
+  Palette,
+  Eye,
+  Thermometer,
+  Layers
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
