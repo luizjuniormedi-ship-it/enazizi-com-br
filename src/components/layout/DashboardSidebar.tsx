@@ -44,6 +44,7 @@ import {
   History,
   Workflow,
   SearchCode,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
