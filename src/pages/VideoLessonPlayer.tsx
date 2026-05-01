@@ -11,6 +11,7 @@ import {
   HelpCircle,
   Clock,
   CheckCircle,
+  ShieldCheck,
   Share2,
   ExternalLink,
   BookOpen,
