@@ -3157,6 +3157,39 @@ export type Database = {
           },
         ]
       }
+      cme_knowledge_lineage: {
+        Row: {
+          created_at: string | null
+          id: string
+          source_entity_id: string
+          source_entity_type: string
+          target_entity_id: string
+          target_entity_type: string
+          transformation_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          source_entity_id: string
+          source_entity_type: string
+          target_entity_id: string
+          target_entity_type: string
+          transformation_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          source_entity_id?: string
+          source_entity_type?: string
+          target_entity_id?: string
+          target_entity_type?: string
+          transformation_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       cme_lesson_blocks: {
         Row: {
           aggregation_id: string
@@ -4007,6 +4040,44 @@ export type Database = {
           },
         ]
       }
+      cme_render_costs: {
+        Row: {
+          created_at: string | null
+          estimated_cost: number | null
+          gpu_minutes: number | null
+          id: string
+          render_job_id: string
+          render_quality: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          estimated_cost?: number | null
+          gpu_minutes?: number | null
+          id?: string
+          render_job_id: string
+          render_quality?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          estimated_cost?: number | null
+          gpu_minutes?: number | null
+          id?: string
+          render_job_id?: string
+          render_quality?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_costs_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "cme_worker_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_render_failures: {
         Row: {
           auto_fix_applied: boolean | null
@@ -4368,6 +4439,110 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cme_render_segments: {
+        Row: {
+          chapter_number: number | null
+          created_at: string | null
+          duration_seconds: number | null
+          end_time: number | null
+          id: string
+          playback_url: string | null
+          render_job_id: string
+          start_time: number | null
+          status: string | null
+        }
+        Insert: {
+          chapter_number?: number | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: number | null
+          id?: string
+          playback_url?: string | null
+          render_job_id: string
+          start_time?: number | null
+          status?: string | null
+        }
+        Update: {
+          chapter_number?: number | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          end_time?: number | null
+          id?: string
+          playback_url?: string | null
+          render_job_id?: string
+          start_time?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      cme_retry_attempts: {
+        Row: {
+          attempt_number: number
+          created_at: string | null
+          error_received: string | null
+          id: string
+          job_id: string
+          next_retry_at: string | null
+          policy_id: string | null
+          strategy_used: string | null
+        }
+        Insert: {
+          attempt_number: number
+          created_at?: string | null
+          error_received?: string | null
+          id?: string
+          job_id: string
+          next_retry_at?: string | null
+          policy_id?: string | null
+          strategy_used?: string | null
+        }
+        Update: {
+          attempt_number?: number
+          created_at?: string | null
+          error_received?: string | null
+          id?: string
+          job_id?: string
+          next_retry_at?: string | null
+          policy_id?: string | null
+          strategy_used?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_retry_attempts_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "cme_retry_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_retry_policies: {
+        Row: {
+          backoff_factor: number | null
+          created_at: string | null
+          id: string
+          initial_delay_sec: number | null
+          max_retries: number | null
+          name: string | null
+        }
+        Insert: {
+          backoff_factor?: number | null
+          created_at?: string | null
+          id?: string
+          initial_delay_sec?: number | null
+          max_retries?: number | null
+          name?: string | null
+        }
+        Update: {
+          backoff_factor?: number | null
+          created_at?: string | null
+          id?: string
+          initial_delay_sec?: number | null
+          max_retries?: number | null
+          name?: string | null
+        }
+        Relationships: []
       }
       cme_scene_graph_nodes: {
         Row: {
@@ -4770,6 +4945,80 @@ export type Database = {
           },
         ]
       }
+      cme_timeline_clips: {
+        Row: {
+          created_at: string | null
+          duration: number | null
+          id: string
+          offset_time: number | null
+          properties: Json | null
+          source_node_id: string | null
+          start_time: number | null
+          track_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          offset_time?: number | null
+          properties?: Json | null
+          source_node_id?: string | null
+          start_time?: number | null
+          track_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          duration?: number | null
+          id?: string
+          offset_time?: number | null
+          properties?: Json | null
+          source_node_id?: string | null
+          start_time?: number | null
+          track_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_timeline_clips_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "cme_timeline_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_timeline_tracks: {
+        Row: {
+          created_at: string | null
+          id: string
+          is_locked: boolean | null
+          is_muted: boolean | null
+          order_index: number | null
+          scene_graph_id: string
+          track_name: string | null
+          track_type: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_muted?: boolean | null
+          order_index?: number | null
+          scene_graph_id: string
+          track_name?: string | null
+          track_type?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          is_locked?: boolean | null
+          is_muted?: boolean | null
+          order_index?: number | null
+          scene_graph_id?: string
+          track_name?: string | null
+          track_type?: string | null
+        }
+        Relationships: []
+      }
       cme_tutor_origins: {
         Row: {
           cme_video_project_id: string | null
@@ -5115,6 +5364,136 @@ export type Database = {
           pronunciation_style?: string | null
           reinforcement_style?: string | null
           speaking_speed?: number
+        }
+        Relationships: []
+      }
+      cme_worker_failures: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          failure_type: string | null
+          id: string
+          job_id: string | null
+          stack_trace: string | null
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          failure_type?: string | null
+          id?: string
+          job_id?: string | null
+          stack_trace?: string | null
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          failure_type?: string | null
+          id?: string
+          job_id?: string | null
+          stack_trace?: string | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_worker_failures_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "cme_worker_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_worker_heartbeats: {
+        Row: {
+          active_jobs: number | null
+          cpu_usage: number | null
+          created_at: string | null
+          gpu_temperature: number | null
+          gpu_usage: number | null
+          id: string
+          queue_depth: number | null
+          ram_usage: number | null
+          vram_total_mb: number | null
+          vram_used_mb: number | null
+          worker_id: string | null
+        }
+        Insert: {
+          active_jobs?: number | null
+          cpu_usage?: number | null
+          created_at?: string | null
+          gpu_temperature?: number | null
+          gpu_usage?: number | null
+          id?: string
+          queue_depth?: number | null
+          ram_usage?: number | null
+          vram_total_mb?: number | null
+          vram_used_mb?: number | null
+          worker_id?: string | null
+        }
+        Update: {
+          active_jobs?: number | null
+          cpu_usage?: number | null
+          created_at?: string | null
+          gpu_temperature?: number | null
+          gpu_usage?: number | null
+          id?: string
+          queue_depth?: number | null
+          ram_usage?: number | null
+          vram_total_mb?: number | null
+          vram_used_mb?: number | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_worker_heartbeats_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "cme_worker_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_worker_nodes: {
+        Row: {
+          created_at: string | null
+          drain_mode: boolean | null
+          gpu_driver: string | null
+          gpu_memory_mb: number | null
+          gpu_name: string | null
+          hostname: string
+          id: string
+          last_heartbeat: string | null
+          status: Database["public"]["Enums"]["cme_worker_status"] | null
+          user_id: string | null
+          worker_version: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          drain_mode?: boolean | null
+          gpu_driver?: string | null
+          gpu_memory_mb?: number | null
+          gpu_name?: string | null
+          hostname: string
+          id?: string
+          last_heartbeat?: string | null
+          status?: Database["public"]["Enums"]["cme_worker_status"] | null
+          user_id?: string | null
+          worker_version?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          drain_mode?: boolean | null
+          gpu_driver?: string | null
+          gpu_memory_mb?: number | null
+          gpu_name?: string | null
+          hostname?: string
+          id?: string
+          last_heartbeat?: string | null
+          status?: Database["public"]["Enums"]["cme_worker_status"] | null
+          user_id?: string | null
+          worker_version?: string | null
         }
         Relationships: []
       }
@@ -16903,6 +17282,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mark_stale_cme_jobs_failed: { Args: never; Returns: undefined }
       match_tutor_memory: {
         Args: {
           match_count?: number
@@ -17089,6 +17469,7 @@ export type Database = {
         | "validating"
         | "ready"
         | "failed"
+      cme_worker_status: "online" | "offline" | "maintenance" | "draining"
       content_status:
         | "draft"
         | "processing"
@@ -17333,6 +17714,7 @@ export const Constants = {
         "ready",
         "failed",
       ],
+      cme_worker_status: ["online", "offline", "maintenance", "draining"],
       content_status: [
         "draft",
         "processing",
