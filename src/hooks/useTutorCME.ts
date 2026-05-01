@@ -279,6 +279,16 @@ export const useTutorCME = () => {
           payload: sceneGraphPayload
         });
         
+        await logPipelineEvent(
+          projectId, 
+          'graphing', 
+          'failed', 
+          40, 
+          `Falha ao persistir Scene Graph: ${techReason}`, 
+          aggregationId || undefined,
+          { code: sgError.code, details: sgError.details, hint: sgError.hint }
+        );
+
         await reportIncident("CME_SceneGraph_Persistence", {
           message: "Falha ao persistir Scene Graph.",
           technical_reason: techReason,
@@ -317,6 +327,16 @@ export const useTutorCME = () => {
             payload: nodes
           });
           
+          await logPipelineEvent(
+            projectId, 
+            'graphing', 
+            'failed', 
+            45, 
+            `Falha ao persistir Scene Graph Nodes: ${techReason}`, 
+            aggregationId || undefined,
+            { code: nodesError.code, details: nodesError.details }
+          );
+
           await reportIncident("CME_SceneNodes_Persistence", {
             message: "Falha ao persistir Scene Graph Nodes.",
             technical_reason: techReason,
