@@ -140,7 +140,7 @@ const GlobalCognitiveHeatmap = () => {
             </div>
             <p className="text-2xl font-bold mt-2">
               {criticalVideos && criticalVideos.length > 0
-                ? (criticalVideos.reduce((a: number, b: any) => a + (b.replays || 0), 0) / (criticalVideos.length || 1)).toFixed(1)
+                ? (Number(criticalVideos.reduce((a: any, b: any) => a + (b.replays || 0), 0)) / (criticalVideos.length || 1)).toFixed(1)
                 : "0"}
             </p>
             <p className="text-[10px] text-muted-foreground mt-1">Por videoaula segmentada</p>
