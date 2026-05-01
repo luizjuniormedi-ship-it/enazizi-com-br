@@ -15,6 +15,7 @@ import {
   scoreImageQuiz, scoreMnemonic, decideMnemonicMode,
   isVisualTopic, isMnemonicTopic,
   buildJustification, pickDiverseAlternatives,
+  buildExplainableJustification,
   type ScoredCandidate, type VisualWeaknessEntry, type MnemonicUtilityEntry,
 } from "../_shared/study-next-scoring.ts";
 
