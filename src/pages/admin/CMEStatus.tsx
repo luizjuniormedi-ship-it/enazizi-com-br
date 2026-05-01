@@ -87,8 +87,8 @@ const CMEStatusPage = () => {
           <Button variant="outline" className="gap-2" onClick={() => refetch()}>
             <RefreshCcw className="h-4 w-4" /> Atualizar agora
           </Button>
-          <Button className="gap-2">
-            <ShieldAlert className="h-4 w-4" /> Relatório de Falhas
+          <Button className="gap-2 bg-red-600 hover:bg-red-700" onClick={() => navigate('/admin/cme-incidents')}>
+            <ShieldAlert className="h-4 w-4" /> Incidentes {stats.critical > 0 && <Badge variant="destructive" className="bg-white text-red-600 ml-1">{stats.critical}</Badge>}
           </Button>
         </div>
       </div>
