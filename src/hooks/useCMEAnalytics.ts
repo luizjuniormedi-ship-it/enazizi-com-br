@@ -13,15 +13,11 @@ export const useCMEAnalytics = () => {
   };
 
   const getExecutiveKPIs = async () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
     const { data: renderJobs } = await supabase.from("cme_render_jobs").select("*");
     const { data: incidents } = await supabase.from("cme_system_incidents").select("*");
     const { data: workers } = await supabase.from("cme_worker_nodes").select("*");
     const { data: cognitive } = await supabase.from("cme_cognitive_analysis").select("*");
+    const { data: neuro } = await supabase.from("cme_neuroanalytics").select("*");
 
     const totalRenders = renderJobs?.length || 0;
     const completedRenders = renderJobs?.filter(j => j.status === 'completed').length || 0;
@@ -35,12 +31,23 @@ export const useCMEAnalytics = () => {
 
     const activeWorkers = workers?.filter(w => w.status === 'online').length || 0;
 
+    // Métricas Neuroanalíticas (Fase Enterprise+)
+    const avgEngagement = neuro?.length 
+      ? neuro.reduce((acc, n) => acc + (Number(n.engagement_score) || 0), 0) / neuro.length 
+      : 0;
+
+    const avgFatigue = neuro?.length 
+      ? neuro.reduce((acc, n) => acc + (Number(n.fatigue_score) || 0), 0) / neuro.length 
+      : 0;
+
     return {
       throughput: completedRenders,
       fallbackRate: fallbackRate.toFixed(1),
       cognitiveScore: Math.round(avgCognitiveScore),
       activeWorkers,
-      efficiency: activeWorkers > 0 ? 94 : 0 // Simplified
+      efficiency: activeWorkers > 0 ? 94 : 0,
+      avgEngagement: Math.round(avgEngagement * 100),
+      avgFatigue: Math.round(avgFatigue * 100)
     };
   };
 
