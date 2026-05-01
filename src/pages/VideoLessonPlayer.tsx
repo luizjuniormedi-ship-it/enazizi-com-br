@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Play, 
@@ -10,6 +11,7 @@ import {
   HelpCircle,
   Clock,
   CheckCircle,
+  ShieldCheck,
   Share2,
   ExternalLink,
   BookOpen,
@@ -45,6 +47,7 @@ import {
 
 import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommendationCard";
 import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";
+import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 
 const VideoLessonPlayer = () => {
   const { id } = useParams();
@@ -160,6 +163,7 @@ const VideoLessonPlayer = () => {
 
   // ───────────────── FASE 3: Adaptive Intelligence ─────────────────
   const { recommendation, resetRecommendation } = useVideoAdaptiveIntelligence(id!, currentSegment?.id || null);
+  const { data: cognitiveState } = useCognitiveOrchestrator();
 
   const currentSegmentAnalytics = currentSegment ? getForSegment(currentSegment.id) : null;
   const currentDifficulty = smartReplayEnabled && currentSegmentAnalytics?.difficultyLikely;
@@ -449,6 +453,25 @@ const VideoLessonPlayer = () => {
                 onClose={resetRecommendation}
               />
             </div>
+
+            {/* Alerta de Orquestração Cognitiva */}
+            {cognitiveState?.current_session_mode === 'recovery' && (
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3"
+              >
+                <div className="p-2 rounded-lg bg-blue-500/20 text-blue-600">
+                  <ShieldCheck className="h-4 w-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-blue-700">Foco Zen Ativado</p>
+                  <p className="text-[10px] text-blue-600/80 italic">
+                    Detectamos aumento de fadiga cognitiva. O ENAZIZI reduziu a intensidade da sessão para preservar sua retenção.
+                  </p>
+                </div>
+              </motion.div>
+            )}
 
             {/* FASE 2: Indicador de dificuldade + segmento atual */}
             {currentSegment && (

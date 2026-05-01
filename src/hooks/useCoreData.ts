@@ -14,6 +14,7 @@ export interface CoreDataResult {
   adaptiveProfile: {
     cognitive_stress_index: number;
     recovery_mode_active: boolean;
+    current_session_mode: string;
   } | null;
   practiceAttempts: { correct: boolean; created_at: string }[];
   revisoes: { id: string; status: string; data_revisao: string; created_at: string }[];
@@ -87,7 +88,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
       .select("specialty, domain_score, questions_answered, correct_answers")
       .eq("user_id", userId),
     supabase.from("adaptive_student_profiles")
-      .select("cognitive_stress_index, recovery_mode_active")
+      .select("cognitive_stress_index, recovery_mode_active, current_session_mode")
       .eq("user_id", userId).maybeSingle(),
   ]);
 

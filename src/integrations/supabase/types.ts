@@ -299,20 +299,57 @@ export type Database = {
           },
         ]
       }
+      adaptive_session_logs: {
+        Row: {
+          cognitive_snapshot: Json | null
+          created_at: string | null
+          id: string
+          new_mode: string | null
+          prev_mode: string | null
+          session_id: string
+          trigger_reason: string | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_snapshot?: Json | null
+          created_at?: string | null
+          id?: string
+          new_mode?: string | null
+          prev_mode?: string | null
+          session_id: string
+          trigger_reason?: string | null
+          user_id: string
+        }
+        Update: {
+          cognitive_snapshot?: Json | null
+          created_at?: string | null
+          id?: string
+          new_mode?: string | null
+          prev_mode?: string | null
+          session_id?: string
+          trigger_reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       adaptive_student_profiles: {
         Row: {
           cognitive_load_estimate: number | null
           cognitive_stress_index: number | null
+          current_session_mode: string | null
+          fatigue_index: number | null
           id: string
           intervention_frequency_score: number | null
           last_intervention_at: string | null
           last_policy_violation_at: string | null
           last_recovery_at: string | null
           mastery_map: Json | null
+          multimodal_preference_score: Json | null
           orchestration_intensity: string | null
           overall_friction_score: number | null
           preferred_modality: string | null
           recovery_mode_active: boolean | null
+          response_speed_index: number | null
           transparency_enabled: boolean | null
           updated_at: string | null
           user_id: string | null
@@ -320,16 +357,20 @@ export type Database = {
         Insert: {
           cognitive_load_estimate?: number | null
           cognitive_stress_index?: number | null
+          current_session_mode?: string | null
+          fatigue_index?: number | null
           id?: string
           intervention_frequency_score?: number | null
           last_intervention_at?: string | null
           last_policy_violation_at?: string | null
           last_recovery_at?: string | null
           mastery_map?: Json | null
+          multimodal_preference_score?: Json | null
           orchestration_intensity?: string | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
           recovery_mode_active?: boolean | null
+          response_speed_index?: number | null
           transparency_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string | null
@@ -337,16 +378,20 @@ export type Database = {
         Update: {
           cognitive_load_estimate?: number | null
           cognitive_stress_index?: number | null
+          current_session_mode?: string | null
+          fatigue_index?: number | null
           id?: string
           intervention_frequency_score?: number | null
           last_intervention_at?: string | null
           last_policy_violation_at?: string | null
           last_recovery_at?: string | null
           mastery_map?: Json | null
+          multimodal_preference_score?: Json | null
           orchestration_intensity?: string | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
           recovery_mode_active?: boolean | null
+          response_speed_index?: number | null
           transparency_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string | null

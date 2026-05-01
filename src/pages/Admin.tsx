@@ -49,6 +49,7 @@ const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
 const AdminInterventionPolicies = lazy(() => import("@/pages/admin/AdminInterventionPolicies"));
 const AdminAdaptiveExperiments = lazy(() => import("@/pages/admin/AdminAdaptiveExperiments"));
 const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/IntelligenceOverviewPanel"));
+const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCognitiveOrchestrator"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -116,6 +117,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "intelligence-overview", label: "Visão Geral IA", icon: LayoutDashboard },
         { key: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch },
         { key: "adaptive-engine", label: "ACE Engine", icon: BrainCircuit },
+        { key: "cognitive-orchestrator", label: "Orquestrador Sessão", icon: Activity },
         { key: "intervention-policies", label: "Governança/Políticas", icon: ShieldCheck },
         { key: "adaptive-experiments", label: "Experimentos A/B", icon: Beaker },
         { key: "specialty-friction", label: "Atrito Cognitivo", icon: TrendingDown },
@@ -699,6 +701,7 @@ const Admin = () => {
             {activeSection === "intelligence-overview" && <IntelligenceOverviewPanel />}
             {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
             {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
+            {activeSection === "cognitive-orchestrator" && <AdminCognitiveOrchestrator />}
             {activeSection === "intervention-policies" && <AdminInterventionPolicies />}
             {activeSection === "adaptive-experiments" && <AdminAdaptiveExperiments />}
             {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
