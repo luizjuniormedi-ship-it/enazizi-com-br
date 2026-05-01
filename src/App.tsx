@@ -116,6 +116,7 @@ const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"
 
 
 
+const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
 /** Loader sensível à rota: escolhe o módulo cinematográfico atual. */
@@ -243,6 +244,7 @@ const App = () => (
                    <Route path="notebooklm-analytics" element={<NotebookLMAnalytics />} />
                    <Route path="video-lessons" element={<VideoLessonsAdmin />} />
                    <Route path="video-lessons/:id" element={<VideoLessonDetailsAdmin />} />
+                   <Route path="specialty-friction" element={<SpecialtyFrictionReport />} />
                    <Route path="ingestion-network" element={<OfficialExamIngestion />} />
                </Route>
 
