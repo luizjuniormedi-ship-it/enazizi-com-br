@@ -41,7 +41,7 @@ export const useTutorCME = () => {
     } catch (e) {
       console.error("Telemetry error:", e);
     }
-  }, []);
+  }, [supabaseClient]);
 
   const aggregateSessionContent = useCallback(async (conversationId: string) => {
     // Use a direct query bypass if possible or simplify
