@@ -29,6 +29,7 @@ import {
   Activity,
   TrendingUp,
   TrendingDown,
+  ShieldCheck,
 } from "lucide-react";
 import {
   useInterventionAnalytics,
