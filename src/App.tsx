@@ -61,6 +61,7 @@ const AnamnesisTrainer = lazyWithRetry(() => import("./pages/AnamnesisTrainer"),
 const Install = lazyWithRetry(() => import("./pages/Install"), "Install");
 const StudyGuides = lazyWithRetry(() => import("./pages/StudyGuides"), "StudyGuides");
 const MedicalChronicles = lazyWithRetry(() => import("./pages/MedicalChronicles"), "MedicalChronicles");
+const MedicalAdaptiveJourney = lazyWithRetry(() => import("./pages/MedicalAdaptiveJourney"), "MedicalAdaptiveJourney");
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
@@ -216,6 +217,7 @@ const App = () => (
                 <Route path="mapas-mentais" element={<MindMaps />} />
                 <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
                 <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
+                <Route path="minha-jornada" element={<MedicalAdaptiveJourney />} />
 
               </Route>
               {/* Fullscreen mind map viewer */}
