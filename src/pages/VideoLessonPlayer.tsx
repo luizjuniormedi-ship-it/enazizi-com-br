@@ -728,11 +728,13 @@ const VideoLessonPlayer = () => {
               <TabsContent value="segmentos" className="py-6">
                 <VideoSegmentList 
                   segments={segments} 
-                  onSelect={handleSelectSegment}
+                  currentSegmentId={currentSegment?.id || null}
+                  onSelectSegment={handleSelectSegment}
                   onAskTutor={handleAskTutorAtSegment}
-                  onReplay={handleReplaySegment}
-                  currentSecond={watchedSeconds}
-                  currentDifficulty={currentDifficulty}
+                  onReplaySegment={handleReplaySegment}
+                  getAnalytics={getForSegment}
+                  smartReplayEnabled={smartReplayEnabled}
+                  tutorTemporalEnabled={temporalEnabled}
                 />
               </TabsContent>
             </Tabs>
