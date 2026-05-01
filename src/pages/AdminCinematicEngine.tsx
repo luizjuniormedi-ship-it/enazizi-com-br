@@ -323,11 +323,61 @@ const AdminCinematicEngine = () => {
                 </Button>
               </CardHeader>
               <CardContent className="p-0">
-                 <div className="p-8 text-center text-slate-400">
-                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                    <p className="font-bold text-sm">Learning from reference videos...</p>
-                    <p className="text-xs max-w-sm mx-auto mt-2">CME Reference Engine v3.0 extracting narrative patterns and cognitive curves from benchmark content.</p>
-                 </div>
+                 {engineLoading ? (
+                   <div className="p-12 text-center text-slate-400 animate-pulse font-bold">Synchronizing benchmarks...</div>
+                 ) : referenceProfiles?.length === 0 ? (
+                   <div className="p-12 text-center text-slate-400">
+                      <Layout className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                      <p className="font-bold text-sm">Learning from reference videos...</p>
+                      <p className="text-xs max-w-sm mx-auto mt-2">CME Reference Engine v3.0 extracting narrative patterns and cognitive curves from benchmark content.</p>
+                   </div>
+                 ) : (
+                   <div className="overflow-x-auto">
+                     <table className="w-full text-sm text-left">
+                       <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 font-black tracking-widest border-b">
+                         <tr>
+                           <th className="px-6 py-4">Reference Benchmark</th>
+                           <th className="px-6 py-4">Type</th>
+                           <th className="px-6 py-4">Duration</th>
+                           <th className="px-6 py-4">Pacing Learning</th>
+                           <th className="px-6 py-4 text-right">Similarity Actions</th>
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y">
+                         {referenceProfiles?.map((profile) => (
+                           <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors group">
+                             <td className="px-6 py-4">
+                               <div className="flex items-center gap-3">
+                                 <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                                   <Film className="h-5 w-5" />
+                                 </div>
+                                 <div>
+                                   <p className="font-bold text-slate-700">{profile.reference_name}</p>
+                                   <p className="text-[10px] text-slate-400 font-mono">ID: {profile.id.slice(0,8)}</p>
+                                 </div>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4">
+                               <Badge variant="secondary" className="text-[9px] font-black uppercase px-2">{profile.reference_type}</Badge>
+                             </td>
+                             <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                               {Math.floor(profile.video_duration_seconds / 60)}:{(profile.video_duration_seconds % 60).toString().padStart(2,'0')}
+                             </td>
+                             <td className="px-6 py-4">
+                               <div className="flex gap-2">
+                                 <Badge variant="outline" className="text-[9px] border-emerald-200 text-emerald-600 bg-emerald-50">Narrative Pattern</Badge>
+                                 <Badge variant="outline" className="text-[9px] border-blue-200 text-blue-600 bg-blue-50">Cognitive Curve</Badge>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-right">
+                               <Button size="sm" variant="ghost" className="font-bold text-xs">Use as Model</Button>
+                             </td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   </div>
+                 )}
               </CardContent>
             </Card>
           </TabsContent>
