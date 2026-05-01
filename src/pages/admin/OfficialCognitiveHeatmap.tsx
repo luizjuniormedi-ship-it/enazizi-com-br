@@ -246,7 +246,7 @@ const GlobalCognitiveHeatmap = () => {
             {/* Heatmap Detalhado */}
             <div className="lg:col-span-2 space-y-6">
               {criticalVideos && criticalVideos.length > 0 ? (
-                <CognitiveHeatmap videoLessonId={criticalVideos[0].id} />
+                <CognitiveHeatmap videoLessonId={(criticalVideos[0] as any).id} />
               ) : (
                 <Card className="h-full flex items-center justify-center border-dashed">
                   <p className="text-muted-foreground">Selecione uma videoaula para ver o heatmap detalhado.</p>
