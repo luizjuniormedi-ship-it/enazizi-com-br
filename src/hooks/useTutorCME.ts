@@ -111,7 +111,7 @@ export const useTutorCME = () => {
     if (blocksError) throw blocksError;
 
     return { aggregation, blocks };
-  };
+  }, [supabase]);
 
   const transformToVideo = useCallback(async (params: {
     title: string;
