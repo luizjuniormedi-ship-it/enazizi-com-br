@@ -3,7 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Sparkles, ArrowUpRight, MessageSquare, Lightbulb, Brain, FileQuestion, Wand2 } from "lucide-react";
+import { 
+  Loader2, Send, Sparkles, ArrowUpRight, MessageSquare, 
+  Lightbulb, Brain, FileQuestion, Wand2, Clapperboard, 
+  Play, Stethoscope, Activity
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
