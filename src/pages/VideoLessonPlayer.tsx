@@ -769,17 +769,24 @@ const VideoLessonPlayer = () => {
             </Card>
 
             <PreventiveTutorTrigger 
-              videoLessonId={id!} 
-              currentSegmentId={currentSegment?.id || null} 
-              watchedSeconds={watchedSeconds}
+              recommendation={recommendation}
+              onAccept={() => acceptRecommendation((recommendation as any)?.id)}
+              onClose={() => resetRecommendation()}
             />
 
             <AnimatePresence>
               {recommendation && (
                 <AdaptiveRecommendationCard 
-                  recommendation={recommendation}
-                  onAccept={() => acceptRecommendation(recommendation.id)}
-                  onIgnore={() => ignoreRecommendation(recommendation.id)}
+                  recommendation={{
+                    id: (recommendation as any).id || 'rec',
+                    recommendation_text: recommendation.description,
+                    action_taken: 'none',
+                    action_payload: {},
+                    trigger_type: recommendation.type,
+                    ...recommendation
+                  }}
+                  onAccept={() => acceptRecommendation((recommendation as any).id)}
+                  onIgnore={() => ignoreRecommendation((recommendation as any).id)}
                 />
               )}
             </AnimatePresence>
