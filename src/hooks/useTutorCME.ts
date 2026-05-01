@@ -127,7 +127,7 @@ export const useTutorCME = () => {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      let aggregationId = null;
+      let aggregationId: string | null = null;
       let finalContent = params.sourceContent;
       let finalBlocksCount = params.blocks.length;
 
