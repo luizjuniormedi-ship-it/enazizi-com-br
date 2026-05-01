@@ -111,8 +111,9 @@ const VideoLessonDetailsAdmin = () => {
           </CardContent>
         </Card>
 
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 space-y-6">
           <VideoAnalyticsDrilldown videoLessonId={lesson.id} />
+          <CognitiveHeatmap videoLessonId={lesson.id} />
         </div>
       </div>
     </div>
