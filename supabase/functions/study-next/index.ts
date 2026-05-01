@@ -545,16 +545,14 @@ serve(async (req) => {
     const alternativeActions = pickDiverseAlternatives(candidates, recommendation.type);
 
     // ── Justification ──
-    const justification = buildJustification(
-      {
-        reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length,
-        tasks: tasks.length,
-        visualErrors: visualErrors.length,
-        mnemonicCandidates: mnemonicErrors.length,
-      },
-      ctx,
-      recommendation.type,
-    );
+    const counts = {
+      reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length,
+      tasks: tasks.length,
+      visualErrors: visualErrors.length,
+      mnemonicCandidates: mnemonicErrors.length,
+    };
+
+    const justification = buildJustification(counts, ctx, recommendation.type);
 
     const adaptiveState = {
       approvalScore,
