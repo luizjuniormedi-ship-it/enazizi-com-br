@@ -153,6 +153,41 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
             {status === 'failed' && <Badge variant="destructive">FAILED</Badge>}
           </header>
 
+          {status === 'failed' && (
+            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 space-y-4 animate-in zoom-in-95">
+              <div className="flex items-center gap-3 text-red-500">
+                <AlertCircle className="h-6 w-6" />
+                <h3 className="font-bold">Falha no Pipeline CME</h3>
+              </div>
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                {error || "Ocorreu um erro inesperado durante a geração do vídeo."}
+                <br />
+                <span className="text-[10px] mt-2 block opacity-50">Estágio: {currentStage}</span>
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Button 
+                  onClick={() => window.location.reload()} 
+                  variant="outline" 
+                  className="border-red-500/20 hover:bg-red-500/10 text-red-500"
+                >
+                  <RefreshCcw className="mr-2 h-4 w-4" /> Tentar Novamente
+                </Button>
+                <Button 
+                  onClick={() => navigate('/tutor')} 
+                  variant="outline" 
+                  className="border-zinc-800 hover:bg-zinc-800 text-zinc-400"
+                >
+                  Usar Fallback Pedagógico
+                </Button>
+                {aggregationId && (
+                  <Button onClick={openBuilder} variant="ghost" className="text-zinc-500 underline">
+                    Abrir CME Builder
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           {status === 'waiting_hardware' && (
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 space-y-4 animate-in zoom-in-95">
               <div className="flex items-center gap-3 text-amber-500">
