@@ -13,6 +13,7 @@ import {
   Sparkles,
   Info,
   BrainCircuit,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { StudyNextRecommendation, AdaptiveState } from "@/hooks/useStudyNext";
 import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
 import { approvalToneClass, getApprovalFocus } from "@/engines/approvalEngine";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
