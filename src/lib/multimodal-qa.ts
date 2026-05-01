@@ -63,7 +63,23 @@ export async function validateVideoLessonPublication(lessonId: string) {
                        playbackUrl.includes('localhost');
 
   if (isPlaceholder) errors.push('URL de mídia real ausente (placeholder detectado)');
-  if (!lessonData.lesson_segments || lessonData.lesson_segments.length === 0) errors.push('Segmentação ausente');
+
+  // FASE 8: Enterprise Autonomous Governance
+  const healthScore = Number(lessonData.health_score || 0);
+  if (healthScore < 85) errors.push(`Saúde da mídia insuficiente (${healthScore}%)`);
+  
+  const similarityScore = Number(lessonData.cinematic_similarity_score || 100);
+  if (similarityScore < 70) errors.push(`Similarity benchmark muito baixa (${similarityScore}%)`);
+
+  if (!lessonData.lesson_segments || lessonData.lesson_segments.length === 0) {
+    errors.push('Segmentação (Scene Graph) ausente');
+  } else {
+    // Validate chapter integrity
+    const segments = lessonData.lesson_segments;
+    const hasGaps = segments.some((s: any, i: number) => i > 0 && s.start_second > segments[i-1].end_second + 1);
+    if (hasGaps) errors.push('Integridade de capítulos violada (existem gaps no Scene Graph)');
+  }
+
   if (!lessonData.video_lesson_quizzes || lessonData.video_lesson_quizzes.length === 0) errors.push('Quizzes não gerados');
   
   // Explicitly require a ready status for publication
