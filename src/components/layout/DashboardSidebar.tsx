@@ -38,6 +38,13 @@ import {
   Activity,
   Monitor,
   ShieldCheck,
+  Clapperboard as Movie,
+  Layout,
+  Cpu,
+  History,
+  Workflow,
+  SearchCode,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -547,14 +554,6 @@ const DashboardSidebar = () => {
                     variant="muted"
                   />
                   <SidebarLink
-                    to="/admin/cme-executive"
-                    icon={Activity}
-                    label="Monitor CME"
-                    description="Executive Dashboard & Realtime Pipeline"
-                    active={location.pathname === "/admin/cme-executive"}
-                    variant="muted"
-                  />
-                  <SidebarLink
                     to="/admin/ai-studio"
                     icon={Sparkles}
                     label="Produção IA"
@@ -563,11 +562,10 @@ const DashboardSidebar = () => {
                     variant="muted"
                   />
                   <SidebarLink
-                    to="/admin/cme-media-monitor"
-                    icon={Monitor}
-                    label="Media Monitor"
-                    description="Auditoria de Playback & Cluster Health"
-                    active={location.pathname === "/admin/cme-media-monitor"}
+                    to="/admin/ceo"
+                    icon={BarChart3}
+                    label="Painel CEO"
+                    active={location.pathname === "/admin/ceo"}
                     variant="muted"
                   />
                   <SidebarLink
@@ -592,6 +590,57 @@ const DashboardSidebar = () => {
                     label="Ingestion Network"
                     description="Ingestão Automática de Provas Oficiais"
                     active={location.pathname === "/admin/ingestion-network"}
+                    variant="muted"
+                  />
+
+                  {/* ─── CME / Fábrica de Vídeos ─── */}
+                  <SectionLabel>CME / Fábrica de Vídeos</SectionLabel>
+                  <SidebarLink
+                    to="/admin/cme-executive"
+                    icon={Layout}
+                    label="Executivo CME"
+                    description="Dashboard Executivo e Pipeline Realtime"
+                    active={location.pathname === "/admin/cme-executive"}
+                    variant="muted"
+                  />
+                  <SidebarLink
+                    to="/admin/cme-media-monitor"
+                    icon={Monitor}
+                    label="Monitor CME"
+                    description="Auditoria de Playback & Cluster Health"
+                    active={location.pathname === "/admin/cme-media-monitor"}
+                    variant="muted"
+                  />
+                  <SidebarLink
+                    to="/admin/cme-audit"
+                    icon={SearchCode}
+                    label="Auditoria CME"
+                    description="Linhagem Pedagógica e Logs Técnicos"
+                    active={location.pathname === "/admin/cme-audit"}
+                    variant="muted"
+                  />
+                  <SidebarLink
+                    to="/admin/gpu-fleet"
+                    icon={Cpu}
+                    label="GPU Fleet"
+                    description="Orquestração de Workers GPU"
+                    active={location.pathname === "/admin/gpu-fleet"}
+                    variant="muted"
+                  />
+                  <SidebarLink
+                    to="/admin/render-queues"
+                    icon={Workflow}
+                    label="Render Queues"
+                    description="Fila de Renderização Distribuída"
+                    active={location.pathname === "/admin/render-queues"}
+                    variant="muted"
+                  />
+                  <SidebarLink
+                    to="/admin/cme-builder-audit"
+                    icon={History}
+                    label="Builder CME"
+                    description="Recuperação de Projetos e Scene Graphs"
+                    active={location.pathname === "/admin/cme-builder-audit"}
                     variant="muted"
                   />
                 </>

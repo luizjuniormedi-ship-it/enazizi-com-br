@@ -12,7 +12,7 @@ import NotificationBell from "@/components/dashboard/NotificationBell";
 import { Menu, LogOut, User, Shield, GraduationCap, Building2, Sun, Moon, ChevronDown, Brain, BarChart3,
   Rocket, Lightbulb, FlipVertical, BookOpen, FileText, CalendarDays, Stethoscope, Siren, PenTool, Image,
   Trophy, Crown, Bot, TrendingUp, Map, AlertTriangle, Sparkles, BookMarked, Clock, Briefcase, Target, Zap,
-  Clapperboard, Activity, Monitor
+  Clapperboard, Activity, Monitor, Layout, Cpu, History, Workflow, SearchCode
 } from "lucide-react";
 import StudyTimer from "@/components/dashboard/StudyTimer";
 import BottomTabBar from "./BottomTabBar";
@@ -228,18 +228,6 @@ const MobileNav = () => {
                     <Shield className="h-4 w-4" /> Admin
                   </Link>
                   <Link
-                    to="/admin/cme-executive"
-                    onClick={() => setOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
-                      location.pathname === "/admin/cme-executive"
-                        ? "bg-sidebar-accent text-sidebar-primary"
-                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
-                    )}
-                  >
-                    <Activity className="h-4 w-4" /> Monitor CME
-                  </Link>
-                  <Link
                     to="/admin/ai-studio"
                     onClick={() => setOpen(false)}
                     className={cn(
@@ -262,6 +250,82 @@ const MobileNav = () => {
                     )}
                   >
                     <BarChart3 className="h-4 w-4" /> Painel CEO
+                  </Link>
+
+                  <div className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/40">
+                    CME / Fábrica de Vídeos
+                  </div>
+                  <Link
+                    to="/admin/cme-executive"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/cme-executive"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <Layout className="h-4 w-4" /> Executivo CME
+                  </Link>
+                  <Link
+                    to="/admin/cme-media-monitor"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/cme-media-monitor"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <Monitor className="h-4 w-4" /> Monitor CME
+                  </Link>
+                  <Link
+                    to="/admin/cme-audit"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/cme-audit"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <SearchCode className="h-4 w-4" /> Auditoria CME
+                  </Link>
+                  <Link
+                    to="/admin/gpu-fleet"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/gpu-fleet"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <Cpu className="h-4 w-4" /> GPU Fleet
+                  </Link>
+                  <Link
+                    to="/admin/render-queues"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/render-queues"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <Workflow className="h-4 w-4" /> Render Queues
+                  </Link>
+                  <Link
+                    to="/admin/cme-builder-audit"
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-[14px] font-medium transition-colors",
+                      location.pathname === "/admin/cme-builder-audit"
+                        ? "bg-sidebar-accent text-sidebar-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent/40",
+                    )}
+                  >
+                    <History className="h-4 w-4" /> Builder CME
                   </Link>
                 </>
               )}
