@@ -2,9 +2,19 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCMEAnalytics } from "@/hooks/useCMEAnalytics";
 import { BarChart, Activity, Shield, Zap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 export default function CMEExecutiveDashboard() {
   const { getExecutiveKPIs } = useCMEAnalytics();
+
+  const { data: kpis, isLoading } = useQuery({
+    queryKey: ["cme-executive-kpis"],
+    queryFn: getExecutiveKPIs,
+    refetchInterval: 10000
+  });
+
+  if (isLoading) return <div className="p-8">Carregando métricas executivas...</div>;
 
   return (
     <div className="p-8 space-y-8 bg-background min-h-screen">
@@ -15,12 +25,12 @@ export default function CMEExecutiveDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Render Throughput</CardTitle>
+            <CardTitle className="text-sm font-medium">Throughput Total</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">142/dia</div>
-            <p className="text-xs text-muted-foreground">+20% em relação a ontem</p>
+            <div className="text-2xl font-bold">{kpis?.throughput || 0}</div>
+            <p className="text-xs text-muted-foreground">Jobs finalizados com sucesso</p>
           </CardContent>
         </Card>
         <Card>
@@ -29,18 +39,18 @@ export default function CMEExecutiveDashboard() {
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">2.4%</div>
-            <p className="text-xs text-muted-foreground">Recuperação automática ativa</p>
+            <div className="text-2xl font-bold text-yellow-600">{kpis?.fallbackRate}%</div>
+            <p className="text-xs text-muted-foreground">Recuperação pedagógica ativa</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cognitive Score</CardTitle>
+            <CardTitle className="text-sm font-medium">Avg Cognitive Score</CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">88/100</div>
-            <p className="text-xs text-muted-foreground">Retenção prevista: Alta</p>
+            <div className="text-2xl font-bold">{kpis?.cognitiveScore}/100</div>
+            <p className="text-xs text-muted-foreground">Índice de retenção previsto</p>
           </CardContent>
         </Card>
         <Card>
@@ -49,8 +59,8 @@ export default function CMEExecutiveDashboard() {
             <BarChart className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">94%</div>
-            <p className="text-xs text-muted-foreground">4 workers ativos</p>
+            <div className="text-2xl font-bold">{kpis?.efficiency}%</div>
+            <p className="text-xs text-muted-foreground">{kpis?.activeWorkers} workers ativos</p>
           </CardContent>
         </Card>
       </div>
@@ -58,7 +68,7 @@ export default function CMEExecutiveDashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Renders por Hora</CardTitle>
+            <CardTitle>Throughput Realtime</CardTitle>
           </CardHeader>
           <CardContent className="pl-2">
             <div className="h-[200px] flex items-end gap-2 px-4">
@@ -70,24 +80,24 @@ export default function CMEExecutiveDashboard() {
         </Card>
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Saúde do Pipeline</CardTitle>
+            <CardTitle>Saúde do Ecossistema CME</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <div className={cn("w-2 h-2 rounded-full", kpis?.throughput > 0 ? "bg-green-500" : "bg-yellow-500")} />
                 <div className="flex-1 text-sm">Aggregator Service</div>
-                <div className="text-xs text-muted-foreground">Online</div>
+                <div className="text-xs text-muted-foreground">Ativo</div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className={cn("w-2 h-2 rounded-full", kpis?.activeWorkers > 0 ? "bg-green-500" : "bg-red-500")} />
+                <div className="flex-1 text-sm">GPU Render Cluster</div>
+                <div className="text-xs text-muted-foreground">{kpis?.activeWorkers} Nodes Online</div>
               </div>
               <div className="flex items-center gap-4">
                 <div className="w-2 h-2 rounded-full bg-green-500" />
-                <div className="flex-1 text-sm">GPU Render Cluster</div>
-                <div className="text-xs text-muted-foreground">Online (4 Nodes)</div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-2 h-2 rounded-full bg-yellow-500" />
-                <div className="flex-1 text-sm">CDN Sync</div>
-                <div className="text-xs text-muted-foreground">Latência: 450ms</div>
+                <div className="flex-1 text-sm">Lineage Tracking</div>
+                <div className="text-xs text-muted-foreground">Auditoria Síncrona</div>
               </div>
             </div>
           </CardContent>

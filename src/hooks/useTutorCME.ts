@@ -151,10 +151,14 @@ export const useTutorCME = () => {
       blocks.push({ type, title, content: section });
     });
 
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
+
     const { data: aggregation, error: aggError } = await supabaseClient
       .from("cme_session_aggregations")
       .insert({
         tutor_session_id: conversationId,
+        user_id: user.id,
         aggregated_content: fullText,
         total_blocks: blocks.length,
         status: 'aggregating',
