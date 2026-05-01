@@ -225,6 +225,9 @@ const VideoLessonsAdmin = () => {
           <Button variant="outline" className="gap-2 border-red-500/20 text-red-500" onClick={() => navigate('/admin/cme-status')}>
             <Activity className="h-4 w-4" /> CME Status {stats.critical > 0 && <Badge variant="destructive" className="h-4 px-1 ml-1">{stats.critical}</Badge>}
           </Button>
+          <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/cme-incidents')}>
+            <ShieldAlert className="h-4 w-4 text-orange-500" /> Incidentes
+          </Button>
           <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/notebooklm-analytics')}>
             <BarChart3 className="h-4 w-4" /> Analytics
           </Button>
