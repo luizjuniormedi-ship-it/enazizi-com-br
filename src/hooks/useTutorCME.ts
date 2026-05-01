@@ -2,9 +2,13 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { TutorBlock } from "@/types/tutor";
+import { Database } from "@/integrations/supabase/types";
+
+type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'];
+type CmeRenderStatus = Database['public']['Enums']['cme_render_status'];
 
 export interface CMEProjectState {
-  status: 'idle' | 'queued' | 'planning' | 'mapping' | 'scripting' | 'graphing' | 'voicing' | 'rendering' | 'chunking' | 'uploading' | 'validating' | 'ready' | 'failed';
+  status: CmeAggregationStatus | CmeRenderStatus | 'idle' | 'mapping' | 'scripting' | 'graphing' | 'voicing' | 'chunking' | 'uploading';
   projectId?: string;
   aggregationId?: string;
   progress: number;

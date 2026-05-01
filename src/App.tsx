@@ -128,6 +128,7 @@ const CMEIncidents = lazyWithRetry(() => import("./pages/admin/CMEIncidents"), "
 const CMEMediaMonitor = lazyWithRetry(() => import("./pages/admin/CMEMediaMonitor"), "CMEMediaMonitor");
 const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEOrigins");
 const CinematicSessionBuilder = lazyWithRetry(() => import("./pages/admin/CinematicSessionBuilder"), "CinematicSessionBuilder");
+const CinematicBuilder = lazyWithRetry(() => import("./pages/admin/CinematicBuilder"), "CinematicBuilder");
 
 
 
@@ -272,8 +273,9 @@ const App = () => (
                    <Route path="adaptive-experiments" element={<AdminAdaptiveExperiments />} />
                     <Route path="cinematic-engine/:projectId" element={<AdminCinematicEngine />} />
                     <Route path="cme-origins" element={<CMEOrigins />} />
-                    <Route path="cinematic-builder/:aggregationId" element={<CinematicSessionBuilder />} />
+                    <Route path="cinematic-builder/:aggregationId" element={<CinematicBuilder />} />
                     <Route path="cme-builder-audit" element={<CMEAudit />} />
+                    <Route path="cme-audit" element={<CMEAudit />} />
                     <Route path="system-checklist" element={<SystemChecklist />} />
                 </Route>
                 <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
