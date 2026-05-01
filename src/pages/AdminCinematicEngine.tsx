@@ -635,10 +635,109 @@ const AdminCinematicEngine = () => {
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
+        </TabsContent>
+
+          <TabsContent value="factory" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="lg:col-span-2 border-none shadow-sm">
+                <CardHeader>
+                  <CardTitle className="text-lg font-black tracking-tight">Granular Scene Graph Orchestrator</CardTitle>
+                  <CardDescription className="text-xs font-bold uppercase opacity-60">Visual composition of medical narrative nodes</CardDescription>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="p-12 text-center space-y-4">
+                    <div className="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center mx-auto">
+                      <Waves className="h-10 w-10 text-slate-300" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-400">Select a project to visualize and edit its Scene Graph nodes.</p>
+                    <Button variant="outline" size="sm">Open Factory Blueprint</Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div className="space-y-6">
+                <Card className="border-none shadow-sm">
+                  <CardHeader>
+                    <CardTitle className="text-sm font-black uppercase tracking-tight">Active Rendering Variants</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {[
+                      { type: 'Full Lecture', status: 'ready', resolution: '4K/HLS' },
+                      { type: 'Recovery Mode', status: 'ready', resolution: '1080p' },
+                      { type: 'Exam Sprint', status: 'rendering', progress: 65 },
+                      { type: 'Feynman Cinematic', status: 'queued' }
+                    ].map((variant, i) => (
+                      <div key={i} className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100">
+                        <div className="flex items-center gap-3">
+                          <div className={cn("p-1.5 rounded-lg", variant.status === 'ready' ? "bg-green-500/10 text-green-600" : "bg-blue-500/10 text-blue-600")}>
+                            <Film className="h-3.5 w-3.5" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-black text-slate-800">{variant.type}</p>
+                            <p className="text-[9px] font-bold text-slate-400 uppercase">{variant.resolution || `${variant.progress}% complete`}</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] font-black uppercase">{variant.status}</Badge>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="optimizations" className="space-y-4">
+            <Card className="border-none shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg font-black tracking-tight">CME Autonomous Self-Learning Loop</CardTitle>
+                <CardDescription className="text-xs font-bold uppercase opacity-60">AI-driven narrative optimizations based on student cognitive signals</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase text-slate-400 tracking-widest">Detected Cognitive Drifts</h3>
+                    {[
+                      { problem: 'Retention drop at 00:45s (Pathophysiology)', action: 'Inject Recovery Variant', gain: '+15%' },
+                      { problem: 'High fatigue detected in Cardiovascular', action: 'Slow down Pacing Graph', gain: '+8%' },
+                      { problem: 'Quiz failure spike on Chapter 3', action: 'Generate Feynman Reinforcement', gain: '+22%' }
+                    ].map((opt, i) => (
+                      <div key={i} className="p-4 rounded-2xl border border-primary/10 bg-primary/5 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <p className="text-sm font-black text-slate-800">{opt.problem}</p>
+                          <Badge className="bg-primary text-white text-[9px] font-black">{opt.gain}</Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase">
+                          <Zap className="h-3 w-3 fill-primary" />
+                          Recommended Action: {opt.action}
+                        </div>
+                        <Button size="sm" className="w-full mt-2 text-[10px] font-black uppercase tracking-widest h-8">Execute Optimization</Button>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="rounded-3xl bg-slate-900 p-8 text-white flex flex-col items-center justify-center text-center space-y-6 relative overflow-hidden">
+                    <div className="absolute inset-0 opacity-20">
+                      <Waves className="h-full w-full animate-pulse text-primary" />
+                    </div>
+                    <Brain className="h-16 w-10 text-primary relative z-10" />
+                    <div className="space-y-2 relative z-10">
+                      <h4 className="text-lg font-black tracking-tight">Autonomous Efficiency Score</h4>
+                      <p className="text-4xl font-black text-primary">89.4%</p>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Global optimization index</p>
+                    </div>
+                    <Progress value={89} className="w-full h-1 bg-white/10 relative z-10" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 };
+
+export default AdminCinematicEngine;
 
 export default AdminCinematicEngine;
 
