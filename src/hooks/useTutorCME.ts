@@ -222,7 +222,8 @@ export const useTutorCME = () => {
             tutor_conversation_id: params.conversationId,
             is_full_session: params.isFullSession,
             specialty: params.specialty,
-            topic: params.topic
+            topic: params.topic,
+            hardened: true
           }
         } as any)
         .select()
