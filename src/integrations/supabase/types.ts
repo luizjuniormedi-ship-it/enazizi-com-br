@@ -5807,7 +5807,7 @@ export type Database = {
           narrative_script_id?: string | null
           overlay_graph?: Json | null
           render_priority?: number | null
-          scene_graph: Json
+          scene_graph?: Json
           scene_order?: number | null
           scene_type?: string | null
           semantic_plan_id?: string | null
