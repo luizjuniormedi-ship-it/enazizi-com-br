@@ -134,7 +134,7 @@ const CinematicSessionBuilder = () => {
                       user_id: (await supabase.auth.getUser()).data.user?.id,
                       title: aggregation?.title || 'Video Project',
                       status: 'draft'
-                    })
+                    } as any)
                     .select()
                     .single();
                   
