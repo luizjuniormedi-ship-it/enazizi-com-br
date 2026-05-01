@@ -262,6 +262,15 @@ const VideoLessonPlayer = () => {
 
     if (error) console.error("Erro ao logar ação:", error);
     
+    // Sincronização com CME Analytics
+    if (isCMEVideo && (lesson as any).cme_project_id) {
+      updateStudentAnalytics((lesson as any).cme_project_id, {
+        watch_time_seconds: action === "heartbeat" ? 30 : 0,
+        replay_count: action === "replay" ? 1 : 0,
+        completion_rate: completionRate
+      });
+    }
+    
     if (action === "complete") {
       toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
       const hasFlashcardsInSegments = segments.some(s => s.has_flashcards);
