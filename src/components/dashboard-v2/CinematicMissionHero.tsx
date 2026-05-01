@@ -63,6 +63,7 @@ function CinematicMissionHero({
   const cfg = TYPE_CONFIG[recommendation.type] || TYPE_CONFIG.free_study;
   const prediction = useApprovalPrediction();
   const { data: dashData } = useDashboardData();
+  const { profile } = useNeuroanalytics();
 
   // Saudação inteligente
   const greeting = useMemo(() => {
