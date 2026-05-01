@@ -106,7 +106,6 @@ export const useTutorCME = () => {
         message,
         user_id: user?.id
       } as any]);
-... keep existing code
       
       if (aggregationId) {
         await supabaseClient.from("cme_session_aggregations")
