@@ -541,7 +541,7 @@ serve(async (req) => {
       }
     }
 
-    const recommendation = candidates[0];
+    // Redefinição removida para evitar conflito de identificador
     const alternativeActions = pickDiverseAlternatives(candidates, recommendation.type);
 
     // ── Justification ──
