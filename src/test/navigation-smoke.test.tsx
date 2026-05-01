@@ -45,7 +45,7 @@ function renderWithProviders(ui: React.ReactNode, route = "/dashboard") {
 describe("Navigation smoke — BottomTabBar (mobile)", () => {
   it("renderiza os 5 itens cardeais", () => {
     renderWithProviders(<BottomTabBar />);
-    for (const label of ["Hoje", "Continuar", "Simulados", "IA", "Perfil"]) {
+    for (const label of ["Hoje", "Continuar", "Simulados", "Tutor", "Perfil"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
@@ -54,9 +54,9 @@ describe("Navigation smoke — BottomTabBar (mobile)", () => {
     renderWithProviders(<BottomTabBar />);
     const expected: Record<string, string> = {
       Hoje: "/dashboard",
-      Continuar: "/dashboard/chatgpt?tutor_mode=mission&tutor_origin=bottom_tab_continue",
+      Continuar: "/dashboard/sessao-estudo?auto=1&source=bottom_tab",
       Simulados: "/dashboard/simulados",
-      IA: "/dashboard/chatgpt",
+      Tutor: "/dashboard/chatgpt",
       Perfil: "/dashboard/perfil",
     };
     for (const [label, href] of Object.entries(expected)) {
