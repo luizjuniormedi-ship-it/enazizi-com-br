@@ -214,15 +214,25 @@ const AgentMessageItem = memo(
                 )}
 
                 {showFallbackButton && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
-                    onClick={() => handleCMETransform(false)}
-                    title={validation.rejectionReason}
-                  >
-                    <AlertCircle className="h-3 w-3" /> Criar videoaula
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                      onClick={() => handleCMETransform(true)}
+                    >
+                      <Film className="h-3.5 w-3.5" /> 🎬 Transformar Sessão Completa
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
+                      onClick={() => handleCMETransform(false)}
+                      title={validation.rejectionReason}
+                    >
+                      <AlertCircle className="h-3 w-3" /> Criar desta resposta
+                    </Button>
+                  </div>
                 )}
 
                 {/* Histórico Multimodal / Ações Enterprise */}

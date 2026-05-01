@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Film } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -13,6 +13,8 @@ import { AgentQuickActions, AgentTimeline } from "./AgentQuickActions";
 import AgentMessageList from "./AgentMessageList";
 import AgentInputBar from "./AgentInputBar";
 import type { QuickAction, LinkToAgent, Upload as UploadType } from "./agentChatTypes";
+import { useTutorCME } from "@/hooks/useTutorCME";
+import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 
 interface AgentChatProps {
   title: string;
@@ -49,6 +51,34 @@ const AgentChat = ({
     quickActions, onSaveMessage, previousContentLoader, initialPrompt, onSendRef,
     topic, subtopic, specialty,
   });
+
+  const { transformToVideo, state: cmeState } = useTutorCME();
+
+  const handleTransformSession = useCallback(async () => {
+    if (chat.messages.length === 0) return;
+    
+    // Find the last assistant message to get some context for the title
+    const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
+    if (!lastAssistantMessage) return;
+
+    const extractionResult = extractInlineTutorBlocks(lastAssistantMessage.content);
+    const cognitiveBlocks = extractionResult.blocks;
+    const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
+    const baseTitle = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
+    const title = `🎬 Videoaula Completa: ${baseTitle}`;
+    const summary = summaryBlock?.payload?.bullets?.join(". ") || lastAssistantMessage.content.slice(0, 300);
+
+    await transformToVideo({
+      title,
+      specialty: specialty || "Geral",
+      topic: topic || "Clínica Médica",
+      summary,
+      sourceContent: lastAssistantMessage.content,
+      blocks: cognitiveBlocks,
+      conversationId: chat.activeConversationId || crypto.randomUUID(),
+      isFullSession: true
+    });
+  }, [chat.messages, chat.activeConversationId, specialty, topic, transformToVideo]);
 
   // Upload handler
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -227,6 +257,8 @@ const AgentChat = ({
         showUploadButton={showUploadButton}
         isUploading={chat.isUploading}
         onUploadClick={onUploadClick}
+        onTransformSession={functionName.includes("tutor") ? handleTransformSession : undefined}
+        hasMessages={chat.messages.filter(m => m.role === "assistant").length > 0}
       />
 
       <input type="file" ref={chat.fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />
