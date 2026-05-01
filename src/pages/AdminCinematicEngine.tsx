@@ -52,6 +52,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useCinematicEngine } from "@/hooks/useCinematicEngine";
+import { CMECinematicDashboard } from "@/components/cinematic/CMECinematicDashboard";
+
 
 const AdminCinematicEngine = () => {
   const navigate = useNavigate();
@@ -487,35 +489,53 @@ const AdminCinematicEngine = () => {
           </TabsContent>
 
           <TabsContent value="analytics" className="space-y-4">
-            <Card className="border-none shadow-sm">
-              <CardHeader className="bg-white border-b">
-                <CardTitle className="text-lg font-black tracking-tight">Multimodal Analytics & Friction Engine</CardTitle>
-                <CardDescription className="text-xs font-bold uppercase opacity-60">High-fidelity tracking of cinematic retention and fatigue reduction</CardDescription>
-              </CardHeader>
-              <CardContent className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
-                 <BarChart3 className="h-12 w-12 mb-4 opacity-20" />
-                 <p>Real-time friction maps and ACE feedback loop status.</p>
-              </CardContent>
-            </Card>
+            <CMECinematicDashboard />
           </TabsContent>
           
           <TabsContent value="governance" className="space-y-4">
-             <Card className="border-none shadow-sm overflow-hidden">
-                <CardHeader className="bg-white border-b flex flex-row items-center justify-between space-y-0">
-                  <div>
-                    <CardTitle className="text-lg font-black tracking-tight">CME Governance Workflow</CardTitle>
-                    <CardDescription className="text-xs font-bold uppercase opacity-60">Mandatory medical, semantic, and cinematic verification queue</CardDescription>
+            <Card className="border-none shadow-sm overflow-hidden">
+              <CardHeader className="bg-white border-b flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-lg font-black tracking-tight">CME Governance Workflow</CardTitle>
+                  <CardDescription className="text-xs font-bold uppercase opacity-60">Mandatory medical, semantic, and cinematic verification queue</CardDescription>
+                </div>
+                <Badge className="bg-red-500/10 text-red-600 border-red-200 uppercase font-black text-[10px]">Publication Guardian Active</Badge>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="p-12">
+                  <div className="max-w-4xl mx-auto space-y-4">
+                    {[
+                      { type: 'Draft', status: 'completed', date: '2026-05-01 10:00' },
+                      { type: 'Semantic Review', status: 'completed', date: '2026-05-01 11:30' },
+                      { type: 'Narrative Review', status: 'completed', date: '2026-05-01 14:00' },
+                      { type: 'Medical Review', status: 'pending', date: '-' },
+                      { type: 'Cinematic Review', status: 'locked', date: '-' },
+                      { type: 'Adaptive Review', status: 'locked', date: '-' },
+                      { type: 'Benchmark Validation', status: 'locked', date: '-' },
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex items-center gap-4 p-4 rounded-xl border bg-slate-50/50 group hover:bg-white transition-all">
+                        <div className={cn(
+                          "h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs",
+                          step.status === 'completed' ? "bg-green-500 text-white" :
+                          step.status === 'pending' ? "bg-amber-500 text-white animate-pulse" :
+                          "bg-slate-200 text-slate-400"
+                        )}>
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-slate-800">{step.type}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{step.status}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] text-slate-400 font-mono">{step.date}</p>
+                        </div>
+                        <Button size="sm" variant="ghost" disabled={step.status === 'locked'}>Review</Button>
+                      </div>
+                    ))}
                   </div>
-                  <Badge className="bg-red-500/10 text-red-600 border-red-200 uppercase font-black text-[10px]">Publication Guardian Active</Badge>
-                </CardHeader>
-                <CardContent className="p-0">
-                  <div className="p-12 text-center text-slate-400 italic font-bold">
-                    <Shield className="h-12 w-12 mb-4 opacity-20 mx-auto" />
-                    <p className="font-bold text-sm uppercase tracking-tighter">Review Queue Management</p>
-                    <p className="text-xs font-normal max-w-md mx-auto mt-2">All CME outputs must undergo semantic, narrative, and medical review before public release.</p>
-                  </div>
-                </CardContent>
-             </Card>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

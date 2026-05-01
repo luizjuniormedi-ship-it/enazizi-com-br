@@ -308,7 +308,7 @@ const VideoLessonPlayer = () => {
     const ctx = buildContext({
       videoLessonId: id,
       segment: seg,
-      currentTimestamp: seg.start_second ?? watchedSeconds,
+      currentTimestamp: watchedSeconds,
       lesson: {
         specialty: lesson.specialty,
         topic: lesson.topic,
@@ -316,22 +316,28 @@ const VideoLessonPlayer = () => {
         tutor_lesson_summary: lesson.tutor_lesson_summary,
       },
     });
+    
     logEvent({
       videoLessonId: id,
       segmentId: seg.id,
       eventType: "tutor_open",
-      timestampSeconds: seg.start_second ?? watchedSeconds,
+      timestampSeconds: watchedSeconds,
       metadata: { temporal: !!ctx, source: "segment_button" },
     });
+    
     handleAction("open_tutor");
+    
     const params = new URLSearchParams({
       context: lesson.id,
       session: lesson.tutor_session_id || "",
     });
+    
     if (ctx) {
       params.set("video_segment", seg.id);
-      params.set("video_ts", String(ctx.current_timestamp));
+      params.set("video_ts", String(watchedSeconds));
+      params.set("hotspot_type", "temporal_context");
     }
+    
     navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
@@ -423,20 +429,61 @@ const VideoLessonPlayer = () => {
           <div className="lg:col-span-2 space-y-6">
             <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-primary/10">
               {lesson.video_url || (lesson as any).notebooklm_video_url ? (
-                <iframe 
-                  src={lesson.video_url || (lesson as any).notebooklm_video_url} 
-                  className="w-full h-full"
-                  allowFullScreen
-                  onLoad={() => {
-                    setIsPlaying(true);
-                    if (id) logEvent({
-                      videoLessonId: id,
-                      segmentId: currentSegment?.id ?? null,
-                      eventType: "play",
-                      timestampSeconds: watchedSeconds,
-                    });
-                  }}
-                />
+                <div className="relative w-full h-full group">
+                  <iframe 
+                    src={lesson.video_url || (lesson as any).notebooklm_video_url} 
+                    className="w-full h-full"
+                    allowFullScreen
+                    onLoad={() => {
+                      setIsPlaying(true);
+                      if (id) logEvent({
+                        videoLessonId: id,
+                        segmentId: currentSegment?.id ?? null,
+                        eventType: "play",
+                        timestampSeconds: watchedSeconds,
+                      });
+                    }}
+                  />
+                  
+                  {/* FASE 2: Cognitive Heat Overlay visual no player */}
+                  <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-30 transition-opacity">
+                    <div className="w-full h-full flex flex-col justify-end">
+                      <div className="h-4 w-full flex">
+                        {segments.map((seg) => {
+                          const analytics = getForSegment(seg.id);
+                          const friction = analytics?.difficultyLevel === 'alta' ? 'bg-red-500' : 
+                                          analytics?.difficultyLevel === 'média' ? 'bg-amber-500' : 'bg-green-500';
+                          return (
+                            <div 
+                              key={seg.id} 
+                              className={cn("h-full border-r border-black/20 flex-1 transition-all", friction)}
+                              title={`${seg.title}: Fricção ${analytics?.difficultyLevel || 'baixa'}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FASE 2: Timeline Cognitiva com Hotspots */}
+                  <div className="absolute bottom-16 left-4 right-4 h-1 bg-white/20 rounded-full overflow-hidden pointer-events-none">
+                    {segments.map((seg) => {
+                      const analytics = getForSegment(seg.id);
+                      if (!analytics?.difficultyLikely) return null;
+                      
+                      const startPercent = ((seg.start_second || 0) / (lesson.duration_seconds || 1)) * 100;
+                      const widthPercent = (((seg.end_second || lesson.duration_seconds) - (seg.start_second || 0)) / (lesson.duration_seconds || 1)) * 100;
+                      
+                      return (
+                        <div 
+                          key={`hotspot-${seg.id}`}
+                          className="absolute h-full bg-red-500/60 animate-pulse"
+                          style={{ left: `${startPercent}%`, width: `${widthPercent}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
               ) : isCMEVideo ? (
                 <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
                   <div className="relative">
@@ -487,6 +534,27 @@ const VideoLessonPlayer = () => {
                 onClose={resetRecommendation}
               />
             </div>
+            {/* FASE 2: Smart Replay & Adaptive Recovery */}
+            {currentSegmentAnalytics?.difficultyLevel === 'alta' && isPlaying && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute top-20 left-1/2 -translate-x-1/2 z-40"
+              >
+                <div className="bg-red-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 border border-white/20">
+                  <RotateCcw className="h-4 w-4 animate-spin-slow" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Alta Fricção: Ativando Adaptive Recovery...</span>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-6 text-[10px] text-white hover:bg-white/20"
+                    onClick={() => handleReplaySegment(currentSegment!)}
+                  >
+                    Smart Replay
+                  </Button>
+                </div>
+              </motion.div>
+            )}
 
             {/* Alerta de Orquestração Cognitiva */}
             {cognitiveState?.current_session_mode === 'recovery' && (

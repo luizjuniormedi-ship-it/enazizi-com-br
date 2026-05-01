@@ -33,6 +33,7 @@ import TutorMessageList from "@/components/tutor/TutorMessageList";
 import TutorInputBar from "@/components/tutor/TutorInputBar";
 import TutorNextStepBlock from "@/components/tutor/TutorNextStepBlock";
 import { useSpeechToText } from "@/hooks/tutor/useSpeechToText";
+import { useTutorTemporalContext } from "@/hooks/useTutorTemporalContext";
 
 const ChatGPT = () => {
   const { user } = useAuth();
@@ -180,6 +181,39 @@ const ChatGPT = () => {
       setTimeout(() => sendMessage(ensureSequentialInitialMessage(msg)), 500);
     }
   }, [missionContext, user, missionData, tutorMode]);
+
+  // Temporal/Hotspot context auto-start (from VideoLessonPlayer)
+  const temporal = useTutorTemporalContext();
+  const temporalHandled = useRef(false);
+  useEffect(() => {
+    if (!user || !searchParams.get("video_ts") || temporalHandled.current) return;
+    
+    const videoTs = searchParams.get("video_ts");
+    const ctx = temporal.readContext();
+    
+    if (temporal.temporalEnabled && ctx && !studyStarted) {
+      temporalHandled.current = true;
+      const topicToStudy = ctx.topic || ctx.segment_title || "Revisão de Vídeo";
+      const timestamp = Math.floor(Number(videoTs));
+      const minutes = Math.floor(timestamp / 60);
+      const seconds = timestamp % 60;
+      
+      const prompt = `CONTEXTO TEMPORAL — Vídeo: ${ctx.video_lesson_id}. ` +
+        `O aluno pausou aos ${minutes}:${seconds.toString().padStart(2, '0')} (Segmento: ${ctx.segment_title || 'Não identificado'}). ` +
+        `O objetivo é tirar uma dúvida específica deste trecho. ` +
+        `Contexto do segmento: ${ctx.segment_summary || 'Resumo indisponível'}. ` +
+        `Pontos-chave: ${ctx.segment_key_points?.join(', ') || 'N/A'}. ` +
+        `Por favor, ajude o aluno com base neste contexto específico, mantendo o Protocolo ENAZIZI.`;
+
+      setStudyStarted(true);
+      setMetricsCollapsed(true);
+      setCurrentTopic(topicToStudy);
+      setTopic(topicToStudy);
+      setEnaziziStep(10); // Discussion phase
+      
+      setTimeout(() => sendMessage(ensureSequentialInitialMessage(prompt)), 500);
+    }
+  }, [searchParams, user, temporal]);
 
   // StudyContext-driven auto-start (from guided flows via URL params)
   const studyCtx = useStudyContext();
