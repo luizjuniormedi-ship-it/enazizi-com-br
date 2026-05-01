@@ -2121,6 +2121,65 @@ export type Database = {
         }
         Relationships: []
       }
+      cme_adaptive_pacing_maps: {
+        Row: {
+          cognitive_load_curve: Json | null
+          created_at: string
+          fatigue_curve: Json | null
+          flow_state_curve: Json | null
+          id: string
+          pacing_curve: Json
+          pacing_mode: string | null
+          pause_points: Json | null
+          recovery_insertions: Json | null
+          reinforcement_points: Json | null
+          render_job_id: string | null
+          semantic_plan_id: string | null
+          stress_curve: Json | null
+          target_duration_seconds: number | null
+        }
+        Insert: {
+          cognitive_load_curve?: Json | null
+          created_at?: string
+          fatigue_curve?: Json | null
+          flow_state_curve?: Json | null
+          id?: string
+          pacing_curve: Json
+          pacing_mode?: string | null
+          pause_points?: Json | null
+          recovery_insertions?: Json | null
+          reinforcement_points?: Json | null
+          render_job_id?: string | null
+          semantic_plan_id?: string | null
+          stress_curve?: Json | null
+          target_duration_seconds?: number | null
+        }
+        Update: {
+          cognitive_load_curve?: Json | null
+          created_at?: string
+          fatigue_curve?: Json | null
+          flow_state_curve?: Json | null
+          id?: string
+          pacing_curve?: Json
+          pacing_mode?: string | null
+          pause_points?: Json | null
+          recovery_insertions?: Json | null
+          reinforcement_points?: Json | null
+          render_job_id?: string | null
+          semantic_plan_id?: string | null
+          stress_curve?: Json | null
+          target_duration_seconds?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_adaptive_pacing_maps_semantic_plan_id_fkey"
+            columns: ["semantic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cme_semantic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_cognitive_pacing: {
         Row: {
           created_at: string
@@ -2159,42 +2218,54 @@ export type Database = {
       cme_gpu_workers: {
         Row: {
           active_jobs: number | null
+          active_projects: number | null
           created_at: string
           current_load: number | null
           gpu_model: string | null
           id: string
           last_heartbeat: string
+          parallel_render_limit: number | null
           render_capacity: number | null
+          render_capacity_score: number | null
           status: string
           temperature_c: number | null
+          thermal_state: string | null
           vram_total_mb: number | null
           vram_used_mb: number | null
           worker_name: string
         }
         Insert: {
           active_jobs?: number | null
+          active_projects?: number | null
           created_at?: string
           current_load?: number | null
           gpu_model?: string | null
           id?: string
           last_heartbeat?: string
+          parallel_render_limit?: number | null
           render_capacity?: number | null
+          render_capacity_score?: number | null
           status?: string
           temperature_c?: number | null
+          thermal_state?: string | null
           vram_total_mb?: number | null
           vram_used_mb?: number | null
           worker_name: string
         }
         Update: {
           active_jobs?: number | null
+          active_projects?: number | null
           created_at?: string
           current_load?: number | null
           gpu_model?: string | null
           id?: string
           last_heartbeat?: string
+          parallel_render_limit?: number | null
           render_capacity?: number | null
+          render_capacity_score?: number | null
           status?: string
           temperature_c?: number | null
+          thermal_state?: string | null
           vram_total_mb?: number | null
           vram_used_mb?: number | null
           worker_name?: string
@@ -2203,39 +2274,66 @@ export type Database = {
       }
       cme_multimodal_analytics: {
         Row: {
+          abandonment_points: Json | null
           avg_pacing_efficiency: number | null
           chapter_retention: Json | null
+          cinematic_retention_score: number | null
+          cognitive_load_score: number | null
           completion_rate: number | null
           created_at: string
+          drift_probability: number | null
+          fatigue_score: number | null
           id: string
+          multimodal_mastery_score: number | null
+          pacing_efficiency: number | null
           project_id: string | null
           replay_count: number | null
+          replay_hotspots: Json | null
           stress_spikes: Json | null
           student_id: string | null
+          tutor_dependency_score: number | null
           watch_time_seconds: number
         }
         Insert: {
+          abandonment_points?: Json | null
           avg_pacing_efficiency?: number | null
           chapter_retention?: Json | null
+          cinematic_retention_score?: number | null
+          cognitive_load_score?: number | null
           completion_rate?: number | null
           created_at?: string
+          drift_probability?: number | null
+          fatigue_score?: number | null
           id?: string
+          multimodal_mastery_score?: number | null
+          pacing_efficiency?: number | null
           project_id?: string | null
           replay_count?: number | null
+          replay_hotspots?: Json | null
           stress_spikes?: Json | null
           student_id?: string | null
+          tutor_dependency_score?: number | null
           watch_time_seconds?: number
         }
         Update: {
+          abandonment_points?: Json | null
           avg_pacing_efficiency?: number | null
           chapter_retention?: Json | null
+          cinematic_retention_score?: number | null
+          cognitive_load_score?: number | null
           completion_rate?: number | null
           created_at?: string
+          drift_probability?: number | null
+          fatigue_score?: number | null
           id?: string
+          multimodal_mastery_score?: number | null
+          pacing_efficiency?: number | null
           project_id?: string | null
           replay_count?: number | null
+          replay_hotspots?: Json | null
           stress_spikes?: Json | null
           student_id?: string | null
+          tutor_dependency_score?: number | null
           watch_time_seconds?: number
         }
         Relationships: [
@@ -2260,25 +2358,52 @@ export type Database = {
           chapters: Json
           cinematic_script: Json
           created_at: string
+          emotional_curve: Json | null
+          emphasis_map: Json | null
+          generated_by_model: string | null
           id: string
+          narrative_style: string | null
+          pacing_curve: Json | null
           pacing_hints: Json | null
           project_id: string | null
+          recovery_insertions: Json | null
+          render_job_id: string | null
+          retention_reinforcement_points: Json | null
+          semantic_plan_id: string | null
         }
         Insert: {
           chapters: Json
           cinematic_script: Json
           created_at?: string
+          emotional_curve?: Json | null
+          emphasis_map?: Json | null
+          generated_by_model?: string | null
           id?: string
+          narrative_style?: string | null
+          pacing_curve?: Json | null
           pacing_hints?: Json | null
           project_id?: string | null
+          recovery_insertions?: Json | null
+          render_job_id?: string | null
+          retention_reinforcement_points?: Json | null
+          semantic_plan_id?: string | null
         }
         Update: {
           chapters?: Json
           cinematic_script?: Json
           created_at?: string
+          emotional_curve?: Json | null
+          emphasis_map?: Json | null
+          generated_by_model?: string | null
           id?: string
+          narrative_style?: string | null
+          pacing_curve?: Json | null
           pacing_hints?: Json | null
           project_id?: string | null
+          recovery_insertions?: Json | null
+          render_job_id?: string | null
+          retention_reinforcement_points?: Json | null
+          semantic_plan_id?: string | null
         }
         Relationships: [
           {
@@ -2286,6 +2411,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_narrative_scripts_semantic_plan_id_fkey"
+            columns: ["semantic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cme_semantic_plans"
             referencedColumns: ["id"]
           },
         ]
@@ -2299,7 +2431,11 @@ export type Database = {
           id: string
           job_id: string | null
           recovery_attempt: number | null
+          recovery_logs: Json | null
+          recovery_strategy: string | null
           render_stage: string
+          rerender_parent_job_id: string | null
+          rerender_reason: string | null
           stack_trace: string | null
         }
         Insert: {
@@ -2310,7 +2446,11 @@ export type Database = {
           id?: string
           job_id?: string | null
           recovery_attempt?: number | null
+          recovery_logs?: Json | null
+          recovery_strategy?: string | null
           render_stage: string
+          rerender_parent_job_id?: string | null
+          rerender_reason?: string | null
           stack_trace?: string | null
         }
         Update: {
@@ -2321,7 +2461,11 @@ export type Database = {
           id?: string
           job_id?: string | null
           recovery_attempt?: number | null
+          recovery_logs?: Json | null
+          recovery_strategy?: string | null
           render_stage?: string
+          rerender_parent_job_id?: string | null
+          rerender_reason?: string | null
           stack_trace?: string | null
         }
         Relationships: [
@@ -2337,21 +2481,30 @@ export type Database = {
       cme_render_jobs: {
         Row: {
           adaptive_profile_snapshot: Json | null
+          adaptive_variant: string | null
           chapter_manifest: Json | null
+          cinematic_score: number | null
           completed_at: string | null
+          distributed_chunks: number | null
           estimated_cost_cents: number | null
+          estimated_vram_mb: number | null
           failed_at: string | null
+          gpu_required: boolean | null
           gpu_worker_id: string | null
           id: string
           output_url: string | null
+          pacing_efficiency_score: number | null
           preview_url: string | null
           priority: number | null
           project_id: string | null
           queued_at: string
+          render_checkpoints: Json | null
           render_duration_ms: number | null
           render_metadata: Json | null
           render_mode: string | null
+          render_stage: string | null
           render_type: string
+          retention_projection: number | null
           retry_count: number | null
           started_at: string | null
           status: string
@@ -2360,21 +2513,30 @@ export type Database = {
         }
         Insert: {
           adaptive_profile_snapshot?: Json | null
+          adaptive_variant?: string | null
           chapter_manifest?: Json | null
+          cinematic_score?: number | null
           completed_at?: string | null
+          distributed_chunks?: number | null
           estimated_cost_cents?: number | null
+          estimated_vram_mb?: number | null
           failed_at?: string | null
+          gpu_required?: boolean | null
           gpu_worker_id?: string | null
           id?: string
           output_url?: string | null
+          pacing_efficiency_score?: number | null
           preview_url?: string | null
           priority?: number | null
           project_id?: string | null
           queued_at?: string
+          render_checkpoints?: Json | null
           render_duration_ms?: number | null
           render_metadata?: Json | null
           render_mode?: string | null
+          render_stage?: string | null
           render_type: string
+          retention_projection?: number | null
           retry_count?: number | null
           started_at?: string | null
           status?: string
@@ -2383,21 +2545,30 @@ export type Database = {
         }
         Update: {
           adaptive_profile_snapshot?: Json | null
+          adaptive_variant?: string | null
           chapter_manifest?: Json | null
+          cinematic_score?: number | null
           completed_at?: string | null
+          distributed_chunks?: number | null
           estimated_cost_cents?: number | null
+          estimated_vram_mb?: number | null
           failed_at?: string | null
+          gpu_required?: boolean | null
           gpu_worker_id?: string | null
           id?: string
           output_url?: string | null
+          pacing_efficiency_score?: number | null
           preview_url?: string | null
           priority?: number | null
           project_id?: string | null
           queued_at?: string
+          render_checkpoints?: Json | null
           render_duration_ms?: number | null
           render_metadata?: Json | null
           render_mode?: string | null
+          render_stage?: string | null
           render_type?: string
+          retention_projection?: number | null
           retry_count?: number | null
           started_at?: string | null
           status?: string
@@ -2423,34 +2594,73 @@ export type Database = {
       }
       cme_scene_graphs: {
         Row: {
+          animation_type: string | null
+          attention_curve: Json | null
+          cognitive_load_level: string | null
           created_at: string
+          estimated_duration_seconds: number | null
+          focus_elements: Json | null
           focus_graph: Json | null
           id: string
           job_id: string | null
+          medical_concept: string | null
           motion_graph: Json | null
+          narrative_script_id: string | null
           overlay_graph: Json | null
+          render_priority: number | null
           scene_graph: Json
+          scene_order: number | null
+          scene_type: string | null
+          semantic_plan_id: string | null
+          transition_type: string | null
           visual_attention_map: Json | null
+          visual_goal: string | null
         }
         Insert: {
+          animation_type?: string | null
+          attention_curve?: Json | null
+          cognitive_load_level?: string | null
           created_at?: string
+          estimated_duration_seconds?: number | null
+          focus_elements?: Json | null
           focus_graph?: Json | null
           id?: string
           job_id?: string | null
+          medical_concept?: string | null
           motion_graph?: Json | null
+          narrative_script_id?: string | null
           overlay_graph?: Json | null
+          render_priority?: number | null
           scene_graph: Json
+          scene_order?: number | null
+          scene_type?: string | null
+          semantic_plan_id?: string | null
+          transition_type?: string | null
           visual_attention_map?: Json | null
+          visual_goal?: string | null
         }
         Update: {
+          animation_type?: string | null
+          attention_curve?: Json | null
+          cognitive_load_level?: string | null
           created_at?: string
+          estimated_duration_seconds?: number | null
+          focus_elements?: Json | null
           focus_graph?: Json | null
           id?: string
           job_id?: string | null
+          medical_concept?: string | null
           motion_graph?: Json | null
+          narrative_script_id?: string | null
           overlay_graph?: Json | null
+          render_priority?: number | null
           scene_graph?: Json
+          scene_order?: number | null
+          scene_type?: string | null
+          semantic_plan_id?: string | null
+          transition_type?: string | null
           visual_attention_map?: Json | null
+          visual_goal?: string | null
         }
         Relationships: [
           {
@@ -2460,41 +2670,91 @@ export type Database = {
             referencedRelation: "cme_render_jobs"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "cme_scene_graphs_narrative_script_id_fkey"
+            columns: ["narrative_script_id"]
+            isOneToOne: false
+            referencedRelation: "cme_narrative_scripts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_scene_graphs_semantic_plan_id_fkey"
+            columns: ["semantic_plan_id"]
+            isOneToOne: false
+            referencedRelation: "cme_semantic_plans"
+            referencedColumns: ["id"]
+          },
         ]
       }
       cme_semantic_plans: {
         Row: {
           clinical_priority_points: string[] | null
+          clinical_reasoning_flow: Json | null
           cognitive_difficulty_map: Json | null
+          concept_map: Json | null
           created_at: string
           exam_priority_points: string[] | null
           id: string
+          narrative_priority_map: Json | null
+          pathology_connections: Json | null
+          pharmacology_connections: Json | null
+          physiology_connections: Json | null
           prerequisite_graph: Json | null
           project_id: string | null
+          render_job_id: string | null
           retention_hotspots: Json | null
+          semantic_focus_windows: Json | null
           semantic_outline: Json
+          specialty: string | null
+          subtopic: string | null
+          topic: string | null
+          updated_at: string | null
         }
         Insert: {
           clinical_priority_points?: string[] | null
+          clinical_reasoning_flow?: Json | null
           cognitive_difficulty_map?: Json | null
+          concept_map?: Json | null
           created_at?: string
           exam_priority_points?: string[] | null
           id?: string
+          narrative_priority_map?: Json | null
+          pathology_connections?: Json | null
+          pharmacology_connections?: Json | null
+          physiology_connections?: Json | null
           prerequisite_graph?: Json | null
           project_id?: string | null
+          render_job_id?: string | null
           retention_hotspots?: Json | null
+          semantic_focus_windows?: Json | null
           semantic_outline: Json
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string | null
         }
         Update: {
           clinical_priority_points?: string[] | null
+          clinical_reasoning_flow?: Json | null
           cognitive_difficulty_map?: Json | null
+          concept_map?: Json | null
           created_at?: string
           exam_priority_points?: string[] | null
           id?: string
+          narrative_priority_map?: Json | null
+          pathology_connections?: Json | null
+          pharmacology_connections?: Json | null
+          physiology_connections?: Json | null
           prerequisite_graph?: Json | null
           project_id?: string | null
+          render_job_id?: string | null
           retention_hotspots?: Json | null
+          semantic_focus_windows?: Json | null
           semantic_outline?: Json
+          specialty?: string | null
+          subtopic?: string | null
+          topic?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -2578,6 +2838,65 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_voice_assets: {
+        Row: {
+          audio_url: string | null
+          cognitive_timing_map: Json | null
+          created_at: string
+          duration_seconds: number | null
+          emotional_metadata: Json | null
+          id: string
+          narration_text: string
+          pacing_metadata: Json | null
+          provider: string
+          render_job_id: string | null
+          scene_id: string | null
+          ssml_text: string | null
+          status: string | null
+          voice_id: string
+        }
+        Insert: {
+          audio_url?: string | null
+          cognitive_timing_map?: Json | null
+          created_at?: string
+          duration_seconds?: number | null
+          emotional_metadata?: Json | null
+          id?: string
+          narration_text: string
+          pacing_metadata?: Json | null
+          provider: string
+          render_job_id?: string | null
+          scene_id?: string | null
+          ssml_text?: string | null
+          status?: string | null
+          voice_id: string
+        }
+        Update: {
+          audio_url?: string | null
+          cognitive_timing_map?: Json | null
+          created_at?: string
+          duration_seconds?: number | null
+          emotional_metadata?: Json | null
+          id?: string
+          narration_text?: string
+          pacing_metadata?: Json | null
+          provider?: string
+          render_job_id?: string | null
+          scene_id?: string | null
+          ssml_text?: string | null
+          status?: string | null
+          voice_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_voice_assets_scene_id_fkey"
+            columns: ["scene_id"]
+            isOneToOne: false
+            referencedRelation: "cme_scene_graphs"
             referencedColumns: ["id"]
           },
         ]
