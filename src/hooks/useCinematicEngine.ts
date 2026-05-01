@@ -42,6 +42,18 @@ export interface CMERenderJob {
   output_url?: string;
   thumbnail_url?: string;
   chapter_manifest?: any;
+  reference_profile_id?: string;
+  cinematic_quality_score?: number;
+}
+
+export interface CMEReferenceProfile {
+  id: string;
+  reference_name: string;
+  reference_type: string;
+  video_duration_seconds: number;
+  pacing_profile: any;
+  narrative_profile: any;
+  cognitive_curve: any[];
 }
 
 export function useCinematicEngine(projectId?: string) {
