@@ -1,0 +1,1 @@
+UPDATE storage.buckets SET allowed_mime_types = ARRAY['video/mp4','video/webm','video/quicktime','application/vnd.apple.mpegurl','application/octet-stream'] WHERE id = 'video-lessons';
