@@ -452,26 +452,39 @@ const VideoLessonsAdmin = () => {
               {[
                 { id: 'planning', label: 'Semantic Planning' },
                 { id: 'scripting', label: 'Narrative Building' },
-                { id: 'rendering', label: 'GPU Rendering' },
-                { id: 'upload', label: 'HLS / CDN Sync' }
+                { id: 'graphing', label: 'Scene Graph' },
+                { id: 'rendering', label: 'GPU Rendering' }
               ].map((step, idx) => (
                 <div key={step.id} className={cn(
                   "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
-                  cmeState.progress > (idx * 25) ? "bg-amber-500/10 border-amber-500/30 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
+                  cmeState.progress > (idx * 25) || cmeState.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
                 )}>
                   <div className={cn(
                     "h-1.5 w-1.5 rounded-full",
-                    cmeState.progress > (idx * 25) ? "bg-amber-500 animate-pulse" : "bg-slate-700"
+                    cmeState.status === step.id ? "bg-amber-500 animate-pulse" : 
+                    cmeState.progress > (idx * 25) ? "bg-amber-500" : "bg-slate-700"
                   )} />
                   {step.label}
                 </div>
               ))}
             </div>
 
+            {cmeState.isStuck && cmeState.status === 'rendering' && (
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1">
+                <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold">
+                  <AlertCircle className="h-3 w-3" />
+                  WORKER OFFLINE
+                </div>
+                <p className="text-[9px] text-blue-300/70 italic">
+                  A renderização automática requer um worker GPU real. O projeto foi preparado para o Builder.
+                </p>
+              </div>
+            )}
+
             {cmeState.projectId && (
               <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
-                <div className="h-1 w-1 rounded-full bg-green-500 animate-ping" />
-                TELEMETRY ACTIVE: ID_{cmeState.projectId.slice(0, 8)}
+                <div className={cn("h-1 w-1 rounded-full bg-green-500", !cmeState.isStuck && "animate-ping")} />
+                TELEMETRY: {cmeState.isStuck ? 'STANDBY' : 'ACTIVE'} | ID_{cmeState.projectId.slice(0, 8)}
               </div>
             )}
 
