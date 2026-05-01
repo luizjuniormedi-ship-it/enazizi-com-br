@@ -123,6 +123,7 @@ const AdminInterventionPolicies = lazyWithRetry(() => import("./pages/admin/Admi
 const AdminAdaptiveExperiments = lazyWithRetry(() => import("./pages/admin/AdminAdaptiveExperiments"), "AdminAdaptiveExperiments");
 const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicEngine"), "AdminCinematicEngine");
 const CMEStatus = lazyWithRetry(() => import("./pages/admin/CMEStatus"), "CMEStatus");
+const CMEIncidents = lazyWithRetry(() => import("./pages/admin/CMEIncidents"), "CMEIncidents");
 
 
 
@@ -241,6 +242,7 @@ const App = () => (
                 <Route path="classification-runner" element={<ClassificationRunner />} />
                 <Route path="classification-health" element={<ClassificationHealthDashboard />} />
                 <Route path="cme-status" element={<CMEStatus />} />
+                <Route path="cme-incidents" element={<CMEIncidents />} />
                 <Route path="curriculum-coverage" element={<CurriculumCoverage />} />
                 <Route path="granular-generator" element={<GranularGeneratorMonitor />} />
                 <Route path="generator-telemetry" element={<GeneratorTelemetry />} />

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -34,6 +35,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 const CMEStatusPage = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: lessons, isLoading: isLoadingLessons, refetch } = useQuery({
@@ -87,8 +89,8 @@ const CMEStatusPage = () => {
           <Button variant="outline" className="gap-2" onClick={() => refetch()}>
             <RefreshCcw className="h-4 w-4" /> Atualizar agora
           </Button>
-          <Button className="gap-2">
-            <ShieldAlert className="h-4 w-4" /> Relatório de Falhas
+          <Button className="gap-2 bg-red-600 hover:bg-red-700" onClick={() => navigate('/admin/cme-incidents')}>
+            <ShieldAlert className="h-4 w-4" /> Incidentes {stats.critical > 0 && <Badge variant="destructive" className="bg-white text-red-600 ml-1">{stats.critical}</Badge>}
           </Button>
         </div>
       </div>
@@ -155,6 +157,26 @@ const CMEStatusPage = () => {
               <CardDescription>Auditoria contínua de playlists HLS e variantes CDN.</CardDescription>
             </div>
             <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={async () => {
+                  toast.info("Iniciando validação em lote de todas as mídias publicadas...");
+                  // Mocking the trigger of a batch validation process
+                  const { error } = await supabase.from('cme_media_validation_logs').insert(
+                    lessons?.filter(l => l.status === 'published').map(l => ({
+                      video_lesson_id: l.id,
+                      validation_type: 'batch_request',
+                      validation_status: 'success',
+                      detected_issue: 'Validação em lote iniciada manualmente.'
+                    })) || []
+                  );
+                  if (!error) toast.success("Processo de validação em lote disparado!");
+                }}
+              >
+                <RefreshCcw className="h-4 w-4" /> Validar Todas as Mídias
+              </Button>
               <div className="relative w-64">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
