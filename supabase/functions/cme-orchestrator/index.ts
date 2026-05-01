@@ -27,7 +27,9 @@ serve(async (req) => {
 
     const { action, projectId, payload } = await req.json()
 
-    if (action === 'start_pipeline') {
+    // Alias: 'start_render' is invoked after Scene Graph persistence (useTutorCME)
+    // Behaves like 'start_pipeline' but assumes the project already exists.
+    if (action === 'start_pipeline' || action === 'start_render') {
       // 1. Get Aggregation context
       const { data: project, error: pError } = await supabaseClient
         .from('cme_video_projects')
