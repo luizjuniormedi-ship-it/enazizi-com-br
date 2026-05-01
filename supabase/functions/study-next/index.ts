@@ -157,7 +157,8 @@ serve(async (req) => {
     const fsrsCards = fsrsDue ?? [];
     const tasks = dailyTasks ?? [];
     const approvalScore = approvalData?.score ?? 0;
-    const recoveryActive = dailyPlanToday?.recovery_mode ?? false;
+    const recoveryActive = (dailyPlanToday?.recovery_mode || (cognitive_state as any)?.recovery_mode_active) ?? false;
+    const cognitiveStress = (cognitive_state as any)?.cognitive_stress_index ?? 0;
     const contentLocked = dailyPlanToday?.content_lock ?? false;
 
     const imgQuizAvailable = Array.isArray(imageQuizCount) ? imageQuizCount.length : 0;
