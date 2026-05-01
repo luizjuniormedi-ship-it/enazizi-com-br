@@ -55,7 +55,7 @@ export async function validateVideoLessonPublication(lessonId: string) {
   const errors: string[] = [];
   const lessonData = lesson as any;
 
-  const playbackUrl = lessonData.hls_url || lessonData.video_url || lessonData.playback_url || lessonData.notebooklm_video_url;
+  const playbackUrl = lessonData.hls_manifest_url || lessonData.hls_url || lessonData.video_url || lessonData.playback_url || lessonData.notebooklm_video_url;
   const isPlaceholder = !playbackUrl || 
                        playbackUrl.includes('example.com') || 
                        playbackUrl.includes('placeholder') ||

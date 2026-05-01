@@ -1084,8 +1084,12 @@ export type Database = {
           active_incident_count: number | null
           audio_url: string | null
           cdn_provider: string | null
+          cinematic_intro_url: string | null
+          cinematic_outro_url: string | null
+          cme_project_id: string | null
           created_at: string
           created_by: string | null
+          current_variant: string | null
           description: string | null
           difficulty_level: string | null
           duration_seconds: number | null
@@ -1123,8 +1127,12 @@ export type Database = {
           active_incident_count?: number | null
           audio_url?: string | null
           cdn_provider?: string | null
+          cinematic_intro_url?: string | null
+          cinematic_outro_url?: string | null
+          cme_project_id?: string | null
           created_at?: string
           created_by?: string | null
+          current_variant?: string | null
           description?: string | null
           difficulty_level?: string | null
           duration_seconds?: number | null
@@ -1162,8 +1170,12 @@ export type Database = {
           active_incident_count?: number | null
           audio_url?: string | null
           cdn_provider?: string | null
+          cinematic_intro_url?: string | null
+          cinematic_outro_url?: string | null
+          cme_project_id?: string | null
           created_at?: string
           created_by?: string | null
+          current_variant?: string | null
           description?: string | null
           difficulty_level?: string | null
           duration_seconds?: number | null
@@ -1197,7 +1209,15 @@ export type Database = {
           video_url?: string | null
           visibility?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ai_video_lessons_cme_project_id_fkey"
+            columns: ["cme_project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alert_events: {
         Row: {
@@ -2312,6 +2332,57 @@ export type Database = {
           },
         ]
       }
+      cme_autonomous_optimizations: {
+        Row: {
+          applied_at: string | null
+          created_at: string | null
+          detected_problem: string | null
+          effectiveness_score: number | null
+          expected_retention_gain: number | null
+          generated_variant_id: string | null
+          id: string
+          optimization_type: string | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          applied_at?: string | null
+          created_at?: string | null
+          detected_problem?: string | null
+          effectiveness_score?: number | null
+          expected_retention_gain?: number | null
+          generated_variant_id?: string | null
+          id?: string
+          optimization_type?: string | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          applied_at?: string | null
+          created_at?: string | null
+          detected_problem?: string | null
+          effectiveness_score?: number | null
+          expected_retention_gain?: number | null
+          generated_variant_id?: string | null
+          id?: string
+          optimization_type?: string | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_autonomous_optimizations_generated_variant_id_fkey"
+            columns: ["generated_variant_id"]
+            isOneToOne: false
+            referencedRelation: "cme_variant_generation_logs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_autonomous_optimizations_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_benchmark_audit: {
         Row: {
           action_type: string
@@ -2815,6 +2886,50 @@ export type Database = {
           worker_name?: string
         }
         Relationships: []
+      }
+      cme_hls_manifests: {
+        Row: {
+          average_bitrate: number | null
+          created_at: string | null
+          id: string
+          latency_score: number | null
+          master_manifest_url: string
+          playback_health_score: number | null
+          resolution_profiles: Json | null
+          segment_count: number | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          average_bitrate?: number | null
+          created_at?: string | null
+          id?: string
+          latency_score?: number | null
+          master_manifest_url: string
+          playback_health_score?: number | null
+          resolution_profiles?: Json | null
+          segment_count?: number | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          average_bitrate?: number | null
+          created_at?: string | null
+          id?: string
+          latency_score?: number | null
+          master_manifest_url?: string
+          playback_health_score?: number | null
+          resolution_profiles?: Json | null
+          segment_count?: number | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_hls_manifests_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cme_incidents: {
         Row: {
@@ -3541,6 +3656,112 @@ export type Database = {
           },
         ]
       }
+      cme_render_outputs: {
+        Row: {
+          codec: string | null
+          created_at: string | null
+          duration_seconds: number | null
+          file_size_bytes: number | null
+          hls_manifest_url: string | null
+          id: string
+          metadata: Json | null
+          output_type: string
+          output_url: string
+          render_job_id: string | null
+          render_quality_score: number | null
+          resolution: string | null
+        }
+        Insert: {
+          codec?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
+          hls_manifest_url?: string | null
+          id?: string
+          metadata?: Json | null
+          output_type: string
+          output_url: string
+          render_job_id?: string | null
+          render_quality_score?: number | null
+          resolution?: string | null
+        }
+        Update: {
+          codec?: string | null
+          created_at?: string | null
+          duration_seconds?: number | null
+          file_size_bytes?: number | null
+          hls_manifest_url?: string | null
+          id?: string
+          metadata?: Json | null
+          output_type?: string
+          output_url?: string
+          render_job_id?: string | null
+          render_quality_score?: number | null
+          resolution?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_outputs_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_scene_graph_nodes: {
+        Row: {
+          cognitive_intensity: number | null
+          created_at: string | null
+          end_second: number
+          id: string
+          is_active: boolean | null
+          node_type: string
+          reinforcement_type: string | null
+          render_payload: Json
+          scene_graph_id: string | null
+          semantic_role: string | null
+          start_second: number
+          transition_profile: string | null
+        }
+        Insert: {
+          cognitive_intensity?: number | null
+          created_at?: string | null
+          end_second: number
+          id?: string
+          is_active?: boolean | null
+          node_type: string
+          reinforcement_type?: string | null
+          render_payload: Json
+          scene_graph_id?: string | null
+          semantic_role?: string | null
+          start_second: number
+          transition_profile?: string | null
+        }
+        Update: {
+          cognitive_intensity?: number | null
+          created_at?: string | null
+          end_second?: number
+          id?: string
+          is_active?: boolean | null
+          node_type?: string
+          reinforcement_type?: string | null
+          render_payload?: Json
+          scene_graph_id?: string | null
+          semantic_role?: string | null
+          start_second?: number
+          transition_profile?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_scene_graph_nodes_scene_graph_id_fkey"
+            columns: ["scene_graph_id"]
+            isOneToOne: false
+            referencedRelation: "cme_scene_graphs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_scene_graphs: {
         Row: {
           animation_type: string | null
@@ -3562,6 +3783,7 @@ export type Database = {
           scene_type: string | null
           semantic_plan_id: string | null
           transition_type: string | null
+          video_lesson_id: string | null
           visual_attention_map: Json | null
           visual_goal: string | null
         }
@@ -3585,6 +3807,7 @@ export type Database = {
           scene_type?: string | null
           semantic_plan_id?: string | null
           transition_type?: string | null
+          video_lesson_id?: string | null
           visual_attention_map?: Json | null
           visual_goal?: string | null
         }
@@ -3608,6 +3831,7 @@ export type Database = {
           scene_type?: string | null
           semantic_plan_id?: string | null
           transition_type?: string | null
+          video_lesson_id?: string | null
           visual_attention_map?: Json | null
           visual_goal?: string | null
         }
@@ -3631,6 +3855,13 @@ export type Database = {
             columns: ["semantic_plan_id"]
             isOneToOne: false
             referencedRelation: "cme_semantic_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_scene_graphs_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
             referencedColumns: ["id"]
           },
         ]
@@ -3732,6 +3963,50 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      cme_variant_generation_logs: {
+        Row: {
+          adaptation_reason: string | null
+          created_at: string | null
+          fatigue_adjustments: Json | null
+          id: string
+          narrative_adjustments: Json | null
+          pacing_adjustments: Json | null
+          reinforcement_adjustments: Json | null
+          variant_type: string
+          video_lesson_id: string | null
+        }
+        Insert: {
+          adaptation_reason?: string | null
+          created_at?: string | null
+          fatigue_adjustments?: Json | null
+          id?: string
+          narrative_adjustments?: Json | null
+          pacing_adjustments?: Json | null
+          reinforcement_adjustments?: Json | null
+          variant_type: string
+          video_lesson_id?: string | null
+        }
+        Update: {
+          adaptation_reason?: string | null
+          created_at?: string | null
+          fatigue_adjustments?: Json | null
+          id?: string
+          narrative_adjustments?: Json | null
+          pacing_adjustments?: Json | null
+          reinforcement_adjustments?: Json | null
+          variant_type?: string
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_variant_generation_logs_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cme_video_assets: {
         Row: {

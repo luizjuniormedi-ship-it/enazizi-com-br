@@ -458,32 +458,39 @@ const VideoLessonPlayer = () => {
       </header>
 
       <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-primary/10">
+            <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-primary/10 group/player">
               {(() => {
-                const playbackUrl = (lesson as any).hls_url || 
+                // FASE 2 & 6: Enterprise HLS & Variant Priority
+                const hlsManifest = (lesson as any).hls_manifest_url;
+                const playbackUrl = hlsManifest || 
+                                   (lesson as any).hls_url || 
                                    lesson.video_url || 
                                    (lesson as any).playback_url ||
                                    (lesson as any).notebooklm_video_url;
 
-                // Anti-placeholder logic: ignore example.com or dummy URLs
+                // Anti-placeholder logic
                 const isPlaceholder = !playbackUrl || 
                                      playbackUrl.includes('example.com') || 
                                      playbackUrl.includes('placeholder.com') ||
                                      playbackUrl.includes('dummy-video');
 
                 if (!isPlaceholder && playbackUrl) {
+                  const isHLS = playbackUrl.endsWith('.m3u8') || !!hlsManifest;
+                  const isDirectVideo = playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage');
+
                   return (
-                    <div className="relative w-full h-full group">
-                      {(playbackUrl.endsWith('.m3u8') || playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage')) ? (
+                    <div className="relative w-full h-full">
+                      {(isHLS || isDirectVideo) ? (
                         <video 
                           id="video-player"
                           src={playbackUrl}
                           className="w-full h-full"
                           controls
                           autoPlay
+                          playsInline
+                          crossOrigin="anonymous"
                           onPlay={() => {
                             setIsPlaying(true);
                             if (id) logEvent({
@@ -511,14 +518,29 @@ const VideoLessonPlayer = () => {
                         />
                       )}
                       
-                      {/* FASE 2: Cognitive Heat Overlay visual no player */}
-                      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-30 transition-opacity">
+                      {/* FASE 3 & 6: Scene Graph & Cinematic Overlays */}
+                      <div className="absolute inset-0 pointer-events-none z-10">
+                        {/* Dynamic Overlay Slot for Scene Graph reinforcement */}
+                        {currentSegment?.segment_type === 'clinical_case' && (
+                          <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="absolute top-4 right-4 bg-primary/90 text-white p-3 rounded-lg backdrop-blur-md border border-white/20 shadow-xl"
+                          >
+                            <p className="text-[10px] font-bold uppercase tracking-tighter">CME Case Insight</p>
+                            <p className="text-xs">Foco: Raciocínio Clínico</p>
+                          </motion.div>
+                        )}
+                      </div>
+
+                      {/* FASE 2: Cognitive Heat Overlay */}
+                      <div className="absolute inset-0 pointer-events-none opacity-0 group-hover/player:opacity-30 transition-opacity z-20">
                         <div className="w-full h-full flex flex-col justify-end">
                           <div className="h-4 w-full flex">
                             {segments.map((seg) => {
                               const analytics = getForSegment(seg.id);
                               const friction = analytics?.difficultyLevel === 'alta' ? 'bg-red-500' : 
-                                              analytics?.difficultyLevel === 'média' ? 'bg-amber-500' : 'bg-green-500';
+                                               analytics?.difficultyLevel === 'média' ? 'bg-amber-500' : 'bg-green-500';
                               return (
                                 <div 
                                   key={seg.id} 
@@ -532,7 +554,7 @@ const VideoLessonPlayer = () => {
                       </div>
 
                       {/* FASE 2: Timeline Cognitiva com Hotspots */}
-                      <div className="absolute bottom-16 left-4 right-4 h-1 bg-white/20 rounded-full overflow-hidden pointer-events-none">
+                      <div className="absolute bottom-16 left-4 right-4 h-1 bg-white/20 rounded-full overflow-hidden pointer-events-none z-20">
                         {segments.map((seg) => {
                           const analytics = getForSegment(seg.id);
                           if (!analytics?.difficultyLikely) return null;

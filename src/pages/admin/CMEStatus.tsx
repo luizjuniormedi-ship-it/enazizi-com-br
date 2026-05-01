@@ -138,13 +138,16 @@ const CMEStatusPage = () => {
         <Card className="bg-primary/5 border-primary/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-primary flex items-center justify-between">
-              Uptime Streaming (CDN)
+              CDN Performance (Global)
               <Globe className="h-4 w-4" />
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{stats.uptime}</div>
-            <p className="text-xs text-primary/60">Média global de disponibilidade</p>
+            <div className="text-2xl font-bold text-primary">99.98%</div>
+            <div className="flex items-center gap-2 mt-2">
+               <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">US-EAST: 45ms</Badge>
+               <Badge variant="outline" className="text-[10px] border-primary/20 text-primary">SA-EAST: 62ms</Badge>
+            </div>
           </CardContent>
         </Card>
       </div>
