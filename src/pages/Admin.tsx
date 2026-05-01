@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -43,6 +43,8 @@ const AdminModalityPanel = lazy(() => import("@/components/admin/AdminModalityPa
 const AdminHygieneDashboard = lazy(() => import("@/components/admin/AdminHygieneDashboard"));
 const AdminLargeUploadPanel = lazy(() => import("@/components/admin/AdminLargeUploadPanel"));
 const SpecialtyFrictionReport = lazy(() => import("@/pages/admin/SpecialtyFrictionReport"));
+const MedicalKnowledgeGraph = lazy(() => import("@/pages/admin/MedicalKnowledgeGraph"));
+const AdaptiveEngineAdmin = lazy(() => import("@/pages/admin/AdaptiveEngineAdmin"));
 const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
 
 // ─── Navigation structure ─────────────────────────────
@@ -109,6 +111,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: BarChart3,
       items: [
         { key: "bi", label: "BI & Métricas", icon: BarChart3 },
+        { key: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch },
+        { key: "adaptive-engine", label: "Adaptive Engine", icon: BrainCircuit },
         { key: "specialty-friction", label: "Atrito Especialidade", icon: TrendingDown },
         { key: "feedbacks", label: "Feedbacks", icon: Star },
         { key: "audit", label: "Log de Auditoria", icon: Shield },
@@ -691,6 +695,8 @@ const Admin = () => {
                 <AdminBIPanel callAdmin={callAdmin} />
               </div>
             )}
+            {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
+            {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
             {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
             {activeSection === "feedbacks" && <AdminFeedbackPanel />}
             {activeSection === "audit" && <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />}
