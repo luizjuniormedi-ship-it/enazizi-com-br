@@ -285,14 +285,20 @@ const AdminCinematicEngine = () => {
                             {getJobStatusBadge(job.status)}
                           </td>
                           <td className="px-6 py-4">
-                            {job.gpu_worker_id ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-xs font-bold text-slate-600">Node_{job.gpu_worker_id.slice(0,4)}</span>
-                              </div>
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400 italic">Unassigned</span>
-                            )}
+                            <div className="flex flex-col">
+                              {job.quality_scores?.[0] ? (
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-primary/10 text-primary border-primary/20 font-black text-[10px]">
+                                    {job.quality_scores[0].overall_cinematic_score?.toFixed(1) || '0.0'}
+                                  </Badge>
+                                  <Button size="icon" variant="ghost" className="h-6 w-6" title={job.quality_scores[0].scoring_explanation?.reason || "View Explanation"}>
+                                    <Info className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-400 italic">Calculating...</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 w-64">
                             <div className="space-y-1.5">
