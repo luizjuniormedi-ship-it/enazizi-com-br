@@ -564,6 +564,23 @@ serve(async (req) => {
       confidence_score: recommendation.priorityScore,
     });
 
+    // ── Closed Loop: Log as Adaptive Intervention if relevant ──
+    if (recommendation.priorityScore > 80) {
+      try {
+        await logAdaptiveIntervention(db, {
+          user_id: userId,
+          trigger_type: recommendation.type,
+          action_taken: recommendation.title,
+          friction_score_snapshot: Math.max(0, (150 - (recommendation.priorityScore || 0)) / 150),
+          recommendation_text: justification,
+          action_payload: (recommendation.contextPayload || {}) as Record<string, unknown>,
+          status: 'pending',
+        });
+      } catch (e) {
+        console.warn("[study-next] logAdaptiveIntervention failed:", e);
+      }
+    }
+
     // ── Engine V3 snapshot — fire-and-forget for impact observability ──
     // Persists in assistant_decisions with source_module='study-engine-v3'
     // so useStudyEngineImpact can read real boost data from the edge.
