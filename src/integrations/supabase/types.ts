@@ -574,8 +574,10 @@ export type Database = {
           id: string
           is_gold_content: boolean | null
           learning_objectives: string[] | null
+          media_status: string | null
           notebooklm_export_text: string | null
           notebooklm_notebook_url: string | null
+          notebooklm_video_url: string | null
           published_at: string | null
           reviewed_by: string | null
           specialty: string
@@ -602,8 +604,10 @@ export type Database = {
           id?: string
           is_gold_content?: boolean | null
           learning_objectives?: string[] | null
+          media_status?: string | null
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
+          notebooklm_video_url?: string | null
           published_at?: string | null
           reviewed_by?: string | null
           specialty: string
@@ -630,8 +634,10 @@ export type Database = {
           id?: string
           is_gold_content?: boolean | null
           learning_objectives?: string[] | null
+          media_status?: string | null
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
+          notebooklm_video_url?: string | null
           published_at?: string | null
           reviewed_by?: string | null
           specialty?: string
