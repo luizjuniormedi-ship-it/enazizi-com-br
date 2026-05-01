@@ -132,10 +132,11 @@ export const useTutorCME = () => {
       let finalBlocksCount = params.blocks.length;
 
       if (params.isFullSession) {
-        const { aggregation, blocks: aggBlocks } = await aggregateSessionContent(params.conversationId);
-        aggregationId = aggregation.id;
-        finalContent = aggregation.aggregated_content;
-        finalBlocksCount = aggBlocks.length;
+        const result = await aggregateSessionContent(params.conversationId);
+        aggregationId = result.aggregation.id;
+        finalContent = result.aggregation.aggregated_content;
+        // @ts-ignore
+        finalBlocksCount = result.blocks.length;
         setState(s => ({ ...s, aggregationId, progress: 10, message: "Sessão agregada. Criando projeto..." }));
       }
 
