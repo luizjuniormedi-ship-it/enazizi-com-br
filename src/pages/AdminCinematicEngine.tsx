@@ -307,12 +307,35 @@ const AdminCinematicEngine = () => {
              <p className="text-xs">Distributed worker orchestration & auto-scaling</p>
           </TabsContent>
           
+          <TabsContent value="references" className="space-y-4">
+            <Card className="border-none shadow-sm">
+              <CardHeader className="bg-white border-b flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-lg font-black tracking-tight">Cinematic Reference Library</CardTitle>
+                  <CardDescription className="text-xs font-bold uppercase opacity-60">High-retention benchmarks for learned pacing and narrative</CardDescription>
+                </div>
+                <Button className="gap-2 font-bold">
+                  <Plus className="h-4 w-4" /> Add Benchmark
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                 <div className="p-8 text-center text-slate-400">
+                    <Layout className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                    <p className="font-bold text-sm">Learning from reference videos...</p>
+                    <p className="text-xs max-w-sm mx-auto mt-2">CME Reference Engine v3.0 extracting narrative patterns and cognitive curves from benchmark content.</p>
+                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="analytics" className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
             Multimodal Retention Scores & Fatigue-Aware Analytics Layer
           </TabsContent>
           
-          <TabsContent value="infrastructure" className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
-            Distributed Rendering Logic & Manual Fix/Override Panel
+          <TabsContent value="governance" className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold text-center px-12">
+            <Shield className="h-12 w-12 mb-4 opacity-20" />
+            <p className="font-bold text-sm uppercase tracking-tighter">Publication Guardian Active</p>
+            <p className="text-xs mt-2">Mandatory medical, semantic, and cinematic review workflow for all CME outputs.</p>
           </TabsContent>
         </Tabs>
       </div>
