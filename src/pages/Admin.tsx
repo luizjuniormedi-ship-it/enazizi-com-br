@@ -43,6 +43,8 @@ const AdminModalityPanel = lazy(() => import("@/components/admin/AdminModalityPa
 const AdminHygieneDashboard = lazy(() => import("@/components/admin/AdminHygieneDashboard"));
 const AdminLargeUploadPanel = lazy(() => import("@/components/admin/AdminLargeUploadPanel"));
 const SpecialtyFrictionReport = lazy(() => import("@/pages/admin/SpecialtyFrictionReport"));
+const MedicalKnowledgeGraph = lazy(() => import("@/pages/admin/MedicalKnowledgeGraph"));
+const AdaptiveEngineAdmin = lazy(() => import("@/pages/admin/AdaptiveEngineAdmin"));
 const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
 
 // ─── Navigation structure ─────────────────────────────
