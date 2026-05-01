@@ -27,6 +27,7 @@ export interface AdaptiveState {
   examProximityDays: number | null;
   mnemonicCandidates?: number;
   mnemonicUtilityTopics?: number;
+  justification?: string;
 }
 
 export interface StudyNextResponse {
