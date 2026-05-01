@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { BrainCircuit, Activity, Zap, ShieldCheck, History, Info, TrendingUp, Sparkles, Sliders, Check } from "lucide-react";
 import { useAdaptiveJourney, useCognitiveHistory } from "@/hooks/useAdaptiveJourney";
 import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function MedicalAdaptiveJourney() {
