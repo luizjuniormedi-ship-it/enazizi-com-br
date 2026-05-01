@@ -13,6 +13,7 @@ import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Target, ShieldCheck, TrendingUp, Award, ArrowRight, Brain, Activity, Zap
 } from "lucide-react";
