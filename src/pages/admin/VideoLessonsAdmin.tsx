@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { validateVideoLessonPublication } from "@/lib/multimodal-qa";
 import { 
   Video, 
   Search, 
