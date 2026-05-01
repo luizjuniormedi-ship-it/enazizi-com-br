@@ -285,33 +285,48 @@ const AgentMessageItem = memo(
                         { id: 'planning', label: 'Semantic Planning' },
                         { id: 'mapping', label: 'Knowledge Mapping' },
                         { id: 'scripting', label: 'Narrative Building' },
-                        { id: 'graph', label: 'Scene Graph' },
+                        { id: 'graphing', label: 'Scene Graph' },
                         { id: 'voice', label: 'Voice Rendering' },
-                        { id: 'gpu', label: 'GPU Rendering' },
+                        { id: 'rendering', label: 'GPU Rendering' },
                         { id: 'hls', label: 'HLS Generation' },
                         { id: 'cdn', label: 'CDN Validation' }
                       ].map((step, idx) => (
                         <div key={step.id} className={cn(
                           "flex items-center gap-2 p-1.5 rounded border text-[9px] font-bold uppercase transition-all duration-500",
-                          state.progress > (idx * 12.5) ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-700"
+                          state.progress > (idx * 12.5) || state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-700"
                         )}>
                           <div className={cn(
                             "h-1 w-1 rounded-full",
-                            state.progress > (idx * 12.5) ? "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)] animate-pulse" : "bg-slate-800"
+                            state.status === step.id ? "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)] animate-pulse" : 
+                            state.progress > (idx * 12.5) ? "bg-amber-500" : "bg-slate-800"
                           )} />
                           {step.label}
                         </div>
                       ))}
                     </div>
 
+                    {state.isStuck && state.status === 'rendering' && (
+                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold">
+                          <AlertCircle className="h-3 w-3" />
+                          WORKER OFFLINE
+                        </div>
+                        <p className="text-[9px] text-blue-300/70 italic">
+                          A renderização automática ainda não está conectada a um worker GPU real. O projeto foi estruturado e está pronto para visualização no Builder.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="p-3 bg-white/5 border border-white/5 rounded-lg space-y-2">
                       <div className="flex justify-between text-[9px] text-slate-500">
-                        <span>WORKER: CLUSTER-GPU-ALPHA-01</span>
-                        <span>LATENCY: 42ms</span>
+                        <span>WORKER: {state.isStuck ? 'NONE_AVAILABLE' : 'CLUSTER-GPU-ALPHA-01'}</span>
+                        <span>LATENCY: {state.isStuck ? '---' : '42ms'}</span>
                       </div>
                       <div className="flex justify-between text-[9px] text-slate-500">
                         <span>ID: {state.projectId?.slice(0, 12) || 'QUEUED'}</span>
-                        <span className="text-green-500">REALTIME TELEMETRY ACTIVE</span>
+                        <span className={cn("text-green-500", state.isStuck && "text-amber-500")}>
+                          {state.isStuck ? 'POLLING INACTIVE' : 'REALTIME TELEMETRY ACTIVE'}
+                        </span>
                       </div>
                     </div>
 
