@@ -98,6 +98,25 @@ export default function CMEAudit() {
             </Table>
           )}
         </CardContent>
+      <Card className="bg-zinc-900 border-zinc-800 mt-8">
+        <CardHeader>
+          <CardTitle className="text-white">Auditoria de Elegibilidade (Tutor IA)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow className="border-zinc-800">
+                <TableHead className="text-zinc-400">Data</TableHead>
+                <TableHead className="text-zinc-400">Status</TableHead>
+                <TableHead className="text-zinc-400">Score</TableHead>
+                <TableHead className="text-zinc-400">Motivo</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <EligibilityRows />
+            </TableBody>
+          </Table>
+        </CardContent>
       </Card>
     </div>
   );
