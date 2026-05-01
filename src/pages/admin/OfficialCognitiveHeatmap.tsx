@@ -189,7 +189,7 @@ const GlobalCognitiveHeatmap = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
-                {specialties?.map(s => (
+                {(specialties as string[] | undefined)?.map(s => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
