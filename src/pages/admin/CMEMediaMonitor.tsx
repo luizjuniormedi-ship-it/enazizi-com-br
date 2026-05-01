@@ -69,7 +69,7 @@ const CMEMediaMonitor = () => {
     queryFn: async () => {
       // @ts-ignore
       const { data, error } = await supabase
-        .from("cme_playback_audit_logs")
+        .from("cme_playback_audit_logs" as any)
         .select("*")
         .order("created_at", { ascending: false })
         .limit(20);
