@@ -44,11 +44,10 @@ export const useTutorCME = () => {
   }, [supabaseClient]);
 
   const aggregateSessionContent = useCallback(async (conversationId: string) => {
-    const query = (supabaseClient as any)
+    // Busca mensagens da sessão (tutor_messages)
+    const { data: messages, error } = await supabaseClient
       .from("tutor_messages")
-      .select("id, content, role, created_at");
-      
-    const { data: messages, error } = await query
+      .select("id, content, role, created_at")
       .eq("tutor_session_id", conversationId)
       .eq("role", "assistant")
       .order("created_at", { ascending: true });
@@ -205,6 +204,9 @@ export const useTutorCME = () => {
 
       if (params.onComplete && aggregationId) {
         params.onComplete(aggregationId);
+      } else if (aggregationId) {
+        // Fallback para navegação automática se onComplete não for passado
+        window.location.href = `/admin/cinematic-builder/${aggregationId}`;
       }
 
       return projectId;

@@ -33,25 +33,52 @@ const CinematicSessionBuilder = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("blocks");
 
-  const { data: aggregation, isLoading: aggLoading } = useQuery({
+  const { data: aggregation, isLoading: aggLoading, error: aggError } = useQuery({
     queryKey: ["cme-aggregation", aggregationId],
     queryFn: async () => {
+      console.log(`[CME] Fetching aggregation ${aggregationId}...`);
       const { data, error } = await supabase
         .from("cme_session_aggregations")
         .select(`
           *,
-          blocks:cme_lesson_blocks(*),
-          reviews:cme_quality_reviews(*),
-          variants:cme_session_variants(*)
+          blocks:cme_lesson_blocks(*)
         `)
         .eq("id", aggregationId)
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("[CME] Error fetching aggregation:", error);
+        throw error;
+      }
+      
+      console.log(`[CME] Aggregation loaded with ${data?.blocks?.length || 0} blocks`);
       return data;
     },
-    enabled: !!aggregationId
+    enabled: !!aggregationId,
+    retry: 1
   });
+
+  if (aggLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-4">
+        <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+        <p className="text-amber-500 font-bold animate-pulse uppercase tracking-widest text-xs">Carregando Orquestrador de Sessão...</p>
+      </div>
+    );
+  }
+
+  if (aggError) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white p-6 text-center">
+        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
+          <Trash2 className="h-8 w-8 text-red-500" />
+        </div>
+        <h2 className="text-xl font-black mb-2">Erro ao carregar sessão</h2>
+        <p className="text-slate-400 text-sm max-w-md mb-6">Não foi possível localizar os dados da agregação cinematográfica.</p>
+        <Button onClick={() => navigate(-1)} variant="outline" className="border-white/10">Voltar</Button>
+      </div>
+    );
+  }
 
   const stats = {
     fatigueScore: 0.15,
@@ -140,24 +167,43 @@ const CinematicSessionBuilder = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="space-y-4">
-                    {aggregation?.blocks?.sort((a: any, b: any) => a.order_index - b.order_index).map((block: any, i: number) => (
-                      <div key={block.id} className="flex items-center gap-4 p-4 bg-white rounded-xl border group hover:border-primary/50 transition-all">
-                        <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center font-black text-xs text-slate-400">
-                          {i + 1}
+                    {(!aggregation?.blocks || aggregation.blocks.length === 0) ? (
+                      <div className="py-20 text-center space-y-4 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <div className="w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center mx-auto">
+                          <Layers className="h-6 w-6 text-slate-300" />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="text-sm font-black text-slate-800">{block.title}</h3>
-                            <Badge variant="secondary" className="text-[9px] uppercase">{block.block_type}</Badge>
-                          </div>
-                          <p className="text-xs text-slate-500 line-clamp-1 mt-1">{block.summary}</p>
+                        <div>
+                          <p className="text-sm font-black text-slate-400">Nenhum capítulo detectado</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Aguardando processamento semântico</p>
                         </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button size="icon" variant="ghost" className="h-8 w-8"><Split className="h-4 w-4" /></Button>
-                          <Button size="icon" variant="ghost" className="h-8 w-8"><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                        </div>
+                        <Button variant="outline" size="sm" className="gap-2 font-bold">
+                          <Plus className="h-3.5 w-3.5" /> Gerar Capítulos Padrão
+                        </Button>
                       </div>
-                    ))}
+                    ) : (
+                      aggregation.blocks.sort((a: any, b: any) => a.block_order - b.block_order).map((block: any, i: number) => (
+                        <div key={block.id} className="flex items-center gap-4 p-4 bg-white rounded-xl border group hover:border-primary/50 transition-all shadow-sm hover:shadow-md">
+                          <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-black text-xs text-slate-400 group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+                            {i + 1}
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h3 className="text-sm font-black text-slate-800">{block.title}</h3>
+                              <Badge variant="secondary" className="text-[9px] uppercase font-bold tracking-tighter bg-slate-100 text-slate-600 border-none">
+                                {block.block_type || 'capítulo'}
+                              </Badge>
+                            </div>
+                            <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-medium italic opacity-80">
+                              {block.content?.slice(0, 100)}...
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-primary/10 hover:text-primary"><Split className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-red-50/80 hover:text-red-500"><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </CardContent>
               </Card>
