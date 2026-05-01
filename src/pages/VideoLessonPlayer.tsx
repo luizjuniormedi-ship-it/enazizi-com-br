@@ -391,9 +391,9 @@ const VideoLessonPlayer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl relative border border-primary/10">
-              {lesson.video_url ? (
+              {lesson.video_url || lesson.notebooklm_video_url ? (
                 <iframe 
-                  src={lesson.video_url} 
+                  src={lesson.video_url || lesson.notebooklm_video_url} 
                   className="w-full h-full"
                   allowFullScreen
                   onLoad={() => {
