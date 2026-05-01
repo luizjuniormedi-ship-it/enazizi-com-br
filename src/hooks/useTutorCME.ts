@@ -15,7 +15,7 @@ export interface CMEProjectState {
 export const useTutorCME = () => {
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
 
-  const logPipelineEvent = async (projectId: string, stage: string, status: string, progress: number, message?: string) => {
+  const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string) => {
     try {
       await supabase.from("cme_pipeline_events").insert({
         project_id: projectId,
@@ -40,9 +40,9 @@ export const useTutorCME = () => {
     } catch (e) {
       console.error("Telemetry error:", e);
     }
-  };
+  }, []);
 
-  const aggregateSessionContent = async (conversationId: string) => {
+  const aggregateSessionContent = useCallback(async (conversationId: string) => {
     // Use a direct query bypass if possible or simplify
     const query = supabase
       .from("tutor_messages")
@@ -217,7 +217,7 @@ export const useTutorCME = () => {
       toast.error("Falha ao transformar em vídeo: " + err.message);
       return null;
     }
-  }, []);
+  }, [aggregateSessionContent, logPipelineEvent]);
 
   const retryRender = useCallback(async (projectId: string) => {
     setState({ status: 'queued', progress: 10, projectId, message: "Reiniciando renderização..." });
