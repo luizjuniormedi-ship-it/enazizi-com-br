@@ -27,6 +27,7 @@ import {
   Clapperboard,
   Sparkles,
   PlayCircle,
+  Video,
   ChevronRight,
   ChevronLeft,
   PanelLeftClose,
@@ -505,6 +506,14 @@ const DashboardSidebar = () => {
                 </p>
               </TooltipContent>
             </Tooltip>
+            
+            <SidebarLink
+              to="/dashboard/videoaulas"
+              icon={Video}
+              label="Videoaulas"
+              active={location.pathname === "/dashboard/videoaulas"}
+              variant="muted"
+            />
 
             {/* ─── 4. Utilidades + Admin ─── */}
             <div className="pt-3 mt-2 border-t border-sidebar-border space-y-0.5">
