@@ -3,6 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { TutorBlock } from "@/types/tutor";
 import { Database } from "@/integrations/supabase/types";
+import { useCMEHardening } from "./useCMEHardening";
+import { useCMEAnalytics } from "./useCMEAnalytics";
+
 
 type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'];
 type CmeRenderStatus = Database['public']['Enums']['cme_render_status'];
@@ -24,8 +27,11 @@ export const useTutorCME = () => {
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
   const [workerHealth, setWorkerHealth] = useState<any>(null);
   const lastEventRef = useRef<number>(Date.now());
+  const { reportIncident, createSnapshot } = useCMEHardening();
+  const { getCognitiveAnalysis } = useCMEAnalytics();
 
   const checkWorkerHealth = useCallback(async () => {
+
     try {
       const { data, error } = await supabaseClient.from('cme_worker_nodes')
         .select('id, status, last_heartbeat')
@@ -222,6 +228,10 @@ export const useTutorCME = () => {
       const projectId = project.id;
       setState(s => ({ ...s, projectId, progress: 20, message: "Projeto criado..." }));
 
+      // Phase 8: Hardening - Snapshot
+      await createSnapshot(projectId, 'planning', { params });
+
+
       await logPipelineEvent(projectId, 'planning', 'completed', 30, "Mapeamento semântico concluído", aggregationId || undefined);
       await logPipelineEvent(projectId, 'mapping', 'completed', 35, "Knowledge Mapping pronto", aggregationId || undefined);
 
@@ -283,9 +293,13 @@ export const useTutorCME = () => {
     } catch (err: any) {
       console.error("CME Transform Error:", err);
       setState(s => ({ ...s, status: 'failed', error: err.message }));
-      toast.error("Erro: " + err.message);
+      
+      // Phase 8: Hardening - Automatic Incident Reporting
+      await reportIncident("TutorCME_Pipeline", err);
+      
       return null;
     }
+
   }, [aggregateSessionContent, logPipelineEvent, supabaseClient]);
 
   return {
