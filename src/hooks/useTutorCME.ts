@@ -108,11 +108,25 @@ export const useTutorCME = () => {
 
     if (aggError) throw aggError;
 
-    // Log initial aggregation
+    // Log initial aggregation with trace metadata
     await supabaseClient.from("cme_audit_logs").insert({
       aggregation_id: aggregation.id,
       action: "Session Aggregation Started",
-      metadata: { total_messages: messages.length, total_blocks: blocks.length }
+      metadata: { 
+        total_messages: messages.length, 
+        total_blocks: blocks.length,
+        tutor_session_id: conversationId,
+        engine_version: "2.0-cinematic"
+      }
+    });
+
+    // Create a shadow pipeline event for audit observability
+    await supabaseClient.from("cme_pipeline_events").insert({
+      stage: 'aggregation',
+      status: 'completed',
+      progress: 100,
+      message: `Agregado ${messages.length} mensagens em ${blocks.length} blocos pedagógicos`,
+      metadata: { aggregation_id: aggregation.id, tutor_session_id: conversationId }
     });
 
     const blockInserts = blocks.map((b, idx) => ({
