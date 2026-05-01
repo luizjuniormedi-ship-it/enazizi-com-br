@@ -272,6 +272,11 @@ function CinematicMissionHero({
                 <Clock className="h-3 w-3 mr-1" />
                 {recommendation.estimatedMinutes} min
               </Badge>
+              {profile && (
+                <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1">
+                  <Zap className="h-2.5 w-2.5" /> Adaptive Pacing: ON
+                </Badge>
+              )}
               {adaptiveState?.recoveryActive && (
                 <Badge variant="destructive" className="hidden sm:inline-flex text-[10px]">
                   <AlertTriangle className="h-3 w-3 mr-1" /> Recuperação
