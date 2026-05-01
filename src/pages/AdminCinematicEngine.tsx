@@ -40,8 +40,13 @@ import {
   Palette,
   Eye,
   Thermometer,
-  Layers
+  Layers,
+  Network
 } from "lucide-react";
+import { GPUFleetPanel } from "@/components/admin/cme/GPUFleetPanel";
+import { RenderQueuesPanel } from "@/components/admin/cme/RenderQueuesPanel";
+import { LineageGraph2 } from "@/components/admin/cme/LineageGraph2";
+import { CMEObservabilityPanel } from "@/components/admin/cme/ObservabilityPanel";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
