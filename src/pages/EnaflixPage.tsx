@@ -18,6 +18,7 @@ import { EnaflixOverlayNav } from "@/components/enaflix/EnaflixOverlayNav";
 import { EnaflixBillboardRotator } from "@/components/enaflix/EnaflixBillboardRotator";
 import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
+import { EnaflixSectionRowVideo } from "@/components/enaflix/EnaflixSectionRowVideo";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
 import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
