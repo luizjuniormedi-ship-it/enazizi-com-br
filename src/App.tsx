@@ -80,6 +80,7 @@ const GeneratorTelemetry = lazyWithRetry(() => import("./pages/admin/GeneratorTe
 const BancaReadiness = lazyWithRetry(() => import("./pages/admin/BancaReadiness"), "BancaReadiness");
 const SimuladoSelectionTelemetry = lazyWithRetry(() => import("./pages/admin/SimuladoSelectionTelemetry"), "SimuladoSelectionTelemetry");
 const SimuladoSelectionRunDetail = lazyWithRetry(() => import("./pages/admin/SimuladoSelectionRunDetail"), "SimuladoSelectionRunDetail");
+const SystemChecklist = lazyWithRetry(() => import("./pages/admin/SystemChecklist"), "SystemChecklist");
 const MissionMode = lazyWithRetry(() => import("./pages/MissionMode"), "MissionMode");
 const MissionControlPage = lazyWithRetry(() => import("./pages/MissionControlPage"), "MissionControlPage");
 const MissionEntry = lazyWithRetry(() => import("./pages/MissionEntry"), "MissionEntry");
