@@ -494,7 +494,6 @@ const AdminCinematicEngine = () => {
           </TabsContent>
         </Tabs>
       </div>
-      </div>
 
       <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
         <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
@@ -592,9 +591,6 @@ const AdminCinematicEngine = () => {
     </div>
   );
 };
-
-// ... keep existing code at the bottom (cn import etc)
-import { cn } from "@/lib/utils";
 
 export default AdminCinematicEngine;
 
