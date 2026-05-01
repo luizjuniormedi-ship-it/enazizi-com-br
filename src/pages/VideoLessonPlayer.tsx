@@ -778,15 +778,18 @@ const VideoLessonPlayer = () => {
               {recommendation && (
                 <AdaptiveRecommendationCard 
                   recommendation={{
-                    id: (recommendation as any).id || 'rec',
+                    id: 'rec',
                     recommendation_text: recommendation.description,
                     action_taken: 'none',
                     action_payload: {},
                     trigger_type: recommendation.type,
-                    ...recommendation
+                    title: recommendation.title,
+                    description: recommendation.description,
+                    priority: recommendation.priority,
+                    type: recommendation.type
                   }}
-                  onAccept={() => acceptRecommendation((recommendation as any).id)}
-                  onIgnore={() => ignoreRecommendation((recommendation as any).id)}
+                  onAccept={() => acceptRecommendation('rec')}
+                  onIgnore={() => ignoreRecommendation('rec')}
                 />
               )}
             </AnimatePresence>
