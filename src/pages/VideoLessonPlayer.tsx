@@ -21,7 +21,8 @@ import {
   Sparkles,
   Zap,
   AlertTriangle,
-  RotateCcw
+  RotateCcw,
+  Film
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
