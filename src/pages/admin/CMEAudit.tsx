@@ -33,8 +33,8 @@ export default function CMEAudit() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <header className="mb-8">
+    <div className="container mx-auto py-8 space-y-8">
+      <header>
         <h1 className="text-3xl font-bold tracking-tight text-white">Auditoria CME Cinematic Factory</h1>
         <p className="text-muted-foreground">Monitoramento do pipeline de agregação e geração de videoaulas.</p>
       </header>
@@ -51,7 +51,7 @@ export default function CMEAudit() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="border-zinc-800">
+                <TableRow className="border-zinc-800 hover:bg-transparent">
                   <TableHead className="text-zinc-400">Data</TableHead>
                   <TableHead className="text-zinc-400">Projeto</TableHead>
                   <TableHead className="text-zinc-400">Aggregation Status</TableHead>
@@ -98,10 +98,9 @@ export default function CMEAudit() {
             </Table>
           )}
         </CardContent>
-        </Card>
       </Card>
 
-      <Card className="bg-zinc-900 border-zinc-800 mt-8">
+      <Card className="bg-zinc-900 border-zinc-800">
         <CardHeader>
           <CardTitle className="text-white">Auditoria de Elegibilidade (Tutor IA)</CardTitle>
         </CardHeader>
@@ -114,7 +113,7 @@ export default function CMEAudit() {
 }
 
 function EligibilityTable() {
-  const { data: eligibilityLogs } = useQuery({
+  const { data: eligibilityLogs, isLoading } = useQuery({
     queryKey: ['cme-eligibility-logs'],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -128,10 +127,12 @@ function EligibilityTable() {
     }
   });
 
+  if (isLoading) return <div className="flex justify-center p-4"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+
   return (
     <Table>
       <TableHeader>
-        <TableRow className="border-zinc-800">
+        <TableRow className="border-zinc-800 hover:bg-transparent">
           <TableHead className="text-zinc-400">Data</TableHead>
           <TableHead className="text-zinc-400">Status</TableHead>
           <TableHead className="text-zinc-400">Score</TableHead>
@@ -140,19 +141,24 @@ function EligibilityTable() {
       </TableHeader>
       <TableBody>
         {eligibilityLogs?.map((log) => (
-          <TableRow key={log.id} className="border-zinc-800">
+          <TableRow key={log.id} className="border-zinc-800 hover:bg-zinc-800/30">
             <TableCell className="text-zinc-300">
               {format(new Date(log.created_at), 'dd/MM/yy HH:mm')}
             </TableCell>
             <TableCell>
-              <Badge variant={log.eligible ? "default" : "destructive"} className="text-[10px]">
+              <Badge variant={log.eligible ? "default" : "destructive"} className="text-[10px] uppercase font-bold">
                 {log.eligible ? "Elegível" : "Inelegível"}
               </Badge>
             </TableCell>
-            <TableCell className="text-zinc-300">{log.structure_score?.toFixed(2) || '0.00'}</TableCell>
+            <TableCell className="text-zinc-300 font-mono text-xs">{log.structure_score?.toFixed(2) || '0.00'}</TableCell>
             <TableCell className="text-zinc-400 text-xs italic">{log.rejection_reason || '-'}</TableCell>
           </TableRow>
         ))}
+        {(!eligibilityLogs || eligibilityLogs.length === 0) && (
+          <TableRow>
+            <TableCell colSpan={4} className="text-center py-4 text-zinc-500 text-xs">Nenhum log de elegibilidade encontrado.</TableCell>
+          </TableRow>
+        )}
       </TableBody>
     </Table>
   );
