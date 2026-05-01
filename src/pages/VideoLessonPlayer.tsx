@@ -115,15 +115,20 @@ const VideoLessonPlayer = () => {
 
     console.log(`[CME Audit] State: ${state}, URL: ${playbackUrl}`);
 
-    await supabase.from("cme_playback_audit_logs" as any).insert({
-      video_lesson_id: id,
-      user_id: user?.id,
-      selected_url: playbackUrl,
-      media_status: lesson?.media_status,
-      player_state: state,
-      error_message: errorMessage,
-      load_time_ms: Date.now() - loadStartTime.current
-    } as any);
+    try {
+      // @ts-ignore
+      await supabase.from("cme_playback_audit_logs").insert({
+        video_lesson_id: id,
+        user_id: user?.id,
+        selected_url: playbackUrl,
+        media_status: lesson?.media_status,
+        player_state: state,
+        error_message: errorMessage,
+        load_time_ms: Date.now() - loadStartTime.current
+      } as any);
+    } catch (err) {
+      console.warn("[CME Audit] Persistent log failed, using fallback:", err);
+    }
   };
 
   useEffect(() => {
