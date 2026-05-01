@@ -2156,6 +2156,51 @@ export type Database = {
           },
         ]
       }
+      cme_gpu_workers: {
+        Row: {
+          active_jobs: number | null
+          created_at: string
+          current_load: number | null
+          gpu_model: string | null
+          id: string
+          last_heartbeat: string
+          render_capacity: number | null
+          status: string
+          temperature_c: number | null
+          vram_total_mb: number | null
+          vram_used_mb: number | null
+          worker_name: string
+        }
+        Insert: {
+          active_jobs?: number | null
+          created_at?: string
+          current_load?: number | null
+          gpu_model?: string | null
+          id?: string
+          last_heartbeat?: string
+          render_capacity?: number | null
+          status?: string
+          temperature_c?: number | null
+          vram_total_mb?: number | null
+          vram_used_mb?: number | null
+          worker_name: string
+        }
+        Update: {
+          active_jobs?: number | null
+          created_at?: string
+          current_load?: number | null
+          gpu_model?: string | null
+          id?: string
+          last_heartbeat?: string
+          render_capacity?: number | null
+          status?: string
+          temperature_c?: number | null
+          vram_total_mb?: number | null
+          vram_used_mb?: number | null
+          worker_name?: string
+        }
+        Relationships: []
+      }
       cme_multimodal_analytics: {
         Row: {
           avg_pacing_efficiency: number | null
@@ -2241,6 +2286,178 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_render_failures: {
+        Row: {
+          auto_fix_applied: boolean | null
+          created_at: string
+          failure_type: string
+          gpu_worker_id: string | null
+          id: string
+          job_id: string | null
+          recovery_attempt: number | null
+          render_stage: string
+          stack_trace: string | null
+        }
+        Insert: {
+          auto_fix_applied?: boolean | null
+          created_at?: string
+          failure_type: string
+          gpu_worker_id?: string | null
+          id?: string
+          job_id?: string | null
+          recovery_attempt?: number | null
+          render_stage: string
+          stack_trace?: string | null
+        }
+        Update: {
+          auto_fix_applied?: boolean | null
+          created_at?: string
+          failure_type?: string
+          gpu_worker_id?: string | null
+          id?: string
+          job_id?: string | null
+          recovery_attempt?: number | null
+          render_stage?: string
+          stack_trace?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_failures_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_render_jobs: {
+        Row: {
+          adaptive_profile_snapshot: Json | null
+          chapter_manifest: Json | null
+          completed_at: string | null
+          estimated_cost_cents: number | null
+          failed_at: string | null
+          gpu_worker_id: string | null
+          id: string
+          output_url: string | null
+          preview_url: string | null
+          priority: number | null
+          project_id: string | null
+          queued_at: string
+          render_duration_ms: number | null
+          render_metadata: Json | null
+          render_mode: string | null
+          render_type: string
+          retry_count: number | null
+          started_at: string | null
+          status: string
+          thumbnail_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          adaptive_profile_snapshot?: Json | null
+          chapter_manifest?: Json | null
+          completed_at?: string | null
+          estimated_cost_cents?: number | null
+          failed_at?: string | null
+          gpu_worker_id?: string | null
+          id?: string
+          output_url?: string | null
+          preview_url?: string | null
+          priority?: number | null
+          project_id?: string | null
+          queued_at?: string
+          render_duration_ms?: number | null
+          render_metadata?: Json | null
+          render_mode?: string | null
+          render_type: string
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          adaptive_profile_snapshot?: Json | null
+          chapter_manifest?: Json | null
+          completed_at?: string | null
+          estimated_cost_cents?: number | null
+          failed_at?: string | null
+          gpu_worker_id?: string | null
+          id?: string
+          output_url?: string | null
+          preview_url?: string | null
+          priority?: number | null
+          project_id?: string | null
+          queued_at?: string
+          render_duration_ms?: number | null
+          render_metadata?: Json | null
+          render_mode?: string | null
+          render_type?: string
+          retry_count?: number | null
+          started_at?: string | null
+          status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_jobs_gpu_worker_id_fkey"
+            columns: ["gpu_worker_id"]
+            isOneToOne: false
+            referencedRelation: "cme_gpu_workers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_jobs_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_scene_graphs: {
+        Row: {
+          created_at: string
+          focus_graph: Json | null
+          id: string
+          job_id: string | null
+          motion_graph: Json | null
+          overlay_graph: Json | null
+          scene_graph: Json
+          visual_attention_map: Json | null
+        }
+        Insert: {
+          created_at?: string
+          focus_graph?: Json | null
+          id?: string
+          job_id?: string | null
+          motion_graph?: Json | null
+          overlay_graph?: Json | null
+          scene_graph: Json
+          visual_attention_map?: Json | null
+        }
+        Update: {
+          created_at?: string
+          focus_graph?: Json | null
+          id?: string
+          job_id?: string | null
+          motion_graph?: Json | null
+          overlay_graph?: Json | null
+          scene_graph?: Json
+          visual_attention_map?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_scene_graphs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -13924,6 +14141,7 @@ export type Database = {
         }[]
       }
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
+      claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
