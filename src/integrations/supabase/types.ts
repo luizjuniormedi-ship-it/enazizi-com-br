@@ -3303,6 +3303,50 @@ export type Database = {
           },
         ]
       }
+      cme_pipeline_events: {
+        Row: {
+          created_at: string
+          id: string
+          latency_ms: number | null
+          message: string | null
+          progress: number | null
+          project_id: string | null
+          stage: string
+          status: string
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          progress?: number | null
+          project_id?: string | null
+          stage: string
+          status: string
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latency_ms?: number | null
+          message?: string | null
+          progress?: number | null
+          project_id?: string | null
+          stage?: string
+          status?: string
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_pipeline_events_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_playback_audit_logs: {
         Row: {
           created_at: string | null
@@ -4164,6 +4208,41 @@ export type Database = {
           {
             foreignKeyName: "cme_semantic_plans_project_id_fkey"
             columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_tutor_origins: {
+        Row: {
+          cme_video_project_id: string | null
+          created_at: string
+          id: string
+          lesson_id: string | null
+          tutor_message_id: string
+          tutor_session_id: string
+        }
+        Insert: {
+          cme_video_project_id?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          tutor_message_id: string
+          tutor_session_id: string
+        }
+        Update: {
+          cme_video_project_id?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: string | null
+          tutor_message_id?: string
+          tutor_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_tutor_origins_cme_video_project_id_fkey"
+            columns: ["cme_video_project_id"]
             isOneToOne: false
             referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
