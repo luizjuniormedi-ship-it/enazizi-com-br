@@ -99,7 +99,8 @@ const AgentMessageItem = memo(
         summary,
         sourceContent: msg.content,
         blocks: cognitiveBlocks,
-        conversationId: conversationId || crypto.randomUUID()
+        conversationId: conversationId || crypto.randomUUID(),
+        messageId: (msg as any).id // Tenta pegar o ID da mensagem se disponível
       });
     };
 
@@ -232,7 +233,7 @@ const AgentMessageItem = memo(
                   <div className="py-6 space-y-6">
                     <div className="space-y-2">
                       <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                        <span>Status: {state.status}</span>
+                        <span>Fase: {state.message || state.status}</span>
                         <span>{state.progress}%</span>
                       </div>
                       <Progress value={state.progress} className="h-1.5 bg-white/5" />
@@ -240,13 +241,13 @@ const AgentMessageItem = memo(
 
                     <div className="grid grid-cols-2 gap-3">
                       {[
-                        { id: 'planning', label: 'Planejamento' },
-                        { id: 'scripting', label: 'Narrativa' },
-                        { id: 'rendering', label: 'Render GPU' },
-                        { id: 'upload', label: 'CDN Sync' }
+                        { id: 'planning', label: 'Semantic Planning' },
+                        { id: 'scripting', label: 'Narrative Building' },
+                        { id: 'rendering', label: 'GPU Rendering' },
+                        { id: 'upload', label: 'HLS / CDN Sync' }
                       ].map((step, idx) => (
                         <div key={step.id} className={cn(
-                          "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight",
+                          "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
                           state.progress > (idx * 25) ? "bg-amber-500/10 border-amber-500/30 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
                         )}>
                           <div className={cn(
@@ -257,6 +258,13 @@ const AgentMessageItem = memo(
                         </div>
                       ))}
                     </div>
+
+                    {state.projectId && (
+                      <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
+                        <div className="h-1 w-1 rounded-full bg-green-500 animate-ping" />
+                        TELEMETRY ACTIVE: ID_{state.projectId.slice(0, 8)}
+                      </div>
+                    )}
 
                     {state.status === 'failed' && (
                       <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs italic">
@@ -280,7 +288,7 @@ const AgentMessageItem = memo(
                         className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
                         onClick={() => {
                           resetState();
-                          navigate('/admin/cme-media-monitor');
+                          navigate(`/admin/cinematic-engine/${state.projectId}`);
                         }}
                       >
                         <Play className="h-3 w-3" /> Ver no Monitor
