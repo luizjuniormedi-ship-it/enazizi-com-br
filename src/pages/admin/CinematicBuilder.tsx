@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Clapperboard, 
   Brain, 
-  Timeline, 
+  History, 
   Settings2, 
   Play, 
   Save, 
