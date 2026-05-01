@@ -11,6 +11,10 @@ export interface CoreDataResult {
     exam_date: string | null;
     last_study_plan_reset_at: string | null;
   };
+  adaptiveProfile: {
+    cognitive_stress_index: number;
+    recovery_mode_active: boolean;
+  } | null;
   practiceAttempts: { correct: boolean; created_at: string }[];
   revisoes: { id: string; status: string; data_revisao: string; created_at: string }[];
   examSessions: { score: number; total_questions: number; finished_at: string }[];
@@ -36,6 +40,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
     practiceRes, revisoesRes, examRes,
     anamnesisRes, temasRes, simRes, osceRes,
     gamRes, errorRes, approvalRes, domainRes,
+    adaptiveRes,
   ] = await Promise.all([
     supabase.from("practice_attempts")
       .select("correct, created_at")
@@ -81,6 +86,9 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
     supabase.from("medical_domain_map")
       .select("specialty, domain_score, questions_answered, correct_answers")
       .eq("user_id", userId),
+    supabase.from("adaptive_student_profiles")
+      .select("cognitive_stress_index, recovery_mode_active")
+      .eq("user_id", userId).maybeSingle(),
   ]);
 
   let targetExams: string[] = [];
@@ -111,6 +119,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
     errorBankCount: errorRes.count || 0,
     approvalScores: (approvalRes.data || []) as any[],
     domainMap: (domainRes.data || []) as any[],
+    adaptiveProfile: adaptiveRes.data as any,
   };
 }
 

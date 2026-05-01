@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,6 +46,9 @@ const SpecialtyFrictionReport = lazy(() => import("@/pages/admin/SpecialtyFricti
 const MedicalKnowledgeGraph = lazy(() => import("@/pages/admin/MedicalKnowledgeGraph"));
 const AdaptiveEngineAdmin = lazy(() => import("@/pages/admin/AdaptiveEngineAdmin"));
 const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
+const AdminInterventionPolicies = lazy(() => import("@/pages/admin/AdminInterventionPolicies"));
+const AdminAdaptiveExperiments = lazy(() => import("@/pages/admin/AdminAdaptiveExperiments"));
+const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/IntelligenceOverviewPanel"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -107,13 +110,22 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       ],
     },
     {
-      title: "Analytics",
+      title: "Intelligence Engine",
+      icon: BrainCircuit,
+      items: [
+        { key: "intelligence-overview", label: "Visão Geral IA", icon: LayoutDashboard },
+        { key: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch },
+        { key: "adaptive-engine", label: "ACE Engine", icon: BrainCircuit },
+        { key: "intervention-policies", label: "Governança/Políticas", icon: ShieldCheck },
+        { key: "adaptive-experiments", label: "Experimentos A/B", icon: Beaker },
+        { key: "specialty-friction", label: "Atrito Cognitivo", icon: TrendingDown },
+      ],
+    },
+    {
+      title: "Analytics & Auditoria",
       icon: BarChart3,
       items: [
         { key: "bi", label: "BI & Métricas", icon: BarChart3 },
-        { key: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch },
-        { key: "adaptive-engine", label: "Adaptive Engine", icon: BrainCircuit },
-        { key: "specialty-friction", label: "Atrito Especialidade", icon: TrendingDown },
         { key: "feedbacks", label: "Feedbacks", icon: Star },
         { key: "audit", label: "Log de Auditoria", icon: Shield },
       ],
@@ -682,6 +694,14 @@ const Admin = () => {
             {activeSection === "qa" && <AdminQAPanel />}
             {activeSection === "ai-studio" && <AIStudio />}
             {activeSection === "system-checklist" && <SystemChecklist />}
+
+            {/* Intelligence Engine */}
+            {activeSection === "intelligence-overview" && <IntelligenceOverviewPanel />}
+            {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
+            {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
+            {activeSection === "intervention-policies" && <AdminInterventionPolicies />}
+            {activeSection === "adaptive-experiments" && <AdminAdaptiveExperiments />}
+            {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
 
             {/* Communication */}
             {activeSection === "messages" && <AdminMessagesPanel />}

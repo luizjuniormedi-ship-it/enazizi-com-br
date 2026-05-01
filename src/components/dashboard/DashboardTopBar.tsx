@@ -11,7 +11,7 @@
  * useCoreData, useMonthlyGoal e useAnalyticsSnapshot já carregados.
  */
 import { memo, useMemo } from "react";
-import { Flame, Calendar, TrendingUp, AlertTriangle, Zap } from "lucide-react";
+import { Flame, Calendar, TrendingUp, AlertTriangle, Zap, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useCoreData } from "@/hooks/useCoreData";
 import { useMonthlyGoal } from "@/hooks/useMonthlyGoal";
@@ -76,6 +76,12 @@ function DashboardTopBar() {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
+        {core?.adaptiveProfile?.recovery_mode_active && (
+          <Badge variant="outline" className="xs:inline-flex gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg border-0 bg-blue-500/15 text-blue-600 dark:text-blue-400">
+            <ShieldCheck className="h-3 w-3" />
+            Foco Zen
+          </Badge>
+        )}
         <Badge variant="outline" className={`hidden xs:inline-flex gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg border-0 ${paceCfg.cls}`}>
           <PaceIcon className="h-3 w-3" />
           {paceCfg.label}
