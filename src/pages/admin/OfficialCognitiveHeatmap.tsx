@@ -153,7 +153,9 @@ const GlobalCognitiveHeatmap = () => {
               <MessageSquare className="h-4 w-4 text-purple-500" />
             </div>
             <p className="text-2xl font-bold mt-2">
-              {criticalVideos?.reduce((a: any, b: any) => a + b.tutor_opens, 0) || 0}
+              {criticalVideos && criticalVideos.length > 0 
+                ? (criticalVideos.reduce((a: any, b: any) => a + (b.tutor_opens || 0), 0))
+                : 0}
             </p>
             <p className="text-[10px] text-muted-foreground mt-1">Total de dúvidas contextuais</p>
           </CardContent>
