@@ -61,7 +61,8 @@ const AgentChat = ({
     const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
     if (!lastAssistantMessage) return;
 
-    const cognitiveBlocks = extractInlineTutorBlocks(lastAssistantMessage.content);
+    const extractionResult = extractInlineTutorBlocks(lastAssistantMessage.content);
+    const cognitiveBlocks = extractionResult.blocks;
     const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
     const baseTitle = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
     const title = `🎬 Videoaula Completa: ${baseTitle}`;
