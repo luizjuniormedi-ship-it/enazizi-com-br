@@ -235,7 +235,7 @@ export const useTutorCME = () => {
     } catch (err: any) {
       toast.error("Falha ao reiniciar: " + err.message);
     }
-  }, []);
+  }, [logPipelineEvent]);
 
   return {
     state,
