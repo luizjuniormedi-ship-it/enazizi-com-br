@@ -16,11 +16,23 @@ export interface CMEProjectState {
 export const useTutorCME = () => {
   const supabaseClient = useMemo(() => supabase, []);
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
+  const [workerHealth, setWorkerHealth] = useState<any>(null);
+
+  // Fetch worker health
+  const checkWorkerHealth = useCallback(async () => {
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('cme-status');
+      if (!error) setWorkerHealth(data.health);
+    } catch (e) {
+      console.warn("Failed to fetch CME status", e);
+    }
+  }, [supabaseClient]);
 
   // Listen for pipeline events in real-time
   useEffect(() => {
     if (!state.projectId || state.status === 'idle' || state.status === 'ready' || state.status === 'failed') return;
 
+    let lastEventTimestamp = Date.now();
     const channel = supabaseClient
       .channel(`cme-pipeline-${state.projectId}`)
       .on(
@@ -34,6 +46,8 @@ export const useTutorCME = () => {
         (payload) => {
           const newEvent = payload.new;
           console.log("[CME Pipeline Event]", newEvent);
+          lastEventTimestamp = Date.now();
+          
           setState(s => ({
             ...s,
             status: newEvent.stage as any,
@@ -42,21 +56,34 @@ export const useTutorCME = () => {
             error: newEvent.status === 'failed' ? newEvent.message : s.error,
             isStuck: false
           }));
+
+          // Trigger health check if we move to rendering
+          if (newEvent.stage === 'rendering') {
+            checkWorkerHealth();
+          }
         }
       )
       .subscribe();
 
-    const timeout = setTimeout(() => {
-      if (state.status === 'rendering' || state.status === 'graphing') {
+    // Enhanced Stuck Detection (Rule of Gold: 20s between graphing_complete and render_start)
+    const stuckCheckInterval = setInterval(() => {
+      const elapsed = Date.now() - lastEventTimestamp;
+      
+      if (state.status === 'graphing' && elapsed > 15000) {
+        setState(s => ({ ...s, message: "Aguardando Cluster GPU...", isStuck: true }));
+        checkWorkerHealth();
+      }
+      
+      if (state.status === 'rendering' && elapsed > 20000 && (!workerHealth || workerHealth.workers_online === 0)) {
         setState(s => ({ ...s, isStuck: true }));
       }
-    }, 20000);
+    }, 5000);
 
     return () => {
       supabaseClient.removeChannel(channel);
-      clearTimeout(timeout);
+      clearInterval(stuckCheckInterval);
     };
-  }, [state.projectId, state.status, supabaseClient]);
+  }, [state.projectId, state.status, supabaseClient, workerHealth, checkWorkerHealth]);
 
   const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string, aggregationId?: string) => {
     try {
