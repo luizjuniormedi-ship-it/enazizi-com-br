@@ -208,8 +208,9 @@ const AdminCinematicEngine = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
           {[
             { label: "Active Jobs", value: stats.active_renders, icon: Activity, color: "blue" },
-            { label: "Queue Depth", value: stats.queued_tasks, icon: History, color: "purple" },
+            { label: "Director AI", value: stats.director_ai_status, icon: Camera, color: "purple" },
             { label: "Avg Quality", value: stats.avg_quality, icon: Target, color: "indigo" },
+            { label: "Fatigue Index", value: stats.global_fatigue_index, icon: Brain, color: "orange" },
             { label: "GPU Nodes", value: stats.gpu_nodes, icon: Server, color: "emerald" },
             { label: "Total VRAM", value: `${Math.round(stats.total_vram/1024)}GB`, icon: Cpu, color: "orange" }
           ].map((stat, i) => (
