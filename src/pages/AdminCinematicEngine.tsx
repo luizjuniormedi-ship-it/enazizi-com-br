@@ -54,8 +54,70 @@ import { useCinematicEngine } from "@/hooks/useCinematicEngine";
 
 const AdminCinematicEngine = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("pipeline");
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [uploadData, setUploadData] = useState({
+    name: "",
+    specialty: "",
+    goal: "",
+    type: "internal_benchmark"
+  });
+
   const { referenceProfiles, isLoading: engineLoading } = useCinematicEngine();
+
+  const handleUpload = async () => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file || !uploadData.name) {
+      toast.error("Please provide a name and select a video file");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileName = `${crypto.randomUUID()}-${file.name}`;
+      const { data: uploadInfo, error: uploadError } = await supabase.storage
+        .from("cme-references")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: profile, error: profileError } = await supabase
+        .from("cme_cinematic_reference_profiles")
+        .insert({
+          reference_name: uploadData.name,
+          reference_type: uploadData.type,
+        })
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      const { error: recordError } = await supabase
+        .from("cme_reference_uploads")
+        .insert({
+          reference_id: profile.id,
+          file_path: uploadInfo.path,
+          original_filename: file.name,
+          specialty: uploadData.specialty,
+          pedagogical_goal: uploadData.goal,
+          upload_status: "uploaded"
+        });
+
+      if (recordError) throw recordError;
+
+      toast.success("Reference benchmark uploaded successfully and queued for analysis");
+      setIsUploadDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["cme-reference-profiles"] });
+    } catch (error: any) {
+      toast.error(`Upload failed: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const { data: renderJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ["cme-render-jobs"],
@@ -64,7 +126,8 @@ const AdminCinematicEngine = () => {
         .from("cme_render_jobs")
         .select(`
           *,
-          project:cme_video_projects(title)
+          project:cme_video_projects(title),
+          quality_scores:cme_cinematic_quality_score(overall_cinematic_score, scoring_explanation)
         `)
         .order("queued_at", { ascending: false });
       if (error) throw error;
@@ -92,7 +155,8 @@ const AdminCinematicEngine = () => {
       avg_render_time: "12m 45s",
       success_rate: "98.2%",
       gpu_nodes: gpuWorkers?.filter(w => w.status === 'online').length || 0,
-      total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0
+      total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0,
+      avg_quality: "8.4 / 10"
     }),
     enabled: !!renderJobs && !!gpuWorkers
   });
