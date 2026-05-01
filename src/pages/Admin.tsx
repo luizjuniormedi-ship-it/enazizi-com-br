@@ -111,6 +111,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: BarChart3,
       items: [
         { key: "bi", label: "BI & Métricas", icon: BarChart3 },
+        { key: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch },
+        { key: "adaptive-engine", label: "Adaptive Engine", icon: BrainCircuit },
         { key: "specialty-friction", label: "Atrito Especialidade", icon: TrendingDown },
         { key: "feedbacks", label: "Feedbacks", icon: Star },
         { key: "audit", label: "Log de Auditoria", icon: Shield },
