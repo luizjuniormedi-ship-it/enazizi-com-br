@@ -460,13 +460,13 @@ const VideoLessonPlayer = () => {
                 // Anti-placeholder logic: ignore example.com or dummy URLs
                 const isPlaceholder = !playbackUrl || 
                                      playbackUrl.includes('example.com') || 
-                                     playbackUrl.includes('placeholder') ||
-                                     playbackUrl.includes('dummy');
+                                     playbackUrl.includes('placeholder.com') ||
+                                     playbackUrl.includes('dummy-video');
 
                 if (!isPlaceholder && playbackUrl) {
                   return (
                     <div className="relative w-full h-full group">
-                      {playbackUrl.endsWith('.m3u8') ? (
+                      {(playbackUrl.endsWith('.m3u8') || playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage')) ? (
                         <video 
                           id="video-player"
                           src={playbackUrl}
@@ -545,7 +545,7 @@ const VideoLessonPlayer = () => {
                 // Status-based rendering if no real media is available
                 const mediaStatus = (lesson as any).media_status || 'queued';
                 
-                if (mediaStatus === 'rendering' || mediaStatus === 'processing' || isCMEVideo) {
+                if (mediaStatus === 'rendering' || mediaStatus === 'processing') {
                   return (
                     <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
                       <div className="relative">
