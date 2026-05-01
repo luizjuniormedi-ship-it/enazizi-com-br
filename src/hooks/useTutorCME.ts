@@ -43,11 +43,13 @@ export const useTutorCME = () => {
   };
 
   const aggregateSessionContent = async (conversationId: string) => {
-    // 1. Fetch all assistant messages in the session
-    const { data: messages, error } = await supabase
+    // Use a direct query bypass if possible or simplify
+    const query = supabase
       .from("tutor_messages")
-      .select("*")
-      .eq("tutor_session_id" as any, conversationId)
+      .select("id, content, role, created_at");
+      
+    const { data: messages, error } = await (query as any)
+      .eq("tutor_session_id", conversationId)
       .eq("role", "assistant")
       .order("created_at", { ascending: true });
 
