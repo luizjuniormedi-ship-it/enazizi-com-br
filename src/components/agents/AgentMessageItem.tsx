@@ -63,12 +63,22 @@ const AgentMessageItem = memo(
     const navigate = useNavigate();
     const { state, transformToVideo, resetState } = useTutorCME();
 
-    // Filtra blocos cognitivos válidos (não-vazios)
-    const cognitiveBlocks = useMemo(
+    // Filtra blocos cognitivos válidos vindos da memória
+    const memoryCognitiveBlocks = useMemo(
       () => (Array.isArray(msg.memoryBlocks) ? msg.memoryBlocks.filter(Boolean) : []),
       [msg.memoryBlocks],
     );
+
+    // NOVO: extrai blocos JSON embutidos no markdown (stream do Tutor)
+    const { cleanedMarkdown, inlineBlocks } = useMemo(() => {
+      if (msg.role !== "assistant") return { cleanedMarkdown: msg.content, inlineBlocks: [] };
+      const { cleanedMarkdown, blocks } = extractInlineTutorBlocks(msg.content);
+      return { cleanedMarkdown, inlineBlocks: blocks };
+    }, [msg.role, msg.content]);
+
+    const cognitiveBlocks = memoryCognitiveBlocks.length > 0 ? memoryCognitiveBlocks : inlineBlocks;
     const hasCognitiveBlocks = cognitiveBlocks.length > 0;
+    const renderedMarkdown = cleanedMarkdown || msg.content;
 
     // Critérios para o botão CME: msg longa da IA com estrutura de blocos
     const showCMEButton = msg.role === "assistant" && 
