@@ -1,5 +1,5 @@
 import { memo, useMemo, useEffect } from "react";
-import { User, Copy, Film, Sparkles, Play, AlertCircle } from "lucide-react";
+import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
@@ -158,7 +158,9 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
               </button>
             </div>
             
-            <div className="flex gap-2 mt-2 pt-2 border-t border-border/30 empty:hidden">
+            <div className="flex flex-col gap-3 mt-4 pt-3 border-t border-border/30 empty:hidden">
+              <div className="flex gap-2">
+
               {showCMEButton && (
                 <Button
                   variant="outline"
@@ -180,7 +182,27 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   <AlertCircle className="h-3 w-3" /> Criar videoaula a partir desta resposta
                 </Button>
               )}
+              </div>
+              
+              {msg.role === "assistant" && hasPermission && (
+                <div className="bg-primary/5 rounded-lg p-2 border border-primary/10 flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
+                    Análise Cognitiva & Lineage
+                  </span>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 text-[10px] gap-1 px-2"
+                      onClick={() => navigate('/admin/cme-executive')}
+                    >
+                      <Activity className="h-3 w-3" /> Dashboard
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
+
 
             {/* Modal de Status CME */}
             <Dialog open={state.status !== 'idle'} onOpenChange={(open) => !open && resetState()}>
@@ -191,8 +213,9 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     Fábrica de Vídeos CME
                   </DialogTitle>
                   <DialogDescription className="text-slate-400">
-                    Transformando seu conteúdo pedagógico em uma experiência cinematográfica multimodal.
+                    Processando com telemetria cognitiva e resiliência enterprise. {state.isStuck ? 'Recuperação automática acionada.' : 'Pipeline nominal.'}
                   </DialogDescription>
+
                 </DialogHeader>
                 
                 <div className="py-6 space-y-6">
