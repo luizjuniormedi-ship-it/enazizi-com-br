@@ -47,7 +47,7 @@ export const useTutorCME = () => {
     const { data: messages, error } = await supabase
       .from("tutor_messages")
       .select("id, content, role, created_at")
-      .eq("conversation_id", conversationId)
+      .eq("tutor_session_id" as any, conversationId)
       .eq("role", "assistant")
       .order("created_at", { ascending: true });
 

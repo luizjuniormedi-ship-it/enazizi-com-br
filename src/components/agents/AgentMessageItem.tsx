@@ -218,7 +218,7 @@ const AgentMessageItem = memo(
                     variant="ghost"
                     size="sm"
                     className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
-                    onClick={handleCMETransform}
+                    onClick={() => handleCMETransform(false)}
                     title={validation.rejectionReason}
                   >
                     <AlertCircle className="h-3 w-3" /> Criar videoaula
