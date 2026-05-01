@@ -45,7 +45,11 @@ export function useCinematicEngine(projectId?: string) {
         .eq("id", projectId!)
         .single();
       if (error) throw error;
-      return data;
+      
+      return {
+        ...data,
+        status: data.status as CMEProject['status']
+      } as CMEProject;
     }
   });
 
