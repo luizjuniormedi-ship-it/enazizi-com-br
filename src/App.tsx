@@ -119,6 +119,7 @@ const MedicalKnowledgeGraph = lazyWithRetry(() => import("./pages/admin/MedicalK
 const AdaptiveEngineAdmin = lazyWithRetry(() => import("./pages/admin/AdaptiveEngineAdmin"), "AdaptiveEngineAdmin");
 const AdminInterventionPolicies = lazyWithRetry(() => import("./pages/admin/AdminInterventionPolicies"), "AdminInterventionPolicies");
 const AdminAdaptiveExperiments = lazyWithRetry(() => import("./pages/admin/AdminAdaptiveExperiments"), "AdminAdaptiveExperiments");
+const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicEngine"), "AdminCinematicEngine");
 
 
 
