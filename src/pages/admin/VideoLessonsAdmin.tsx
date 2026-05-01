@@ -54,6 +54,7 @@ const VideoLessonsAdmin = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
+  const [mediaFilter, setMediaFilter] = useState("all");
 
   const { data: lessons, isLoading, refetch } = useQuery({
     queryKey: ["admin-video-lessons"],
@@ -89,7 +90,16 @@ const VideoLessonsAdmin = () => {
                          lesson.specialty.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || lesson.status === statusFilter;
     const matchesSpecialty = specialtyFilter === "all" || lesson.specialty === specialtyFilter;
-    return matchesSearch && matchesStatus && matchesSpecialty;
+    
+    const playbackUrl = lesson.hls_url || lesson.video_url || lesson.playback_url;
+    const hasMedia = !!playbackUrl && !playbackUrl.includes('example.com') && !playbackUrl.includes('placeholder');
+    
+    const matchesMedia = mediaFilter === "all" || 
+                         (mediaFilter === "no_media" && !hasMedia) ||
+                         (mediaFilter === "has_media" && hasMedia) ||
+                         (mediaFilter === "failed" && lesson.media_status === 'failed');
+
+    return matchesSearch && matchesStatus && matchesSpecialty && matchesMedia;
   });
 
   const getStatusBadge = (lesson: any) => {
@@ -293,6 +303,17 @@ const VideoLessonsAdmin = () => {
                   <SelectItem value="draft">Rascunho</SelectItem>
                   <SelectItem value="video_review">Em Revisão</SelectItem>
                   <SelectItem value="published">Publicado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={mediaFilter} onValueChange={setMediaFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Mídia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Mídias</SelectItem>
+                  <SelectItem value="has_media">Com Mídia Real</SelectItem>
+                  <SelectItem value="no_media">Sem Mídia / Placeholder</SelectItem>
+                  <SelectItem value="failed">Falha na Renderização</SelectItem>
                 </SelectContent>
               </Select>
             </div>
