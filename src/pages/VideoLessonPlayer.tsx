@@ -416,14 +416,28 @@ const VideoLessonPlayer = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-white animate-in fade-in duration-500 pb-20">
-      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+      <header className="sticky top-0 z-50 bg-[#0a0a12]/80 backdrop-blur-xl border-b border-white/5 px-6 h-14 flex items-center justify-between">
         <Button 
           variant="ghost" 
-          className="gap-2 -ml-2 mb-2 text-white/70 hover:text-white hover:bg-white/10" 
+          className="gap-2 -ml-2 text-white/70 hover:text-white hover:bg-white/10" 
           onClick={() => navigate("/dashboard/videoaulas")}
         >
-          <ChevronLeft className="h-4 w-4" /> Voltar para Videoaulas
+          <ChevronLeft className="h-4 w-4" /> Voltar
         </Button>
+        <div className="flex items-center gap-4">
+          <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">
+            Sincronização em Tempo Real Ativa
+          </Badge>
+          <Button variant="outline" size="sm" className="gap-2 border-white/10" onClick={() => {
+            navigator.clipboard.writeText(`${window.location.origin}/videoaulas/${id}`);
+            toast.success("Link público copiado!");
+          }}>
+            <Share2 className="h-4 w-4" /> Compartilhar Preview
+          </Button>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">

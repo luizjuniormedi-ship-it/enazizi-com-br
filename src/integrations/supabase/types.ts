@@ -2559,6 +2559,47 @@ export type Database = {
           },
         ]
       }
+      cme_exam_sprint_profiles: {
+        Row: {
+          created_at: string | null
+          exam_density: number
+          generated_at: string | null
+          id: string
+          lesson_id: string | null
+          retention_focus: string
+          sprint_duration: number
+          sprint_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          exam_density: number
+          generated_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          retention_focus: string
+          sprint_duration: number
+          sprint_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          exam_density?: number
+          generated_at?: string | null
+          id?: string
+          lesson_id?: string | null
+          retention_focus?: string
+          sprint_duration?: number
+          sprint_score?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_exam_sprint_profiles_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_explainable_scores: {
         Row: {
           contributing_factors: Json | null

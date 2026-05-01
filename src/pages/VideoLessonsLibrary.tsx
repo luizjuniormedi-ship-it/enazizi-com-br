@@ -119,14 +119,19 @@ const VideoLessonsLibrary = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-2 space-y-6">
           <div className="flex flex-col gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-              <Input
-                placeholder="O que você quer aprender hoje? (ex: Cardiologia, Diabetes...)"
-                className="pl-10 h-12 text-lg shadow-sm"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="flex gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  placeholder="O que você quer aprender hoje? (ex: Cardiologia, Diabetes...)"
+                  className="pl-10 h-12 text-lg shadow-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button size="lg" className="h-12 px-6 gap-2" variant="outline" onClick={() => navigate("/dashboard/videoaulas/explorar")}>
+                <Filter className="h-5 w-5" /> Filtros Avançados
+              </Button>
             </div>
             
             <div className="flex flex-wrap gap-2">
