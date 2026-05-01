@@ -52,29 +52,7 @@ export default function MedicalAdaptiveJourney() {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          <Card className="bg-gradient-to-br from-background to-primary/5 border-primary/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <Zap className="h-4 w-4 text-primary" /> Orquestração de Sessão
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">Estado Cognitivo Atual</span>
-                  <span className="font-bold text-emerald-600">Estável</span>
-                </div>
-                <Progress value={20} className="h-1.5" />
-              </div>
-              
-              <div className="pt-4 border-t space-y-3">
-                <h4 className="text-[10px] uppercase font-bold text-muted-foreground">Insights do ACE</h4>
-                <div className="bg-background/50 rounded-lg p-3 border text-xs leading-relaxed italic">
-                  "Seu ritmo de acertos em Cardiologia aumentou 12% após a última micro-revisão de SRAA."
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CognitiveSessionController />
 
           <Card>
             <CardHeader className="pb-2">
