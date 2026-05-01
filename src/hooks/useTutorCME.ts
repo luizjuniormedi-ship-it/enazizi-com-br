@@ -24,8 +24,43 @@ export const useTutorCME = () => {
         message,
         latency_ms: Math.floor(Math.random() * 500) // Simulated latency
       });
+      
+      // Update the render job if it exists
+      if (status === 'completed' || status === 'failed' || status === 'in_progress') {
+        const jobStatus = status === 'completed' ? 'completed' : (status === 'failed' ? 'failed' : 'processing');
+        await supabase.from("cme_render_jobs")
+          .update({ 
+            status: jobStatus,
+            stage: stage,
+            error_message: status === 'failed' ? message : undefined,
+            updated_at: new Date().toISOString()
+          } as any)
+          .eq('project_id', projectId);
+      }
     } catch (e) {
       console.error("Telemetry error:", e);
+    }
+  };
+
+  const logEligibility = async (params: {
+    messageId: string;
+    eligible: boolean;
+    rejectionReason?: string;
+    structureScore: number;
+    cognitiveDensity: number;
+    metrics: any;
+  }) => {
+    try {
+      await supabase.from("cme_generation_eligibility_logs").insert({
+        tutor_message_id: params.messageId as any,
+        eligible: params.eligible,
+        rejection_reason: params.rejectionReason,
+        structure_score: params.structureScore,
+        cognitive_density: params.cognitiveDensity,
+        metadata: params.metrics
+      } as any);
+    } catch (e) {
+      console.error("Eligibility log error:", e);
     }
   };
 
@@ -53,6 +88,7 @@ export const useTutorCME = () => {
           title: params.title,
           status: 'active',
           target_audience: 'medical_students',
+          lineage_path: `tutor://${params.conversationId}/${params.messageId || 'new'}`,
           config: {
             tutor_conversation_id: params.conversationId,
             tutor_message_id: params.messageId,
@@ -68,17 +104,25 @@ export const useTutorCME = () => {
       if (projectError) throw projectError;
       const projectId = project.id;
       
+      // 2. Registrar Job de Renderização
+      await supabase.from("cme_render_jobs").insert({
+        project_id: projectId,
+        status: 'queued',
+        stage: 'planning',
+        retry_count: 0
+      } as any);
+
       setState({ status: 'planning', progress: 15, projectId, message: "Mapeamento semântico..." });
       await logPipelineEvent(projectId, 'planning', 'in_progress', 15, "Iniciando mapeamento de conhecimento");
 
-      // 2. Criar Vínculo Oficial (Origem)
+      // 3. Criar Vínculo Oficial (Origem)
       await supabase.from("cme_tutor_origins").insert({
         tutor_session_id: params.conversationId as any,
         tutor_message_id: (params.messageId || crypto.randomUUID()) as any,
         cme_video_project_id: projectId
       } as any);
 
-      // 3. Criar Plano Semântico
+      // 4. Criar Plano Semântico
       const { error: planError } = await supabase
         .from("cme_semantic_plans")
         .insert({
@@ -97,26 +141,6 @@ export const useTutorCME = () => {
       setState({ status: 'scripting', progress: 30, projectId, message: "Gerando narrativa visual..." });
       await logPipelineEvent(projectId, 'scripting', 'completed', 30, "Narrativa concluída");
 
-      // 4. Registrar Job de Renderização
-      const { error: jobError } = await supabase
-        .from("cme_render_jobs")
-        .insert({
-          project_id: projectId,
-          render_type: 'cinematic_v2',
-          render_mode: 'autonomous_director',
-          status: 'processing',
-          render_stage: 'scene_generation',
-          priority: 30,
-          gpu_required: true,
-          render_metadata: {
-            source: 'tutor_ia',
-            blocks: params.blocks,
-            origin_message_id: params.messageId
-          }
-        } as any);
-
-      if (jobError) throw jobError;
-      
       toast.success("Projeto vinculado ao CME e enviado para renderização!");
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Cluster GPU: Gerando Scene Graph" }));
       await logPipelineEvent(projectId, 'rendering', 'in_progress', 50, "Aguardando worker GPU...");
@@ -130,9 +154,29 @@ export const useTutorCME = () => {
     }
   }, []);
 
+  const retryRender = useCallback(async (projectId: string) => {
+    setState({ status: 'queued', progress: 10, projectId, message: "Reiniciando renderização..." });
+    try {
+      await supabase.from("cme_render_jobs")
+        .update({ 
+          status: 'queued', 
+          stage: 'planning', 
+          updated_at: new Date().toISOString()
+        } as any)
+        .eq('project_id', projectId);
+      
+      await logPipelineEvent(projectId, 'retry', 'in_progress', 10, "Renderização reiniciada pelo usuário");
+      toast.success("Renderização reiniciada com sucesso!");
+    } catch (err: any) {
+      toast.error("Falha ao reiniciar: " + err.message);
+    }
+  }, []);
+
   return {
     state,
     transformToVideo,
+    retryRender,
+    logEligibility,
     resetState: () => setState({ status: 'idle', progress: 0 })
   };
 };
