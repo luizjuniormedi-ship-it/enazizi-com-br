@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Server, RefreshCw, Wifi, WifiOff, XCircle,
-  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity,
+  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity, GitMerge,
 } from "lucide-react";
 import { DashboardData, MentorSummary, StudentRow, RiskAlert } from "@/components/monitoring/MonitoringTypes";
 import { OverviewTab } from "@/components/monitoring/OverviewTab";
@@ -17,6 +17,8 @@ import { PerformanceTab } from "@/components/monitoring/PerformanceTab";
 import { RiskAlertsTab } from "@/components/monitoring/RiskAlertsTab";
 import { AIUsageTab } from "@/components/monitoring/AIUsageTab";
 import { SystemHealthTab } from "@/components/monitoring/SystemHealthTab";
+import { InterventionEfficacyMonitor } from "@/components/admin/InterventionEfficacyMonitor";
+import { AdaptivePathwaysLog } from "@/components/admin/AdaptivePathwaysLog";
 
 export default function AdminMonitoring() {
   const { session } = useAuth();
@@ -157,6 +159,10 @@ export default function AdminMonitoring() {
               <Zap className="h-3.5 w-3.5" />
               IA
             </TabsTrigger>
+            <TabsTrigger value="adaptive" className="text-xs gap-1.5">
+              <GitMerge className="h-3.5 w-3.5" />
+              ACE Loop
+            </TabsTrigger>
             <TabsTrigger value="system" className="text-xs gap-1.5">
               <Activity className="h-3.5 w-3.5" />
               Sistema
@@ -180,6 +186,12 @@ export default function AdminMonitoring() {
           </TabsContent>
           <TabsContent value="ai">
             <AIUsageTab d={d} />
+          </TabsContent>
+          <TabsContent value="adaptive" className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <InterventionEfficacyMonitor />
+              <AdaptivePathwaysLog />
+            </div>
           </TabsContent>
           <TabsContent value="system">
             <SystemHealthTab d={d} />

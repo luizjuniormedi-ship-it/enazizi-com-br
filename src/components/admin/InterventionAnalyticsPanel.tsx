@@ -36,6 +36,8 @@ import {
 import { computeInterventionAdjustment } from "@/lib/interventionAdaptiveRanking";
 import PenaltySystemSection from "./PenaltySystemSection";
 import InterventionProfileSection from "./InterventionProfileSection";
+import { InterventionEfficacyMonitor } from "./InterventionEfficacyMonitor";
+import { AdaptivePathwaysLog } from "./AdaptivePathwaysLog";
 
 /**
  * Pesos base da V1 — usados apenas para visualização no admin.
@@ -365,6 +367,11 @@ export default function InterventionAnalyticsPanel() {
             <PenaltySystemSection />
             {/* Seção 7 — User Fit / Profile Personalization (Fase 6) */}
             <InterventionProfileSection />
+            {/* Seção 8 — Closed Loop & Adaptive Pathways (Fase 7) */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-6">
+              <InterventionEfficacyMonitor />
+              <AdaptivePathwaysLog />
+            </div>
           </>
         )}
       </CardContent>
