@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { VideoAnalyticsDrilldown } from "@/components/admin/VideoAnalyticsDrilldown";
+import CognitiveHeatmap from "@/components/admin/CognitiveHeatmap";
 import { toast } from "sonner";
 
 const VideoLessonDetailsAdmin = () => {
