@@ -5299,12 +5299,15 @@ export type Database = {
           id: string
           is_active: boolean | null
           node_type: string
+          payload: Json | null
           reinforcement_type: string | null
           render_payload: Json
           scene_graph_id: string | null
           semantic_role: string | null
           start_second: number
+          title: string | null
           transition_profile: string | null
+          user_id: string | null
         }
         Insert: {
           cognitive_intensity?: number | null
@@ -5313,12 +5316,15 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           node_type: string
+          payload?: Json | null
           reinforcement_type?: string | null
           render_payload: Json
           scene_graph_id?: string | null
           semantic_role?: string | null
           start_second: number
+          title?: string | null
           transition_profile?: string | null
+          user_id?: string | null
         }
         Update: {
           cognitive_intensity?: number | null
@@ -5327,12 +5333,15 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           node_type?: string
+          payload?: Json | null
           reinforcement_type?: string | null
           render_payload?: Json
           scene_graph_id?: string | null
           semantic_role?: string | null
           start_second?: number
+          title?: string | null
           transition_profile?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -5350,12 +5359,15 @@ export type Database = {
           attention_curve: Json | null
           cognitive_load_level: string | null
           created_at: string
+          error_message: string | null
           estimated_duration_seconds: number | null
           focus_elements: Json | null
           focus_graph: Json | null
+          graph_payload: Json | null
           id: string
           job_id: string | null
           medical_concept: string | null
+          metadata: Json | null
           motion_graph: Json | null
           narrative_script_id: string | null
           overlay_graph: Json | null
@@ -5364,9 +5376,12 @@ export type Database = {
           scene_order: number | null
           scene_type: string | null
           semantic_plan_id: string | null
+          session_id: string | null
           transition_type: string | null
+          updated_at: string | null
           user_id: string | null
           video_lesson_id: string | null
+          video_project_id: string | null
           visual_attention_map: Json | null
           visual_goal: string | null
         }
@@ -5375,12 +5390,15 @@ export type Database = {
           attention_curve?: Json | null
           cognitive_load_level?: string | null
           created_at?: string
+          error_message?: string | null
           estimated_duration_seconds?: number | null
           focus_elements?: Json | null
           focus_graph?: Json | null
+          graph_payload?: Json | null
           id?: string
           job_id?: string | null
           medical_concept?: string | null
+          metadata?: Json | null
           motion_graph?: Json | null
           narrative_script_id?: string | null
           overlay_graph?: Json | null
@@ -5389,9 +5407,12 @@ export type Database = {
           scene_order?: number | null
           scene_type?: string | null
           semantic_plan_id?: string | null
+          session_id?: string | null
           transition_type?: string | null
+          updated_at?: string | null
           user_id?: string | null
           video_lesson_id?: string | null
+          video_project_id?: string | null
           visual_attention_map?: Json | null
           visual_goal?: string | null
         }
@@ -5400,12 +5421,15 @@ export type Database = {
           attention_curve?: Json | null
           cognitive_load_level?: string | null
           created_at?: string
+          error_message?: string | null
           estimated_duration_seconds?: number | null
           focus_elements?: Json | null
           focus_graph?: Json | null
+          graph_payload?: Json | null
           id?: string
           job_id?: string | null
           medical_concept?: string | null
+          metadata?: Json | null
           motion_graph?: Json | null
           narrative_script_id?: string | null
           overlay_graph?: Json | null
@@ -5414,9 +5438,12 @@ export type Database = {
           scene_order?: number | null
           scene_type?: string | null
           semantic_plan_id?: string | null
+          session_id?: string | null
           transition_type?: string | null
+          updated_at?: string | null
           user_id?: string | null
           video_lesson_id?: string | null
+          video_project_id?: string | null
           visual_attention_map?: Json | null
           visual_goal?: string | null
         }
@@ -5447,6 +5474,13 @@ export type Database = {
             columns: ["video_lesson_id"]
             isOneToOne: false
             referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_scene_graphs_video_project_id_fkey"
+            columns: ["video_project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
         ]

@@ -222,7 +222,8 @@ export const useTutorCME = () => {
             tutor_conversation_id: params.conversationId,
             is_full_session: params.isFullSession,
             specialty: params.specialty,
-            topic: params.topic
+            topic: params.topic,
+            hardened: true
           }
         } as any)
         .select()
@@ -243,28 +244,42 @@ export const useTutorCME = () => {
       const { data: sceneGraph, error: sgError } = await supabaseClient
         .from("cme_scene_graphs")
         .insert({
-          project_id: projectId,
+          video_project_id: projectId,
           user_id: user.id,
           scene_type: 'pedagogical',
           visual_goal: 'high_engagement',
-          status: 'ready'
+          status: 'ready',
+          graph_payload: { 
+            title: params.title,
+            blocks_count: lessonBlocks.length,
+            generated_at: new Date().toISOString()
+          }
         } as any)
         .select()
         .single();
 
-      if (sgError) throw new Error("Falha ao persistir Scene Graph.");
+      if (sgError) {
+        console.error("Scene Graph Error:", sgError);
+        throw new Error("Falha ao persistir Scene Graph.");
+      }
 
       if (sceneGraph && lessonBlocks.length > 0) {
         const nodes = lessonBlocks.map((block, idx) => ({
           scene_graph_id: sceneGraph.id,
+          user_id: user.id,
           node_type: block.type || 'concept',
-          semantic_role: block.title,
-          node_order: idx,
+          title: block.title,
+          sequence_order: idx,
           start_second: idx * 60,
           end_second: (idx + 1) * 60,
-          render_payload: { content: block.content }
+          payload: { content: block.content },
+          render_payload: { content: block.content } // compatibility
         }));
-        await supabaseClient.from("cme_scene_graph_nodes").insert(nodes as any);
+        const { error: nodesError } = await supabaseClient.from("cme_scene_graph_nodes").insert(nodes as any);
+        if (nodesError) {
+          console.error("Scene Nodes Error:", nodesError);
+          throw new Error("Falha ao persistir Scene Graph Nodes.");
+        }
       }
 
       setState(s => ({ ...s, sceneGraphId: sceneGraph.id }));
