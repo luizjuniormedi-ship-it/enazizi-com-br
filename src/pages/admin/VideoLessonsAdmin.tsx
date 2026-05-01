@@ -54,6 +54,7 @@ const VideoLessonsAdmin = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
+  const [mediaFilter, setMediaFilter] = useState("all");
 
   const { data: lessons, isLoading, refetch } = useQuery({
     queryKey: ["admin-video-lessons"],
@@ -89,15 +90,26 @@ const VideoLessonsAdmin = () => {
                          lesson.specialty.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || lesson.status === statusFilter;
     const matchesSpecialty = specialtyFilter === "all" || lesson.specialty === specialtyFilter;
-    return matchesSearch && matchesStatus && matchesSpecialty;
+    
+    const playbackUrl = lesson.hls_url || lesson.video_url || lesson.playback_url;
+    const hasMedia = !!playbackUrl && !playbackUrl.includes('example.com') && !playbackUrl.includes('placeholder');
+    
+    const matchesMedia = mediaFilter === "all" || 
+                         (mediaFilter === "no_media" && !hasMedia) ||
+                         (mediaFilter === "has_media" && hasMedia) ||
+                         (mediaFilter === "failed" && lesson.media_status === 'failed');
+
+    return matchesSearch && matchesStatus && matchesSpecialty && matchesMedia;
   });
 
   const getStatusBadge = (lesson: any) => {
     const status = lesson.status;
     const mediaStatus = lesson.media_status;
-    const hasRealMedia = (lesson.hls_url || lesson.video_url) && 
-                         !lesson.video_url?.includes('example.com') && 
-                         !lesson.hls_url?.includes('example.com');
+    const playbackUrl = lesson.hls_url || lesson.video_url || lesson.playback_url;
+    const hasRealMedia = playbackUrl && 
+                         !playbackUrl.includes('example.com') && 
+                         !playbackUrl.includes('placeholder') &&
+                         !playbackUrl.includes('dummy');
 
     const statusMap: Record<string, { label: string, color: string }> = {
       draft: { label: "Rascunho", color: "bg-gray-500" },
@@ -107,7 +119,8 @@ const VideoLessonsAdmin = () => {
       video_review: { label: "Em Revisão", color: "bg-orange-500" },
       approved: { label: "Aprovado", color: "bg-green-500" },
       published: { label: "Publicado", color: "bg-emerald-600" },
-      archived: { label: "Arquivado", color: "bg-slate-700" }
+      archived: { label: "Arquivado", color: "bg-slate-700" },
+      failed: { label: "Erro na Renderização", color: "bg-red-600" }
     };
 
     const config = statusMap[status] || { label: status, color: "bg-gray-500" };
@@ -118,12 +131,18 @@ const VideoLessonsAdmin = () => {
         {mediaStatus && (
           <Badge variant="outline" className={cn(
             "text-[10px] py-0 h-4",
-            mediaStatus === 'ready' ? "border-green-500 text-green-500" :
+            mediaStatus === 'ready' || mediaStatus === 'published' ? "border-green-500 text-green-500" :
             mediaStatus === 'failed' ? "border-red-500 text-red-500" :
+            mediaStatus === 'rendering' || mediaStatus === 'processing' ? "border-amber-500 text-amber-500 animate-pulse" :
             "border-blue-500 text-blue-500"
           )}>
-            Media: {mediaStatus}
+            Media: {mediaStatus || 'none'}
           </Badge>
+        )}
+        {lesson.pipeline_last_error && (
+          <p className="text-[9px] text-red-400 max-w-[150px] truncate" title={lesson.pipeline_last_error}>
+            Err: {lesson.pipeline_last_error}
+          </p>
         )}
         {!hasRealMedia && status === 'published' && (
           <Badge variant="destructive" className="text-[10px] py-0 h-4 animate-pulse">
@@ -284,6 +303,17 @@ const VideoLessonsAdmin = () => {
                   <SelectItem value="draft">Rascunho</SelectItem>
                   <SelectItem value="video_review">Em Revisão</SelectItem>
                   <SelectItem value="published">Publicado</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={mediaFilter} onValueChange={setMediaFilter}>
+                <SelectTrigger className="w-[160px]">
+                  <SelectValue placeholder="Mídia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as Mídias</SelectItem>
+                  <SelectItem value="has_media">Com Mídia Real</SelectItem>
+                  <SelectItem value="no_media">Sem Mídia / Placeholder</SelectItem>
+                  <SelectItem value="failed">Falha na Renderização</SelectItem>
                 </SelectContent>
               </Select>
             </div>
