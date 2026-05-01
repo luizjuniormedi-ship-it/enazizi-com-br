@@ -114,6 +114,27 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               ENAFLIX
             </span>
           </div>
+
+          <nav className="hidden md:flex items-center gap-6 ml-4">
+            <button 
+              onClick={() => (window.location.href = "/enaflix")}
+              className={cn(
+                "text-sm font-semibold transition-colors hover:text-white",
+                window.location.pathname === "/enaflix" ? "text-white" : "text-white/60"
+              )}
+            >
+              Início
+            </button>
+            <button 
+              onClick={() => (window.location.href = "/dashboard/videoaulas")}
+              className={cn(
+                "text-sm font-semibold transition-colors hover:text-white",
+                window.location.pathname.includes("videoaulas") ? "text-white" : "text-white/60"
+              )}
+            >
+              Videoaulas
+            </button>
+          </nav>
         </div>
 
         {/* Direita: ações secundárias discretas (ghost) */}

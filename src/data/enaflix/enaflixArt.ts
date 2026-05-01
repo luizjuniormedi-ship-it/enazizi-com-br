@@ -13,6 +13,7 @@ import mascot from "@/assets/enaflix/mascot-enazizi.png";
 
 // ─── V2 cinematic artworks (artes hero originais) ───
 import tutorIA from "@/assets/enaflix/v2-tutor-ia.jpg";
+import videoaulas from "@/assets/enaflix/v2-sessao-estudo.jpg"; // Reutilizando arte de sessão por enquanto
 import flashcards from "@/assets/enaflix/v2-flashcards.jpg";
 import simulados from "@/assets/enaflix/v2-simulados.jpg";
 import aprovacao from "@/assets/enaflix/v2-aprovacao.jpg";
@@ -110,6 +111,7 @@ export const ENAFLIX_HERO_ART_MAP: Record<string, EnaflixArtEntry> = {
   perfil: { image: perfil, accent: "primary", animationProfile: "breathe" },
 
   // ─── 📚 CONTEÚDO / NARRATIVA ───
+  videoaulas: { image: videoaulas, accent: "primary", animationProfile: "breathe" },
   apostilas: { image: apostilas, accent: "warning", animationProfile: "float" },
   cronicas: { image: cronicas, accent: "warning", animationProfile: "breathe" },
   revisor: { image: revisor, accent: "success", animationProfile: "breathe" },
