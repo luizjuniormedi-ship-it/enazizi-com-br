@@ -183,18 +183,16 @@ const ChatGPT = () => {
   }, [missionContext, user, missionData, tutorMode]);
 
   // Temporal/Hotspot context auto-start (from VideoLessonPlayer)
+  const temporal = useTutorTemporalContext();
+  const temporalHandled = useRef(false);
   useEffect(() => {
-    if (!user || !searchParams.get("video_ts")) return;
+    if (!user || !searchParams.get("video_ts") || temporalHandled.current) return;
     
     const videoTs = searchParams.get("video_ts");
-    const videoSegmentId = searchParams.get("video_segment");
-    const hotspotType = searchParams.get("hotspot_type");
+    const ctx = temporal.readContext();
     
-    // Read persistent context from storage
-    const { readContext, temporalEnabled } = useTutorTemporalContext();
-    const ctx = readContext();
-    
-    if (temporalEnabled && ctx && !studyStarted) {
+    if (temporal.temporalEnabled && ctx && !studyStarted) {
+      temporalHandled.current = true;
       const topicToStudy = ctx.topic || ctx.segment_title || "Revisão de Vídeo";
       const timestamp = Math.floor(Number(videoTs));
       const minutes = Math.floor(timestamp / 60);
@@ -215,7 +213,7 @@ const ChatGPT = () => {
       
       setTimeout(() => sendMessage(ensureSequentialInitialMessage(prompt)), 500);
     }
-  }, [searchParams, user]);
+  }, [searchParams, user, temporal]);
 
   // StudyContext-driven auto-start (from guided flows via URL params)
   const studyCtx = useStudyContext();
