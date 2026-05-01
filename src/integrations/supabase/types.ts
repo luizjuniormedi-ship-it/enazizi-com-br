@@ -133,6 +133,7 @@ export type Database = {
         Row: {
           action_payload: Json | null
           action_taken: string
+          cognitive_insight: string | null
           confidence_score: number | null
           context_node_id: string | null
           created_at: string | null
@@ -141,9 +142,11 @@ export type Database = {
           evidence_score: number | null
           experiment_id: string | null
           experiment_variant_id: string | null
+          explanation: string | null
           friction_score_snapshot: number | null
           historical_effectiveness_snapshot: number | null
           id: string
+          impact_summary: string | null
           metadata: Json | null
           outcome_metrics: Json | null
           policy_id: string | null
@@ -160,6 +163,7 @@ export type Database = {
         Insert: {
           action_payload?: Json | null
           action_taken: string
+          cognitive_insight?: string | null
           confidence_score?: number | null
           context_node_id?: string | null
           created_at?: string | null
@@ -168,9 +172,11 @@ export type Database = {
           evidence_score?: number | null
           experiment_id?: string | null
           experiment_variant_id?: string | null
+          explanation?: string | null
           friction_score_snapshot?: number | null
           historical_effectiveness_snapshot?: number | null
           id?: string
+          impact_summary?: string | null
           metadata?: Json | null
           outcome_metrics?: Json | null
           policy_id?: string | null
@@ -187,6 +193,7 @@ export type Database = {
         Update: {
           action_payload?: Json | null
           action_taken?: string
+          cognitive_insight?: string | null
           confidence_score?: number | null
           context_node_id?: string | null
           created_at?: string | null
@@ -195,9 +202,11 @@ export type Database = {
           evidence_score?: number | null
           experiment_id?: string | null
           experiment_variant_id?: string | null
+          explanation?: string | null
           friction_score_snapshot?: number | null
           historical_effectiveness_snapshot?: number | null
           id?: string
+          impact_summary?: string | null
           metadata?: Json | null
           outcome_metrics?: Json | null
           policy_id?: string | null
@@ -300,9 +309,11 @@ export type Database = {
           last_policy_violation_at: string | null
           last_recovery_at: string | null
           mastery_map: Json | null
+          orchestration_intensity: string | null
           overall_friction_score: number | null
           preferred_modality: string | null
           recovery_mode_active: boolean | null
+          transparency_enabled: boolean | null
           updated_at: string | null
           user_id: string | null
         }
@@ -315,9 +326,11 @@ export type Database = {
           last_policy_violation_at?: string | null
           last_recovery_at?: string | null
           mastery_map?: Json | null
+          orchestration_intensity?: string | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
           recovery_mode_active?: boolean | null
+          transparency_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -330,9 +343,11 @@ export type Database = {
           last_policy_violation_at?: string | null
           last_recovery_at?: string | null
           mastery_map?: Json | null
+          orchestration_intensity?: string | null
           overall_friction_score?: number | null
           preferred_modality?: string | null
           recovery_mode_active?: boolean | null
+          transparency_enabled?: boolean | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -1926,6 +1941,36 @@ export type Database = {
           specialty?: string
           title?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      cognitive_state_history: {
+        Row: {
+          created_at: string | null
+          friction_index: number
+          id: string
+          load_index: number
+          session_id: string | null
+          stress_index: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          friction_index: number
+          id?: string
+          load_index: number
+          session_id?: string | null
+          stress_index: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          friction_index?: number
+          id?: string
+          load_index?: number
+          session_id?: string | null
+          stress_index?: number
+          user_id?: string
         }
         Relationships: []
       }

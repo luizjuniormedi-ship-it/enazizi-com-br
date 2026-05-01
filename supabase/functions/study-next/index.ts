@@ -15,6 +15,7 @@ import {
   scoreImageQuiz, scoreMnemonic, decideMnemonicMode,
   isVisualTopic, isMnemonicTopic,
   buildJustification, pickDiverseAlternatives,
+  buildExplainableJustification,
   type ScoredCandidate, type VisualWeaknessEntry, type MnemonicUtilityEntry,
 } from "../_shared/study-next-scoring.ts";
 
@@ -544,16 +545,14 @@ serve(async (req) => {
     const alternativeActions = pickDiverseAlternatives(candidates, recommendation.type);
 
     // ── Justification ──
-    const justification = buildJustification(
-      {
-        reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length,
-        tasks: tasks.length,
-        visualErrors: visualErrors.length,
-        mnemonicCandidates: mnemonicErrors.length,
-      },
-      ctx,
-      recommendation.type,
-    );
+    const counts = {
+      reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length,
+      tasks: tasks.length,
+      visualErrors: visualErrors.length,
+      mnemonicCandidates: mnemonicErrors.length,
+    };
+
+    const justification = buildJustification(counts, ctx, recommendation.type);
 
     const adaptiveState = {
       approvalScore,
@@ -568,6 +567,7 @@ serve(async (req) => {
       imageQuizAvailable: imgQuizAvailable,
       consecutiveErrorBoost,
       mnemonicUtilityTopics: mnemonicUtility.length,
+      justification: buildExplainableJustification(counts, ctx, recommendation.type),
     };
 
     // ── Telemetry ──
