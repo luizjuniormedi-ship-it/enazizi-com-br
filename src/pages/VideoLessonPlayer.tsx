@@ -115,6 +115,7 @@ const VideoLessonPlayer = () => {
 
     console.log(`[CME Audit] State: ${state}, URL: ${playbackUrl}`);
 
+    // @ts-ignore
     await supabase.from("cme_playback_audit_logs").insert({
       video_lesson_id: id,
       user_id: user?.id,
