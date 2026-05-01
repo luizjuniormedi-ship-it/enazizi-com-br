@@ -1082,14 +1082,17 @@ export type Database = {
       ai_video_lessons: {
         Row: {
           audio_url: string | null
+          cdn_provider: string | null
           created_at: string
           created_by: string | null
           description: string | null
           difficulty_level: string | null
           duration_seconds: number | null
+          health_score: number | null
           hls_url: string | null
           id: string
           is_gold_content: boolean | null
+          last_validation_at: string | null
           learning_objectives: string[] | null
           media_status: string | null
           notebooklm_export_text: string | null
@@ -1116,14 +1119,17 @@ export type Database = {
         }
         Insert: {
           audio_url?: string | null
+          cdn_provider?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
           duration_seconds?: number | null
+          health_score?: number | null
           hls_url?: string | null
           id?: string
           is_gold_content?: boolean | null
+          last_validation_at?: string | null
           learning_objectives?: string[] | null
           media_status?: string | null
           notebooklm_export_text?: string | null
@@ -1150,14 +1156,17 @@ export type Database = {
         }
         Update: {
           audio_url?: string | null
+          cdn_provider?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           difficulty_level?: string | null
           duration_seconds?: number | null
+          health_score?: number | null
           hls_url?: string | null
           id?: string
           is_gold_content?: boolean | null
+          last_validation_at?: string | null
           learning_objectives?: string[] | null
           media_status?: string | null
           notebooklm_export_text?: string | null
@@ -2800,6 +2809,109 @@ export type Database = {
           worker_name?: string
         }
         Relationships: []
+      }
+      cme_media_reprocessing_jobs: {
+        Row: {
+          created_at: string | null
+          error_log: string | null
+          failure_reason: string | null
+          id: string
+          last_attempt_at: string | null
+          metadata: Json | null
+          render_job_id: string | null
+          reprocess_status: string
+          resolved_at: string | null
+          retry_count: number | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_log?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          metadata?: Json | null
+          render_job_id?: string | null
+          reprocess_status?: string
+          resolved_at?: string | null
+          retry_count?: number | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_log?: string | null
+          failure_reason?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          metadata?: Json | null
+          render_job_id?: string | null
+          reprocess_status?: string
+          resolved_at?: string | null
+          retry_count?: number | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_media_reprocessing_jobs_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_media_validation_logs: {
+        Row: {
+          checked_url: string | null
+          created_at: string | null
+          detected_issue: string | null
+          id: string
+          latency_ms: number | null
+          metadata: Json | null
+          mime_type: string | null
+          recommendation: string | null
+          response_code: number | null
+          validation_status: string
+          validation_type: string
+          video_lesson_id: string | null
+        }
+        Insert: {
+          checked_url?: string | null
+          created_at?: string | null
+          detected_issue?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          mime_type?: string | null
+          recommendation?: string | null
+          response_code?: number | null
+          validation_status: string
+          validation_type: string
+          video_lesson_id?: string | null
+        }
+        Update: {
+          checked_url?: string | null
+          created_at?: string | null
+          detected_issue?: string | null
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          mime_type?: string | null
+          recommendation?: string | null
+          response_code?: number | null
+          validation_status?: string
+          validation_type?: string
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_media_validation_logs_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cme_multimodal_analytics: {
         Row: {
@@ -15218,6 +15330,10 @@ export type Database = {
         }[]
       }
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
+      calculate_cme_media_health_score: {
+        Args: { lesson_id: string }
+        Returns: number
+      }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
       delete_email: {
