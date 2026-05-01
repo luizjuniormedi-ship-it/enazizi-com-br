@@ -202,10 +202,10 @@ const AdminCinematicEngine = () => {
           {[
             { label: "Active Jobs", value: stats?.active_renders, icon: Activity, color: "blue" },
             { label: "Queue Depth", value: stats?.queued_tasks, icon: History, color: "purple" },
-            { label: "GPU Nodes", value: stats?.gpu_nodes, icon: Server, color: "emerald" },
+            { label: "Avg Quality", value: stats?.avg_quality, icon: Target, color: "indigo" },
             { label: "Success Rate", value: stats?.success_rate, icon: CheckCircle2, color: "green" },
-            { label: "Avg Render", value: stats?.avg_render_time, icon: Clock, color: "orange" },
-            { label: "Total VRAM", value: `${Math.round((stats?.total_vram || 0)/1024)}GB`, icon: Cpu, color: "indigo" }
+            { label: "GPU Nodes", value: stats?.gpu_nodes, icon: Server, color: "emerald" },
+            { label: "Total VRAM", value: `${Math.round((stats?.total_vram || 0)/1024)}GB`, icon: Cpu, color: "orange" }
           ].map((stat, i) => (
             <Card key={i} className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all">
               <CardContent className="p-5 flex flex-col items-center justify-center text-center space-y-1">
