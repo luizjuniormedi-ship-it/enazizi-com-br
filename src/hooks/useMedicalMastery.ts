@@ -9,6 +9,9 @@ export interface MasteryMetric {
   speed_factor: number;
   dependency_factor: number;
   transfer_score: number;
+  overload_risk: number;
+  retention_projection: number;
+  false_mastery_risk: number;
   last_updated_at: string;
 }
 
@@ -28,6 +31,9 @@ export function useMedicalMastery() {
           speed_factor,
           dependency_factor,
           transfer_score,
+          overload_risk,
+          retention_projection,
+          false_mastery_risk,
           last_updated_at,
           knowledge_nodes (
             name
