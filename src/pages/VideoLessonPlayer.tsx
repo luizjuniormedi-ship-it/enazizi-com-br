@@ -466,7 +466,7 @@ const VideoLessonPlayer = () => {
                 if (!isPlaceholder && playbackUrl) {
                   return (
                     <div className="relative w-full h-full group">
-                      {playbackUrl.endsWith('.m3u8') ? (
+                      {(playbackUrl.endsWith('.m3u8') || playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage')) ? (
                         <video 
                           id="video-player"
                           src={playbackUrl}
