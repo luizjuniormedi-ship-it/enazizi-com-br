@@ -116,6 +116,7 @@ const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"
 
 
 
+const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
 /** Loader sensível à rota: escolhe o módulo cinematográfico atual. */
