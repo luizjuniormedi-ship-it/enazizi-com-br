@@ -159,11 +159,19 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                 <AlertCircle className="h-6 w-6" />
                 <h3 className="font-bold">Falha no Pipeline CME</h3>
               </div>
-              <p className="text-zinc-400 text-sm leading-relaxed">
-                {error || "Ocorreu um erro inesperado durante a geração do vídeo."}
-                <br />
-                <span className="text-[10px] mt-2 block opacity-50">Estágio: {currentStage}</span>
-              </p>
+              <div className="space-y-2">
+                <p className="text-zinc-400 text-sm leading-relaxed">
+                  {error || "Ocorreu um erro inesperado durante a geração do vídeo."}
+                </p>
+                {currentStage === 'graphing' && (
+                  <p className="text-xs text-zinc-500 bg-black/40 p-3 rounded-lg border border-red-500/10">
+                    O planejamento pedagógico foi concluído, mas o Scene Graph não pôde ser salvo no banco de dados. Você pode tentar novamente ou gerar uma versão em slides.
+                  </p>
+                )}
+                <span className="text-[10px] mt-2 block opacity-50 uppercase tracking-tighter">
+                  Error Code: {events.find(e => e.status === 'failed')?.metadata?.code || 'N/A'} | Stage: {currentStage}
+                </span>
+              </div>
               <div className="flex flex-wrap gap-3">
                 <Button 
                   onClick={() => window.location.reload()} 
