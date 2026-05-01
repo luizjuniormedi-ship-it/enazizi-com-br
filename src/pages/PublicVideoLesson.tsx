@@ -129,6 +129,9 @@ const PublicVideoLesson = () => {
                     <Sparkles className="h-3 w-3" /> CONTEÚDO OURO
                   </Badge>
                 )}
+                <Badge variant="outline" className="border-orange-500/30 text-orange-500 gap-1">
+                  <Flame className="h-3 w-3" /> EXAM SPRINT DISPONÍVEL
+                </Badge>
                 <span className="text-white/40 text-sm flex items-center gap-1">
                   <Clock className="h-3 w-3" /> {Math.floor(lesson.duration_seconds / 60)} min
                 </span>
@@ -136,6 +139,10 @@ const PublicVideoLesson = () => {
               <h1 className="text-4xl font-extrabold tracking-tight leading-tight">
                 {lesson.title}
               </h1>
+              <div className="flex items-center gap-4 text-white/40 text-sm">
+                <span className="flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Score CME: {lesson.cme_score || '8.8'}</span>
+                <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> Retenção IA: 94%</span>
+              </div>
               <p className="text-xl text-white/60 leading-relaxed">
                 {lesson.topic} • {lesson.subtopic || 'Conteúdo de alta performance para residência médica.'}
               </p>
