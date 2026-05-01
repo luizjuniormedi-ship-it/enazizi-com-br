@@ -50,6 +50,7 @@ serve(async (req) => {
       fsrsDue, approvalData, profile, gamification,
       imageQuizCount, visualAttempts,
       mnemonicFeedbackAgg, mnemonicResultsForUser,
+      active_experiments, user_assignments, cognitive_state
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) => {
         let q = c.from("revisoes")
