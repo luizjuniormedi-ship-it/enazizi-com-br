@@ -46,9 +46,12 @@ function DashboardTopBar() {
   const paceStatus = goal?.paceStatus ?? "on_track";
   const streak = snap?.streak ?? core?.gamification?.current_streak ?? 0;
   const level = core?.gamification?.level ?? 1;
+  const currentMode = core?.adaptiveProfile?.current_session_mode ?? 'balanced';
 
   const paceCfg = isFinalStretch
     ? { icon: AlertTriangle, label: "Reta final", cls: "bg-destructive/10 text-destructive border-destructive/20" }
+    : currentMode === 'recovery'
+    ? { icon: ShieldCheck, label: "Foco Zen", cls: "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" }
     : paceStatus === "behind"
     ? { icon: AlertTriangle, label: "Atrasado", cls: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20" }
     : paceStatus === "ahead"
@@ -76,13 +79,10 @@ function DashboardTopBar() {
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {core?.adaptiveProfile?.recovery_mode_active && (
-          <Badge variant="outline" className="xs:inline-flex gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg border-0 bg-blue-500/15 text-blue-600 dark:text-blue-400">
-            <ShieldCheck className="h-3 w-3" />
-            Foco Zen
-          </Badge>
-        )}
         <Badge variant="outline" className={`hidden xs:inline-flex gap-1 text-[11px] font-bold px-2 py-0.5 rounded-lg border-0 ${paceCfg.cls}`}>
+          <PaceIcon className="h-3 w-3" />
+          {paceCfg.label}
+        </Badge>
           <PaceIcon className="h-3 w-3" />
           {paceCfg.label}
         </Badge>
