@@ -86,6 +86,7 @@ export const useDashboardData = () => {
           discursivasRes, globalFlashRes, globalQuestRes,
           questionsCreatedRes, summariesRes, chroniclesRes,
           imageQuizRes, diagnosticRes,
+          adaptiveProfileRes,
         ] = await Promise.all([
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
@@ -102,6 +103,7 @@ export const useDashboardData = () => {
           supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
           supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("cme_adaptive_profiles").select("*").eq("user_id", userId).maybeSingle(),
         ]);
 
         const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
