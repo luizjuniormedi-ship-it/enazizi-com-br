@@ -589,16 +589,30 @@ const VideoLessonPlayer = () => {
                 }
 
                 return (
-                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-slate-900/50">
+                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-slate-900/50 p-6">
                     <div className="relative">
                       <Play className="h-20 w-20 text-primary/20" />
                       <div className="absolute inset-0 flex items-center justify-center">
                         <Loader2 className="h-10 w-10 text-primary animate-spin" />
                       </div>
                     </div>
-                    <div className="text-center space-y-1">
-                      <p className="text-white font-medium">Aguardando Mídia Real</p>
-                      <p className="text-xs text-muted-foreground">Esta videoaula está publicada, mas o arquivo de vídeo ainda não foi vinculado ao CME.</p>
+                    <div className="text-center space-y-2 max-w-sm">
+                      <p className="text-white font-medium">Videoaula ainda em geração</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        O conteúdo de {(lesson as any).title} está sendo processado pelo motor cinematográfico. 
+                        O vídeo será liberado automaticamente após o render finalizar.
+                      </p>
+                      
+                      {lesson.pipeline_last_error && (
+                        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-left">
+                          <p className="text-[10px] text-red-400 font-bold uppercase mb-1 flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Log de Erro CME
+                          </p>
+                          <p className="text-[10px] text-red-300/80 line-clamp-2 italic">
+                            {lesson.pipeline_last_error}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
