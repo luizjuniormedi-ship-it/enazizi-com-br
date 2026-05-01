@@ -9,7 +9,7 @@ import { useCoreData } from "@/hooks/useCoreData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
-import { GraduationCap, Play } from "lucide-react";
+import { GraduationCap, Play, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
