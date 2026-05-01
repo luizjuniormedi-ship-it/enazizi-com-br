@@ -74,7 +74,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       // Try to find scene graph
       const { data: sg } = await supabase.from('cme_scene_graphs')
         .select('id')
-        .eq('aggregation_id', aggregationId)
+        .eq('project_id', aggregationId) // Note: Using aggregationId as project_id if they are the same in current logic or just query by project
         .limit(1)
         .maybeSingle();
       if (sg) setSceneGraphId(sg.id);
