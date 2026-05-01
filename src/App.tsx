@@ -100,6 +100,7 @@ const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixP
 const EnaflixCatalogPage = lazyWithRetry(() => import("./pages/EnaflixCatalogPage"), "EnaflixCatalogPage");
 const PublicVideoLesson = lazyWithRetry(() => import("./pages/PublicVideoLesson"), "PublicVideoLesson");
 const VideoLessonsExplore = lazyWithRetry(() => import("./pages/VideoLessonsExplore"), "VideoLessonsExplore");
+const CMEAudit = lazyWithRetry(() => import("./pages/admin/CMEAudit"), "CMEAudit");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowcase"), "CognitiveShowcase");
@@ -272,6 +273,7 @@ const App = () => (
                     <Route path="cinematic-engine/:projectId" element={<AdminCinematicEngine />} />
                     <Route path="cme-origins" element={<CMEOrigins />} />
                     <Route path="cinematic-builder/:aggregationId" element={<CinematicSessionBuilder />} />
+                    <Route path="cme-builder-audit" element={<CMEAudit />} />
                     <Route path="system-checklist" element={<SystemChecklist />} />
                 </Route>
                 <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />

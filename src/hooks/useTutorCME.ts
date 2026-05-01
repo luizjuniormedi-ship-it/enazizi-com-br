@@ -16,7 +16,7 @@ export const useTutorCME = () => {
   const supabaseClient = useMemo(() => supabase, []);
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
 
-  const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string) => {
+  const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string, aggregationId?: string) => {
     try {
       await supabaseClient.from("cme_pipeline_events").insert({
         project_id: projectId,
@@ -27,6 +27,22 @@ export const useTutorCME = () => {
         latency_ms: Math.floor(Math.random() * 500)
       });
       
+      if (aggregationId) {
+        await supabaseClient.from("cme_audit_logs").insert({
+          aggregation_id: aggregationId,
+          action: `Pipeline: ${stage}`,
+          metadata: { status, progress, message }
+        });
+        
+        await supabaseClient.from("cme_session_aggregations")
+          .update({ 
+            status: status === 'completed' ? 'builder_ready' : (status === 'failed' ? 'failed' : 'aggregating'),
+            error_message: status === 'failed' ? message : undefined,
+            completed_at: status === 'completed' ? new Date().toISOString() : undefined
+          })
+          .eq('id', aggregationId);
+      }
+
       if (status === 'completed' || status === 'failed' || status === 'in_progress') {
         const jobStatus = status === 'completed' ? 'completed' : (status === 'failed' ? 'failed' : 'processing');
         await supabaseClient.from("cme_render_jobs")
@@ -82,6 +98,8 @@ export const useTutorCME = () => {
         tutor_session_id: conversationId,
         aggregated_content: fullText,
         total_blocks: blocks.length,
+        status: 'aggregating',
+        started_at: new Date().toISOString(),
         estimated_duration_seconds: Math.max(blocks.length * 120, 300),
         detected_topics: Array.from(new Set(blocks.map(b => b.title).slice(0, 5)))
       } as any)
@@ -89,6 +107,13 @@ export const useTutorCME = () => {
       .single();
 
     if (aggError) throw aggError;
+
+    // Log initial aggregation
+    await supabaseClient.from("cme_audit_logs").insert({
+      aggregation_id: aggregation.id,
+      action: "Session Aggregation Started",
+      metadata: { total_messages: messages.length, total_blocks: blocks.length }
+    });
 
     const blockInserts = blocks.map((b, idx) => ({
       aggregation_id: aggregation.id,
@@ -104,6 +129,16 @@ export const useTutorCME = () => {
       .insert(blockInserts as any);
 
     if (blocksError) throw blocksError;
+
+    await supabaseClient.from("cme_session_aggregations")
+      .update({ status: 'blocks_generated' })
+      .eq('id', aggregation.id);
+
+    await supabaseClient.from("cme_audit_logs").insert({
+      aggregation_id: aggregation.id,
+      action: "Pedagogical Blocks Generated",
+      metadata: { block_count: blocks.length }
+    });
 
     return { aggregation, blocks };
   }, [supabaseClient]);
@@ -172,7 +207,7 @@ export const useTutorCME = () => {
       } as any);
 
       setState({ status: 'planning', progress: 15, projectId, aggregationId, message: "Mapeamento semântico..." });
-      await logPipelineEvent(projectId, 'planning', 'in_progress', 15, `Iniciando mapeamento de ${params.isFullSession ? 'toda a sessão' : 'mensagem'}`);
+      await logPipelineEvent(projectId, 'planning', 'in_progress', 15, `Iniciando mapeamento de ${params.isFullSession ? 'toda a sessão' : 'mensagem'}`, aggregationId || undefined);
 
       await supabaseClient.from("cme_tutor_origins").insert({
         tutor_session_id: params.conversationId,
@@ -197,11 +232,11 @@ export const useTutorCME = () => {
       if (planError) throw planError;
       
       setState({ status: 'scripting', progress: 30, projectId, message: "Gerando narrativa visual..." });
-      await logPipelineEvent(projectId, 'scripting', 'completed', 30, "Narrativa concluída");
+      await logPipelineEvent(projectId, 'scripting', 'completed', 30, "Narrativa concluída", aggregationId || undefined);
 
       toast.success(params.isFullSession ? "Sessão completa vinculada ao CME!" : "Projeto vinculado ao CME!");
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Cluster GPU: Gerando Scene Graph" }));
-      await logPipelineEvent(projectId, 'rendering', 'in_progress', 50, "Aguardando worker GPU...");
+      await logPipelineEvent(projectId, 'rendering', 'in_progress', 50, "Aguardando worker GPU...", aggregationId || undefined);
 
       if (params.onComplete && aggregationId) {
         params.onComplete(aggregationId);

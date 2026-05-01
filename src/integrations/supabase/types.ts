@@ -2370,6 +2370,41 @@ export type Database = {
           },
         ]
       }
+      cme_audit_logs: {
+        Row: {
+          action: string
+          aggregation_id: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          aggregation_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          aggregation_id?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_audit_logs_aggregation_id_fkey"
+            columns: ["aggregation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_session_aggregations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_autonomous_optimizations: {
         Row: {
           applied_at: string | null
@@ -4502,36 +4537,48 @@ export type Database = {
       cme_session_aggregations: {
         Row: {
           aggregated_content: string
+          completed_at: string | null
           created_at: string
           detected_topics: string[] | null
+          error_message: string | null
           estimated_duration_seconds: number | null
           id: string
           metadata: Json | null
           narrative_density: number | null
+          started_at: string | null
+          status: string | null
           total_blocks: number | null
           tutor_session_id: string
           updated_at: string
         }
         Insert: {
           aggregated_content: string
+          completed_at?: string | null
           created_at?: string
           detected_topics?: string[] | null
+          error_message?: string | null
           estimated_duration_seconds?: number | null
           id?: string
           metadata?: Json | null
           narrative_density?: number | null
+          started_at?: string | null
+          status?: string | null
           total_blocks?: number | null
           tutor_session_id: string
           updated_at?: string
         }
         Update: {
           aggregated_content?: string
+          completed_at?: string | null
           created_at?: string
           detected_topics?: string[] | null
+          error_message?: string | null
           estimated_duration_seconds?: number | null
           id?: string
           metadata?: Json | null
           narrative_density?: number | null
+          started_at?: string | null
+          status?: string | null
           total_blocks?: number | null
           tutor_session_id?: string
           updated_at?: string
