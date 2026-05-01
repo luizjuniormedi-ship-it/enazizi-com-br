@@ -403,11 +403,11 @@ const VideoLessonsAdmin = () => {
                                     title: lesson.title,
                                     specialty: lesson.specialty,
                                     topic: lesson.topic,
-                                    summary: lesson.summary || lesson.content?.slice(0, 300) || "",
-                                    sourceContent: lesson.content || "",
-                                    blocks: (lesson.config as any)?.blocks || [],
-                                    conversationId: (lesson.config as any)?.tutor_conversation_id || crypto.randomUUID(),
-                                    messageId: (lesson.config as any)?.tutor_message_id
+                                    summary: lesson.tutor_lesson_summary || lesson.description || "",
+                                    sourceContent: lesson.notebooklm_export_text || lesson.tutor_lesson_summary || "",
+                                    blocks: [], 
+                                    conversationId: lesson.tutor_session_id || crypto.randomUUID(),
+                                    messageId: undefined
                                   })}
                                 >
                                   <Film className="h-4 w-4" /> 🎬 Transformar em Videoaula
