@@ -52,6 +52,15 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -159,35 +168,6 @@ const VideoLessonsAdmin = () => {
         )}
       </div>
     );
-  };
-
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    if (newStatus === 'published') {
-      const validation = await validateVideoLessonPublication(id);
-      if (!validation.valid) {
-        toast.error("Publicação bloqueada", {
-          description: validation.errors.join(", "),
-          duration: 5000
-        });
-        return;
-      }
-    }
-
-    const { error } = await supabase
-      .from("ai_video_lessons")
-      .update({ 
-        status: newStatus, 
-        updated_at: new Date().toISOString(),
-        published_at: newStatus === 'published' ? new Date().toISOString() : undefined,
-      } as any)
-      .eq("id", id);
-
-    if (error) {
-      toast.error("Erro ao atualizar status: " + error.message);
-    } else {
-      toast.success(`Status atualizado para ${newStatus}!`);
-      refetch();
-    }
   };
 
   const toggleGoldContent = async (id: string, current: boolean) => {
@@ -433,28 +413,6 @@ const VideoLessonsAdmin = () => {
                                   <Film className="h-4 w-4" /> 🎬 Transformar em Videoaula
                                 </DropdownMenuItem>
                               )}
-                                <Star className={`h-4 w-4 ${lesson.is_gold_content ? 'fill-yellow-500 text-yellow-500' : ''}`} /> 
-                                {lesson.is_gold_content ? 'Remover Destaque' : 'Destacar (Ouro)'}
-                              </DropdownMenuItem>
-                              {lesson.status === 'video_review' && (
-                                <DropdownMenuItem 
-                                  className="gap-2 text-green-600"
-                                  onClick={() => handleStatusChange(lesson.id, 'approved')}
-                                >
-                                  <CheckCircle2 className="h-4 w-4" /> Aprovar Vídeo
-                                </DropdownMenuItem>
-                              )}
-                              {(lesson.status === 'approved' || lesson.status === 'draft') && (
-                                <DropdownMenuItem 
-                                  className="gap-2 text-blue-600"
-                                  onClick={() => handleStatusChange(lesson.id, 'published')}
-                                >
-                                  <ExternalLink className="h-4 w-4" /> Publicar Aula
-                                </DropdownMenuItem>
-                              )}
-                              <DropdownMenuItem className="gap-2 text-red-600">
-                                <AlertCircle className="h-4 w-4" /> Arquivar
-                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -467,6 +425,7 @@ const VideoLessonsAdmin = () => {
           )}
         </CardContent>
       </Card>
+
       {/* Modal de Status CME */}
       <Dialog open={cmeState.status !== 'idle'} onOpenChange={(open) => !open && resetCme()}>
         <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white">
