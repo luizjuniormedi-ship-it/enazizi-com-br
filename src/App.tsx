@@ -125,6 +125,8 @@ const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicE
 const CMEStatus = lazyWithRetry(() => import("./pages/admin/CMEStatus"), "CMEStatus");
 const CMEIncidents = lazyWithRetry(() => import("./pages/admin/CMEIncidents"), "CMEIncidents");
 const CMEMediaMonitor = lazyWithRetry(() => import("./pages/admin/CMEMediaMonitor"), "CMEMediaMonitor");
+const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEOrigins");
+
 
 
 const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
