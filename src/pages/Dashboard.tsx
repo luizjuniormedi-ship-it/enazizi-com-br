@@ -9,6 +9,7 @@ import { useCoreData } from "@/hooks/useCoreData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
+import { GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
@@ -30,6 +31,7 @@ import { fireCelebration } from "@/lib/celebrations";
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const TutorContinueCard = lazy(() => import("@/components/dashboard/TutorContinueCard"));
 const AdvancedAnalyticsAccordion = lazy(() => import("@/components/dashboard/AdvancedAnalyticsAccordion"));
+const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const AdaptiveMnemonicCard = lazy(() =>
   import("@/components/mnemonic/AdaptiveMnemonicCard").then((m) => ({ default: m.AdaptiveMnemonicCard }))
 );
@@ -290,6 +292,19 @@ const Dashboard = () => {
               <ProgressOverview />
             </Suspense>
           </SafeCard>
+          
+          {/* 4.5 — MEDICAL MASTERY MODEL (Nível de Domínio Clínico) */}
+          <Suspense fallback={null}>
+            <SafeCard name="MedicalMastery">
+              <div className="space-y-3">
+                <h3 className="text-lg font-bold flex items-center gap-2 px-1">
+                  <GraduationCap className="h-5 w-5 text-primary" />
+                  Medical Mastery Model
+                </h3>
+                <MedicalMasteryDashboard />
+              </div>
+            </SafeCard>
+          </Suspense>
 
           {/* 5 — ANÁLISES AVANÇADAS (Accordion técnico) */}
           <div id="advanced-analytics" className="pt-2">
