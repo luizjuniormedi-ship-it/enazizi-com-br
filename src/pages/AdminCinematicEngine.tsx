@@ -494,6 +494,101 @@ const AdminCinematicEngine = () => {
           </TabsContent>
         </Tabs>
       </div>
+      </div>
+
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">CME Reference Studio</DialogTitle>
+            <DialogDescription className="text-xs font-bold uppercase tracking-wider opacity-60">
+              Upload video benchmark for cognitive/cinematic pattern extraction
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name" className="text-xs font-black uppercase tracking-widest text-slate-500">Benchmark Name</Label>
+              <Input 
+                id="name" 
+                placeholder="e.g. Masterclass Cardiology v1" 
+                className="font-bold"
+                value={uploadData.name}
+                onChange={(e) => setUploadData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="type" className="text-xs font-black uppercase tracking-widest text-slate-500">Benchmark Type</Label>
+                <select 
+                  id="type"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-bold"
+                  value={uploadData.type}
+                  onChange={(e) => setUploadData(prev => ({ ...prev, type: e.target.value }))}
+                >
+                  <option value="internal_benchmark">Internal Benchmark</option>
+                  <option value="expert_reference">Expert Reference</option>
+                  <option value="high_retention_sample">High Retention Sample</option>
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="specialty" className="text-xs font-black uppercase tracking-widest text-slate-500">Medical Specialty</Label>
+                <Input 
+                  id="specialty" 
+                  placeholder="e.g. Cardiology" 
+                  className="font-bold"
+                  value={uploadData.specialty}
+                  onChange={(e) => setUploadData(prev => ({ ...prev, specialty: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="goal" className="text-xs font-black uppercase tracking-widest text-slate-500">Pedagogical Objective</Label>
+              <Textarea 
+                id="goal" 
+                placeholder="Describe how this reference should influence retention..." 
+                className="font-bold resize-none h-20"
+                value={uploadData.goal}
+                onChange={(e) => setUploadData(prev => ({ ...prev, goal: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-xs font-black uppercase tracking-widest text-slate-500">Reference Video File</Label>
+              <div 
+                className="border-2 border-dashed rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input type="file" className="hidden" ref={fileInputRef} accept="video/*" />
+                <Upload className="h-8 w-8 mx-auto mb-2 text-slate-400 group-hover:text-primary transition-colors" />
+                <p className="text-sm font-bold text-slate-600">Click to upload or drag & drop</p>
+                <p className="text-[10px] uppercase font-black text-slate-400 mt-1">MP4, MOV, WEBM (Max 500MB)</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="font-bold" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
+            <Button 
+              className="font-bold shadow-lg shadow-primary/20 gap-2" 
+              onClick={handleUpload}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" /> Start Extraction
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
