@@ -295,6 +295,7 @@ const VideoLessonsExplore = () => {
                 <TabsTrigger value="gold">Conteúdo Ouro</TabsTrigger>
                 <TabsTrigger value="exam_sprint">Exam Sprint</TabsTrigger>
                 <TabsTrigger value="recovery">Recovery Mode</TabsTrigger>
+                <TabsTrigger value="low_mastery">Baixa Maestria</TabsTrigger>
               </TabsList>
             </Tabs>
 
