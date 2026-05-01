@@ -1,12 +1,25 @@
 import { memo, useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
-import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User } from "lucide-react";
+import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
 import { adjustMemoryQuality } from "@/lib/tutor/tutorMemory";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
+import { useTutorCME } from "@/hooks/useTutorCME";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface AgentMessageItemProps {
   msg: Msg;
@@ -45,8 +58,12 @@ const AgentMessageItem = memo(
     msg, index, title, isLoading, hasSpeechSynthesis, speakingMsgIdx, savingMsgIdx,
     isSaved, hasOnSaveMessage, linkToAgent, selectedUploadIds, renderAssistantMessage,
     onCopy, onSpeak, onSave, onLink, onRegenerateFromMemory,
+    conversationId, topic, subtopic, specialty
   }: AgentMessageItemProps) => {
-    // Filtra blocos cognitivos válidos (não-vazios) — defesa extra contra payload incompleto.
+    const navigate = useNavigate();
+    const { state, transformToVideo, resetState } = useTutorCME();
+
+    // Filtra blocos cognitivos válidos (não-vazios)
     const cognitiveBlocks = useMemo(
       () => (Array.isArray(msg.memoryBlocks) ? msg.memoryBlocks.filter(Boolean) : []),
       [msg.memoryBlocks],
@@ -95,7 +112,6 @@ const AgentMessageItem = memo(
                 <TutorBlockRenderer
                   blocks={cognitiveBlocks}
                   onQuizAnswered={({ correct }) => {
-                    // Fase 2: +3 acerto / -5 erro quando a mensagem veio de memória.
                     if (!msg.memoryId) return;
                     adjustMemoryQuality(msg.memoryId, correct ? 3 : -5).catch(() => {});
                   }}
@@ -169,7 +185,91 @@ const AgentMessageItem = memo(
                     <GraduationCap className="h-3.5 w-3.5" /> {linkToAgent.label}
                   </Button>
                 )}
+                {showCMEButton && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                    onClick={handleCMETransform}
+                  >
+                    <Film className="h-3.5 w-3.5" /> 🎬 Transformar em Videoaula
+                  </Button>
+                )}
               </div>
+
+              {/* Modal de Status CME */}
+              <Dialog open={state.status !== 'idle'} onOpenChange={(open) => !open && resetState()}>
+                <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-amber-500" />
+                      Fábrica de Vídeos CME
+                    </DialogTitle>
+                    <DialogDescription className="text-slate-400">
+                      Transformando seu conteúdo pedagógico em uma experiência cinematográfica multimodal.
+                    </DialogDescription>
+                  </DialogHeader>
+                  
+                  <div className="py-6 space-y-6">
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                        <span>Status: {state.status}</span>
+                        <span>{state.progress}%</span>
+                      </div>
+                      <Progress value={state.progress} className="h-1.5 bg-white/5" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { id: 'planning', label: 'Planejamento' },
+                        { id: 'scripting', label: 'Narrativa' },
+                        { id: 'rendering', label: 'Render GPU' },
+                        { id: 'upload', label: 'CDN Sync' }
+                      ].map((step, idx) => (
+                        <div key={step.id} className={cn(
+                          "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight",
+                          state.progress > (idx * 25) ? "bg-amber-500/10 border-amber-500/30 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
+                        )}>
+                          <div className={cn(
+                            "h-1.5 w-1.5 rounded-full",
+                            state.progress > (idx * 25) ? "bg-amber-500 animate-pulse" : "bg-slate-700"
+                          )} />
+                          {step.label}
+                        </div>
+                      ))}
+                    </div>
+
+                    {state.status === 'failed' && (
+                      <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs italic">
+                        Erro: {state.error}
+                      </div>
+                    )}
+                  </div>
+
+                  <DialogFooter className="sm:justify-start">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={resetState}
+                      className="text-xs h-8"
+                    >
+                      Fechar
+                    </Button>
+                    {state.status === 'rendering' && (
+                      <Button
+                        type="button"
+                        className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
+                        onClick={() => {
+                          resetState();
+                          navigate('/admin/cme-media-monitor');
+                        }}
+                      >
+                        <Play className="h-3 w-3" /> Ver no Monitor
+                      </Button>
+                    )}
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </>
           ) : (
             <span className="whitespace-pre-wrap">{msg.content}</span>
@@ -193,7 +293,11 @@ const AgentMessageItem = memo(
     prev.speakingMsgIdx === next.speakingMsgIdx &&
     prev.savingMsgIdx === next.savingMsgIdx &&
     prev.isSaved === next.isSaved &&
-    prev.selectedUploadIds === next.selectedUploadIds
+    prev.selectedUploadIds === next.selectedUploadIds &&
+    prev.conversationId === next.conversationId &&
+    prev.topic === next.topic &&
+    prev.subtopic === next.subtopic &&
+    prev.specialty === next.specialty
 );
 AgentMessageItem.displayName = "AgentMessageItem";
 export default AgentMessageItem;
