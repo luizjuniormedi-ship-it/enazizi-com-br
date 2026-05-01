@@ -534,6 +534,27 @@ const VideoLessonPlayer = () => {
                 onClose={resetRecommendation}
               />
             </div>
+            {/* FASE 2: Smart Replay & Adaptive Recovery */}
+            {currentSegmentAnalytics?.difficultyLevel === 'alta' && isPlaying && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="absolute top-20 left-1/2 -translate-x-1/2 z-40"
+              >
+                <div className="bg-red-500/90 backdrop-blur-md text-white px-4 py-2 rounded-full shadow-2xl flex items-center gap-3 border border-white/20">
+                  <RotateCcw className="h-4 w-4 animate-spin-slow" />
+                  <span className="text-xs font-bold uppercase tracking-wider">Alta Fricção: Ativando Adaptive Recovery...</span>
+                  <Button 
+                    size="sm" 
+                    variant="ghost" 
+                    className="h-6 text-[10px] text-white hover:bg-white/20"
+                    onClick={() => handleReplaySegment(currentSegment!)}
+                  >
+                    Smart Replay
+                  </Button>
+                </div>
+              </motion.div>
+            )}
 
             {/* Alerta de Orquestração Cognitiva */}
             {cognitiveState?.current_session_mode === 'recovery' && (
