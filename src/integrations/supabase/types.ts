@@ -1081,6 +1081,7 @@ export type Database = {
       }
       ai_video_lessons: {
         Row: {
+          active_incident_count: number | null
           audio_url: string | null
           cdn_provider: string | null
           created_at: string
@@ -1092,6 +1093,7 @@ export type Database = {
           hls_url: string | null
           id: string
           is_gold_content: boolean | null
+          last_test_passed: boolean | null
           last_validation_at: string | null
           learning_objectives: string[] | null
           media_status: string | null
@@ -1118,6 +1120,7 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          active_incident_count?: number | null
           audio_url?: string | null
           cdn_provider?: string | null
           created_at?: string
@@ -1129,6 +1132,7 @@ export type Database = {
           hls_url?: string | null
           id?: string
           is_gold_content?: boolean | null
+          last_test_passed?: boolean | null
           last_validation_at?: string | null
           learning_objectives?: string[] | null
           media_status?: string | null
@@ -1155,6 +1159,7 @@ export type Database = {
           visibility?: string
         }
         Update: {
+          active_incident_count?: number | null
           audio_url?: string | null
           cdn_provider?: string | null
           created_at?: string
@@ -1166,6 +1171,7 @@ export type Database = {
           hls_url?: string | null
           id?: string
           is_gold_content?: boolean | null
+          last_test_passed?: boolean | null
           last_validation_at?: string | null
           learning_objectives?: string[] | null
           media_status?: string | null
@@ -2810,6 +2816,62 @@ export type Database = {
         }
         Relationships: []
       }
+      cme_incidents: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          probable_cause: string | null
+          resolved_at: string | null
+          severity: string
+          status: string
+          timeline: Json | null
+          title: string
+          updated_at: string | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          probable_cause?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          timeline?: Json | null
+          title: string
+          updated_at?: string | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          probable_cause?: string | null
+          resolved_at?: string | null
+          severity?: string
+          status?: string
+          timeline?: Json | null
+          title?: string
+          updated_at?: string | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_incidents_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_media_reprocessing_jobs: {
         Row: {
           created_at: string | null
@@ -3168,6 +3230,47 @@ export type Database = {
             columns: ["reference_id"]
             isOneToOne: false
             referencedRelation: "cme_cinematic_reference_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_regression_tests: {
+        Row: {
+          browser_metadata: Json | null
+          created_at: string | null
+          error_details: string | null
+          id: string
+          latency_ms: number | null
+          status: string
+          test_type: string
+          video_lesson_id: string | null
+        }
+        Insert: {
+          browser_metadata?: Json | null
+          created_at?: string | null
+          error_details?: string | null
+          id?: string
+          latency_ms?: number | null
+          status: string
+          test_type: string
+          video_lesson_id?: string | null
+        }
+        Update: {
+          browser_metadata?: Json | null
+          created_at?: string | null
+          error_details?: string | null
+          id?: string
+          latency_ms?: number | null
+          status?: string
+          test_type?: string
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_regression_tests_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
             referencedColumns: ["id"]
           },
         ]
