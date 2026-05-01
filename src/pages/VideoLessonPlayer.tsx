@@ -556,7 +556,7 @@ const VideoLessonPlayer = () => {
                   )}
                   <div className="flex gap-4">
                     <Button 
-                      variant="primary" 
+                      variant="default" 
                       className="gap-2"
                       onClick={() => toast.info("Solicitação de re-renderização enviada ao cluster GPU.")}
                     >
