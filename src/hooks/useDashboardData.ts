@@ -43,6 +43,11 @@ export interface DashboardMetrics {
   imageQuizAttempts: number;
   diagnosticCompleted: number;
   chatConversations: number;
+  // Fase Enterprise+ (Neuroanalytics)
+  retentionScore?: number;
+  fatigueScore?: number;
+  engagementScore?: number;
+  overloadThreshold?: number;
 }
 
 // [planner-unification-final] PlanJson removido — Dashboard não lê mais study_plans.
@@ -81,6 +86,7 @@ export const useDashboardData = () => {
           discursivasRes, globalFlashRes, globalQuestRes,
           questionsCreatedRes, summariesRes, chroniclesRes,
           imageQuizRes, diagnosticRes,
+          adaptiveProfileRes,
         ] = await Promise.all([
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
@@ -97,6 +103,7 @@ export const useDashboardData = () => {
           supabase.from("chat_conversations").select("id, agent_type", { count: "exact" }).eq("user_id", userId),
           supabase.from("medical_image_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
+          supabase.from("cme_adaptive_profiles").select("*").eq("user_id", userId).maybeSingle(),
         ]);
 
         const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
@@ -159,6 +166,10 @@ export const useDashboardData = () => {
           imageQuizAttempts: imageQuizRes.count || 0,
           diagnosticCompleted: diagnosticRes.count || 0,
           chatConversations: chroniclesRes.count || 0,
+          retentionScore: Number(adaptiveProfileRes.data?.retention_score) || 0,
+          fatigueScore: 0, // Will be updated by real-time neuroanalytics
+          engagementScore: 0,
+          overloadThreshold: Number(adaptiveProfileRes.data?.overload_threshold) || 0.8,
         };
 
         // Build stats

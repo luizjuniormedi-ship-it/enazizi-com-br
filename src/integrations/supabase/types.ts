@@ -2324,6 +2324,45 @@ export type Database = {
           },
         ]
       }
+      cme_adaptive_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          learning_style: string | null
+          overload_threshold: number | null
+          pacing_preference: string | null
+          preferred_depth: string | null
+          replay_rate: number | null
+          retention_score: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          learning_style?: string | null
+          overload_threshold?: number | null
+          pacing_preference?: string | null
+          preferred_depth?: string | null
+          replay_rate?: number | null
+          retention_score?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          learning_style?: string | null
+          overload_threshold?: number | null
+          pacing_preference?: string | null
+          preferred_depth?: string | null
+          replay_rate?: number | null
+          retention_score?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cme_adaptive_timing_maps: {
         Row: {
           fatigue_protection_map: Json | null
@@ -2489,6 +2528,164 @@ export type Database = {
             columns: ["video_lesson_id"]
             isOneToOne: false
             referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_autoscaling_events: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          reason: string | null
+          worker_count_after: number | null
+          worker_count_before: number | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          worker_count_after?: number | null
+          worker_count_before?: number | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string | null
+          worker_count_after?: number | null
+          worker_count_before?: number | null
+        }
+        Relationships: []
+      }
+      cme_batch_items: {
+        Row: {
+          batch_id: string
+          created_at: string
+          error_log: string | null
+          id: string
+          input_payload: Json | null
+          item_type: string
+          project_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          error_log?: string | null
+          id?: string
+          input_payload?: Json | null
+          item_type: string
+          project_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          error_log?: string | null
+          id?: string
+          input_payload?: Json | null
+          item_type?: string
+          project_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cme_batch_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_batch_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_batch_jobs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          priority: number | null
+          processed_items: number | null
+          status: string | null
+          title: string
+          total_items: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: number | null
+          processed_items?: number | null
+          status?: string | null
+          title: string
+          total_items?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          priority?: number | null
+          processed_items?: number | null
+          status?: string | null
+          title?: string
+          total_items?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cme_batch_lineage: {
+        Row: {
+          batch_id: string
+          created_at: string
+          id: string
+          relationship_type: string | null
+          source_id: string | null
+          target_id: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          id?: string
+          relationship_type?: string | null
+          source_id?: string | null
+          target_id?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          id?: string
+          relationship_type?: string | null
+          source_id?: string | null
+          target_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_batch_lineage_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "cme_batch_jobs"
             referencedColumns: ["id"]
           },
         ]
@@ -2804,6 +3001,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cme_cluster_metrics: {
+        Row: {
+          active_workers: number | null
+          avg_render_time: number | null
+          cpu_utilization: number | null
+          created_at: string
+          id: string
+          queued_jobs: number | null
+          vram_utilization: number | null
+        }
+        Insert: {
+          active_workers?: number | null
+          avg_render_time?: number | null
+          cpu_utilization?: number | null
+          created_at?: string
+          id?: string
+          queued_jobs?: number | null
+          vram_utilization?: number | null
+        }
+        Update: {
+          active_workers?: number | null
+          avg_render_time?: number | null
+          cpu_utilization?: number | null
+          created_at?: string
+          id?: string
+          queued_jobs?: number | null
+          vram_utilization?: number | null
+        }
+        Relationships: []
       }
       cme_cognitive_analysis: {
         Row: {
@@ -3474,6 +3701,81 @@ export type Database = {
         }
         Relationships: []
       }
+      cme_knowledge_mesh_edges: {
+        Row: {
+          created_at: string
+          id: string
+          relationship_type: string
+          source_node_id: string
+          strength: number | null
+          target_node_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          relationship_type: string
+          source_node_id: string
+          strength?: number | null
+          target_node_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          relationship_type?: string
+          source_node_id?: string
+          strength?: number | null
+          target_node_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_knowledge_mesh_edges_source_node_id_fkey"
+            columns: ["source_node_id"]
+            isOneToOne: false
+            referencedRelation: "cme_knowledge_mesh_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_knowledge_mesh_edges_target_node_id_fkey"
+            columns: ["target_node_id"]
+            isOneToOne: false
+            referencedRelation: "cme_knowledge_mesh_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_knowledge_mesh_nodes: {
+        Row: {
+          cognitive_weight: number | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json | null
+          title: string | null
+          user_id: string
+        }
+        Insert: {
+          cognitive_weight?: number | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          metadata?: Json | null
+          title?: string | null
+          user_id: string
+        }
+        Update: {
+          cognitive_weight?: number | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          metadata?: Json | null
+          title?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       cme_learning_feedback: {
         Row: {
           chapter_id: string | null
@@ -3940,6 +4242,50 @@ export type Database = {
           },
         ]
       }
+      cme_neuroanalytics: {
+        Row: {
+          abandonment_risk: number | null
+          cognitive_load: number | null
+          created_at: string
+          engagement_score: number | null
+          fatigue_score: number | null
+          generation_id: string | null
+          id: string
+          retention_prediction: number | null
+          user_id: string
+        }
+        Insert: {
+          abandonment_risk?: number | null
+          cognitive_load?: number | null
+          created_at?: string
+          engagement_score?: number | null
+          fatigue_score?: number | null
+          generation_id?: string | null
+          id?: string
+          retention_prediction?: number | null
+          user_id: string
+        }
+        Update: {
+          abandonment_risk?: number | null
+          cognitive_load?: number | null
+          created_at?: string
+          engagement_score?: number | null
+          fatigue_score?: number | null
+          generation_id?: string | null
+          id?: string
+          retention_prediction?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_neuroanalytics_generation_id_fkey"
+            columns: ["generation_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_overlay_clusters: {
         Row: {
           block_id: string | null
@@ -4215,6 +4561,59 @@ export type Database = {
             columns: ["lesson_id"]
             isOneToOne: false
             referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_playback_segments: {
+        Row: {
+          created_at: string
+          end_time: number
+          id: string
+          project_id: string
+          segment_index: number
+          start_time: number
+          status: string | null
+          thumbnail_url: string | null
+          title: string | null
+          transcript: string | null
+          updated_at: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          end_time: number
+          id?: string
+          project_id: string
+          segment_index: number
+          start_time: number
+          status?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          transcript?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          end_time?: number
+          id?: string
+          project_id?: string
+          segment_index?: number
+          start_time?: number
+          status?: string | null
+          thumbnail_url?: string | null
+          title?: string | null
+          transcript?: string | null
+          updated_at?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_playback_segments_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
             referencedColumns: ["id"]
           },
         ]
@@ -5837,6 +6236,50 @@ export type Database = {
           },
         ]
       }
+      cme_streaming_sessions: {
+        Row: {
+          bitrate_preference: string | null
+          created_at: string
+          device_info: Json | null
+          id: string
+          is_active: boolean | null
+          last_position: number | null
+          project_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bitrate_preference?: string | null
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_position?: number | null
+          project_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bitrate_preference?: string | null
+          created_at?: string
+          device_info?: Json | null
+          id?: string
+          is_active?: boolean | null
+          last_position?: number | null
+          project_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_streaming_sessions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_system_incidents: {
         Row: {
           component: string
@@ -6166,6 +6609,57 @@ export type Database = {
             columns: ["topic_id"]
             isOneToOne: false
             referencedRelation: "knowledge_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_viewing_analytics: {
+        Row: {
+          created_at: string
+          id: string
+          interaction_type: string | null
+          playback_speed: number | null
+          project_id: string
+          session_id: string | null
+          timestamp_end: number | null
+          timestamp_start: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          interaction_type?: string | null
+          playback_speed?: number | null
+          project_id: string
+          session_id?: string | null
+          timestamp_end?: number | null
+          timestamp_start?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          interaction_type?: string | null
+          playback_speed?: number | null
+          project_id?: string
+          session_id?: string | null
+          timestamp_end?: number | null
+          timestamp_start?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_viewing_analytics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "cme_video_projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_viewing_analytics_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "cme_streaming_sessions"
             referencedColumns: ["id"]
           },
         ]

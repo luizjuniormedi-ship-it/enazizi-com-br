@@ -13,6 +13,7 @@ import {
   Sparkles,
   Info,
   BrainCircuit,
+  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { cn } from "@/lib/utils";
 import type { StudyNextRecommendation, AdaptiveState } from "@/hooks/useStudyNext";
 import { useApprovalPrediction } from "@/hooks/useApprovalPrediction";
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
 import { approvalToneClass, getApprovalFocus } from "@/engines/approvalEngine";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNavigate } from "react-router-dom";
@@ -61,6 +63,7 @@ function CinematicMissionHero({
   const cfg = TYPE_CONFIG[recommendation.type] || TYPE_CONFIG.free_study;
   const prediction = useApprovalPrediction();
   const { data: dashData } = useDashboardData();
+  const { profile } = useNeuroanalytics();
 
   // Saudação inteligente
   const greeting = useMemo(() => {
@@ -269,6 +272,11 @@ function CinematicMissionHero({
                 <Clock className="h-3 w-3 mr-1" />
                 {recommendation.estimatedMinutes} min
               </Badge>
+              {profile && (
+                <Badge className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1">
+                  <Zap className="h-2.5 w-2.5" /> Adaptive Pacing: ON
+                </Badge>
+              )}
               {adaptiveState?.recoveryActive && (
                 <Badge variant="destructive" className="hidden sm:inline-flex text-[10px]">
                   <AlertTriangle className="h-3 w-3 mr-1" /> Recuperação

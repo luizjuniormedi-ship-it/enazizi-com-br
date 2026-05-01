@@ -32,7 +32,10 @@ import {
   ChevronUp,
   Activity,
   Gauge,
-  Target
+  Target,
+  Brain,
+  History,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
@@ -60,6 +63,8 @@ import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommenda
 import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 import { useCinematicEngine } from "@/hooks/useCinematicEngine";
+import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 const VideoLessonPlayer = () => {
   const { id } = useParams();
@@ -84,6 +89,9 @@ const VideoLessonPlayer = () => {
     triggerEvaluation,
     shadowMode 
   } = useAdaptiveEngine(id);
+
+  const { trackViewing, updateNeuroanalytics, profile } = useNeuroanalytics(id);
+  const { trackAction } = useTelemetry();
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ["video-lesson", id],
@@ -287,6 +295,30 @@ const VideoLessonPlayer = () => {
         if (watchedSeconds - lastLogTime.current >= 30) {
           handleAction("heartbeat");
           lastLogTime.current = watchedSeconds;
+          
+          // Fase Enterprise+: Persistência Neuroanalítica Realtime
+          if (id) {
+            trackViewing.mutate({
+              projectId: id,
+              startTime: watchedSeconds - 30,
+              endTime: watchedSeconds,
+              playbackSpeed: 1.0, // Default for now
+              interactionType: 'watch'
+            });
+            
+            // Simula cálculo de carga cognitiva adaptativa
+            if (profile) {
+              const currentLoad = 0.4 + (Math.random() * 0.2); // Simulado
+              updateNeuroanalytics.mutate({
+                projectId: id,
+                fatigueScore: 0.1,
+                cognitiveLoad: currentLoad,
+                engagementScore: 0.9,
+                retentionPrediction: Number(profile.retention_score || 0.85),
+                abandonmentRisk: 0.05
+              });
+            }
+          }
         }
       }, 1000);
     } else {

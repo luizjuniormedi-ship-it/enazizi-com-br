@@ -7,15 +7,15 @@
  *   • MonthlyGoalCard (meta de questões/mês)
  *   • ReadinessCard (prontidão p/ prova)
  *
- * Reusa hooks existentes (sem nova query):
- *   useAnalyticsSnapshot · useCoverageStatus · useMonthlyGoal · useDashboardData · useCoreData
+ * Fase Enterprise+: Integração com Neuroanalytics
  */
 import { memo, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
-  Target, ShieldCheck, TrendingUp, Award, ArrowRight,
+  Target, ShieldCheck, TrendingUp, Award, ArrowRight, Brain, Activity, Zap
 } from "lucide-react";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useCoverageStatus } from "@/hooks/useCoverageStatus";
@@ -26,6 +26,8 @@ import { approvalBadgeBg } from "@/engines/approvalEngine";
 import { TrendingDown, Minus } from "lucide-react";
 import { CinematicMetricHalo } from "@/components/cinematic";
 import { useTelemetry } from "@/hooks/useTelemetry";
+import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
+import { Progress } from "@/components/ui/progress";
 
 type Tone = "primary" | "success" | "warn" | "danger" | "muted";
 
@@ -36,25 +38,14 @@ function ProgressOverview() {
   const { data: coverage } = useCoverageStatus();
   const { data: goal } = useMonthlyGoal();
   const { data: core } = useCoreData();
+  const { profile } = useNeuroanalytics();
   const prediction = useApprovalPrediction();
 
   // Score preditivo > snapshot legado (fallback se sem dados)
   const approvalScore = prediction?.score ?? snap?.approvalScore ?? 0;
-  const approvalTone: Tone =
-    approvalScore >= 70 ? "success" :
-    approvalScore >= 50 ? "primary" :
-    approvalScore >= 30 ? "warn" : "danger";
-
+  
   const coveragePct = coverage?.requiredCoveragePct ?? 0;
-  const coverageTone: Tone =
-    coveragePct >= 80 ? "success" :
-    coveragePct >= 50 ? "primary" : "danger";
-
   const goalPct = goal?.percentComplete ?? 0;
-  const goalTone: Tone =
-    !goal ? "muted" :
-    goal.paceStatus === "ahead" ? "success" :
-    goal.paceStatus === "on_track" ? "primary" : "warn";
 
   // Readiness (prontidão p/ prova) — média acertos de simulados recentes
   const examSessions = core?.examSessions ?? [];
@@ -66,11 +57,6 @@ function ProgressOverview() {
     }, 0) / Math.min(5, examSessions.length);
     return Math.round(avg);
   }, [examSessions]);
-  const readinessTone: Tone =
-    readinessPct === null ? "muted" :
-    readinessPct >= 70 ? "success" :
-    readinessPct >= 50 ? "primary" :
-    readinessPct >= 30 ? "warn" : "danger";
 
   // Drill-down inteligente: vai para a central de estudo/revisões
   const handleDrillDown = () => {
@@ -80,7 +66,7 @@ function ProgressOverview() {
 
   return (
     <Card className="overflow-hidden border-border/60">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-4 space-y-4">
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
             <TrendingUp className="h-3.5 w-3.5 text-primary" />
@@ -120,6 +106,35 @@ function ProgressOverview() {
                 {prediction.delta > 0 ? "+" : ""}{prediction.delta}
               </div>
             )}
+          </div>
+        )}
+
+        {/* Bloco Neuroanalítico Enterprise+ */}
+        {profile && (
+          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Brain className="h-4 w-4 text-primary" />
+                <span className="text-[11px] font-black uppercase tracking-widest text-primary">Estado Cognitivo Adaptativo</span>
+              </div>
+              <Badge variant="outline" className="text-[9px] uppercase tracking-tighter bg-white/50 border-primary/20">Active Engine</Badge>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[9px] font-bold uppercase tracking-tight text-muted-foreground">
+                  <span>Score de Retenção</span>
+                  <span className="text-primary">{Math.round((Number(profile.retention_score) || 0) * 100)}%</span>
+                </div>
+                <Progress value={Math.round((Number(profile.retention_score) || 0) * 100)} className="h-1" />
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[9px] font-bold uppercase tracking-tight text-muted-foreground">
+                  <span>Limiar de Overload</span>
+                  <span className="text-amber-600">{Math.round((Number(profile.overload_threshold) || 0) * 100)}%</span>
+                </div>
+                <Progress value={Math.round((Number(profile.overload_threshold) || 0) * 100)} className="h-1 bg-amber-100" />
+              </div>
+            </div>
           </div>
         )}
 
