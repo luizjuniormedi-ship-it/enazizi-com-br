@@ -460,8 +460,8 @@ const VideoLessonPlayer = () => {
                 // Anti-placeholder logic: ignore example.com or dummy URLs
                 const isPlaceholder = !playbackUrl || 
                                      playbackUrl.includes('example.com') || 
-                                     playbackUrl.includes('placeholder') ||
-                                     playbackUrl.includes('dummy');
+                                     playbackUrl.includes('placeholder.com') ||
+                                     playbackUrl.includes('dummy-video');
 
                 if (!isPlaceholder && playbackUrl) {
                   return (
