@@ -44,11 +44,10 @@ export const useTutorCME = () => {
   }, [supabaseClient]);
 
   const aggregateSessionContent = useCallback(async (conversationId: string) => {
-    const query = (supabaseClient as any)
+    // Busca mensagens da sessão (tutor_messages)
+    const { data: messages, error } = await supabaseClient
       .from("tutor_messages")
-      .select("id, content, role, created_at");
-      
-    const { data: messages, error } = await query
+      .select("id, content, role, created_at")
       .eq("tutor_session_id", conversationId)
       .eq("role", "assistant")
       .order("created_at", { ascending: true });
@@ -80,10 +79,10 @@ export const useTutorCME = () => {
     const { data: aggregation, error: aggError } = await supabaseClient
       .from("cme_session_aggregations")
       .insert({
-        tutor_session_id: conversationId as any,
+        tutor_session_id: conversationId,
         aggregated_content: fullText,
         total_blocks: blocks.length,
-        estimated_duration_seconds: blocks.length * 120,
+        estimated_duration_seconds: Math.max(blocks.length * 120, 300),
         detected_topics: Array.from(new Set(blocks.map(b => b.title).slice(0, 5)))
       } as any)
       .select()
@@ -128,7 +127,7 @@ export const useTutorCME = () => {
       const { data: { user } } = await supabaseClient.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      let aggregationId = null;
+      let aggregationId: string | null = null;
       let finalContent = params.sourceContent;
       let finalBlocksCount = params.blocks.length;
 
@@ -175,8 +174,8 @@ export const useTutorCME = () => {
       await logPipelineEvent(projectId, 'planning', 'in_progress', 15, `Iniciando mapeamento de ${params.isFullSession ? 'toda a sessão' : 'mensagem'}`);
 
       await supabaseClient.from("cme_tutor_origins").insert({
-        tutor_session_id: params.conversationId as any,
-        tutor_message_id: (params.messageId || crypto.randomUUID()) as any,
+        tutor_session_id: params.conversationId,
+        tutor_message_id: (params.messageId || crypto.randomUUID()),
         cme_video_project_id: projectId
       } as any);
 
@@ -205,6 +204,9 @@ export const useTutorCME = () => {
 
       if (params.onComplete && aggregationId) {
         params.onComplete(aggregationId);
+      } else if (aggregationId) {
+        // Fallback para navegação automática se onComplete não for passado
+        window.location.href = `/admin/cinematic-builder/${aggregationId}`;
       }
 
       return projectId;
