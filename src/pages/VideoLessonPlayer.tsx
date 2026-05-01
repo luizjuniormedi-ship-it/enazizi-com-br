@@ -483,6 +483,7 @@ const VideoLessonPlayer = () => {
                          
       if (!playbackUrl) {
         setMediaTimeout(true);
+        logPlaybackAudit("timeout", "Media source not found within 8s");
       }
     }, 8000);
 
