@@ -76,9 +76,10 @@ const AgentChat = ({
       sourceContent: lastAssistantMessage.content,
       blocks: cognitiveBlocks,
       conversationId: chat.activeConversationId || crypto.randomUUID(),
-      isFullSession: true
+      isFullSession: true,
+      onComplete: (id) => navigate(`/admin/cinematic-builder/${id}`)
     });
-  }, [chat.messages, chat.activeConversationId, specialty, topic, transformToVideo]);
+  }, [chat.messages, chat.activeConversationId, specialty, topic, transformToVideo, navigate]);
 
   // Upload handler
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
