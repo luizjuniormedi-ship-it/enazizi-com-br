@@ -55,10 +55,20 @@ export async function validateVideoLessonPublication(lessonId: string) {
   const errors: string[] = [];
   const lessonData = lesson as any;
 
-  if (!lessonData.video_url && !lessonData.notebooklm_video_url) errors.push('URL do vídeo ausente');
+  const playbackUrl = lessonData.hls_url || lessonData.video_url || lessonData.playback_url || lessonData.notebooklm_video_url;
+  const isPlaceholder = !playbackUrl || 
+                       playbackUrl.includes('example.com') || 
+                       playbackUrl.includes('placeholder') ||
+                       playbackUrl.includes('dummy');
+
+  if (isPlaceholder) errors.push('URL de vídeo real ausente (placeholder detectado)');
   if (!lessonData.lesson_segments || lessonData.lesson_segments.length === 0) errors.push('Segmentação ausente');
   if (!lessonData.video_lesson_quizzes || lessonData.video_lesson_quizzes.length === 0) errors.push('Quizzes não gerados');
-  if (lessonData.media_status !== 'reviewed') errors.push('Status da mídia não revisado');
+  
+  // Accept 'ready' or 'published' as valid for final publication
+  if (!['ready', 'published', 'reviewed'].includes(lessonData.media_status)) {
+    errors.push('Mídia não processada ou falhou');
+  }
 
   return {
     valid: errors.length === 0,

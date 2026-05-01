@@ -1087,6 +1087,7 @@ export type Database = {
           description: string | null
           difficulty_level: string | null
           duration_seconds: number | null
+          hls_url: string | null
           id: string
           is_gold_content: boolean | null
           learning_objectives: string[] | null
@@ -1094,6 +1095,8 @@ export type Database = {
           notebooklm_export_text: string | null
           notebooklm_notebook_url: string | null
           notebooklm_video_url: string | null
+          playback_url: string | null
+          preview_url: string | null
           published_at: string | null
           reviewed_by: string | null
           specialty: string
@@ -1117,6 +1120,7 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           duration_seconds?: number | null
+          hls_url?: string | null
           id?: string
           is_gold_content?: boolean | null
           learning_objectives?: string[] | null
@@ -1124,6 +1128,8 @@ export type Database = {
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
           notebooklm_video_url?: string | null
+          playback_url?: string | null
+          preview_url?: string | null
           published_at?: string | null
           reviewed_by?: string | null
           specialty: string
@@ -1147,6 +1153,7 @@ export type Database = {
           description?: string | null
           difficulty_level?: string | null
           duration_seconds?: number | null
+          hls_url?: string | null
           id?: string
           is_gold_content?: boolean | null
           learning_objectives?: string[] | null
@@ -1154,6 +1161,8 @@ export type Database = {
           notebooklm_export_text?: string | null
           notebooklm_notebook_url?: string | null
           notebooklm_video_url?: string | null
+          playback_url?: string | null
+          preview_url?: string | null
           published_at?: string | null
           reviewed_by?: string | null
           specialty?: string

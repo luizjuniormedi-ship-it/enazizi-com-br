@@ -47,6 +47,7 @@ import {
   SelectValue 
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const VideoLessonsAdmin = () => {
   const navigate = useNavigate();
@@ -91,7 +92,13 @@ const VideoLessonsAdmin = () => {
     return matchesSearch && matchesStatus && matchesSpecialty;
   });
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (lesson: any) => {
+    const status = lesson.status;
+    const mediaStatus = lesson.media_status;
+    const hasRealMedia = (lesson.hls_url || lesson.video_url) && 
+                         !lesson.video_url?.includes('example.com') && 
+                         !lesson.hls_url?.includes('example.com');
+
     const statusMap: Record<string, { label: string, color: string }> = {
       draft: { label: "Rascunho", color: "bg-gray-500" },
       tutor_lesson_saved: { label: "Aula Salva", color: "bg-blue-500" },
@@ -104,7 +111,27 @@ const VideoLessonsAdmin = () => {
     };
 
     const config = statusMap[status] || { label: status, color: "bg-gray-500" };
-    return <Badge className={config.color}>{config.label}</Badge>;
+    
+    return (
+      <div className="flex flex-col gap-1">
+        <Badge className={config.color}>{config.label}</Badge>
+        {mediaStatus && (
+          <Badge variant="outline" className={cn(
+            "text-[10px] py-0 h-4",
+            mediaStatus === 'ready' ? "border-green-500 text-green-500" :
+            mediaStatus === 'failed' ? "border-red-500 text-red-500" :
+            "border-blue-500 text-blue-500"
+          )}>
+            Media: {mediaStatus}
+          </Badge>
+        )}
+        {!hasRealMedia && status === 'published' && (
+          <Badge variant="destructive" className="text-[10px] py-0 h-4 animate-pulse">
+            Placeholder Detectado
+          </Badge>
+        )}
+      </div>
+    );
   };
 
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -303,7 +330,7 @@ const VideoLessonsAdmin = () => {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-1">
-                            {getStatusBadge(lesson.status)}
+                            {getStatusBadge(lesson)}
                             <div className="text-[10px] text-muted-foreground px-1 uppercase tracking-wider">
                               {lesson.visibility || 'Public'}
                             </div>
