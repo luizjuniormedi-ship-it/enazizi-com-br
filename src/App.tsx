@@ -286,9 +286,8 @@ const App = () => (
                     <Route path="render-queues" element={<CMERenderQueues />} />
                     <Route path="cme-observability" element={<CMEObservability />} />
                     <Route path="system-checklist" element={<SystemChecklist />} />
-
+                    <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
                 </Route>
-                <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
 
               <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
