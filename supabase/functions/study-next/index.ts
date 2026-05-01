@@ -370,7 +370,7 @@ serve(async (req) => {
       };
       const typeName = targetType ? (IMAGE_TYPE_NAMES[targetType] || targetType.toUpperCase()) : null;
 
-      const title = typeName
+      const imgTitle = typeName
         ? `Treino visual: ${typeName}`
         : topic
           ? `Treino visual: ${topic.tema}`
