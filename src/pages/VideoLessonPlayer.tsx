@@ -43,6 +43,9 @@ import {
   DialogFooter
 } from "@/components/ui/dialog";
 
+import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommendationCard";
+import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";
+
 const VideoLessonPlayer = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -56,6 +59,14 @@ const VideoLessonPlayer = () => {
   const lastLogTime = useRef(0);
   const pauseStartTime = useRef<number | null>(null);
   const hasNotifiedDifficulty = useRef<Set<string>>(new Set());
+  
+  const { 
+    recommendations, 
+    acceptRecommendation, 
+    ignoreRecommendation, 
+    triggerEvaluation,
+    shadowMode 
+  } = useAdaptiveEngine(id);
 
   const { data: lesson, isLoading } = useQuery({
     queryKey: ["video-lesson", id],
