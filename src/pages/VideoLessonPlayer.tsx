@@ -430,8 +430,54 @@ const VideoLessonPlayer = () => {
     handleAction("quiz_completed");
   };
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center">Carregando aula...</div>;
-  if (!lesson) return <div className="p-8">Aula não encontrada.</div>;
+  const [mediaTimeout, setMediaTimeout] = useState(false);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isLoading) return;
+    
+    const timeout = setTimeout(() => {
+      const hlsManifest = (lesson as any)?.hls_manifest_url;
+      const playbackUrl = hlsManifest || 
+                         (lesson as any)?.hls_url || 
+                         lesson?.video_url || 
+                         (lesson as any)?.playback_url;
+                         
+      if (!playbackUrl) {
+        setMediaTimeout(true);
+      }
+    }, 8000);
+
+    return () => clearTimeout(timeout);
+  }, [isLoading, lesson]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-screen items-center justify-center bg-[#0a0a12] text-white gap-4">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <div className="text-xl font-medium animate-pulse">Carregando aula...</div>
+        <p className="text-white/40 text-sm">Sincronizando com CME Autonomous Factory</p>
+      </div>
+    );
+  }
+
+  if (!lesson) return <div className="p-8 text-white bg-[#0a0a12] h-screen">Aula não encontrada.</div>;
+
+  // FASE 2 & 6: Enterprise HLS & Variant Priority
+  const hlsManifest = (lesson as any).hls_manifest_url;
+  const playbackUrl = hlsManifest || 
+                     (lesson as any).hls_url || 
+                     lesson.video_url || 
+                     (lesson as any).playback_url ||
+                     (lesson as any).notebooklm_video_url;
+
+  // Anti-placeholder logic
+  const isPlaceholder = !playbackUrl || 
+                       playbackUrl.includes('example.com') || 
+                       playbackUrl.includes('placeholder.com') ||
+                       playbackUrl.includes('dummy-video');
+
+  const isRendering = lesson.media_status === 'processing' || lesson.media_status === 'pending';
 
   return (
     <div className="min-h-screen bg-[#0a0a12] text-white animate-in fade-in duration-500 pb-20">
@@ -473,22 +519,58 @@ const VideoLessonPlayer = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           <div className="lg:col-span-3 space-y-6">
             <div className="aspect-video bg-black rounded-3xl overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative border border-primary/20 group/player ring-1 ring-white/10">
-              {(() => {
-                // FASE 2 & 6: Enterprise HLS & Variant Priority
-                const hlsManifest = (lesson as any).hls_manifest_url;
-                const playbackUrl = hlsManifest || 
-                                   (lesson as any).hls_url || 
-                                   lesson.video_url || 
-                                   (lesson as any).playback_url ||
-                                   (lesson as any).notebooklm_video_url;
+              {isRendering ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm z-20 text-center p-6">
+                  <Activity className="h-16 w-16 text-primary animate-pulse mb-4" />
+                  <h3 className="text-2xl font-bold mb-2">Videoaula em Renderização</h3>
+                  <p className="text-white/60 max-w-md mb-6">
+                    O CME Autonomous Studio está processando os ativos cinemáticos e gerando as variantes HLS.
+                  </p>
+                  <div className="flex gap-3">
+                    <Badge variant="secondary" className="bg-primary/20 text-primary border-primary/30">
+                      Status: {lesson.media_status}
+                    </Badge>
+                    <Badge variant="outline" className="border-white/20">
+                      Health: {lesson.health_score}%
+                    </Badge>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="mt-8 gap-2 border-white/10 hover:bg-white/5"
+                    onClick={() => window.location.reload()}
+                  >
+                    <RotateCcw className="h-4 w-4" /> Atualizar Status
+                  </Button>
+                </div>
+              ) : (mediaTimeout || isPlaceholder) ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#1a1a2e] z-20 text-center p-6">
+                  <AlertTriangle className="h-16 w-16 text-orange-500 mb-4" />
+                  <h3 className="text-2xl font-bold mb-2">Mídia Indisponível</h3>
+                  <p className="text-white/60 max-w-md mb-6">
+                    Não foi possível localizar uma fonte de vídeo válida para esta aula no momento.
+                  </p>
+                  {lesson.pipeline_last_error && (
+                    <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-lg mb-6 text-red-400 text-xs font-mono max-w-xl text-left">
+                      {lesson.pipeline_last_error}
+                    </div>
+                  )}
+                  <div className="flex gap-4">
+                    <Button 
+                      variant="primary" 
+                      className="gap-2"
+                      onClick={() => toast.info("Solicitação de re-renderização enviada ao cluster GPU.")}
+                    >
+                      <RotateCcw className="h-4 w-4" /> Reprocessar Aula
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate("/dashboard/videoaulas")}>
+                      Voltar à Biblioteca
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
 
-                // Anti-placeholder logic
-                const isPlaceholder = !playbackUrl || 
-                                     playbackUrl.includes('example.com') || 
-                                     playbackUrl.includes('placeholder.com') ||
-                                     playbackUrl.includes('dummy-video');
+              {(!isRendering && !isPlaceholder && playbackUrl) && (
 
-                if (!isPlaceholder && playbackUrl) {
                   const isHLS = playbackUrl.endsWith('.m3u8') || !!hlsManifest;
                   const isDirectVideo = playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage');
 
