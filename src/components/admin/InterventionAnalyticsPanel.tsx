@@ -30,6 +30,7 @@ import {
   TrendingUp,
   TrendingDown,
   ShieldCheck,
+  Beaker,
 } from "lucide-react";
 import {
   useInterventionAnalytics,
@@ -187,6 +188,15 @@ export default function InterventionAnalyticsPanel() {
             >
               <ShieldCheck className="h-3.5 w-3.5" />
               Políticas de Governança
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2 text-xs gap-1.5"
+              onClick={() => navigate("/admin/adaptive-experiments")}
+            >
+              <Beaker className="h-3.5 w-3.5" />
+              Experimentos A/B
             </Button>
             <div className="flex items-center gap-1">
               {[7, 14, 30].map((d) => (

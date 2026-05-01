@@ -117,6 +117,7 @@ const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"
 const MedicalKnowledgeGraph = lazyWithRetry(() => import("./pages/admin/MedicalKnowledgeGraph"), "MedicalKnowledgeGraph");
 const AdaptiveEngineAdmin = lazyWithRetry(() => import("./pages/admin/AdaptiveEngineAdmin"), "AdaptiveEngineAdmin");
 const AdminInterventionPolicies = lazyWithRetry(() => import("./pages/admin/AdminInterventionPolicies"), "AdminInterventionPolicies");
+const AdminAdaptiveExperiments = lazyWithRetry(() => import("./pages/admin/AdminAdaptiveExperiments"), "AdminAdaptiveExperiments");
 
 
 
@@ -253,6 +254,7 @@ const App = () => (
                    <Route path="knowledge-graph" element={<MedicalKnowledgeGraph />} />
                    <Route path="adaptive-engine" element={<AdaptiveEngineAdmin />} />
                    <Route path="intervention-policies" element={<AdminInterventionPolicies />} />
+                   <Route path="adaptive-experiments" element={<AdminAdaptiveExperiments />} />
                    <Route path="system-checklist" element={<SystemChecklist />} />
                </Route>
 
