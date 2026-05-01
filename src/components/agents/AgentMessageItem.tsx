@@ -26,6 +26,10 @@ interface AgentMessageItemProps {
   onSave: (idx: number, content: string) => void;
   onLink: (content: string, uploadIds: string[]) => void;
   onRegenerateFromMemory?: (question: string) => void;
+  conversationId?: string;
+  topic?: string;
+  subtopic?: string;
+  specialty?: string;
 }
 
 const markdownComponents = {
@@ -48,6 +52,28 @@ const AgentMessageItem = memo(
       [msg.memoryBlocks],
     );
     const hasCognitiveBlocks = cognitiveBlocks.length > 0;
+
+    // Critérios para o botão CME: msg longa da IA com estrutura de blocos
+    const showCMEButton = msg.role === "assistant" && 
+                         msg.content.length > 800 && 
+                         hasCognitiveBlocks &&
+                         !isLoading;
+
+    const handleCMETransform = () => {
+      const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
+      const title = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
+      const summary = summaryBlock?.payload?.bullets?.join(". ") || msg.content.slice(0, 300);
+
+      transformToVideo({
+        title,
+        specialty: specialty || "Geral",
+        topic: topic || "Clínica Médica",
+        summary,
+        sourceContent: msg.content,
+        blocks: cognitiveBlocks,
+        conversationId: conversationId || crypto.randomUUID()
+      });
+    };
 
     return (
       <div className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
