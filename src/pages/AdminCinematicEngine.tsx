@@ -52,6 +52,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
 import { useCinematicEngine } from "@/hooks/useCinematicEngine";
+import { CMECinematicDashboard } from "@/components/cinematic/CMECinematicDashboard";
+
 
 const AdminCinematicEngine = () => {
   const navigate = useNavigate();
