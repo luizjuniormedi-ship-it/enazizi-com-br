@@ -241,26 +241,52 @@ export const useTutorCME = () => {
       await logPipelineEvent(projectId, 'mapping', 'completed', 35, "Knowledge Mapping pronto", aggregationId || undefined);
 
       setState(s => ({ ...s, status: 'graphing', progress: 40, message: "Gerando Scene Graph..." }));
+      
+      const sceneGraphPayload = {
+        video_project_id: projectId,
+        user_id: user.id,
+        scene_type: 'pedagogical',
+        visual_goal: 'high_engagement',
+        status: 'ready',
+        title: params.title,
+        graph_payload: { 
+          title: params.title,
+          blocks_count: lessonBlocks.length,
+          generated_at: new Date().toISOString(),
+          hardened: true
+        },
+        metadata: {
+          specialty: params.specialty,
+          topic: params.topic,
+          source_content_length: params.sourceContent?.length
+        }
+      };
+
       const { data: sceneGraph, error: sgError } = await supabaseClient
         .from("cme_scene_graphs")
-        .insert({
-          video_project_id: projectId,
-          user_id: user.id,
-          scene_type: 'pedagogical',
-          visual_goal: 'high_engagement',
-          status: 'ready',
-          graph_payload: { 
-            title: params.title,
-            blocks_count: lessonBlocks.length,
-            generated_at: new Date().toISOString()
-          }
-        } as any)
+        .insert(sceneGraphPayload as any)
         .select()
         .single();
 
       if (sgError) {
-        console.error("Scene Graph Error:", sgError);
-        throw new Error("Falha ao persistir Scene Graph.");
+        console.error("CME Persistence Audit - Scene Graph Failed:", {
+          code: sgError.code,
+          message: sgError.message,
+          details: sgError.details,
+          hint: sgError.hint,
+          payload: sceneGraphPayload
+        });
+        
+        const technicalReason = `[${sgError.code}] ${sgError.message}`;
+        await reportIncident("CME_SceneGraph_Persistence", {
+          message: "Falha ao persistir Scene Graph.",
+          technical_reason: technicalReason,
+          details: sgError.details,
+          code: sgError.code,
+          stack: new Error().stack
+        });
+
+        throw new Error(`Falha ao persistir Scene Graph: ${technicalReason}`);
       }
 
       if (sceneGraph && lessonBlocks.length > 0) {
@@ -273,17 +299,33 @@ export const useTutorCME = () => {
           start_second: idx * 60,
           end_second: (idx + 1) * 60,
           payload: { content: block.content },
-          render_payload: { content: block.content } // compatibility
+          render_payload: { content: block.content }
         }));
+        
         const { error: nodesError } = await supabaseClient.from("cme_scene_graph_nodes").insert(nodes as any);
+        
         if (nodesError) {
-          console.error("Scene Nodes Error:", nodesError);
-          throw new Error("Falha ao persistir Scene Graph Nodes.");
+          console.error("CME Persistence Audit - Scene Nodes Failed:", {
+            code: nodesError.code,
+            message: nodesError.message,
+            details: nodesError.details,
+            payload: nodes
+          });
+          
+          const technicalReason = `[${nodesError.code}] ${nodesError.message}`;
+          await reportIncident("CME_SceneNodes_Persistence", {
+            message: "Falha ao persistir Scene Graph Nodes.",
+            technical_reason: technicalReason,
+            details: nodesError.details,
+            code: nodesError.code
+          });
+
+          throw new Error(`Falha ao persistir Scene Graph Nodes: ${technicalReason}`);
         }
       }
 
       setState(s => ({ ...s, sceneGraphId: sceneGraph.id }));
-      await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado", aggregationId || undefined);
+      await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado e persistido", aggregationId || undefined);
 
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Orquestrando Renderização..." }));
       
