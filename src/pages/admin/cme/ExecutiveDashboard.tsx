@@ -5,6 +5,7 @@ import { BarChart, Activity, Shield, Zap, Brain, Heart, AlertCircle, TrendingUp 
 import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
+import { Badge } from "@/components/ui/badge";
 
 export default function CMEExecutiveDashboard() {
   const { getExecutiveKPIs } = useCMEAnalytics();
