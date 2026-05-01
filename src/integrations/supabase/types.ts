@@ -2241,6 +2241,51 @@ export type Database = {
           },
         ]
       }
+      cme_benchmark_audit: {
+        Row: {
+          action_type: string
+          actor_id: string | null
+          created_at: string
+          decision_metadata: Json | null
+          id: string
+          reference_id: string | null
+          render_job_id: string | null
+        }
+        Insert: {
+          action_type: string
+          actor_id?: string | null
+          created_at?: string
+          decision_metadata?: Json | null
+          id?: string
+          reference_id?: string | null
+          render_job_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          actor_id?: string | null
+          created_at?: string
+          decision_metadata?: Json | null
+          id?: string
+          reference_id?: string | null
+          render_job_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_benchmark_audit_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "cme_cinematic_reference_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_benchmark_audit_render_job_id_fkey"
+            columns: ["render_job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_cinematic_quality_score: {
         Row: {
           created_at: string
@@ -2254,6 +2299,8 @@ export type Database = {
           pacing_efficiency_score: number | null
           render_job_id: string | null
           reviewer_notes: string | null
+          scoring_explanation: Json | null
+          segment_weights: Json | null
           verdict: string | null
         }
         Insert: {
@@ -2268,6 +2315,8 @@ export type Database = {
           pacing_efficiency_score?: number | null
           render_job_id?: string | null
           reviewer_notes?: string | null
+          scoring_explanation?: Json | null
+          segment_weights?: Json | null
           verdict?: string | null
         }
         Update: {
@@ -2282,6 +2331,8 @@ export type Database = {
           pacing_efficiency_score?: number | null
           render_job_id?: string | null
           reviewer_notes?: string | null
+          scoring_explanation?: Json | null
+          segment_weights?: Json | null
           verdict?: string | null
         }
         Relationships: [
@@ -2301,8 +2352,11 @@ export type Database = {
           cognitive_curve: Json | null
           emotional_curve: Json | null
           fatigue_protection_profile: Json | null
+          feynman_trigger_points: Json | null
           generated_at: string
+          hotspot_heuristics: Json | null
           id: string
+          ideal_timings: Json | null
           narrative_profile: Json | null
           pacing_profile: Json | null
           reference_name: string
@@ -2322,8 +2376,11 @@ export type Database = {
           cognitive_curve?: Json | null
           emotional_curve?: Json | null
           fatigue_protection_profile?: Json | null
+          feynman_trigger_points?: Json | null
           generated_at?: string
+          hotspot_heuristics?: Json | null
           id?: string
+          ideal_timings?: Json | null
           narrative_profile?: Json | null
           pacing_profile?: Json | null
           reference_name: string
@@ -2343,8 +2400,11 @@ export type Database = {
           cognitive_curve?: Json | null
           emotional_curve?: Json | null
           fatigue_protection_profile?: Json | null
+          feynman_trigger_points?: Json | null
           generated_at?: string
+          hotspot_heuristics?: Json | null
           id?: string
+          ideal_timings?: Json | null
           narrative_profile?: Json | null
           pacing_profile?: Json | null
           reference_name?: string
@@ -2363,6 +2423,7 @@ export type Database = {
       cme_cinematic_similarity_reports: {
         Row: {
           cinematic_similarity_score: number | null
+          comparison_explanation: Json | null
           fatigue_similarity_score: number | null
           generated_at: string
           id: string
@@ -2376,6 +2437,7 @@ export type Database = {
         }
         Insert: {
           cinematic_similarity_score?: number | null
+          comparison_explanation?: Json | null
           fatigue_similarity_score?: number | null
           generated_at?: string
           id?: string
@@ -2389,6 +2451,7 @@ export type Database = {
         }
         Update: {
           cinematic_similarity_score?: number | null
+          comparison_explanation?: Json | null
           fatigue_similarity_score?: number | null
           generated_at?: string
           id?: string
@@ -2699,6 +2762,62 @@ export type Database = {
             columns: ["semantic_plan_id"]
             isOneToOne: false
             referencedRelation: "cme_semantic_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cme_reference_uploads: {
+        Row: {
+          analysis_logs: Json | null
+          created_at: string
+          file_path: string
+          file_size_bytes: number | null
+          id: string
+          mime_type: string | null
+          original_filename: string | null
+          pedagogical_goal: string | null
+          reference_id: string | null
+          specialty: string | null
+          updated_at: string
+          upload_status: string | null
+          uploader_id: string | null
+        }
+        Insert: {
+          analysis_logs?: Json | null
+          created_at?: string
+          file_path: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          original_filename?: string | null
+          pedagogical_goal?: string | null
+          reference_id?: string | null
+          specialty?: string | null
+          updated_at?: string
+          upload_status?: string | null
+          uploader_id?: string | null
+        }
+        Update: {
+          analysis_logs?: Json | null
+          created_at?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          id?: string
+          mime_type?: string | null
+          original_filename?: string | null
+          pedagogical_goal?: string | null
+          reference_id?: string | null
+          specialty?: string | null
+          updated_at?: string
+          upload_status?: string | null
+          uploader_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_reference_uploads_reference_id_fkey"
+            columns: ["reference_id"]
+            isOneToOne: false
+            referencedRelation: "cme_cinematic_reference_profiles"
             referencedColumns: ["id"]
           },
         ]
