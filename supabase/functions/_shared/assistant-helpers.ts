@@ -90,3 +90,30 @@ export async function logDecision(
   }
   return { id: (data as { id: string }).id };
 }
+
+/** Log an intervention to adaptive_interventions */
+export async function logAdaptiveIntervention(
+  db: SupabaseClient,
+  params: {
+    user_id: string;
+    trigger_type: string;
+    action_taken: string;
+    context_node_id?: string;
+    video_lesson_id?: string;
+    friction_score_snapshot: number;
+    recommendation_text: string;
+    action_payload?: Record<string, unknown>;
+    status?: 'shadow' | 'pending' | 'accepted' | 'ignored';
+  }
+): Promise<{ id: string | null }> {
+  const { data, error } = await db
+    .from("adaptive_interventions")
+    .insert(params)
+    .select("id")
+    .single();
+  if (error) {
+    console.error("[Assistant] logAdaptiveIntervention failed:", error.message);
+    return { id: null };
+  }
+  return { id: (data as { id: string }).id };
+}
