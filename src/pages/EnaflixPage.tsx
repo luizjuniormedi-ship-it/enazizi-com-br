@@ -255,15 +255,38 @@ export default function EnaflixPage() {
               // Prioridade: Continuar → Recomendados IA → Videoaulas IA → Mais usados → 1 categoria rotativa.
               const rows: React.ReactNode[] = [];
 
-              if (continueModules.length > 0) {
+              if (continueModules.length > 0 || continueLessons.length > 0) {
                 rows.push(
-                  <EnaflixSectionRow
-                    key="continue"
-                    title="Continuar de onde parou"
-                    subtitle="Retome sua jornada"
-                    modules={continueModules}
-                    onNavigate={handleNavigate}
-                  />,
+                  <div key="continue-container" className="space-y-8">
+                    {continueModules.length > 0 && (
+                      <EnaflixSectionRow
+                        key="continue"
+                        title="Continuar de onde parou"
+                        subtitle="Módulos e ferramentas que você estava usando"
+                        modules={continueModules}
+                        onNavigate={handleNavigate}
+                      />
+                    )}
+                    {continueLessons.length > 0 && (
+                      <EnaflixSectionRowVideo
+                        key="continue-lessons"
+                        title="Continuar Assistindo"
+                        subtitle="Suas videoaulas IA em andamento"
+                        lessons={continueLessons}
+                      />
+                    )}
+                  </div>
+                );
+              }
+
+              if (aiLessons && aiLessons.length > 0 && rows.length < 5) {
+                rows.push(
+                  <EnaflixSectionRowVideo
+                    key="ai-videoaulas"
+                    title="Videoaulas IA (CME)"
+                    subtitle="Conteúdo médico cinematográfico personalizado"
+                    lessons={aiLessons}
+                  />
                 );
               }
 
@@ -274,19 +297,6 @@ export default function EnaflixPage() {
                     title="Recomendados pela IA"
                     subtitle="Sugestões inteligentes do ENAZIZI"
                     modules={recommendedModules}
-                    onNavigate={handleNavigate}
-                  />,
-                );
-              }
-
-              const videoaulasModules = visibleModules.filter((m) => m.category === "videoaulas");
-              if (videoaulasModules.length > 0 && rows.length < 5) {
-                rows.push(
-                  <EnaflixSectionRow
-                    key="videoaulas"
-                    title="Videoaulas IA"
-                    subtitle="Conteúdo médico cinematográfico"
-                    modules={videoaulasModules}
                     onNavigate={handleNavigate}
                   />,
                 );
