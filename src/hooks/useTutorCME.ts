@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { TutorBlock } from "@/types/tutor";
@@ -8,35 +8,41 @@ type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'
 type CmeRenderStatus = Database['public']['Enums']['cme_render_status'];
 
 export interface CMEProjectState {
-  status: CmeAggregationStatus | CmeRenderStatus | 'idle' | 'mapping' | 'scripting' | 'graphing' | 'voicing' | 'chunking' | 'uploading';
+  status: CmeAggregationStatus | CmeRenderStatus | 'idle' | 'mapping' | 'scripting' | 'graphing' | 'voicing' | 'chunking' | 'uploading' | 'pending_hardware';
   projectId?: string;
   aggregationId?: string;
+  sceneGraphId?: string;
   progress: number;
   error?: string;
   message?: string;
   isStuck?: boolean;
+  workerStatus?: 'online' | 'offline_or_unavailable';
 }
 
 export const useTutorCME = () => {
   const supabaseClient = useMemo(() => supabase, []);
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
   const [workerHealth, setWorkerHealth] = useState<any>(null);
+  const lastEventRef = useRef<number>(Date.now());
 
-  // Fetch worker health
   const checkWorkerHealth = useCallback(async () => {
     try {
-      const { data, error } = await supabaseClient.functions.invoke('cme-status');
-      if (!error) setWorkerHealth(data.health);
+      const { data, error } = await supabaseClient.from('cme_worker_nodes')
+        .select('id, status, last_heartbeat')
+        .eq('status', 'online');
+      
+      const workersOnline = data?.length || 0;
+      setWorkerHealth({ workers_online: workersOnline });
+      return workersOnline;
     } catch (e) {
       console.warn("Failed to fetch CME status", e);
+      return 0;
     }
   }, [supabaseClient]);
 
-  // Listen for pipeline events in real-time
   useEffect(() => {
     if (!state.projectId || state.status === 'idle' || state.status === 'ready' || state.status === 'failed') return;
 
-    let lastEventTimestamp = Date.now();
     const channel = supabaseClient
       .channel(`cme-pipeline-${state.projectId}`)
       .on(
@@ -49,8 +55,7 @@ export const useTutorCME = () => {
         },
         (payload) => {
           const newEvent = payload.new;
-          console.log("[CME Pipeline Event]", newEvent);
-          lastEventTimestamp = Date.now();
+          lastEventRef.current = Date.now();
           
           setState(s => ({
             ...s,
@@ -58,28 +63,28 @@ export const useTutorCME = () => {
             progress: Math.max(s.progress, newEvent.progress),
             message: newEvent.message,
             error: newEvent.status === 'failed' ? newEvent.message : s.error,
-            isStuck: false
+            isStuck: false,
+            workerStatus: 'online'
           }));
-
-          // Trigger health check if we move to rendering
-          if (newEvent.stage === 'rendering') {
-            checkWorkerHealth();
-          }
         }
       )
       .subscribe();
 
-    // Enhanced Stuck Detection (Rule of Gold: 20s between graphing_complete and render_start)
-    const stuckCheckInterval = setInterval(() => {
-      const elapsed = Date.now() - lastEventTimestamp;
+    const stuckCheckInterval = setInterval(async () => {
+      const elapsed = Date.now() - lastEventRef.current;
       
-      if (state.status === 'graphing' && elapsed > 15000) {
-        setState(s => ({ ...s, message: "Aguardando Cluster GPU...", isStuck: true }));
-        checkWorkerHealth();
-      }
-      
-      if (state.status === 'rendering' && elapsed > 20000 && (!workerHealth || workerHealth.workers_online === 0)) {
-        setState(s => ({ ...s, isStuck: true }));
+      // If we are in rendering stage and no updates for 20s
+      if (state.status === 'rendering' && elapsed > 20000) {
+        const onlineCount = await checkWorkerHealth();
+        if (onlineCount === 0) {
+          setState(s => ({ 
+            ...s, 
+            status: 'pending_hardware',
+            workerStatus: 'offline_or_unavailable',
+            message: "Renderização pendente de hardware. O Worker/GPU parece estar offline.",
+            isStuck: true 
+          }));
+        }
       }
     }, 5000);
 
@@ -87,26 +92,22 @@ export const useTutorCME = () => {
       supabaseClient.removeChannel(channel);
       clearInterval(stuckCheckInterval);
     };
-  }, [state.projectId, state.status, supabaseClient, workerHealth, checkWorkerHealth]);
+  }, [state.projectId, state.status, supabaseClient, checkWorkerHealth]);
 
   const logPipelineEvent = useCallback(async (projectId: string, stage: string, status: string, progress: number, message?: string, aggregationId?: string) => {
     try {
+      const { data: { user } } = await supabaseClient.auth.getUser();
       await supabaseClient.from("cme_pipeline_events").insert({
         project_id: projectId,
+        aggregation_id: aggregationId,
         stage,
         status,
         progress,
         message,
-        latency_ms: 100
+        user_id: user?.id
       });
       
       if (aggregationId) {
-        await supabaseClient.from("cme_audit_logs").insert({
-          aggregation_id: aggregationId,
-          action: `Pipeline: ${stage}`,
-          metadata: { status, progress, message }
-        });
-        
         await supabaseClient.from("cme_session_aggregations")
           .update({ 
             status: status === 'completed' ? 'builder_ready' : (status === 'failed' ? 'failed' : 'aggregating'),
@@ -184,6 +185,7 @@ export const useTutorCME = () => {
     onComplete?: (aggregationId: string) => void;
   }) => {
     setState({ status: 'queued', progress: 5, message: "Iniciando pipeline..." });
+    lastEventRef.current = Date.now();
 
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
@@ -205,13 +207,14 @@ export const useTutorCME = () => {
           title: params.title,
           status: 'active',
           aggregation_id: aggregationId,
+          user_id: user.id,
           config: {
             tutor_conversation_id: params.conversationId,
             is_full_session: params.isFullSession,
             specialty: params.specialty,
             topic: params.topic
           }
-        })
+        } as any)
         .select()
         .single();
 
@@ -222,18 +225,20 @@ export const useTutorCME = () => {
       await logPipelineEvent(projectId, 'planning', 'completed', 30, "Mapeamento semântico concluído", aggregationId || undefined);
       await logPipelineEvent(projectId, 'mapping', 'completed', 35, "Knowledge Mapping pronto", aggregationId || undefined);
 
-      // Scene Graph Generation (Real DB Entries)
       setState(s => ({ ...s, status: 'graphing', progress: 40, message: "Gerando Scene Graph..." }));
-      const { data: sceneGraph } = await supabaseClient
+      const { data: sceneGraph, error: sgError } = await supabaseClient
         .from("cme_scene_graphs")
         .insert({
           project_id: projectId,
+          user_id: user.id,
           scene_type: 'pedagogical',
           visual_goal: 'high_engagement',
           status: 'ready'
         } as any)
         .select()
         .single();
+
+      if (sgError) throw new Error("Falha ao persistir Scene Graph.");
 
       if (sceneGraph && lessonBlocks.length > 0) {
         const nodes = lessonBlocks.map((block, idx) => ({
@@ -248,10 +253,10 @@ export const useTutorCME = () => {
         await supabaseClient.from("cme_scene_graph_nodes").insert(nodes as any);
       }
 
+      setState(s => ({ ...s, sceneGraphId: sceneGraph.id }));
       await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado", aggregationId || undefined);
 
-      // Render Job via Orchestrator
-      setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Cluster GPU: Aguardando..." }));
+      setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Orquestrando Renderização..." }));
       
       const { data: orchestratorResult, error: orchError } = await supabaseClient.functions.invoke('cme-orchestrator', {
         body: { 
@@ -261,26 +266,18 @@ export const useTutorCME = () => {
         }
       });
 
-      if (orchError || !orchestratorResult?.success) {
-        console.warn("Orchestrator call failed, falling back to direct insert", orchError);
-        await supabaseClient.from("cme_render_jobs").insert({
-          project_id: projectId,
-          status: 'queued',
-          render_stage: 'gpu_rendering',
-          priority: 1
-        } as any);
+      if (orchError) {
+        throw new Error(orchError.message || "Erro no orquestrador");
       }
 
-      await logPipelineEvent(projectId, 'rendering', 'in_progress', 50, "Render enfileirado", aggregationId || undefined);
-
-      // Auto-navigate to Builder if it's a full session
-      setTimeout(() => {
-        if (params.onComplete && aggregationId) {
-          params.onComplete(aggregationId);
-        } else if (aggregationId) {
-          window.location.href = `/admin/cinematic-builder/${aggregationId}`;
-        }
-      }, 3000);
+      if (orchestratorResult?.status === 'waiting_hardware') {
+        setState(s => ({ 
+          ...s, 
+          status: 'pending_hardware', 
+          message: orchestratorResult.message,
+          progress: 60
+        }));
+      }
 
       return projectId;
     } catch (err: any) {
@@ -291,55 +288,13 @@ export const useTutorCME = () => {
     }
   }, [aggregateSessionContent, logPipelineEvent, supabaseClient]);
 
-  const triggerPedagogicalFallback = useCallback(async (projectId: string) => {
-    setState(s => ({ ...s, status: 'rendering', message: "Gerando Fallback Pedagógico (Slides)...", progress: 90 }));
-    
-    // Simulate/Trigger slide generation
-    await logPipelineEvent(projectId, 'rendering', 'completed', 100, "Fallback de slides gerado com sucesso");
-    
-    await supabaseClient.from("cme_video_projects").update({
-      config: { fallback_active: true, fallback_type: 'pedagogical_slides' }
-    } as any).eq('id', projectId);
-
-    toast.success("Fallback pedagógico gerado para evitar interrupção.");
-    
-    setTimeout(() => {
-      setState(s => ({ ...s, status: 'ready', progress: 100 }));
-    }, 2000);
-  }, [logPipelineEvent, supabaseClient]);
-
   return {
     state,
     workerHealth,
     transformToVideo,
-    triggerPedagogicalFallback,
     retryRender: async (pid: string) => {
        await supabaseClient.from("cme_render_jobs").update({ status: 'queued' } as any).eq('project_id', pid);
        toast.success("Reiniciado");
-    },
-    logEligibility: async (params: { 
-      messageId: string; 
-      eligible: boolean; 
-      rejectionReason?: string; 
-      structureScore?: number;
-      cognitiveDensity?: number;
-      metrics?: any;
-    }) => {
-      try {
-        await supabaseClient.from("cme_generation_eligibility_logs").insert({
-          tutor_message_id: params.messageId,
-          eligible: params.eligible,
-          rejection_reason: params.rejectionReason,
-          structure_score: params.structureScore || 0,
-          cognitive_density: params.cognitiveDensity || 0,
-          metadata: { 
-            metrics: params.metrics,
-            timestamp: new Date().toISOString() 
-          }
-        });
-      } catch (e) {
-        console.error("Eligibility log error:", e);
-      }
     },
     resetState: () => setState({ status: 'idle', progress: 0 })
   };
