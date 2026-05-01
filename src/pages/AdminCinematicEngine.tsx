@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -26,7 +26,11 @@ import {
   Gauge,
   Shield,
   Search,
-  Plus
+  Plus,
+  Upload,
+  Info,
+  TrendingUp,
+  Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,13 +38,87 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 import { useCinematicEngine } from "@/hooks/useCinematicEngine";
 
 const AdminCinematicEngine = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("pipeline");
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [uploadData, setUploadData] = useState({
+    name: "",
+    specialty: "",
+    goal: "",
+    type: "internal_benchmark"
+  });
+
   const { referenceProfiles, isLoading: engineLoading } = useCinematicEngine();
+
+  const handleUpload = async () => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file || !uploadData.name) {
+      toast.error("Please provide a name and select a video file");
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const fileName = `${crypto.randomUUID()}-${file.name}`;
+      const { data: uploadInfo, error: uploadError } = await supabase.storage
+        .from("cme-references")
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: profile, error: profileError } = await supabase
+        .from("cme_cinematic_reference_profiles")
+        .insert({
+          reference_name: uploadData.name,
+          reference_type: uploadData.type,
+        })
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      const { error: recordError } = await supabase
+        .from("cme_reference_uploads")
+        .insert({
+          reference_id: profile.id,
+          file_path: uploadInfo.path,
+          original_filename: file.name,
+          specialty: uploadData.specialty,
+          pedagogical_goal: uploadData.goal,
+          upload_status: "uploaded"
+        });
+
+      if (recordError) throw recordError;
+
+      toast.success("Reference benchmark uploaded successfully and queued for analysis");
+      setIsUploadDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["cme-reference-profiles"] });
+    } catch (error: any) {
+      toast.error(`Upload failed: ${error.message}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const { data: renderJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ["cme-render-jobs"],
@@ -49,7 +127,8 @@ const AdminCinematicEngine = () => {
         .from("cme_render_jobs")
         .select(`
           *,
-          project:cme_video_projects(title)
+          project:cme_video_projects(title),
+          quality_scores:cme_cinematic_quality_score(overall_cinematic_score, scoring_explanation)
         `)
         .order("queued_at", { ascending: false });
       if (error) throw error;
@@ -77,7 +156,8 @@ const AdminCinematicEngine = () => {
       avg_render_time: "12m 45s",
       success_rate: "98.2%",
       gpu_nodes: gpuWorkers?.filter(w => w.status === 'online').length || 0,
-      total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0
+      total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0,
+      avg_quality: "8.4 / 10"
     }),
     enabled: !!renderJobs && !!gpuWorkers
   });
@@ -86,6 +166,7 @@ const AdminCinematicEngine = () => {
     const variants: Record<string, { label: string, color: string }> = {
       queued: { label: "Na fila", color: "bg-slate-500/10 text-slate-600 border-slate-200" },
       preparing: { label: "Preparando", color: "bg-blue-500/10 text-blue-600 border-blue-200 animate-pulse" },
+      semantic_processing: { label: "Semântica", color: "bg-purple-500/10 text-purple-600 border-purple-200 animate-pulse" },
       cinematic_rendering: { label: "Renderizando", color: "bg-indigo-500/10 text-indigo-600 border-indigo-200 animate-pulse" },
       completed: { label: "Concluído", color: "bg-green-500/10 text-green-600 border-green-200" },
       failed: { label: "Falhou", color: "bg-red-500/10 text-red-600 border-red-200" }
@@ -123,10 +204,10 @@ const AdminCinematicEngine = () => {
           {[
             { label: "Active Jobs", value: stats?.active_renders, icon: Activity, color: "blue" },
             { label: "Queue Depth", value: stats?.queued_tasks, icon: History, color: "purple" },
-            { label: "GPU Nodes", value: stats?.gpu_nodes, icon: Server, color: "emerald" },
+            { label: "Avg Quality", value: stats?.avg_quality, icon: Target, color: "indigo" },
             { label: "Success Rate", value: stats?.success_rate, icon: CheckCircle2, color: "green" },
-            { label: "Avg Render", value: stats?.avg_render_time, icon: Clock, color: "orange" },
-            { label: "Total VRAM", value: `${Math.round((stats?.total_vram || 0)/1024)}GB`, icon: Cpu, color: "indigo" }
+            { label: "GPU Nodes", value: stats?.gpu_nodes, icon: Server, color: "emerald" },
+            { label: "Total VRAM", value: `${Math.round((stats?.total_vram || 0)/1024)}GB`, icon: Cpu, color: "orange" }
           ].map((stat, i) => (
             <Card key={i} className="border-none shadow-sm overflow-hidden group hover:shadow-md transition-all">
               <CardContent className="p-5 flex flex-col items-center justify-center text-center space-y-1">
@@ -204,14 +285,20 @@ const AdminCinematicEngine = () => {
                             {getJobStatusBadge(job.status)}
                           </td>
                           <td className="px-6 py-4">
-                            {job.gpu_worker_id ? (
-                              <div className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                <span className="text-xs font-bold text-slate-600">Node_{job.gpu_worker_id.slice(0,4)}</span>
-                              </div>
-                            ) : (
-                              <span className="text-xs font-bold text-slate-400 italic">Unassigned</span>
-                            )}
+                            <div className="flex flex-col">
+                              {job.quality_scores?.[0] ? (
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-primary/10 text-primary border-primary/20 font-black text-[10px]">
+                                    {job.quality_scores[0].overall_cinematic_score?.toFixed(1) || '0.0'}
+                                  </Badge>
+                                  <Button size="icon" variant="ghost" className="h-6 w-6" title={(job.quality_scores?.[0]?.scoring_explanation as any)?.reason || "View Explanation"}>
+                                    <Info className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <span className="text-[10px] font-bold text-slate-400 italic">Calculating...</span>
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 w-64">
                             <div className="space-y-1.5">
@@ -318,7 +405,7 @@ const AdminCinematicEngine = () => {
                   <CardTitle className="text-lg font-black tracking-tight">Cinematic Reference Library</CardTitle>
                   <CardDescription className="text-xs font-bold uppercase opacity-60">High-retention benchmarks for learned pacing and narrative</CardDescription>
                 </div>
-                <Button className="gap-2 font-bold">
+                <Button className="gap-2 font-bold" onClick={() => setIsUploadDialogOpen(true)}>
                   <Plus className="h-4 w-4" /> Add Benchmark
                 </Button>
               </CardHeader>
@@ -336,41 +423,58 @@ const AdminCinematicEngine = () => {
                      <table className="w-full text-sm text-left">
                        <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 font-black tracking-widest border-b">
                          <tr>
-                           <th className="px-6 py-4">Reference Benchmark</th>
+                           <th className="px-6 py-4">Reference Name</th>
                            <th className="px-6 py-4">Type</th>
-                           <th className="px-6 py-4">Duration</th>
-                           <th className="px-6 py-4">Pacing Learning</th>
-                           <th className="px-6 py-4 text-right">Similarity Actions</th>
+                           <th className="px-6 py-4 text-center">Pacing</th>
+                           <th className="px-6 py-4 text-center">Retention Est.</th>
+                           <th className="px-6 py-4 text-center">Hotspots</th>
+                           <th className="px-6 py-4 text-right">Actions</th>
                          </tr>
                        </thead>
                        <tbody className="divide-y">
-                         {referenceProfiles?.map((profile) => (
+                         {referenceProfiles?.map((profile: any) => (
                            <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors group">
                              <td className="px-6 py-4">
-                               <div className="flex items-center gap-3">
-                                 <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
-                                   <Film className="h-5 w-5" />
-                                 </div>
-                                 <div>
-                                   <p className="font-bold text-slate-700">{profile.reference_name}</p>
-                                   <p className="text-[10px] text-slate-400 font-mono">ID: {profile.id.slice(0,8)}</p>
-                                 </div>
+                               <div className="flex flex-col">
+                                 <span className="font-bold text-slate-700">{profile.reference_name}</span>
+                                 <span className="text-[10px] text-slate-400 font-mono">#{profile.id.slice(0,8)}</span>
                                </div>
                              </td>
                              <td className="px-6 py-4">
-                               <Badge variant="secondary" className="text-[9px] font-black uppercase px-2">{profile.reference_type}</Badge>
-                             </td>
-                             <td className="px-6 py-4 text-slate-500 font-mono text-xs">
-                               {Math.floor(profile.video_duration_seconds / 60)}:{(profile.video_duration_seconds % 60).toString().padStart(2,'0')}
+                               <Badge variant="outline" className="text-[9px] font-black uppercase bg-slate-50">{profile.reference_type}</Badge>
                              </td>
                              <td className="px-6 py-4">
-                               <div className="flex gap-2">
-                                 <Badge variant="outline" className="text-[9px] border-emerald-200 text-emerald-600 bg-emerald-50">Narrative Pattern</Badge>
-                                 <Badge variant="outline" className="text-[9px] border-blue-200 text-blue-600 bg-blue-50">Cognitive Curve</Badge>
+                               <div className="flex flex-col items-center gap-1">
+                                 <div className="flex gap-0.5 h-3 items-end">
+                                    {[20, 40, 60, 30, 80, 50, 90, 40].map((h, i) => (
+                                      <div key={i} className="w-1 bg-primary/40 rounded-t-sm" style={{ height: `${h}%` }} />
+                                    ))}
+                                 </div>
+                                 <span className="text-[9px] font-bold text-slate-500 uppercase">Adaptive Pacing</span>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-center">
+                               <div className="inline-flex flex-col items-center">
+                                 <span className="text-sm font-black text-slate-700">92%</span>
+                                 <div className="flex items-center gap-1">
+                                   <TrendingUp className="h-2 w-2 text-green-500" />
+                                   <span className="text-[9px] font-bold text-green-600 uppercase">High</span>
+                                 </div>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-center">
+                               <div className="flex items-center justify-center gap-1">
+                                 <Badge variant="outline" className="bg-red-50 text-red-600 text-[9px] font-bold border-red-100">3 Fatigue Points</Badge>
+                                 <Badge variant="outline" className="bg-blue-50 text-blue-600 text-[9px] font-bold border-blue-100">2 Replays</Badge>
                                </div>
                              </td>
                              <td className="px-6 py-4 text-right">
-                               <Button size="sm" variant="ghost" className="font-bold text-xs">Use as Model</Button>
+                               <div className="flex items-center justify-end gap-2">
+                                 <Button size="icon" variant="ghost" className="h-8 w-8 rounded-lg" title="View Scoring Breakdown">
+                                   <Info className="h-4 w-4" />
+                                 </Button>
+                                 <Button size="sm" variant="ghost" className="font-bold text-xs h-8">Use as Model</Button>
+                               </div>
                              </td>
                            </tr>
                          ))}
@@ -415,12 +519,103 @@ const AdminCinematicEngine = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+        <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-black">CME Reference Studio</DialogTitle>
+            <DialogDescription className="text-xs font-bold uppercase tracking-wider opacity-60">
+              Upload video benchmark for cognitive/cinematic pattern extraction
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="name" className="text-xs font-black uppercase tracking-widest text-slate-500">Benchmark Name</Label>
+              <Input 
+                id="name" 
+                placeholder="e.g. Masterclass Cardiology v1" 
+                className="font-bold"
+                value={uploadData.name}
+                onChange={(e) => setUploadData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label htmlFor="type" className="text-xs font-black uppercase tracking-widest text-slate-500">Benchmark Type</Label>
+                <select 
+                  id="type"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 font-bold"
+                  value={uploadData.type}
+                  onChange={(e) => setUploadData(prev => ({ ...prev, type: e.target.value }))}
+                >
+                  <option value="internal_benchmark">Internal Benchmark</option>
+                  <option value="expert_reference">Expert Reference</option>
+                  <option value="high_retention_sample">High Retention Sample</option>
+                </select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="specialty" className="text-xs font-black uppercase tracking-widest text-slate-500">Medical Specialty</Label>
+                <Input 
+                  id="specialty" 
+                  placeholder="e.g. Cardiology" 
+                  className="font-bold"
+                  value={uploadData.specialty}
+                  onChange={(e) => setUploadData(prev => ({ ...prev, specialty: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="goal" className="text-xs font-black uppercase tracking-widest text-slate-500">Pedagogical Objective</Label>
+              <Textarea 
+                id="goal" 
+                placeholder="Describe how this reference should influence retention..." 
+                className="font-bold resize-none h-20"
+                value={uploadData.goal}
+                onChange={(e) => setUploadData(prev => ({ ...prev, goal: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label className="text-xs font-black uppercase tracking-widest text-slate-500">Reference Video File</Label>
+              <div 
+                className="border-2 border-dashed rounded-2xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer group"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <input type="file" className="hidden" ref={fileInputRef} accept="video/*" />
+                <Upload className="h-8 w-8 mx-auto mb-2 text-slate-400 group-hover:text-primary transition-colors" />
+                <p className="text-sm font-bold text-slate-600">Click to upload or drag & drop</p>
+                <p className="text-[10px] uppercase font-black text-slate-400 mt-1">MP4, MOV, WEBM (Max 500MB)</p>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="font-bold" onClick={() => setIsUploadDialogOpen(false)}>Cancel</Button>
+            <Button 
+              className="font-bold shadow-lg shadow-primary/20 gap-2" 
+              onClick={handleUpload}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" /> Start Extraction
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
-
-// ... keep existing code at the bottom (cn import etc)
-import { cn } from "@/lib/utils";
 
 export default AdminCinematicEngine;
 
