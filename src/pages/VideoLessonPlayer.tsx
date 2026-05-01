@@ -770,7 +770,7 @@ const VideoLessonPlayer = () => {
 
             <PreventiveTutorTrigger 
               recommendation={recommendation}
-              onAccept={() => acceptRecommendation((recommendation as any)?.id)}
+              onAccept={() => acceptRecommendation('rec')}
               onClose={() => resetRecommendation()}
             />
 
