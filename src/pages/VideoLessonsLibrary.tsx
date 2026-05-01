@@ -98,7 +98,7 @@ const VideoLessonsLibrary = () => {
   const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
 
   return (
-    <div className="container mx-auto p-6 space-y-8 animate-in fade-in duration-500">
+    <div className="container mx-auto p-6 space-y-8 animate-in fade-in duration-500 bg-[#0a0a12] text-white min-h-screen">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
@@ -187,7 +187,7 @@ const VideoLessonsLibrary = () => {
                     <Card 
                       key={lesson.id} 
                       className={`group overflow-hidden hover:shadow-xl transition-all duration-300 border-primary/10 cursor-pointer ${lesson.is_gold_content ? 'ring-1 ring-yellow-400/50' : ''}`} 
-                      onClick={() => navigate(`/videoaulas/${lesson.id}`)}
+                      onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
                     >
                       <div className="relative aspect-video bg-muted overflow-hidden">
                         {lesson.thumbnail_url ? (
@@ -268,7 +268,7 @@ const VideoLessonsLibrary = () => {
                 <div 
                   key={lesson.id} 
                   className="flex gap-3 items-center group cursor-pointer"
-                  onClick={() => navigate(`/videoaulas/${lesson.id}`)}
+                  onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
                 >
                   <div className="w-16 h-10 rounded bg-muted flex-shrink-0 overflow-hidden">
                     {lesson.thumbnail_url && <img src={lesson.thumbnail_url} className="w-full h-full object-cover" />}
