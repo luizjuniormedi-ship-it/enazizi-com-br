@@ -123,6 +123,7 @@ const AdminInterventionPolicies = lazyWithRetry(() => import("./pages/admin/Admi
 const AdminAdaptiveExperiments = lazyWithRetry(() => import("./pages/admin/AdminAdaptiveExperiments"), "AdminAdaptiveExperiments");
 const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicEngine"), "AdminCinematicEngine");
 const CMEStatus = lazyWithRetry(() => import("./pages/admin/CMEStatus"), "CMEStatus");
+const CMEIncidents = lazyWithRetry(() => import("./pages/admin/CMEIncidents"), "CMEIncidents");
 
 
 
