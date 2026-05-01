@@ -32,7 +32,10 @@ import {
   ChevronUp,
   Activity,
   Gauge,
-  Target
+  Target,
+  Brain,
+  History,
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
@@ -60,6 +63,8 @@ import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommenda
 import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";
 import { useCognitiveOrchestrator } from "@/hooks/useCognitiveOrchestrator";
 import { useCinematicEngine } from "@/hooks/useCinematicEngine";
+import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
+import { useTelemetry } from "@/hooks/useTelemetry";
 
 const VideoLessonPlayer = () => {
   const { id } = useParams();
