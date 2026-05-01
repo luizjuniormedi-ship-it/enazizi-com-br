@@ -416,6 +416,73 @@ const AdminCinematicEngine = () => {
             </Card>
           </TabsContent>
 
+          <TabsContent value="director" className="space-y-4">
+            <Card className="border-none shadow-sm overflow-hidden bg-slate-900 text-white">
+              <CardHeader className="border-b border-white/10">
+                <CardTitle className="text-xl font-black text-primary flex items-center gap-2">
+                  <Camera className="h-6 w-6" /> Autonomous Director AI
+                </CardTitle>
+                <CardDescription className="text-slate-400">Automated cinematography, framing, and cognitive pacing orchestration.</CardDescription>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-6">
+                    <h3 className="text-xs font-black uppercase text-primary tracking-widest">Active Director Logs</h3>
+                    {[
+                      { time: '14:20:05', decision: 'Apply Semantic Zoom', reasoning: 'Focus on mitral valve leaflet detail', goal: 'Visual Clarity' },
+                      { time: '14:20:12', decision: 'Reduce Pacing (-15%)', reasoning: 'High cognitive intensity detected', goal: 'Retention' },
+                      { time: '14:20:45', decision: 'Inject Diagram Overlay', reasoning: 'Anatomical complexity reinforcement', goal: 'Mental Model' }
+                    ].map((dec, i) => (
+                      <div key={i} className="flex gap-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                        <div className="text-[10px] font-mono text-slate-500 mt-1">{dec.time}</div>
+                        <div>
+                          <p className="text-sm font-black text-emerald-400">{dec.decision}</p>
+                          <p className="text-xs text-slate-400 mt-1">{dec.reasoning}</p>
+                          <Badge variant="outline" className="mt-2 text-[8px] border-primary/30 text-primary">{dec.goal}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-slate-800/50 rounded-3xl p-8 flex flex-col items-center justify-center text-center border border-white/5">
+                    <div className="relative mb-6">
+                       <Maximize2 className="h-16 w-16 text-primary animate-pulse" />
+                       <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+                    </div>
+                    <h4 className="text-lg font-black">Framing Optimizer</h4>
+                    <p className="text-xs text-slate-400 mt-2 max-w-xs">Director AI is currently adjusting camera paths for 3 active render jobs.</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="grammar" className="space-y-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+               {[
+                 { specialty: 'Cardiology', color: 'red', rules: 142, motion: 'Pulsative' },
+                 { specialty: 'Neurology', color: 'purple', rules: 89, motion: 'Synaptic' },
+                 { specialty: 'Emergency', color: 'orange', rules: 215, motion: 'Urgent' },
+                 { specialty: 'Anatomy', color: 'emerald', rules: 167, motion: 'Detailed' }
+               ].map((gram, i) => (
+                 <Card key={i} className="border-none shadow-sm group hover:scale-[1.02] transition-transform">
+                   <CardContent className="p-5 space-y-4">
+                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", `bg-${gram.color}-500/10 text-${gram.color}-600`)}>
+                       <Palette className="h-5 w-5" />
+                     </div>
+                     <div>
+                       <p className="text-sm font-black">{gram.specialty}</p>
+                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{gram.motion} Grammar</p>
+                     </div>
+                     <div className="pt-2 border-t flex justify-between items-center">
+                        <span className="text-[10px] font-black text-slate-500 uppercase">{gram.rules} Rules Active</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6"><Scissors className="h-3 w-3" /></Button>
+                     </div>
+                   </CardContent>
+                 </Card>
+               ))}
+             </div>
+          </TabsContent>
+
           <TabsContent value="governance" className="space-y-4">
             <Card className="border-none shadow-sm overflow-hidden">
               <CardHeader className="bg-white border-b">
