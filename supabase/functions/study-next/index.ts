@@ -568,6 +568,7 @@ serve(async (req) => {
       imageQuizAvailable: imgQuizAvailable,
       consecutiveErrorBoost,
       mnemonicUtilityTopics: mnemonicUtility.length,
+      justification: buildExplainableJustification(counts, ctx, recommendation.type),
     };
 
     // ── Telemetry ──
