@@ -42,6 +42,18 @@ export interface CMERenderJob {
   output_url?: string;
   thumbnail_url?: string;
   chapter_manifest?: any;
+  reference_profile_id?: string;
+  cinematic_quality_score?: number;
+}
+
+export interface CMEReferenceProfile {
+  id: string;
+  reference_name: string;
+  reference_type: string;
+  video_duration_seconds: number;
+  pacing_profile: any;
+  narrative_profile: any;
+  cognitive_curve: any[];
 }
 
 export function useCinematicEngine(projectId?: string) {
@@ -138,10 +150,23 @@ export function useCinematicEngine(projectId?: string) {
     }
   };
 
+  const referenceProfilesQuery = useQuery({
+    queryKey: ["cme-reference-profiles"],
+    queryFn: async (): Promise<CMEReferenceProfile[]> => {
+      const { data, error } = await supabase
+        .from("cme_cinematic_reference_profiles")
+        .select("*")
+        .order("generated_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as CMEReferenceProfile[];
+    }
+  });
+
   return {
     project: projectQuery.data,
     renderJobs: renderJobsQuery.data,
-    isLoading: projectQuery.isLoading || renderJobsQuery.isLoading,
+    referenceProfiles: referenceProfilesQuery.data,
+    isLoading: projectQuery.isLoading || renderJobsQuery.isLoading || referenceProfilesQuery.isLoading,
     startRender,
     updateStudentAnalytics
   };

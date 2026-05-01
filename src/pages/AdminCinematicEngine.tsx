@@ -23,17 +23,24 @@ import {
   Maximize2,
   Server,
   Layout,
-  Gauge
+  Gauge,
+  Shield,
+  Search,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+
+import { useCinematicEngine } from "@/hooks/useCinematicEngine";
 
 const AdminCinematicEngine = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("pipeline");
+  const { referenceProfiles, isLoading: engineLoading } = useCinematicEngine();
 
   const { data: renderJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ["cme-render-jobs"],
@@ -71,7 +78,8 @@ const AdminCinematicEngine = () => {
       success_rate: "98.2%",
       gpu_nodes: gpuWorkers?.filter(w => w.status === 'online').length || 0,
       total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0
-    })
+    }),
+    enabled: !!renderJobs && !!gpuWorkers
   });
 
   const getJobStatusBadge = (status: string) => {
@@ -138,14 +146,17 @@ const AdminCinematicEngine = () => {
               <TabsTrigger value="pipeline" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Activity className="h-4 w-4" /> Queue
               </TabsTrigger>
+              <TabsTrigger value="references" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Layout className="h-4 w-4" /> Reference Benchmarks
+              </TabsTrigger>
               <TabsTrigger value="workers" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Server className="h-4 w-4" /> GPU Cluster
               </TabsTrigger>
               <TabsTrigger value="analytics" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <BarChart3 className="h-4 w-4" /> Analytics
               </TabsTrigger>
-              <TabsTrigger value="infrastructure" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
-                <Settings className="h-4 w-4" /> Orchestration
+              <TabsTrigger value="governance" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Shield className="h-4 w-4" /> Governance
               </TabsTrigger>
             </TabsList>
           </div>
@@ -300,12 +311,107 @@ const AdminCinematicEngine = () => {
              <p className="text-xs">Distributed worker orchestration & auto-scaling</p>
           </TabsContent>
           
-          <TabsContent value="analytics" className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
-            Multimodal Retention Scores & Fatigue-Aware Analytics Layer
+          <TabsContent value="references" className="space-y-4">
+            <Card className="border-none shadow-sm">
+              <CardHeader className="bg-white border-b flex flex-row items-center justify-between space-y-0">
+                <div>
+                  <CardTitle className="text-lg font-black tracking-tight">Cinematic Reference Library</CardTitle>
+                  <CardDescription className="text-xs font-bold uppercase opacity-60">High-retention benchmarks for learned pacing and narrative</CardDescription>
+                </div>
+                <Button className="gap-2 font-bold">
+                  <Plus className="h-4 w-4" /> Add Benchmark
+                </Button>
+              </CardHeader>
+              <CardContent className="p-0">
+                 {engineLoading ? (
+                   <div className="p-12 text-center text-slate-400 animate-pulse font-bold">Synchronizing benchmarks...</div>
+                 ) : referenceProfiles?.length === 0 ? (
+                   <div className="p-12 text-center text-slate-400">
+                      <Layout className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                      <p className="font-bold text-sm">Learning from reference videos...</p>
+                      <p className="text-xs max-w-sm mx-auto mt-2">CME Reference Engine v3.0 extracting narrative patterns and cognitive curves from benchmark content.</p>
+                   </div>
+                 ) : (
+                   <div className="overflow-x-auto">
+                     <table className="w-full text-sm text-left">
+                       <thead className="text-[10px] text-slate-400 uppercase bg-slate-50/50 font-black tracking-widest border-b">
+                         <tr>
+                           <th className="px-6 py-4">Reference Benchmark</th>
+                           <th className="px-6 py-4">Type</th>
+                           <th className="px-6 py-4">Duration</th>
+                           <th className="px-6 py-4">Pacing Learning</th>
+                           <th className="px-6 py-4 text-right">Similarity Actions</th>
+                         </tr>
+                       </thead>
+                       <tbody className="divide-y">
+                         {referenceProfiles?.map((profile) => (
+                           <tr key={profile.id} className="hover:bg-slate-50/50 transition-colors group">
+                             <td className="px-6 py-4">
+                               <div className="flex items-center gap-3">
+                                 <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-600">
+                                   <Film className="h-5 w-5" />
+                                 </div>
+                                 <div>
+                                   <p className="font-bold text-slate-700">{profile.reference_name}</p>
+                                   <p className="text-[10px] text-slate-400 font-mono">ID: {profile.id.slice(0,8)}</p>
+                                 </div>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4">
+                               <Badge variant="secondary" className="text-[9px] font-black uppercase px-2">{profile.reference_type}</Badge>
+                             </td>
+                             <td className="px-6 py-4 text-slate-500 font-mono text-xs">
+                               {Math.floor(profile.video_duration_seconds / 60)}:{(profile.video_duration_seconds % 60).toString().padStart(2,'0')}
+                             </td>
+                             <td className="px-6 py-4">
+                               <div className="flex gap-2">
+                                 <Badge variant="outline" className="text-[9px] border-emerald-200 text-emerald-600 bg-emerald-50">Narrative Pattern</Badge>
+                                 <Badge variant="outline" className="text-[9px] border-blue-200 text-blue-600 bg-blue-50">Cognitive Curve</Badge>
+                               </div>
+                             </td>
+                             <td className="px-6 py-4 text-right">
+                               <Button size="sm" variant="ghost" className="font-bold text-xs">Use as Model</Button>
+                             </td>
+                           </tr>
+                         ))}
+                       </tbody>
+                     </table>
+                   </div>
+                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-4">
+            <Card className="border-none shadow-sm">
+              <CardHeader className="bg-white border-b">
+                <CardTitle className="text-lg font-black tracking-tight">Multimodal Analytics & Friction Engine</CardTitle>
+                <CardDescription className="text-xs font-bold uppercase opacity-60">High-fidelity tracking of cinematic retention and fatigue reduction</CardDescription>
+              </CardHeader>
+              <CardContent className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
+                 <BarChart3 className="h-12 w-12 mb-4 opacity-20" />
+                 <p>Real-time friction maps and ACE feedback loop status.</p>
+              </CardContent>
+            </Card>
           </TabsContent>
           
-          <TabsContent value="infrastructure" className="h-64 flex flex-col items-center justify-center text-slate-400 italic font-bold">
-            Distributed Rendering Logic & Manual Fix/Override Panel
+          <TabsContent value="governance" className="space-y-4">
+             <Card className="border-none shadow-sm overflow-hidden">
+                <CardHeader className="bg-white border-b flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle className="text-lg font-black tracking-tight">CME Governance Workflow</CardTitle>
+                    <CardDescription className="text-xs font-bold uppercase opacity-60">Mandatory medical, semantic, and cinematic verification queue</CardDescription>
+                  </div>
+                  <Badge className="bg-red-500/10 text-red-600 border-red-200 uppercase font-black text-[10px]">Publication Guardian Active</Badge>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="p-12 text-center text-slate-400 italic font-bold">
+                    <Shield className="h-12 w-12 mb-4 opacity-20 mx-auto" />
+                    <p className="font-bold text-sm uppercase tracking-tighter">Review Queue Management</p>
+                    <p className="text-xs font-normal max-w-md mx-auto mt-2">All CME outputs must undergo semantic, narrative, and medical review before public release.</p>
+                  </div>
+                </CardContent>
+             </Card>
           </TabsContent>
         </Tabs>
       </div>
