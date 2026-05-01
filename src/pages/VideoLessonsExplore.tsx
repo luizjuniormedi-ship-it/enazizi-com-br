@@ -45,6 +45,11 @@ const VideoLessonsExplore = () => {
   const [specialtyFilter, setSpecialtyFilter] = useState("all");
   const [difficultyFilter, setDifficultyFilter] = useState("all");
   const [sortBy, setSortBy] = useState("recent");
+  // Fase 1: Novos filtros
+  const [durationFilter, setDurationFilter] = useState("all");
+  const [examSprintOnly, setExamSprintOnly] = useState(false);
+  const [recoveryOnly, setRecoveryOnly] = useState(false);
+  
   const navigate = useNavigate();
 
   const { data: lessons, isLoading } = useQuery({
@@ -52,7 +57,10 @@ const VideoLessonsExplore = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ai_video_lessons")
-        .select("*")
+        .select(`
+          *,
+          cme_exam_sprint_profiles(id, sprint_score, sprint_duration)
+        `)
         .eq("status", "published")
         .order("published_at", { ascending: false });
 
@@ -91,28 +99,48 @@ const VideoLessonsExplore = () => {
     if (!lessons) return [];
     
     let result = lessons.filter(lesson => {
-      const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lesson.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           lesson.topic.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchStr = `${lesson.title} ${lesson.specialty} ${lesson.topic} ${lesson.subtopic || ""} ${(lesson as any).professor || ""}`.toLowerCase();
+      const matchesSearch = searchStr.includes(searchTerm.toLowerCase());
       
       const matchesSpecialty = specialtyFilter === "all" || lesson.specialty === specialtyFilter;
       const matchesDifficulty = difficultyFilter === "all" || lesson.difficulty_level === difficultyFilter;
       
+      const duration = lesson.duration_seconds || 0;
+      let matchesDuration = true;
+      if (durationFilter === "short") matchesDuration = duration <= 600; // 10 min
+      if (durationFilter === "medium") matchesDuration = duration > 600 && duration <= 1800; // 10-30 min
+      if (durationFilter === "long") matchesDuration = duration > 1800; // > 30 min
+
       let matchesCategory = true;
       if (activeCategory === "gold") matchesCategory = !!lesson.is_gold_content;
-      if (activeCategory === "exam_sprint") matchesCategory = lesson.title.toLowerCase().includes("sprint") || (lesson as any).cme_profile === "exam_sprint";
-      if (activeCategory === "recovery") matchesCategory = (lesson as any).adaptive_mode === "recovery";
+      if (activeCategory === "exam_sprint" || examSprintOnly) {
+        const hasSprint = (lesson as any).cme_exam_sprint_profiles?.length > 0 || lesson.title.toLowerCase().includes("sprint");
+        if (activeCategory === "exam_sprint" || examSprintOnly) matchesCategory = hasSprint;
+      }
+      if (activeCategory === "recovery" || recoveryOnly) {
+        const isRecovery = (lesson as any).adaptive_mode === "recovery" || (lesson as any).cme_profile === "recovery";
+        if (activeCategory === "recovery" || recoveryOnly) matchesCategory = isRecovery;
+      }
       
-      return matchesSearch && matchesSpecialty && matchesDifficulty && matchesCategory;
+      // Filtros Cognitivos (ACE)
+      if (activeCategory === "recommended") matchesCategory = !!(lesson as any).recommended_by_ace;
+      if (activeCategory === "fsrs") matchesCategory = !!(lesson as any).fsrs_review_pending;
+      if (activeCategory === "friction") matchesCategory = (Number((lesson as any).friction_score) || 0) > 70;
+      if (activeCategory === "low_mastery") matchesCategory = (Number((lesson as any).mastery_score) || 0) < 50;
+      
+      return matchesSearch && matchesSpecialty && matchesDifficulty && matchesDuration && matchesCategory;
     });
 
     // Sorting logic
     if (sortBy === "retention") result.sort((a, b) => (Number((b as any).avg_retention) || 0) - (Number((a as any).avg_retention) || 0));
     if (sortBy === "watched") result.sort((a, b) => (Number((b as any).view_count) || 0) - (Number((a as any).view_count) || 0));
     if (sortBy === "score") result.sort((a, b) => (Number((b as any).cme_score) || 0) - (Number((a as any).cme_score) || 0));
+    if (sortBy === "recent") result.sort((a, b) => new Date(b.published_at || "").getTime() - new Date(a.published_at || "").getTime());
+    if (sortBy === "replay") result.sort((a, b) => (Number((b as any).replay_rate) || 0) - (Number((a as any).replay_rate) || 0));
+    if (sortBy === "abandon") result.sort((a, b) => (Number((b as any).abandon_rate) || 0) - (Number((a as any).abandon_rate) || 0));
 
     return result;
-  }, [lessons, searchTerm, specialtyFilter, difficultyFilter, activeCategory, sortBy]);
+  }, [lessons, searchTerm, specialtyFilter, difficultyFilter, activeCategory, sortBy, durationFilter, examSprintOnly, recoveryOnly]);
 
   const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
 
