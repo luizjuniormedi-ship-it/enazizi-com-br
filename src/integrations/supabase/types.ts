@@ -3303,6 +3303,50 @@ export type Database = {
           },
         ]
       }
+      cme_playback_audit_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          id: string
+          load_time_ms: number | null
+          media_status: string | null
+          player_state: string | null
+          selected_url: string | null
+          user_id: string | null
+          video_lesson_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          load_time_ms?: number | null
+          media_status?: string | null
+          player_state?: string | null
+          selected_url?: string | null
+          user_id?: string | null
+          video_lesson_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          load_time_ms?: number | null
+          media_status?: string | null
+          player_state?: string | null
+          selected_url?: string | null
+          user_id?: string | null
+          video_lesson_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_playback_audit_logs_video_lesson_id_fkey"
+            columns: ["video_lesson_id"]
+            isOneToOne: false
+            referencedRelation: "ai_video_lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_playback_hotspots: {
         Row: {
           abandon_density: number | null
