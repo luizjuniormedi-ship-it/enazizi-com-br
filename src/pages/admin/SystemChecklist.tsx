@@ -145,7 +145,7 @@ const SystemChecklist = () => {
     setRunningTests(false);
     
     // Save to DB
-    await supabase.from("system_checklist_runs").insert({
+    await (supabase.from("system_checklist_runs") as any).insert({
       run_type: 'smoke',
       status: 'completed',
       results: newChecklist,
