@@ -209,11 +209,11 @@ export default function EnaflixPage() {
             />
           )}
 
-          {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 4 */}
+          {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 5 */}
           <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
             {(() => {
-              // Curadoria: no máximo 4 fileiras visíveis para preservar foco.
-              // Prioridade: Continuar → Recomendados IA → Mais usados → 1 categoria rotativa.
+              // Curadoria: no máximo 5 fileiras visíveis para preservar foco.
+              // Prioridade: Continuar → Recomendados IA → Videoaulas IA → Mais usados → 1 categoria rotativa.
               const rows: React.ReactNode[] = [];
 
               if (continueModules.length > 0) {
@@ -228,7 +228,7 @@ export default function EnaflixPage() {
                 );
               }
 
-              if (recommendedModules.length > 0 && rows.length < 4) {
+              if (recommendedModules.length > 0 && rows.length < 5) {
                 rows.push(
                   <EnaflixSectionRow
                     key="recommended"
@@ -240,7 +240,20 @@ export default function EnaflixPage() {
                 );
               }
 
-              if (popularModules.length > 1 && rows.length < 4) {
+              const videoaulasModules = visibleModules.filter((m) => m.category === "videoaulas");
+              if (videoaulasModules.length > 0 && rows.length < 5) {
+                rows.push(
+                  <EnaflixSectionRow
+                    key="videoaulas"
+                    title="Videoaulas IA"
+                    subtitle="Conteúdo médico cinematográfico"
+                    modules={videoaulasModules}
+                    onNavigate={handleNavigate}
+                  />,
+                );
+              }
+
+              if (popularModules.length > 1 && rows.length < 5) {
                 rows.push(
                   <EnaflixSectionRow
                     key="popular"
@@ -253,7 +266,7 @@ export default function EnaflixPage() {
               }
 
               // 1 categoria rotativa (rotaciona por dia da semana para variar a descoberta)
-              if (rows.length < 4) {
+              if (rows.length < 5) {
                 const rotatable = ENAFLIX_CATEGORIES.filter((c) => {
                   if (c.dynamic) return false;
                   if (c.requires === "admin" && !isAdmin) return false;
@@ -280,7 +293,7 @@ export default function EnaflixPage() {
               return rows;
             })()}
 
-            {/* CTA "Ver tudo" — descobertas além das 4 fileiras curadas */}
+            {/* CTA "Ver tudo" — descobertas além das 5 fileiras curadas */}
             <div className="px-4 sm:px-8 lg:px-14 pt-2">
               <button
                 type="button"

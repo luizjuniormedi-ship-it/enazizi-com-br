@@ -48,6 +48,7 @@ import {
   Users,
   Wand2,
   Zap,
+  Video,
 } from "lucide-react";
 
 import type { EnaflixCategoryId } from "./enaflixCategories";
@@ -256,6 +257,20 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     category: "clinica",
     icon: Briefcase,
     accent: "purple",
+  },
+
+  // ───────── VIDEOAULAS ─────────
+  {
+    id: "videoaulas",
+    title: "Videoaulas",
+    description: "Biblioteca cinematográfica de videoaulas IA",
+    route: "/dashboard/videoaulas",
+    category: "videoaulas",
+    icon: Video,
+    badge: "ia",
+    accent: "primary",
+    featured: true,
+    keywords: ["vídeo", "aula", "cinema", "multimodal", "tutor", "cme"],
   },
 
   // ───────── CONTEÚDO & ESTUDO ─────────

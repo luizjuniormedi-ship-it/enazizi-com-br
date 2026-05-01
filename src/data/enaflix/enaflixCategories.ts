@@ -7,6 +7,7 @@ export type EnaflixCategoryId =
   | "continue"
   | "popular"
   | "recommended"
+  | "videoaulas"
   | "avaliacao"
   | "treino"
   | "clinica"
@@ -33,6 +34,7 @@ export const ENAFLIX_CATEGORIES: EnaflixCategory[] = [
   { id: "continue", title: "Continuar de onde parou", subtitle: "Retome sua jornada", dynamic: true, minItems: 1 },
   { id: "popular", title: "Mais usados", subtitle: "Os queridinhos do dia a dia", dynamic: true, minItems: 1 },
   { id: "recommended", title: "Recomendados para você", subtitle: "Sugestões inteligentes", dynamic: true, minItems: 1 },
+  { id: "videoaulas", title: "Videoaulas IA", subtitle: "Conteúdo cinematográfico adaptativo" },
   { id: "avaliacao", title: "Avaliação", subtitle: "Teste seu nível" },
   { id: "treino", title: "Treino & Revisão", subtitle: "Memória ativa e repetição espaçada" },
   { id: "clinica", title: "Clínica & Simulação", subtitle: "Casos reais e prática" },

@@ -9,7 +9,7 @@ import { useCoreData } from "@/hooks/useCoreData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
-import { GraduationCap } from "lucide-react";
+import { GraduationCap, Play, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
@@ -211,6 +211,22 @@ const Dashboard = () => {
           {/* 1 — Header Contextual (Status e Boas-vindas) */}
           <div className="space-y-4">
             <SafeCard name="DashboardTopBar"><DashboardTopBar /></SafeCard>
+            
+            <button
+              onClick={() => navigate("/dashboard/videoaulas")}
+              className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/10 hover:border-primary/20 hover:bg-primary/[0.08] transition-all group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-glow-sm group-hover:scale-105 transition-transform">
+                  <Play className="h-5 w-5 text-white fill-white" />
+                </div>
+                <div className="text-left">
+                  <h4 className="text-sm font-bold text-foreground">Continuar Videoaula</h4>
+                  <p className="text-xs text-muted-foreground">Retome seu conteúdo cinematográfico de onde parou.</p>
+                </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+            </button>
             
             {/* Recovery banner sempre que ativo */}
             <RecoveryModeBanner />
