@@ -43,6 +43,11 @@ export interface DashboardMetrics {
   imageQuizAttempts: number;
   diagnosticCompleted: number;
   chatConversations: number;
+  // Fase Enterprise+ (Neuroanalytics)
+  retentionScore?: number;
+  fatigueScore?: number;
+  engagementScore?: number;
+  overloadThreshold?: number;
 }
 
 // [planner-unification-final] PlanJson removido — Dashboard não lê mais study_plans.
