@@ -160,7 +160,7 @@ const PublicVideoLesson = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="text-white/60 space-y-2 text-sm">
-                  <p>• Domínio profundo do tema baseado em evidências.</p>
+                  <p>• Domínio profundo do tema baseado em evidências e Exam Sprint.</p>
                   <p>• Correlações clínicas essenciais para a prova.</p>
                   <p>• Raciocínio clínico médico estruturado.</p>
                   <p>• Pegadinhas de prova e hotspots de cobrança.</p>
