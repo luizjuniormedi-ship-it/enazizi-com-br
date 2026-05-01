@@ -24,7 +24,8 @@ import {
   RotateCcw,
   Film,
   Settings,
-  Flame
+  Flame,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
@@ -578,9 +579,17 @@ const VideoLessonPlayer = () => {
                 }
 
                 return (
-                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
-                    <Play className="h-20 w-20 text-primary/40" />
-                    <p className="text-muted-foreground">Vídeo em processamento ou aguardando mídia real...</p>
+                  <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-slate-900/50">
+                    <div className="relative">
+                      <Play className="h-20 w-20 text-primary/20" />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                      </div>
+                    </div>
+                    <div className="text-center space-y-1">
+                      <p className="text-white font-medium">Aguardando Mídia Real</p>
+                      <p className="text-xs text-muted-foreground">Esta videoaula está publicada, mas o arquivo de vídeo ainda não foi vinculado ao CME.</p>
+                    </div>
                   </div>
                 );
               })()}
