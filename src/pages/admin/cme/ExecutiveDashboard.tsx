@@ -2,6 +2,8 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useCMEAnalytics } from "@/hooks/useCMEAnalytics";
 import { BarChart, Activity, Shield, Zap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 
 export default function CMEExecutiveDashboard() {
   const { getExecutiveKPIs } = useCMEAnalytics();

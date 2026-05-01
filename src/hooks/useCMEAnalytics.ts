@@ -25,7 +25,7 @@ export const useCMEAnalytics = () => {
 
     const totalRenders = renderJobs?.length || 0;
     const completedRenders = renderJobs?.filter(j => j.status === 'completed').length || 0;
-    const fallbackCount = incidents?.filter(i => i.recovery_action === 'pedagogical_fallback').length || 0;
+    const fallbackCount = incidents?.filter(i => (i.metadata as any)?.recovery_action === 'pedagogical_fallback').length || 0;
     
     const fallbackRate = totalRenders > 0 ? (fallbackCount / totalRenders) * 100 : 0;
     
