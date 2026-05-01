@@ -232,6 +232,12 @@ const AdminCinematicEngine = () => {
               <TabsTrigger value="pipeline" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Activity className="h-4 w-4" /> Queue
               </TabsTrigger>
+              <TabsTrigger value="director" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Camera className="h-4 w-4" /> Director AI
+              </TabsTrigger>
+              <TabsTrigger value="grammar" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Scissors className="h-4 w-4" /> Visual Grammar
+              </TabsTrigger>
               <TabsTrigger value="factory" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Waves className="h-4 w-4" /> Scene Factory
               </TabsTrigger>
