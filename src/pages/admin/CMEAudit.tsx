@@ -66,13 +66,13 @@ export default function CMEAudit() {
                       {format(new Date(log.created_at), 'dd/MM/yy HH:mm')}
                     </TableCell>
                     <TableCell className="font-medium text-white">
-                      {log.project_title || 'Sem título'}
+                      {log.title || 'Sem título'}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        {getStatusIcon(log.status)}
+                        {getStatusIcon(log.aggregation_status)}
                         <Badge variant="outline" className="capitalize text-[10px]">
-                          {log.status || 'unknown'}
+                          {log.aggregation_status || 'unknown'}
                         </Badge>
                       </div>
                     </TableCell>
@@ -80,17 +80,17 @@ export default function CMEAudit() {
                       {log.render_status ? (
                         <Badge className={cn(
                           "capitalize text-[10px]",
-                          log.render_status === 'completed' ? "bg-green-500/20 text-green-500" : 
+                          log.render_status === 'ready' ? "bg-green-500/20 text-green-500" : 
                           log.render_status === 'failed' ? "bg-red-500/20 text-red-500" : "bg-blue-500/20 text-blue-500"
                         )}>
-                          {log.render_status} ({log.render_stage})
+                          {log.render_status}
                         </Badge>
                       ) : (
                         <span className="text-zinc-600 text-[10px]">N/A</span>
                       )}
                     </TableCell>
                     <TableCell className="text-zinc-400 text-xs">
-                      {log.total_blocks || 0} capítulos
+                      {log.blocks_count || 0} capítulos
                     </TableCell>
                   </TableRow>
                 ))}
