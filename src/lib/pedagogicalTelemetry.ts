@@ -60,7 +60,16 @@ export type TelemetryEventName =
   | 'flashcard_completed'
   | 'mnemonic_opened'
   | 'practical_exam_opened'
-  | 'practical_exam_completed';
+  | 'practical_exam_completed'
+  // Phase Enterprise+ (Neuroanalytics)
+  | 'cme_playback_started'
+  | 'cme_segment_completed'
+  | 'cme_playback_speed_changed'
+  | 'cme_fatigue_detected'
+  | 'cme_overload_alert'
+  | 'cme_knowledge_mesh_viewed'
+  | 'cme_batch_generation_started'
+  | 'cme_batch_generation_completed';
 
 interface TelemetryProperties {
   [key: string]: any;
