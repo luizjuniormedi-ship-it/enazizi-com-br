@@ -82,7 +82,7 @@ export const useTutorCME = () => {
         tutor_session_id: conversationId,
         aggregated_content: fullText,
         total_blocks: blocks.length,
-        estimated_duration_seconds: blocks.length * 120,
+        estimated_duration_seconds: Math.max(blocks.length * 120, 300),
         detected_topics: Array.from(new Set(blocks.map(b => b.title).slice(0, 5)))
       } as any)
       .select()
