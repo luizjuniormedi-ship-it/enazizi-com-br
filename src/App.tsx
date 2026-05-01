@@ -101,12 +101,6 @@ const EnaflixCatalogPage = lazyWithRetry(() => import("./pages/EnaflixCatalogPag
 const PublicVideoLesson = lazyWithRetry(() => import("./pages/PublicVideoLesson"), "PublicVideoLesson");
 const VideoLessonsExplore = lazyWithRetry(() => import("./pages/VideoLessonsExplore"), "VideoLessonsExplore");
 const CMEAudit = lazyWithRetry(() => import("./pages/admin/CMEAudit"), "CMEAudit");
-const CinematicSessionBuilder = lazyWithRetry(() => import("./pages/admin/CinematicSessionBuilder"), "CinematicSessionBuilder");
-const CMEOrigins = lazyWithRetry(() => import("./pages/admin/CMEOrigins"), "CMEOrigins");
-const CMEStatus = lazyWithRetry(() => import("./pages/admin/CMEStatus"), "CMEStatus");
-const CMEIncidents = lazyWithRetry(() => import("./pages/admin/CMEIncidents"), "CMEIncidents");
-const CMEMediaMonitor = lazyWithRetry(() => import("./pages/admin/CMEMediaMonitor"), "CMEMediaMonitor");
-const AdminCinematicEngine = lazyWithRetry(() => import("./pages/AdminCinematicEngine"), "AdminCinematicEngine");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowcase"), "CognitiveShowcase");
