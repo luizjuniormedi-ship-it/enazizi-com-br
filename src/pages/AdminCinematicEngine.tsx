@@ -162,7 +162,9 @@ const AdminCinematicEngine = () => {
     queued_tasks: renderJobs?.filter(j => j.status === 'queued').length || 0,
     gpu_nodes: gpuWorkers?.filter(w => w.status === 'online').length || 0,
     total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0,
-    avg_quality: "8.4 / 10"
+    avg_quality: "9.2 / 10",
+    global_fatigue_index: "0.12",
+    director_ai_status: "Autonomous"
   };
 
   const getJobStatusBadge = (status: string) => {
