@@ -201,6 +201,40 @@ const VideoLessonsExplore = () => {
                   <SelectItem value="advanced">Avançado</SelectItem>
                 </SelectContent>
               </Select>
+
+              <Select value={durationFilter} onValueChange={setDurationFilter}>
+                <SelectTrigger className="bg-white/5 border-white/10 h-11">
+                  <SelectValue placeholder="Duração" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Qualquer Duração</SelectItem>
+                  <SelectItem value="short">Curto (< 10min)</SelectItem>
+                  <SelectItem value="medium">Médio (10-30min)</SelectItem>
+                  <SelectItem value="long">Longo (> 30min)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-white/40 uppercase tracking-widest flex items-center gap-2">
+              <Zap className="h-4 w-4" /> Modos de Entrega
+            </h3>
+            <div className="grid grid-cols-1 gap-2">
+              <Button 
+                variant={examSprintOnly ? "default" : "outline"} 
+                className={cn("justify-start gap-3 h-11 border-white/10", examSprintOnly && "bg-orange-500 hover:bg-orange-600")}
+                onClick={() => setExamSprintOnly(!examSprintOnly)}
+              >
+                <Flame className="h-4 w-4" /> Exam Sprint
+              </Button>
+              <Button 
+                variant={recoveryOnly ? "default" : "outline"} 
+                className={cn("justify-start gap-3 h-11 border-white/10", recoveryOnly && "bg-blue-600 hover:bg-blue-700")}
+                onClick={() => setRecoveryOnly(!recoveryOnly)}
+              >
+                <RotateCcw className="h-4 w-4" /> Recovery Mode
+              </Button>
             </div>
           </div>
 
