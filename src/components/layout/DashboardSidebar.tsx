@@ -35,6 +35,9 @@ import {
   RotateCcw,
   TrendingUp,
   BrainCircuit,
+  Activity,
+  Monitor,
+  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -544,6 +547,14 @@ const DashboardSidebar = () => {
                     variant="muted"
                   />
                   <SidebarLink
+                    to="/admin/cme-executive"
+                    icon={Activity}
+                    label="Monitor CME"
+                    description="Executive Dashboard & Realtime Pipeline"
+                    active={location.pathname === "/admin/cme-executive"}
+                    variant="muted"
+                  />
+                  <SidebarLink
                     to="/admin/ai-studio"
                     icon={Sparkles}
                     label="Produção IA"
@@ -552,8 +563,16 @@ const DashboardSidebar = () => {
                     variant="muted"
                   />
                   <SidebarLink
+                    to="/admin/cme-media-monitor"
+                    icon={Monitor}
+                    label="Media Monitor"
+                    description="Auditoria de Playback & Cluster Health"
+                    active={location.pathname === "/admin/cme-media-monitor"}
+                    variant="muted"
+                  />
+                  <SidebarLink
                     to="/admin/medical-review-queue"
-                    icon={Shield}
+                    icon={ShieldCheck}
                     label="Fila de Revisão"
                     description="Governança Pedagógica Médica"
                     active={location.pathname === "/admin/medical-review-queue"}
