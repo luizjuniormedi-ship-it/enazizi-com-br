@@ -7,6 +7,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import {
   corsHeaders, jsonResponse, errorResponse,
   getServiceClient, getUserIdFromRequest, safeQuery, logDecision,
+  logAdaptiveIntervention,
 } from "../_shared/assistant-helpers.ts";
 import {
   ScoringContext, getApprovalZone,
