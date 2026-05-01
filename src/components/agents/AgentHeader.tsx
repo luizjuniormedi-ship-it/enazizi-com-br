@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload } from "lucide-react";
+import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload, Film } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 
 interface AgentHeaderProps {
@@ -17,12 +17,15 @@ interface AgentHeaderProps {
   showUploadButton?: boolean;
   isUploading: boolean;
   onUploadClick: () => void;
+  onTransformSession?: () => void;
+  hasMessages?: boolean;
 }
 
 const AgentHeader = memo(({
   title, subtitle, selectedCount, isFullscreen, onToggleFullscreen,
   onNewConversation, onToggleHistory, autoSpeak, onToggleAutoSpeak,
   showUploadButton, isUploading, onUploadClick,
+  onTransformSession, hasMessages
 }: AgentHeaderProps) => {
   return (
     <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
@@ -41,6 +44,18 @@ const AgentHeader = memo(({
             <Paperclip className="h-3 w-3" /> {selectedCount} material(is)
           </span>
         )}
+
+        {hasMessages && onTransformSession && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onTransformSession}
+            className="hidden md:flex h-8 text-[10px] gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shadow-sm shadow-amber-500/20 px-3"
+          >
+            <Film className="h-3.5 w-3.5" /> 🎬 Transformar Sessão em Videoaula
+          </Button>
+        )}
+
         <Button variant="outline" size="icon" onClick={onToggleFullscreen} className="h-8 w-8" title={isFullscreen ? "Sair da tela cheia" : "Tela cheia"}>
           {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
         </Button>
@@ -51,6 +66,11 @@ const AgentHeader = memo(({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            {hasMessages && onTransformSession && (
+              <DropdownMenuItem onClick={onTransformSession} className="md:hidden text-amber-500">
+                <Film className="h-4 w-4 mr-2" /> 🎬 Transformar em Videoaula
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem onClick={onNewConversation}>
               <Plus className="h-4 w-4 mr-2" /> Nova conversa
             </DropdownMenuItem>
