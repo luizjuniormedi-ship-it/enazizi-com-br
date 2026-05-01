@@ -431,6 +431,17 @@ const VideoLessonPlayer = () => {
                 </div>
               )}
 
+              {/* FASE 4: Recomendações Adaptativas ACE */}
+              {!shadowMode && recommendations.length > 0 && (
+                <div className="absolute bottom-4 right-4 z-50 w-80">
+                  <AdaptiveRecommendationCard 
+                    recommendation={recommendations[0]}
+                    onAccept={acceptRecommendation}
+                    onIgnore={ignoreRecommendation}
+                  />
+                </div>
+              )}
+
               {/* FASE 3: Trigger Preventivo */}
               <PreventiveTutorTrigger 
                 recommendation={recommendation}
