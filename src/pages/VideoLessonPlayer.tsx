@@ -135,6 +135,9 @@ const VideoLessonPlayer = () => {
   const { logEvent } = useVideoSegmentEvents();
   const { getForSegment, smartReplayEnabled, analyticsEnabled } = useVideoSegmentAnalytics(id);
   const { temporalEnabled, buildContext } = useTutorTemporalContext();
+  
+  // ───────────────── FASE 3: Adaptive Intelligence ─────────────────
+  const { recommendation, resetRecommendation } = useVideoAdaptiveIntelligence(id!, currentSegment?.id || null);
 
   // Determina o segmento "atual" baseado em watchedSeconds (fallback p/ primeiro)
   const currentSegment = useMemo<VideoSegment | null>(() => {
