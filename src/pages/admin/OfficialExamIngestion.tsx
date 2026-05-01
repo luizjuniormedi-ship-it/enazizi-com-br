@@ -193,5 +193,3 @@ const OfficialExamIngestion = () => {
 };
 
 export default OfficialExamIngestion;
-
-import { cn } from "@/lib/utils";
