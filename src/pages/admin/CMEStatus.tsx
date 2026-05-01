@@ -33,6 +33,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { GPUFleetPanel } from "@/components/admin/cme/GPUFleetPanel";
 
 const CMEStatusPage = () => {
   const navigate = useNavigate();
