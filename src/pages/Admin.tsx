@@ -695,6 +695,8 @@ const Admin = () => {
                 <AdminBIPanel callAdmin={callAdmin} />
               </div>
             )}
+            {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
+            {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
             {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
             {activeSection === "feedbacks" && <AdminFeedbackPanel />}
             {activeSection === "audit" && <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />}
