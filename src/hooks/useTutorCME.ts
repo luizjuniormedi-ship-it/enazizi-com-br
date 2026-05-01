@@ -45,11 +45,11 @@ export const useTutorCME = () => {
 
   const aggregateSessionContent = useCallback(async (conversationId: string) => {
     // Use a direct query bypass if possible or simplify
-    const query = supabase
+    const query = (supabaseClient as any)
       .from("tutor_messages")
       .select("id, content, role, created_at");
       
-    const { data: messages, error } = await (query as any)
+    const { data: messages, error } = await query
       .eq("tutor_session_id", conversationId)
       .eq("role", "assistant")
       .order("created_at", { ascending: true });
