@@ -23,13 +23,17 @@ import {
   Maximize2,
   Server,
   Layout,
-  Gauge
+  Gauge,
+  Shield,
+  Search,
+  Plus
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 
 const AdminCinematicEngine = () => {
   const navigate = useNavigate();
