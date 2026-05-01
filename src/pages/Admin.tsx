@@ -689,6 +689,7 @@ const Admin = () => {
 
             {/* Content */}
             {activeSection === "pipeline" && <AdminPipelineMonitor />}
+            {activeSection === "cinematic-engine" && <AdminCinematicEngine />}
             {activeSection === "questions" && <AdminQuestionReviewPanel />}
             {activeSection === "image-upgrade" && <ImageQuestionUpgradePanel />}
             {activeSection === "image-review" && <AdminImageQuestionReviewPanel />}
