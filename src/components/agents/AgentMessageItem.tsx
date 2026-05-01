@@ -8,6 +8,7 @@ import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer
 import { adjustMemoryQuality } from "@/lib/tutor/tutorMemory";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
 import { useTutorCME } from "@/hooks/useTutorCME";
+import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { 
   Dialog, 
   DialogContent, 
