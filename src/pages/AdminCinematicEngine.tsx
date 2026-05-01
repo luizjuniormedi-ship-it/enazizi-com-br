@@ -232,6 +232,9 @@ const AdminCinematicEngine = () => {
               <TabsTrigger value="factory" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Waves className="h-4 w-4" /> Scene Factory
               </TabsTrigger>
+              <TabsTrigger value="observability" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
+                <Monitor className="h-4 w-4" /> Observability
+              </TabsTrigger>
               <TabsTrigger value="optimizations" className="gap-2 font-bold data-[state=active]:bg-white data-[state=active]:text-primary rounded-lg">
                 <Brain className="h-4 w-4" /> Auto-Optimization
               </TabsTrigger>
