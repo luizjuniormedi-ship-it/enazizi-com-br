@@ -1022,8 +1022,6 @@ const VideoLessonPlayer = () => {
           </div>
         </div>
       </div>
-
-      {/* Quiz Dialog */}
       <Dialog open={showQuiz} onOpenChange={setShowQuiz}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
