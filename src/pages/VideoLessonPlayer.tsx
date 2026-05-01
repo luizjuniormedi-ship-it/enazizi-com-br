@@ -435,6 +435,24 @@ const VideoLessonPlayer = () => {
                     });
                   }}
                 />
+              ) : isCMEVideo ? (
+                <div className="w-full h-full flex flex-col items-center justify-center space-y-4 bg-gradient-to-br from-slate-900 to-primary/20">
+                  <div className="relative">
+                    <Film className="h-20 w-20 text-primary/40 animate-pulse" />
+                    <Sparkles className="h-6 w-6 text-primary absolute -top-2 -right-2 animate-bounce" />
+                  </div>
+                  <div className="text-center space-y-2">
+                    <p className="text-white font-bold">Gerando Experiência Cinematográfica...</p>
+                    <p className="text-xs text-primary/60 font-medium uppercase tracking-widest">ENAZIZI Cinematic Medical Engine</p>
+                  </div>
+                  <div className="w-48 h-1 bg-white/10 rounded-full overflow-hidden">
+                    <motion.div 
+                      className="h-full bg-primary"
+                      animate={{ x: [-200, 200] }}
+                      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                    />
+                  </div>
+                </div>
               ) : (
                 <div className="w-full h-full flex flex-col items-center justify-center space-y-4">
                   <Play className="h-20 w-20 text-primary/40" />
