@@ -308,7 +308,7 @@ const VideoLessonPlayer = () => {
     const ctx = buildContext({
       videoLessonId: id,
       segment: seg,
-      currentTimestamp: seg.start_second ?? watchedSeconds,
+      currentTimestamp: watchedSeconds,
       lesson: {
         specialty: lesson.specialty,
         topic: lesson.topic,
@@ -316,22 +316,28 @@ const VideoLessonPlayer = () => {
         tutor_lesson_summary: lesson.tutor_lesson_summary,
       },
     });
+    
     logEvent({
       videoLessonId: id,
       segmentId: seg.id,
       eventType: "tutor_open",
-      timestampSeconds: seg.start_second ?? watchedSeconds,
+      timestampSeconds: watchedSeconds,
       metadata: { temporal: !!ctx, source: "segment_button" },
     });
+    
     handleAction("open_tutor");
+    
     const params = new URLSearchParams({
       context: lesson.id,
       session: lesson.tutor_session_id || "",
     });
+    
     if (ctx) {
       params.set("video_segment", seg.id);
-      params.set("video_ts", String(ctx.current_timestamp));
+      params.set("video_ts", String(watchedSeconds));
+      params.set("hotspot_type", "temporal_context");
     }
+    
     navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
