@@ -35,9 +35,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 
+import { useCinematicEngine } from "@/hooks/useCinematicEngine";
+
 const AdminCinematicEngine = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("pipeline");
+  const { referenceProfiles, isLoading: engineLoading } = useCinematicEngine();
 
   const { data: renderJobs, isLoading: jobsLoading } = useQuery({
     queryKey: ["cme-render-jobs"],
@@ -75,7 +78,8 @@ const AdminCinematicEngine = () => {
       success_rate: "98.2%",
       gpu_nodes: gpuWorkers?.filter(w => w.status === 'online').length || 0,
       total_vram: gpuWorkers?.reduce((acc, w) => acc + (w.vram_total_mb || 0), 0) || 0
-    })
+    }),
+    enabled: !!renderJobs && !!gpuWorkers
   });
 
   const getJobStatusBadge = (status: string) => {
