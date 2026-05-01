@@ -2818,6 +2818,7 @@ export type Database = {
           overload_risk: number | null
           pacing_score: number | null
           retention_prediction: number | null
+          user_id: string | null
           visual_complexity: number | null
         }
         Insert: {
@@ -2832,6 +2833,7 @@ export type Database = {
           overload_risk?: number | null
           pacing_score?: number | null
           retention_prediction?: number | null
+          user_id?: string | null
           visual_complexity?: number | null
         }
         Update: {
@@ -2846,6 +2848,7 @@ export type Database = {
           overload_risk?: number | null
           pacing_score?: number | null
           retention_prediction?: number | null
+          user_id?: string | null
           visual_complexity?: number | null
         }
         Relationships: [
@@ -3980,6 +3983,7 @@ export type Database = {
           render_job_id: string | null
           stage: string
           status: string
+          user_id: string | null
           worker_id: string | null
         }
         Insert: {
@@ -3995,6 +3999,7 @@ export type Database = {
           render_job_id?: string | null
           stage: string
           status: string
+          user_id?: string | null
           worker_id?: string | null
         }
         Update: {
@@ -4010,6 +4015,7 @@ export type Database = {
           render_job_id?: string | null
           stage?: string
           status?: string
+          user_id?: string | null
           worker_id?: string | null
         }
         Relationships: [
@@ -4050,6 +4056,7 @@ export type Database = {
           render_job_id: string | null
           state_data: Json
           step_name: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -4057,6 +4064,7 @@ export type Database = {
           render_job_id?: string | null
           state_data: Json
           step_name: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -4064,6 +4072,7 @@ export type Database = {
           render_job_id?: string | null
           state_data?: Json
           step_name?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4431,6 +4440,7 @@ export type Database = {
           recovery_strategy: string | null
           render_job_id: string | null
           status: string | null
+          user_id: string | null
         }
         Insert: {
           created_at?: string | null
@@ -4439,6 +4449,7 @@ export type Database = {
           recovery_strategy?: string | null
           render_job_id?: string | null
           status?: string | null
+          user_id?: string | null
         }
         Update: {
           created_at?: string | null
@@ -4447,6 +4458,7 @@ export type Database = {
           recovery_strategy?: string | null
           render_job_id?: string | null
           status?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4812,6 +4824,7 @@ export type Database = {
           status: string
           thumbnail_url: string | null
           updated_at: string
+          user_id: string | null
           variant_type: string | null
           visual_grammar_id: string | null
           voice_profile_id: string | null
@@ -4862,6 +4875,7 @@ export type Database = {
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
+          user_id?: string | null
           variant_type?: string | null
           visual_grammar_id?: string | null
           voice_profile_id?: string | null
@@ -4912,6 +4926,7 @@ export type Database = {
           status?: string
           thumbnail_url?: string | null
           updated_at?: string
+          user_id?: string | null
           variant_type?: string | null
           visual_grammar_id?: string | null
           voice_profile_id?: string | null
@@ -5350,6 +5365,7 @@ export type Database = {
           scene_type: string | null
           semantic_plan_id: string | null
           transition_type: string | null
+          user_id: string | null
           video_lesson_id: string | null
           visual_attention_map: Json | null
           visual_goal: string | null
@@ -5374,6 +5390,7 @@ export type Database = {
           scene_type?: string | null
           semantic_plan_id?: string | null
           transition_type?: string | null
+          user_id?: string | null
           video_lesson_id?: string | null
           visual_attention_map?: Json | null
           visual_goal?: string | null
@@ -5398,6 +5415,7 @@ export type Database = {
           scene_type?: string | null
           semantic_plan_id?: string | null
           transition_type?: string | null
+          user_id?: string | null
           video_lesson_id?: string | null
           visual_attention_map?: Json | null
           visual_goal?: string | null
@@ -5788,6 +5806,7 @@ export type Database = {
           resolved_at: string | null
           severity: Database["public"]["Enums"]["cme_incident_severity"] | null
           stack_trace: string | null
+          user_id: string | null
         }
         Insert: {
           component: string
@@ -5800,6 +5819,7 @@ export type Database = {
           resolved_at?: string | null
           severity?: Database["public"]["Enums"]["cme_incident_severity"] | null
           stack_trace?: string | null
+          user_id?: string | null
         }
         Update: {
           component?: string
@@ -5812,6 +5832,7 @@ export type Database = {
           resolved_at?: string | null
           severity?: Database["public"]["Enums"]["cme_incident_severity"] | null
           stack_trace?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
