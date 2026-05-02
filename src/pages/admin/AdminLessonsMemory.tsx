@@ -95,16 +95,31 @@ const AdminLessonsMemory = () => {
   });
   
   const deleteLessonMutation = useMutation({
-    mutationFn: async (id: string) => {
-      // If there's a video, we might want to delete it from storage too
-      // For now, focus on deleting the record as requested
+    mutationFn: async (lesson: any) => {
+      // If there's a video, try to delete it from storage
+      if (lesson.manual_video_url) {
+        try {
+          // Extract file path from public URL
+          const urlParts = lesson.manual_video_url.split('/tutor-lesson-videos/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage
+              .from("tutor-lesson-videos")
+              .remove([filePath]);
+          }
+        } catch (storageError) {
+          console.error("Erro ao excluir arquivo do storage:", storageError);
+          // Continue deleting the record even if storage deletion fails
+        }
+      }
+
       const { error } = await supabase
         .from("cme_session_aggregations")
         .delete()
-        .eq("id", id);
+        .eq("id", lesson.id);
       
       if (error) throw error;
-      return id;
+      return lesson.id;
     },
     onSuccess: () => {
       toast.success("Aula excluída com sucesso!");
