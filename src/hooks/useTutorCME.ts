@@ -496,7 +496,8 @@ export const useTutorCME = () => {
       return projectId;
     } catch (err: any) {
       console.error("CME Transform Error:", err);
-      setState(s => ({ ...s, status: 'failed', error: err.message }));
+      setState(s => ({ ...s, status: 'failed', error: err.message, message: err.message }));
+      toast.error(`Falha ao iniciar aula: ${err.message}`);
       
       // Phase 8: Hardening - Automatic Incident Reporting
       await reportIncident("TutorCME_Pipeline", err);
