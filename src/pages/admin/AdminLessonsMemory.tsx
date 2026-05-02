@@ -193,6 +193,59 @@ const AdminLessonsMemory = () => {
     }
   };
 
+  const exportLesson = async (
+    lesson: any,
+    format: "notebooklm" | "gemini" | "google_vids" | "markdown" | "txt",
+  ) => {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "tutor-lesson-export",
+        { body: { lesson_id: lesson.id, format } },
+      );
+      if (error || !data?.content) throw error || new Error("Sem conteúdo");
+      const blob = new Blob([data.content], { type: data.mime || "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = data.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(`Exportação ${format} concluída`);
+    } catch (e: any) {
+      toast.error(`Falha na exportação: ${e.message ?? "erro"}`);
+    }
+  };
+
+  const restructureLesson = async (lesson: any) => {
+    try {
+      toast.info("Reestruturando aula com IA...");
+      const { error } = await supabase.functions.invoke(
+        "tutor-lesson-structure",
+        { body: { lesson_id: lesson.id } },
+      );
+      if (error) throw error;
+      toast.success("Aula reestruturada");
+      queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+    } catch (e: any) {
+      toast.error(`Falha ao reestruturar: ${e.message ?? "erro"}`);
+    }
+  };
+
+  const toggleChecklistItem = async (lesson: any, key: string) => {
+    const next = { ...(lesson.quality_checklist || {}), [key]: !lesson.quality_checklist?.[key] };
+    const { error } = await supabase
+      .from("tutor_lesson_memory")
+      .update({ quality_checklist: next })
+      .eq("id", lesson.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+    }
+  };
+
   const downloadAsPDF = (lesson: any) => {
     const content =
       `AULA: ${lesson.title}\n` +
