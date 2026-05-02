@@ -1,0 +1,1 @@
+ALTER TABLE public.tutor_study_tracking ADD CONSTRAINT tutor_study_tracking_user_id_topic_key UNIQUE (user_id, topic);

@@ -1,0 +1,1 @@
+ALTER TABLE public.tutor_lesson_memory ADD CONSTRAINT tutor_lesson_memory_user_id_topic_key UNIQUE (user_id, topic);
