@@ -456,9 +456,26 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
           </div>
           
           {status === 'ready' && (
-             <Button onClick={onClose} className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold uppercase py-6 rounded-2xl shadow-lg shadow-emerald-500/20">
-               Concluir e Assistir
-             </Button>
+            <div className="space-y-3">
+              {(renderJob?.preview_url || renderJob?.output_url) && (
+                <Button
+                  onClick={() => {
+                    const url = renderJob?.preview_url || renderJob?.output_url;
+                    if (url) window.open(url, '_blank', 'noopener');
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold uppercase py-6 rounded-2xl shadow-lg shadow-emerald-500/20"
+                >
+                  <Video className="mr-2 h-5 w-5" /> Assistir prévia
+                </Button>
+              )}
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="w-full border-zinc-700 hover:bg-zinc-800 font-bold uppercase py-5 rounded-2xl"
+              >
+                Concluir e fechar
+              </Button>
+            </div>
           )}
         </div>
       </div>
