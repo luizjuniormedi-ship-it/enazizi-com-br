@@ -5194,6 +5194,7 @@ export type Database = {
           estimated_cost_cents: number | null
           estimated_vram_mb: number | null
           failed_at: string | null
+          generation_id: string | null
           gpu_required: boolean | null
           gpu_worker_id: string | null
           id: string
@@ -5246,6 +5247,7 @@ export type Database = {
           estimated_cost_cents?: number | null
           estimated_vram_mb?: number | null
           failed_at?: string | null
+          generation_id?: string | null
           gpu_required?: boolean | null
           gpu_worker_id?: string | null
           id?: string
@@ -5298,6 +5300,7 @@ export type Database = {
           estimated_cost_cents?: number | null
           estimated_vram_mb?: number | null
           failed_at?: string | null
+          generation_id?: string | null
           gpu_required?: boolean | null
           gpu_worker_id?: string | null
           id?: string
