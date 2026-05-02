@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -44,6 +44,7 @@ const AdminHygieneDashboard = lazy(() => import("@/components/admin/AdminHygiene
 const AdminLargeUploadPanel = lazy(() => import("@/components/admin/AdminLargeUploadPanel"));
 const SpecialtyFrictionReport = lazy(() => import("@/pages/admin/SpecialtyFrictionReport"));
 const MedicalKnowledgeGraph = lazy(() => import("@/pages/admin/MedicalKnowledgeGraph"));
+const AdminAutomationLab = lazy(() => import("@/components/admin/AdminAutomationLab"));
 const AdaptiveEngineAdmin = lazy(() => import("@/pages/admin/AdaptiveEngineAdmin"));
 const SystemChecklist = lazy(() => import("@/pages/admin/SystemChecklist"));
 const AdminInterventionPolicies = lazy(() => import("@/pages/admin/AdminInterventionPolicies"));
@@ -144,6 +145,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "uploads", label: "Uploads", icon: Upload },
         { key: "upload2gb", label: "Upload 2GB", icon: HardDrive },
         { key: "multimodal", label: "Multimodal", icon: ImageIcon },
+        { key: "automation-lab", label: "Automação Lab", icon: Sparkles },
       ],
     },
   ];
@@ -522,6 +524,7 @@ const Admin = () => {
                 <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
                 <AdminPlanDistribution stats={stats} />
                 <AdminDailyGenerationAlert />
+                <AdminAutomationLab userId={session?.user?.id} />
 
                 {/* Atalhos para ferramentas administrativas internas (rotas /admin/*) */}
                 <div className="rounded-lg border bg-card p-4 sm:p-5">
@@ -699,6 +702,7 @@ const Admin = () => {
             {activeSection === "hygiene" && <AdminHygieneDashboard />}
             {activeSection === "ingestion" && <AdminIngestionPanel />}
             {activeSection === "scraping" && <AdminWebScrapingPanel />}
+            {activeSection === "automation-lab" && <AdminAutomationLab userId={session?.user?.id} />}
             {activeSection === "qa" && <AdminQAPanel />}
             {activeSection === "ai-studio" && <AIStudio />}
             {activeSection === "system-checklist" && <SystemChecklist />}
