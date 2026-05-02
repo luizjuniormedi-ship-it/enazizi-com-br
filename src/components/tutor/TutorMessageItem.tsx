@@ -1,5 +1,5 @@
-import { memo, useMemo, useEffect } from "react";
-import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info } from "lucide-react";
+import { memo, useMemo, useEffect, useState } from "react";
+import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info, Zap } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
@@ -20,6 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import type { Msg } from "@/components/tutor/TutorConstants";
+import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 
 /** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
 function linkifyBareUrls(text: string): string {
@@ -56,7 +57,7 @@ interface TutorMessageItemProps {
 
 const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty }: TutorMessageItemProps) => {
   const navigate = useNavigate();
-  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState } = useTutorCME();
+  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer } = useTutorCME();
   const { isAdmin, isProfessor, roles } = useUserRoles();
   const { isEnabled } = useFeatureFlags();
 
@@ -325,6 +326,14 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            {/* Agile Player Overlay */}
+            {showAgilePlayer && state.aggregationId && (
+              <AgileLessonPlayer 
+                aggregationId={state.aggregationId} 
+                onClose={() => setShowAgilePlayer(false)} 
+              />
+            )}
           </>
         ) : (
           <span className="whitespace-pre-wrap">{msg.content}</span>
