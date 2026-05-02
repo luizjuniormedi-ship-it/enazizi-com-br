@@ -25,6 +25,7 @@ import {
   Gauge,
   GraduationCap,
   HeartPulse,
+  History,
   Image as ImageIcon,
   Layers,
   Library,
