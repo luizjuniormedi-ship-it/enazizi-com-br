@@ -585,11 +585,11 @@ const DashboardSidebar = () => {
                     variant="muted"
                   />
                   <SidebarLink
-                    to="/admin/ingestion-network"
+                    to="/admin/lessons-memory"
                     icon={Database}
-                    label="Ingestion Network"
-                    description="Ingestão Automática de Provas Oficiais"
-                    active={location.pathname === "/admin/ingestion-network"}
+                    label="Curadoria de Aulas"
+                    description="Gestão de Memória e Estruturação de Aulas IA"
+                    active={location.pathname === "/admin/lessons-memory"}
                     variant="muted"
                   />
 
