@@ -193,8 +193,17 @@ export const useTutorCME = () => {
     const fullText = messages.map(m => m.content).join("\n\n---\n\n");
     const blocks: { type: string; title: string; content: string; metadata?: any }[] = [];
     
-    // Split by Markdown headers
-    const sections = fullText.split(/\n(?=# )/).filter(s => s.trim().length > 0);
+    // Split by Markdown headers (H1 or H2)
+    let sections = fullText.split(/\n(?=#{1,2}\s)/).filter(s => s.trim().length > 0);
+    if (sections.length === 0 && fullText.trim()) {
+      sections = [fullText.trim()];
+    } else if (sections.length > 0 && !sections[0].trim().startsWith('#')) {
+      // If the first part doesn't have a header, it's the intro
+      const intro = sections[0];
+      if (intro.length > 0) {
+        // Leave it as is, will be handled in the loop
+      }
+    }
     
     sections.forEach((section, idx) => {
       const titleLine = section.split("\n")[0].replace(/^#+\s*/, "").trim();
