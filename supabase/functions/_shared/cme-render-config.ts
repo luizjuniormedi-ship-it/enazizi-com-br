@@ -112,29 +112,29 @@ export function sanitizeRenderConfig(raw: unknown): RenderConfig {
     ? incoming.fps
     : DEFAULT_RENDER_CONFIG.fps;
 
-  const wp = isObject(incoming.worker_preferences) ? incoming.worker_preferences : {};
-  const ss = isObject(incoming.segment_settings) ? incoming.segment_settings : {};
-  const ep = isObject(incoming.enaflix_publish) ? incoming.enaflix_publish : {};
+  const wp: Record<string, any> = isObject(incoming.worker_preferences) ? (incoming.worker_preferences as any) : {};
+  const ss: Record<string, any> = isObject(incoming.segment_settings) ? (incoming.segment_settings as any) : {};
+  const ep: Record<string, any> = isObject(incoming.enaflix_publish) ? (incoming.enaflix_publish as any) : {};
 
   return {
-    render_mode: pick('render_mode', incoming.render_mode, DEFAULT_RENDER_CONFIG.render_mode),
-    quality: pick('quality', incoming.quality, DEFAULT_RENDER_CONFIG.quality),
+    render_mode: pick(ALLOWED.render_mode, incoming.render_mode, DEFAULT_RENDER_CONFIG.render_mode),
+    quality: pick(ALLOWED.quality, incoming.quality, DEFAULT_RENDER_CONFIG.quality),
     fps,
-    resolution: pick('resolution', incoming.resolution, DEFAULT_RENDER_CONFIG.resolution),
-    narration_mode: pick('narration_mode', incoming.narration_mode, DEFAULT_RENDER_CONFIG.narration_mode),
-    cognitive_pacing: pick('cognitive_pacing', incoming.cognitive_pacing, DEFAULT_RENDER_CONFIG.cognitive_pacing),
-    fallback_strategy: pick('fallback_strategy', incoming.fallback_strategy, DEFAULT_RENDER_CONFIG.fallback_strategy),
+    resolution: pick(ALLOWED.resolution, incoming.resolution, DEFAULT_RENDER_CONFIG.resolution),
+    narration_mode: pick(ALLOWED.narration_mode, incoming.narration_mode, DEFAULT_RENDER_CONFIG.narration_mode),
+    cognitive_pacing: pick(ALLOWED.cognitive_pacing, incoming.cognitive_pacing, DEFAULT_RENDER_CONFIG.cognitive_pacing),
+    fallback_strategy: pick(ALLOWED.fallback_strategy, incoming.fallback_strategy, DEFAULT_RENDER_CONFIG.fallback_strategy),
     worker_preferences: {
       ...DEFAULT_RENDER_CONFIG.worker_preferences,
       ...wp,
-      gpu_tier: pick('gpu_tier', wp.gpu_tier, DEFAULT_RENDER_CONFIG.worker_preferences.gpu_tier),
+      gpu_tier: pick(ALLOWED.gpu_tier, wp.gpu_tier, DEFAULT_RENDER_CONFIG.worker_preferences.gpu_tier),
     },
     segment_settings: {
       ...DEFAULT_RENDER_CONFIG.segment_settings,
       ...ss,
       segment_duration:
         typeof ss.segment_duration === 'number' && ss.segment_duration > 0 && ss.segment_duration <= 600
-          ? ss.segment_duration
+          ? (ss.segment_duration as number)
           : DEFAULT_RENDER_CONFIG.segment_settings.segment_duration,
     },
     enaflix_publish: {
@@ -142,7 +142,7 @@ export function sanitizeRenderConfig(raw: unknown): RenderConfig {
       ...ep,
       auto_publish:
         typeof ep.auto_publish === 'boolean'
-          ? ep.auto_publish
+          ? (ep.auto_publish as boolean)
           : DEFAULT_RENDER_CONFIG.enaflix_publish.auto_publish,
     },
     _config_version: CONFIG_VERSION,
