@@ -146,7 +146,6 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "uploads", label: "Uploads", icon: Upload },
         { key: "upload2gb", label: "Upload 2GB", icon: HardDrive },
         { key: "multimodal", label: "Multimodal", icon: ImageIcon },
-        { key: "automation-lab", label: "Automação Lab", icon: Sparkles },
       ],
     },
   ];
