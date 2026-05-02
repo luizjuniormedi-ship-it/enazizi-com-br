@@ -477,7 +477,7 @@ export const useTutorCME = () => {
       
       setState(s => ({ 
         ...s, 
-        status: 'completed', 
+        status: 'ready', 
         progress: 100, 
         message: "Enviado com sucesso! Um administrador irá anexar o vídeo em breve." 
       }));
