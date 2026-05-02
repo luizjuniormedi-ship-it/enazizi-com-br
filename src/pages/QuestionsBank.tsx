@@ -344,56 +344,85 @@ const QuestionsBank = () => {
           <span>Acertos: {score.correct}/{score.total}</span>
         </div>
 
-        <div className="glass-card p-6">
+        <div className="glass-card-pixar p-8 shadow-pixar border-primary/20 bg-card-pixar-violet/40">
           {practiceQuestion.topic && (
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary mb-3 inline-block">
+            <span className="text-xs px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/30 font-bold mb-4 inline-block">
               {practiceQuestion.topic}
             </span>
           )}
-          <p className="text-base font-medium mb-6"><MedicalTermHighlighter text={practiceQuestion.statement} /></p>
+          <p className="text-xl sm:text-2xl font-bold text-white mb-8 leading-tight">
+            <MedicalTermHighlighter text={practiceQuestion.statement} />
+          </p>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {practiceQuestion.options.map((opt, i) => (
               <button
                 key={i}
                 onClick={() => !answered && setSelected(i)}
-                className={`w-full text-left p-4 rounded-lg border text-sm transition-all ${
+                className={cn(
+                  "w-full text-left p-5 rounded-2xl border text-base transition-all duration-300 relative group overflow-hidden shadow-elegant",
                   answered && i === practiceQuestion.correct_index
-                    ? "border-green-500 bg-green-500/10"
+                    ? "border-green-500 bg-green-500/20 text-green-300 shadow-glow-green"
                     : answered && i === selected && i !== practiceQuestion.correct_index
-                    ? "border-destructive bg-destructive/10"
+                    ? "border-red-500 bg-red-500/20 text-red-300 shadow-glow-red"
                     : selected === i
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-secondary/50 hover:border-primary/30"
-                }`}
+                    ? "border-primary bg-primary/20 text-white shadow-glow-primary"
+                    : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:border-white/20"
+                )}
               >
-                <span className="font-semibold mr-2">
-                  {practiceQuestion.options.length === 2 ? "" : `${String.fromCharCode(65 + i)}) `}
-                </span>
-                {opt}
+                <div className="flex items-center gap-4">
+                  <span className={cn(
+                    "h-8 w-8 rounded-lg flex items-center justify-center font-black text-xs transition-colors",
+                    selected === i ? "bg-primary text-white" : "bg-white/10 text-white/40"
+                  )}>
+                    {practiceQuestion.options.length === 2 ? "" : String.fromCharCode(65 + i)}
+                  </span>
+                  <span className="flex-1">{opt}</span>
+                </div>
               </button>
             ))}
           </div>
 
           {answered && practiceQuestion.explanation && (
-            <div className="mt-4 p-4 rounded-lg bg-muted text-sm">
-              <p className="font-medium mb-1">Explicação:</p>
-              <p className="text-muted-foreground"><MedicalTermHighlighter text={practiceQuestion.explanation} /></p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 p-6 rounded-2xl bg-primary/5 border border-primary/20 text-sm shadow-inner"
+            >
+              <p className="font-black text-primary mb-2 uppercase tracking-widest text-xs flex items-center gap-2">
+                <Sparkles className="h-4 w-4" /> Explicação do Especialista
+              </p>
+              <p className="text-white/80 leading-relaxed text-base italic">
+                <MedicalTermHighlighter text={practiceQuestion.explanation} />
+              </p>
+            </motion.div>
           )}
 
-          <div className="flex gap-3 mt-6 flex-wrap">
+          <div className="flex gap-4 mt-8 flex-wrap">
             {!answered ? (
-              <Button onClick={confirmAnswer} disabled={selected === null}>Confirmar</Button>
+              <Button 
+                onClick={confirmAnswer} 
+                disabled={selected === null}
+                size="lg"
+                className="gap-2 px-8 py-6 rounded-2xl shadow-pixar bg-[var(--pixar-grad-primary)]"
+              >
+                <CheckCircle2 className="h-5 w-5" /> Confirmar Resposta
+              </Button>
             ) : (
               <>
-                <Button onClick={nextQuestion}>
-                  {practiceIdx + 1 >= filtered.length ? "Finalizar" : "Próxima"}
+                <Button 
+                  onClick={nextQuestion}
+                  size="lg"
+                  className="gap-2 px-8 py-6 rounded-2xl shadow-pixar"
+                >
+                  {practiceIdx + 1 >= filtered.length ? "Finalizar Sessão" : "Próxima Questão"}
+                  <ArrowRight className="h-5 w-5" />
                 </Button>
                 {selected !== practiceQuestion.correct_index && (
                   <Button
                     variant="outline"
-                    className="gap-2"
+                    size="lg"
+                    className="gap-2 px-8 py-6 rounded-2xl border-primary/30 text-primary hover:bg-primary/10"
                     onClick={() => {
                       const params = new URLSearchParams();
                       params.set("sc_source", "error-bank");
@@ -404,7 +433,7 @@ const QuestionsBank = () => {
                       navigate(`/dashboard/chatgpt?${params.toString()}`);
                     }}
                   >
-                    <GraduationCap className="h-4 w-4" />
+                    <GraduationCap className="h-5 w-5" />
                     Estudar com Tutor IA
                   </Button>
                 )}
