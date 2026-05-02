@@ -63,6 +63,15 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["centro de comando", "ceo", "kpi", "executivo"],
       },
       {
+        to: "/admin/automation-lab",
+        label: "Produção Lote P2",
+        description: "Geração síncrona em lote para temas de prova (P2 Clínica/Pediatria).",
+        icon: Sparkles,
+        scopes: ["super_admin", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["automação", "p2", "lote", "geração"],
+      },
+      {
         to: "/admin/monitoring",
         label: "Monitor de Alunos",
         description: "Painel do mentor: alunos em risco, progresso e intervenções.",
