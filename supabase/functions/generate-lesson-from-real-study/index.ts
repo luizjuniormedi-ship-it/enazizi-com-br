@@ -158,30 +158,26 @@ Deno.serve(async (req) => {
       metadata: { score, reason, topic, rollout: true }
     });
 
-    // 5. Chamar a function de estruturação de forma SÍNCRONA para garantir que o admin já veja os prompts
+    // 5. Chamar a function de estruturação de forma SÍNCRONA
     const structureUrl = `${supabaseUrl}/functions/v1/tutor-lesson-structure`;
-    try {
-      const structResp = await fetch(structureUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${serviceKey}`
-        },
-        body: JSON.stringify({ lesson_id: lesson.id })
-      });
-      
-      const structData = await structResp.json();
-      console.log("Structure generation completed:", structData);
-    } catch (err) {
-      console.error("Error triggering synchronous structure:", err);
-    }
+    const structResp = await fetch(structureUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${serviceKey}`
+      },
+      body: JSON.stringify({ lesson_id: lesson.id })
+    });
+    
+    const structData = await structResp.json();
 
     return new Response(JSON.stringify({ 
       status: "success", 
       lesson_id: lesson.id,
       score,
       reason,
-      rollout_active: true
+      rollout_active: true,
+      structure: structData
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
