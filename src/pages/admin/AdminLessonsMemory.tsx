@@ -102,10 +102,20 @@ const AdminLessonsMemory = () => {
 
   const uploadVideoMutation = useMutation({
     mutationFn: async ({ id, file }: { id: string; file: File }) => {
-      const fileName = `${id}/${crypto.randomUUID()}-${file.name}`;
+      // Sanitiza nome: remove acentos/diacríticos e caracteres não permitidos pelo Supabase Storage
+      const safeName = file.name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]/g, "_")
+        .replace(/_+/g, "_");
+      const fileName = `${id}/${crypto.randomUUID()}-${safeName}`;
       const { error: uploadError } = await supabase.storage
         .from("tutor-lesson-videos")
-        .upload(fileName, file, { cacheControl: "3600", upsert: true });
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: true,
+          contentType: file.type || "video/mp4",
+        });
       if (uploadError) throw uploadError;
 
       const { error: updateError } = await supabase
