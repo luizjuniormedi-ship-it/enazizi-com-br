@@ -475,7 +475,24 @@ const Admin = () => {
       <main className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 space-y-6 max-w-7xl">
           {/* Cinematic hero — sóbrio, técnico, premium */}
-          {activeSection === "overview" && (
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-3 p-4 bg-violet-600 rounded-2xl shadow-2xl shadow-violet-500/40 border border-violet-400">
+              <Sparkles className="h-6 w-6 text-white animate-pulse" />
+              <div className="flex-1">
+                <h2 className="text-white font-black text-sm uppercase tracking-tighter">Área de Produção Urgente</h2>
+                <p className="text-violet-100 text-xs">Inicie a geração automática das 41 aulas para a P2 agora.</p>
+              </div>
+              <Button 
+                onClick={handleBatchP2} 
+                disabled={loadingBatch}
+                className="bg-white text-violet-600 hover:bg-violet-50 font-black px-6 h-10 shadow-lg"
+              >
+                {loadingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current mr-2" />}
+                {loadingBatch ? "PROCESSANDO..." : "INICIAR LOTE P2 AGORA"}
+              </Button>
+            </div>
+
+            {activeSection === "overview" && (
             <CinematicHero
               module="admin"
               eyebrow={
