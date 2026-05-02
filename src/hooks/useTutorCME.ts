@@ -31,7 +31,6 @@ export interface CMEProjectState {
   workerStatus?: 'online' | 'offline_or_unavailable';
   manualVideoUrl?: string;
 }
-}
 
 export const useTutorCME = () => {
   const supabaseClient = useMemo(() => supabase, []);
