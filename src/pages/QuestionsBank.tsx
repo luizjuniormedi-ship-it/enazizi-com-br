@@ -329,7 +329,7 @@ const QuestionsBank = () => {
   if (practicing && practiceQuestion) {
     return (
       <div className="space-y-6 animate-fade-in max-w-3xl relative min-h-screen pb-12">
-        <EnaflixBackgroundFX intensity="high" />
+        <EnaflixBackgroundFX intensity="medium" />
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold flex items-center gap-2 text-white">
             <Play className="h-6 w-6 text-primary" /> Modo Prática
