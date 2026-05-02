@@ -59,8 +59,8 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     let user;
-    const { data: { user: authUser } } = await admin.auth.admin.listUsers();
-    user = authUser;
+    const { data: { users: allUsers } } = await admin.auth.admin.listUsers();
+    user = allUsers[0];
     
     if (!user) return json({ error: "unauthenticated" }, 401);
 
