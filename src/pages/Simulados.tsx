@@ -238,9 +238,9 @@ const Simulados = () => {
           {Object.entries(EXAM_PROFILES).slice(0, 6).map(([id, profile]) => (
             <SimuladoProfileCard
               key={id} title={profile.name} subtitle="Padrão oficial da banca"
-              count={profile.questionCount} timeMinutes={profile.timeMinutes}
+              count={profile.totalQuestions} timeMinutes={profile.timeMinutes}
               image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
-              onClick={() => handleStart({ topics: profile.subjects, count: profile.questionCount, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
+              onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
             />
           ))}
         </EnaflixRow>
@@ -248,7 +248,17 @@ const Simulados = () => {
         <EnaflixSection title="Configuração Avançada" subtitle="Monte sua prova personalizada.">
           <div className="px-4 sm:px-8 lg:px-14">
             <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden">
-              <SimuladoSetup onStart={handleStart} isAdaptiveLoading={adaptivePreviewLoading} adaptiveMeta={adaptivePreviewMeta} onFetchAdaptiveMeta={() => {}} />
+              <SimuladoSetup
+                onStart={handleStart}
+                adaptiveLoading={adaptivePreviewLoading}
+                adaptiveMeta={adaptivePreviewMeta}
+                onFetchAdaptivePreview={() => {}}
+                onResumeSession={() => {}}
+                onDiscardSession={() => {}}
+                onRetryErrors={() => {}}
+                pendingSession={null}
+                checkedSession={true}
+              />
             </div>
           </div>
         </EnaflixSection>
