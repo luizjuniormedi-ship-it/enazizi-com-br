@@ -80,7 +80,7 @@ serve(async (req) => {
           status: 'queued',
           queue_id: queue?.id,
           user_id: user.id,
-          config: buildConfig(payload),
+          config: renderConfig,
           idempotency_key: `${projectId}-${Date.now()}`
         })
         .select()
