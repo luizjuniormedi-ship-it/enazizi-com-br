@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Sparkles, Wand2, Activity, Info, Loader2, Zap } from "lucide-react";
+import { Sparkles, Wand2, Activity, Info, Loader2, Zap, GraduationCap, BookOpen } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { simulateHighStudyActivity } from "@/lib/enaflixSimulation";
+import { generateP2LessonBatch } from "@/lib/p2BatchGeneration";
 import { toast } from "sonner";
 
 interface Props {
