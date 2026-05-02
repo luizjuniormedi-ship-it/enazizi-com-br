@@ -165,20 +165,30 @@ export const useTutorCME = () => {
     }
   }, [supabaseClient]);
 
-  const aggregateSessionContent = useCallback(async (conversationId: string) => {
-    const { data: messages, error } = await supabaseClient
-      .from("tutor_messages")
-      .select("id, content, role, created_at")
-      .eq("tutor_session_id", conversationId)
-      .eq("role", "assistant")
-      .order("created_at", { ascending: true });
+  const aggregateSessionContent = useCallback(async (conversationId: string, customContent?: string) => {
+    let messages: any[] = [];
+    
+    if (customContent) {
+      messages = [{ content: customContent, role: 'assistant' }];
+    } else {
+      const { data, error } = await supabaseClient
+        .from("tutor_messages")
+        .select("id, content, role, created_at")
+        .eq("tutor_session_id", conversationId)
+        .eq("role", "assistant")
+        .order("created_at", { ascending: true });
 
-    if (error) throw error;
-    if (!messages || messages.length === 0) throw new Error("Nenhuma mensagem encontrada na sessão.");
+      if (error) throw error;
+      messages = data || [];
+    }
+
+    if (messages.length === 0) throw new Error("Nenhuma mensagem encontrada para processar.");
 
     const fullText = messages.map(m => m.content).join("\n\n---\n\n");
     const blocks: { type: string; title: string; content: string; metadata?: any }[] = [];
-    const sections = fullText.split("\n#").filter(s => s.trim().length > 0);
+    
+    // Split by Markdown headers
+    const sections = fullText.split(/\n(?=# )/).filter(s => s.trim().length > 0);
     
     sections.forEach((section, idx) => {
       const titleLine = section.split("\n")[0].replace(/^#+\s*/, "").trim();
@@ -253,14 +263,16 @@ export const useTutorCME = () => {
       if (!user) throw new Error("Usuário não autenticado");
 
       let aggregationId: string | null = null;
-      let lessonBlocks: any[] = params.blocks || [];
+      let lessonBlocks: any[] = [];
 
-      if (params.isFullSession) {
-        const result = await aggregateSessionContent(params.conversationId);
-        aggregationId = result.aggregation.id;
-        lessonBlocks = result.blocks;
-        setState(s => ({ ...s, aggregationId, progress: 10, message: "Sessão agregada..." }));
-      }
+      // Always create an aggregation to support Agile Player and structure
+      const result = await aggregateSessionContent(
+        params.conversationId, 
+        params.isFullSession ? undefined : params.sourceContent
+      );
+      aggregationId = result.aggregation.id;
+      lessonBlocks = result.blocks;
+      setState(s => ({ ...s, aggregationId, progress: 10, message: "Conteúdo estruturado..." }));
 
       const { data: project, error: projectError } = await supabaseClient
         .from("cme_video_projects")
@@ -413,31 +425,42 @@ export const useTutorCME = () => {
 
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Orquestrando Renderização..." }));
       
+      console.log("[CME] Invoking orchestrator for project:", projectId);
       const { data: orchestratorResult, error: orchError } = await supabaseClient.functions.invoke('cme-orchestrator', {
         body: { 
           action: 'start_render', 
           projectId,
-          payload: { priority: 1, title: params.title }
+          payload: { 
+            priority: 1, 
+            title: params.title,
+            aggregationId // Pass the aggregation ID to the orchestrator
+          }
         }
       });
 
       if (orchError) {
-        throw new Error(orchError.message || "Erro no orquestrador");
+        console.error("[CME] Orchestrator Invoke Error:", orchError);
+        throw new Error(orchError.message || "Erro de conexão com o orquestrador");
       }
+
+      console.log("[CME] Orchestrator Result:", orchestratorResult);
 
       // Structured failure from orchestrator (never blank screen)
       if (orchestratorResult && orchestratorResult.success === false) {
         const techReason = orchestratorResult.technical_reason || orchestratorResult.message || orchestratorResult.code;
-        if (orchestratorResult.code === 'WORKER_ASSIGN_FAILED' || orchestratorResult.fallback_available) {
+        
+        // If it's a hardware issue, we can still proceed to Agile mode
+        if (orchestratorResult.code === 'WORKER_ASSIGN_FAILED' || orchestratorResult.status === 'waiting_hardware' || orchestratorResult.fallback_available) {
           setState(s => ({
             ...s,
-            status: 'failed',
-            error: orchestratorResult.message || 'Falha no orquestrador',
-            message: techReason,
+            status: 'pending_hardware',
+            isStuck: true,
+            message: orchestratorResult.message || "GPU Workers offline. Fallback disponível.",
+            progress: 65
           }));
-          await reportIncident('cme-orchestrator', new Error(techReason));
-          return null;
+          return projectId;
         }
+        
         throw new Error(`${orchestratorResult.code || 'ORCHESTRATOR_ERROR'}: ${techReason}`);
       }
 
@@ -445,10 +468,11 @@ export const useTutorCME = () => {
         setState(s => ({ 
           ...s, 
           status: 'pending_hardware', 
-          message: orchestratorResult.message,
-          progress: 60
+          message: orchestratorResult.message || "Aguardando hardware GPU...",
+          progress: 60,
+          isStuck: true
         }));
-      } else if (orchestratorResult?.status === 'rendering') {
+      } else if (orchestratorResult?.status === 'rendering' || orchestratorResult?.status === 'completed') {
         setState(s => ({
           ...s,
           status: 'gpu_rendering' as any,
