@@ -95,17 +95,23 @@ export const useTutorCME = () => {
       const elapsed = Date.now() - lastEventRef.current;
       
       // If the backend is between render job creation and GPU rendering without fresh telemetry, verify real state.
-      if (['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering'].includes(String(state.status)) && elapsed > 20000) {
+      if (['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware'].includes(String(state.status)) && elapsed > 10000) {
         const onlineCount = await checkWorkerHealth();
-        const { data: job } = state.projectId
+        
+        const { data: job, error: jobErr } = state.projectId
           ? await supabaseClient
-              .from('cme_render_jobs' as any)
+              .from('cme_render_jobs')
               .select('status, progress, gpu_worker_id, pipeline_last_error')
               .eq('project_id', state.projectId)
               .order('updated_at', { ascending: false })
               .limit(1)
               .maybeSingle()
-          : { data: null };
+          : { data: null, error: null };
+
+        if (jobErr) {
+          console.error("Job status check failed", jobErr);
+          return;
+        }
 
         if ((job as any)?.pipeline_last_error) {
           setState(s => ({ ...s, status: 'failed', error: (job as any).pipeline_last_error, message: (job as any).pipeline_last_error, isStuck: true }));
@@ -118,7 +124,7 @@ export const useTutorCME = () => {
             status: 'pending_hardware',
             workerStatus: 'offline_or_unavailable',
             progress: Math.max(s.progress, (job as any)?.progress ?? 65),
-            message: "Renderização pendente de hardware. Nenhum Worker/GPU com heartbeat recente.",
+            message: "Renderização pendente de hardware. Nenhum Worker/GPU ativo no momento.",
             isStuck: true 
           }));
           return;
@@ -129,7 +135,7 @@ export const useTutorCME = () => {
           lastEventRef.current = Date.now();
         }
       }
-    }, 5000);
+    }, 3000);
 
     return () => {
       supabaseClient.removeChannel(channel);
@@ -319,12 +325,13 @@ export const useTutorCME = () => {
         visual_goal: 'high_engagement',
         status: 'ready',
         title: params.title,
-        scene_graph: sceneGraphData, // Ensure canonical column is filled
-        graph_payload: sceneGraphData, // Ensure legacy/compatibility column is filled
+        scene_graph: sceneGraphData,
+        graph_payload: sceneGraphData,
         metadata: {
           specialty: params.specialty,
           topic: params.topic,
-          source_content_length: params.sourceContent?.length
+          source_content_length: params.sourceContent?.length,
+          aggregation_id: aggregationId // Critical: link to aggregation
         }
       };
 
