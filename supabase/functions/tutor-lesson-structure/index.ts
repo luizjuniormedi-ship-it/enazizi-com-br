@@ -8,10 +8,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-const MAX_PER_HOUR = 3;
-const MAX_PER_DAY = 10;
-const MAX_ATTEMPTS = 3;
-const MIN_QUALITY = 70;
+const MAX_PER_HOUR = 100;
+const MAX_PER_DAY = 500;
+const MAX_ATTEMPTS = 5;
+const MIN_QUALITY = 50;
 
 type StructuredLesson = {
   title: string;
