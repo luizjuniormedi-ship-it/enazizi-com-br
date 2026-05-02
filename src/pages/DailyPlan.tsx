@@ -5,12 +5,13 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap,
   Target, FlipVertical, GraduationCap, Calendar, AlertTriangle,
-  Layers, ChevronDown, ArrowRight, Rocket, Play
+  Layers, ChevronDown, ArrowRight, Rocket, Play, Compass
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,6 +27,14 @@ import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import NextTaskBanner from "@/components/daily-plan/NextTaskBanner";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
+import { EnaflixCinematicCard } from "@/components/enaflix/EnaflixCinematicCard";
+import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
+import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
+import { EnaflixLoader } from "@/components/enaflix/EnaflixLoader";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { motion } from "framer-motion";
 
 const reviewTimeEstimates: Record<string, number> = {
   D1: 20, D3: 15, D7: 12, D15: 10, D30: 8,
@@ -348,8 +357,9 @@ const DailyPlan = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] py-20">
+        <EnaflixBackgroundFX intensity="subtle" />
+        <EnaflixLoader variant="hologram" label="Sincronizando plano diário..." />
       </div>
     );
   }
@@ -386,278 +396,310 @@ const DailyPlan = () => {
     && (Date.now() - lastCompletedAt) < 90_000;
 
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Header */}
-      <div>
-        <h1 className="text-xl font-bold flex items-center gap-2">
-          <Zap className="h-6 w-6 text-primary" />
-          Plano de Hoje
-        </h1>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          O que o sistema selecionou para você estudar hoje.
-        </p>
-      </div>
-
-      {/* Banner de auto-encadeamento — aparece logo após concluir uma task */}
-      {showNextBanner && nextAction && (
-        <NextTaskBanner
-          nextLabel={nextAction.label}
-          hint={nextAction.hint}
-          onContinue={nextAction.go}
-          onOpenRadar={() => navigate("/dashboard/radar-trajetoria")}
-          onDismiss={() => setLastCompletedAt(null)}
-        />
-      )}
-
-      {/* Progress */}
-      {hasContent && (
-        <div className="space-y-3">
-          <DailyPlanProgress
-            overallPct={overallPct}
-            totalDone={totalDone}
-            totalItems={totalItems}
-            totalMinutes={totalMinutes}
-          />
-          <div className="rounded-lg border border-border/60 p-3 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" /> Tempo planejado
-              </span>
-              <span className={`font-semibold ${timeUsedPct > 100 ? "text-destructive" : "text-foreground"}`}>
-                {formatTime(totalMinutes)} / {formatTime(dailyMinutes)}
-              </span>
-            </div>
-            <Progress value={timeUsedPct} className="h-1.5" />
-          </div>
-        </div>
-      )}
-
-      {/* ── SECTION 1: Scheduled Reviews (from Planner) ── */}
-      {scheduledReviews.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            Revisões Programadas
-            <Badge variant="secondary" className="text-[10px]">{scheduledReviews.length}</Badge>
-            <span className="text-[10px] text-muted-foreground ml-auto">~{reviewMinutes}min</span>
-          </h2>
-          {scheduledReviews.map((review) => {
-            const done = completedReviews.has(review.id);
-            const mastery = masteryData.get(review.tema_id);
-            const masteryLevel = mastery ? getMasteryLevel(mastery.correctRate, mastery.reviewsDone) : null;
-
-            return (
-              <div
-                key={review.id}
-                className={`rounded-lg border p-3 flex items-start gap-3 transition-all ${done ? "opacity-40 border-border/40" : review.overdue ? "border-destructive/40 bg-destructive/5" : "border-primary/20 bg-primary/5"}`}
-              >
-                <div
-                  className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform bg-primary/10"
-                  onClick={() => done ? toggleReviewDone(review.id) : handleReviewComplete(review.id, review.tema, review.especialidade)}
+    <div className="relative min-h-screen pb-20">
+      <EnaflixBackgroundFX intensity="medium" />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-10">
+        {/* Header / Hero */}
+        <section className="relative overflow-hidden rounded-3xl p-8 sm:p-12 mb-10">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-violet-500/10 to-transparent -z-10" />
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/20 blur-[100px] rounded-full -z-10" />
+          
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="enaflix-hud-label !text-primary tracking-widest uppercase font-black">Missão Médica</span>
+              </div>
+              <h1 className="text-4xl sm:text-6xl font-black tracking-tighter leading-none bg-gradient-to-r from-white via-white/90 to-white/60 bg-clip-text text-transparent">
+                Hoje no ENAFLIX
+              </h1>
+              <p className="text-lg text-white/70 max-w-xl font-medium">
+                Sua jornada personalizada, organizada por IA para máxima retenção.
+              </p>
+              
+              <div className="flex flex-wrap gap-4 pt-4">
+                {nextAction && (
+                  <Enaflix3DButton 
+                    glow 
+                    size="lg" 
+                    iconRight={<Play className="ml-2 h-5 w-5" />}
+                    onClick={nextAction.go}
+                  >
+                    Começar Missão
+                  </Enaflix3DButton>
+                )}
+                <Enaflix3DButton 
+                  variant="outline" 
+                  size="lg" 
+                  iconLeft={<Compass className="mr-2 h-5 w-5" />}
+                  onClick={() => navigate("/dashboard/radar-trajetoria")}
                 >
-                  {done ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <RefreshCw className="h-4 w-4 text-primary" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                    <h3 className={`font-medium text-sm ${done ? "line-through" : ""}`}>{review.tema}</h3>
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0">{review.tipo_revisao}</Badge>
-                    {review.overdue && (
-                      <span className="text-[9px] text-destructive flex items-center gap-0.5">
-                        <AlertTriangle className="h-2.5 w-2.5" /> Atrasada
-                      </span>
-                    )}
-                    {masteryLevel && <MasteryBadge level={masteryLevel.level} percentage={masteryLevel.percentage} compact />}
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    {review.especialidade} · ~{review.estimatedMinutes}min
-                    {review.subtopico && <> · {review.subtopico}</>}
-                  </p>
-                  {!done && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => goToTutor(review.tema, review.especialidade, "review", review.subtopico)}>
-                        <GraduationCap className="h-3 w-3" /> Tutor
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => goToQuestions(review.tema, review.especialidade)}>
-                        <Target className="h-3 w-3" /> Questões
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => goToFlashcards(review.tema, review.especialidade)}>
-                        <FlipVertical className="h-3 w-3" /> Flashcards
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                  Ver Trajetória
+                </Enaflix3DButton>
               </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Overflow reviews */}
-      {overflowReviews.length > 0 && (
-        <Collapsible open={showOverflowReviews} onOpenChange={setShowOverflowReviews}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
-              <span>Revisões extras ({overflowReviews.length})</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${showOverflowReviews ? "rotate-180" : ""}`} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1.5 mt-1">
-            {overflowReviews.map((review) => (
-              <div key={review.id} className="rounded-lg border border-border/40 p-2.5 flex items-center gap-2.5 opacity-60">
-                <RefreshCw className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{review.tema}</p>
-                  <p className="text-[10px] text-muted-foreground">{review.tipo_revisao} · {review.especialidade} · ~{review.estimatedMinutes}min</p>
-                </div>
-                <Button variant="ghost" size="sm" className="text-[10px] h-6 px-2"
-                  onClick={() => goToTutor(review.tema, review.especialidade, "review")}>
-                  <ArrowRight className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {/* ── SECTION 2: New Topics (from Planner) ── */}
-      {todayTopics.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <BookOpen className="h-4 w-4 text-primary" />
-            Conteúdo Novo
-            <Badge variant="secondary" className="text-[10px]">{todayTopics.length}</Badge>
-          </h2>
-          {todayTopics.map((topic) => {
-            const done = completedTopics.has(topic.id);
-            return (
-              <div
-                key={topic.id}
-                className={`rounded-lg border p-3 flex items-start gap-3 transition-all ${done ? "opacity-40 border-border/40" : "border-primary/20 bg-primary/5"}`}
-              >
-                <div
-                  className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-transform bg-primary/10"
-                  onClick={() => done ? setCompletedTopics(prev => { const n = new Set(prev); n.delete(topic.id); return n; }) : handleTopicDone(topic.id, topic.tema)}
-                >
-                  {done ? <CheckCircle2 className="h-4 w-4 text-primary" /> : <BookOpen className="h-4 w-4 text-primary" />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                    <h3 className={`font-medium text-sm ${done ? "line-through" : ""}`}>{topic.tema}</h3>
-                    <Badge variant="outline" className="text-[9px] px-1.5 py-0">Novo</Badge>
-                  </div>
-                  <p className="text-[10px] text-muted-foreground">
-                    {topic.especialidade} · ~40min
-                    {topic.subtopico && <> · {topic.subtopico}</>}
-                  </p>
-                  {!done && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => goToTutor(topic.tema, topic.especialidade, "new_content", topic.subtopico)}>
-                        <GraduationCap className="h-3 w-3" /> Tutor
-                      </Button>
-                      <Button variant="ghost" size="sm" className="gap-1 text-[10px] h-6 px-2"
-                        onClick={() => goToQuestions(topic.tema, topic.especialidade)}>
-                        <Target className="h-3 w-3" /> Questões
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Overflow topics */}
-      {overflowTopics.length > 0 && (
-        <Collapsible open={showOverflowTopics} onOpenChange={setShowOverflowTopics}>
-          <CollapsibleTrigger asChild>
-            <Button variant="ghost" size="sm" className="w-full justify-between text-muted-foreground text-xs">
-              <span>Mais temas para depois ({overflowTopics.length})</span>
-              <ChevronDown className={`h-4 w-4 transition-transform ${showOverflowTopics ? "rotate-180" : ""}`} />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="space-y-1.5 mt-1">
-            {overflowTopics.map((topic) => (
-              <div key={topic.id} className="rounded-lg border border-border/40 p-2.5 flex items-center gap-2.5 opacity-60">
-                <BookOpen className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium truncate">{topic.tema}</p>
-                  <p className="text-[10px] text-muted-foreground">{topic.especialidade} · ~40min</p>
-                </div>
-              </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      )}
-
-      {/* ── SECTION 3: Study Engine Recommendations ── */}
-      {engineRecs && engineRecs.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-sm font-semibold flex items-center gap-2">
-            <Brain className="h-4 w-4 text-primary" />
-            Recomendações Inteligentes
-          </h2>
-          {engineRecs.slice(0, 3).map(rec => {
-            const path = buildStudyPath(rec, "daily-plan");
-            return (
-              <div
-                key={rec.id}
-                className="rounded-lg border border-border/60 p-3 flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"
-                onClick={() => navigate(path)}
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{rec.topic}</p>
-                  <p className="text-[10px] text-muted-foreground">{rec.reason}</p>
-                </div>
-                <span className="text-[10px] text-muted-foreground flex items-center gap-0.5 shrink-0">
-                  <Clock className="h-3 w-3" />
-                  {rec.estimatedMinutes}min
-                </span>
-                <ArrowRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ── Mission CTA — start full guided flow ── */}
-      {hasContent && missionState.status === "idle" && missionHasTasks && (
-        <div className="rounded-xl border border-primary/30 bg-gradient-to-br from-primary/5 to-background p-4 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
-              <Rocket className="h-5 w-5 text-primary" />
             </div>
-            <div className="flex-1">
-              <p className="font-bold text-sm">Executar tudo como Missão</p>
-              <p className="text-[10px] text-muted-foreground">O sistema guia você passo a passo por todas as tarefas.</p>
-            </div>
+
+            {hasContent && (
+              <div className="w-full md:w-80 shrink-0">
+                <EnaflixCinematicCard variant="analytics" className="p-5 space-y-4 border-white/10 bg-black/40 backdrop-blur-xl">
+                  <div className="flex justify-between items-end">
+                    <span className="text-xs font-bold text-white/50 uppercase tracking-widest">Progresso do Dia</span>
+                    <span className="text-3xl font-black text-primary">{overallPct}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-white/5 overflow-hidden ring-1 ring-white/10">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${overallPct}%` }}
+                      className="h-full bg-gradient-to-r from-primary via-cyan-400 to-violet-500"
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold text-white/40 uppercase">
+                    <span>{totalDone}/{totalItems} atividades</span>
+                    <span className={timeUsedPct > 100 ? "text-red-400" : ""}>
+                      {formatTime(totalMinutes)} planejados
+                    </span>
+                  </div>
+                </EnaflixCinematicCard>
+              </div>
+            )}
           </div>
-          <Button
-            className="w-full gap-2 font-semibold"
-            onClick={() => { startMission(); navigate("/mission"); }}
+        </section>
+
+        {/* Banner de auto-encadeamento */}
+        {showNextBanner && nextAction && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
           >
-            <Play className="h-4 w-4" /> INICIAR MISSÃO DO DIA
-          </Button>
-        </div>
-      )}
+            <NextTaskBanner
+              nextLabel={nextAction.label}
+              hint={nextAction.hint}
+              onContinue={nextAction.go}
+              onOpenRadar={() => navigate("/dashboard/radar-trajetoria")}
+              onDismiss={() => setLastCompletedAt(null)}
+            />
+          </motion.div>
+        )}
 
-      {/* Empty state */}
-      {!hasContent && (
-        <div className="text-center py-16 space-y-3">
-          <Brain className="h-12 w-12 text-muted-foreground mx-auto" />
-          <p className="text-sm text-muted-foreground">Nenhuma tarefa para hoje.</p>
-          <p className="text-xs text-muted-foreground">
-            Configure seu plano de estudos no <strong>Plano Geral</strong> para ver tarefas aqui.
-          </p>
-          <Button variant="outline" size="sm" onClick={() => navigate("/dashboard/planner")}>
-            <Calendar className="h-4 w-4 mr-2" /> Ir para o Plano Geral
-          </Button>
-        </div>
-      )}
+        {/* ── MISSÃO PRINCIPAL ── */}
+        {nextAction && (
+          <section className="space-y-4">
+            <EnaflixSectionTitle 
+              kicker="IA de Estudos"
+              title="Próxima Melhor Ação"
+              subtitle="O que você deve fazer agora para manter o ritmo."
+            />
+            <EnaflixCinematicCard 
+              variant="tutor" 
+              glow
+              className="group p-8 relative overflow-hidden min-h-[220px] flex flex-col justify-center"
+              onClick={nextAction.go}
+            >
+              <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+                <Brain className="h-32 w-32" />
+              </div>
+              <div className="relative z-10 space-y-4">
+                <div className="flex items-center gap-3">
+                  <EnaflixBadge type="recomendado" />
+                  <span className="text-xs font-bold text-white/40 uppercase tracking-widest">{nextAction.hint}</span>
+                </div>
+                <h3 className="text-3xl sm:text-4xl font-black text-white group-hover:text-primary transition-colors">
+                  {nextAction.label}
+                </h3>
+                <div className="flex items-center gap-4">
+                  <Enaflix3DButton size="md" className="w-fit">
+                    Continuar agora
+                  </Enaflix3DButton>
+                </div>
+              </div>
+            </EnaflixCinematicCard>
+          </section>
+        )}
+
+        {/* ── REVISÕES INTELIGENTES ── */}
+        {scheduledReviews.length > 0 && (
+          <section className="space-y-6">
+            <EnaflixSectionTitle 
+              title="Revisões Inteligentes"
+              subtitle="Seu cronograma de repetição espaçada."
+              action={
+                <div className="flex items-center gap-2 text-xs font-bold text-white/40">
+                  <Clock className="h-4 w-4" />
+                  ~{reviewMinutes}min estimado
+                </div>
+              }
+            />
+            <EnaflixRow title="" className="!space-y-0 -mx-4 sm:-mx-8 lg:-mx-14">
+              {scheduledReviews.map((review) => {
+                const done = completedReviews.has(review.id);
+                const mastery = masteryData.get(review.tema_id);
+                const masteryLevel = mastery ? getMasteryLevel(mastery.correctRate, mastery.reviewsDone) : null;
+
+                return (
+                  <EnaflixCinematicCard
+                    key={review.id}
+                    variant="lesson"
+                    className={cn(
+                      "min-w-[280px] sm:min-w-[320px] p-5 space-y-4 transition-all",
+                      done && "opacity-40 grayscale"
+                    )}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <EnaflixBadge type={review.overdue ? "urgente" : "ia"} />
+                          {masteryLevel && <MasteryBadge level={masteryLevel.level} percentage={masteryLevel.percentage} compact />}
+                        </div>
+                        <h3 className="font-bold text-lg line-clamp-2">{review.tema}</h3>
+                        <p className="text-[10px] text-white/50 uppercase font-black tracking-wider">
+                          {review.especialidade} {review.subtopico ? `· ${review.subtopico}` : ""}
+                        </p>
+                      </div>
+                      <div 
+                        className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 hover:bg-white/10 transition-colors cursor-pointer"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          done ? toggleReviewDone(review.id) : handleReviewComplete(review.id, review.tema, review.especialidade);
+                        }}
+                      >
+                        {done ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <RefreshCw className="h-5 w-5 text-white/40" />}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <Enaflix3DButton 
+                        variant="ghost" 
+                        size="sm" 
+                        className="!h-8 !px-3"
+                        onClick={() => goToTutor(review.tema, review.especialidade, "review", review.subtopico)}
+                      >
+                        Tutor IA
+                      </Enaflix3DButton>
+                      <Enaflix3DButton 
+                        variant="ghost" 
+                        size="sm" 
+                        className="!h-8 !px-3"
+                        onClick={() => goToQuestions(review.tema, review.especialidade)}
+                      >
+                        Questões
+                      </Enaflix3DButton>
+                    </div>
+                  </EnaflixCinematicCard>
+                );
+              })}
+            </EnaflixRow>
+          </section>
+        )}
+
+        {/* ── CONTEÚDO NOVO ── */}
+        {todayTopics.length > 0 && (
+          <section className="space-y-6">
+            <EnaflixSectionTitle 
+              title="Aulas recomendadas"
+              subtitle="Novos temas para expandir sua base de conhecimento hoje."
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {todayTopics.map((topic) => {
+                const done = completedTopics.has(topic.id);
+                return (
+                  <EnaflixCinematicCard
+                    key={topic.id}
+                    variant="medical"
+                    className={cn(
+                      "p-6 flex flex-col justify-between min-h-[180px]",
+                      done && "opacity-40 grayscale"
+                    )}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-start">
+                        <EnaflixBadge type="novo" />
+                        <div 
+                          className="h-10 w-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 cursor-pointer hover:bg-white/10"
+                          onClick={() => done ? setCompletedTopics(prev => { const n = new Set(prev); n.delete(topic.id); return n; }) : handleTopicDone(topic.id, topic.tema)}
+                        >
+                          {done ? <CheckCircle2 className="h-5 w-5 text-primary" /> : <BookOpen className="h-5 w-5 text-white/40" />}
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-black tracking-tight">{topic.tema}</h3>
+                      <p className="text-xs text-white/50">{topic.especialidade} · ~40min</p>
+                    </div>
+                    
+                    <div className="flex gap-3 pt-4">
+                      <Enaflix3DButton 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={() => goToTutor(topic.tema, topic.especialidade, "new_content", topic.subtopico)}
+                      >
+                        Estudar
+                      </Enaflix3DButton>
+                      <Enaflix3DButton 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => goToQuestions(topic.tema, topic.especialidade)}
+                      >
+                        Praticar
+                      </Enaflix3DButton>
+                    </div>
+                  </EnaflixCinematicCard>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── RECOMENDAÇÕESestatísticas ── */}
+        {engineRecs && engineRecs.length > 0 && (
+          <section className="space-y-6">
+            <EnaflixSectionTitle 
+              title="Ajuste da jornada"
+              subtitle="Otimizações sugeridas pela IA com base no seu desempenho recente."
+            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {engineRecs.slice(0, 3).map(rec => (
+                <div
+                  key={rec.id}
+                  className="card-pixar group p-4 flex items-center gap-4 cursor-pointer"
+                  onClick={() => navigate(buildStudyPath(rec, "daily-plan"))}
+                >
+                  <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                    <Brain className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-sm truncate">{rec.topic}</p>
+                    <p className="text-[10px] text-white/50 uppercase tracking-widest font-black truncate">{rec.reason}</p>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-white/20 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Empty state */}
+        {!hasContent && (
+          <div className="flex flex-col items-center justify-center py-32 text-center space-y-6">
+            <div className="relative">
+              <Brain className="h-24 w-24 text-white/10" />
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-2xl font-black">Sua mente está descansada.</h3>
+              <p className="text-white/50 max-w-sm mx-auto">
+                Nenhuma tarefa pendente para hoje. Que tal revisar seu plano geral?
+              </p>
+            </div>
+            <Enaflix3DButton 
+              variant="primary" 
+              iconLeft={<Calendar className="mr-2 h-5 w-5" />}
+              onClick={() => navigate("/dashboard/planner")}
+            >
+              Ir para o Plano Geral
+            </Enaflix3DButton>
+          </div>
+        )}
+      </div>
 
       {/* Micro Quiz */}
       {quizReview && (
