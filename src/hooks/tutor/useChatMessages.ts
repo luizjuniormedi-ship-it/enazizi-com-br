@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Msg, Conversation } from "@/components/tutor/TutorConstants";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { dualWriteTutorSession, dualWriteTutorMessage } from "@/lib/tutorDualWrite";
+import { trackStudyActivity } from "@/lib/educationalEngine";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 export function useChatMessages(userId: string | undefined) {
