@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2 } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -475,7 +475,24 @@ const Admin = () => {
       <main className="flex-1 overflow-auto">
         <div className="p-4 sm:p-6 space-y-6 max-w-7xl">
           {/* Cinematic hero — sóbrio, técnico, premium */}
-          {activeSection === "overview" && (
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-3 p-4 bg-violet-600 rounded-2xl shadow-2xl shadow-violet-500/40 border border-violet-400">
+              <Sparkles className="h-6 w-6 text-white animate-pulse" />
+              <div className="flex-1">
+                <h2 className="text-white font-black text-sm uppercase tracking-tighter">Área de Produção Urgente</h2>
+                <p className="text-violet-100 text-xs">Inicie a geração automática das 41 aulas para a P2 agora.</p>
+              </div>
+              <Button 
+                onClick={handleBatchP2} 
+                disabled={loadingBatch}
+                className="bg-white text-violet-600 hover:bg-violet-50 font-black px-6 h-10 shadow-lg"
+              >
+                {loadingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current mr-2" />}
+                {loadingBatch ? "PROCESSANDO..." : "INICIAR LOTE P2 AGORA"}
+              </Button>
+            </div>
+
+            {activeSection === "overview" && (
             <CinematicHero
               module="admin"
               eyebrow={
@@ -487,30 +504,32 @@ const Admin = () => {
               title="ENAFLIX Operations Center"
               subtitle="Operação, qualidade e governança do ENAZIZI em tempo real."
               actions={
-                <div className="flex flex-wrap gap-3">
-                  <Button 
-                    variant="outline" 
-                    size="lg" 
-                    onClick={loadData} 
-                    disabled={loading} 
-                    className="gap-2"
-                  >
-                    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                    Atualizar dados
-                  </Button>
-                  <Button 
-                    size="lg" 
-                    onClick={handleBatchP2} 
-                    disabled={loadingBatch}
-                    className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0 shadow-lg shadow-violet-500/20"
-                  >
-                    {loadingBatch ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <BookOpen className="h-4 w-4" />
-                    )}
-                    Produção em Lote P2
-                  </Button>
+                <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="lg" 
+                      onClick={loadData} 
+                      disabled={loading} 
+                      className="gap-2"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                      Atualizar dados
+                    </Button>
+                    <Button 
+                      size="lg" 
+                      onClick={handleBatchP2} 
+                      disabled={loadingBatch}
+                      className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0 shadow-xl shadow-violet-500/30 ring-2 ring-violet-400/20"
+                    >
+                      {loadingBatch ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Play className="h-4 w-4 fill-white" />
+                      )}
+                      <span className="font-black">INICIAR PRODUÇÃO LOTE P2</span>
+                    </Button>
+                  </div>
                 </div>
               }
               className="py-6 sm:py-8"
@@ -776,6 +795,7 @@ const Admin = () => {
             {activeSection === "upload2gb" && <AdminLargeUploadPanel />}
             {activeSection === "multimodal" && <AdminModalityPanel />}
           </Suspense>
+        </div>
         </div>
       </main>
 
