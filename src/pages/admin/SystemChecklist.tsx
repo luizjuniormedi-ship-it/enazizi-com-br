@@ -52,7 +52,7 @@ const MODULES = [
   "Biblioteca de Videoaulas",
   "Smart Replay",
   "Heatmap Cognitivo",
-  "Ingestion Network"
+  "Curadoria de Aulas"
 ];
 
 const SystemChecklist = () => {
