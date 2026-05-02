@@ -66,6 +66,8 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
   const [sceneGraphId, setSceneGraphId] = useState<string | null>(null);
   const [renderJob, setRenderJob] = useState<any | null>(null);
   const [configState, setConfigState] = useState<'config_validated' | 'config_warning' | 'config_invalid' | 'retry_using_original_config' | 'fallback_using_config' | 'unknown'>('unknown');
+  const [devWorkerLoading, setDevWorkerLoading] = useState(false);
+  const [devWorkerError, setDevWorkerError] = useState<string | null>(null);
   const lastEventRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -91,9 +93,9 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       // Latest render job (carries the persisted config)
       const { data: job } = await supabase
         .from('cme_render_jobs' as any)
-        .select('id, status, config, retry_count, worker_id, error_message')
+        .select('id, status, progress, config, retry_count, gpu_worker_id, pipeline_last_error, output_url, preview_url')
         .eq('generation_id', aggregationId)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (job) {
