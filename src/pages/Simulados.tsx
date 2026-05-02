@@ -300,7 +300,7 @@ const Simulados = () => {
       questions={questions}
       timeSeconds={restoredState?.timeLeft ?? 0}
       onFinish={handleFinish}
-      onAutoSaveState={() => ({})}
+      onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
       onStateChange={() => {}}
       mode={mode}
     />
