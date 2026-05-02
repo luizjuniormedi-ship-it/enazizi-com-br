@@ -7,6 +7,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Simple parser for edge function environment
+function parseQuestions(text: string) {
+  const questions: any[] = [];
+  const parts = text.split(/---+/).filter(p => p.trim());
+  
+  const OPTION_LINE_RE = /^[a-eA-E][).]\s+.+/gim;
+  
+  for (const part of parts) {
+    if (part.match(OPTION_LINE_RE)) {
+      const options = part.match(OPTION_LINE_RE)?.map(o => o.replace(/^[a-eA-E][).]\s*/i, "").trim()) || [];
+      const statement = part.split(/[a-eA-E][).]/i)[0].trim().replace(/^#+\s*Questão\s*\d*\s*:?\s*/i, "");
+      questions.push({ statement, options, correctIndex: 0, explanation: "" });
+    }
+  }
+  return questions;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -19,7 +36,7 @@ serve(async (req) => {
     )
 
     const authHeader = req.headers.get('Authorization')
-    const { data: { user } } = await supabaseClient.auth.getUser(authHeader?.replace('Bearer ', ''))
+    const { data: { user } } = await supabaseClient.auth.getUser(authHeader?.replace('Bearer ', '') ?? '')
 
     if (!user) throw new Error('Unauthorized')
 
@@ -58,7 +75,31 @@ serve(async (req) => {
 
     if (aggError) throw aggError
 
-    // 3. Create Project
+    // 3. Create Lesson Blocks (Sync with useTutorCME logic)
+    const sections = fullText.split("\n#").filter(s => s.trim().length > 0);
+    const blockInserts = sections.map((section, idx) => {
+      const titleLine = section.split("\n")[0].replace(/^#+\s*/, "").trim();
+      const title = titleLine || `Capítulo ${idx + 1}`;
+      
+      const questions = parseQuestions(section);
+      const isQuiz = questions.length > 0;
+      
+      return {
+        aggregation_id: aggregation.id,
+        block_type: isQuiz ? 'mini_quiz' : (title.toLowerCase().includes('resumo') ? 'summary' : 'deep_dive'),
+        title: title,
+        block_order: idx + 1,
+        content: section,
+        scene_graph_data: isQuiz ? { questions } : {},
+        estimated_minutes: 2
+      };
+    });
+
+    if (blockInserts.length > 0) {
+      await supabaseClient.from('cme_lesson_blocks').insert(blockInserts);
+    }
+
+    // 4. Create Project
     const { data: project } = await supabaseClient
       .from('cme_video_projects')
       .insert({
@@ -71,11 +112,11 @@ serve(async (req) => {
       .select()
       .single()
 
-    // 4. Start Enterprise Orchestrator
+    // 5. Start Enterprise Orchestrator
     const response = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/cme-orchestrator`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authHeader?.replace('Bearer ', '')}`,
+        'Authorization': `Bearer ${authHeader?.replace('Bearer ', '') ?? ''}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
@@ -97,7 +138,7 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("[CME Start Pipeline Error]", error);
     return new Response(
       JSON.stringify({ error: error.message }),
