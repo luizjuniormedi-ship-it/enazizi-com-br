@@ -58,71 +58,78 @@ export default function RecoveryModeBanner() {
   if (hr?.active) {
     const phaseColor = PHASE_COLORS[hr.phase] || PHASE_COLORS[1];
     return (
-      <Card className="border-destructive/20 bg-destructive/5 shadow-sm rounded-2xl overflow-hidden">
-        <CardContent className="p-5 space-y-4">
-          <div className="flex items-start gap-4">
-            <div className={`p-3 rounded-2xl shrink-0 shadow-sm ${phaseColor} animate-pulse-slow`}>
-              <Shield className="h-6 w-6" />
+      <div className="card-pixar bg-destructive/10 border-destructive/20 relative overflow-hidden">
+        <div className="p-6 space-y-6 relative z-10">
+          <div className="flex items-start gap-5">
+            <div className={`p-4 rounded-2xl shrink-0 shadow-[0_0_30px_rgba(239,68,68,0.4)] ${phaseColor} animate-pulse-slow border border-destructive/30`}>
+              <Shield className="h-8 w-8" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <p className="text-[15px] font-black tracking-tight uppercase text-destructive">
-                  Modo de Recuperação Pesada
+              <div className="flex items-center gap-3 flex-wrap">
+                <p className="text-[16px] font-black tracking-tighter uppercase text-destructive drop-shadow-sm">
+                  Protocolo de Recuperação Crítica
                 </p>
-                <Badge variant="destructive" className="text-[10px] font-bold py-0 h-5 px-2 rounded-lg border-0 bg-destructive text-destructive-foreground">
-                  Fase {hr.phase}/4 — {hr.phaseLabel}
+                <Badge variant="destructive" className="text-[10px] font-black py-0.5 h-6 px-3 rounded-full border-0 bg-destructive text-white shadow-lg">
+                  Fase {hr.phase}/4 · {hr.phaseLabel}
                 </Badge>
               </div>
-              <p className="text-[13px] font-medium text-muted-foreground mt-1 leading-relaxed">
+              <p className="text-[14px] font-bold text-white/70 mt-2 leading-relaxed italic">
                 {hr.phaseDescription}
               </p>
             </div>
           </div>
 
-          <div className="space-y-2 bg-white/5 p-3 rounded-xl border border-white/5">
-            <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-muted-foreground/80">
+          <div className="space-y-3 bg-white/5 p-4 rounded-3xl border border-white/5 shadow-inner">
+            <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
               <span>Dia {hr.dayInRecovery}/30 na jornada de resgate</span>
-              <span className="flex items-center gap-1.5 text-destructive">
-                <TrendingUp className="h-3.5 w-3.5" />
+              <span className="flex items-center gap-1.5 text-destructive animate-pulse">
+                <TrendingUp className="h-4 w-4" />
                 {hr.progressPercent}% recuperado
               </span>
             </div>
-            <Progress value={hr.progressPercent} className="h-2 rounded-full bg-destructive/10" />
+            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-destructive transition-all duration-1000 shadow-[0_0_10px_rgba(239,68,68,0.5)]" 
+                style={{ width: `${hr.progressPercent}%` }} 
+              />
+            </div>
           </div>
 
-          <p className="text-[12px] text-muted-foreground/70 italic font-medium border-l-2 border-destructive/30 pl-3 py-0.5">
-            "{PHASE_MESSAGES[hr.phase]}"
-          </p>
-        </CardContent>
-      </Card>
+          <div className="bg-destructive/5 rounded-2xl p-4 border-l-4 border-destructive/50">
+            <p className="text-[13px] text-white/80 italic font-bold leading-relaxed">
+              "{PHASE_MESSAGES[hr.phase]}"
+            </p>
+          </div>
+        </div>
+      </div>
     );
   }
 
   // Standard recovery mode — compacto em mobile, completo em ≥sm
   return (
-    <Card className="border-primary/20 bg-primary/5">
-      {/* Mobile: linha única discreta (sem ícone grande, sem subtitle) */}
-      <CardContent className="sm:hidden px-3 py-2 flex items-center gap-2">
-        <Shield className="h-3.5 w-3.5 text-primary shrink-0" />
-        <p className="text-xs text-muted-foreground truncate">
-          <span className="font-medium text-foreground">Recuperação ativa</span>
+    <div className="card-pixar bg-primary/5 border-primary/20">
+      {/* Mobile: linha única discreta */}
+      <div className="sm:hidden px-4 py-3 flex items-center gap-3">
+        <Shield className="h-4 w-4 text-[#00d2ff] shrink-0 animate-pulse" />
+        <p className="text-xs font-bold text-white/70 truncate uppercase tracking-wider">
+          <span className="text-white">Recuperação ativa</span>
           {adaptive.recoveryReason ? ` · ${adaptive.recoveryReason}` : ""}
         </p>
-      </CardContent>
+      </div>
       {/* ≥sm: layout original */}
-      <CardContent className="hidden sm:flex p-4 items-center gap-3">
-        <div className="p-2.5 rounded-xl bg-primary/10 shrink-0">
-          <Shield className="h-5 w-5 text-primary" />
+      <div className="hidden sm:flex p-5 items-center gap-4">
+        <div className="p-3 rounded-2xl bg-[#00d2ff]/20 shrink-0 border border-[#00d2ff]/30 shadow-[0_0_20px_rgba(0,210,255,0.2)]">
+          <Shield className="h-6 w-6 text-[#00d2ff]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-snug">
+          <p className="text-sm font-black uppercase tracking-widest text-white leading-snug">
             Modo recuperação ativo
           </p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-[13px] font-bold text-white/50 mt-1">
             {adaptive.recoveryReason || "Vamos reorganizar seu plano para você retomar o ritmo."}
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
