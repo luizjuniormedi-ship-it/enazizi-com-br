@@ -384,6 +384,20 @@ const Admin = () => {
 
   const isUserSection = activeSection.startsWith("users-");
 
+  const handleBatchP2 = async () => {
+    if (loadingBatch) return;
+    setLoadingBatch(true);
+    try {
+      const { generateP2LessonBatch } = await import("@/lib/p2BatchGeneration");
+      await generateP2LessonBatch(session?.user?.id || "");
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Erro na produção em lote", variant: "destructive" });
+    } finally {
+      setLoadingBatch(false);
+    }
+  };
+
   // ─── Render ─────────────────────────────
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden -m-4 sm:-m-6">
