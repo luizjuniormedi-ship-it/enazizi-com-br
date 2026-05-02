@@ -1,3 +1,4 @@
+import { supabase } from "@/integrations/supabase/client";
 import { simulateHighStudyActivity } from "@/lib/enaflixSimulation";
 import { toast } from "sonner";
 
