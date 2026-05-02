@@ -65,18 +65,18 @@ function ProgressOverview() {
   };
 
   return (
-    <Card className="overflow-hidden border-border/60">
-      <CardContent className="p-4 space-y-4">
+    <div className="card-pixar group overflow-hidden">
+      <div className="p-5 space-y-6 relative z-10">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
-            <TrendingUp className="h-3.5 w-3.5 text-primary" />
+          <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-white/50 flex items-center gap-2">
+            <div className="h-1.5 w-1.5 rounded-full bg-[#00d2ff] animate-pulse" />
             Panorama de Desempenho
           </h3>
           <Button
             size="sm"
             variant="ghost"
             onClick={handleDrillDown}
-            className="h-8 text-xs font-semibold gap-1.5 text-primary hover:bg-primary/5 rounded-xl transition-all"
+            className="h-8 text-[11px] font-black uppercase tracking-wider gap-1.5 text-[#00d2ff] hover:bg-white/5 hover:text-white rounded-full transition-all border border-white/5 px-4"
           >
             Análise detalhada <ArrowRight className="h-3.5 w-3.5" />
           </Button>
@@ -84,25 +84,26 @@ function ProgressOverview() {
 
         {/* Banner Preditivo de Aprovação */}
         {prediction && prediction.hasEnoughData && (
-          <div className={`rounded-2xl border-0 px-4 py-3 flex items-center justify-between gap-3 shadow-sm ${approvalBadgeBg(prediction.riskLevel)}`}>
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="h-9 w-9 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                <Target className="h-5 w-5" />
+          <div className={`rounded-2xl border-0 px-5 py-4 flex items-center justify-between gap-4 shadow-xl ${approvalBadgeBg(prediction.riskLevel)} relative overflow-hidden group/prediction`}>
+            <div className="absolute inset-0 bg-white/5 opacity-0 group-hover/prediction:opacity-100 transition-opacity" />
+            <div className="flex items-center gap-4 min-w-0 relative z-10">
+              <div className="h-11 w-11 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 shadow-lg border border-white/20">
+                <Target className="h-6 w-6 text-white" />
               </div>
               <div className="min-w-0">
-                <p className="text-[13px] font-black leading-tight tracking-tight uppercase">
+                <p className="text-[14px] font-black leading-tight tracking-tight uppercase text-white">
                   Chance de aprovação: {prediction.score}%
                 </p>
-                <p className="text-[11px] font-medium opacity-80 leading-snug">
+                <p className="text-[11px] font-bold opacity-90 leading-snug text-white/80 mt-0.5">
                   {prediction.message}
                 </p>
               </div>
             </div>
             {prediction.delta !== null && (
-              <div className="flex items-center gap-1 text-[13px] font-black tabular-nums flex-shrink-0 bg-white/10 px-2 py-1 rounded-lg">
-                {prediction.trend === "up" && <TrendingUp className="h-3.5 w-3.5" />}
-                {prediction.trend === "down" && <TrendingDown className="h-3.5 w-3.5" />}
-                {prediction.trend === "stable" && <Minus className="h-3.5 w-3.5" />}
+              <div className="flex items-center gap-1.5 text-[14px] font-black tabular-nums flex-shrink-0 bg-white/20 px-3 py-1.5 rounded-full border border-white/20 text-white relative z-10">
+                {prediction.trend === "up" && <TrendingUp className="h-4 w-4" />}
+                {prediction.trend === "down" && <TrendingDown className="h-4 w-4" />}
+                {prediction.trend === "stable" && <Minus className="h-4 w-4" />}
                 {prediction.delta > 0 ? "+" : ""}{prediction.delta}
               </div>
             )}
@@ -111,34 +112,48 @@ function ProgressOverview() {
 
         {/* Bloco Neuroanalítico Enterprise+ */}
         {profile && (
-          <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 space-y-3">
+          <div className="bg-white/5 border border-white/10 rounded-3xl p-5 space-y-4 shadow-inner">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Brain className="h-4 w-4 text-primary" />
-                <span className="text-[11px] font-black uppercase tracking-widest text-primary">Estado Cognitivo Adaptativo</span>
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 rounded-lg bg-[#9d50bb]/20">
+                  <Brain className="h-4 w-4 text-[#9d50bb]" />
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-[0.15em] text-white/70">Estado Cognitivo Adaptativo</span>
               </div>
-              <Badge variant="outline" className="text-[9px] uppercase tracking-tighter bg-white/50 border-primary/20">Active Engine</Badge>
+              <Badge variant="outline" className="text-[9px] font-black uppercase tracking-widest bg-white/10 border-white/10 text-white/60 px-2 py-0">Active Engine</Badge>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[9px] font-bold uppercase tracking-tight text-muted-foreground">
+            <div className="grid grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-tight text-white/50">
                   <span>Score de Retenção</span>
-                  <span className="text-primary">{Math.round((Number(profile.retention_score) || 0) * 100)}%</span>
+                  <span className="text-[#00d2ff]">{Math.round((Number(profile.retention_score) || 0) * 100)}%</span>
                 </div>
-                <Progress value={Math.round((Number(profile.retention_score) || 0) * 100)} className="h-1" />
+                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.round((Number(profile.retention_score) || 0) * 100)}%` }}
+                    className="h-full bg-gradient-to-r from-[#00d2ff] to-[#3a7bd5]"
+                  />
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[9px] font-bold uppercase tracking-tight text-muted-foreground">
+              <div className="space-y-2">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-tight text-white/50">
                   <span>Limiar de Overload</span>
-                  <span className="text-amber-600">{Math.round((Number(profile.overload_threshold) || 0) * 100)}%</span>
+                  <span className="text-amber-500">{Math.round((Number(profile.overload_threshold) || 0) * 100)}%</span>
                 </div>
-                <Progress value={Math.round((Number(profile.overload_threshold) || 0) * 100)} className="h-1 bg-amber-100" />
+                <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.round((Number(profile.overload_threshold) || 0) * 100)}%` }}
+                    className="h-full bg-amber-500"
+                  />
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <CinematicMetricHalo
             module="dashboard"
             icon={Target}
@@ -198,8 +213,8 @@ function ProgressOverview() {
             onClick={() => navigate("/dashboard/sessao-estudo?source=progress_overview_readiness")}
           />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
