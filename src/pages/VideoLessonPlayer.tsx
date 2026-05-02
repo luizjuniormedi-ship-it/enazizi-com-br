@@ -96,6 +96,14 @@ const VideoLessonPlayer = () => {
   const { data: lesson, isLoading } = useQuery({
     queryKey: ["video-lesson", id],
     queryFn: async () => {
+      const { data: memoryData, error: memoryError } = await supabase
+        .from("tutor_lesson_memory")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (memoryData) return memoryData;
+
       const { data, error } = await supabase
         .from("ai_video_lessons")
         .select("*")
@@ -110,6 +118,7 @@ const VideoLessonPlayer = () => {
       return data;
     }
   });
+
 
   const logPlaybackAudit = async (state: string, errorMessage?: string) => {
     if (!id) return;
@@ -289,38 +298,42 @@ const VideoLessonPlayer = () => {
       }
 
       interval = setInterval(() => {
-        setWatchedSeconds(prev => prev + 1);
-        
-        // Log a cada 30 segundos ou na conclusão
-        if (watchedSeconds - lastLogTime.current >= 30) {
-          handleAction("heartbeat");
-          lastLogTime.current = watchedSeconds;
+        setWatchedSeconds(prev => {
+          const next = prev + 1;
           
-          // Fase Enterprise+: Persistência Neuroanalítica Realtime
-          if (id) {
-            trackViewing.mutate({
-              projectId: id,
-              startTime: watchedSeconds - 30,
-              endTime: watchedSeconds,
-              playbackSpeed: 1.0, // Default for now
-              interactionType: 'watch'
-            });
+          // Log a cada 30 segundos ou na conclusão
+          if (next - lastLogTime.current >= 30) {
+            handleAction("heartbeat", next);
+            lastLogTime.current = next;
             
-            // Simula cálculo de carga cognitiva adaptativa
-            if (profile) {
-              const currentLoad = 0.4 + (Math.random() * 0.2); // Simulado
-              updateNeuroanalytics.mutate({
+            // Fase Enterprise+: Persistência Neuroanalítica Realtime
+            if (id) {
+              trackViewing.mutate({
                 projectId: id,
-                fatigueScore: 0.1,
-                cognitiveLoad: currentLoad,
-                engagementScore: 0.9,
-                retentionPrediction: Number(profile.retention_score || 0.85),
-                abandonmentRisk: 0.05
+                startTime: next - 30,
+                endTime: next,
+                playbackSpeed: 1.0, // Default for now
+                interactionType: 'watch'
               });
+              
+              // Simula cálculo de carga cognitiva adaptativa
+              if (profile) {
+                const currentLoad = 0.4 + (Math.random() * 0.2); // Simulado
+                updateNeuroanalytics.mutate({
+                  projectId: id,
+                  fatigueScore: 0.1,
+                  cognitiveLoad: currentLoad,
+                  engagementScore: 0.9,
+                  retentionPrediction: Number(profile.retention_score || 0.85),
+                  abandonmentRisk: 0.05
+                });
+              }
             }
           }
-        }
+          return next;
+        });
       }, 1000);
+
     } else {
       // Quando pausa, registra o início
       if (!pauseStartTime.current) {
@@ -342,9 +355,20 @@ const VideoLessonPlayer = () => {
     };
   }, [isPlaying, watchedSeconds, id, currentSegment?.id, completionRate, quizFinished]);
 
-  const handleAction = async (action: string) => {
+  const handleAction = async (action: string, currentTs?: number) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    const ts = currentTs ?? watchedSeconds;
+
+    // Track in new table
+    await supabase.from("tutor_lesson_progress").upsert({
+      lesson_id: id,
+      user_id: user.id,
+      last_position: ts,
+      progress_percent: lesson?.duration ? Math.min(Math.round((ts / lesson.duration) * 100), 100) : 0,
+      completed: action === "complete"
+    }, { onConflict: 'lesson_id,user_id' });
 
     const { error } = await supabase
       .from("video_lesson_usage_logs")
@@ -352,7 +376,7 @@ const VideoLessonPlayer = () => {
         video_lesson_id: id,
         user_id: user.id,
         action,
-        watched_seconds: watchedSeconds,
+        watched_seconds: ts,
         completion_rate: completionRate
       });
 
@@ -381,6 +405,7 @@ const VideoLessonPlayer = () => {
       }
     }
   };
+
 
   // ───── FASE 2: handlers Adaptive Video ─────
   const handleSelectSegment = (seg: VideoSegment) => {
