@@ -215,7 +215,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
         .limit(1)
         .maybeSingle();
       if (latestJob) {
-        setRenderJob((prev: any) => ({ ...prev, ...latestJob }));
+        setRenderJob((prev: any) => ({ ...(prev || {}), ...(latestJob as any) }));
         if ((latestJob as any).status === 'completed') setStatus('ready');
         if ((latestJob as any).status === 'failed') {
           setStatus('failed');
