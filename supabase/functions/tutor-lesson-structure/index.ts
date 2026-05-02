@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
     const lessonId: string | undefined = body?.lesson_id;
     if (!lessonId) return json({ error: "lesson_id required" }, 400);
 
-    // 1) Carrega aula com cliente do usuário (RLS valida acesso)
-    const { data: lesson, error: lessonErr } = await userClient
+    // 1) Carrega aula (usamos admin client para garantir acesso no processamento em lote)
+    const { data: lesson, error: lessonErr } = await admin
       .from("tutor_lesson_memory")
       .select("*")
       .eq("id", lessonId)
