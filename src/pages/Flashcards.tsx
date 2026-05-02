@@ -303,29 +303,30 @@ const Flashcards = () => {
   // ── Empty state ──
   if (allCards.length === 0) {
     return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FlipVertical className="h-6 w-6 text-primary" /> Flashcards
-            </h1>
-            <p className="text-muted-foreground">Revise seus flashcards com repetição espaçada.</p>
-          </div>
-          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
-            "Vá em 'Gerar Flashcards' no menu lateral para criar cards com IA por tema",
-            "Cada card tem frente (pergunta) e verso (resposta) — clique para virar",
-            "Após virar, avalie: Fácil, Bom ou Errei — o algoritmo agenda revisões",
-            "Use o modo Sprint ⚡ para revisar vários cards com cronômetro",
-          ]} />
+      <div className="pb-24 pt-8 space-y-12">
+        <div className="px-4 sm:px-8 lg:px-14">
+          <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <FlipVertical className="h-8 w-8 text-primary" /> 
+            Revisão Inteligente
+          </h1>
+          <p className="text-sm text-white/50 mt-1 font-medium">Revise seus conhecimentos com repetição espaçada personalizada.</p>
         </div>
-        <ModuleEmptyState
-          icon="📚"
-          title="Nenhum flashcard ainda"
-          description="Gere flashcards com IA a partir de qualquer tema médico ou envie um PDF."
-          steps={["Vá em 'Gerar Flashcards' e escolha um tema", "A IA cria flashcards com casos clínicos", "Revise marcando Fácil/Difícil — o algoritmo agenda revisões"]}
-          actionLabel="Gerar Flashcards Agora"
-          actionPath="/dashboard/flashcard-generator"
-        />
+
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <EnaflixActionCard
+            title="Gerar novos Flashcards"
+            description="Use a IA para criar novos cards a partir de temas médicos ou materiais de estudo."
+            icon={Sparkles}
+            variant="primary"
+            onClick={() => navigate("/dashboard/gerar-flashcards")}
+          />
+          <EnaflixActionCard
+            title="Importar Conteúdo"
+            description="Adicione seus próprios materiais em PDF ou texto para gerar revisões."
+            icon={DatabaseZap}
+            onClick={() => navigate("/dashboard/uploads")}
+          />
+        </div>
       </div>
     );
   }
