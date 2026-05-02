@@ -96,7 +96,7 @@ const Dashboard = () => {
           title="Revisão Inteligente"
           subtitle={`${dashData?.stats.flashcards || 0} pendentes para hoje.`}
           onClick={() => navigate("/dashboard/flashcards")}
-          progress={(dashData?.stats.flashcards_done / dashData?.stats.flashcards) * 100}
+          progress={(dashData?.stats.todayCompleted / dashData?.stats.todayTotal) * 100}
           image="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=400&auto=format&fit=crop"
         />
         <EnaflixCard
