@@ -415,13 +415,36 @@ const VideoLessonPlayer = () => {
     const ts = currentTs ?? watchedSeconds;
 
     // Track in new table
+    const progressPct = duration ? Math.min(Math.round((ts / duration) * 100), 100) : 0;
+    const isCompleted = action === "complete" || progressPct >= 90;
     await supabase.from("tutor_lesson_progress").upsert({
       lesson_id: id,
       user_id: user.id,
       last_position: ts,
-      progress_percent: duration ? Math.min(Math.round((ts / duration) * 100), 100) : 0,
-      completed: action === "complete"
+      progress_percent: progressPct,
+      completed: isCompleted,
+      completed_at: isCompleted ? new Date().toISOString() : null,
     }, { onConflict: 'lesson_id,user_id' });
+
+    // Eventos próprios para aulas humanas (não polui CME logs)
+    if ((lesson as any)?.__source === "tutor_memory" && id) {
+      if (action === "play" || action === "heartbeat") {
+        await supabase.from("tutor_lesson_events").insert([{
+          lesson_id: id,
+          actor_id: user.id,
+          event_type: "lesson_watched",
+          metadata: { watched_seconds: ts, progress_percent: progressPct },
+        }] as any);
+      }
+      if (isCompleted) {
+        await supabase.from("tutor_lesson_events").insert([{
+          lesson_id: id,
+          actor_id: user.id,
+          event_type: "lesson_completed",
+          metadata: { watched_seconds: ts, progress_percent: progressPct },
+        }] as any);
+      }
+    }
 
 
     const { error } = await supabase
