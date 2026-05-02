@@ -156,9 +156,9 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       const [{ data: sg }, { data: job }, { data: workers }] = await Promise.all([
         supabase.from('cme_scene_graphs' as any).select('id').eq('video_project_id', aggregationId).limit(1).maybeSingle(),
         supabase.from('cme_render_jobs' as any)
-          .select('id, status, gpu_worker_id, error_message')
+          .select('id, status, progress, gpu_worker_id, pipeline_last_error, output_url, preview_url')
           .eq('generation_id', aggregationId)
-          .order('created_at', { ascending: false })
+          .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
         supabase.from('cme_worker_nodes').select('id').eq('status', 'online').eq('is_draining', false),
