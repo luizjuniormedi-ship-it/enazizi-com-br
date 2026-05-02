@@ -67,6 +67,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    // 0. Rollout Control - Verificar se a feature está ativa para este usuário
+    const { data: hasAccess, error: accessErr } = await admin.rpc("check_feature_access", {
+      f_name: "tutor_lesson_automation",
+      u_id: user_id
+    });
+
+    if (accessErr) {
+      console.error("Access check error:", accessErr);
+    }
+
+    if (!hasAccess && !force) {
+      return new Response(JSON.stringify({ status: "skipped", reason: "rollout_restricted" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // 1. Buscar dados de rastreamento do tema para este usuário
     const { data: tracking, error: trackErr } = await admin
       .from("tutor_study_tracking")
@@ -93,21 +109,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 2. Verificar se já existe uma aula pendente ou publicada sobre este tema exato para este user
+    // 2. Verificar se já existe uma aula pendente ou publicada sobre este tema exato para este user (Deduplicação)
     const { data: existing } = await admin
       .from("tutor_lesson_memory")
-      .select("id")
+      .select("id, status")
       .eq("user_id", user_id)
       .eq("topic", topic)
+      .not("status", "eq", "archived")
       .maybeSingle();
 
     if (existing) {
-      return new Response(JSON.stringify({ status: "skipped", reason: "already_exists" }), {
+      return new Response(JSON.stringify({ status: "skipped", reason: "already_exists", lesson_id: existing.id }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // 3. Criar registro inicial da aula
+    // 3. Criar registro inicial da aula (Central de Produção ENAFLIX)
     const reason = tracking ? engine.getGenerationReason(tracking, score) : "Solicitação manual via IA";
     const { data: lesson, error: insErr } = await admin
       .from("tutor_lesson_memory")
@@ -118,7 +135,7 @@ Deno.serve(async (req) => {
         generated_from_real_usage: true,
         pedagogical_interest_score: score,
         generation_reason: reason,
-        study_sessions_count: 1,
+        study_sessions_count: tracking?.session_count || 1,
         tutor_messages_count: tracking?.interaction_count || 0,
         related_error_bank_count: tracking?.related_errors || 0,
         related_fsrs_reviews: tracking?.fsrs_reviews || 0,
@@ -137,11 +154,10 @@ Deno.serve(async (req) => {
       lesson_id: lesson.id,
       actor_id: user_id,
       event_type: "lesson_auto_detected",
-      metadata: { score, reason, topic }
+      metadata: { score, reason, topic, rollout: true }
     });
 
-    // 5. Chamar a function de estruturação para preencher os prompts (NotebookLM, Gemini, etc)
-    // Usamos fetch interno para não bloquear a resposta se demorar
+    // 5. Chamar a function de estruturação (NotebookLM/Gemini/Google Vids)
     const structureUrl = `${supabaseUrl}/functions/v1/tutor-lesson-structure`;
     fetch(structureUrl, {
       method: "POST",
@@ -156,7 +172,8 @@ Deno.serve(async (req) => {
       status: "success", 
       lesson_id: lesson.id,
       score,
-      reason
+      reason,
+      rollout_active: true
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
