@@ -181,7 +181,7 @@ const App = () => (
                 <Route path="/videoaulas/:id" element={<PublicVideoLesson />} />
                 <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
                 <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="cronograma" element={<PreserveQueryNavigate to="/dashboard/planner" />} />
                 <Route path="cronograma-inteligente" element={<PreserveQueryNavigate to="/dashboard/planner" />} />
