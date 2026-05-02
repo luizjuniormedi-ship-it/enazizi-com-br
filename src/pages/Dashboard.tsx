@@ -168,25 +168,35 @@ const Dashboard = () => {
       {/* Progresso e Domínio */}
       <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            Meu Progresso
-          </h2>
+          <EnaflixSectionTitle
+            kicker="Performance"
+            title={
+              <span className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Meu Progresso
+              </span>
+            }
+          />
           <Suspense fallback={null}>
             <ProgressOverview />
           </Suspense>
         </div>
         <div className="space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
-            Domínio Clínico
-          </h2>
+          <EnaflixSectionTitle
+            kicker="Maestria"
+            title={
+              <span className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Domínio Clínico
+              </span>
+            }
+          />
           <Suspense fallback={null}>
             <MedicalMasteryDashboard />
           </Suspense>
         </div>
       </div>
-      
+
       {/* Tutor IA Section */}
       <div className="px-4 sm:px-8 lg:px-14">
         <Suspense fallback={null}>

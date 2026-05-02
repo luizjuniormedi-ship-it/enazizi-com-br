@@ -307,14 +307,15 @@ const Flashcards = () => {
   // ── Empty state ──
   if (allCards.length === 0) {
     return (
-      <div className="pb-24 pt-8 space-y-12">
-        <div className="px-4 sm:px-8 lg:px-14">
-          <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <FlipVertical className="h-8 w-8 text-primary" /> 
-            Revisão Inteligente
-          </h1>
-          <p className="text-sm text-white/50 mt-1 font-medium">Revise seus conhecimentos com repetição espaçada personalizada.</p>
-        </div>
+    <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
+      <div className="px-4 sm:px-8 lg:px-14">
+        <EnaflixSectionTitle
+          kicker="Revisão Inteligente"
+          title="Consolidação Cognitiva"
+          subtitle="Revise seus conhecimentos com repetição espaçada personalizada."
+        />
+      </div>
 
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-2 gap-6">
           <EnaflixActionCard
