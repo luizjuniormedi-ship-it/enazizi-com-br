@@ -32,7 +32,7 @@ const AdminLessonsMemory = () => {
     queryKey: ["admin-tutor-lessons"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("cme_session_aggregations")
+        .from("tutor_lesson_memory")
         .select("*")
         .order("created_at", { ascending: false });
       
@@ -40,6 +40,7 @@ const AdminLessonsMemory = () => {
       return data;
     }
   });
+
 
   const uploadVideoMutation = useMutation({
     mutationFn: async ({ id, file }: { id: string, file: File }) => {
@@ -59,13 +60,14 @@ const AdminLessonsMemory = () => {
         .getPublicUrl(fileName);
 
       const { error: updateError } = await supabase
-        .from("cme_session_aggregations")
+        .from("tutor_lesson_memory")
         .update({ 
-          manual_video_url: publicUrl,
-          status: 'completed',
-          updated_at: new Date().toISOString()
+          video_url: publicUrl,
+          status: 'published',
+          published_at: new Date().toISOString()
         })
         .eq('id', id);
+
 
       if (updateError) throw updateError;
       return publicUrl;
@@ -104,7 +106,7 @@ const AdminLessonsMemory = () => {
       
       CONTEÚDO PARA NOTEBOOK LM:
       --------------------------
-      ${lesson.aggregated_content}
+      ${JSON.stringify(lesson.structured_content, null, 2)}
     `;
     
     const blob = new Blob([content], { type: 'text/plain' });
@@ -165,12 +167,13 @@ const AdminLessonsMemory = () => {
                   <div className="flex flex-col md:flex-row">
                     <div className="flex-1 p-6">
                       <div className="flex items-center gap-3 mb-2">
-                        <Badge variant={lesson.manual_video_url ? "default" : "secondary"} className={cn(
+                        <Badge variant={lesson.video_url ? "default" : "secondary"} className={cn(
                           "uppercase text-[10px] font-black tracking-widest",
-                          lesson.manual_video_url ? "bg-emerald-500 hover:bg-emerald-600" : "bg-amber-500/10 text-amber-600"
+                          lesson.video_url ? "bg-emerald-500 hover:bg-emerald-600" : "bg-amber-500/10 text-amber-600"
                         )}>
-                          {lesson.manual_video_url ? "Vídeo Ativo" : "Aguardando Vídeo"}
+                          {lesson.status === 'published' ? "Vídeo Ativo" : lesson.status}
                         </Badge>
+
                         <span className="text-[10px] text-slate-400 font-mono">#{lesson.id.slice(0, 8)}</span>
                       </div>
                       
@@ -183,7 +186,8 @@ const AdminLessonsMemory = () => {
                         </div>
                         <div className="flex items-center gap-1">
                           <FileText className="h-3.5 w-3.5" />
-                          {lesson.aggregated_content?.length || 0} caracteres
+                          {lesson.subject} / {lesson.topic}
+
                         </div>
                       </div>
                     </div>
@@ -209,10 +213,10 @@ const AdminLessonsMemory = () => {
                           />
                           <Button 
                             asChild
-                            variant={lesson.manual_video_url ? "outline" : "default"}
+                            variant={lesson.video_url ? "outline" : "default"}
                             className={cn(
                               "w-full text-[10px] font-black uppercase h-10 gap-2",
-                              !lesson.manual_video_url && "bg-amber-600 hover:bg-amber-700"
+                              !lesson.video_url && "bg-amber-600 hover:bg-amber-700"
                             )}
                             disabled={uploadingId === lesson.id}
                           >
@@ -222,21 +226,23 @@ const AdminLessonsMemory = () => {
                               ) : (
                                 <Upload className="h-3.5 w-3.5" />
                               )}
-                              {lesson.manual_video_url ? "Substituir Vídeo" : "Subir Vídeo"}
+                              {lesson.video_url ? "Substituir Vídeo" : "Subir Vídeo"}
                             </label>
+
                           </Button>
                         </div>
                       </div>
 
-                      {lesson.manual_video_url && (
+                      {lesson.video_url && (
                         <Button 
                           variant="ghost" 
                           className="w-full text-[10px] font-black uppercase h-10 gap-2 text-primary hover:bg-primary/5"
-                          onClick={() => window.open(lesson.manual_video_url, '_blank')}
+                          onClick={() => window.open(lesson.video_url, '_blank')}
                         >
                           <Video className="h-3.5 w-3.5" /> Assistir Prévia
                         </Button>
                       )}
+
 
                       {uploadingId === lesson.id && (
                         <div className="space-y-1">
