@@ -46,15 +46,15 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  structuring: "bg-blue-500/10 text-blue-700 animate-pulse",
-  pending_review: "bg-slate-500/10 text-slate-700",
-  in_production: "bg-blue-500/10 text-blue-700",
-  needs_adjustment: "bg-orange-500/10 text-orange-700",
-  ready_to_publish: "bg-amber-500/10 text-amber-700",
+  structuring: "bg-blue-500/20 text-blue-300 animate-pulse",
+  pending_review: "bg-muted text-muted-foreground",
+  in_production: "bg-blue-500/20 text-blue-300",
+  needs_adjustment: "bg-orange-500/20 text-orange-300",
+  ready_to_publish: "bg-amber-500/20 text-amber-300",
   published: "bg-emerald-500 text-white hover:bg-emerald-600",
-  unpublished: "bg-slate-300 text-slate-700",
-  archived: "bg-slate-200 text-slate-500",
-  rejected: "bg-red-500/10 text-red-700",
+  unpublished: "bg-muted text-muted-foreground",
+  archived: "bg-muted text-muted-foreground",
+  rejected: "bg-red-500/20 text-red-300",
 };
 
 const MIN_CHECKLIST = [
@@ -275,28 +275,28 @@ const AdminLessonsMemory = () => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
-      <div className="bg-white border-b sticky top-0 z-50">
+    <div className="min-h-screen bg-background pb-20">
+      <div className="bg-card border-b border-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shadow-inner">
-              <Shield className="h-7 w-7 text-amber-600" />
+              <Shield className="h-7 w-7 text-amber-500" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight">
+              <h1 className="text-xl font-black text-foreground tracking-tight">
                 Memória de Aulas do Tutor
               </h1>
-              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest opacity-70">
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest opacity-80">
                 Curadoria · Upload · Publicação manual
               </p>
             </div>
           </div>
 
           <div className="relative w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar aulas..."
-              className="pl-10 bg-slate-50 border-slate-200"
+              className="pl-10 bg-muted border-border"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -310,7 +310,7 @@ const AdminLessonsMemory = () => {
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-48 bg-slate-200 animate-pulse rounded-2xl"
+                className="h-48 bg-muted animate-pulse rounded-2xl"
               />
             ))}
           </div>
@@ -328,7 +328,7 @@ const AdminLessonsMemory = () => {
               return (
                 <Card
                   key={lesson.id}
-                  className="border-none shadow-sm overflow-hidden hover:shadow-md transition-all"
+                  className="border-border bg-card shadow-sm overflow-hidden hover:shadow-md transition-all"
                 >
                   <CardContent className="p-0">
                     <div className="flex flex-col md:flex-row">
@@ -338,31 +338,31 @@ const AdminLessonsMemory = () => {
                             className={cn(
                               "uppercase text-[10px] font-black tracking-widest",
                               STATUS_COLOR[lesson.status] ??
-                                "bg-slate-200 text-slate-700",
+                                "bg-muted text-muted-foreground",
                             )}
                           >
                             {STATUS_LABEL[lesson.status] ?? lesson.status}
                           </Badge>
                           {hasVideo && (
-                            <Badge variant="outline" className="text-[10px] gap-1">
+                            <Badge variant="outline" className="text-[10px] gap-1 border-border text-foreground">
                               <Video className="h-3 w-3" /> Vídeo anexado
                             </Badge>
                           )}
                           {isStructured && (
-                            <Badge variant="outline" className="text-[10px] gap-1 border-emerald-300 text-emerald-700">
+                            <Badge variant="outline" className="text-[10px] gap-1 border-emerald-500/40 text-emerald-400">
                               <Sparkles className="h-3 w-3" /> Estruturada IA
                             </Badge>
                           )}
-                          <span className="text-[10px] text-slate-400 font-mono">
+                          <span className="text-[10px] text-muted-foreground font-mono">
                             #{lesson.id.slice(0, 8)}
                           </span>
                         </div>
 
-                        <h3 className="text-lg font-black text-slate-800 mb-2">
+                        <h3 className="text-lg font-black text-foreground mb-2">
                           {lesson.title || "Sem título"}
                         </h3>
 
-                        <div className="flex items-center gap-4 text-xs text-slate-500 font-medium mb-4">
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground font-medium mb-4">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
                             {new Date(lesson.created_at).toLocaleDateString()}
@@ -374,15 +374,15 @@ const AdminLessonsMemory = () => {
                         </div>
 
                         {/* Checklist mínimo */}
-                        <div className="rounded-xl border border-slate-200 bg-white p-3">
-                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                        <div className="rounded-xl border border-border bg-muted/30 p-3">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-2">
                             Checklist mínimo de publicação
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {MIN_CHECKLIST.map(([key, label]) => (
                               <label
                                 key={key}
-                                className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"
+                                className="flex items-center gap-2 text-xs text-foreground cursor-pointer"
                               >
                                 <Checkbox
                                   checked={!!checklist[key]}
@@ -394,17 +394,17 @@ const AdminLessonsMemory = () => {
                             ))}
                           </div>
                           {!checklistComplete && !isPublished && (
-                            <div className="text-[10px] text-amber-600 font-bold mt-2">
+                            <div className="text-[10px] text-amber-400 font-bold mt-2">
                               Complete o checklist para liberar a publicação.
                             </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="md:w-[420px] bg-slate-50/50 border-l p-6 flex flex-col justify-center gap-3">
+                      <div className="md:w-[420px] bg-muted/40 border-l border-border p-6 flex flex-col justify-center gap-3">
                         <Button
                           variant="outline"
-                          className="w-full text-[10px] font-black uppercase h-10 gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                          className="w-full text-[10px] font-black uppercase h-10 gap-2 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10 hover:text-emerald-300"
                           onClick={() => restructureLesson(lesson)}
                         >
                           <Sparkles className="h-3.5 w-3.5" /> Reestruturar IA
@@ -413,7 +413,7 @@ const AdminLessonsMemory = () => {
                         <div className="grid grid-cols-2 gap-2">
                           <Button
                             variant="outline"
-                            className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
+                            className="text-[10px] font-black uppercase h-10 gap-2 border-border text-foreground hover:bg-muted"
                             onClick={() => exportLesson(lesson, "notebooklm")}
                             disabled={!isStructured}
                           >
@@ -421,7 +421,7 @@ const AdminLessonsMemory = () => {
                           </Button>
                           <Button
                             variant="outline"
-                            className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
+                            className="text-[10px] font-black uppercase h-10 gap-2 border-border text-foreground hover:bg-muted"
                             onClick={() => exportLesson(lesson, "gemini")}
                             disabled={!isStructured}
                           >
@@ -429,7 +429,7 @@ const AdminLessonsMemory = () => {
                           </Button>
                           <Button
                             variant="outline"
-                            className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
+                            className="text-[10px] font-black uppercase h-10 gap-2 border-border text-foreground hover:bg-muted"
                             onClick={() => exportLesson(lesson, "google_vids")}
                             disabled={!isStructured}
                           >
@@ -437,7 +437,7 @@ const AdminLessonsMemory = () => {
                           </Button>
                           <Button
                             variant="outline"
-                            className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
+                            className="text-[10px] font-black uppercase h-10 gap-2 border-border text-foreground hover:bg-muted"
                             onClick={() => exportLesson(lesson, "markdown")}
                             disabled={!isStructured}
                           >
@@ -459,7 +459,8 @@ const AdminLessonsMemory = () => {
                             variant={hasVideo ? "outline" : "default"}
                             className={cn(
                               "w-full text-[10px] font-black uppercase h-10 gap-2",
-                              !hasVideo && "bg-amber-600 hover:bg-amber-700",
+                              !hasVideo && "bg-amber-600 hover:bg-amber-700 text-white",
+                              hasVideo && "border-border text-foreground hover:bg-muted",
                             )}
                             disabled={uploadingId === lesson.id}
                           >
@@ -480,7 +481,7 @@ const AdminLessonsMemory = () => {
                         {hasVideo && (
                           <Button
                             variant="ghost"
-                            className="w-full text-[10px] font-black uppercase h-10 gap-2 text-primary hover:bg-primary/5"
+                            className="w-full text-[10px] font-black uppercase h-10 gap-2 text-primary hover:bg-primary/10 hover:text-primary"
                             onClick={() => handlePreview(lesson)}
                           >
                             <PlayCircle className="h-3.5 w-3.5" /> Preview seguro
@@ -489,7 +490,7 @@ const AdminLessonsMemory = () => {
 
                         {!isPublished && (
                           <Button
-                            className="w-full text-[10px] font-black uppercase h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300"
+                            className="w-full text-[10px] font-black uppercase h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 text-white disabled:bg-muted disabled:text-muted-foreground"
                             disabled={!canPublish || publishingId === lesson.id}
                             onClick={() => {
                               setPublishingId(lesson.id);
@@ -504,7 +505,7 @@ const AdminLessonsMemory = () => {
                         )}
 
                         {isPublished && (
-                          <div className="flex items-center justify-center text-[10px] text-emerald-700 font-black uppercase tracking-widest">
+                          <div className="flex items-center justify-center text-[10px] text-emerald-400 font-black uppercase tracking-widest">
                             <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
                             Disponível para o aluno
                           </div>
@@ -512,11 +513,11 @@ const AdminLessonsMemory = () => {
 
                         {uploadingId === lesson.id && (
                           <div className="space-y-1">
-                            <div className="flex justify-between text-[9px] font-black text-amber-600 uppercase">
+                            <div className="flex justify-between text-[9px] font-black text-amber-400 uppercase">
                               <span>Enviando...</span>
                               <span>Processando</span>
                             </div>
-                            <Progress value={45} className="h-1 bg-amber-100" />
+                            <Progress value={45} className="h-1 bg-amber-500/20" />
                           </div>
                         )}
                       </div>
@@ -527,14 +528,14 @@ const AdminLessonsMemory = () => {
             })}
 
             {filteredLessons?.length === 0 && (
-              <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-slate-200">
-                <div className="h-16 w-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-8 w-8 text-slate-300" />
+              <div className="text-center py-20 bg-card rounded-3xl border border-dashed border-border">
+                <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-lg font-bold text-slate-800">
+                <h3 className="text-lg font-bold text-foreground">
                   Nenhuma aula encontrada
                 </h3>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-muted-foreground">
                   Tente buscar por outro termo ou aguarde novas aulas serem
                   geradas.
                 </p>
