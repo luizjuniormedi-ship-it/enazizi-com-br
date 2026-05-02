@@ -51,6 +51,7 @@ const AdminAdaptiveExperiments = lazy(() => import("@/pages/admin/AdminAdaptiveE
 const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/IntelligenceOverviewPanel"));
 const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCognitiveOrchestrator"));
 const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
+const AdminLessonsMemory = lazy(() => import("@/pages/admin/AdminLessonsMemory"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -692,6 +693,7 @@ const Admin = () => {
             {activeSection === "pipeline" && <AdminPipelineMonitor />}
             {activeSection === "cinematic-engine" && <AdminCinematicEngine />}
             {activeSection === "questions" && <AdminQuestionReviewPanel />}
+            {activeSection === "tutor-lessons" && <AdminLessonsMemory />}
             {activeSection === "image-upgrade" && <ImageQuestionUpgradePanel />}
             {activeSection === "image-review" && <AdminImageQuestionReviewPanel />}
             {activeSection === "hygiene" && <AdminHygieneDashboard />}
