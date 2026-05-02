@@ -300,37 +300,37 @@ const App = () => (
                      <Route path="builder/:id" element={<CinematicBuilder />} />
                  </Route>
 
-              <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
+              <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
                 <Route path="proficiencia/piloto" element={<ProficiencyPilotPage />} />
               </Route>
               {/* Alias: /dashboard/proficiencia/piloto → mesma página, mesma guarda de professor/admin */}
-              <Route path="/dashboard/proficiencia/piloto" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
+              <Route path="/dashboard/proficiencia/piloto" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProficiencyPilotPage />} />
               </Route>
-              <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
+              <Route path="/institucional" element={<InstitutionalRoute><EnaflixDashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
-              <Route path="/mission" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/mission" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<MissionMode />} />
               </Route>
-              <Route path="/mission-control" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/mission-control" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<MissionControlPage />} />
               </Route>
               {/* Study execution aliases */}
-              <Route path="/study/tutor" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/study/tutor" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<ChatGPT />} />
               </Route>
-              <Route path="/study/flashcards" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/study/flashcards" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Flashcards />} />
               </Route>
-              <Route path="/study/simulado" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/study/simulado" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Simulados />} />
               </Route>
-              <Route path="/study/clinical" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/study/clinical" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<ClinicalSimulation />} />
               </Route>
-              <Route path="/study/anamnese" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/study/anamnese" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<AnamnesisTrainer />} />
               </Route>
               <Route path="/install" element={<Install />} />
