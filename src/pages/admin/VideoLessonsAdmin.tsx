@@ -429,6 +429,9 @@ const VideoLessonsAdmin = () => {
                                   <Film className="h-4 w-4" /> 🎬 Transformar em Videoaula
                                 </DropdownMenuItem>
                               )}
+                              <DropdownMenuItem className="gap-2 text-red-500" onClick={() => handleDeleteLesson(lesson.id)}>
+                                <Trash2 className="h-4 w-4" /> Excluir Videoaula
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
