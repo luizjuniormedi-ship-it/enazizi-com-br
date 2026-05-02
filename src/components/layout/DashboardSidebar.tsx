@@ -545,105 +545,14 @@ const DashboardSidebar = () => {
                 />
               )}
               {showAdmin && (
-                <>
-                  <SidebarLink
-                    to="/admin"
-                    icon={Shield}
-                    label="Painel Admin"
-                    active={location.pathname === "/admin"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/ai-studio"
-                    icon={Sparkles}
-                    label="Produção IA"
-                    description="Central de Produção de Conteúdo e NotebookLM"
-                    active={location.pathname === "/admin/ai-studio"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/ceo"
-                    icon={BarChart3}
-                    label="Painel CEO"
-                    active={location.pathname === "/admin/ceo"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/medical-review-queue"
-                    icon={ShieldCheck}
-                    label="Fila de Revisão"
-                    description="Governança Pedagógica Médica"
-                    active={location.pathname === "/admin/medical-review-queue"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/medical-governance"
-                    icon={TrendingUp}
-                    label="Dashboard BI"
-                    description="Métricas de Custo e Qualidade"
-                    active={location.pathname === "/admin/medical-governance"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/lessons-memory"
-                    icon={Database}
-                    label="Curadoria de Aulas"
-                    description="Gestão de Memória e Estruturação de Aulas IA"
-                    active={location.pathname === "/admin/lessons-memory"}
-                    variant="muted"
-                  />
-
-                  {/* ─── CME / Fábrica de Vídeos ─── */}
-                  <SectionLabel>CME / Fábrica de Vídeos</SectionLabel>
-                  <SidebarLink
-                    to="/admin/cme-executive"
-                    icon={Layout}
-                    label="Executivo CME"
-                    description="Dashboard Executivo e Pipeline Realtime"
-                    active={location.pathname === "/admin/cme-executive"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/cme-media-monitor"
-                    icon={Monitor}
-                    label="Monitor CME"
-                    description="Auditoria de Playback & Cluster Health"
-                    active={location.pathname === "/admin/cme-media-monitor"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/cme-audit"
-                    icon={SearchCode}
-                    label="Auditoria CME"
-                    description="Linhagem Pedagógica e Logs Técnicos"
-                    active={location.pathname === "/admin/cme-audit"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/gpu-fleet"
-                    icon={Cpu}
-                    label="GPU Fleet"
-                    description="Orquestração de Workers GPU"
-                    active={location.pathname === "/admin/gpu-fleet"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/render-queues"
-                    icon={Workflow}
-                    label="Render Queues"
-                    description="Fila de Renderização Distribuída"
-                    active={location.pathname === "/admin/render-queues"}
-                    variant="muted"
-                  />
-                  <SidebarLink
-                    to="/admin/cme-builder-audit"
-                    icon={History}
-                    label="Builder CME"
-                    description="Recuperação de Projetos e Scene Graphs"
-                    active={location.pathname === "/admin/cme-builder-audit"}
-                    variant="muted"
-                  />
-                </>
+                <SidebarLink
+                  to="/admin"
+                  icon={Shield}
+                  label="Painel Admin"
+                  description="Centro de Comando — gestão completa do produto"
+                  active={location.pathname.startsWith("/admin")}
+                  variant="muted"
+                />
               )}
               {showInstitutional && (
                 <SidebarLink
