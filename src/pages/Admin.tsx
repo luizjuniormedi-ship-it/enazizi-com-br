@@ -172,6 +172,7 @@ const Admin = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [loadingBatch, setLoadingBatch] = useState(false);
 
   const [planDialog, setPlanDialog] = useState<{ open: boolean; user: AdminUser | null; plan: string }>({ open: false, user: null, plan: "" });
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; user: AdminUser | null; block: boolean }>({ open: false, user: null, block: false });
