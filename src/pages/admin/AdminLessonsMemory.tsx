@@ -207,7 +207,34 @@ const AdminLessonsMemory = () => {
                         <span className="text-[10px] text-slate-400 font-mono">#{lesson.id.slice(0, 8)}</span>
                       </div>
                       
-                      <h3 className="text-lg font-black text-slate-800 mb-2">{lesson.title || "Sem título"}</h3>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-black text-slate-800">{lesson.title || "Sem título"}</h3>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 transition-colors">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Aula?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá permanentemente os dados da aula
+                                e o acesso ao vídeo vinculado.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                       
                       <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
                         <div className="flex items-center gap-1">
