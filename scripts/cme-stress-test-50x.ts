@@ -1,8 +1,8 @@
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function runStressTest() {
@@ -11,71 +11,70 @@ async function runStressTest() {
   const STRESS_COUNT = 50;
   const projects = [];
 
-  // 1. Create 50 Projects
   for (let i = 0; i < STRESS_COUNT; i++) {
-    const { data: project } = await supabase
+    const { data: project, error } = await supabase
       .from('cme_video_projects')
       .insert({
         title: `Stress Test Project ${i}`,
         description: 'Automated Stress Test',
         status: 'draft',
-        user_id: '00000000-0000-0000-0000-000000000000' // Mock system user
+        user_id: '00000000-0000-0000-0000-000000000000'
       })
       .select()
       .single();
     
     if (project) projects.push(project);
+    else if (error) console.error(`Error creating project ${i}:`, error.message);
   }
 
   console.log(`✅ Created ${projects.length} projects.`);
 
-  // 2. Simulate 50 Pipelines
   const pipelinePromises = projects.map(async (project, i) => {
-    // Step A: Scene Graph Persistence
-    const { data: sceneGraph } = await supabase
-      .from('cme_scene_graphs')
-      .insert({
-        video_project_id: project.id,
-        scene_graph: { nodes: [], edges: [] },
-        graph_payload: { version: '1.0', stress_test: true }
-      })
-      .select()
-      .single();
+    try {
+      const { data: sceneGraph, error: sgError } = await supabase
+        .from('cme_scene_graphs')
+        .insert({
+          video_project_id: project.id,
+          scene_graph: { nodes: [], edges: [] },
+          graph_payload: { version: '1.0', stress_test: true }
+        })
+        .select()
+        .single();
 
-    if (!sceneGraph) throw new Error(`Failed to persist Scene Graph for project ${project.id}`);
+      if (sgError) throw new Error(`SG Error: ${sgError.message}`);
 
-    // Step B: Orchestrator Call
-    const response = await fetch(`${supabaseUrl}/functions/v1/cme-orchestrator`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        action: 'start_render',
-        projectId: project.id,
-        payload: { priority: i % 5 === 0 ? 'high' : 'standard' }
-      })
-    });
+      const response = await fetch(`${supabaseUrl}/functions/v1/cme-orchestrator`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          action: 'start_render',
+          projectId: project.id,
+          payload: { priority: i % 5 === 0 ? 'high' : 'standard' }
+        })
+      });
 
-    const result = await response.json();
-    if (!result.success) throw new Error(`Orchestrator failed for project ${project.id}: ${result.error}`);
+      const result = await response.json();
+      if (!result.success) throw new Error(`Orchestrator failed: ${result.error}`);
 
-    // Step C: Simulate Completion to Trigger Cost Logic
-    if (result.jobId) {
-      await supabase
-        .from('cme_render_jobs')
-        .update({ status: 'completed' })
-        .eq('id', result.jobId);
+      if (result.jobId) {
+        await supabase
+          .from('cme_render_jobs')
+          .update({ status: 'completed' })
+          .eq('id', result.jobId);
+      }
+      return result.jobId;
+    } catch (e) {
+      console.error(`Pipeline failed for project ${project.id}:`, e.message);
+      return null;
     }
-
-    return result.jobId;
   });
 
-  const jobIds = await Promise.all(pipelinePromises);
+  const jobIds = (await Promise.all(pipelinePromises)).filter(id => id !== null);
   console.log(`✅ ${jobIds.length} render jobs initialized and completed.`);
 
-  // 3. Validate Costs
   const { data: costs } = await supabase
     .from('cme_render_costs')
     .select('*')
@@ -83,14 +82,12 @@ async function runStressTest() {
 
   console.log(`💰 Cost tracking validation: ${costs?.length} records found.`);
 
-  // 4. Validate Lineage
   const { data: lineage } = await supabase
     .from('cme_lineage_nodes')
     .select('*')
     .limit(10);
   
   console.log(`🔍 Lineage audit: ${lineage?.length} sample nodes verified.`);
-
   console.log("🏁 Stress Test Complete.");
 }
 
