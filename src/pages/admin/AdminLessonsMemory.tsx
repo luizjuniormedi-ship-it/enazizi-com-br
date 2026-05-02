@@ -365,7 +365,8 @@ const AdminLessonsMemory = () => {
                           <Button
                             variant="outline"
                             className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
-                            onClick={() => downloadAsPDF(lesson)}
+                            onClick={() => exportLesson(lesson, "notebooklm")}
+                            disabled={!lesson.structured_content?.title}
                           >
                             <Download className="h-3.5 w-3.5" /> NotebookLM
                           </Button>
