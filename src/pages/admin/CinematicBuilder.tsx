@@ -14,7 +14,9 @@ import {
   Activity,
   AlertCircle,
   Stethoscope,
-  BarChart
+  BarChart,
+  HelpCircle,
+  CheckCircle,
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
