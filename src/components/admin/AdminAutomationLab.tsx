@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Wand2, Activity, Info, Loader2 } from "lucide-react";
+import { Sparkles, Wand2, Activity, Info, Loader2, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { simulateHighStudyActivity } from "@/lib/enaflixSimulation";
