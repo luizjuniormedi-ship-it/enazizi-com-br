@@ -31,6 +31,8 @@ interface FlashcardExamProps {
   userId?: string;
 }
 
+import { cn } from "@/lib/utils";
+
 const FlashcardExam = ({
   cards, mode, sprintTimeLeft: externalTimeLeft,
   onReview, onFinish, onDelete, userId,
@@ -191,51 +193,59 @@ const FlashcardExam = ({
       </div>
 
       {/* Card */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary">
-              {card.topic || "Geral"}
-            </span>
-            {!statuses.has(current) && (
-              <span className="text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-600">Pendente</span>
-            )}
-          </div>
-          <button
-            onClick={() => toggleFlag(current)}
-            className={`p-1.5 rounded-lg transition-all ${flagged.has(current) ? "text-yellow-500 bg-yellow-500/10" : "text-muted-foreground hover:text-yellow-500"}`}
-            title="Marcar para revisão"
+      <div className="perspective-1000 min-h-[400px] flex items-center justify-center relative">
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={`${current}-${flipped}`}
+            initial={{ rotateY: flipped ? -90 : 90, opacity: 0 }}
+            animate={{ rotateY: 0, opacity: 1 }}
+            exit={{ rotateY: flipped ? 90 : -90, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="w-full h-full cursor-pointer"
+            onClick={() => !answerSubmitted && setFlipped(!flipped)}
           >
-            <Bookmark className={`h-5 w-5 ${flagged.has(current) ? "fill-current" : ""}`} />
-          </button>
-        </div>
-
-        {/* Question */}
-        <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold">Pergunta</div>
-        <p className="text-base font-medium mb-6">{card.question}</p>
-
-        {/* Answer (flipped) */}
-        {flipped && (
-          <div className={`w-full border-t border-border pt-4 mt-2 ${answerSubmitted ? (isAnswerCorrect() ? "bg-green-500/5 rounded-b-lg" : "bg-destructive/5 rounded-b-lg") : ""}`}>
-            <div className="text-xs uppercase tracking-wider text-primary mb-2 font-semibold flex items-center justify-center gap-2">
-              Resposta
-              {answerSubmitted && (
-                isAnswerCorrect()
-                  ? <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  : <XCircle className="h-4 w-4 text-destructive" />
-              )}
-            </div>
-            {answerSubmitted && (
-              <div className="mb-3 p-2 rounded-md bg-muted/50 text-sm">
-                <span className="text-muted-foreground">Sua resposta: </span>
-                <span className={isAnswerCorrect() ? "text-green-500 font-medium" : "text-destructive font-medium"}>
-                  {userAnswer}
-                </span>
+            {!flipped ? (
+              <div className="glass-card-pixar p-8 min-h-[350px] flex flex-col justify-center shadow-pixar border-primary/20 bg-card-pixar/40">
+                <div className="flex items-center justify-between mb-6">
+                  <span className="text-xs px-3 py-1 rounded-full bg-primary/20 text-primary font-bold border border-primary/30">
+                    {card.topic || "Geral"}
+                  </span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); toggleFlag(current); }}
+                    className={cn("p-2 rounded-xl transition-all", flagged.has(current) ? "text-yellow-500 bg-yellow-500/10 shadow-glow-yellow" : "text-white/40 hover:text-yellow-500")}
+                  >
+                    <Bookmark className={cn("h-6 w-6", flagged.has(current) && "fill-current")} />
+                  </button>
+                </div>
+                <div className="text-xs uppercase tracking-widest text-primary/60 mb-4 font-black text-center">Pergunta</div>
+                <p className="text-xl sm:text-2xl font-bold text-white text-center leading-tight">{card.question}</p>
+                <div className="mt-12 flex justify-center">
+                  <span className="text-xs text-white/30 font-medium flex items-center gap-2 animate-pulse">
+                    <RotateCcw className="h-3 w-3" /> Toque para revelar resposta
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div className="glass-card-pixar p-8 min-h-[350px] flex flex-col justify-center shadow-pixar-violet border-violet-500/20 bg-card-pixar-violet/40">
+                <div className="text-xs uppercase tracking-widest text-violet-400 mb-6 font-black text-center">Resposta</div>
+                {answerSubmitted && (
+                  <div className="mb-6 p-4 rounded-2xl bg-white/5 border border-white/10 text-center">
+                    <span className={cn("text-lg font-bold flex items-center justify-center gap-2", isAnswerCorrect() ? "text-green-400" : "text-red-400")}>
+                      {isAnswerCorrect() ? <CheckCircle2 className="h-5 w-5" /> : <XCircle className="h-5 w-5" />}
+                      Sua resposta: {userAnswer}
+                    </span>
+                  </div>
+                )}
+                <p className="text-xl sm:text-2xl font-bold text-white text-center leading-relaxed italic">
+                  {card.answer}
+                </p>
+                <div className="mt-8 flex justify-center">
+                  <span className="text-xs text-white/30 font-medium">Auto-avaliação abaixo</span>
+                </div>
               </div>
             )}
-            <p className="text-lg leading-relaxed font-medium text-center">{card.answer}</p>
-          </div>
-        )}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* Input / FSRS buttons */}
