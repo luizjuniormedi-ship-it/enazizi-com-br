@@ -404,6 +404,22 @@ export const useTutorCME = () => {
         throw new Error(orchError.message || "Erro no orquestrador");
       }
 
+      // Structured failure from orchestrator (never blank screen)
+      if (orchestratorResult && orchestratorResult.success === false) {
+        const techReason = orchestratorResult.technical_reason || orchestratorResult.message || orchestratorResult.code;
+        if (orchestratorResult.code === 'WORKER_ASSIGN_FAILED' || orchestratorResult.fallback_available) {
+          setState(s => ({
+            ...s,
+            status: 'failed',
+            error: orchestratorResult.message || 'Falha no orquestrador',
+            message: techReason,
+          }));
+          await reportIncident('cme-orchestrator', new Error(techReason));
+          return null;
+        }
+        throw new Error(`${orchestratorResult.code || 'ORCHESTRATOR_ERROR'}: ${techReason}`);
+      }
+
       if (orchestratorResult?.status === 'waiting_hardware') {
         setState(s => ({ 
           ...s, 
