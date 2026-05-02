@@ -46,15 +46,15 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
-  structuring: "bg-blue-500/10 text-blue-700 animate-pulse",
-  pending_review: "bg-slate-500/10 text-slate-700",
-  in_production: "bg-blue-500/10 text-blue-700",
-  needs_adjustment: "bg-orange-500/10 text-orange-700",
-  ready_to_publish: "bg-amber-500/10 text-amber-700",
+  structuring: "bg-blue-500/20 text-blue-300 animate-pulse",
+  pending_review: "bg-muted text-muted-foreground",
+  in_production: "bg-blue-500/20 text-blue-300",
+  needs_adjustment: "bg-orange-500/20 text-orange-300",
+  ready_to_publish: "bg-amber-500/20 text-amber-300",
   published: "bg-emerald-500 text-white hover:bg-emerald-600",
-  unpublished: "bg-slate-300 text-slate-700",
-  archived: "bg-slate-200 text-slate-500",
-  rejected: "bg-red-500/10 text-red-700",
+  unpublished: "bg-muted text-muted-foreground",
+  archived: "bg-muted text-muted-foreground",
+  rejected: "bg-red-500/20 text-red-300",
 };
 
 const MIN_CHECKLIST = [
