@@ -205,6 +205,22 @@ const AdminLessonsMemory = () => {
     publishMutation.mutate(lesson);
   };
 
+  const handleBatchP2 = async () => {
+    if (loadingBatch) return;
+    setLoadingBatch(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { generateP2LessonBatch } = await import("@/lib/p2BatchGeneration");
+      await generateP2LessonBatch(user?.id || "");
+      queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro na produção em lote");
+    } finally {
+      setLoadingBatch(false);
+    }
+  };
+
   // counters
   const counters = useMemo(() => {
     const list = lessons ?? [];
