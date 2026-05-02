@@ -15,7 +15,7 @@ export const simulateHighStudyActivity = async (userId: string, topic: string) =
       .upsert({
         user_id: userId,
         topic: topic,
-        subject: "Simulação Clínica",
+        subject: "Clínica Médica",
         interaction_count: 25,
         total_study_time: 1800, // 30 min
         flashcards_generated: 8,
