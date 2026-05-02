@@ -362,8 +362,14 @@ export const useTutorCME = () => {
           sequence_order: idx,
           start_second: idx * 60,
           end_second: (idx + 1) * 60,
-          payload: { content: block.content },
-          render_payload: { content: block.content }
+          payload: { 
+            content: block.content, 
+            metadata: (block as any).metadata || (block as any).scene_graph_data || {} 
+          },
+          render_payload: { 
+            content: block.content,
+            metadata: (block as any).metadata || (block as any).scene_graph_data || {}
+          }
         }));
         
         const { error: nodesError } = await supabaseClient
