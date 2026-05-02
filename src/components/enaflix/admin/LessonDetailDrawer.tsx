@@ -212,16 +212,27 @@ export function LessonDetailDrawer({
                 )}
               </TabsContent>
 
-              <TabsContent value="actions" className="space-y-3 mt-0">
-                <ActionPill
-                  icon={<Sparkles className="h-4 w-4" />}
-                  label="Reestruturar com IA"
-                  hint="Recria roteiro, capítulos e prompts"
-                  onClick={() => onRestructure(lesson)}
-                  accent="violet"
-                />
+              <TabsContent value="actions" className="space-y-4 mt-0">
+                <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 p-4 mb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Sparkles className="h-4 w-4 text-violet-300" />
+                    <h4 className="text-xs font-black uppercase tracking-widest text-violet-200">Pipeline de Produção IA</h4>
+                  </div>
+                  <p className="text-xs text-violet-100/70 mb-4 leading-relaxed">
+                    Esta aula foi detectada automaticamente. Use o botão abaixo para gerar toda a estrutura cinematográfica (roteiro, capítulos e prompts de vídeo).
+                  </p>
+                  <Button 
+                    onClick={() => onRestructure(lesson)}
+                    className="w-full bg-violet-500 hover:bg-violet-400 text-white font-black uppercase tracking-widest text-[10px] h-10 gap-2 shadow-[0_0_20px_-5px_rgba(139,92,246,0.6)]"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    Gerar Estrutura Cinematográfica
+                  </Button>
+                </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="h-px bg-white/5 my-2" />
+                <Section title="Exportações de Vídeo">
+                  <div className="grid grid-cols-2 gap-2 mt-2">
                   <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
                   <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Gemini" onClick={() => onExport(lesson, "gemini")} disabled={!isStructured} />
                   <ActionPill icon={<Film className="h-4 w-4" />} label="Google Vids" onClick={() => onExport(lesson, "google_vids")} disabled={!isStructured} />
