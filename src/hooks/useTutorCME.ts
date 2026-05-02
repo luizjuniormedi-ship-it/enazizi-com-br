@@ -312,6 +312,7 @@ export const useTutorCME = () => {
           user_id: user.id,
           config: {
             tutor_conversation_id: params.conversationId,
+            tutor_message_id: params.messageId,
             is_full_session: params.isFullSession,
             specialty: params.specialty,
             topic: params.topic,
