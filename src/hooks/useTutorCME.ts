@@ -430,6 +430,10 @@ export const useTutorCME = () => {
       setState(s => ({ ...s, sceneGraphId: sceneGraph.id }));
       await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado e persistido", aggregationId || undefined);
 
+      // NOVO: Mostrar o Player Ágil imediatamente como fallback primário, enquanto a GPU trabalha no fundo
+      setShowAgilePlayer(true);
+      toast.success("Aula estruturada! Iniciando experiência interativa enquanto o vídeo cinematográfico é processado.");
+
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Orquestrando Renderização..." }));
       
       console.log("[CME] Invoking orchestrator for project:", projectId);
