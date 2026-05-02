@@ -184,9 +184,50 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       lastEventRef.current = Date.now();
     }, 5000);
 
+    // Fallback polling every 2s — guarantees UI updates even if realtime drops
+    const pollTimer = setInterval(async () => {
+      if (status === 'ready' || status === 'failed') return;
+
+      const { data: latestEvents } = await supabase
+        .from('cme_pipeline_events')
+        .select('*')
+        .eq('aggregation_id', aggregationId)
+        .order('created_at', { ascending: true });
+
+      if (latestEvents && latestEvents.length > 0) {
+        setEvents(latestEvents);
+        const last = latestEvents[latestEvents.length - 1];
+        setCurrentStage(last.stage);
+        setProgress(last.progress);
+        if (last.status === 'failed') {
+          setStatus('failed');
+          setError(last.message);
+        } else if (last.progress === 100 || last.stage === 'completed') {
+          setStatus('ready');
+        }
+      }
+
+      const { data: latestJob } = await supabase
+        .from('cme_render_jobs' as any)
+        .select('id, status, progress, gpu_worker_id, pipeline_last_error, output_url, preview_url')
+        .eq('generation_id', aggregationId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestJob) {
+        setRenderJob((prev: any) => ({ ...prev, ...latestJob }));
+        if ((latestJob as any).status === 'completed') setStatus('ready');
+        if ((latestJob as any).status === 'failed') {
+          setStatus('failed');
+          setError((latestJob as any).pipeline_last_error || 'Render falhou');
+        }
+      }
+    }, 2000);
+
     return () => {
       supabase.removeChannel(channel);
       clearInterval(timer);
+      clearInterval(pollTimer);
     };
   }, [aggregationId, onComplete, status]);
 
