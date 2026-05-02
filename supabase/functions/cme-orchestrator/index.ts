@@ -77,6 +77,7 @@ serve(async (req) => {
         .insert({
           project_id: projectId,
           generation_id: project.aggregation_id,
+          aggregation_id: project.aggregation_id,
           status: 'queued',
           queue_id: queue?.id,
           user_id: user.id,
@@ -87,6 +88,17 @@ serve(async (req) => {
         .single();
 
       if (jobError) throw jobError;
+
+      // Emit pipeline event: render job created (60%)
+      await supabaseClient.from('cme_pipeline_events').insert({
+        project_id: projectId,
+        aggregation_id: project.aggregation_id,
+        render_job_id: job.id,
+        stage: 'render_job_creation',
+        status: 'completed',
+        progress: 60,
+        message: 'Render job criado e enfileirado',
+      }).then(() => {}, () => {});
 
       const { data: stages } = await supabaseClient
         .from('cme_pipeline_stages')
@@ -112,18 +124,56 @@ serve(async (req) => {
       let selectedWorker = null;
       if (workers && workers.length > 0) {
         const scoredWorkers = workers.map(w => {
-          const vramScore = ((w.vram_total_mb - w.vram_used_mb) / w.vram_total_mb) * 100;
+          const total = (w.vram_total_mb ?? 1) || 1;
+          const used = w.vram_used_mb ?? 0;
+          const vramScore = ((total - used) / total) * 100;
           return { ...w, total_score: vramScore };
         }).sort((a, b) => b.total_score - a.total_score);
         selectedWorker = scoredWorkers[0];
 
         await supabaseClient
           .from('cme_render_jobs')
-          .update({ worker_id: selectedWorker.id })
+          .update({ gpu_worker_id: selectedWorker.id, status: 'rendering', started_rendering_at: new Date().toISOString() })
           .eq('id', job.id);
+
+        await supabaseClient.from('cme_pipeline_events').insert([
+          {
+            project_id: projectId,
+            aggregation_id: project.aggregation_id,
+            render_job_id: job.id,
+            stage: 'worker_selection',
+            status: 'completed',
+            progress: 70,
+            message: `Worker selecionado: ${selectedWorker.id}`,
+            worker_id: selectedWorker.id,
+          },
+          {
+            project_id: projectId,
+            aggregation_id: project.aggregation_id,
+            render_job_id: job.id,
+            stage: 'gpu_rendering',
+            status: 'running',
+            progress: 80,
+            message: 'GPU iniciou renderização',
+            worker_id: selectedWorker.id,
+          },
+        ]).then(() => {}, () => {});
+
+        return new Response(JSON.stringify({ success: true, jobId: job.id, status: 'rendering' }), { headers: corsHeaders });
       }
 
-      return new Response(JSON.stringify({ success: true, jobId: job.id }), { headers: corsHeaders });
+      // No online worker available — surface explicitly
+      await supabaseClient.from('cme_pipeline_events').insert({
+        project_id: projectId,
+        aggregation_id: project.aggregation_id,
+        render_job_id: job.id,
+        stage: 'worker_selection',
+        status: 'waiting_hardware',
+        progress: 65,
+        message: 'Nenhum worker GPU online — aguardando hardware',
+      }).then(() => {}, () => {});
+
+      return new Response(JSON.stringify({ success: true, jobId: job.id, status: 'waiting_hardware', message: 'Aguardando worker GPU online' }), { headers: corsHeaders });
     }
 
     if (action === 'publish_enaflix') {

@@ -35,13 +35,26 @@ interface CMERenderModalProps {
 }
 
 const STAGES = [
-  { id: 'aggregation', label: 'Aggregation', icon: Database },
-  { id: 'planning', label: 'Planning', icon: Brain },
-  { id: 'graphing', label: 'Scene Graph', icon: Settings },
-  { id: 'render_queued', label: 'Queue', icon: History },
-  { id: 'rendering', label: 'GPU Render', icon: Cpu },
-  { id: 'completed', label: 'Finished', icon: CheckCircle2 },
+  { id: 'planning', label: 'Planning', icon: Brain, progress: 15 },
+  { id: 'mapping', label: 'Mapping', icon: Database, progress: 35 },
+  { id: 'graphing', label: 'Scene Graph', icon: Layout, progress: 50 },
+  { id: 'render_job_creation', label: 'Render Job', icon: Settings, progress: 60 },
+  { id: 'worker_selection', label: 'Worker', icon: Cpu, progress: 70 },
+  { id: 'gpu_rendering', label: 'GPU Render', icon: Cpu, progress: 80 },
+  { id: 'hls_cdn_sync', label: 'HLS/CDN', icon: Globe, progress: 90 },
+  { id: 'completed', label: 'Finished', icon: CheckCircle2, progress: 100 },
 ];
+
+const STAGE_LABELS: Record<string, string> = {
+  planning: 'Planejamento Semântico',
+  mapping: 'Mapeamento de Conhecimento',
+  graphing: 'Gerando Scene Graph',
+  render_job_creation: 'Criando Render Job',
+  worker_selection: 'Selecionando Worker GPU',
+  gpu_rendering: 'GPU Renderizando',
+  hls_cdn_sync: 'Sincronizando HLS/CDN',
+  completed: 'Concluído',
+};
 
 export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERenderModalProps) => {
   const navigate = useNavigate();
@@ -132,15 +145,41 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       )
       .subscribe();
 
-    // Stuck detection (20s)
+    // Real stuck detection at 50% boundary (Scene Graph ↔ Render Queue)
     const timer = setInterval(async () => {
       const elapsed = Date.now() - lastEventRef.current;
-      if (status === 'processing' && elapsed > 20000) {
-        const { data: workers } = await supabase.from('cme_worker_nodes').select('id').eq('status', 'online');
-        if (!workers || workers.length === 0) {
-          setStatus('waiting_hardware');
-        }
+      if (status !== 'processing' || elapsed < 30000) return;
+
+      // Re-check the real backend state instead of guessing
+      const [{ data: sg }, { data: job }, { data: workers }] = await Promise.all([
+        supabase.from('cme_scene_graphs' as any).select('id').eq('video_project_id', aggregationId).limit(1).maybeSingle(),
+        supabase.from('cme_render_jobs' as any)
+          .select('id, status, gpu_worker_id, error_message')
+          .eq('generation_id', aggregationId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase.from('cme_worker_nodes').select('id').eq('status', 'online').eq('is_draining', false),
+      ]);
+
+      const hasWorkers = (workers?.length ?? 0) > 0;
+
+      if (!sg) {
+        setStatus('failed');
+        setError('Scene Graph não foi persistido (boundary stall).');
+        return;
       }
+      if (!job) {
+        setStatus('failed');
+        setError('RENDER_JOB_NOT_CREATED — orchestrator não criou render job.');
+        return;
+      }
+      if (job && !(job as any).gpu_worker_id && !hasWorkers) {
+        setStatus('waiting_hardware');
+        return;
+      }
+      // Job exists, worker assigned: keep polling, telemetry will catch up
+      lastEventRef.current = Date.now();
     }, 5000);
 
     return () => {
@@ -148,6 +187,11 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       clearInterval(timer);
     };
   }, [aggregationId, onComplete, status]);
+
+  const openMonitor = () => {
+    navigate(`/admin/cme-monitor?aggregation_id=${aggregationId}`);
+    onClose?.();
+  };
 
   const openBuilder = () => {
     if (aggregationId) {
@@ -287,10 +331,17 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
 
           <div className="space-y-4">
             <div className="flex justify-between items-end">
-              <span className="text-zinc-400 text-xs font-bold uppercase tracking-tight">{currentStage.replace(/_/g, ' ')}</span>
+              <span className="text-zinc-400 text-xs font-bold uppercase tracking-tight">
+                {STAGE_LABELS[currentStage] || currentStage.replace(/_/g, ' ')}
+              </span>
               <span className="text-primary text-2xl font-black italic">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2 bg-zinc-900 shadow-inner" />
+            <div className="flex justify-end">
+              <Button onClick={openMonitor} variant="ghost" size="sm" className="text-zinc-500 hover:text-primary text-[10px] uppercase tracking-widest gap-2">
+                <ExternalLink className="h-3 w-3" /> Ver no Monitor
+              </Button>
+            </div>
           </div>
 
 
