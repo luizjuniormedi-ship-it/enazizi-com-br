@@ -67,6 +67,8 @@ const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
 const AdminMonitoring = lazyWithRetry(() => import("./pages/AdminMonitoring"), "AdminMonitoring");
 const AdminCEO = lazyWithRetry(() => import("./pages/AdminCEO"), "AdminCEO");
+const AdminLayout = lazyWithRetry(() => import("./components/layout/AdminLayout"), "AdminLayout");
+const CentroComando = lazyWithRetry(() => import("./pages/admin/CentroComando"), "CentroComando");
 const ProductMetricsPage = lazyWithRetry(() => import("./pages/ProductMetricsPage"), "ProductMetricsPage");
 const AdminOrchestratorInsights = lazyWithRetry(() => import("./pages/AdminOrchestratorInsights"), "AdminOrchestratorInsights");
 const ValidationDashboard = lazyWithRetry(() => import("./pages/admin/ValidationDashboard"), "ValidationDashboard");
@@ -244,8 +246,10 @@ const App = () => (
               </Route>
               {/* Fullscreen mind map viewer */}
               <Route path="/dashboard/mapas-mentais/:id" element={<MindMapFullscreen />} />
-              <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
-                <Route index element={<Admin />} />
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                <Route index element={<CentroComando />} />
+                <Route path="users" element={<Admin />} />
+                <Route path="ingestion-network" element={<AdminLessonsMemory />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
                 <Route path="metrics" element={<ProductMetricsPage />} />
