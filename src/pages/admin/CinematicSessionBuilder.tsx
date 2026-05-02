@@ -245,8 +245,11 @@ const CinematicSessionBuilder = () => {
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
                               <h3 className="text-sm font-black text-slate-800">{block.title}</h3>
-                              <Badge variant="secondary" className="text-[9px] uppercase font-bold tracking-tighter bg-slate-100 text-slate-600 border-none">
-                                {block.block_type || 'capítulo'}
+                              <Badge variant="secondary" className={cn(
+                                "text-[9px] uppercase font-bold tracking-tighter border-none",
+                                block.block_type === 'mini_quiz' ? "bg-purple-100 text-purple-600" : "bg-slate-100 text-slate-600"
+                              )}>
+                                {block.block_type === 'mini_quiz' ? 'QUIZ INTERATIVO' : (block.block_type || 'capítulo')}
                               </Badge>
                             </div>
                             <p className="text-xs text-slate-500 line-clamp-1 mt-1 font-medium italic opacity-80">
