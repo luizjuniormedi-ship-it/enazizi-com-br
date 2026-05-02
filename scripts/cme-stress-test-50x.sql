@@ -7,6 +7,7 @@ DECLARE
   v_job_id UUID;
   v_queue_id UUID;
   v_start_time TIMESTAMPTZ;
+  v_user_id UUID := 'a845ec5d-7afb-4cb9-8aa8-95ae2ea9d023';
 BEGIN
   -- Get queue
   SELECT id INTO v_queue_id FROM public.cme_render_queues WHERE name = 'Standard' LIMIT 1;
@@ -14,7 +15,7 @@ BEGIN
   FOR i IN 1..stress_count LOOP
     -- 1. Create Project
     INSERT INTO public.cme_video_projects (title, status, user_id)
-    VALUES ('Stress Test Project ' || i, 'draft', '00000000-0000-0000-0000-000000000000')
+    VALUES ('Stress Test Project ' || i, 'draft', v_user_id)
     RETURNING id INTO v_project_id;
 
     -- 2. Create Scene Graph
@@ -24,7 +25,7 @@ BEGIN
     -- 3. Create Render Job
     v_start_time := now() - (interval '5 minutes');
     INSERT INTO public.cme_render_jobs (project_id, status, queue_id, user_id, render_metadata, created_at)
-    VALUES (v_project_id, 'queued', v_queue_id, '00000000-0000-0000-0000-000000000000', '{"priority": "standard"}'::jsonb, v_start_time)
+    VALUES (v_project_id, 'queued', v_queue_id, v_user_id, '{"priority": "standard"}'::jsonb, v_start_time)
     RETURNING id INTO v_job_id;
 
     -- 4. Complete Render Job (to trigger costs)
