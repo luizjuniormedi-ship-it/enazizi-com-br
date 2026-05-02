@@ -487,10 +487,31 @@ const Admin = () => {
               title="ENAFLIX Operations Center"
               subtitle="Operação, qualidade e governança do ENAZIZI em tempo real."
               actions={
-                <Button variant="outline" size="lg" onClick={loadData} disabled={loading} className="gap-2">
-                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                  Atualizar dados
-                </Button>
+                <div className="flex flex-wrap gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    onClick={loadData} 
+                    disabled={loading} 
+                    className="gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                    Atualizar dados
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    onClick={handleBatchP2} 
+                    disabled={loadingBatch}
+                    className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0 shadow-lg shadow-violet-500/20"
+                  >
+                    {loadingBatch ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <BookOpen className="h-4 w-4" />
+                    )}
+                    Produção em Lote P2
+                  </Button>
+                </div>
               }
               className="py-6 sm:py-8"
             />
