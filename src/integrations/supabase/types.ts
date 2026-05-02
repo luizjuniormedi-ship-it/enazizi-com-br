@@ -5188,6 +5188,7 @@ export type Database = {
           cinematic_quality_score: number | null
           cinematic_score: number | null
           completed_at: string | null
+          config: Json | null
           director_ai_id: string | null
           distributed_chunks: number | null
           estimated_cost_cents: number | null
@@ -5239,6 +5240,7 @@ export type Database = {
           cinematic_quality_score?: number | null
           cinematic_score?: number | null
           completed_at?: string | null
+          config?: Json | null
           director_ai_id?: string | null
           distributed_chunks?: number | null
           estimated_cost_cents?: number | null
@@ -5290,6 +5292,7 @@ export type Database = {
           cinematic_quality_score?: number | null
           cinematic_score?: number | null
           completed_at?: string | null
+          config?: Json | null
           director_ai_id?: string | null
           distributed_chunks?: number | null
           estimated_cost_cents?: number | null
