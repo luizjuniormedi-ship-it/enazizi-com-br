@@ -41,7 +41,7 @@ export const generateP2LessonBatch = async (userId: string) => {
   
   for (const topic of allThemes) {
     try {
-      // Simula o estudo profundo e dispara a geração
+      // Simula o estudo profundo e dispara a geração (Curadoria ENAFLIX)
       const lessonId = await simulateHighStudyActivity(userId, topic);
       if (lessonId) successCount++;
       
