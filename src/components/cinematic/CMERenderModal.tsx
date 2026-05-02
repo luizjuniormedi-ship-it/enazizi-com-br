@@ -66,6 +66,8 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
   const [sceneGraphId, setSceneGraphId] = useState<string | null>(null);
   const [renderJob, setRenderJob] = useState<any | null>(null);
   const [configState, setConfigState] = useState<'config_validated' | 'config_warning' | 'config_invalid' | 'retry_using_original_config' | 'fallback_using_config' | 'unknown'>('unknown');
+  const [devWorkerLoading, setDevWorkerLoading] = useState(false);
+  const [devWorkerError, setDevWorkerError] = useState<string | null>(null);
   const lastEventRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -91,9 +93,9 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       // Latest render job (carries the persisted config)
       const { data: job } = await supabase
         .from('cme_render_jobs' as any)
-        .select('id, status, config, retry_count, worker_id, error_message')
+        .select('id, status, progress, config, retry_count, gpu_worker_id, pipeline_last_error, output_url, preview_url')
         .eq('generation_id', aggregationId)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
       if (job) {
@@ -154,9 +156,9 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       const [{ data: sg }, { data: job }, { data: workers }] = await Promise.all([
         supabase.from('cme_scene_graphs' as any).select('id').eq('video_project_id', aggregationId).limit(1).maybeSingle(),
         supabase.from('cme_render_jobs' as any)
-          .select('id, status, gpu_worker_id, error_message')
+          .select('id, status, progress, gpu_worker_id, pipeline_last_error, output_url, preview_url')
           .eq('generation_id', aggregationId)
-          .order('created_at', { ascending: false })
+          .order('updated_at', { ascending: false })
           .limit(1)
           .maybeSingle(),
         supabase.from('cme_worker_nodes').select('id').eq('status', 'online').eq('is_draining', false),
@@ -182,9 +184,50 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       lastEventRef.current = Date.now();
     }, 5000);
 
+    // Fallback polling every 2s — guarantees UI updates even if realtime drops
+    const pollTimer = setInterval(async () => {
+      if (status === 'ready' || status === 'failed') return;
+
+      const { data: latestEvents } = await supabase
+        .from('cme_pipeline_events')
+        .select('*')
+        .eq('aggregation_id', aggregationId)
+        .order('created_at', { ascending: true });
+
+      if (latestEvents && latestEvents.length > 0) {
+        setEvents(latestEvents);
+        const last = latestEvents[latestEvents.length - 1];
+        setCurrentStage(last.stage);
+        setProgress(last.progress);
+        if (last.status === 'failed') {
+          setStatus('failed');
+          setError(last.message);
+        } else if (last.progress === 100 || last.stage === 'completed') {
+          setStatus('ready');
+        }
+      }
+
+      const { data: latestJob } = await supabase
+        .from('cme_render_jobs' as any)
+        .select('id, status, progress, gpu_worker_id, pipeline_last_error, output_url, preview_url')
+        .eq('generation_id', aggregationId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (latestJob) {
+        setRenderJob((prev: any) => ({ ...(prev || {}), ...(latestJob as any) }));
+        if ((latestJob as any).status === 'completed') setStatus('ready');
+        if ((latestJob as any).status === 'failed') {
+          setStatus('failed');
+          setError((latestJob as any).pipeline_last_error || 'Render falhou');
+        }
+      }
+    }, 2000);
+
     return () => {
       supabase.removeChannel(channel);
       clearInterval(timer);
+      clearInterval(pollTimer);
     };
   }, [aggregationId, onComplete, status]);
 
@@ -280,21 +323,32 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
+                  disabled={devWorkerLoading}
                   onClick={async () => {
+                    setDevWorkerLoading(true);
+                    setDevWorkerError(null);
                     try {
-                      const { data, error } = await supabase.functions.invoke('cme-dev-worker', {
+                      const { data, error: fnErr } = await supabase.functions.invoke('cme-dev-worker', {
                         body: { action: 'pickup_and_run' },
                       });
-                      if (error || (data && data.success === false)) {
-                        console.error('[dev-worker] erro', error, data);
+                      if (fnErr) {
+                        setDevWorkerError(fnErr.message || 'Falha ao invocar DEV worker');
+                      } else if (data && data.success === false) {
+                        setDevWorkerError(data.message || data.code || 'DEV worker retornou erro');
                       }
-                    } catch (e) {
-                      console.error('[dev-worker] exception', e);
+                    } catch (e: any) {
+                      setDevWorkerError(e?.message || 'Erro inesperado ao iniciar DEV worker');
+                    } finally {
+                      setDevWorkerLoading(false);
                     }
                   }}
                   className="bg-amber-500 hover:bg-amber-600 text-black font-bold"
                 >
-                  <Cpu className="mr-2 h-4 w-4" /> Iniciar Worker DEV
+                  {devWorkerLoading ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Iniciando…</>
+                  ) : (
+                    <><Cpu className="mr-2 h-4 w-4" /> Iniciar Worker DEV</>
+                  )}
                 </Button>
                 <Button onClick={openBuilder} variant="outline" className="border-amber-500/20 hover:bg-amber-500/10 text-amber-500">
                   <ExternalLink className="mr-2 h-4 w-4" /> Ir para o Builder
@@ -303,6 +357,9 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                   Ver status do Cluster GPU
                 </Button>
               </div>
+              {devWorkerError && (
+                <p className="text-xs text-red-400 mt-2 font-mono">⚠ {devWorkerError}</p>
+              )}
             </div>
           )}
 
@@ -399,9 +456,26 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
           </div>
           
           {status === 'ready' && (
-             <Button onClick={onClose} className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold uppercase py-6 rounded-2xl shadow-lg shadow-emerald-500/20">
-               Concluir e Assistir
-             </Button>
+            <div className="space-y-3">
+              {(renderJob?.preview_url || renderJob?.output_url) && (
+                <Button
+                  onClick={() => {
+                    const url = renderJob?.preview_url || renderJob?.output_url;
+                    if (url) window.open(url, '_blank', 'noopener');
+                  }}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold uppercase py-6 rounded-2xl shadow-lg shadow-emerald-500/20"
+                >
+                  <Video className="mr-2 h-5 w-5" /> Assistir prévia
+                </Button>
+              )}
+              <Button
+                onClick={onClose}
+                variant="outline"
+                className="w-full border-zinc-700 hover:bg-zinc-800 font-bold uppercase py-5 rounded-2xl"
+              >
+                Concluir e fechar
+              </Button>
+            </div>
           )}
         </div>
       </div>
