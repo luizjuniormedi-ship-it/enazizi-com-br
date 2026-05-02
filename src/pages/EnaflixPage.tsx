@@ -45,14 +45,32 @@ export default function EnaflixPage() {
   const { data: aiLessons } = useQuery({
     queryKey: ["enaflix-ai-lessons"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("ai_video_lessons")
         .select("*")
         .eq("status", "published")
         .order("published_at", { ascending: false })
         .limit(10);
-      if (error) return [];
-      return data;
+
+      const { data: memoryData } = await supabase
+        .from("tutor_lesson_memory")
+        .select("*")
+        .eq("status", "published")
+        .eq("hidden_from_student", false)
+        .order("published_at", { ascending: false })
+        .limit(10);
+
+      const memoryLessons = (memoryData || []).map((l: any) => ({
+        ...l,
+        specialty: l.subject,
+        duration_seconds: l.duration || 900,
+      }));
+
+      return [...(data || []), ...memoryLessons].sort(
+        (a: any, b: any) =>
+          new Date(b.published_at || b.created_at).getTime() -
+          new Date(a.published_at || a.created_at).getTime()
+      );
     }
   });
 
