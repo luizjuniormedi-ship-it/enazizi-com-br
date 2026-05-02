@@ -33,6 +33,9 @@ import { Badge } from "@/components/ui/badge";
 import { createPortal } from "react-dom";
 import FlashcardExam, { type FlashcardItem } from "@/components/flashcards/FlashcardExam";
 import { EnaflixActionCard } from "@/components/enaflix/EnaflixActionCard";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
+import { cn } from "@/lib/utils";
 
 type Phase = "setup" | "active" | "finished";
 
