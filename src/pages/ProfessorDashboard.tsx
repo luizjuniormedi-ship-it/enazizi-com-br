@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { CinematicHero } from "@/components/cinematic";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 
 import ClassAnalytics from "@/components/professor/ClassAnalytics";
 import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
@@ -188,7 +189,8 @@ const ProfessorDashboard = () => {
   }, [simulados]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
       <CinematicHero
         module="professor"
         eyebrow={

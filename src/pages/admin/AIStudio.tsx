@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 import { Badge } from "@/components/ui/badge";
@@ -71,7 +73,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/hooks/useAuth";
+// useAuth already imported above
 import { PedagogicalQualityDashboard } from "@/components/admin/PedagogicalQualityDashboard";
 import { 
   Table, 
@@ -82,7 +84,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 
-export default function AIStudio() {
+export function AIStudio() {
    const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -1626,11 +1628,13 @@ ${content.generated_video_script || "Roteiro pendente."}
   );
 }
 
-const AIStudioWrapper = () => (
-  <div className="relative min-h-screen bg-background p-6 sm:p-10 space-y-10">
-    <EnaflixBackgroundFX intensity="medium" />
-    <AIStudio />
-  </div>
-);
+function AIStudioWrapper() {
+  return (
+    <div className="relative min-h-screen bg-background p-6 sm:p-10 space-y-10">
+      <EnaflixBackgroundFX intensity="medium" />
+      <AIStudio />
+    </div>
+  );
+}
 
 export default AIStudioWrapper;

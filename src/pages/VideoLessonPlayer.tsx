@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   Play, 
@@ -663,7 +664,8 @@ const VideoLessonPlayer = () => {
   const isRendering = lesson.media_status === 'processing' || lesson.media_status === 'pending';
 
   return (
-    <div className="min-h-screen bg-[#0a0a12] text-white animate-in fade-in duration-500 pb-20">
+    <div className="min-h-screen bg-[#0a0a12] text-white animate-in fade-in duration-500 pb-20 relative">
+      <EnaflixBackgroundFX intensity="medium" />
       <header className="sticky top-0 z-50 bg-[#0a0a12]/80 backdrop-blur-xl border-b border-white/5 px-6 h-14 flex items-center justify-between">
         <Button 
           variant="ghost" 
