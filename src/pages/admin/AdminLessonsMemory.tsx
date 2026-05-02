@@ -12,7 +12,8 @@ import {
   ExternalLink,
   ChevronRight,
   Shield,
-  Download
+  Download,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -21,6 +22,17 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const AdminLessonsMemory = () => {
   const queryClient = useQueryClient();
@@ -79,6 +91,42 @@ const AdminLessonsMemory = () => {
     onError: (error: any) => {
       toast.error(`Falha no upload: ${error.message}`);
       setUploadingId(null);
+    }
+  });
+  
+  const deleteLessonMutation = useMutation({
+    mutationFn: async (lesson: any) => {
+      // If there's a video, try to delete it from storage
+      if (lesson.manual_video_url) {
+        try {
+          // Extract file path from public URL
+          const urlParts = lesson.manual_video_url.split('/tutor-lesson-videos/');
+          if (urlParts.length > 1) {
+            const filePath = urlParts[1];
+            await supabase.storage
+              .from("tutor-lesson-videos")
+              .remove([filePath]);
+          }
+        } catch (storageError) {
+          console.error("Erro ao excluir arquivo do storage:", storageError);
+          // Continue deleting the record even if storage deletion fails
+        }
+      }
+
+      const { error } = await supabase
+        .from("cme_session_aggregations")
+        .delete()
+        .eq("id", lesson.id);
+      
+      if (error) throw error;
+      return lesson.id;
+    },
+    onSuccess: () => {
+      toast.success("Aula excluída com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+    },
+    onError: (error: any) => {
+      toast.error(`Falha ao excluir: ${error.message}`);
     }
   });
 
@@ -174,7 +222,34 @@ const AdminLessonsMemory = () => {
                         <span className="text-[10px] text-slate-400 font-mono">#{lesson.id.slice(0, 8)}</span>
                       </div>
                       
-                      <h3 className="text-lg font-black text-slate-800 mb-2">{lesson.title || "Sem título"}</h3>
+                      <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-black text-slate-800">{lesson.title || "Sem título"}</h3>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-slate-400 hover:text-red-500 transition-colors">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Excluir Aula?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. Isso excluirá permanentemente os dados da aula
+                                e o acesso ao vídeo vinculado.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction 
+                                onClick={() => deleteLessonMutation.mutate(lesson)}
+                                className="bg-red-600 hover:bg-red-700"
+                              >
+                                Excluir
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
                       
                       <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
                         <div className="flex items-center gap-1">
