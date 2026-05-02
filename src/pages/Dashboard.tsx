@@ -5,342 +5,188 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { usePrefetch } from "@/hooks/usePrefetch";
-import { useCoreData } from "@/hooks/useCoreData";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
-import { GraduationCap, Play, ChevronRight } from "lucide-react";
+import { Play, Sparkles, Clock, FileText, AlertTriangle, Target, Brain, Info, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
+import { motion } from "framer-motion";
 
 import CinematicMissionHero from "@/components/dashboard-v2/CinematicMissionHero";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
 import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
-
-import MissionCompletionBanner from "@/components/mission-control/MissionCompletionBanner";
-import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
-import MissionControlError from "@/components/mission-control/MissionControlError";
-import MissionControlEmpty from "@/components/mission-control/MissionControlEmpty";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { EnaflixCard } from "@/components/enaflix/EnaflixCard";
 import SafeCard from "@/components/layout/SafeCard";
-import { useFocusMode } from "@/components/dashboard/guided/FocusModeEntry";
 import AchievementToast from "@/components/gamification/AchievementToast";
-
 import { fireCelebration } from "@/lib/celebrations";
+import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 
-// Lazy-load heavy / below-the-fold blocks to shrink the critical bundle.
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const TutorContinueCard = lazy(() => import("@/components/dashboard/TutorContinueCard"));
-const AdvancedAnalyticsAccordion = lazy(() => import("@/components/dashboard/AdvancedAnalyticsAccordion"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
-const AdaptiveMnemonicCard = lazy(() =>
-  import("@/components/mnemonic/AdaptiveMnemonicCard").then((m) => ({ default: m.AdaptiveMnemonicCard }))
-);
-const OnboardingChecklist = lazy(() => import("@/components/dashboard/OnboardingChecklist"));
 
-interface CompletionHandoff {
-  completedTitle: string;
-  badges?: string[];
-}
-
-/* ═══════════════════════════════════════════════════
-   HOJE — Panorama silencioso (entender, não executar)
-   Função: orientar o aluno sobre o estado do dia.
-   Execução vive em /dashboard/sessao-estudo (cockpit Estudar).
-   Blocos:
-     1. TopBar (saudação + status)
-     2. Hero contextual (recomendação atual — CTA leva ao Estudar)
-     3. Mnemônico adaptativo (condicional)
-     4. Progresso unificado
-     5. Tutor (continuar)
-     6. Análises avançadas (accordion fechado)
-   ═══════════════════════════════════════════════════ */
 const Dashboard = () => {
   useRevisionNotifier();
   usePrefetch("/dashboard");
-  const [focusMode] = useFocusMode();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { trackAction } = useTelemetry();
   const { user } = useAuth();
-  const { data: coreData } = useCoreData();
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
   const { data: dashboardMnemonic } = useDashboardMnemonic();
-
-  const { data, isLoading: missionLoading, isError, error, refresh } = useStudyNext();
+  const { data, isLoading: missionLoading, isError, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
 
-  const [overrideRec, setOverrideRec] = useState<StudyNextRecommendation | null>(null);
-  const [handoff, setHandoff] = useState<CompletionHandoff | null>(null);
-  const [dismissedMnemonicId, setDismissedMnemonicId] = useState<string | null>(null);
-  const [advancedAccordion, setAdvancedAccordion] = useState<string>("");
-  const prevLevelRef = useRef<number | null>(null);
   const autostartConsumedRef = useRef(false);
 
-  const activeRec = overrideRec ?? data?.recommendation;
-  const justification = data?.justification ?? "";
-  const alternatives = data?.alternativeActions ?? [];
+  const activeRec = data?.recommendation;
   const adaptiveState = data?.adaptiveState;
 
-  useEffect(() => {
-    setDismissedMnemonicId(null);
-  }, [dashboardMnemonic?.link.id]);
-
-  const visibleDashboardMnemonic =
-    dashboardMnemonic && dashboardMnemonic.link.id !== dismissedMnemonicId
-      ? dashboardMnemonic
-      : null;
-
-  // ─── AUTOSTART → redireciona para o cockpit Estudar (execução pertence lá) ───
+  // Autostart logic
   useEffect(() => {
     if (autostartConsumedRef.current) return;
     if (missionLoading || !data) return;
     const autostart = searchParams.get("autostart");
     if (autostart !== "true") return;
 
-    trackAction('continuar_clicked', { source: 'autostart' });
-
     autostartConsumedRef.current = true;
-    const newParams = new URLSearchParams(searchParams);
-    newParams.delete("autostart");
-    newParams.delete("source");
-    setSearchParams(newParams, { replace: true });
-
-    // Redireciona para sessao-estudo (Fluxo: Hoje -> Continuar -> Sessão Ativa)
     navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
-  }, [missionLoading, data, searchParams, setSearchParams, navigate]);
+  }, [missionLoading, data, searchParams, navigate]);
 
-  // Celebrations
-  useEffect(() => {
-    if (!dashData) return;
-    if (prevLevelRef.current !== null && dashData.metrics.gamificationLevel > prevLevelRef.current) {
-      fireCelebration("levelup");
-    }
-    prevLevelRef.current = dashData.metrics.gamificationLevel;
-  }, [dashData]);
-
-  // Fresh login cleanup + retention tracking (fires ONCE per page load)
-  const retentionFiredRef = useRef(false);
-  useEffect(() => {
-    if (retentionFiredRef.current) return;
-    retentionFiredRef.current = true;
-    localStorage.removeItem("enazizi_last_login_ts");
-    try {
-      const lastVisitKey = "enazizi_last_dashboard_visit";
-      const retentionFiredKey = "enazizi_retention_fired_at";
-      const last = localStorage.getItem(lastVisitKey);
-      const lastFired = localStorage.getItem(retentionFiredKey);
-      const now = Date.now();
-      // Throttle: only allow one retention event per 6h, even across reloads
-      const sixHours = 6 * 3600 * 1000;
-      const canFire = !lastFired || (now - parseInt(lastFired, 10)) > sixHours;
-      if (last && canFire) {
-        const lastDate = new Date(parseInt(last, 10));
-        const nowDate = new Date(now);
-        const sameDay = lastDate.toDateString() === nowDate.toDateString();
-        const dayDiff = Math.floor((now - parseInt(last, 10)) / 86400000);
-        const hoursSince = Math.floor((now - parseInt(last, 10)) / 3600000);
-        // Only fire returned_same_day if at least 1h has passed (otherwise it's the same session)
-        if (sameDay && hoursSince >= 1) {
-          trackAction('returned_same_day', { hours_since_last: hoursSince });
-          localStorage.setItem(retentionFiredKey, String(now));
-        } else if (dayDiff === 1) {
-          trackAction('returned_next_day', { hours_since_last: hoursSince });
-          localStorage.setItem(retentionFiredKey, String(now));
-        } else if (dayDiff >= 2) {
-          trackAction('streak_recovered', { days_since_last: dayDiff });
-          localStorage.setItem(retentionFiredKey, String(now));
-        }
-      }
-      localStorage.setItem(lastVisitKey, String(now));
-    } catch {}
-  }, [trackAction]);
-
-  // Realtime invalidation
-  useEffect(() => {
-    if (!user?.id) return;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    const pending = new Set<string>();
-    const debounced = (keys: string[][]) => {
-      keys.forEach(k => pending.add(JSON.stringify(k)));
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        pending.forEach(k => queryClient.invalidateQueries({ queryKey: JSON.parse(k) }));
-        pending.clear();
-      }, 1500);
-    };
-    const channel = supabase
-      .channel('dashboard-live')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'practice_attempts', filter: `user_id=eq.${user.id}` }, () => debounced([["core-data"], ["dashboard-data"], ["study-next"]]))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'revisoes', filter: `user_id=eq.${user.id}` }, () => debounced([["core-data"], ["dashboard-data"]]))
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_gamification', filter: `user_id=eq.${user.id}` }, () => debounced([["core-data"], ["dashboard-data"]]))
-      .subscribe();
-    return () => {
-      if (timer) clearTimeout(timer);
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, queryClient]);
-
-  /* ─── Handlers ─── */
-  const handleSelectAlternative = useCallback((alt: StudyNextRecommendation) => {
-    setOverrideRec(alt);
-  }, []);
-
-  const handleRefresh = useCallback(() => {
-    setOverrideRec(null);
-    refresh();
-  }, [refresh]);
-
-  const dismissBanner = useCallback(() => setHandoff(null), []);
-
-  /* ─── Derived ─── */
-  const isNewUser = dashData ? (dashData.metrics.questionsAnswered === 0 && dashData.stats.flashcards === 0) : false;
-
-  // First load
+  // Loading state
   const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
   if (initialLoading) return <MissionControlSkeleton />;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-24 lg:pb-6 px-4">
-      {/* Achievement toasts (overlay invisível até disparar) */}
-      <SafeCard name="AchievementToast"><AchievementToast /></SafeCard>
+    <div className="pb-24 pt-8 space-y-12">
+      <AchievementToast />
 
-      {/* ═══ HOJE — panorama silencioso (entender, não executar) ═══ */}
-      {!focusMode && (
-        <>
-          {/* 1 — Header Contextual (Status e Boas-vindas) */}
-          <div className="space-y-4">
-            <SafeCard name="DashboardTopBar"><DashboardTopBar /></SafeCard>
-            
-            <button
-              onClick={() => navigate("/dashboard/videoaulas")}
-              className="w-full flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/10 hover:border-primary/20 hover:bg-primary/[0.08] transition-all group"
-            >
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-xl bg-primary flex items-center justify-center shadow-glow-sm group-hover:scale-105 transition-transform">
-                  <Play className="h-5 w-5 text-white fill-white" />
-                </div>
-                <div className="text-left">
-                  <h4 className="text-sm font-bold text-foreground">Continuar Videoaula</h4>
-                  <p className="text-xs text-muted-foreground">Retome seu conteúdo cinematográfico de onde parou.</p>
-                </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
-            </button>
-            
-            {/* Recovery banner sempre que ativo */}
-            <RecoveryModeBanner />
-          </div>
+      {/* Header & Status */}
+      <div className="px-4 sm:px-8 lg:px-14">
+        <DashboardTopBar />
+        <RecoveryModeBanner />
+      </div>
 
-          {/* Onboarding inline para usuários totalmente novos */}
-          {isNewUser && dashData && (
-            <Suspense fallback={null}>
-              <SafeCard name="OnboardingNew">
-                <OnboardingChecklist
-                  stats={dashData.stats}
-                  metrics={dashData.metrics}
-                  hasCompletedDiagnostic={dashData.hasCompletedDiagnostic}
-                />
-              </SafeCard>
-            </Suspense>
-          )}
-
-          {/* Erro / vazio */}
-          {isError && <MissionControlError error={error} onRetry={handleRefresh} />}
-          {!isError && !activeRec && <MissionControlEmpty onGenerate={handleRefresh} />}
-
-          {/* Banner de missão concluída */}
-          {handoff && (
-            <MissionCompletionBanner
-              completedTitle={handoff.completedTitle}
-              badges={handoff.badges}
-              onDismiss={dismissBanner}
-            />
-          )}
-
-          {/* 2 — HERO CONTEXTUAL (Ação Principal Recomendada) */}
-          {activeRec && (
-            <SafeCard name="MissionHero">
-              <CinematicMissionHero
-                recommendation={activeRec}
-                adaptiveState={adaptiveState}
-                onStart={() => {
-                  trackAction('hero_cta_clicked', { rec_type: activeRec.type });
-                  navigate(`/dashboard/sessao-estudo?source=dashboard_hero`);
-                }}
-                onRefresh={handleRefresh}
-                onShowAlternatives={() => {
-                  setAdvancedAccordion("advanced");
-                  requestAnimationFrame(() => {
-                    const el = document.getElementById("advanced-analytics");
-                    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-                  });
-                }}
-              />
-            </SafeCard>
-          )}
-
-          {/* 3 — CONTINUIDADE (Mnemônicos e Tutor) */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Mnemônico adaptativo (condicional) */}
-            {visibleDashboardMnemonic && (
-              <SafeCard name="DashboardMnemonic">
-                <Suspense fallback={null}>
-                  <AdaptiveMnemonicCard
-                    mnemonic={visibleDashboardMnemonic}
-                    onDismiss={() => setDismissedMnemonicId(visibleDashboardMnemonic.link.id)}
-                  />
-                </Suspense>
-              </SafeCard>
-            )}
-
-            {/* TUTOR (continuar conversa anterior) */}
-            <SafeCard name="TutorContinueCard">
-              <Suspense fallback={null}>
-                <TutorContinueCard />
-              </Suspense>
-            </SafeCard>
-          </div>
-
-          {/* 4 — PANORAMA DE MÉTRICAS (Estatísticas Unificadas) */}
-          <SafeCard name="ProgressOverview">
-            <Suspense fallback={null}>
-              <ProgressOverview />
-            </Suspense>
-          </SafeCard>
-          
-          {/* 4.5 — MEDICAL MASTERY MODEL (Nível de Domínio Clínico) */}
-          <Suspense fallback={null}>
-            <SafeCard name="MedicalMastery">
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold flex items-center gap-2 px-1">
-                  <GraduationCap className="h-5 w-5 text-primary" />
-                  Medical Mastery Model
-                </h3>
-                <MedicalMasteryDashboard />
-              </div>
-            </SafeCard>
-          </Suspense>
-
-          {/* 5 — ANÁLISES AVANÇADAS (Accordion técnico) */}
-          <div id="advanced-analytics" className="pt-2">
-            <SafeCard name="AdvancedAnalytics">
-              <Suspense fallback={null}>
-                <AdvancedAnalyticsAccordion
-                  showMissionDetails={!!activeRec}
-                  justification={justification}
-                  adaptiveState={adaptiveState}
-                  alternatives={alternatives}
-                  activeRecType={activeRec?.type}
-                  onSelectAlternative={handleSelectAlternative}
-                  value={advancedAccordion}
-                  onValueChange={setAdvancedAccordion}
-                />
-              </Suspense>
-            </SafeCard>
-          </div>
-        </>
+      {/* Hero Principal - Missão de hoje */}
+      {activeRec && (
+        <div className="px-4 sm:px-8 lg:px-14">
+          <CinematicMissionHero
+            recommendation={activeRec}
+            adaptiveState={adaptiveState}
+            onStart={() => navigate(`/dashboard/sessao-estudo?source=dashboard_hero`)}
+            onRefresh={refresh}
+            onShowAlternatives={() => {}}
+          />
+        </div>
       )}
+
+      {/* Missão de Hoje - Grid de Ações Rápidas */}
+      <EnaflixRow title="Missão de hoje">
+        <EnaflixCard
+          title="Iniciar Sessão de Estudo"
+          subtitle="IA organizadora recomendou focar em revisões agora."
+          badge="Prioridade"
+          onClick={() => navigate("/dashboard/sessao-estudo")}
+          image="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=400&auto=format&fit=crop"
+        />
+        <EnaflixCard
+          title="Revisão Inteligente"
+          subtitle={`${dashData?.stats.flashcards || 0} pendentes para hoje.`}
+          onClick={() => navigate("/dashboard/flashcards")}
+          progress={(dashData?.stats.flashcards_done / dashData?.stats.flashcards) * 100}
+          image="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=400&auto=format&fit=crop"
+        />
+        <EnaflixCard
+          title="Simulado Recomendado"
+          subtitle="Simulado de Ginecologia e Obstetrícia"
+          onClick={() => navigate("/dashboard/simulados")}
+          image="https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=400&auto=format&fit=crop"
+        />
+        <EnaflixCard
+          title="Tutor IA"
+          subtitle="Tirar dúvidas sobre temas complexos"
+          onClick={() => navigate("/dashboard/chatgpt")}
+          image="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=400&auto=format&fit=crop"
+        />
+      </EnaflixRow>
+
+      {/* Continuar Assistindo */}
+      <EnaflixRow title="Continuar assistindo">
+        <EnaflixCard
+          title="Insuficiência Cardíaca"
+          subtitle="Cardiologia - Aula 3"
+          progress={65}
+          onClick={() => navigate("/dashboard/videoaulas")}
+          image="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=400&auto=format&fit=crop"
+        />
+        <EnaflixCard
+          title="Diabetes Mellitus"
+          subtitle="Endocrinologia - Aula 1"
+          progress={12}
+          onClick={() => navigate("/dashboard/videoaulas")}
+          image="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=400&auto=format&fit=crop"
+        />
+      </EnaflixRow>
+
+      {/* Revisões Inteligentes */}
+      <EnaflixRow title="Revisões inteligentes">
+        <EnaflixCard
+          title="Pediatria: Crescimento"
+          subtitle="Risco de esquecimento: Alto"
+          badge="Urgente"
+          onClick={() => navigate("/dashboard/flashcards")}
+          image="https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=400&auto=format&fit=crop"
+        />
+        <EnaflixCard
+          title="Cirurgia Geral: Abdome Agudo"
+          subtitle="Revisão pendente há 2 dias"
+          onClick={() => navigate("/dashboard/flashcards")}
+          image="https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=400&auto=format&fit=crop"
+        />
+      </EnaflixRow>
+
+      {/* Meus Erros */}
+      <EnaflixRow title="Meus erros">
+        <EnaflixCard
+          title="Treinar Temas em Queda"
+          subtitle="Ginecologia e Infectologia"
+          badge="IA Recomendou"
+          onClick={() => navigate("/dashboard/banco-erros")}
+          image="https://images.unsplash.com/photo-1590105577767-e21a46b530f6?q=80&w=400&auto=format&fit=crop"
+        />
+      </EnaflixRow>
+
+      {/* Progresso e Domínio */}
+      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Target className="h-5 w-5 text-primary" />
+            Meu Progresso
+          </h2>
+          <Suspense fallback={null}>
+            <ProgressOverview />
+          </Suspense>
+        </div>
+        <div className="space-y-4">
+          <h2 className="text-xl font-bold flex items-center gap-2">
+            <Brain className="h-5 w-5 text-primary" />
+            Domínio Clínico
+          </h2>
+          <Suspense fallback={null}>
+            <MedicalMasteryDashboard />
+          </Suspense>
+        </div>
+      </div>
+      
+      {/* Tutor IA Section */}
+      <div className="px-4 sm:px-8 lg:px-14">
+        <Suspense fallback={null}>
+          <TutorContinueCard />
+        </Suspense>
+      </div>
     </div>
   );
 };
