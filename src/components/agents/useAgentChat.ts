@@ -152,6 +152,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   const handleSend = useCallback(
     async (overridePrompt?: string, contextOverride?: string) => {
+
       const text = overridePrompt || input.trim();
       if (!text || isLoading || sendCooldown || !user) return;
 

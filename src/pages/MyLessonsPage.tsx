@@ -4,7 +4,7 @@ import { EnaflixOverlayNav } from "@/components/enaflix/EnaflixOverlayNav";
 import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { useNavigate } from "react-router-dom";
-import { Brain, History, Star, Video, FileText, Search, Filter } from "lucide-react";
+import { Brain, History, Star, Video, FileText, Search, Filter, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -18,10 +18,11 @@ export default function MyLessonsPage() {
     document.title = "Minhas Aulas — ENAFLIX";
   }, []);
 
-  const continueLessons = memory.filter(m => !m.archived).slice(0, 10);
-  const favorites = memory.filter(m => m.favorite);
-  const cmeLessons = memory.filter(m => m.source_type === 'cme');
-  const tutorLessons = memory.filter(m => m.source_type === 'tutor_chat');
+  const continueLessons = memory.filter(m => m.status === 'published' && !m.archived).slice(0, 10);
+  const favorites = memory.filter(m => m.is_favorite);
+  const inProduction = memory.filter(m => ['pending_review', 'in_production', 'ready_to_publish'].includes(m.status));
+  const otherLessons = memory.filter(m => m.status === 'published' && !m.is_favorite);
+
 
   const handleClose = () => navigate("/dashboard");
 
@@ -77,35 +78,36 @@ export default function MyLessonsPage() {
             </div>
           )}
 
-          {/* Por Tipo: CME */}
-          {cmeLessons.length > 0 && (
+          {/* Em Produção */}
+          {inProduction.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center gap-2">
-                <Video className="w-5 h-5 text-purple-400" />
-                <h2 className="text-2xl font-bold">Cinemática (CME)</h2>
+                <Clock className="w-5 h-5 text-amber-400" />
+                <h2 className="text-2xl font-bold">Aulas em Produção</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {cmeLessons.map(lesson => (
+                {inProduction.map(lesson => (
                   <LessonCard key={lesson.id} lesson={lesson} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Por Tipo: Tutor */}
-          {tutorLessons.length > 0 && (
+          {/* Outras Aulas */}
+          {otherLessons.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center gap-2">
-                <Brain className="w-5 h-5 text-primary" />
-                <h2 className="text-2xl font-bold">Conversas com Tutor</h2>
+                <Video className="w-5 h-5 text-primary" />
+                <h2 className="text-2xl font-bold">Biblioteca de Aulas</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {tutorLessons.map(lesson => (
+                {otherLessons.map(lesson => (
                   <LessonCard key={lesson.id} lesson={lesson} />
                 ))}
               </div>
             </div>
           )}
+
 
           {memory.length === 0 && !isLoading && (
             <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm">
@@ -126,12 +128,17 @@ function LessonCard({ lesson }: { lesson: any }) {
   const navigate = useNavigate();
 
   const handleOpen = () => {
-    if (lesson.source_type === 'cme' && lesson.aggregation_id) {
+    if (lesson.status === 'published' && lesson.id) {
+      navigate(`/dashboard/videoaulas/${lesson.id}`);
+    } else if (lesson.source_session_id) {
+      navigate(`/dashboard/chatgpt?sessionId=${lesson.source_session_id}`);
+    } else if (lesson.source_type === 'cme' && lesson.aggregation_id) {
       navigate(`/dashboard/videoaulas?aggregationId=${lesson.aggregation_id}`);
     } else if (lesson.source_type === 'tutor_chat' && lesson.session_id) {
       navigate(`/dashboard/chatgpt?sessionId=${lesson.session_id}`);
     }
   };
+
 
   const getSourceIcon = (type: string) => {
     switch (type) {
@@ -151,7 +158,18 @@ function LessonCard({ lesson }: { lesson: any }) {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending_review': return 'Aguardando revisão';
+      case 'in_production': return 'Em produção';
+      case 'published': return 'Assistir';
+      case 'rejected': return 'Não aprovada';
+      default: return null;
+    }
+  };
+
   return (
+
     <Card 
       onClick={handleOpen}
       className="group relative bg-[#1a1a2e]/50 border-white/5 hover:border-primary/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-sm"
@@ -177,11 +195,20 @@ function LessonCard({ lesson }: { lesson: any }) {
           </Badge>
         </div>
 
-        {lesson.favorite && (
+        {lesson.status && lesson.status !== 'published' && (
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-amber-500/80 backdrop-blur-md border-white/10 text-[9px] py-0.5 px-1.5">
+              {getStatusLabel(lesson.status)}
+            </Badge>
+          </div>
+        )}
+
+        {lesson.is_favorite && (
           <div className="absolute top-3 right-3">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 drop-shadow-lg" />
           </div>
         )}
+
       </div>
 
       <CardContent className="p-4">

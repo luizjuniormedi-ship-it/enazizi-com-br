@@ -66,6 +66,34 @@ import { useCinematicEngine } from "@/hooks/useCinematicEngine";
 import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
+interface LessonData {
+  id: string;
+  title: string;
+  subtitle?: string;
+  subject?: string;
+  topic?: string;
+  subtopic?: string;
+  video_url?: string;
+  thumbnail_url?: string;
+  duration?: number;
+  duration_seconds?: number;
+  media_status?: string;
+  status?: string;
+  tutor_lesson_id?: string;
+  tutor_session_id?: string;
+  source_session_id?: string;
+  tutor_lesson_summary?: string;
+  learning_objectives?: string[];
+  health_score?: number;
+  pipeline_last_error?: string;
+  cme_project_id?: string;
+  hls_manifest_url?: string;
+  hls_url?: string;
+  playback_url?: string;
+  specialty?: string;
+}
+
+
 const VideoLessonPlayer = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -93,9 +121,17 @@ const VideoLessonPlayer = () => {
   const { trackViewing, updateNeuroanalytics, profile } = useNeuroanalytics(id);
   const { trackAction } = useTelemetry();
 
-  const { data: lesson, isLoading } = useQuery({
+  const { data: lesson, isLoading } = useQuery<LessonData>({
     queryKey: ["video-lesson", id],
     queryFn: async () => {
+      const { data: memoryData } = await supabase
+        .from("tutor_lesson_memory")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle();
+
+      if (memoryData) return memoryData as LessonData;
+
       const { data, error } = await supabase
         .from("ai_video_lessons")
         .select("*")
@@ -107,18 +143,20 @@ const VideoLessonPlayer = () => {
         logPlaybackAudit("error", error.message);
         throw error;
       }
-      return data;
+      return data as LessonData;
     }
   });
 
+
+
   const logPlaybackAudit = async (state: string, errorMessage?: string) => {
-    if (!id) return;
+    if (!id || !lesson) return;
     const { data: { user } } = await supabase.auth.getUser();
     
     const hlsManifest = (lesson as any)?.hls_manifest_url;
     const playbackUrl = hlsManifest || 
                        (lesson as any)?.hls_url || 
-                       lesson?.video_url || 
+                       (lesson as any)?.video_url || 
                        (lesson as any)?.playback_url;
 
     console.log(`[CME Audit] State: ${state}, URL: ${playbackUrl}`);
@@ -129,7 +167,7 @@ const VideoLessonPlayer = () => {
         video_lesson_id: id,
         user_id: user?.id,
         selected_url: playbackUrl,
-        media_status: lesson?.media_status,
+        media_status: (lesson as any)?.media_status || (lesson as any)?.status,
         player_state: state,
         error_message: errorMessage,
         load_time_ms: Date.now() - loadStartTime.current
@@ -139,15 +177,18 @@ const VideoLessonPlayer = () => {
     }
   };
 
+
   useEffect(() => {
     if (!isLoading && lesson && !hasLoggedReady.current) {
-      if (lesson.media_status === 'ready' || lesson.media_status === 'published') {
+      const mediaStatus = (lesson as any).media_status || (lesson as any).status;
+      if (mediaStatus === 'ready' || mediaStatus === 'published') {
         logPlaybackAudit("ready");
         hasLoggedReady.current = true;
       } else {
-        logPlaybackAudit(lesson.media_status || "unknown_status");
+        logPlaybackAudit(mediaStatus || "unknown_status");
       }
     }
+
   }, [isLoading, lesson]);
 
 
@@ -203,13 +244,14 @@ const VideoLessonPlayer = () => {
   // ───────────────── FASE 2: Adaptive Video ─────────────────
   // Carrega segmentos da videoaula (se houver). Compatível com vídeos sem segmentação.
   const { data: segments = [] } = useQuery<VideoSegment[]>({
-    queryKey: ["video-lesson-segments", lesson?.tutor_lesson_id],
-    enabled: !!lesson?.tutor_lesson_id,
+    queryKey: ["video-lesson-segments", (lesson as any)?.tutor_lesson_id || (lesson as any)?.id],
+    enabled: !!lesson,
     queryFn: async () => {
+      const lessonId = (lesson as any).tutor_lesson_id || (lesson as any).id;
       const { data, error } = await supabase
         .from("lesson_segments")
         .select("id, title, summary, key_points, start_second, end_second, ordem, segment_type, has_flashcards")
-        .eq("lesson_id", lesson!.tutor_lesson_id!)
+        .eq("lesson_id", lessonId)
         .order("ordem", { ascending: true });
       if (error) {
         console.warn("[VideoLessonPlayer] segments fetch:", error.message);
@@ -218,6 +260,7 @@ const VideoLessonPlayer = () => {
       return (data ?? []) as VideoSegment[];
     },
   });
+
 
   const { logEvent } = useVideoSegmentEvents();
   const { getForSegment, smartReplayEnabled, analyticsEnabled } = useVideoSegmentAnalytics(id);
@@ -267,7 +310,9 @@ const VideoLessonPlayer = () => {
     }
   }, [progress]);
 
-  const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
+  const duration = (lesson as any)?.duration_seconds || (lesson as any)?.duration || 0;
+  const completionRate = duration ? Math.min((watchedSeconds / duration) * 100, 100) : 0;
+
 
   // Simulação de log de progresso e detecção de pausa longa / abandono
   useEffect(() => {
@@ -289,38 +334,42 @@ const VideoLessonPlayer = () => {
       }
 
       interval = setInterval(() => {
-        setWatchedSeconds(prev => prev + 1);
-        
-        // Log a cada 30 segundos ou na conclusão
-        if (watchedSeconds - lastLogTime.current >= 30) {
-          handleAction("heartbeat");
-          lastLogTime.current = watchedSeconds;
+        setWatchedSeconds(prev => {
+          const next = prev + 1;
           
-          // Fase Enterprise+: Persistência Neuroanalítica Realtime
-          if (id) {
-            trackViewing.mutate({
-              projectId: id,
-              startTime: watchedSeconds - 30,
-              endTime: watchedSeconds,
-              playbackSpeed: 1.0, // Default for now
-              interactionType: 'watch'
-            });
+          // Log a cada 30 segundos ou na conclusão
+          if (next - lastLogTime.current >= 30) {
+            handleAction("heartbeat", next);
+            lastLogTime.current = next;
             
-            // Simula cálculo de carga cognitiva adaptativa
-            if (profile) {
-              const currentLoad = 0.4 + (Math.random() * 0.2); // Simulado
-              updateNeuroanalytics.mutate({
+            // Fase Enterprise+: Persistência Neuroanalítica Realtime
+            if (id) {
+              trackViewing.mutate({
                 projectId: id,
-                fatigueScore: 0.1,
-                cognitiveLoad: currentLoad,
-                engagementScore: 0.9,
-                retentionPrediction: Number(profile.retention_score || 0.85),
-                abandonmentRisk: 0.05
+                startTime: next - 30,
+                endTime: next,
+                playbackSpeed: 1.0, // Default for now
+                interactionType: 'watch'
               });
+              
+              // Simula cálculo de carga cognitiva adaptativa
+              if (profile) {
+                const currentLoad = 0.4 + (Math.random() * 0.2); // Simulado
+                updateNeuroanalytics.mutate({
+                  projectId: id,
+                  fatigueScore: 0.1,
+                  cognitiveLoad: currentLoad,
+                  engagementScore: 0.9,
+                  retentionPrediction: Number(profile.retention_score || 0.85),
+                  abandonmentRisk: 0.05
+                });
+              }
             }
           }
-        }
+          return next;
+        });
       }, 1000);
+
     } else {
       // Quando pausa, registra o início
       if (!pauseStartTime.current) {
@@ -342,9 +391,21 @@ const VideoLessonPlayer = () => {
     };
   }, [isPlaying, watchedSeconds, id, currentSegment?.id, completionRate, quizFinished]);
 
-  const handleAction = async (action: string) => {
+  const handleAction = async (action: string, currentTs?: number) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
+
+    const ts = currentTs ?? watchedSeconds;
+
+    // Track in new table
+    await supabase.from("tutor_lesson_progress").upsert({
+      lesson_id: id,
+      user_id: user.id,
+      last_position: ts,
+      progress_percent: duration ? Math.min(Math.round((ts / duration) * 100), 100) : 0,
+      completed: action === "complete"
+    }, { onConflict: 'lesson_id,user_id' });
+
 
     const { error } = await supabase
       .from("video_lesson_usage_logs")
@@ -352,7 +413,7 @@ const VideoLessonPlayer = () => {
         video_lesson_id: id,
         user_id: user.id,
         action,
-        watched_seconds: watchedSeconds,
+        watched_seconds: ts,
         completion_rate: completionRate
       });
 
@@ -382,6 +443,7 @@ const VideoLessonPlayer = () => {
     }
   };
 
+
   // ───── FASE 2: handlers Adaptive Video ─────
   const handleSelectSegment = (seg: VideoSegment) => {
     const target = seg.start_second ?? 0;
@@ -404,12 +466,13 @@ const VideoLessonPlayer = () => {
       segment: seg,
       currentTimestamp: watchedSeconds,
       lesson: {
-        specialty: lesson.specialty,
-        topic: lesson.topic,
-        subtopic: lesson.subtopic,
-        tutor_lesson_summary: lesson.tutor_lesson_summary,
+        specialty: (lesson as any).specialty || "Geral",
+        topic: (lesson as any).topic || "Clínica Médica",
+        subtopic: (lesson as any).subtopic || "",
+        tutor_lesson_summary: (lesson as any).tutor_lesson_summary || "",
       },
     });
+
     
     logEvent({
       videoLessonId: id,
@@ -422,9 +485,10 @@ const VideoLessonPlayer = () => {
     handleAction("open_tutor");
     
     const params = new URLSearchParams({
-      context: lesson.id,
-      session: lesson.tutor_session_id || "",
+      context: (lesson as any).id,
+      session: (lesson as any).tutor_session_id || (lesson as any).source_session_id || "",
     });
+
     
     if (ctx) {
       params.set("video_segment", seg.id);

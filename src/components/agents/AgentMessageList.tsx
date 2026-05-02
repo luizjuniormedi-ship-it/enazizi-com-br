@@ -2,6 +2,8 @@ import { memo, forwardRef } from "react";
 import AgentMessageItem from "./AgentMessageItem";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import type { Msg, LinkToAgent } from "./agentChatTypes";
+import TutorNextStepBlock from "@/components/tutor/TutorNextStepBlock";
+
 
 interface AgentMessageListProps {
   messages: Msg[];
@@ -85,7 +87,17 @@ const AgentMessageList = memo(
             </div>
           </div>
         )}
+        
+        {messages.length > 1 && !isLoading && title.toLowerCase().includes("tutor") && (
+          <TutorNextStepBlock 
+            topic={topic} 
+            specialty={specialty} 
+            sessionId={conversationId} 
+            content={messages[messages.length - 1]?.content}
+          />
+        )}
       </div>
+
     )
   )
 );

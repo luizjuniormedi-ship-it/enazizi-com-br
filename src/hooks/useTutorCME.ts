@@ -297,7 +297,7 @@ export const useTutorCME = () => {
         .update({ 
           title: params.title,
           is_manual_upload: true,
-          status: 'waiting_manual_upload'
+          status: 'pending_review'
         } as any)
         .eq('id', aggregationId);
 
@@ -336,7 +336,8 @@ export const useTutorCME = () => {
         aggregation_id: aggregationId,
         session_id: params.conversationId,
         short_summary: params.summary,
-        status: 'waiting_manual_upload'
+        status: 'pending_review'
+
       });
 
       // Phase 8: Hardening - Snapshot

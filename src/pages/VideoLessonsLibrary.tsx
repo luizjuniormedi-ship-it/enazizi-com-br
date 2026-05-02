@@ -43,6 +43,12 @@ const VideoLessonsLibrary = () => {
   const { data: lessons, isLoading } = useQuery({
     queryKey: ["student-video-lessons"],
     queryFn: async () => {
+      const { data: memoryData } = await supabase
+        .from("tutor_lesson_memory")
+        .select("*")
+        .eq("status", "published")
+        .eq("hidden_from_student", false);
+
       const { data, error } = await supabase
         .from("ai_video_lessons")
         .select("*")
@@ -53,8 +59,16 @@ const VideoLessonsLibrary = () => {
         toast.error("Erro ao carregar biblioteca: " + error.message);
         throw error;
       }
-      return data;
+
+      // Merge and standardize
+      const standardLessons = (data || []).map(l => ({ ...l, duration: l.duration_seconds }));
+      const memoryLessons = (memoryData || []).map(l => ({ ...l, specialty: l.subject }));
+      
+      return [...standardLessons, ...memoryLessons].sort((a, b) => 
+        new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime()
+      );
     }
+
   });
 
   const { data: usageLogs } = useQuery({
@@ -63,10 +77,16 @@ const VideoLessonsLibrary = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
       
+      const { data: progressData } = await supabase
+        .from("tutor_lesson_progress")
+        .select("lesson_id, progress_percent")
+        .eq("user_id", user.id);
+
       const { data, error } = await supabase
         .from("video_lesson_usage_logs")
         .select("video_lesson_id, action, completion_rate")
         .eq("user_id", user.id);
+
       
       if (error) return [];
       return data;
@@ -81,21 +101,27 @@ const VideoLessonsLibrary = () => {
   };
 
   const filteredLessons = lessons?.filter(lesson => {
-    const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lesson.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lesson.topic.toLowerCase().includes(searchTerm.toLowerCase());
+    const title = lesson.title || "";
+    const specialty = (lesson as any).specialty || "";
+    const topic = lesson.topic || "";
+    const difficulty = (lesson as any).difficulty_level || "intermediate";
+    const isGold = (lesson as any).is_gold_content || false;
+
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         topic.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSpecialty = specialtyFilter === "all" || lesson.specialty === specialtyFilter;
-    const matchesDifficulty = difficultyFilter === "all" || lesson.difficulty_level === difficultyFilter;
+    const matchesSpecialty = specialtyFilter === "all" || specialty === specialtyFilter;
+    const matchesDifficulty = difficultyFilter === "all" || difficulty === difficultyFilter;
     
     if (activeTab === "all") return matchesSearch && matchesSpecialty && matchesDifficulty;
-    if (activeTab === "gold") return matchesSearch && matchesSpecialty && matchesDifficulty && lesson.is_gold_content;
-    if (activeTab === "trending") return matchesSearch && matchesSpecialty && matchesDifficulty; // Placeholder
+    if (activeTab === "gold") return matchesSearch && matchesSpecialty && matchesDifficulty && isGold;
     
     return matchesSearch && matchesSpecialty && matchesDifficulty;
   });
 
-  const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
+
+  const specialties = Array.from(new Set(lessons?.map(l => (l as any).specialty) || []));
 
   return (
     <div className="container mx-auto p-6 space-y-8 animate-in fade-in duration-500 bg-[#0a0a12] text-white min-h-screen">
@@ -188,10 +214,14 @@ const VideoLessonsLibrary = () => {
               ) : (
                 filteredLessons?.map((lesson) => {
                   const progress = getLessonProgress(lesson.id);
+                  const isGold = (lesson as any).is_gold_content;
+                  const duration = lesson.duration || (lesson as any).duration_seconds || 900;
+                  const specialty = (lesson as any).specialty;
+
                   return (
                     <Card 
                       key={lesson.id} 
-                      className={`group overflow-hidden hover:shadow-xl transition-all duration-300 border-primary/10 cursor-pointer ${lesson.is_gold_content ? 'ring-1 ring-yellow-400/50' : ''}`} 
+                      className={`group overflow-hidden hover:shadow-xl transition-all duration-300 border-primary/10 cursor-pointer ${isGold ? 'ring-1 ring-yellow-400/50' : ''}`} 
                       onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
                     >
                       <div className="relative aspect-video bg-muted overflow-hidden">
@@ -212,12 +242,12 @@ const VideoLessonsLibrary = () => {
                           </div>
                         </div>
                         <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                          {Math.floor(lesson.duration_seconds / 60)}:{(lesson.duration_seconds % 60).toString().padStart(2, '0')}
+                          {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
                         </div>
                         <Badge className="absolute top-2 left-2 bg-primary/90">
-                          {lesson.specialty}
+                          {specialty}
                         </Badge>
-                        {lesson.is_gold_content && (
+                        {isGold && (
                           <Badge className="absolute top-2 right-2 bg-yellow-500 text-black gap-1">
                             <Sparkles className="h-3 w-3" /> Conteúdo Ouro
                           </Badge>
@@ -254,6 +284,7 @@ const VideoLessonsLibrary = () => {
                     </Card>
                   );
                 })
+
               )}
             </div>
           )}
@@ -280,7 +311,7 @@ const VideoLessonsLibrary = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{lesson.title}</p>
-                    <p className="text-xs text-muted-foreground">{lesson.specialty} • {Math.floor(lesson.duration_seconds / 60)}min</p>
+                    <p className="text-xs text-muted-foreground">{(lesson as any).specialty} • {Math.floor((lesson.duration || (lesson as any).duration_seconds || 900) / 60)}min</p>
                   </div>
                 </div>
               ))}
