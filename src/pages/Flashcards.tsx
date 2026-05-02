@@ -421,7 +421,8 @@ const Flashcards = () => {
 
   // ── PHASE: Setup ──
   return (
-    <div className="pb-24 pt-8 space-y-12">
+    <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
       <div className="px-4 sm:px-8 lg:px-14">
         <div className="flex items-center gap-2 mb-4">
           <Button 
