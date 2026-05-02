@@ -291,79 +291,135 @@ const ErrorBank = () => {
   const hasActiveFilters = filterTipo !== "all" || filterCategoria !== "all";
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="pb-24 pt-8 space-y-12">
       {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-destructive" />
-            Banco de Erros
-          </h1>
-          <p className="text-muted-foreground text-sm">Revisão ativa e personalizada dos seus pontos fracos</p>
+      <div className="px-4 sm:px-8 lg:px-14">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
+              <AlertTriangle className="h-8 w-8 text-destructive" />
+              Meus Erros
+            </h1>
+            <p className="text-sm text-white/50 mt-1 font-medium">IA de estudos analisou seus pontos de fragilidade para recuperação ativa.</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl gap-2 h-11"
+              onClick={generateFlashcardsFromErrors}
+              disabled={generatingFlashcards}
+            >
+              {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
+              Gerar Flashcards de Erros
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11"
+              onClick={loadErrors}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            {errors.length > 0 && (
-              <DropdownMenuItem onClick={generateFlashcardsFromErrors} disabled={generatingFlashcards}>
-                {generatingFlashcards ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FlipVertical className="h-4 w-4 mr-2" />}
-                Gerar Flashcards
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuItem onClick={loadErrors}><RefreshCw className="h-4 w-4 mr-2" /> Atualizar</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => {}}>
-              <HelpCircle className="h-4 w-4 mr-2" /> Como usar
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-              <AlertTriangle className="h-5 w-5 text-destructive" />
+      {/* Stats Row */}
+      <EnaflixRow title="Status da Recuperação">
+        <div className="flex gap-4">
+          <MetricBadge 
+            label="Erros Ativos" 
+            value={totalErrors} 
+            icon={AlertTriangle} 
+            color="text-destructive" 
+          />
+          <MetricBadge 
+            label="Temas em Risco" 
+            value={themeStats.length} 
+            icon={BookOpen} 
+            color="text-amber-500" 
+          />
+          <MetricBadge 
+            label="Superados" 
+            value={masteredErrors.length} 
+            icon={CheckCircle2} 
+            color="text-emerald-500" 
+          />
+          <MetricBadge 
+            label="Recuperação IA" 
+            value={`${Math.round((masteredErrors.length / (errors.length + masteredErrors.length || 1)) * 100)}%`} 
+            icon={TrendingUp} 
+            color="text-primary" 
+          />
+        </div>
+      </EnaflixRow>
+
+      {/* Main Content */}
+      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+          <EnaflixSection title="Ranking de Temas Críticos" subtitle="Onde você mais precisa focar agora." className="px-0">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {themeStats.map((stat, i) => (
+                <ErrorThemeCard
+                  key={stat.tema}
+                  {...stat}
+                  onClick={() => setSelectedTema(stat.tema)}
+                  onTrain={() => startReviewMode("revisar", stat.tema)}
+                />
+              ))}
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Erros Ativos</p>
-              <p className="text-lg font-bold">{totalErrors}</p>
+          </EnaflixSection>
+
+          {/* Evolution Chart */}
+          <EnaflixSection title="Evolução Semanal" className="px-0">
+            <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-2xl p-6 h-64">
+              <Suspense fallback={<div className="h-full flex items-center justify-center text-white/20">Carregando telemetria...</div>}>
+                <ErrorBankWeeklyChart data={weeklyData} />
+              </Suspense>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-              <BookOpen className="h-5 w-5 text-amber-500" />
+          </EnaflixSection>
+        </div>
+
+        <div className="space-y-8">
+          <EnaflixSection title="Ações Recomendadas" className="px-0">
+            <div className="space-y-3">
+              {REVIEW_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  onClick={() => startReviewMode(mode.id)}
+                  className="w-full p-4 rounded-xl bg-white/5 border border-white/5 flex items-center gap-4 hover:bg-white/10 transition-all text-left group"
+                >
+                  <div className={cn("p-2 rounded-lg bg-white/5", mode.color)}>
+                    <mode.icon className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors">{mode.label}</h4>
+                    <p className="text-[10px] text-white/40 font-medium leading-tight">{mode.description}</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white transition-colors" />
+                </button>
+              ))}
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Temas com Erros</p>
-              <p className="text-lg font-bold">{themeStats.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Dominados</p>
-              <p className="text-lg font-bold">{masteredErrors.length}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-accent/10 flex items-center justify-center">
-              <Target className="h-5 w-5 text-accent" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Tema Mais Fraco</p>
-              <p className="text-sm font-bold truncate max-w-[120px]">{themeStats[0]?.tema || "—"}</p>
+          </EnaflixSection>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetricBadge({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: any; color: string }) {
+  return (
+    <div className="bg-white/5 border border-white/5 rounded-2xl p-6 min-w-[160px] flex items-center gap-4">
+      <div className={cn("p-2 rounded-xl bg-white/5", color)}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <div>
+        <div className={cn("text-2xl font-black leading-none mb-1", color)}>{value}</div>
+        <div className="text-[10px] uppercase font-bold tracking-widest text-white/30">{label}</div>
+      </div>
+    </div>
+  );
+}
             </div>
           </CardContent>
         </Card>
