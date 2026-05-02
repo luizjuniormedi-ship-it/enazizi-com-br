@@ -117,6 +117,7 @@ const VideoLessonsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessons
 const VideoLessonDetailsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonDetailsAdmin"), "VideoLessonDetailsAdmin");
 const OfficialExamIngestion = lazyWithRetry(() => import("./pages/admin/OfficialExamIngestion"), "OfficialExamIngestion");
 const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibrary"), "VideoLessonsLibrary");
+const MyLessonsPage = lazyWithRetry(() => import("./pages/MyLessonsPage"), "MyLessonsPage");
 const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"), "VideoLessonPlayer");
 const MedicalKnowledgeGraph = lazyWithRetry(() => import("./pages/admin/MedicalKnowledgeGraph"), "MedicalKnowledgeGraph");
 const AdaptiveEngineAdmin = lazyWithRetry(() => import("./pages/admin/AdaptiveEngineAdmin"), "AdaptiveEngineAdmin");
@@ -235,6 +236,7 @@ const App = () => (
                 <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
                 <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
                 <Route path="minha-jornada" element={<MedicalAdaptiveJourney />} />
+                <Route path="minhas-aulas" element={<MyLessonsPage />} />
 
               </Route>
               {/* Fullscreen mind map viewer */}

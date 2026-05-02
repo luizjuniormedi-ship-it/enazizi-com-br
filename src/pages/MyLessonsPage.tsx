@@ -28,7 +28,7 @@ export default function MyLessonsPage() {
   return (
     <div className="min-h-screen bg-[#0a0a12] text-white relative overflow-x-hidden">
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <EnaflixAmbientParticles count={20} hue="purple" />
+        <EnaflixAmbientParticles count={20} hue="violet" />
       </div>
 
       <EnaflixOverlayNav onClose={handleClose} />

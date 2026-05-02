@@ -51,9 +51,11 @@ export const useEducationalMemory = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
+    const payload: any = { ...memory, user_id: user.id };
+
     const { data: inserted, error } = await supabase
       .from('educational_memory')
-      .insert([{ ...memory, user_id: user.id }])
+      .insert([payload])
       .select()
       .single();
 
