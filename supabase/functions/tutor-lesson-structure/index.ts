@@ -61,9 +61,16 @@ Deno.serve(async (req) => {
     });
     const admin = createClient(supabaseUrl, serviceKey);
 
-    const {
-      data: { user },
-    } = await userClient.auth.getUser();
+    let user;
+    if (authHeader.includes("Bearer " + serviceKey)) {
+      // Chamada interna via Service Role
+      const { data: { user: firstUser } } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
+      user = firstUser;
+    } else {
+      const { data: { user: authUser } } = await userClient.auth.getUser();
+      user = authUser;
+    }
+    
     if (!user) return json({ error: "unauthenticated" }, 401);
 
     const body = await req.json().catch(() => ({}));
