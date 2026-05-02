@@ -1,4 +1,10 @@
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+/**
+ * EducationalInterestEngine — Cliente para rastreamento de estudo e detecção de aulas.
+ * VERSÃO 2.0: Integração total com Tutor, Questões, FSRS e Banco de Erros.
+ */
 
 interface TrackingUpdate {
   userId: string;
@@ -12,17 +18,17 @@ interface TrackingUpdate {
   errorsCount?: number;
 }
 
-/**
- * EducationalInterestEngine — Cliente para rastreamento de estudo e detecção de aulas.
- */
 export const trackStudyActivity = async (data: TrackingUpdate) => {
   try {
-    // 1. Atualizar ou inserir rastreamento de estudo
+    const { userId, topic } = data;
+    if (!userId || !topic) return;
+
+    // 1. Buscar registro atual para acumular
     const { data: existing, error: fetchErr } = await supabase
       .from("tutor_study_tracking")
       .select("*")
-      .eq("user_id", data.userId)
-      .eq("topic", data.topic)
+      .eq("user_id", userId)
+      .eq("topic", topic)
       .maybeSingle();
 
     if (fetchErr) throw fetchErr;
@@ -43,10 +49,10 @@ export const trackStudyActivity = async (data: TrackingUpdate) => {
         .eq("id", existing.id);
     } else {
       await supabase.from("tutor_study_tracking").insert({
-        user_id: data.userId,
-        topic: data.topic,
+        user_id: userId,
+        topic: topic,
         subject: data.subject || "Medicina",
-        interaction_count: data.interactionCount || 1,
+        interaction_count: data.interactionCount || 0,
         total_study_time: data.studyTimeSeconds || 0,
         flashcards_generated: data.flashcardsCount || 0,
         questions_answered: data.questionsCount || 0,
@@ -55,21 +61,38 @@ export const trackStudyActivity = async (data: TrackingUpdate) => {
       });
     }
 
-    // 2. Chamar a Edge Function para verificar se deve gerar aula
-    // Fazemos isso em background (não esperamos a resposta para não travar a UI)
-    fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-lesson-from-real-study`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-      },
-      body: JSON.stringify({
-        user_id: data.userId,
-        topic: data.topic
-      }),
-    }).catch(err => console.error("Error triggering auto-lesson detection:", err));
+    // 2. Notificar a Edge Function para reavaliar score e possível geração de aula
+    // Usamos invocação silenciosa para não impactar performance do usuário
+    supabase.functions.invoke("generate-lesson-from-real-study", {
+      body: { user_id: userId, topic: topic }
+    }).catch(err => console.error("Auto-lesson detection trigger failed (silent):", err));
 
   } catch (error) {
     console.error("Error tracking study activity:", error);
+  }
+};
+
+/**
+ * Dispara uma geração manual forçada para administradores
+ */
+export const forceAutoLessonGeneration = async (userId: string, topic: string) => {
+  try {
+    const { data, error } = await supabase.functions.invoke("generate-lesson-from-real-study", {
+      body: { user_id: userId, topic: topic, force: true }
+    });
+
+    if (error) throw error;
+    
+    if (data?.status === "success") {
+      toast.success(`Aula de "${topic}" enviada para a Central de Produção!`);
+      return data.lesson_id;
+    } else if (data?.reason === "already_exists") {
+      toast.info(`Já existe uma aula de "${topic}" em produção.`);
+    } else {
+      toast.error(`Falha ao gerar: ${data?.reason || "Erro desconhecido"}`);
+    }
+  } catch (error) {
+    console.error("Error forcing lesson generation:", error);
+    toast.error("Erro ao solicitar geração automática.");
   }
 };

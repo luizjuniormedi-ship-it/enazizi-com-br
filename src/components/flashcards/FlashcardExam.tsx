@@ -92,6 +92,19 @@ const FlashcardExam = ({
     onReview(card.id, ratingMap[quality], userAnswer);
     import("@/lib/haptics").then(h => isCorrect ? h.hapticSuccess() : h.hapticError());
 
+    // Rastreamento pedagógico para automação ENAFLIX
+    if (userId) {
+      import("@/lib/educationalEngine").then(({ trackStudyActivity }) => {
+        trackStudyActivity({
+          userId,
+          topic: card.topic || "Geral",
+          fsrsCount: 1,
+          errorsCount: isCorrect ? 0 : 1,
+          studyTimeSeconds: 45, // Estimativa por flashcard
+        });
+      });
+    }
+
     // Auto-advance
     if (current < cards.length - 1) {
       setCurrent(c => c + 1);
