@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState, useRef } from 'react';
 import { 
   Dialog, 
@@ -22,12 +23,15 @@ import {
   History,
   Layout,
   RefreshCcw,
-  ExternalLink
+  ExternalLink,
+  Play,
+  Sparkles
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { AgileLessonPlayer } from './AgileLessonPlayer';
 
 interface CMERenderModalProps {
   aggregationId: string;
@@ -69,6 +73,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
   const [configState, setConfigState] = useState<'config_validated' | 'config_warning' | 'config_invalid' | 'retry_using_original_config' | 'fallback_using_config' | 'unknown'>('unknown');
   const [devWorkerLoading, setDevWorkerLoading] = useState(false);
   const [devWorkerError, setDevWorkerError] = useState<string | null>(null);
+  const [showAgilePlayer, setShowAgilePlayer] = useState(false);
   const lastEventRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -91,10 +96,10 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
         if (hasConfigWarning) setConfigState('config_warning');
       }
 
-      // Latest render job (carries the persisted config)
+      // Latest render job
       const { data: job } = await supabase
         .from('cme_render_jobs' as any)
-        .select('id, status, progress, config, retry_count, gpu_worker_id, pipeline_last_error, output_url, preview_url')
+        .select('id, status, progress, config, retry_count, gpu_worker_id, pipeline_last_error, output_url, preview_url, project_id')
         .eq('generation_id', aggregationId)
         .order('updated_at', { ascending: false })
         .limit(1)
@@ -109,7 +114,6 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
         }
       }
 
-      // Try to find scene graph
       const { data: sg } = await supabase.from('cme_scene_graphs' as any)
         .select('id')
         .eq('video_project_id', aggregationId)
@@ -148,12 +152,10 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       )
       .subscribe();
 
-    // Real stuck detection at 50% boundary (Scene Graph ↔ Render Queue)
     const timer = setInterval(async () => {
       const elapsed = Date.now() - lastEventRef.current;
       if (status !== 'processing' || elapsed < 30000) return;
 
-      // Re-check the real backend state instead of guessing
       const [{ data: sg }, { data: job }, { data: workers }] = await Promise.all([
         supabase.from('cme_scene_graphs' as any).select('id').eq('video_project_id', aggregationId).limit(1).maybeSingle(),
         supabase.from('cme_render_jobs' as any)
@@ -166,13 +168,9 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       ]);
 
       const hasWorkers = (workers?.length ?? 0) > 0;
-
-      if (!sg) {
-        setStatus('failed');
-        setError('Scene Graph não foi persistido (boundary stall).');
-        return;
-      }
-      if (!job) {
+      if (!sg && progress < 50) return; // Still scripting
+      
+      if (!job && progress >= 50) {
         setStatus('failed');
         setError('RENDER_JOB_NOT_CREATED — orchestrator não criou render job.');
         return;
@@ -181,20 +179,18 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
         setStatus('waiting_hardware');
         return;
       }
-      // Job exists, worker assigned: keep polling, telemetry will catch up
       lastEventRef.current = Date.now();
     }, 5000);
 
-    // Fallback polling every 2s — guarantees UI updates even if realtime drops or aggregation_id is null
     const pollTimer = setInterval(async () => {
       if (status === 'ready' || status === 'failed') return;
 
-      // 1) Find latest job — try BY aggregation, then by project_id from existing renderJob
       let jobQuery = supabase
         .from('cme_render_jobs' as any)
         .select('id, status, progress, gpu_worker_id, pipeline_last_error, output_url, preview_url, project_id, aggregation_id')
         .order('updated_at', { ascending: false })
         .limit(1);
+      
       const projectIdHint = (renderJob as any)?.project_id;
       if (projectIdHint) {
         jobQuery = jobQuery.eq('project_id', projectIdHint);
@@ -212,7 +208,6 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
         }
       }
 
-      // 2) Fetch events — by aggregation_id OR by render_job_id (covers null aggregation case)
       const targetJobId = (latestJob as any)?.id || (renderJob as any)?.id;
       const eventsQuery = targetJobId
         ? supabase.from('cme_pipeline_events').select('*').or(`aggregation_id.eq.${aggregationId},render_job_id.eq.${targetJobId}`)
@@ -239,12 +234,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       clearInterval(timer);
       clearInterval(pollTimer);
     };
-  }, [aggregationId, onComplete, status]);
-
-  const openMonitor = () => {
-    navigate(`/admin/cme-monitor?aggregation_id=${aggregationId}`);
-    onClose?.();
-  };
+  }, [aggregationId, onComplete, status, renderJob]);
 
   const openBuilder = () => {
     if (aggregationId) {
@@ -278,46 +268,35 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                 <AlertCircle className="h-6 w-6" />
                 <h3 className="font-bold">Falha no Pipeline CME</h3>
               </div>
-              <div className="space-y-2">
-                <p className="text-zinc-400 text-sm leading-relaxed">
-                  {error || "Ocorreu um erro inesperado durante a geração do vídeo."}
-                </p>
-                {currentStage === 'graphing' && (
-                  <div className="bg-black/40 p-3 rounded-lg border border-red-500/10 space-y-2">
-                    <p className="text-xs text-zinc-500">
-                      O planejamento pedagógico foi concluído, mas o Scene Graph não pôde ser salvo no banco de dados.
-                    </p>
-                    <div className="flex items-center gap-2 text-[10px] text-zinc-600 font-mono">
-                      <span className="bg-red-500/20 text-red-400 px-1 rounded">23502</span>
-                      <span className="uppercase tracking-tighter italic">Scene Graph Not Null Violation</span>
-                    </div>
-                  </div>
-                )}
-                <span className="text-[10px] mt-2 block opacity-50 uppercase tracking-tighter">
-                  Error Code: {events.find(e => e.status === 'failed')?.metadata?.code || 'N/A'} | Stage: {currentStage}
-                </span>
-              </div>
+              <p className="text-zinc-400 text-sm leading-relaxed">{error || "Erro inesperado."}</p>
               <div className="flex flex-wrap gap-3">
-                <Button 
-                  onClick={() => window.location.reload()} 
-                  variant="outline" 
-                  className="border-red-500/20 hover:bg-red-500/10 text-red-500"
-                >
+                <Button onClick={() => window.location.reload()} variant="outline" className="border-red-500/20 text-red-500">
                   <RefreshCcw className="mr-2 h-4 w-4" /> Tentar Novamente
                 </Button>
-                <Button 
-                  onClick={() => navigate('/tutor')} 
-                  variant="outline" 
-                  className="border-zinc-800 hover:bg-zinc-800 text-zinc-400"
-                >
-                  Usar Fallback Pedagógico
-                </Button>
-                {aggregationId && (
-                  <Button onClick={openBuilder} variant="ghost" className="text-zinc-500 underline">
-                    Abrir CME Builder
-                  </Button>
-                )}
+                <Button onClick={openBuilder} variant="ghost" className="text-zinc-500 underline">Abrir Builder</Button>
               </div>
+            </div>
+          )}
+
+          {/* Agile Mode Callout */}
+          {['graphing', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware', 'waiting_hardware', 'completed'].includes(currentStage) && progress >= 50 && (
+            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 space-y-4 animate-in slide-in-from-bottom-4 duration-500 shadow-lg shadow-primary/5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3 text-primary">
+                  <Sparkles className="h-6 w-6" />
+                  <h3 className="font-bold">Aula Interativa Pronta!</h3>
+                </div>
+                <Badge className="bg-primary/20 text-primary border-primary/10 uppercase text-[9px] font-black">Acesso Instantâneo</Badge>
+              </div>
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                A estrutura pedagógica e as questões já foram processadas. Você pode assistir a versão interativa agora enquanto a versão cinematográfica é renderizada em background.
+              </p>
+              <Button 
+                onClick={() => setShowAgilePlayer(true)}
+                className="w-full bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest h-14 rounded-2xl shadow-lg shadow-primary/20 gap-2"
+              >
+                <Play className="h-5 w-5 fill-current" /> Assistir Versão Ágil
+              </Button>
             </div>
           )}
 
@@ -325,212 +304,59 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
             <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 space-y-4 animate-in zoom-in-95">
               <div className="flex items-center gap-3 text-amber-500">
                 <AlertCircle className="h-6 w-6" />
-                <h3 className="font-bold">Renderização pendente de hardware</h3>
+                <h3 className="font-bold text-sm">Aguardando disponibilidade de GPU</h3>
               </div>
-              <p className="text-zinc-400 text-sm leading-relaxed">
-                O vídeo foi planejado e estruturado com sucesso, mas a renderização depende de um Worker/GPU ativo.
-                Em ambiente de desenvolvimento, você pode iniciar um Worker simulado para validar o pipeline ponta-a-ponta.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  disabled={devWorkerLoading}
-                  onClick={async () => {
-                    setDevWorkerLoading(true);
-                    setDevWorkerError(null);
-                    toast.info('Worker DEV chamado…');
-                    try {
-                      const { data, error: fnErr } = await supabase.functions.invoke('cme-dev-worker', {
-                        body: {
-                          action: 'pickup_and_run',
-                          projectId: renderJob?.project_id,
-                          aggregationId,
-                        },
-                      });
-                      console.log('[dev-worker] response', { data, fnErr });
-                      if (fnErr) {
-                        setDevWorkerError(fnErr.message || 'Falha ao invocar DEV worker');
-                        toast.error(`DEV worker erro: ${fnErr.message}`);
-                      } else if (data && data.success === false) {
-                        const msg = data.message || data.code || 'DEV worker retornou erro';
-                        setDevWorkerError(`${msg}${data.recent_jobs ? ` — ${data.recent_jobs.length} jobs recentes` : ''}`);
-                        toast.error(msg);
-                      } else if (data?.success) {
-                        toast.success(`Worker DEV processou job ${String(data.jobId).slice(0, 8)}…`);
-                        // Force immediate refetch of events + job
-                        const { data: latest } = await supabase
-                          .from('cme_render_jobs' as any)
-                          .select('id, status, progress, gpu_worker_id, output_url, preview_url, pipeline_last_error, config')
-                          .eq('id', data.jobId)
-                          .maybeSingle();
-                        if (latest) {
-                          setRenderJob((prev: any) => ({ ...(prev || {}), ...(latest as any) }));
-                          if ((latest as any).status === 'completed') {
-                            setStatus('ready');
-                            setProgress(100);
-                          }
-                        }
-                        const { data: evts } = await supabase
-                          .from('cme_pipeline_events')
-                          .select('*')
-                          .eq('render_job_id', data.jobId)
-                          .order('created_at', { ascending: true });
-                        if (evts && evts.length > 0) {
-                          setEvents((prev) => {
-                            const merged = [...prev];
-                            evts.forEach((e: any) => {
-                              if (!merged.find((m) => m.id === e.id)) merged.push(e);
-                            });
-                            return merged;
-                          });
-                          const last = evts[evts.length - 1];
-                          setCurrentStage(last.stage);
-                          setProgress(Math.max(progress, last.progress));
-                        }
-                      }
-                    } catch (e: any) {
-                      setDevWorkerError(e?.message || 'Erro inesperado ao iniciar DEV worker');
-                      toast.error(e?.message || 'Erro inesperado');
-                    } finally {
-                      setDevWorkerLoading(false);
-                    }
-                  }}
-                  className="bg-amber-500 hover:bg-amber-600 text-black font-bold"
-                >
-                  {devWorkerLoading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Iniciando…</>
-                  ) : (
-                    <><Cpu className="mr-2 h-4 w-4" /> Iniciar Worker DEV</>
-                  )}
-                </Button>
-                <Button onClick={openBuilder} variant="outline" className="border-amber-500/20 hover:bg-amber-500/10 text-amber-500">
-                  <ExternalLink className="mr-2 h-4 w-4" /> Ir para o Builder
-                </Button>
-                <Button onClick={() => navigate('/admin/gpu-fleet')} variant="ghost" className="text-zinc-500 underline">
-                  Ver status do Cluster GPU
-                </Button>
-              </div>
-              {devWorkerError && (
-                <p className="text-xs text-red-400 mt-2 font-mono">⚠ {devWorkerError}</p>
-              )}
-            </div>
-          )}
-
-
-          {renderJob?.config && (
-            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Render Config</span>
-                <Badge
-                  className={cn(
-                    "text-[9px] uppercase tracking-tighter px-2 py-0.5 border",
-                    configState === 'config_invalid' ? "bg-red-500/10 text-red-400 border-red-500/20" :
-                    configState === 'config_warning' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
-                    configState === 'retry_using_original_config' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
-                    configState === 'fallback_using_config' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
-                    "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  )}
-                >
-                  {configState.replace(/_/g, ' ')}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
-                {[
-                  ['Mode', renderJob.config.render_mode],
-                  ['Quality', renderJob.config.quality],
-                  ['Resolution', renderJob.config.resolution],
-                  ['Fallback', renderJob.config.fallback_strategy],
-                  ['GPU Tier', renderJob.config.worker_preferences?.gpu_tier],
-                  ['Segment', `${renderJob.config.segment_settings?.segment_duration ?? '—'}s`],
-                  ['Retries', renderJob.retry_count ?? 0],
-                  ['Cfg v', renderJob.config._config_version ?? '—'],
-                ].map(([label, value]) => (
-                  <div key={String(label)} className="bg-black/40 rounded-lg px-2 py-1.5 border border-zinc-800/60">
-                    <div className="text-zinc-600 font-bold uppercase tracking-widest text-[8px]">{label}</div>
-                    <div className="text-zinc-200 font-mono truncate">{String(value ?? '—')}</div>
-                  </div>
-                ))}
-              </div>
-              {renderJob.error_message && (
-                <div className="text-[10px] font-mono text-red-400 bg-red-500/5 border border-red-500/20 rounded px-2 py-1">
-                  {renderJob.error_message}
-                </div>
-              )}
+              <Button
+                size="sm"
+                disabled={devWorkerLoading}
+                onClick={async () => {
+                  setDevWorkerLoading(true);
+                  try {
+                    await supabase.functions.invoke('cme-dev-worker', {
+                      body: { action: 'pickup_and_run', projectId: renderJob?.project_id, aggregationId }
+                    });
+                    toast.success("Worker DEV simulado com sucesso!");
+                  } catch (e: any) {
+                    toast.error(e.message);
+                  } finally {
+                    setDevWorkerLoading(false);
+                  }
+                }}
+                className="bg-amber-500 hover:bg-amber-600 text-black font-bold h-10 w-full"
+              >
+                {devWorkerLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Cpu className="mr-2 h-4 w-4" />} Iniciar Simulação de Render (DEV)
+              </Button>
             </div>
           )}
 
           <div className="space-y-4">
-            <div className="flex justify-between items-end">
-              <span className="text-zinc-400 text-xs font-bold uppercase tracking-tight">
-                {STAGE_LABELS[currentStage] || currentStage.replace(/_/g, ' ')}
-              </span>
-              <span className="text-primary text-2xl font-black italic">{progress}%</span>
+            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
+              <span>{STAGE_LABELS[currentStage] || 'Processando'}</span>
+              <span>{progress}%</span>
             </div>
-            <Progress value={progress} className="h-2 bg-zinc-900 shadow-inner" />
-            <div className="flex justify-end">
-              <Button onClick={openMonitor} variant="ghost" size="sm" className="text-zinc-500 hover:text-primary text-[10px] uppercase tracking-widest gap-2">
-                <ExternalLink className="h-3 w-3" /> Ver no Monitor
-              </Button>
-            </div>
+            <Progress value={progress} className="h-2 bg-zinc-900" />
           </div>
 
-
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
-            {STAGES.map((stage) => {
-              const Icon = stage.icon;
-              const isCompleted = events.some(e => e.stage === stage.id && e.status === 'completed') || (progress === 100 && status === 'ready');
-              const isActive = currentStage === stage.id;
-              
-              return (
-                <div key={stage.id} className={cn(
-                  "p-3 rounded-xl border transition-all duration-500 flex flex-col items-center gap-2 text-center",
-                  isCompleted ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-500" :
-                  isActive ? "bg-primary/5 border-primary/40 text-primary animate-pulse" :
-                  "bg-zinc-900/50 border-zinc-800 text-zinc-600 opacity-50"
-                )}>
-                  <Icon className="h-4 w-4" />
-                  <span className="text-[8px] font-black leading-tight uppercase tracking-tight">{stage.label}</span>
-                  {isCompleted && <CheckCircle2 className="h-3 w-3" />}
-                </div>
-              );
-            })}
+          <div className="flex items-center justify-between pt-4 border-t border-white/5">
+             <div className="flex items-center gap-2">
+                <div className={cn("h-2 w-2 rounded-full", status === 'ready' ? "bg-emerald-500" : "bg-amber-500 animate-pulse")} />
+                <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-tighter">
+                  Pipeline: {status}
+                </span>
+             </div>
+             {status === 'ready' && (
+               <Button onClick={onClose} variant="ghost" className="text-xs">Fechar Monitor</Button>
+             )}
           </div>
-
-          <div className="bg-zinc-900/50 rounded-2xl p-4 h-32 overflow-hidden relative font-mono text-[10px]">
-            <div className="space-y-1">
-              {events.slice().reverse().map((e, i) => (
-                <div key={i} className="flex gap-2 animate-in fade-in">
-                  <span className="text-zinc-600">[{new Date(e.created_at).toLocaleTimeString()}]</span>
-                  <span className={cn("font-bold uppercase", e.status === 'failed' ? "text-red-500" : "text-zinc-500")}>{e.stage}:</span>
-                  <span className="text-zinc-400">{e.message}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          {status === 'ready' && (
-            <div className="space-y-3">
-              {(renderJob?.preview_url || renderJob?.output_url) && (
-                <Button
-                  onClick={() => {
-                    const url = renderJob?.preview_url || renderJob?.output_url;
-                    if (url) window.open(url, '_blank', 'noopener');
-                  }}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 font-bold uppercase py-6 rounded-2xl shadow-lg shadow-emerald-500/20"
-                >
-                  <Video className="mr-2 h-5 w-5" /> Assistir prévia
-                </Button>
-              )}
-              <Button
-                onClick={onClose}
-                variant="outline"
-                className="w-full border-zinc-700 hover:bg-zinc-800 font-bold uppercase py-5 rounded-2xl"
-              >
-                Concluir e fechar
-              </Button>
-            </div>
-          )}
         </div>
       </div>
+
+      {showAgilePlayer && (
+        <AgileLessonPlayer 
+          aggregationId={aggregationId} 
+          onClose={() => setShowAgilePlayer(false)} 
+        />
+      )}
     </div>
   );
 };

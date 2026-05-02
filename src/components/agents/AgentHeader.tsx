@@ -50,9 +50,9 @@ const AgentHeader = memo(({
             variant="outline" 
             size="sm" 
             onClick={onTransformSession}
-            className="hidden md:flex h-8 text-[10px] gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shadow-sm shadow-amber-500/20 px-3"
+             className="hidden md:flex h-8 text-[10px] gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shadow-sm shadow-amber-500/20 px-3"
           >
-            <Film className="h-3.5 w-3.5" /> 🎬 Transformar Sessão em Videoaula
+            <Film className="h-3.5 w-3.5" /> 🎓 Gerar Aula Interativa
           </Button>
         )}
 
@@ -68,7 +68,7 @@ const AgentHeader = memo(({
           <DropdownMenuContent align="end">
             {hasMessages && onTransformSession && (
               <DropdownMenuItem onClick={onTransformSession} className="md:hidden text-amber-500">
-                <Film className="h-4 w-4 mr-2" /> 🎬 Transformar em Videoaula
+                <Film className="h-4 w-4 mr-2" /> 🎓 Gerar Aula Interativa
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={onNewConversation}>

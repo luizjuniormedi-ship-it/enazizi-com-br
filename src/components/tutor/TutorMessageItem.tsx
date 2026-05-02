@@ -168,7 +168,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 animate-fade-in"
                   onClick={handleCMETransform}
                 >
-                  <Film className="h-3.5 w-3.5" /> 🎬 Transformar em Videoaula
+                  <Film className="h-3.5 w-3.5" /> 🎓 Gerar Aula Interativa
                 </Button>
               )}
               {showFallbackButton && (
@@ -179,7 +179,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   onClick={handleCMETransform}
                   title="Forçar criação mesmo sem estrutura detectada"
                 >
-                  <AlertCircle className="h-3 w-3" /> Criar videoaula a partir desta resposta
+                  <AlertCircle className="h-3 w-3" /> Gerar aula a partir desta resposta
                 </Button>
               )}
               </div>

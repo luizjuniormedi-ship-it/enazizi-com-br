@@ -34,6 +34,7 @@ export const useTutorCME = () => {
   const supabaseClient = useMemo(() => supabase, []);
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
   const [workerHealth, setWorkerHealth] = useState<any>(null);
+  const [showAgilePlayer, setShowAgilePlayer] = useState(false);
   const lastEventRef = useRef<number>(Date.now());
   const { reportIncident, createSnapshot } = useCMEHardening();
   const { getCognitiveAnalysis } = useCMEAnalytics();
@@ -473,20 +474,29 @@ export const useTutorCME = () => {
   return {
     state,
     workerHealth,
+    showAgilePlayer,
+    setShowAgilePlayer,
     transformToVideo,
     retryRender: async (pid: string) => {
        await supabaseClient.from("cme_render_jobs").update({ status: 'queued' } as any).eq('project_id', pid);
        toast.success("Reiniciado");
     },
-    resetState: () => setState({ status: 'idle', progress: 0 }),
+    resetState: () => {
+      setState({ status: 'idle', progress: 0 });
+      setShowAgilePlayer(false);
+    },
     triggerPedagogicalFallback: async (projectId: string) => {
       setState(s => ({ ...s, status: 'rendering', message: "Gerando Fallback Pedagógico (Slides)...", progress: 90 }));
       await logPipelineEvent(projectId, 'rendering', 'completed', 100, "Fallback de slides gerado com sucesso");
       await supabaseClient.from("cme_video_projects").update({
+        status: 'ready',
         config: { fallback_active: true, fallback_type: 'pedagogical_slides' }
       } as any).eq('id', projectId);
-      toast.success("Fallback pedagógico gerado para evitar interrupção.");
-      setTimeout(() => setState(s => ({ ...s, status: 'ready', progress: 100 })), 2000);
+      toast.success("Aula Ágil gerada para evitar interrupção.");
+      setTimeout(() => {
+        setState(s => ({ ...s, status: 'ready', progress: 100 }));
+        setShowAgilePlayer(true);
+      }, 1000);
     },
     logEligibility: async (params: { 
       messageId: string; 
