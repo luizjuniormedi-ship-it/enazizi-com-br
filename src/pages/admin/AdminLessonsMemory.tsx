@@ -241,7 +241,7 @@ const AdminLessonsMemory = () => {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
                               <AlertDialogAction 
-                                onClick={() => deleteLessonMutation.mutate(lesson.id)}
+                                onClick={() => deleteLessonMutation.mutate(lesson)}
                                 className="bg-red-600 hover:bg-red-700"
                               >
                                 Excluir
