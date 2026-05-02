@@ -176,16 +176,28 @@ export const useTutorCME = () => {
     if (!messages || messages.length === 0) throw new Error("Nenhuma mensagem encontrada na sessão.");
 
     const fullText = messages.map(m => m.content).join("\n\n---\n\n");
-    const blocks: { type: string; title: string; content: string }[] = [];
+    const blocks: { type: string; title: string; content: string; metadata?: any }[] = [];
     const sections = fullText.split("\n#").filter(s => s.trim().length > 0);
     
     sections.forEach((section, idx) => {
-      const title = section.split("\n")[0].replace(/^#+\s*/, "").trim() || `Capítulo ${idx + 1}`;
+      const titleLine = section.split("\n")[0].replace(/^#+\s*/, "").trim();
+      const title = titleLine || `Capítulo ${idx + 1}`;
       let type = "deep_dive";
-      const lowTitle = title.toLowerCase();
-      if (lowTitle.includes("introdução")) type = "introduction";
-      else if (lowTitle.includes("resumo")) type = "summary";
-      blocks.push({ type, title, content: section });
+      
+      const parsedQuestions = parseQuestionsFromText(section);
+      if (parsedQuestions.length > 0) {
+        blocks.push({ 
+          type: "mini_quiz", 
+          title: titleLine || `Quiz ${idx + 1}`, 
+          content: section,
+          metadata: { questions: parsedQuestions }
+        });
+      } else {
+        const lowTitle = title.toLowerCase();
+        if (lowTitle.includes("introdução")) type = "introduction";
+        else if (lowTitle.includes("resumo")) type = "summary";
+        blocks.push({ type, title, content: section });
+      }
     });
 
     const { data: { user } } = await supabaseClient.auth.getUser();
@@ -212,6 +224,7 @@ export const useTutorCME = () => {
       title: b.title,
       block_order: idx + 1,
       content: b.content,
+      scene_graph_data: b.metadata || {},
       estimated_minutes: 2
     }));
 
