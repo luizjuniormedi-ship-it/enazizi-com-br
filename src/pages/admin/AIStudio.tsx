@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { useQueryClient } from "@tanstack/react-query";
-import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { supabase } from "@/integrations/supabase/client";
 import { jsPDF } from "jspdf";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +73,7 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { useAuth } from "@/hooks/useAuth";
+// useAuth already imported above
 import { PedagogicalQualityDashboard } from "@/components/admin/PedagogicalQualityDashboard";
 import { 
   Table, 

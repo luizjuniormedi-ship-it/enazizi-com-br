@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { isMedicalContent } from "@/lib/medicalValidation";
