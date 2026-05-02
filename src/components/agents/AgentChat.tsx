@@ -1,8 +1,17 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { Loader2, Film } from "lucide-react";
+import { Loader2, Film, Sparkles, Play, AlertCircle } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription,
+  DialogFooter
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useAgentChat } from "./useAgentChat";
@@ -15,6 +24,8 @@ import AgentInputBar from "./AgentInputBar";
 import type { QuickAction, LinkToAgent, Upload as UploadType } from "./agentChatTypes";
 import { useTutorCME } from "@/hooks/useTutorCME";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
+import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
+import { cn } from "@/lib/utils";
 
 interface AgentChatProps {
   title: string;
@@ -52,7 +63,7 @@ const AgentChat = ({
     topic, subtopic, specialty,
   });
 
-  const { transformToVideo, state: cmeState } = useTutorCME();
+  const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback } = useTutorCME();
 
   const handleTransformSession = useCallback(async () => {
     if (chat.messages.length === 0) return;
@@ -77,9 +88,9 @@ const AgentChat = ({
       blocks: cognitiveBlocks,
       conversationId: chat.activeConversationId || crypto.randomUUID(),
       isFullSession: true,
-      onComplete: (id) => navigate(`/admin/cinematic-builder/${id}`)
+      onComplete: (id) => console.log("CME Pipeline started for project:", id)
     });
-  }, [chat.messages, chat.activeConversationId, specialty, topic, transformToVideo, navigate]);
+  }, [chat.messages, chat.activeConversationId, specialty, topic, transformToVideo]);
 
   // Upload handler
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -351,6 +362,83 @@ const AgentChat = ({
         isListening={chat.isListening}
         onToggleListening={chat.toggleListening}
       />
+
+      {/* CME Status Modal */}
+      <Dialog open={cmeState.status !== 'idle'} onOpenChange={(open) => !open && resetCmeState()}>
+        <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-500">
+              <Sparkles className="h-5 w-5" />
+              Fábrica de Vídeos CME
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 text-xs">
+              {cmeState.message || 'Processando pipeline de vídeo...'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between text-[10px] font-bold uppercase text-slate-500">
+                <span>Progresso</span>
+                <span>{cmeState.progress}%</span>
+              </div>
+              <Progress value={cmeState.progress} className="h-1 bg-white/5" />
+            </div>
+
+            {cmeState.isStuck && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2">
+                <div className="flex items-center gap-2 text-amber-400 text-[10px] font-bold">
+                  <AlertCircle className="h-3 w-3" />
+                  PIPELINE EM ESPERA
+                </div>
+                <p className="text-[9px] text-amber-300/70 italic">
+                  O cluster GPU está com alta demanda. A aula interativa já está disponível abaixo.
+                </p>
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  className="w-full h-7 text-[10px] bg-amber-500/20 border-amber-500/30 text-amber-500 hover:bg-amber-500/30"
+                  onClick={() => setShowAgilePlayer(true)}
+                >
+                  Abrir Aula Interativa (Slides)
+                </Button>
+              </div>
+            )}
+
+            {cmeState.status === 'failed' && (
+              <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-[10px] italic">
+                Erro: {cmeState.error}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="sm:justify-start">
+            <Button type="button" variant="secondary" onClick={resetCmeState} className="text-xs h-8">
+              Fechar
+            </Button>
+            {['rendering', 'gpu_rendering', 'pending_hardware', 'ready'].includes(String(cmeState.status)) && (
+              <Button
+                type="button"
+                className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
+                onClick={() => {
+                  resetCmeState();
+                  navigate(`/admin/cinematic-engine/${cmeState.projectId}`);
+                }}
+              >
+                <Play className="h-3 w-3" /> Monitorar GPU
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Agile Player Overlay */}
+      {showAgilePlayer && cmeState.aggregationId && (
+        <AgileLessonPlayer 
+          aggregationId={cmeState.aggregationId} 
+          onClose={() => setShowAgilePlayer(false)} 
+        />
+      )}
     </div>
   );
 
