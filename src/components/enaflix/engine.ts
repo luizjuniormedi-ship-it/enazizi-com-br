@@ -35,8 +35,8 @@ export { EnaflixLoader } from "./EnaflixLoader";
 export { EnaflixSectionTitle } from "./EnaflixSectionTitle";
 
 // Reexport componentes existentes (já parte da engine):
-export { EnaflixBadge } from "../EnaflixBadge";
-export { EnaflixHero } from "../EnaflixHero";
-export { EnaflixSection } from "../EnaflixSection";
-export { EnaflixRow as EnaflixPosterRow } from "../EnaflixRow";
-export { EnaflixAmbientParticles as EnaflixFloatingParticles } from "../EnaflixAmbientParticles";
+export { EnaflixBadge } from "./EnaflixBadge";
+export { EnaflixHero } from "./EnaflixHero";
+export { EnaflixSection } from "./EnaflixSection";
+export { EnaflixRow as EnaflixPosterRow } from "./EnaflixRow";
+export { EnaflixAmbientParticles as EnaflixFloatingParticles } from "./EnaflixAmbientParticles";
