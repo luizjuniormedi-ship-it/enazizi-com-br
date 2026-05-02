@@ -5,7 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Brain, Clock, BookOpen, RefreshCw, CheckCircle2, Loader2, Zap,
   Target, FlipVertical, GraduationCap, Calendar, AlertTriangle,
-  Layers, ChevronDown, ArrowRight, Rocket, Play
+  Layers, ChevronDown, ArrowRight, Rocket, Play, Compass
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +26,14 @@ import SelfAssessmentDialog from "@/components/daily-plan/SelfAssessmentDialog";
 import type { ScheduledReview } from "@/components/daily-plan/DailyPlanTypes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import NextTaskBanner from "@/components/daily-plan/NextTaskBanner";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
+import { EnaflixCinematicCard } from "@/components/enaflix/EnaflixCinematicCard";
+import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
+import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
+import { EnaflixLoader } from "@/components/enaflix/EnaflixLoader";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { motion } from "framer-motion";
 
 const reviewTimeEstimates: Record<string, number> = {
   D1: 20, D3: 15, D7: 12, D15: 10, D30: 8,
