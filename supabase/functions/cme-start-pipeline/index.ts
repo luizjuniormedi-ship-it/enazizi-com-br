@@ -7,18 +7,33 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Simple parser for edge function environment
+// Robust parser for edge function environment (CESPE/Multi-choice)
 function parseQuestions(text: string) {
   const questions: any[] = [];
-  const parts = text.split(/---+/).filter(p => p.trim());
+  // Split by common question markers
+  const parts = text.split(/(?=\d+\s*[).]\s+|\*{0,2}Questão\s+\d+|---+)/i).filter(p => p.trim().length > 20);
   
   const OPTION_LINE_RE = /^[a-eA-E][).]\s+.+/gim;
-  
+  const GABARITO_RE = /(Gabarito|Resposta|Alternativa Correta)\s*:?\s*([a-eA-E])/i;
+
   for (const part of parts) {
-    if (part.match(OPTION_LINE_RE)) {
-      const options = part.match(OPTION_LINE_RE)?.map(o => o.replace(/^[a-eA-E][).]\s*/i, "").trim()) || [];
-      const statement = part.split(/[a-eA-E][).]/i)[0].trim().replace(/^#+\s*Questão\s*\d*\s*:?\s*/i, "");
-      questions.push({ statement, options, correctIndex: 0, explanation: "" });
+    const options = part.match(OPTION_LINE_RE);
+    if (options && options.length >= 2) {
+      const gabMatch = part.match(GABARITO_RE);
+      const gabText = gabMatch?.[2] || 'A';
+      const correctIndex = gabText.toUpperCase().charCodeAt(0) - 65;
+      
+      const statement = part.split(/[a-eA-E][).]/i)[0]
+        .replace(/^#+\s*/g, "")
+        .replace(/Questão\s*\d*\s*:?\s*/i, "")
+        .trim();
+
+      questions.push({ 
+        statement, 
+        options: options.map(o => o.replace(/^[a-eA-E][).]\s*/i, "").trim()), 
+        correctIndex: (correctIndex >= 0 && correctIndex < options.length) ? correctIndex : 0,
+        explanation: part.split(/(Explicação|Comentário)\s*:/i)[2]?.trim() || ""
+      });
     }
   }
   return questions;
