@@ -119,7 +119,7 @@ const SystemChecklist = () => {
       { module: "NotebookLM", task: "Exportação & Sync" },
       { module: "Biblioteca", task: "Player & Quiz" },
       { module: "Smart Replay", task: "Detection Engine" },
-      { module: "Ingestion", task: "Parsing & OCR" },
+      { module: "Curadoria", task: "Parsing & NotebookLM" },
       { module: "RLS", task: "Security Policies" },
       { module: "Database", task: "Latency Check" }
     ];
