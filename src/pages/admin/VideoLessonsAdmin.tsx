@@ -25,8 +25,7 @@ import {
   ShieldAlert,
   Film,
   Sparkles,
-  Play,
-  Trash2
+  Play
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -180,21 +179,6 @@ const VideoLessonsAdmin = () => {
     if (error) toast.error("Erro ao atualizar destaque.");
     else {
       toast.success("Destaque atualizado!");
-      refetch();
-    }
-  };
-  
-  const handleDeleteLesson = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta videoaula? Esta ação não pode ser desfeita.")) return;
-    
-    const { error } = await supabase
-      .from("ai_video_lessons")
-      .delete()
-      .eq("id", id);
-    
-    if (error) toast.error("Erro ao excluir videoaula: " + error.message);
-    else {
-      toast.success("Videoaula excluída com sucesso!");
       refetch();
     }
   };
@@ -429,9 +413,6 @@ const VideoLessonsAdmin = () => {
                                   <Film className="h-4 w-4" /> 🎬 Transformar em Videoaula
                                 </DropdownMenuItem>
                               )}
-                              <DropdownMenuItem className="gap-2 text-red-500" onClick={() => handleDeleteLesson(lesson.id)}>
-                                <Trash2 className="h-4 w-4" /> Excluir Videoaula
-                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
