@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { updateStudyPerformanceContext } from "@/lib/cronogramaSync";
 import { buildStudyPath } from "@/lib/studyRouter";
 import { useAuth } from "@/hooks/useAuth";
