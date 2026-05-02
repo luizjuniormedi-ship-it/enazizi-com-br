@@ -91,6 +91,26 @@ const AdminLessonsMemory = () => {
     onError: (error: any) => {
       toast.error(`Falha no upload: ${error.message}`);
       setUploadingId(null);
+  });
+  
+  const deleteLessonMutation = useMutation({
+    mutationFn: async (id: string) => {
+      // If there's a video, we might want to delete it from storage too
+      // For now, focus on deleting the record as requested
+      const { error } = await supabase
+        .from("cme_session_aggregations")
+        .delete()
+        .eq("id", id);
+      
+      if (error) throw error;
+      return id;
+    },
+    onSuccess: () => {
+      toast.success("Aula excluída com sucesso!");
+      queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+    },
+    onError: (error: any) => {
+      toast.error(`Falha ao excluir: ${error.message}`);
     }
   });
 
