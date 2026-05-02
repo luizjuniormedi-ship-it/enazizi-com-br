@@ -171,7 +171,7 @@ export default function CinematicBuilder() {
                         </p>
                         {block.scene_graph_data?.questions?.length > 0 && (
                           <div className="flex gap-2">
-                            <Badge variant="ghost" className="text-[8px] p-0 text-zinc-600 uppercase">
+                            <Badge variant="outline" className="text-[8px] h-4 bg-zinc-900 text-zinc-600 uppercase border-zinc-800">
                               {block.scene_graph_data.questions.length} Perguntas extraídas
                             </Badge>
                           </div>
