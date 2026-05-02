@@ -6021,6 +6021,8 @@ export type Database = {
           estimated_duration: number | null
           estimated_duration_seconds: number | null
           id: string
+          is_manual_upload: boolean | null
+          manual_video_url: string | null
           metadata: Json | null
           narrative_density: number | null
           pipeline_last_error: string | null
@@ -6046,6 +6048,8 @@ export type Database = {
           estimated_duration?: number | null
           estimated_duration_seconds?: number | null
           id?: string
+          is_manual_upload?: boolean | null
+          manual_video_url?: string | null
           metadata?: Json | null
           narrative_density?: number | null
           pipeline_last_error?: string | null
@@ -6071,6 +6075,8 @@ export type Database = {
           estimated_duration?: number | null
           estimated_duration_seconds?: number | null
           id?: string
+          is_manual_upload?: boolean | null
+          manual_video_url?: string | null
           metadata?: Json | null
           narrative_density?: number | null
           pipeline_last_error?: string | null
@@ -19024,6 +19030,12 @@ export type Database = {
       }
     }
     Enums: {
+      aggregation_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "waiting_manual_upload"
       ai_content_type:
         | "technical_summary"
         | "feynman_summary"
@@ -19265,6 +19277,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      aggregation_status: [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "waiting_manual_upload",
+      ],
       ai_content_type: [
         "technical_summary",
         "feynman_summary",
