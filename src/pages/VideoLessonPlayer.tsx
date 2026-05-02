@@ -130,7 +130,9 @@ const VideoLessonPlayer = () => {
         .eq("id", id)
         .maybeSingle();
 
-      if (memoryData) return memoryData as LessonData;
+      if (memoryData) {
+        return { ...(memoryData as any), __source: "tutor_memory" } as LessonData;
+      }
 
       const { data, error } = await supabase
         .from("ai_video_lessons")
@@ -143,7 +145,22 @@ const VideoLessonPlayer = () => {
         logPlaybackAudit("error", error.message);
         throw error;
       }
-      return data as LessonData;
+      return { ...(data as any), __source: "cme" } as LessonData;
+    }
+  });
+
+  // Signed URL para aulas vindas do tutor_lesson_memory (bucket privado)
+  const { data: signedUrlData } = useQuery({
+    queryKey: ["tutor-lesson-signed-url", id],
+    enabled: !!id && (lesson as any)?.__source === "tutor_memory" && !!(lesson as any)?.video_url,
+    refetchInterval: 50 * 60 * 1000, // renova antes de expirar (URL dura 60 min)
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke(
+        "tutor-lesson-signed-url",
+        { body: { lesson_id: id } }
+      );
+      if (error) throw error;
+      return data as { signed_url: string; expires_in: number };
     }
   });
 
