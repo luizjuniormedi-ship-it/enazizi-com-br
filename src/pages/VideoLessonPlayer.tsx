@@ -621,12 +621,15 @@ const VideoLessonPlayer = () => {
   if (!lesson) return <div className="p-8 text-white bg-[#0a0a12] h-screen">Aula não encontrada.</div>;
 
   // FASE 2 & 6: Enterprise HLS & Variant Priority
+  const isTutorMemory = (lesson as any).__source === "tutor_memory";
   const hlsManifest = (lesson as any).hls_manifest_url;
-  const playbackUrl = hlsManifest || 
-                     (lesson as any).hls_url || 
-                     lesson.video_url || 
-                     (lesson as any).playback_url ||
-                     (lesson as any).notebooklm_video_url;
+  const playbackUrl = isTutorMemory
+    ? signedUrlData?.signed_url
+    : (hlsManifest ||
+       (lesson as any).hls_url ||
+       lesson.video_url ||
+       (lesson as any).playback_url ||
+       (lesson as any).notebooklm_video_url);
 
   // Anti-placeholder logic
   const isPlaceholder = !playbackUrl || 
