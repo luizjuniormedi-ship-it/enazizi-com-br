@@ -129,6 +129,17 @@ export function LessonDetailDrawer({
                     </ul>
                   </Section>
                 )}
+                {lesson.generation_reason && (
+                  <Section title="Motivo da Geração">
+                    <p className="text-sm text-violet-300/90 font-medium">{lesson.generation_reason}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <Metric label="Sessões" value={lesson.study_sessions_count} />
+                      <Metric label="Dúvidas" value={lesson.tutor_messages_count} />
+                      <Metric label="Erros" value={lesson.related_error_bank_count} />
+                      <Metric label="Score Pedag." value={lesson.pedagogical_interest_score} />
+                    </div>
+                  </Section>
+                )}
               </TabsContent>
 
               <TabsContent value="content" className="space-y-5 mt-0">
