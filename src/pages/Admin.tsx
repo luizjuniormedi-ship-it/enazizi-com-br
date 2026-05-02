@@ -796,6 +796,7 @@ const Admin = () => {
             {activeSection === "multimodal" && <AdminModalityPanel />}
           </Suspense>
         </div>
+        </div>
       </main>
 
       {/* Dialogs */}
