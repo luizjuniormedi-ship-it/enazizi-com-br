@@ -72,7 +72,7 @@ const OfficialExamIngestion = () => {
     <div className="p-6 space-y-6 max-w-7xl mx-auto animate-in fade-in duration-500">
       <div className="flex items-center justify-between">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Ingestion Network</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Ingestão de Provas</h1>
           <p className="text-muted-foreground flex items-center gap-2">
             <Database className="h-4 w-4" /> Governança e Ingestão Automática de Provas Oficiais
           </p>
