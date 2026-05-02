@@ -34,23 +34,25 @@ export const generateP2LessonBatch = async (userId: string) => {
   }
 
   const allThemes = [...TEMAS_P2_CLINICA, ...TEMAS_P2_PEDIATRIA];
-  toast.info(`Iniciando geração automática de ${allThemes.length} videoaulas para a P2...`);
+  toast.info(`Processando 41 temas: Gerando roteiros e prompts 1 a 1...`);
 
-  // Processamos em pequenos lotes para não sobrecarregar a Edge Function
   let successCount = 0;
   
   for (const topic of allThemes) {
     try {
-      // Simula o estudo profundo e dispara a geração (Curadoria ENAFLIX)
+      // Agora a geração é SÍNCRONA: o script espera a IA terminar de estruturar para passar para a próxima
       const lessonId = await simulateHighStudyActivity(userId, topic);
-      if (lessonId) successCount++;
+      if (lessonId) {
+        successCount++;
+        console.log(`[Batch] Aula de "${topic}" estruturada com sucesso.`);
+      }
       
-      // Pequeno delay entre requisições
-      await new Promise(resolve => setTimeout(resolve, 800));
+      // Delay de respiro para o Gateway de IA
+      await new Promise(resolve => setTimeout(resolve, 2000));
     } catch (err) {
       console.error(`Erro ao gerar aula para ${topic}:`, err);
     }
   }
 
-  toast.success(`Pipeline finalizado! ${successCount} aulas enviadas para a Central de Produção.`);
+  toast.success(`Pipeline finalizado! ${successCount} aulas estão PRONTAS com prompts na Central de Produção.`);
 };
