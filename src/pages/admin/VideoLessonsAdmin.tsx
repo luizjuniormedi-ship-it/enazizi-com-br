@@ -183,6 +183,21 @@ const VideoLessonsAdmin = () => {
       refetch();
     }
   };
+  
+  const handleDeleteLesson = async (id: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta videoaula? Esta ação não pode ser desfeita.")) return;
+    
+    const { error } = await supabase
+      .from("ai_video_lessons")
+      .delete()
+      .eq("id", id);
+    
+    if (error) toast.error("Erro ao excluir videoaula: " + error.message);
+    else {
+      toast.success("Videoaula excluída com sucesso!");
+      refetch();
+    }
+  };
 
   const getEngagementMetrics = (lessonId: string) => {
     if (!analytics) return { views: 0, completion: 0 };
