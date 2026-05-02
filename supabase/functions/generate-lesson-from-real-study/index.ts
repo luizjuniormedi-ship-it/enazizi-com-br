@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
       .insert({
         user_id,
         topic,
+        title: topic,
         subject: tracking?.subject || "Medicina",
         generated_from_real_usage: true,
         pedagogical_interest_score: score,
@@ -142,7 +143,7 @@ Deno.serve(async (req) => {
         related_questions_count: tracking?.questions_answered || 0,
         production_pipeline_status: "awaiting_structure",
         admin_review_required: true,
-        status: "draft"
+        status: "structuring"
       })
       .select()
       .single();
