@@ -43,6 +43,12 @@ const VideoLessonsLibrary = () => {
   const { data: lessons, isLoading } = useQuery({
     queryKey: ["student-video-lessons"],
     queryFn: async () => {
+      const { data: memoryData } = await supabase
+        .from("tutor_lesson_memory")
+        .select("*")
+        .eq("status", "published")
+        .eq("hidden_from_student", false);
+
       const { data, error } = await supabase
         .from("ai_video_lessons")
         .select("*")
@@ -53,8 +59,16 @@ const VideoLessonsLibrary = () => {
         toast.error("Erro ao carregar biblioteca: " + error.message);
         throw error;
       }
-      return data;
+
+      // Merge and standardize
+      const standardLessons = (data || []).map(l => ({ ...l, duration: l.duration_seconds }));
+      const memoryLessons = (memoryData || []).map(l => ({ ...l, specialty: l.subject }));
+      
+      return [...standardLessons, ...memoryLessons].sort((a, b) => 
+        new Date(b.published_at || b.created_at).getTime() - new Date(a.published_at || a.created_at).getTime()
+      );
     }
+
   });
 
   const { data: usageLogs } = useQuery({
@@ -63,10 +77,16 @@ const VideoLessonsLibrary = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
       
+      const { data: progressData } = await supabase
+        .from("tutor_lesson_progress")
+        .select("lesson_id, progress_percent")
+        .eq("user_id", user.id);
+
       const { data, error } = await supabase
         .from("video_lesson_usage_logs")
         .select("video_lesson_id, action, completion_rate")
         .eq("user_id", user.id);
+
       
       if (error) return [];
       return data;

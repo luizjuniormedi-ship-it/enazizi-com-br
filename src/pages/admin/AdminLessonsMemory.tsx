@@ -43,7 +43,7 @@ const AdminLessonsMemory = () => {
 
 
   const uploadVideoMutation = useMutation({
-    mutationFn: async ({ id, file }: { id: string, file: File }) => {
+    mutationFn: async ({ id, file, title }: { id: string, file: File, title: string }) => {
       const fileName = `${id}/${crypto.randomUUID()}-${file.name}`;
       
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -94,7 +94,7 @@ const AdminLessonsMemory = () => {
     }
 
     setUploadingId(id);
-    uploadVideoMutation.mutate({ id, file });
+    uploadVideoMutation.mutate({ id, file, title: filteredLessons?.find(l => l.id === id)?.title || "Aula" });
   };
 
   const downloadAsPDF = (lesson: any) => {
