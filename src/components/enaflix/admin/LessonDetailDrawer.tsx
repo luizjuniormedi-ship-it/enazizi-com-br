@@ -61,6 +61,11 @@ export function LessonDetailDrawer({
                       <Sparkles className="h-3 w-3" /> Estruturada IA
                     </span>
                   )}
+                  {lesson.generated_from_real_usage && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-200">
+                      <Sparkles className="h-3 w-3" /> Comportamento Real
+                    </span>
+                  )}
                 </div>
                 <SheetTitle className="text-2xl font-black text-white leading-tight">
                   {lesson.title || "Sem título"}
