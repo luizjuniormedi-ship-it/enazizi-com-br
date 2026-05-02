@@ -57,9 +57,21 @@ interface TutorMessageItemProps {
 
 const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty }: TutorMessageItemProps) => {
   const navigate = useNavigate();
-  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer } = useTutorCME();
+  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer, getLessonForMessage } = useTutorCME();
   const { isAdmin, isProfessor, roles } = useUserRoles();
   const { isEnabled } = useFeatureFlags();
+
+  const [lessonData, setLessonData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchLesson = async () => {
+      if (msg.role === "assistant" && (msg as any).id) {
+        const lesson = await getLessonForMessage((msg as any).id);
+        if (lesson) setLessonData(lesson);
+      }
+    };
+    fetchLesson();
+  }, [msg, getLessonForMessage]);
 
   const isCoordinator = roles.includes("coordenador") || roles.includes("coordinator");
   const hasPermission = isAdmin || isProfessor || isCoordinator;
