@@ -5,6 +5,7 @@ import type { TutorBlock } from "@/types/tutor";
 import { Database } from "@/integrations/supabase/types";
 import { useCMEHardening } from "./useCMEHardening";
 import { useCMEAnalytics } from "./useCMEAnalytics";
+import { parseQuestionsFromText } from "@/lib/parseQuestions";
 
 
 type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'];
