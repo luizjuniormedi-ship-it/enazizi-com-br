@@ -61,6 +61,11 @@ export function LessonDetailDrawer({
                       <Sparkles className="h-3 w-3" /> Estruturada IA
                     </span>
                   )}
+                  {lesson.generated_from_real_usage && (
+                    <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-violet-200">
+                      <Sparkles className="h-3 w-3" /> Comportamento Real
+                    </span>
+                  )}
                 </div>
                 <SheetTitle className="text-2xl font-black text-white leading-tight">
                   {lesson.title || "Sem título"}
@@ -122,6 +127,17 @@ export function LessonDetailDrawer({
                         <li key={i} className="flex gap-2"><span className="text-amber-300">!</span> {p}</li>
                       ))}
                     </ul>
+                  </Section>
+                )}
+                {lesson.generation_reason && (
+                  <Section title="Motivo da Geração">
+                    <p className="text-sm text-violet-300/90 font-medium">{lesson.generation_reason}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <Metric label="Sessões" value={lesson.study_sessions_count} />
+                      <Metric label="Dúvidas" value={lesson.tutor_messages_count} />
+                      <Metric label="Erros" value={lesson.related_error_bank_count} />
+                      <Metric label="Score Pedag." value={lesson.pedagogical_interest_score} />
+                    </div>
                   </Section>
                 )}
               </TabsContent>
@@ -259,6 +275,15 @@ export function LessonDetailDrawer({
         </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2">
+      <div className="text-[9px] font-black uppercase tracking-widest text-white/30">{label}</div>
+      <div className="text-sm font-bold text-white mt-0.5">{value}</div>
+    </div>
   );
 }
 

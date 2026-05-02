@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Msg, Conversation } from "@/components/tutor/TutorConstants";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { dualWriteTutorSession, dualWriteTutorMessage } from "@/lib/tutorDualWrite";
+import { trackStudyActivity } from "@/lib/educationalEngine";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
 export function useChatMessages(userId: string | undefined) {
@@ -63,6 +64,19 @@ export function useChatMessages(userId: string | undefined) {
     await supabase.from("chat_conversations").update({ updated_at: new Date().toISOString() }).eq("id", convId);
     // Dual-write: mirror to tutor_messages (flag-gated)
     if (tutorDualWriteEnabled) dualWriteTutorMessage({ userId, conversationId: convId, role, content });
+    
+    // Rastreamento pedagógico para automação ENAFLIX
+    if (role === "user" && content.length > 10) {
+      // Tentativa simples de extrair o tema do título da conversa ou do conteúdo
+      const conversation = conversations.find(c => c.id === convId);
+      const topic = conversation?.title || "Estudo Geral";
+      trackStudyActivity({
+        userId,
+        topic,
+        interactionCount: 1,
+        studyTimeSeconds: 30 // Estimativa por mensagem
+      });
+    }
   }, [userId]);
 
   const deleteConversation = useCallback(async (convId: string) => {

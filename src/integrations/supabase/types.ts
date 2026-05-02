@@ -16997,12 +16997,19 @@ export type Database = {
       }
       tutor_lesson_memory: {
         Row: {
+          admin_review_required: boolean | null
+          ai_generation_context: Json | null
+          cinematic_prompt: Json | null
           created_at: string | null
           delete_reason: string | null
           deleted_at: string | null
           deleted_by: string | null
           duration: number | null
           estimated_duration_minutes: number | null
+          gemini_export: string | null
+          generated_from_real_usage: boolean | null
+          generation_reason: string | null
+          google_vids_export: string | null
           hard_deleted: boolean | null
           hidden_from_student: boolean | null
           id: string
@@ -17010,14 +17017,21 @@ export type Database = {
           is_recommended: boolean | null
           last_structuring_at: string | null
           last_structuring_error: string | null
+          notebooklm_export: string | null
+          pedagogical_interest_score: number | null
           pedagogical_quality_score: number | null
           priority: string | null
+          production_pipeline_status: string | null
           published_at: string | null
           quality_checklist: Json
+          related_error_bank_count: number | null
+          related_fsrs_reviews: number | null
+          related_questions_count: number | null
           source_session_id: string | null
           status: string
           structured_content: Json | null
           structuring_attempts: number
+          study_sessions_count: number | null
           subject: string | null
           subtitle: string | null
           subtopic: string | null
@@ -17026,17 +17040,26 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           topic: string | null
+          tutor_messages_count: number | null
           updated_at: string | null
           user_id: string
+          user_learning_pattern: Json | null
           video_url: string | null
         }
         Insert: {
+          admin_review_required?: boolean | null
+          ai_generation_context?: Json | null
+          cinematic_prompt?: Json | null
           created_at?: string | null
           delete_reason?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           duration?: number | null
           estimated_duration_minutes?: number | null
+          gemini_export?: string | null
+          generated_from_real_usage?: boolean | null
+          generation_reason?: string | null
+          google_vids_export?: string | null
           hard_deleted?: boolean | null
           hidden_from_student?: boolean | null
           id?: string
@@ -17044,14 +17067,21 @@ export type Database = {
           is_recommended?: boolean | null
           last_structuring_at?: string | null
           last_structuring_error?: string | null
+          notebooklm_export?: string | null
+          pedagogical_interest_score?: number | null
           pedagogical_quality_score?: number | null
           priority?: string | null
+          production_pipeline_status?: string | null
           published_at?: string | null
           quality_checklist?: Json
+          related_error_bank_count?: number | null
+          related_fsrs_reviews?: number | null
+          related_questions_count?: number | null
           source_session_id?: string | null
           status?: string
           structured_content?: Json | null
           structuring_attempts?: number
+          study_sessions_count?: number | null
           subject?: string | null
           subtitle?: string | null
           subtopic?: string | null
@@ -17060,17 +17090,26 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           topic?: string | null
+          tutor_messages_count?: number | null
           updated_at?: string | null
           user_id: string
+          user_learning_pattern?: Json | null
           video_url?: string | null
         }
         Update: {
+          admin_review_required?: boolean | null
+          ai_generation_context?: Json | null
+          cinematic_prompt?: Json | null
           created_at?: string | null
           delete_reason?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           duration?: number | null
           estimated_duration_minutes?: number | null
+          gemini_export?: string | null
+          generated_from_real_usage?: boolean | null
+          generation_reason?: string | null
+          google_vids_export?: string | null
           hard_deleted?: boolean | null
           hidden_from_student?: boolean | null
           id?: string
@@ -17078,14 +17117,21 @@ export type Database = {
           is_recommended?: boolean | null
           last_structuring_at?: string | null
           last_structuring_error?: string | null
+          notebooklm_export?: string | null
+          pedagogical_interest_score?: number | null
           pedagogical_quality_score?: number | null
           priority?: string | null
+          production_pipeline_status?: string | null
           published_at?: string | null
           quality_checklist?: Json
+          related_error_bank_count?: number | null
+          related_fsrs_reviews?: number | null
+          related_questions_count?: number | null
           source_session_id?: string | null
           status?: string
           structured_content?: Json | null
           structuring_attempts?: number
+          study_sessions_count?: number | null
           subject?: string | null
           subtitle?: string | null
           subtopic?: string | null
@@ -17094,8 +17140,10 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           topic?: string | null
+          tutor_messages_count?: number | null
           updated_at?: string | null
           user_id?: string
+          user_learning_pattern?: Json | null
           video_url?: string | null
         }
         Relationships: [
@@ -17310,6 +17358,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tutor_study_tracking: {
+        Row: {
+          created_at: string | null
+          flashcards_generated: number | null
+          fsrs_reviews: number | null
+          id: string
+          interaction_count: number | null
+          interest_score: number | null
+          last_interaction_at: string | null
+          questions_answered: number | null
+          related_errors: number | null
+          subject: string | null
+          subtopic: string | null
+          topic: string
+          total_study_time: number | null
+          tutor_session_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          flashcards_generated?: number | null
+          fsrs_reviews?: number | null
+          id?: string
+          interaction_count?: number | null
+          interest_score?: number | null
+          last_interaction_at?: string | null
+          questions_answered?: number | null
+          related_errors?: number | null
+          subject?: string | null
+          subtopic?: string | null
+          topic: string
+          total_study_time?: number | null
+          tutor_session_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          flashcards_generated?: number | null
+          fsrs_reviews?: number | null
+          id?: string
+          interaction_count?: number | null
+          interest_score?: number | null
+          last_interaction_at?: string | null
+          questions_answered?: number | null
+          related_errors?: number | null
+          subject?: string | null
+          subtopic?: string | null
+          topic?: string
+          total_study_time?: number | null
+          tutor_session_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       uploads: {
         Row: {
