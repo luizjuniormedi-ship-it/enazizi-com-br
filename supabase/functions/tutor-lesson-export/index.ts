@@ -9,6 +9,38 @@ const corsHeaders = {
 
 type Format = "notebooklm" | "gemini" | "google_vids" | "markdown" | "txt";
 
+const CINEMATIC_3D_BLOCK = `---
+IMPORTANTE — PADRÃO VISUAL OBRIGATÓRIO ENAZIZI/ENAFLIX
+
+Utilize estética cinematográfica 3D estilo Pixar científico.
+Priorize animações educacionais fluidas.
+
+A aula deve parecer uma mistura entre:
+- documentário Netflix
+- Pixar científico
+- visualização médica premium
+- animação educacional AAA
+
+Requisitos visuais:
+- estilo cinematográfico 3D
+- visual científico estilo Pixar
+- qualidade documentário Netflix
+- animações educacionais fluidas
+- motion graphics médicos avançados
+- anatomia precisa quando for medicina
+- luz volumétrica
+- profundidade de campo
+- câmera dinâmica
+- transições suaves
+- visual premium
+
+Narração e idioma:
+- Idioma obrigatório: Português do Brasil (pt-BR).
+- Linguagem técnica e didática.
+- Sem termos em inglês desnecessários.
+- Citar fontes (Nelson, Sabiston, diretrizes oficiais) quando aplicável.
+`;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
