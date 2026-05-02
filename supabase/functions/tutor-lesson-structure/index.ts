@@ -195,6 +195,13 @@ Deno.serve(async (req) => {
         structured_content: structured as unknown as Record<string, unknown>,
         pedagogical_quality_score: score,
         last_structuring_error: null,
+        notebooklm_export: structured.notebooklm_prompt || null,
+        gemini_export: structured.gemini_video_prompt || null,
+        google_vids_export: structured.google_vids_prompt || null,
+        cinematic_prompt: { 
+          gemini: structured.gemini_video_prompt, 
+          google_vids: structured.google_vids_prompt 
+        }
       })
       .eq("id", lessonId);
 
