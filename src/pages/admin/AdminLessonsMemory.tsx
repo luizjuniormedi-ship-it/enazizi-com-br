@@ -30,9 +30,10 @@ const ALLOWED_MIME = [
 ];
 
 const STATUS_LABEL: Record<string, string> = {
-  pending_review: "Pendente",
+  structuring: "Estruturando",
+  pending_review: "Estruturada",
   in_production: "Em produção",
-  needs_adjustment: "Ajustar",
+  needs_adjustment: "Precisa ajuste",
   ready_to_publish: "Pronto para publicar",
   published: "Publicado",
   unpublished: "Despublicado",
@@ -41,6 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
+  structuring: "bg-blue-500/10 text-blue-700 animate-pulse",
   pending_review: "bg-slate-500/10 text-slate-700",
   in_production: "bg-blue-500/10 text-blue-700",
   needs_adjustment: "bg-orange-500/10 text-orange-700",
@@ -50,6 +52,14 @@ const STATUS_COLOR: Record<string, string> = {
   archived: "bg-slate-200 text-slate-500",
   rejected: "bg-red-500/10 text-red-700",
 };
+
+const MIN_CHECKLIST = [
+  ["title_reviewed", "Título revisado"],
+  ["content_reviewed", "Conteúdo revisado"],
+  ["video_attached", "Vídeo anexado"],
+  ["no_hallucination", "Sem alucinação"],
+  ["ready_to_publish", "Pronto para publicar"],
+] as const;
 
 const AdminLessonsMemory = () => {
   const queryClient = useQueryClient();
@@ -183,6 +193,59 @@ const AdminLessonsMemory = () => {
     }
   };
 
+  const exportLesson = async (
+    lesson: any,
+    format: "notebooklm" | "gemini" | "google_vids" | "markdown" | "txt",
+  ) => {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "tutor-lesson-export",
+        { body: { lesson_id: lesson.id, format } },
+      );
+      if (error || !data?.content) throw error || new Error("Sem conteúdo");
+      const blob = new Blob([data.content], { type: data.mime || "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = data.file_name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      toast.success(`Exportação ${format} concluída`);
+    } catch (e: any) {
+      toast.error(`Falha na exportação: ${e.message ?? "erro"}`);
+    }
+  };
+
+  const restructureLesson = async (lesson: any) => {
+    try {
+      toast.info("Reestruturando aula com IA...");
+      const { error } = await supabase.functions.invoke(
+        "tutor-lesson-structure",
+        { body: { lesson_id: lesson.id } },
+      );
+      if (error) throw error;
+      toast.success("Aula reestruturada");
+      queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+    } catch (e: any) {
+      toast.error(`Falha ao reestruturar: ${e.message ?? "erro"}`);
+    }
+  };
+
+  const toggleChecklistItem = async (lesson: any, key: string) => {
+    const next = { ...(lesson.quality_checklist || {}), [key]: !lesson.quality_checklist?.[key] };
+    const { error } = await supabase
+      .from("tutor_lesson_memory")
+      .update({ quality_checklist: next })
+      .eq("id", lesson.id);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+    }
+  };
+
   const downloadAsPDF = (lesson: any) => {
     const content =
       `AULA: ${lesson.title}\n` +
@@ -302,7 +365,8 @@ const AdminLessonsMemory = () => {
                           <Button
                             variant="outline"
                             className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
-                            onClick={() => downloadAsPDF(lesson)}
+                            onClick={() => exportLesson(lesson, "notebooklm")}
+                            disabled={!lesson.structured_content?.title}
                           >
                             <Download className="h-3.5 w-3.5" /> NotebookLM
                           </Button>

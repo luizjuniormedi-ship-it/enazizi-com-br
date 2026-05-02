@@ -9,7 +9,7 @@ export interface EducationalLesson {
   subject: string;
   topic: string;
   subtopic: string;
-  status: 'pending_review' | 'in_production' | 'needs_adjustment' | 'ready_to_publish' | 'published' | 'unpublished' | 'archived' | 'rejected' | 'deleted';
+  status: 'structuring' | 'pending_review' | 'in_production' | 'needs_adjustment' | 'ready_to_publish' | 'published' | 'unpublished' | 'archived' | 'rejected' | 'deleted';
   priority: 'low' | 'normal' | 'high' | 'urgent';
   structured_content: any;
   video_url: string;
@@ -81,12 +81,30 @@ export const useEducationalMemory = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
+    // Dedup: já existe pedido ativo equivalente?
+    const sessionId = lesson.source_session_id ?? lesson.session_id ?? null;
+    const topic = lesson.topic ?? null;
+    const subject = lesson.subject ?? null;
+    if (sessionId || topic) {
+      let q = supabase
+        .from('tutor_lesson_memory')
+        .select('id, status, title')
+        .eq('user_id', user.id)
+        .not('status', 'in', '("deleted","rejected")');
+      if (sessionId) q = q.eq('source_session_id', sessionId);
+      if (topic) q = q.eq('topic', topic);
+      if (subject) q = q.eq('subject', subject);
+      const { data: existing } = await q.maybeSingle();
+      if (existing) {
+        return { ...existing, _deduped: true } as any;
+      }
+    }
+
     const payload: any = {
       ...lesson,
       user_id: user.id,
-      status: 'pending_review'
+      status: 'pending_review',
     };
-
     // Clean up legacy fields before insert
     delete payload.source_type;
     delete payload.session_id;
@@ -96,26 +114,54 @@ export const useEducationalMemory = () => {
     delete payload.short_summary;
     delete payload.estimated_duration;
     delete payload.difficulty_level;
+    delete payload.progress;
+    delete payload._deduped;
 
     const { data: inserted, error } = await supabase
       .from('tutor_lesson_memory')
       .insert([payload])
       .select()
       .single();
-
-
     if (error) throw error;
-    
-    // Log event
-    await supabase.from('tutor_lesson_events').insert({
+
+    // Evento "lesson_requested"
+    await supabase.from('tutor_lesson_events').insert([{
       lesson_id: inserted.id,
       actor_id: user.id,
       event_type: 'lesson_requested',
-      metadata: { source: 'tutor_ia' }
-    });
+      metadata: { source: 'tutor_ia' },
+    }] as any);
+
+    // Dispara estruturação (fire-and-forget)
+    supabase.functions
+      .invoke('tutor-lesson-structure', { body: { lesson_id: inserted.id } })
+      .catch((err) => console.warn('[lesson-structure] invoke failed', err))
+      .finally(() => refetch());
 
     refetch();
     return inserted;
+  };
+
+  const restructureLesson = async (lessonId: string) => {
+    const { data, error } = await supabase.functions.invoke(
+      'tutor-lesson-structure',
+      { body: { lesson_id: lessonId } },
+    );
+    if (error) throw error;
+    refetch();
+    return data;
+  };
+
+  const exportLesson = async (
+    lessonId: string,
+    format: 'notebooklm' | 'gemini' | 'google_vids' | 'markdown' | 'txt',
+  ) => {
+    const { data, error } = await supabase.functions.invoke(
+      'tutor-lesson-export',
+      { body: { lesson_id: lessonId, format } },
+    );
+    if (error) throw error;
+    return data as { content: string; file_name: string; mime: string };
   };
 
   const updateLessonProgress = async (lessonId: string, progress: { progress_percent: number, last_position: number, completed?: boolean }) => {
@@ -140,10 +186,12 @@ export const useEducationalMemory = () => {
     isLoading,
     error,
     requestLesson,
+    restructureLesson,
+    exportLesson,
     updateLessonProgress,
     refetch,
     // Legacy alias
-    addToMemory: requestLesson
+    addToMemory: requestLesson,
   };
 };
 

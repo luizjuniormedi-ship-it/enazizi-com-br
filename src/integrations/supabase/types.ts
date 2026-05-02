@@ -17002,19 +17002,26 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           duration: number | null
+          estimated_duration_minutes: number | null
           hard_deleted: boolean | null
           hidden_from_student: boolean | null
           id: string
           is_favorite: boolean | null
           is_recommended: boolean | null
+          last_structuring_at: string | null
+          last_structuring_error: string | null
+          pedagogical_quality_score: number | null
           priority: string | null
           published_at: string | null
+          quality_checklist: Json
           source_session_id: string | null
           status: string
           structured_content: Json | null
+          structuring_attempts: number
           subject: string | null
           subtitle: string | null
           subtopic: string | null
+          summary: string | null
           teacher_id: string | null
           thumbnail_url: string | null
           title: string
@@ -17029,19 +17036,26 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           duration?: number | null
+          estimated_duration_minutes?: number | null
           hard_deleted?: boolean | null
           hidden_from_student?: boolean | null
           id?: string
           is_favorite?: boolean | null
           is_recommended?: boolean | null
+          last_structuring_at?: string | null
+          last_structuring_error?: string | null
+          pedagogical_quality_score?: number | null
           priority?: string | null
           published_at?: string | null
+          quality_checklist?: Json
           source_session_id?: string | null
           status?: string
           structured_content?: Json | null
+          structuring_attempts?: number
           subject?: string | null
           subtitle?: string | null
           subtopic?: string | null
+          summary?: string | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title: string
@@ -17056,19 +17070,26 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           duration?: number | null
+          estimated_duration_minutes?: number | null
           hard_deleted?: boolean | null
           hidden_from_student?: boolean | null
           id?: string
           is_favorite?: boolean | null
           is_recommended?: boolean | null
+          last_structuring_at?: string | null
+          last_structuring_error?: string | null
+          pedagogical_quality_score?: number | null
           priority?: string | null
           published_at?: string | null
+          quality_checklist?: Json
           source_session_id?: string | null
           status?: string
           structured_content?: Json | null
+          structuring_attempts?: number
           subject?: string | null
           subtitle?: string | null
           subtopic?: string | null
+          summary?: string | null
           teacher_id?: string | null
           thumbnail_url?: string | null
           title?: string
