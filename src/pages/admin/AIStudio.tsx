@@ -1628,11 +1628,13 @@ ${content.generated_video_script || "Roteiro pendente."}
   );
 }
 
-const AIStudioWrapper = () => (
-  <div className="relative min-h-screen bg-background p-6 sm:p-10 space-y-10">
-    <EnaflixBackgroundFX intensity="medium" />
-    <AIStudio />
-  </div>
-);
+function AIStudioWrapper() {
+  return (
+    <div className="relative min-h-screen bg-background p-6 sm:p-10 space-y-10">
+      <EnaflixBackgroundFX intensity="medium" />
+      <AIStudio />
+    </div>
+  );
+}
 
 export default AIStudioWrapper;
