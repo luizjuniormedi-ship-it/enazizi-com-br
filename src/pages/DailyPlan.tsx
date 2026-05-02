@@ -356,8 +356,9 @@ const DailyPlan = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 text-primary animate-spin" />
+      <div className="flex flex-col items-center justify-center min-h-[60vh] py-20">
+        <EnaflixBackgroundFX intensity="subtle" />
+        <EnaflixLoader variant="hologram" label="Sincronizando plano diário..." />
       </div>
     );
   }
