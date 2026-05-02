@@ -30,9 +30,10 @@ const ALLOWED_MIME = [
 ];
 
 const STATUS_LABEL: Record<string, string> = {
-  pending_review: "Pendente",
+  structuring: "Estruturando",
+  pending_review: "Estruturada",
   in_production: "Em produção",
-  needs_adjustment: "Ajustar",
+  needs_adjustment: "Precisa ajuste",
   ready_to_publish: "Pronto para publicar",
   published: "Publicado",
   unpublished: "Despublicado",
@@ -41,6 +42,7 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const STATUS_COLOR: Record<string, string> = {
+  structuring: "bg-blue-500/10 text-blue-700 animate-pulse",
   pending_review: "bg-slate-500/10 text-slate-700",
   in_production: "bg-blue-500/10 text-blue-700",
   needs_adjustment: "bg-orange-500/10 text-orange-700",
@@ -50,6 +52,14 @@ const STATUS_COLOR: Record<string, string> = {
   archived: "bg-slate-200 text-slate-500",
   rejected: "bg-red-500/10 text-red-700",
 };
+
+const MIN_CHECKLIST = [
+  ["title_reviewed", "Título revisado"],
+  ["content_reviewed", "Conteúdo revisado"],
+  ["video_attached", "Vídeo anexado"],
+  ["no_hallucination", "Sem alucinação"],
+  ["ready_to_publish", "Pronto para publicar"],
+] as const;
 
 const AdminLessonsMemory = () => {
   const queryClient = useQueryClient();
