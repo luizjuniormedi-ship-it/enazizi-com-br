@@ -323,21 +323,32 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button
+                  disabled={devWorkerLoading}
                   onClick={async () => {
+                    setDevWorkerLoading(true);
+                    setDevWorkerError(null);
                     try {
-                      const { data, error } = await supabase.functions.invoke('cme-dev-worker', {
+                      const { data, error: fnErr } = await supabase.functions.invoke('cme-dev-worker', {
                         body: { action: 'pickup_and_run' },
                       });
-                      if (error || (data && data.success === false)) {
-                        console.error('[dev-worker] erro', error, data);
+                      if (fnErr) {
+                        setDevWorkerError(fnErr.message || 'Falha ao invocar DEV worker');
+                      } else if (data && data.success === false) {
+                        setDevWorkerError(data.message || data.code || 'DEV worker retornou erro');
                       }
-                    } catch (e) {
-                      console.error('[dev-worker] exception', e);
+                    } catch (e: any) {
+                      setDevWorkerError(e?.message || 'Erro inesperado ao iniciar DEV worker');
+                    } finally {
+                      setDevWorkerLoading(false);
                     }
                   }}
                   className="bg-amber-500 hover:bg-amber-600 text-black font-bold"
                 >
-                  <Cpu className="mr-2 h-4 w-4" /> Iniciar Worker DEV
+                  {devWorkerLoading ? (
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Iniciando…</>
+                  ) : (
+                    <><Cpu className="mr-2 h-4 w-4" /> Iniciar Worker DEV</>
+                  )}
                 </Button>
                 <Button onClick={openBuilder} variant="outline" className="border-amber-500/20 hover:bg-amber-500/10 text-amber-500">
                   <ExternalLink className="mr-2 h-4 w-4" /> Ir para o Builder
@@ -346,6 +357,9 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                   Ver status do Cluster GPU
                 </Button>
               </div>
+              {devWorkerError && (
+                <p className="text-xs text-red-400 mt-2 font-mono">⚠ {devWorkerError}</p>
+              )}
             </div>
           )}
 
