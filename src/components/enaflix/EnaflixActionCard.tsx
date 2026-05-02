@@ -12,39 +12,45 @@ interface Props {
 }
 
 export function EnaflixActionCard({ title, description, icon: Icon, onClick, variant = "secondary", badge }: Props) {
+  const accentClass =
+    variant === "primary" ? "card-pixar" : "card-pixar card-pixar-violet";
+  const iconBg =
+    variant === "primary"
+      ? "bg-[var(--pixar-grad-primary)] shadow-[0_8px_22px_-8px_hsl(var(--pixar-blue)/0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]"
+      : "bg-[var(--pixar-grad-violet)] shadow-[0_8px_22px_-8px_hsl(var(--pixar-violet)/0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]";
+
   return (
     <motion.button
-      whileHover={{ scale: 1.02, y: -4 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ y: -6, scale: 1.025 }}
+      whileTap={{ scale: 0.97 }}
+      transition={{ type: "spring", stiffness: 280, damping: 20 }}
       onClick={onClick}
       className={cn(
-        "relative flex flex-col p-6 rounded-2xl border text-left transition-all duration-300 overflow-hidden group",
-        variant === "primary"
-          ? "bg-primary/10 border-primary/20 hover:bg-primary/20"
-          : "bg-white/5 border-white/5 hover:bg-white/10"
+        accentClass,
+        "relative flex flex-col p-6 text-left group min-h-[170px]",
       )}
+      style={{ ['--card-hover-glow' as any]: 'true' }}
     >
-      {/* Glow Effect */}
-      <div className={cn(
-        "absolute -top-12 -right-12 w-24 h-24 blur-[40px] rounded-full opacity-20 transition-opacity group-hover:opacity-40",
-        variant === "primary" ? "bg-primary" : "bg-white"
-      )} />
-
       {badge && (
-        <span className="absolute top-4 right-4 bg-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider text-white">
+        <span className="absolute top-4 right-4 z-10 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white bg-[var(--pixar-grad-primary)] shadow-[0_4px_14px_-4px_hsl(var(--pixar-blue)/0.7)] ring-1 ring-white/30">
           {badge}
         </span>
       )}
 
-      <div className={cn(
-        "h-12 w-12 rounded-xl flex items-center justify-center mb-4 transition-transform duration-500 group-hover:scale-110 group-hover:rotate-3",
-        variant === "primary" ? "bg-primary text-white shadow-glow-sm" : "bg-white/10 text-white/60"
-      )}>
-        <Icon className="h-6 w-6" />
+      <div
+        className={cn(
+          "h-14 w-14 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-white/25",
+          "transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 pixar-breathe",
+          iconBg,
+        )}
+      >
+        <Icon className="h-7 w-7 text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" />
       </div>
 
-      <h3 className="text-lg font-bold text-white mb-2 group-hover:text-primary transition-colors">{title}</h3>
-      <p className="text-sm text-white/50 leading-relaxed line-clamp-2">{description}</p>
+      <h3 className="text-lg font-black text-white mb-1.5 tracking-tight drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)]">
+        {title}
+      </h3>
+      <p className="text-sm text-white/70 leading-relaxed line-clamp-2">{description}</p>
     </motion.button>
   );
 }
