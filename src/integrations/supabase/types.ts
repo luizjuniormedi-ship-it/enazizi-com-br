@@ -8470,6 +8470,96 @@ export type Database = {
           },
         ]
       }
+      educational_memory: {
+        Row: {
+          access_count: number | null
+          aggregation_id: string | null
+          archived: boolean | null
+          conversation_id: string | null
+          created_at: string | null
+          difficulty_level: string | null
+          estimated_duration: number | null
+          favorite: boolean | null
+          generated_summary: string | null
+          id: string
+          last_accessed_at: string | null
+          memory_score: number | null
+          metadata: Json | null
+          session_id: string | null
+          short_summary: string | null
+          source_type: string
+          status: string | null
+          subject: string | null
+          subtitle: string | null
+          subtopic: string | null
+          tags: string[] | null
+          teaching_style: string | null
+          thumbnail_url: string | null
+          title: string
+          topic: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_count?: number | null
+          aggregation_id?: string | null
+          archived?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          estimated_duration?: number | null
+          favorite?: boolean | null
+          generated_summary?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          memory_score?: number | null
+          metadata?: Json | null
+          session_id?: string | null
+          short_summary?: string | null
+          source_type: string
+          status?: string | null
+          subject?: string | null
+          subtitle?: string | null
+          subtopic?: string | null
+          tags?: string[] | null
+          teaching_style?: string | null
+          thumbnail_url?: string | null
+          title: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_count?: number | null
+          aggregation_id?: string | null
+          archived?: boolean | null
+          conversation_id?: string | null
+          created_at?: string | null
+          difficulty_level?: string | null
+          estimated_duration?: number | null
+          favorite?: boolean | null
+          generated_summary?: string | null
+          id?: string
+          last_accessed_at?: string | null
+          memory_score?: number | null
+          metadata?: Json | null
+          session_id?: string | null
+          short_summary?: string | null
+          source_type?: string
+          status?: string | null
+          subject?: string | null
+          subtitle?: string | null
+          subtopic?: string | null
+          tags?: string[] | null
+          teaching_style?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       email_send_log: {
         Row: {
           created_at: string

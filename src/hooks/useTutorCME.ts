@@ -6,6 +6,7 @@ import { Database } from "@/integrations/supabase/types";
 import { useCMEHardening } from "./useCMEHardening";
 import { useCMEAnalytics } from "./useCMEAnalytics";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
+import { useEducationalMemory } from "./useEducationalMemory";
 
 
 type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'];
@@ -38,6 +39,7 @@ export const useTutorCME = () => {
   const lastEventRef = useRef<number>(Date.now());
   const { reportIncident, createSnapshot } = useCMEHardening();
   const { getCognitiveAnalysis } = useCMEAnalytics();
+  const { addToMemory } = useEducationalMemory();
 
   const checkWorkerHealth = useCallback(async () => {
 
@@ -310,6 +312,18 @@ export const useTutorCME = () => {
       if (projectError) throw projectError;
       const projectId = project.id;
       setState(s => ({ ...s, projectId, progress: 20, message: "Projeto criado..." }));
+
+      // Index to Educational Memory
+      await addToMemory({
+        title: params.title,
+        subject: params.specialty,
+        topic: params.topic,
+        source_type: 'cme',
+        aggregation_id: aggregationId,
+        session_id: params.conversationId,
+        short_summary: params.summary,
+        status: 'processing'
+      });
 
       // Phase 8: Hardening - Snapshot
       await createSnapshot(projectId, 'planning', { params });
