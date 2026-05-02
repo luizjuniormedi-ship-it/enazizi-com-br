@@ -1,5 +1,6 @@
 import { memo, useMemo, useEffect, useState } from "react";
-import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info, Zap } from "lucide-react";
+import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info, Zap, Clock } from "lucide-react";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
