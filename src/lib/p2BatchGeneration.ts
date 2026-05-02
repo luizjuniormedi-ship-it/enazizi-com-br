@@ -40,19 +40,35 @@ export const generateP2LessonBatch = async (userId: string) => {
   
   for (const topic of allThemes) {
     try {
-      // Agora a geração é SÍNCRONA: o script espera a IA terminar de estruturar para passar para a próxima
-      const lessonId = await simulateHighStudyActivity(userId, topic);
-      if (lessonId) {
+      console.log(`[Batch] Iniciando geração para: ${topic}`);
+      
+      // Chamada direta para a Edge Function para evitar problemas de concorrência
+      const { data, error } = await supabase.functions.invoke("generate-lesson-from-real-study", {
+        body: { 
+          user_id: userId, 
+          topic: topic,
+          force: true 
+        }
+      });
+
+      if (error) {
+        console.error(`[Batch] Erro na função para "${topic}":`, error);
+        continue;
+      }
+
+      if (data?.status === "success" || data?.reason === "already_exists") {
         successCount++;
-        console.log(`[Batch] Aula de "${topic}" estruturada com sucesso.`);
+        console.log(`[Batch] Aula de "${topic}" processada com sucesso.`);
+      } else {
+        console.warn(`[Batch] Alerta para "${topic}":`, data?.reason);
       }
       
-      // Delay de respiro para o Gateway de IA
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Delay menor pois a função agora lida com a estruturação de forma mais robusta
+      await new Promise(resolve => setTimeout(resolve, 500));
     } catch (err) {
       console.error(`Erro ao gerar aula para ${topic}:`, err);
     }
   }
 
-  toast.success(`Pipeline finalizado! ${successCount} aulas estão PRONTAS com prompts na Central de Produção.`);
+  toast.success(`Pipeline finalizado! ${successCount} aulas processadas na Central de Curadoria.`);
 };
