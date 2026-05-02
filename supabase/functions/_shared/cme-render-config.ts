@@ -108,9 +108,7 @@ export function sanitizeRenderConfig(raw: unknown): RenderConfig {
     ? (incoming.fps as number)
     : DEFAULT_RENDER_CONFIG.fps;
 
-  const fps = typeof incoming.fps === 'number' && incoming.fps >= 12 && incoming.fps <= 120
-    ? incoming.fps
-    : DEFAULT_RENDER_CONFIG.fps;
+
 
   const wp: Record<string, any> = isObject(incoming.worker_preferences) ? (incoming.worker_preferences as any) : {};
   const ss: Record<string, any> = isObject(incoming.segment_settings) ? (incoming.segment_settings as any) : {};
