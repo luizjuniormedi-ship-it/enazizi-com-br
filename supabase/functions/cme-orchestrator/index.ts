@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { buildConfig, lineageProjection, validateRenderConfig } from "../_shared/cme-render-config.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -27,34 +28,6 @@ serve(async (req) => {
 
     const { action, projectId, payload } = await req.json()
 
-    // Canonical default config — guarantees every render job has a valid, complete payload
-    // for retry/recovery/fallback engines and lineage tracking.
-    const DEFAULT_RENDER_CONFIG = {
-      render_mode: 'cinematic',
-      quality: 'high',
-      fps: 30,
-      resolution: '1080p',
-      narration_mode: 'adaptive',
-      cognitive_pacing: 'dynamic',
-      fallback_strategy: 'slides',
-      worker_preferences: { gpu_tier: 'high_vram' },
-      segment_settings: { segment_duration: 30 },
-      enaflix_publish: { auto_publish: true },
-    } as const;
-
-    const buildConfig = (raw: unknown) => {
-      const incoming = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw as Record<string, unknown> : {};
-      return {
-        ...DEFAULT_RENDER_CONFIG,
-        ...incoming,
-        worker_preferences: { ...DEFAULT_RENDER_CONFIG.worker_preferences, ...(incoming.worker_preferences as object || {}) },
-        segment_settings: { ...DEFAULT_RENDER_CONFIG.segment_settings, ...(incoming.segment_settings as object || {}) },
-        enaflix_publish: { ...DEFAULT_RENDER_CONFIG.enaflix_publish, ...(incoming.enaflix_publish as object || {}) },
-        _config_version: 1,
-        _persisted_at: new Date().toISOString(),
-      };
-    };
-
     if (action === 'start_pipeline' || action === 'start_render') {
       const { data: project, error: pError } = await supabaseClient
         .from('cme_video_projects')
@@ -64,15 +37,34 @@ serve(async (req) => {
       
       if (pError || !project) throw new Error("PROJECT_NOT_FOUND");
 
+      const renderConfig = buildConfig(payload);
+      const validation = validateRenderConfig(renderConfig);
+      if (validation.warnings.length > 0) {
+        await supabaseClient.from('cme_pipeline_events').insert({
+          aggregation_id: project.aggregation_id,
+          stage: 'config',
+          status: 'warning',
+          message: `Config sanitized with warnings: ${validation.warnings.join(', ')}`,
+          metadata: { warnings: validation.warnings, projection: lineageProjection(renderConfig) },
+          progress: 0,
+        }).then(() => {}, () => {});
+      }
+
       const { data: lineageNode } = await supabaseClient
         .from('cme_lineage_nodes')
         .insert({
           type: 'tutor_session',
           entity_id: project.aggregation?.session_id || projectId,
-          metadata: { project_id: projectId, action: 'start_pipeline', user_id: user.id }
+          metadata: {
+            project_id: projectId,
+            action: 'start_pipeline',
+            user_id: user.id,
+            render_config: lineageProjection(renderConfig),
+          }
         })
         .select()
         .single();
+
 
       const { data: queue } = await supabaseClient
         .from('cme_render_queues')
@@ -88,7 +80,7 @@ serve(async (req) => {
           status: 'queued',
           queue_id: queue?.id,
           user_id: user.id,
-          config: buildConfig(payload),
+          config: renderConfig,
           idempotency_key: `${projectId}-${Date.now()}`
         })
         .select()
@@ -156,6 +148,47 @@ serve(async (req) => {
       });
 
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
+    }
+
+    if (action === 'retry_render') {
+      const { jobId } = payload || {};
+      if (!jobId) throw new Error('jobId required for retry_render');
+
+      // CRITICAL: reuse the original persisted config — do NOT rebuild from payload.
+      const { data: original, error: oErr } = await supabaseClient
+        .from('cme_render_jobs')
+        .select('id, project_id, generation_id, queue_id, config, user_id')
+        .eq('id', jobId)
+        .single();
+      if (oErr || !original) throw new Error('ORIGINAL_JOB_NOT_FOUND');
+
+      const reuseValidation = validateRenderConfig(original.config);
+      if (!reuseValidation.valid) {
+        await supabaseClient.from('cme_system_incidents').insert({
+          component: 'cme-orchestrator',
+          severity: 'high',
+          error_message: 'Retry attempted with invalid persisted config',
+          stack_trace: JSON.stringify(reuseValidation.errors),
+          user_id: user.id,
+        }).then(() => {}, () => {});
+      }
+
+      const { data: retryJob, error: rErr } = await supabaseClient
+        .from('cme_render_jobs')
+        .insert({
+          project_id: original.project_id,
+          generation_id: original.generation_id,
+          queue_id: original.queue_id,
+          status: 'queued',
+          user_id: original.user_id,
+          config: original.config, // reuse, do not overwrite
+          idempotency_key: `${original.project_id}-retry-${Date.now()}`,
+        })
+        .select()
+        .single();
+      if (rErr) throw rErr;
+
+      return new Response(JSON.stringify({ success: true, jobId: retryJob.id, reused_config: true }), { headers: corsHeaders });
     }
 
     return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders });
