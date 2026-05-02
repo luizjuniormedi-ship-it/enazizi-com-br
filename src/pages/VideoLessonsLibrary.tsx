@@ -214,79 +214,77 @@ const VideoLessonsLibrary = () => {
               ) : (
                 filteredLessons?.map((lesson) => {
                   const progress = getLessonProgress(lesson.id);
+                  const isGold = (lesson as any).is_gold_content;
+                  const duration = lesson.duration || (lesson as any).duration_seconds || 900;
+                  const specialty = (lesson as any).specialty;
+
                   return (
-                    const isGold = (lesson as any).is_gold_content;
-                    const duration = lesson.duration || (lesson as any).duration_seconds || 900;
-                    const specialty = (lesson as any).specialty;
-
-                    return (
-                      <Card 
-                        key={lesson.id} 
-                        className={`group overflow-hidden hover:shadow-xl transition-all duration-300 border-primary/10 cursor-pointer ${isGold ? 'ring-1 ring-yellow-400/50' : ''}`} 
-                        onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
-                      >
-                        <div className="relative aspect-video bg-muted overflow-hidden">
-                          {lesson.thumbnail_url ? (
-                            <img 
-                              src={lesson.thumbnail_url} 
-                              alt={lesson.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                              <Stethoscope className="h-12 w-12 text-primary/20" />
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                              <Play className="h-6 w-6 text-white fill-white ml-1" />
-                            </div>
+                    <Card 
+                      key={lesson.id} 
+                      className={`group overflow-hidden hover:shadow-xl transition-all duration-300 border-primary/10 cursor-pointer ${isGold ? 'ring-1 ring-yellow-400/50' : ''}`} 
+                      onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
+                    >
+                      <div className="relative aspect-video bg-muted overflow-hidden">
+                        {lesson.thumbnail_url ? (
+                          <img 
+                            src={lesson.thumbnail_url} 
+                            alt={lesson.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                            <Stethoscope className="h-12 w-12 text-primary/20" />
                           </div>
-                          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                            {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                            <Play className="h-6 w-6 text-white fill-white ml-1" />
                           </div>
-                          <Badge className="absolute top-2 left-2 bg-primary/90">
-                            {specialty}
-                          </Badge>
-                          {isGold && (
-                            <Badge className="absolute top-2 right-2 bg-yellow-500 text-black gap-1">
-                              <Sparkles className="h-3 w-3" /> Conteúdo Ouro
-                            </Badge>
-                          )}
                         </div>
-                        <CardHeader className="p-4 space-y-1">
-                          <div className="flex justify-between items-start">
-                            <CardTitle className="text-lg line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                              {lesson.title}
-                            </CardTitle>
+                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                          {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
+                        </div>
+                        <Badge className="absolute top-2 left-2 bg-primary/90">
+                          {specialty}
+                        </Badge>
+                        {isGold && (
+                          <Badge className="absolute top-2 right-2 bg-yellow-500 text-black gap-1">
+                            <Sparkles className="h-3 w-3" /> Conteúdo Ouro
+                          </Badge>
+                        )}
+                      </div>
+                      <CardHeader className="p-4 space-y-1">
+                        <div className="flex justify-between items-start">
+                          <CardTitle className="text-lg line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                            {lesson.title}
+                          </CardTitle>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {lesson.topic} • {lesson.subtopic || 'Geral'}
+                        </p>
+                      </CardHeader>
+                      <CardContent className="p-4 pt-0">
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>Progresso</span>
+                            <span>{Math.floor(progress)}%</span>
                           </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {lesson.topic} • {lesson.subtopic || 'Geral'}
-                          </p>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                          <div className="space-y-2">
-                            <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>Progresso</span>
-                              <span>{Math.floor(progress)}%</span>
-                            </div>
-                            <Progress value={progress} className="h-1.5" />
-                          </div>
-                        </CardContent>
-                        <CardFooter className="p-4 pt-0 flex justify-between items-center">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <GraduationCap className="h-3 w-3" />
-                            <span>Tutor IA</span>
-                          </div>
-                          <Button variant="ghost" size="sm" className="gap-1 px-0 hover:bg-transparent hover:text-primary">
-                            {progress > 0 ? 'Continuar Aula' : 'Assistir Agora'} <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    );
-
+                          <Progress value={progress} className="h-1.5" />
+                        </div>
+                      </CardContent>
+                      <CardFooter className="p-4 pt-0 flex justify-between items-center">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <GraduationCap className="h-3 w-3" />
+                          <span>Tutor IA</span>
+                        </div>
+                        <Button variant="ghost" size="sm" className="gap-1 px-0 hover:bg-transparent hover:text-primary">
+                          {progress > 0 ? 'Continuar Aula' : 'Assistir Agora'} <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </CardFooter>
+                    </Card>
                   );
                 })
+
               )}
             </div>
           )}
