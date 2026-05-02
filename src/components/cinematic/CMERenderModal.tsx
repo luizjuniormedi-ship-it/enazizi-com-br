@@ -328,17 +328,59 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                   onClick={async () => {
                     setDevWorkerLoading(true);
                     setDevWorkerError(null);
+                    toast.info('Worker DEV chamado…');
                     try {
                       const { data, error: fnErr } = await supabase.functions.invoke('cme-dev-worker', {
-                        body: { action: 'pickup_and_run' },
+                        body: {
+                          action: 'pickup_and_run',
+                          projectId: renderJob?.project_id,
+                          aggregationId,
+                        },
                       });
+                      console.log('[dev-worker] response', { data, fnErr });
                       if (fnErr) {
                         setDevWorkerError(fnErr.message || 'Falha ao invocar DEV worker');
+                        toast.error(`DEV worker erro: ${fnErr.message}`);
                       } else if (data && data.success === false) {
-                        setDevWorkerError(data.message || data.code || 'DEV worker retornou erro');
+                        const msg = data.message || data.code || 'DEV worker retornou erro';
+                        setDevWorkerError(`${msg}${data.recent_jobs ? ` — ${data.recent_jobs.length} jobs recentes` : ''}`);
+                        toast.error(msg);
+                      } else if (data?.success) {
+                        toast.success(`Worker DEV processou job ${String(data.jobId).slice(0, 8)}…`);
+                        // Force immediate refetch of events + job
+                        const { data: latest } = await supabase
+                          .from('cme_render_jobs' as any)
+                          .select('id, status, progress, gpu_worker_id, output_url, preview_url, pipeline_last_error, config')
+                          .eq('id', data.jobId)
+                          .maybeSingle();
+                        if (latest) {
+                          setRenderJob((prev: any) => ({ ...(prev || {}), ...(latest as any) }));
+                          if ((latest as any).status === 'completed') {
+                            setStatus('ready');
+                            setProgress(100);
+                          }
+                        }
+                        const { data: evts } = await supabase
+                          .from('cme_pipeline_events')
+                          .select('*')
+                          .eq('render_job_id', data.jobId)
+                          .order('created_at', { ascending: true });
+                        if (evts && evts.length > 0) {
+                          setEvents((prev) => {
+                            const merged = [...prev];
+                            evts.forEach((e: any) => {
+                              if (!merged.find((m) => m.id === e.id)) merged.push(e);
+                            });
+                            return merged;
+                          });
+                          const last = evts[evts.length - 1];
+                          setCurrentStage(last.stage);
+                          setProgress(Math.max(progress, last.progress));
+                        }
                       }
                     } catch (e: any) {
                       setDevWorkerError(e?.message || 'Erro inesperado ao iniciar DEV worker');
+                      toast.error(e?.message || 'Erro inesperado');
                     } finally {
                       setDevWorkerLoading(false);
                     }
