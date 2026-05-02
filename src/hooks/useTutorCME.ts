@@ -29,6 +29,8 @@ export interface CMEProjectState {
   message?: string;
   isStuck?: boolean;
   workerStatus?: 'online' | 'offline_or_unavailable';
+  manualVideoUrl?: string;
+}
 }
 
 export const useTutorCME = () => {
@@ -289,6 +291,17 @@ export const useTutorCME = () => {
       );
       aggregationId = result.aggregation.id;
       lessonBlocks = result.blocks;
+      
+      // Update with title and manual flag
+      await supabaseClient
+        .from("cme_session_aggregations")
+        .update({ 
+          title: params.title,
+          is_manual_upload: true,
+          status: 'waiting_manual_upload'
+        } as any)
+        .eq('id', aggregationId);
+
       setState(s => ({ ...s, aggregationId, progress: 10, message: "Conteúdo estruturado..." }));
 
       const { data: project, error: projectError } = await supabaseClient
@@ -303,7 +316,8 @@ export const useTutorCME = () => {
             is_full_session: params.isFullSession,
             specialty: params.specialty,
             topic: params.topic,
-            hardened: true
+            hardened: true,
+            is_manual_upload: true
           }
         } as any)
         .select()
@@ -311,7 +325,7 @@ export const useTutorCME = () => {
 
       if (projectError) throw projectError;
       const projectId = project.id;
-      setState(s => ({ ...s, projectId, progress: 20, message: "Projeto criado..." }));
+      setState(s => ({ ...s, projectId, progress: 20, message: "Projeto criado e enviado para revisão ADM." }));
 
       // Index to Educational Memory
       await addToMemory({
@@ -322,7 +336,7 @@ export const useTutorCME = () => {
         aggregation_id: aggregationId,
         session_id: params.conversationId,
         short_summary: params.summary,
-        status: 'processing'
+        status: 'waiting_manual_upload'
       });
 
       // Phase 8: Hardening - Snapshot
@@ -459,44 +473,24 @@ export const useTutorCME = () => {
 
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Orquestrando Renderização..." }));
       
-      console.log("[CME] Invoking orchestrator for project:", projectId);
-      const { data: orchestratorResult, error: orchError } = await supabaseClient.functions.invoke('cme-orchestrator', {
-        body: { 
-          action: 'start_render', 
-          projectId,
-          payload: { 
-            priority: 1, 
-            title: params.title,
-            aggregationId // Pass the aggregation ID to the orchestrator
-          }
-        }
-      });
+      console.log("[CME] Manual mode: skipping orchestrator. Project ready for admin upload.");
+      
+      await logPipelineEvent(projectId, 'completed', 'completed', 100, "Aula enviada para o Admin. Aguardando upload do vídeo.", aggregationId || undefined);
+      
+      setState(s => ({ 
+        ...s, 
+        status: 'completed', 
+        progress: 100, 
+        message: "Enviado com sucesso! Um administrador irá anexar o vídeo em breve." 
+      }));
 
-      if (orchError) {
-        console.error("[CME] Orchestrator Invoke Error:", orchError);
-        throw new Error(orchError.message || "Erro de conexão com o orquestrador");
+      toast.success("Conteúdo enviado para o Admin! Você poderá assistir assim que o vídeo for carregado.");
+      
+      if (params.onComplete && aggregationId) {
+        params.onComplete(aggregationId);
       }
 
-      console.log("[CME] Orchestrator Result:", orchestratorResult);
-
-      // Structured failure from orchestrator (never blank screen)
-      if (orchestratorResult && orchestratorResult.success === false) {
-        const techReason = orchestratorResult.technical_reason || orchestratorResult.message || orchestratorResult.code;
-        
-        // If it's a hardware issue, we can still proceed to Agile mode
-        if (orchestratorResult.code === 'WORKER_ASSIGN_FAILED' || orchestratorResult.status === 'waiting_hardware' || orchestratorResult.fallback_available) {
-          setState(s => ({
-            ...s,
-            status: 'pending_hardware',
-            isStuck: true,
-            message: orchestratorResult.message || "GPU Workers offline. Fallback disponível.",
-            progress: 65
-          }));
-          return projectId;
-        }
-        
-        throw new Error(`${orchestratorResult.code || 'ORCHESTRATOR_ERROR'}: ${techReason}`);
-      }
+      return projectId;
 
       if (orchestratorResult?.status === 'waiting_hardware') {
         setState(s => ({ 
