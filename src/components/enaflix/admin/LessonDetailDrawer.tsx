@@ -278,6 +278,15 @@ export function LessonDetailDrawer({
   );
 }
 
+function Metric({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-white/5 bg-white/[0.02] p-2">
+      <div className="text-[9px] font-black uppercase tracking-widest text-white/30">{label}</div>
+      <div className="text-sm font-bold text-white mt-0.5">{value}</div>
+    </div>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
