@@ -61,7 +61,14 @@ function LessonProductionCardInner({ lesson, onOpen, index = 0 }: Props) {
 
         {/* top badges */}
         <div className="absolute top-3 left-3 right-3 flex items-start justify-between gap-2">
-          <LessonStatusBadge status={lesson.status} />
+          <div className="flex flex-col gap-1.5 items-start">
+            <LessonStatusBadge status={lesson.status} />
+            {lesson.generated_from_real_usage && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/30 bg-violet-500/15 px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider text-violet-200 backdrop-blur-md">
+                <Sparkles className="h-2 w-2" /> Uso Real
+              </span>
+            )}
+          </div>
           {isStructured && (
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-500/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-200 backdrop-blur-md">
               <Sparkles className="h-2.5 w-2.5" /> IA
