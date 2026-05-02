@@ -185,15 +185,40 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       lastEventRef.current = Date.now();
     }, 5000);
 
-    // Fallback polling every 2s — guarantees UI updates even if realtime drops
+    // Fallback polling every 2s — guarantees UI updates even if realtime drops or aggregation_id is null
     const pollTimer = setInterval(async () => {
       if (status === 'ready' || status === 'failed') return;
 
-      const { data: latestEvents } = await supabase
-        .from('cme_pipeline_events')
-        .select('*')
-        .eq('aggregation_id', aggregationId)
-        .order('created_at', { ascending: true });
+      // 1) Find latest job — try BY aggregation, then by project_id from existing renderJob
+      let jobQuery = supabase
+        .from('cme_render_jobs' as any)
+        .select('id, status, progress, gpu_worker_id, pipeline_last_error, output_url, preview_url, project_id, aggregation_id')
+        .order('updated_at', { ascending: false })
+        .limit(1);
+      const projectIdHint = (renderJob as any)?.project_id;
+      if (projectIdHint) {
+        jobQuery = jobQuery.eq('project_id', projectIdHint);
+      } else {
+        jobQuery = jobQuery.or(`generation_id.eq.${aggregationId},aggregation_id.eq.${aggregationId}`);
+      }
+      const { data: latestJob } = await jobQuery.maybeSingle();
+
+      if (latestJob) {
+        setRenderJob((prev: any) => ({ ...(prev || {}), ...(latestJob as any) }));
+        if ((latestJob as any).status === 'completed') setStatus('ready');
+        if ((latestJob as any).status === 'failed') {
+          setStatus('failed');
+          setError((latestJob as any).pipeline_last_error || 'Render falhou');
+        }
+      }
+
+      // 2) Fetch events — by aggregation_id OR by render_job_id (covers null aggregation case)
+      const targetJobId = (latestJob as any)?.id || (renderJob as any)?.id;
+      const eventsQuery = targetJobId
+        ? supabase.from('cme_pipeline_events').select('*').or(`aggregation_id.eq.${aggregationId},render_job_id.eq.${targetJobId}`)
+        : supabase.from('cme_pipeline_events').select('*').eq('aggregation_id', aggregationId);
+
+      const { data: latestEvents } = await eventsQuery.order('created_at', { ascending: true });
 
       if (latestEvents && latestEvents.length > 0) {
         setEvents(latestEvents);
@@ -205,22 +230,6 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
           setError(last.message);
         } else if (last.progress === 100 || last.stage === 'completed') {
           setStatus('ready');
-        }
-      }
-
-      const { data: latestJob } = await supabase
-        .from('cme_render_jobs' as any)
-        .select('id, status, progress, gpu_worker_id, pipeline_last_error, output_url, preview_url')
-        .eq('generation_id', aggregationId)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      if (latestJob) {
-        setRenderJob((prev: any) => ({ ...(prev || {}), ...(latestJob as any) }));
-        if ((latestJob as any).status === 'completed') setStatus('ready');
-        if ((latestJob as any).status === 'failed') {
-          setStatus('failed');
-          setError((latestJob as any).pipeline_last_error || 'Render falhou');
         }
       }
     }, 2000);
