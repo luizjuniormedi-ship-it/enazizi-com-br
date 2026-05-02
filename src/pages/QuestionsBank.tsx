@@ -6,7 +6,11 @@ import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter"
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
-import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap } from "lucide-react";
+import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap, ChevronLeft } from "lucide-react";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
 import { exportToPdf } from "@/lib/exportPdf";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStudyContext } from "@/lib/studyContext";
@@ -413,21 +417,27 @@ const QuestionsBank = () => {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <StudyContextBanner />
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Database className="h-6 w-6 text-primary" />
-            Banco de Questões
-          </h1>
-          <p className="text-muted-foreground">
-            {filtered.length} questões disponíveis
-            {totalCount > filtered.length && (
-              <span className="text-xs ml-1">({totalCount} no banco total)</span>
-            )}
-          </p>
+    <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
+      <div className="px-4 sm:px-8 lg:px-14">
+        <div className="flex items-center gap-2 mb-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/dashboard")}
+            className="gap-2 text-white/40 hover:text-white"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Voltar
+          </Button>
         </div>
+        
+        <EnaflixSectionTitle
+          kicker="Banco Global"
+          title="Arena de Questões"
+          subtitle={`${totalCount} questões disponíveis para o seu treinamento.`}
+        />
+      </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setShowStats(!showStats)} className="gap-1.5">
             <BarChart3 className="h-4 w-4" /> Estatísticas
