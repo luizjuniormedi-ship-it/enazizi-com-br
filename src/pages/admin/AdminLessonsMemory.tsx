@@ -76,12 +76,14 @@ const AdminLessonsMemory = () => {
   ) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
-    await supabase.from("tutor_lesson_events").insert({
-      lesson_id: lessonId,
-      actor_id: user.id,
-      event_type: eventType,
-      metadata,
-    });
+    await supabase.from("tutor_lesson_events").insert([
+      {
+        lesson_id: lessonId,
+        actor_id: user.id,
+        event_type: eventType,
+        metadata,
+      },
+    ] as any);
   };
 
   const uploadVideoMutation = useMutation({
