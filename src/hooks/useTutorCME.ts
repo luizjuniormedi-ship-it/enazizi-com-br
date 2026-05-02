@@ -411,6 +411,14 @@ export const useTutorCME = () => {
           message: orchestratorResult.message,
           progress: 60
         }));
+      } else if (orchestratorResult?.status === 'rendering') {
+        setState(s => ({
+          ...s,
+          status: 'gpu_rendering' as any,
+          message: "GPU renderizando com worker ativo",
+          progress: 80,
+          workerStatus: 'online'
+        }));
       }
 
       return projectId;
