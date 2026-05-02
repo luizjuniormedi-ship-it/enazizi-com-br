@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2 } from "lucide-react";
+import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -172,6 +172,7 @@ const Admin = () => {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("overview");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [loadingBatch, setLoadingBatch] = useState(false);
 
   const [planDialog, setPlanDialog] = useState<{ open: boolean; user: AdminUser | null; plan: string }>({ open: false, user: null, plan: "" });
   const [blockDialog, setBlockDialog] = useState<{ open: boolean; user: AdminUser | null; block: boolean }>({ open: false, user: null, block: false });
@@ -383,6 +384,20 @@ const Admin = () => {
 
   const isUserSection = activeSection.startsWith("users-");
 
+  const handleBatchP2 = async () => {
+    if (loadingBatch) return;
+    setLoadingBatch(true);
+    try {
+      const { generateP2LessonBatch } = await import("@/lib/p2BatchGeneration");
+      await generateP2LessonBatch(session?.user?.id || "");
+    } catch (e) {
+      console.error(e);
+      toast({ title: "Erro na produção em lote", variant: "destructive" });
+    } finally {
+      setLoadingBatch(false);
+    }
+  };
+
   // ─── Render ─────────────────────────────
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden -m-4 sm:-m-6">
@@ -472,10 +487,31 @@ const Admin = () => {
               title="ENAFLIX Operations Center"
               subtitle="Operação, qualidade e governança do ENAZIZI em tempo real."
               actions={
-                <Button variant="outline" size="lg" onClick={loadData} disabled={loading} className="gap-2">
-                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                  Atualizar dados
-                </Button>
+                <div className="flex flex-wrap gap-3">
+                  <Button 
+                    variant="outline" 
+                    size="lg" 
+                    onClick={loadData} 
+                    disabled={loading} 
+                    className="gap-2"
+                  >
+                    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                    Atualizar dados
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    onClick={handleBatchP2} 
+                    disabled={loadingBatch}
+                    className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0 shadow-lg shadow-violet-500/20"
+                  >
+                    {loadingBatch ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <BookOpen className="h-4 w-4" />
+                    )}
+                    Produção em Lote P2
+                  </Button>
+                </div>
               }
               className="py-6 sm:py-8"
             />
