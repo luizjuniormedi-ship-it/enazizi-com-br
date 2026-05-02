@@ -25,12 +25,11 @@ export interface RenderConfig {
   narration_mode: NarrationMode;
   cognitive_pacing: CognitivePacing;
   fallback_strategy: FallbackStrategy;
-  worker_preferences: { gpu_tier: GpuTier; [k: string]: unknown };
-  segment_settings: { segment_duration: number; [k: string]: unknown };
-  enaflix_publish: { auto_publish: boolean; [k: string]: unknown };
+  worker_preferences: { gpu_tier: GpuTier } & Record<string, unknown>;
+  segment_settings: { segment_duration: number } & Record<string, unknown>;
+  enaflix_publish: { auto_publish: boolean } & Record<string, unknown>;
   _config_version: number;
   _persisted_at: string;
-  [k: string]: unknown;
 }
 
 export const DEFAULT_RENDER_CONFIG: Omit<RenderConfig, '_persisted_at'> = {
