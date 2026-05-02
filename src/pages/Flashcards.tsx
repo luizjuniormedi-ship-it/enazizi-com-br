@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { createPortal } from "react-dom";
 import FlashcardExam, { type FlashcardItem } from "@/components/flashcards/FlashcardExam";
+import { EnaflixActionCard } from "@/components/enaflix/EnaflixActionCard";
 
 type Phase = "setup" | "active" | "finished";
 
