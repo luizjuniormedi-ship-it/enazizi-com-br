@@ -63,7 +63,25 @@ const AgentChat = ({
     topic, subtopic, specialty,
   });
 
-  const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback } = useTutorCME();
+  const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage } = useTutorCME();
+
+  const [sessionLesson, setSessionLesson] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchSessionLesson = async () => {
+      if (chat.activeConversationId) {
+        // For full session, we can check by conversationId in the config
+        const { data } = await supabase
+          .from("cme_video_projects")
+          .select("*, aggregation:cme_session_aggregations(*)")
+          .contains('config', { tutor_conversation_id: chat.activeConversationId, is_full_session: true })
+          .maybeSingle();
+        
+        if (data) setSessionLesson(data);
+      }
+    };
+    fetchSessionLesson();
+  }, [chat.activeConversationId]);
 
   const handleTransformSession = useCallback(async () => {
     if (chat.messages.length === 0) return;
@@ -269,8 +287,13 @@ const AgentChat = ({
         showUploadButton={showUploadButton}
         isUploading={chat.isUploading}
         onUploadClick={onUploadClick}
-        onTransformSession={functionName.includes("tutor") ? handleTransformSession : undefined}
+        onTransformSession={
+          sessionLesson?.aggregation?.manual_video_url 
+            ? () => window.open(sessionLesson.aggregation.manual_video_url, '_blank')
+            : (functionName.includes("tutor") ? handleTransformSession : undefined)
+        }
         hasMessages={chat.messages.filter(m => m.role === "assistant").length > 0}
+        lessonStatus={sessionLesson ? (sessionLesson.aggregation?.manual_video_url ? 'ready' : 'processing') : 'idle'}
       />
 
       <input type="file" ref={chat.fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />

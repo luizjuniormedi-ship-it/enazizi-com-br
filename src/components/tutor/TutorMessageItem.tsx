@@ -1,5 +1,6 @@
 import { memo, useMemo, useEffect, useState } from "react";
-import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info, Zap } from "lucide-react";
+import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info, Zap, Clock } from "lucide-react";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
@@ -57,9 +58,21 @@ interface TutorMessageItemProps {
 
 const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty }: TutorMessageItemProps) => {
   const navigate = useNavigate();
-  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer } = useTutorCME();
+  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer, getLessonForMessage } = useTutorCME();
   const { isAdmin, isProfessor, roles } = useUserRoles();
   const { isEnabled } = useFeatureFlags();
+
+  const [lessonData, setLessonData] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchLesson = async () => {
+      if (msg.role === "assistant" && (msg as any).id) {
+        const lesson = await getLessonForMessage((msg as any).id);
+        if (lesson) setLessonData(lesson);
+      }
+    };
+    fetchLesson();
+  }, [msg, getLessonForMessage]);
 
   const isCoordinator = roles.includes("coordenador") || roles.includes("coordinator");
   const hasPermission = isAdmin || isProfessor || isCoordinator;
@@ -164,7 +177,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             <div className="flex flex-col gap-3 mt-4 pt-3 border-t border-border/30 empty:hidden">
               <div className="flex gap-2">
 
-              {showCMEButton && (
+              {showCMEButton && !lessonData && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -174,7 +187,34 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   <Film className="h-3.5 w-3.5" /> 🎓 Gerar Aula Interativa
                 </Button>
               )}
-              {showFallbackButton && (
+
+              {lessonData && (
+                <Button
+                  variant={lessonData.aggregation?.manual_video_url ? "default" : "outline"}
+                  size="sm"
+                  className={cn(
+                    "h-7 text-xs gap-1.5 animate-fade-in",
+                    lessonData.aggregation?.manual_video_url 
+                      ? "bg-primary hover:bg-primary/90 text-white" 
+                      : "border-amber-500/20 text-amber-500/70 cursor-wait"
+                  )}
+                  onClick={() => {
+                    if (lessonData.aggregation?.manual_video_url) {
+                      window.open(lessonData.aggregation.manual_video_url, '_blank');
+                    } else {
+                      toast.info("Esta aula está sendo preparada por um professor. Tente novamente em breve.");
+                    }
+                  }}
+                >
+                  {lessonData.aggregation?.manual_video_url ? (
+                    <><Play className="h-3.5 w-3.5 fill-current" /> Assistir Aula</>
+                  ) : (
+                    <><Clock className="h-3.5 w-3.5" /> Aula em Produção</>
+                  )}
+                </Button>
+              )}
+
+              {showFallbackButton && !lessonData && (
                 <Button
                   variant="ghost"
                   size="sm"

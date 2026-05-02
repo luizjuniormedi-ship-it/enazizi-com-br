@@ -104,6 +104,7 @@ const CMEAudit = lazyWithRetry(() => import("./pages/admin/CMEAudit"), "CMEAudit
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowcase"), "CognitiveShowcase");
+const AdminLessonsMemory = lazyWithRetry(() => import("./pages/admin/AdminLessonsMemory"), "AdminLessonsMemory");
 const TutorMemoryAdmin = lazyWithRetry(() => import("./pages/admin/TutorMemoryAdmin"), "TutorMemoryAdmin");
 const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"), "TelemetryAdmin");
 const AIStudio = lazyWithRetry(() => import("./pages/admin/AIStudio"), "AIStudio");

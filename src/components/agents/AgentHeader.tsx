@@ -1,7 +1,8 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload, Film } from "lucide-react";
+import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload, Film, Play, Clock } from "lucide-react";
+import { cn } from "@/lib/utils";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 
 interface AgentHeaderProps {
@@ -19,13 +20,14 @@ interface AgentHeaderProps {
   onUploadClick: () => void;
   onTransformSession?: () => void;
   hasMessages?: boolean;
+  lessonStatus?: 'idle' | 'processing' | 'ready';
 }
 
 const AgentHeader = memo(({
   title, subtitle, selectedCount, isFullscreen, onToggleFullscreen,
   onNewConversation, onToggleHistory, autoSpeak, onToggleAutoSpeak,
   showUploadButton, isUploading, onUploadClick,
-  onTransformSession, hasMessages
+  onTransformSession, hasMessages, lessonStatus = 'idle'
 }: AgentHeaderProps) => {
   return (
     <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
@@ -47,12 +49,23 @@ const AgentHeader = memo(({
 
         {hasMessages && onTransformSession && (
           <Button 
-            variant="outline" 
+            variant={lessonStatus === 'ready' ? "default" : "outline"} 
             size="sm" 
             onClick={onTransformSession}
-             className="hidden md:flex h-8 text-[10px] gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shadow-sm shadow-amber-500/20 px-3"
+             className={cn(
+               "hidden md:flex h-8 text-[10px] gap-1.5 shadow-sm px-3 font-black uppercase tracking-widest transition-all",
+               lessonStatus === 'ready' 
+                ? "bg-primary hover:bg-primary/90 text-white" 
+                : "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shadow-amber-500/20"
+             )}
           >
-            <Film className="h-3.5 w-3.5" /> 🎓 Gerar Aula Interativa
+            {lessonStatus === 'ready' ? (
+              <><Play className="h-3.5 w-3.5 fill-current" /> Assistir Aula</>
+            ) : lessonStatus === 'processing' ? (
+              <><Clock className="h-3.5 w-3.5" /> Aula em Produção</>
+            ) : (
+              <><Film className="h-3.5 w-3.5" /> 🎓 Gerar Aula Interativa</>
+            )}
           </Button>
         )}
 

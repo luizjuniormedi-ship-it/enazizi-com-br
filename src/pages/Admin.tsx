@@ -51,6 +51,7 @@ const AdminAdaptiveExperiments = lazy(() => import("@/pages/admin/AdminAdaptiveE
 const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/IntelligenceOverviewPanel"));
 const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCognitiveOrchestrator"));
 const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
+const AdminLessonsMemory = lazy(() => import("@/pages/admin/AdminLessonsMemory"));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -93,6 +94,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "pipeline", label: "Pipeline", icon: Layers },
         { key: "cinematic-engine", label: "Cinematic (CME)", icon: Film },
         { key: "questions", label: "Questões", icon: FileText },
+        { key: "tutor-lessons", label: "Memória Aulas", icon: FileText },
         { key: "image-upgrade", label: "Upgrade Imagem", icon: ImageIcon },
         { key: "image-review", label: "Review Imagem", icon: ImageIcon },
         { key: "hygiene", label: "Higiene", icon: Bug },
@@ -691,6 +693,7 @@ const Admin = () => {
             {activeSection === "pipeline" && <AdminPipelineMonitor />}
             {activeSection === "cinematic-engine" && <AdminCinematicEngine />}
             {activeSection === "questions" && <AdminQuestionReviewPanel />}
+            {activeSection === "tutor-lessons" && <AdminLessonsMemory />}
             {activeSection === "image-upgrade" && <ImageQuestionUpgradePanel />}
             {activeSection === "image-review" && <AdminImageQuestionReviewPanel />}
             {activeSection === "hygiene" && <AdminHygieneDashboard />}
