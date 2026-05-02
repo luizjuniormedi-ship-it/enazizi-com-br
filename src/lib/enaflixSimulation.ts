@@ -31,7 +31,7 @@ export const simulateHighStudyActivity = async (userId: string, topic: string) =
       body: { 
         user_id: userId, 
         topic: topic,
-        force: true // Forçar para ignorar rollout se necessário
+        force: true 
       }
     });
 
