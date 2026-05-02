@@ -69,6 +69,9 @@ Deno.serve(async (req) => {
         return json({ error: "invalid_format" }, 400);
     }
 
+    // Padrão cinematográfico 3D obrigatório em todas as exportações
+    content = `${content}\n\n${CINEMATIC_3D_BLOCK}\n`;
+
     const slug = (lesson.title ?? "aula")
       .toLowerCase()
       .normalize("NFD")
