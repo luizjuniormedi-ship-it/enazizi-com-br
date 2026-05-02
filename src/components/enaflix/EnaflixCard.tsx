@@ -49,12 +49,13 @@ export function EnaflixCard({
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       className={cn(
-        "group relative flex-shrink-0 cursor-pointer overflow-hidden rounded-xl bg-[#1a1a1e] transition-all duration-500",
+        "card-pixar group relative flex-shrink-0 cursor-pointer",
         sizeClasses[size],
         aspectClasses[aspectRatio],
-        "hover:z-10 hover:ring-2 hover:ring-white/20 hover:shadow-[0_0_30px_rgba(0,0,0,0.5)]"
+        "hover:z-10",
       )}
-      whileHover={{ scale: 1.05, y: -5 }}
+      whileHover={{ scale: 1.05, y: -6 }}
+      transition={{ type: "spring", stiffness: 280, damping: 22 }}
       onClick={onClick}
     >
       {/* Thumbnail */}
@@ -62,21 +63,21 @@ export function EnaflixCard({
         <img
           src={image}
           alt={title}
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
         />
       ) : (
-        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#1a1a1e] to-[#2a2a2e]">
-          <Play className="h-12 w-12 text-white/10" />
+        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[#11132a] to-[#1d1f3a]">
+          <Play className="h-12 w-12 text-white/15" />
         </div>
       )}
 
       {/* Overlays */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-60 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/30 to-transparent opacity-70 group-hover:opacity-100 transition-opacity" />
 
       {/* Badge */}
       {badge && (
-        <div className="absolute left-3 top-3">
-          <span className="rounded bg-primary/90 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white backdrop-blur-sm">
+        <div className="absolute left-3 top-3 z-10">
+          <span className="rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white bg-[var(--pixar-grad-primary)] ring-1 ring-white/30 shadow-[0_4px_14px_-4px_hsl(var(--pixar-blue)/0.7)]">
             {badge}
           </span>
         </div>
@@ -84,46 +85,42 @@ export function EnaflixCard({
 
       {/* Progress Bar */}
       {progress !== undefined && (
-        <div className="absolute bottom-0 left-0 h-1 w-full bg-white/10">
-          <div 
-            className="h-full bg-primary transition-all duration-500" 
-            style={{ width: `${progress}%` }} 
+        <div className="absolute bottom-0 left-0 h-1 w-full bg-white/10 z-10">
+          <div
+            className="h-full bg-[var(--pixar-grad-primary)] transition-all duration-500"
+            style={{ width: `${progress}%` }}
           />
         </div>
       )}
 
       {/* Content (Visible on Hover) */}
       <div className={cn(
-        "absolute inset-0 flex flex-col justify-end p-4 transition-all duration-300",
+        "absolute inset-0 flex flex-col justify-end p-4 transition-all duration-300 z-10",
         isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       )}>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <button 
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-black hover:bg-white/90 transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClick?.();
-              }}
+            <button
+              className="btn-pixar h-10 w-10 !p-0 !rounded-full"
+              onClick={(e) => { e.stopPropagation(); onClick?.(); }}
+              aria-label="Reproduzir"
             >
-              <Play className="h-4 w-4 fill-current" />
+              <Play className="h-4 w-4 fill-white text-white relative z-10" />
             </button>
-            <button 
-              className="flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-black/50 text-white hover:bg-black/70 backdrop-blur-md transition-colors"
-              onClick={(e) => {
-                e.stopPropagation();
-                onInfoClick?.();
-              }}
+            <button
+              className="btn-pixar btn-pixar-ghost h-10 w-10 !p-0 !rounded-full"
+              onClick={(e) => { e.stopPropagation(); onInfoClick?.(); }}
+              aria-label="Mais informações"
             >
-              <Info className="h-4 w-4" />
+              <Info className="h-4 w-4 text-white relative z-10" />
             </button>
           </div>
-          
-          <h3 className="font-bold text-sm sm:text-base leading-tight text-white line-clamp-2">
+
+          <h3 className="font-black text-sm sm:text-base leading-tight text-white line-clamp-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.7)]">
             {title}
           </h3>
           {subtitle && (
-            <p className="text-xs text-white/60 line-clamp-1">
+            <p className="text-xs text-white/70 line-clamp-1">
               {subtitle}
             </p>
           )}
@@ -132,8 +129,8 @@ export function EnaflixCard({
 
       {/* Locked State */}
       {locked && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-[2px]">
-          <Lock className="h-8 w-8 text-white/40" />
+        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/65 backdrop-blur-[2px]">
+          <Lock className="h-8 w-8 text-white/50" />
         </div>
       )}
     </motion.div>
