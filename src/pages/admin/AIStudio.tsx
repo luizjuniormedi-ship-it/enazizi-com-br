@@ -1,4 +1,8 @@
 import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -82,7 +86,7 @@ import {
   TableRow 
 } from "@/components/ui/table";
 
-export default function AIStudio() {
+export function AIStudio() {
    const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
