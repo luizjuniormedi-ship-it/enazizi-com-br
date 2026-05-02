@@ -34,6 +34,7 @@ export const useTutorCME = () => {
   const supabaseClient = useMemo(() => supabase, []);
   const [state, setState] = useState<CMEProjectState>({ status: 'idle', progress: 0 });
   const [workerHealth, setWorkerHealth] = useState<any>(null);
+  const [showAgilePlayer, setShowAgilePlayer] = useState(false);
   const lastEventRef = useRef<number>(Date.now());
   const { reportIncident, createSnapshot } = useCMEHardening();
   const { getCognitiveAnalysis } = useCMEAnalytics();
