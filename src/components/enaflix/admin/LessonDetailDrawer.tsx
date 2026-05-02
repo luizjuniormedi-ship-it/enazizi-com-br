@@ -130,13 +130,20 @@ export function LessonDetailDrawer({
                   </Section>
                 )}
                 {lesson.generation_reason && (
-                  <Section title="Motivo da Geração">
-                    <p className="text-sm text-violet-300/90 font-medium">{lesson.generation_reason}</p>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      <Metric label="Sessões" value={lesson.study_sessions_count} />
-                      <Metric label="Dúvidas" value={lesson.tutor_messages_count} />
-                      <Metric label="Erros" value={lesson.related_error_bank_count} />
-                      <Metric label="Score Pedag." value={lesson.pedagogical_interest_score} />
+                  <Section title="Motivo da Geração (Voz do Aluno)">
+                    <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 mb-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Sparkles className="h-3.5 w-3.5 text-violet-300" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-violet-200">Insight Pedagógico</span>
+                      </div>
+                      <p className="text-sm text-white font-medium leading-relaxed">{lesson.generation_reason}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                      <Metric label="Sessões de Estudo" value={lesson.study_sessions_count} />
+                      <Metric label="Interações Tutor" value={lesson.tutor_messages_count} />
+                      <Metric label="Erros no Banco" value={lesson.related_error_bank_count} />
+                      <Metric label="Score de Interesse" value={`${lesson.pedagogical_interest_score}%`} />
                     </div>
                   </Section>
                 )}
