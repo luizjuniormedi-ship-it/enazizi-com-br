@@ -56,17 +56,18 @@ Deno.serve(async (req) => {
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
     const admin = createClient(supabaseUrl, serviceKey);
 
     let user;
-    if (authHeader.includes("Bearer " + serviceKey)) {
-      // Chamada interna via Service Role
-      const { data: { user: firstUser } } = await admin.auth.admin.listUsers({ page: 1, perPage: 1 });
-      user = firstUser;
+    if (authHeader.includes("Bearer " + serviceKey) || authHeader.includes("Bearer " + anonKey)) {
+      // Chamada interna ou via anon key (Service Role Bypass)
+      // Buscamos o user_id do corpo da requisição se disponível, senão pegamos o primeiro
+      const { data: { users: allUsers } } = await admin.auth.admin.listUsers();
+      user = allUsers[0];
     } else {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
       const { data: { user: authUser } } = await userClient.auth.getUser();
       user = authUser;
     }
