@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Sparkles, Wand2, Activity, Info, Loader2 } from "lucide-react";
+import { Sparkles, Wand2, Activity, Info, Loader2, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { simulateHighStudyActivity } from "@/lib/enaflixSimulation";
@@ -68,37 +68,37 @@ const AdminAutomationLab = ({ userId }: Props) => {
                 variant="outline" 
                 size="sm" 
                 disabled={!!loading}
-                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-xs gap-2"
-                onClick={() => handleSimulate("Câncer de Mama")}
-              >
-                {loading === "Câncer de Mama" ? <Loader2 className="h-3 w-3 animate-spin" /> : "CA de Mama"}
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={!!loading}
-                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-xs gap-2"
+                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-[10px] gap-2 py-4 h-auto flex-col"
                 onClick={() => handleSimulate("Insuficiência Cardíaca")}
               >
-                {loading === "Insuficiência Cardíaca" ? <Loader2 className="h-3 w-3 animate-spin" /> : "IC Crônica"}
+                {loading === "Insuficiência Cardíaca" ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Activity className="h-3 w-3" /> Insuf. Cardíaca</>}
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 disabled={!!loading}
-                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-xs gap-2"
-                onClick={() => handleSimulate("Asma Brônquica")}
+                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-[10px] gap-2 py-4 h-auto flex-col"
+                onClick={() => handleSimulate("IAM (Infarto Agudo)")}
               >
-                {loading === "Asma Brônquica" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Asma"}
+                {loading === "IAM (Infarto Agudo)" ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Zap className="h-3 w-3" /> IAM Agudo</>}
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 disabled={!!loading}
-                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-xs gap-2"
-                onClick={() => handleSimulate("Apendicite Aguda")}
+                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-[10px] gap-2 py-4 h-auto flex-col"
+                onClick={() => handleSimulate("Câncer de Próstata")}
               >
-                {loading === "Apendicite Aguda" ? <Loader2 className="h-3 w-3 animate-spin" /> : "Apendicite"}
+                {loading === "Câncer de Próstata" ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Wand2 className="h-3 w-3" /> CA de Próstata</>}
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={!!loading}
+                className="bg-violet-500/5 border-violet-500/20 hover:bg-violet-500/10 hover:border-violet-400/40 text-[10px] gap-2 py-4 h-auto flex-col"
+                onClick={() => handleSimulate("Neonatologia")}
+              >
+                {loading === "Neonatologia" ? <Loader2 className="h-3 w-3 animate-spin" /> : <><Sparkles className="h-3 w-3" /> Neonatologia</>}
               </Button>
             </div>
           </div>
