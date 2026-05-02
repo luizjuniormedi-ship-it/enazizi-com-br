@@ -120,28 +120,30 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
           <nav className="hidden md:flex items-center gap-6 ml-4">
             <button 
-              onClick={() => (window.location.href = "/enaflix")}
+              onClick={() => navigate("/enaflix")}
               className={cn(
                 "text-sm font-semibold transition-colors hover:text-white",
-                window.location.pathname === "/enaflix" ? "text-white" : "text-white/60"
+                location.pathname === "/enaflix" ? "text-white" : "text-white/60"
               )}
             >
               Início
             </button>
             <button 
-              onClick={() => (window.location.href = "/dashboard/videoaulas/explorar")}
+              type="button"
+              onClick={() => navigate("/dashboard/videoaulas/explorar")}
               className={cn(
                 "text-sm font-semibold transition-colors hover:text-white",
-                window.location.pathname.includes("explorar") ? "text-white" : "text-white/60"
+                location.pathname.includes("explorar") ? "text-white" : "text-white/60"
               )}
             >
               Explorar Videoaulas
             </button>
             <button 
-              onClick={() => (window.location.href = "/dashboard/videoaulas")}
+              type="button"
+              onClick={() => navigate("/dashboard/videoaulas")}
               className={cn(
                 "text-sm font-semibold transition-colors hover:text-white",
-                window.location.pathname.includes("/dashboard/videoaulas") && !window.location.pathname.includes("explorar") ? "text-white" : "text-white/60"
+                location.pathname.includes("/dashboard/videoaulas") && !location.pathname.includes("explorar") ? "text-white" : "text-white/60"
               )}
             >
               Minhas Aulas
