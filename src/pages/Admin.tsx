@@ -75,6 +75,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: LayoutDashboard,
       items: [
         { key: "overview", label: "Dashboard", icon: LayoutDashboard },
+        { key: "automation-lab", label: "Automação Lab (P2)", icon: Sparkles },
         { key: "online", label: "Usuários Online", icon: Activity },
       ],
     },
