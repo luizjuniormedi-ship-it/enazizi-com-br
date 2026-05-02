@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Film } from "lucide-react";
+import { Search, Film, Play, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -9,6 +9,7 @@ import { ProductionHeroHeader } from "@/components/enaflix/admin/ProductionHeroH
 import { ProductionTabs } from "@/components/enaflix/admin/ProductionTabs";
 import { LessonProductionCard } from "@/components/enaflix/admin/LessonProductionCard";
 import { LessonDetailDrawer } from "@/components/enaflix/admin/LessonDetailDrawer";
+import { Button } from "@/components/ui/button";
 
 const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
 const ALLOWED_MIME = [
