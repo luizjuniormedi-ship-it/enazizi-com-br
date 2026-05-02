@@ -38,6 +38,8 @@ import { EnaflixActionCard } from "@/components/enaflix/EnaflixActionCard";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { Progress } from "@/components/ui/progress";
 
 type Phase = "setup" | "active" | "finished";
 
@@ -346,33 +348,54 @@ const Flashcards = () => {
     const rate = total > 0 ? Math.round((sessionStats.correct / total) * 100) : 0;
 
     return (
-      <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
-        <div className="glass-card p-8 text-center space-y-4">
-          <Award className="h-12 w-12 text-primary mx-auto" />
-          <h2 className="text-xl font-bold">
-            {mode === "sprint" ? "Sprint Concluído!" : "Sessão Concluída!"}
-          </h2>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-3 rounded-lg bg-green-500/10">
-              <div className="text-2xl font-bold text-green-500">{sessionStats.correct}</div>
-              <div className="text-xs text-muted-foreground">Acertos</div>
+      <div className="max-w-xl mx-auto space-y-8 animate-fade-in relative min-h-screen pt-12">
+        <EnaflixBackgroundFX intensity="medium" />
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card-pixar p-12 text-center space-y-8 shadow-pixar border-primary/30"
+        >
+          <div className="relative inline-block">
+            <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
+            <Award className="h-20 w-20 text-primary mx-auto relative drop-shadow-[0_0_15px_rgba(var(--pixar-blue),0.8)]" />
+          </div>
+          
+          <div className="space-y-2">
+            <h2 className="text-3xl font-black text-white tracking-tight">
+              {mode === "sprint" ? "Sprint Imbatível!" : "Sessão Concluída!"}
+            </h2>
+            <p className="text-white/60 font-medium">Sua memória muscular médica acaba de ser fortalecida.</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6">
+            <div className="p-4 rounded-2xl bg-green-500/10 border border-green-500/20 shadow-glow-green">
+              <div className="text-3xl font-black text-green-400">{sessionStats.correct}</div>
+              <div className="text-[10px] uppercase font-black tracking-widest text-green-500/60 mt-1">Acertos</div>
             </div>
-            <div className="p-3 rounded-lg bg-destructive/10">
-              <div className="text-2xl font-bold text-destructive">{sessionStats.wrong}</div>
-              <div className="text-xs text-muted-foreground">Erros</div>
+            <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 shadow-glow-red">
+              <div className="text-3xl font-black text-red-400">{sessionStats.wrong}</div>
+              <div className="text-[10px] uppercase font-black tracking-widest text-red-500/60 mt-1">Erros</div>
             </div>
-            <div className="p-3 rounded-lg bg-muted">
-              <div className="text-2xl font-bold text-muted-foreground">{sessionStats.skipped}</div>
-              <div className="text-xs text-muted-foreground">Pulados</div>
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+              <div className="text-3xl font-black text-white/40">{sessionStats.skipped}</div>
+              <div className="text-[10px] uppercase font-black tracking-widest text-white/20 mt-1">Pulados</div>
             </div>
           </div>
+
           {total > 0 && (
-            <p className="text-sm text-muted-foreground">Taxa de acerto: {rate}%</p>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs font-black uppercase tracking-tighter text-white/40">
+                <span>Taxa de Retenção</span>
+                <span className="text-primary">{rate}%</span>
+              </div>
+              <Progress value={rate} className="h-3 bg-white/5" />
+            </div>
           )}
-        </div>
+        </motion.div>
+
         <TaskCompletionCard
-          title="Revisão concluída!"
-          secondaryLabel="Nova Sessão"
+          title="Consolidação Completa"
+          secondaryLabel="Nova Jornada"
           onSecondary={() => setPhase("setup")}
         />
       </div>
