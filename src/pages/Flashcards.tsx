@@ -548,7 +548,6 @@ const Flashcards = () => {
       </EnaflixSection>
     </div>
   );
-  );
 };
 
 export default Flashcards;
