@@ -99,16 +99,14 @@ export function validateRenderConfig(config: unknown): ValidationResult {
 
 /** Returns a guaranteed-valid config, repairing any invalid/missing fields with defaults. */
 export function sanitizeRenderConfig(raw: unknown): RenderConfig {
-  const incoming = isObject(raw) ? raw : {};
+  const incoming: Record<string, any> = isObject(raw) ? (raw as Record<string, any>) : {};
 
-  const pick = <K extends keyof typeof ALLOWED>(
-    key: K,
-    value: unknown,
-    fallback: (typeof ALLOWED)[K][number],
-  ): (typeof ALLOWED)[K][number] =>
-    (ALLOWED[key] as readonly string[]).includes(value as string)
-      ? (value as (typeof ALLOWED)[K][number])
-      : fallback;
+  const pick = <T extends string>(allowed: readonly string[], value: unknown, fallback: T): T =>
+    (allowed.includes(value as string) ? (value as T) : fallback);
+
+  const fps = typeof incoming.fps === 'number' && incoming.fps >= 12 && incoming.fps <= 120
+    ? (incoming.fps as number)
+    : DEFAULT_RENDER_CONFIG.fps;
 
   const fps = typeof incoming.fps === 'number' && incoming.fps >= 12 && incoming.fps <= 120
     ? incoming.fps
