@@ -275,17 +275,37 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
                 <h3 className="font-bold">Renderização pendente de hardware</h3>
               </div>
               <p className="text-zinc-400 text-sm leading-relaxed">
-                O vídeo foi planejado e estruturado com sucesso, mas a renderização depende de um Worker/GPU ativo. 
-                O sistema tentará novamente assim que um hardware for detectado.
+                O vídeo foi planejado e estruturado com sucesso, mas a renderização depende de um Worker/GPU ativo.
+                Em ambiente de desenvolvimento, você pode iniciar um Worker simulado para validar o pipeline ponta-a-ponta.
               </p>
-              <div className="flex gap-3">
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={async () => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke('cme-dev-worker', {
+                        body: { action: 'pickup_and_run' },
+                      });
+                      if (error || (data && data.success === false)) {
+                        console.error('[dev-worker] erro', error, data);
+                      }
+                    } catch (e) {
+                      console.error('[dev-worker] exception', e);
+                    }
+                  }}
+                  className="bg-amber-500 hover:bg-amber-600 text-black font-bold"
+                >
+                  <Cpu className="mr-2 h-4 w-4" /> Iniciar Worker DEV
+                </Button>
                 <Button onClick={openBuilder} variant="outline" className="border-amber-500/20 hover:bg-amber-500/10 text-amber-500">
                   <ExternalLink className="mr-2 h-4 w-4" /> Ir para o Builder
                 </Button>
-                <Button onClick={() => navigate('/admin/gpu-fleet')} variant="ghost" className="text-zinc-500 underline">Ver status do Cluster GPU</Button>
+                <Button onClick={() => navigate('/admin/gpu-fleet')} variant="ghost" className="text-zinc-500 underline">
+                  Ver status do Cluster GPU
+                </Button>
               </div>
             </div>
           )}
+
 
           {renderJob?.config && (
             <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3">
