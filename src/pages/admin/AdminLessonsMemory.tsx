@@ -32,6 +32,7 @@ const AdminLessonsMemory = () => {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
+  const [loadingBatch, setLoadingBatch] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingUploadLessonId = useRef<string | null>(null);
 
