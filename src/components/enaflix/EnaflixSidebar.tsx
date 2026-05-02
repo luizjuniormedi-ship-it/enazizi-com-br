@@ -17,10 +17,13 @@ import {
   LayoutDashboard,
   Search,
   Bell,
-  Settings
+  Settings,
+  ChevronRight
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 
 const NAV_SECTIONS = [
   {
@@ -65,25 +68,51 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
     <Link
       to={to}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300",
+        "group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-500 overflow-hidden",
         active 
-          ? "bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)]" 
-          : "text-white/50 hover:text-white hover:bg-white/5"
+          ? "bg-white/10 text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/10" 
+          : "text-white/40 hover:text-white hover:bg-white/5"
       )}
     >
+      {/* Selection Glow */}
+      {active && (
+        <motion.div
+          layoutId="sidebar-active-bg"
+          className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent -z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        />
+      )}
+
       <Icon className={cn(
-        "h-5 w-5 transition-transform duration-300 group-hover:scale-110",
-        active ? "text-primary shadow-[0_0_10px_rgba(var(--primary),0.5)]" : ""
+        "h-5 w-5 transition-all duration-500 group-hover:scale-125",
+        active ? "text-primary drop-shadow-[0_0_8px_rgba(var(--pixar-blue),0.8)] scale-110" : "opacity-70 group-hover:opacity-100"
       )} />
-      <span className="text-sm font-medium tracking-wide">{label}</span>
+      
+      <span className={cn(
+        "text-sm font-black tracking-tight transition-all duration-500",
+        active ? "translate-x-1" : "group-hover:translate-x-0.5"
+      )}>
+        {label}
+      </span>
       
       {active && (
         <motion.div
-          layoutId="sidebar-active"
-          className="absolute left-0 w-1 h-6 bg-primary rounded-r-full"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}
+          className="ml-auto"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+        >
+          <ChevronRight className="h-3 w-3 text-primary/60" />
+        </motion.div>
+      )}
+
+      {active && (
+        <motion.div
+          layoutId="sidebar-active-indicator"
+          className="absolute left-0 w-1 h-6 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--pixar-blue),1)]"
+          initial={{ opacity: 0, x: -5 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20 }}
         />
       )}
     </Link>
@@ -92,24 +121,31 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
 
 export function EnaflixSidebar() {
   const location = useLocation();
-  const isAdmin = true; // Placeholder, should use useAdminCheck
-  const isProfessor = true; // Placeholder
+  const { isAdmin } = useAdminCheck();
+  const { isProfessor } = useProfessorCheck();
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0a0a0e] border-r border-white/5 flex flex-col z-50 hidden lg:flex">
+    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0a0a0e]/95 backdrop-blur-3xl border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_40px_-20px_rgba(0,0,0,0.8)]">
       {/* Brand */}
-      <div className="p-8">
-        <Link to="/" className="flex items-center gap-3 group">
+      <div className="p-8 pb-4">
+        <Link to="/" className="flex items-center gap-4 group">
           <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full group-hover:bg-primary/30 transition-colors" />
-            <img src={enazizi} alt="ENAZIZI" className="relative h-10 w-10 rounded-xl object-cover border border-white/10" />
+            <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full group-hover:bg-primary/50 transition-all duration-700 group-hover:scale-125" />
+            <img 
+              src={enazizi} 
+              alt="ENAZIZI" 
+              className="relative h-12 w-12 rounded-2xl object-cover border-2 border-white/10 shadow-pixar transition-transform duration-700 group-hover:rotate-6 group-hover:scale-110" 
+            />
           </div>
-          <span className="font-black text-xl tracking-[0.2em] text-white">ENAFLIX</span>
+          <div className="flex flex-col">
+            <span className="font-black text-2xl tracking-[0.15em] text-white leading-none drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">ENAFLIX</span>
+            <span className="text-[8px] font-black text-primary tracking-[0.3em] uppercase opacity-60">Studio Engine</span>
+          </div>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 custom-scrollbar">
+      <nav className="flex-1 overflow-y-auto px-4 custom-scrollbar mt-6">
         <div className="space-y-8 pb-8">
           {NAV_SECTIONS.map((section) => (
             <div key={section.title} className="space-y-2">
