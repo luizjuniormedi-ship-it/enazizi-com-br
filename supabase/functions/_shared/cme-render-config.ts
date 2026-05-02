@@ -101,8 +101,8 @@ export function validateRenderConfig(config: unknown): ValidationResult {
 export function sanitizeRenderConfig(raw: unknown): RenderConfig {
   const incoming: Record<string, any> = isObject(raw) ? (raw as Record<string, any>) : {};
 
-  const pick = <T extends string>(allowed: readonly string[], value: unknown, fallback: T): T =>
-    (allowed.includes(value as string) ? (value as T) : fallback);
+  const pick = <T extends string>(allowed: readonly T[] | readonly string[], value: unknown, fallback: T): T =>
+    ((allowed as readonly string[]).includes(value as string) ? (value as T) : fallback);
 
   const fps = typeof incoming.fps === 'number' && incoming.fps >= 12 && incoming.fps <= 120
     ? (incoming.fps as number)
