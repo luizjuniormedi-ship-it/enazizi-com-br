@@ -153,8 +153,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
 
 function PanelLoader() {
   return (
-    <div className="flex items-center justify-center py-16">
-      <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center justify-center py-24">
+      <EnaflixLoader variant="default" label="Orquestrando dados..." />
     </div>
   );
 }

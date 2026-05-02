@@ -12,6 +12,8 @@ import { Play, Sparkles, Clock, FileText, AlertTriangle, Target, Brain, Info, Hi
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { motion } from "framer-motion";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 
 import CinematicMissionHero from "@/components/dashboard-v2/CinematicMissionHero";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
@@ -61,13 +63,16 @@ const Dashboard = () => {
   if (initialLoading) return <MissionControlSkeleton />;
 
   return (
-    <div className="pb-24 pt-8 space-y-12">
+    <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
       <AchievementToast />
 
       {/* Header & Status */}
       <div className="px-4 sm:px-8 lg:px-14">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mb-2">Hoje no ENAFLIX</h1>
-        <DashboardTopBar />
+        <EnaflixSectionTitle 
+          title="Hoje no ENAFLIX" 
+          subtitle={<DashboardTopBar />}
+        />
         <RecoveryModeBanner />
       </div>
 
