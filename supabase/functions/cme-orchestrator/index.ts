@@ -28,34 +28,6 @@ serve(async (req) => {
 
     const { action, projectId, payload } = await req.json()
 
-    // Canonical default config — guarantees every render job has a valid, complete payload
-    // for retry/recovery/fallback engines and lineage tracking.
-    const DEFAULT_RENDER_CONFIG = {
-      render_mode: 'cinematic',
-      quality: 'high',
-      fps: 30,
-      resolution: '1080p',
-      narration_mode: 'adaptive',
-      cognitive_pacing: 'dynamic',
-      fallback_strategy: 'slides',
-      worker_preferences: { gpu_tier: 'high_vram' },
-      segment_settings: { segment_duration: 30 },
-      enaflix_publish: { auto_publish: true },
-    } as const;
-
-    const buildConfig = (raw: unknown) => {
-      const incoming = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? raw as Record<string, unknown> : {};
-      return {
-        ...DEFAULT_RENDER_CONFIG,
-        ...incoming,
-        worker_preferences: { ...DEFAULT_RENDER_CONFIG.worker_preferences, ...(incoming.worker_preferences as object || {}) },
-        segment_settings: { ...DEFAULT_RENDER_CONFIG.segment_settings, ...(incoming.segment_settings as object || {}) },
-        enaflix_publish: { ...DEFAULT_RENDER_CONFIG.enaflix_publish, ...(incoming.enaflix_publish as object || {}) },
-        _config_version: 1,
-        _persisted_at: new Date().toISOString(),
-      };
-    };
-
     if (action === 'start_pipeline' || action === 'start_render') {
       const { data: project, error: pError } = await supabaseClient
         .from('cme_video_projects')
@@ -65,15 +37,34 @@ serve(async (req) => {
       
       if (pError || !project) throw new Error("PROJECT_NOT_FOUND");
 
+      const renderConfig = buildConfig(payload);
+      const validation = validateRenderConfig(renderConfig);
+      if (validation.warnings.length > 0) {
+        await supabaseClient.from('cme_pipeline_events').insert({
+          aggregation_id: project.aggregation_id,
+          stage: 'config',
+          status: 'warning',
+          message: `Config sanitized with warnings: ${validation.warnings.join(', ')}`,
+          metadata: { warnings: validation.warnings, projection: lineageProjection(renderConfig) },
+          progress: 0,
+        }).then(() => {}, () => {});
+      }
+
       const { data: lineageNode } = await supabaseClient
         .from('cme_lineage_nodes')
         .insert({
           type: 'tutor_session',
           entity_id: project.aggregation?.session_id || projectId,
-          metadata: { project_id: projectId, action: 'start_pipeline', user_id: user.id }
+          metadata: {
+            project_id: projectId,
+            action: 'start_pipeline',
+            user_id: user.id,
+            render_config: lineageProjection(renderConfig),
+          }
         })
         .select()
         .single();
+
 
       const { data: queue } = await supabaseClient
         .from('cme_render_queues')
