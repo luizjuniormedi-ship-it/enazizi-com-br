@@ -4,7 +4,7 @@ import { EnaflixOverlayNav } from "@/components/enaflix/EnaflixOverlayNav";
 import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { useNavigate } from "react-router-dom";
-import { Brain, History, Star, Video, FileText, Search, Filter } from "lucide-react";
+import { Brain, History, Star, Video, FileText, Search, Filter, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
