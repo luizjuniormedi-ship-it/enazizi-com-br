@@ -68,7 +68,7 @@ const AgentHeader = memo(({
           <DropdownMenuContent align="end">
             {hasMessages && onTransformSession && (
               <DropdownMenuItem onClick={onTransformSession} className="md:hidden text-amber-500">
-                <Film className="h-4 w-4 mr-2" /> 🎬 Transformar em Videoaula
+                <Film className="h-4 w-4 mr-2" /> 🎓 Gerar Aula Interativa
               </DropdownMenuItem>
             )}
             <DropdownMenuItem onClick={onNewConversation}>
