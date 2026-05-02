@@ -104,12 +104,32 @@ const AdminAutomationLab = ({ userId }: Props) => {
             </div>
           </div>
 
-          {/* Engine Status */}
-          <div className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-3">
-            <h4 className="font-bold text-sm text-white flex items-center gap-2">
-              <Activity className="h-4 w-4 text-emerald-300" />
-              Engine Intelligence
-            </h4>
+          {/* Engine Status & Batch Actions */}
+          <div className="space-y-4">
+            <div className="p-4 rounded-xl border border-violet-500/30 bg-violet-500/10 space-y-3">
+              <h4 className="font-bold text-sm text-violet-200 flex items-center gap-2">
+                <GraduationCap className="h-4 w-4" />
+                Lote P2: Clínica & Pediatria
+              </h4>
+              <p className="text-[10px] text-violet-200/60 leading-tight">
+                Gere automaticamente 41 aulas baseadas nos temas das provas P2. 
+                Cada tema terá seu próprio roteiro e prompts individuais.
+              </p>
+              <Button 
+                onClick={() => generateP2LessonBatch(userId || "")}
+                disabled={!!loading}
+                className="w-full bg-violet-500 hover:bg-violet-600 text-white font-black text-[10px] uppercase tracking-tighter h-9 gap-2 shadow-[0_0_15px_-3px_rgba(139,92,246,0.5)]"
+              >
+                <BookOpen className="h-3.5 w-3.5" /> Iniciar Produção em Lote (P2)
+              </Button>
+            </div>
+
+            <div className="p-4 rounded-xl border border-white/5 bg-white/[0.02] space-y-3">
+              <h4 className="font-bold text-sm text-white flex items-center gap-2">
+                <Activity className="h-4 w-4 text-emerald-300" />
+                Engine Intelligence
+              </h4>
+...
             
             <div className="space-y-2">
               <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
