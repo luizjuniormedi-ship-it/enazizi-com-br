@@ -19,7 +19,7 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { CinematicPageLoader, AmbientPersistenceLayer, useModuleAtmosphere, CinematicRouteTransition } from "@/components/cinematic";
 
 // Eager-load shell layout (always needed)
-import DashboardLayout from "./components/layout/DashboardLayout";
+import EnaflixDashboardLayout from "./components/layout/EnaflixDashboardLayout";
 
 // Lazy-load all pages
 const Index = lazyWithRetry(() => import("./pages/Index"), "Index");
