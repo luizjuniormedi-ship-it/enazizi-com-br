@@ -51,6 +51,8 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
   const [status, setStatus] = useState<'processing' | 'ready' | 'failed' | 'waiting_hardware'>('processing');
   const [error, setError] = useState<string | null>(null);
   const [sceneGraphId, setSceneGraphId] = useState<string | null>(null);
+  const [renderJob, setRenderJob] = useState<any | null>(null);
+  const [configState, setConfigState] = useState<'config_validated' | 'config_warning' | 'config_invalid' | 'retry_using_original_config' | 'fallback_using_config' | 'unknown'>('unknown');
   const lastEventRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -69,6 +71,26 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
         setCurrentStage(last.stage);
         setProgress(last.progress);
         if (last.status === 'completed' && last.progress === 100) setStatus('ready');
+        const hasConfigWarning = data.some((e: any) => e.stage === 'config' && e.status === 'warning');
+        if (hasConfigWarning) setConfigState('config_warning');
+      }
+
+      // Latest render job (carries the persisted config)
+      const { data: job } = await supabase
+        .from('cme_render_jobs' as any)
+        .select('id, status, config, retry_count, worker_id, error_message')
+        .eq('generation_id', aggregationId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (job) {
+        setRenderJob(job);
+        const cfg = (job as any).config || {};
+        if (cfg && cfg._config_version) {
+          setConfigState((prev) => (prev === 'config_warning' ? prev : 'config_validated'));
+        } else {
+          setConfigState('config_invalid');
+        }
       }
 
       // Try to find scene graph
