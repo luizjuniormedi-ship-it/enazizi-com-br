@@ -64,7 +64,7 @@ const Dashboard = () => {
 
   return (
     <div className="pb-32 pt-12 space-y-16 relative min-h-screen overflow-x-hidden">
-      <EnaflixBackgroundFX intensity="high" />
+      <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
 
       {/* Header & Status — Pixar Portal style */}
