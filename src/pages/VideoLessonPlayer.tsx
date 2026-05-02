@@ -121,13 +121,13 @@ const VideoLessonPlayer = () => {
 
 
   const logPlaybackAudit = async (state: string, errorMessage?: string) => {
-    if (!id) return;
+    if (!id || !lesson) return;
     const { data: { user } } = await supabase.auth.getUser();
     
     const hlsManifest = (lesson as any)?.hls_manifest_url;
     const playbackUrl = hlsManifest || 
                        (lesson as any)?.hls_url || 
-                       lesson?.video_url || 
+                       (lesson as any)?.video_url || 
                        (lesson as any)?.playback_url;
 
     console.log(`[CME Audit] State: ${state}, URL: ${playbackUrl}`);
@@ -138,7 +138,7 @@ const VideoLessonPlayer = () => {
         video_lesson_id: id,
         user_id: user?.id,
         selected_url: playbackUrl,
-        media_status: lesson?.media_status,
+        media_status: (lesson as any)?.media_status || (lesson as any)?.status,
         player_state: state,
         error_message: errorMessage,
         load_time_ms: Date.now() - loadStartTime.current
@@ -148,15 +148,18 @@ const VideoLessonPlayer = () => {
     }
   };
 
+
   useEffect(() => {
     if (!isLoading && lesson && !hasLoggedReady.current) {
-      if (lesson.media_status === 'ready' || lesson.media_status === 'published') {
+      const mediaStatus = (lesson as any).media_status || (lesson as any).status;
+      if (mediaStatus === 'ready' || mediaStatus === 'published') {
         logPlaybackAudit("ready");
         hasLoggedReady.current = true;
       } else {
-        logPlaybackAudit(lesson.media_status || "unknown_status");
+        logPlaybackAudit(mediaStatus || "unknown_status");
       }
     }
+
   }, [isLoading, lesson]);
 
 
@@ -212,13 +215,14 @@ const VideoLessonPlayer = () => {
   // ───────────────── FASE 2: Adaptive Video ─────────────────
   // Carrega segmentos da videoaula (se houver). Compatível com vídeos sem segmentação.
   const { data: segments = [] } = useQuery<VideoSegment[]>({
-    queryKey: ["video-lesson-segments", lesson?.tutor_lesson_id],
-    enabled: !!lesson?.tutor_lesson_id,
+    queryKey: ["video-lesson-segments", (lesson as any)?.tutor_lesson_id || (lesson as any)?.id],
+    enabled: !!lesson,
     queryFn: async () => {
+      const lessonId = (lesson as any).tutor_lesson_id || (lesson as any).id;
       const { data, error } = await supabase
         .from("lesson_segments")
         .select("id, title, summary, key_points, start_second, end_second, ordem, segment_type, has_flashcards")
-        .eq("lesson_id", lesson!.tutor_lesson_id!)
+        .eq("lesson_id", lessonId)
         .order("ordem", { ascending: true });
       if (error) {
         console.warn("[VideoLessonPlayer] segments fetch:", error.message);
@@ -227,6 +231,7 @@ const VideoLessonPlayer = () => {
       return (data ?? []) as VideoSegment[];
     },
   });
+
 
   const { logEvent } = useVideoSegmentEvents();
   const { getForSegment, smartReplayEnabled, analyticsEnabled } = useVideoSegmentAnalytics(id);
@@ -276,7 +281,9 @@ const VideoLessonPlayer = () => {
     }
   }, [progress]);
 
-  const completionRate = lesson?.duration_seconds ? Math.min((watchedSeconds / lesson.duration_seconds) * 100, 100) : 0;
+  const duration = (lesson as any)?.duration_seconds || (lesson as any)?.duration || 0;
+  const completionRate = duration ? Math.min((watchedSeconds / duration) * 100, 100) : 0;
+
 
   // Simulação de log de progresso e detecção de pausa longa / abandono
   useEffect(() => {
@@ -366,9 +373,10 @@ const VideoLessonPlayer = () => {
       lesson_id: id,
       user_id: user.id,
       last_position: ts,
-      progress_percent: lesson?.duration ? Math.min(Math.round((ts / lesson.duration) * 100), 100) : 0,
+      progress_percent: duration ? Math.min(Math.round((ts / duration) * 100), 100) : 0,
       completed: action === "complete"
     }, { onConflict: 'lesson_id,user_id' });
+
 
     const { error } = await supabase
       .from("video_lesson_usage_logs")
@@ -429,12 +437,13 @@ const VideoLessonPlayer = () => {
       segment: seg,
       currentTimestamp: watchedSeconds,
       lesson: {
-        specialty: lesson.specialty,
-        topic: lesson.topic,
-        subtopic: lesson.subtopic,
-        tutor_lesson_summary: lesson.tutor_lesson_summary,
+        specialty: (lesson as any).specialty || "Geral",
+        topic: (lesson as any).topic || "Clínica Médica",
+        subtopic: (lesson as any).subtopic || "",
+        tutor_lesson_summary: (lesson as any).tutor_lesson_summary || "",
       },
     });
+
     
     logEvent({
       videoLessonId: id,
@@ -447,9 +456,10 @@ const VideoLessonPlayer = () => {
     handleAction("open_tutor");
     
     const params = new URLSearchParams({
-      context: lesson.id,
-      session: lesson.tutor_session_id || "",
+      context: (lesson as any).id,
+      session: (lesson as any).tutor_session_id || (lesson as any).source_session_id || "",
     });
+
     
     if (ctx) {
       params.set("video_segment", seg.id);
