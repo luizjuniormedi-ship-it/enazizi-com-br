@@ -243,6 +243,48 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
             </div>
           )}
 
+          {renderJob?.config && (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Render Config</span>
+                <Badge
+                  className={cn(
+                    "text-[9px] uppercase tracking-tighter px-2 py-0.5 border",
+                    configState === 'config_invalid' ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                    configState === 'config_warning' ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                    configState === 'retry_using_original_config' ? "bg-blue-500/10 text-blue-400 border-blue-500/20" :
+                    configState === 'fallback_using_config' ? "bg-purple-500/10 text-purple-400 border-purple-500/20" :
+                    "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  )}
+                >
+                  {configState.replace(/_/g, ' ')}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-[10px]">
+                {[
+                  ['Mode', renderJob.config.render_mode],
+                  ['Quality', renderJob.config.quality],
+                  ['Resolution', renderJob.config.resolution],
+                  ['Fallback', renderJob.config.fallback_strategy],
+                  ['GPU Tier', renderJob.config.worker_preferences?.gpu_tier],
+                  ['Segment', `${renderJob.config.segment_settings?.segment_duration ?? '—'}s`],
+                  ['Retries', renderJob.retry_count ?? 0],
+                  ['Cfg v', renderJob.config._config_version ?? '—'],
+                ].map(([label, value]) => (
+                  <div key={String(label)} className="bg-black/40 rounded-lg px-2 py-1.5 border border-zinc-800/60">
+                    <div className="text-zinc-600 font-bold uppercase tracking-widest text-[8px]">{label}</div>
+                    <div className="text-zinc-200 font-mono truncate">{String(value ?? '—')}</div>
+                  </div>
+                ))}
+              </div>
+              {renderJob.error_message && (
+                <div className="text-[10px] font-mono text-red-400 bg-red-500/5 border border-red-500/20 rounded px-2 py-1">
+                  {renderJob.error_message}
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="space-y-4">
             <div className="flex justify-between items-end">
               <span className="text-zinc-400 text-xs font-bold uppercase tracking-tight">{currentStage.replace(/_/g, ' ')}</span>
@@ -250,6 +292,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
             </div>
             <Progress value={progress} className="h-2 bg-zinc-900 shadow-inner" />
           </div>
+
 
           <div className="grid grid-cols-2 md:grid-cols-6 gap-2">
             {STAGES.map((stage) => {
