@@ -91,6 +91,7 @@ const AdminLessonsMemory = () => {
     onError: (error: any) => {
       toast.error(`Falha no upload: ${error.message}`);
       setUploadingId(null);
+    }
   });
   
   const deleteLessonMutation = useMutation({
