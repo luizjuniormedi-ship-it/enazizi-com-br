@@ -18,6 +18,8 @@ interface Props {
  * - Botões "ghost" com hover suave (scale 1.03 + bg fade).
  */
 export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Props) {
+  const navigate = useNavigate();
+  const location = useLocation();
   // 0 = no topo (transparente), 1 = totalmente sólida.
   const [scrollProgress, setScrollProgress] = useState(0);
 
