@@ -95,17 +95,23 @@ export const useTutorCME = () => {
       const elapsed = Date.now() - lastEventRef.current;
       
       // If the backend is between render job creation and GPU rendering without fresh telemetry, verify real state.
-      if (['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering'].includes(String(state.status)) && elapsed > 20000) {
+      if (['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware'].includes(String(state.status)) && elapsed > 10000) {
         const onlineCount = await checkWorkerHealth();
-        const { data: job } = state.projectId
+        
+        const { data: job, error: jobErr } = state.projectId
           ? await supabaseClient
-              .from('cme_render_jobs' as any)
+              .from('cme_render_jobs')
               .select('status, progress, gpu_worker_id, pipeline_last_error')
               .eq('project_id', state.projectId)
               .order('updated_at', { ascending: false })
               .limit(1)
               .maybeSingle()
-          : { data: null };
+          : { data: null, error: null };
+
+        if (jobErr) {
+          console.error("Job status check failed", jobErr);
+          return;
+        }
 
         if ((job as any)?.pipeline_last_error) {
           setState(s => ({ ...s, status: 'failed', error: (job as any).pipeline_last_error, message: (job as any).pipeline_last_error, isStuck: true }));
@@ -118,7 +124,7 @@ export const useTutorCME = () => {
             status: 'pending_hardware',
             workerStatus: 'offline_or_unavailable',
             progress: Math.max(s.progress, (job as any)?.progress ?? 65),
-            message: "Renderização pendente de hardware. Nenhum Worker/GPU com heartbeat recente.",
+            message: "Renderização pendente de hardware. Nenhum Worker/GPU ativo no momento.",
             isStuck: true 
           }));
           return;
@@ -129,7 +135,7 @@ export const useTutorCME = () => {
           lastEventRef.current = Date.now();
         }
       }
-    }, 5000);
+    }, 3000);
 
     return () => {
       supabaseClient.removeChannel(channel);
@@ -165,20 +171,39 @@ export const useTutorCME = () => {
     }
   }, [supabaseClient]);
 
-  const aggregateSessionContent = useCallback(async (conversationId: string) => {
-    const { data: messages, error } = await supabaseClient
-      .from("tutor_messages")
-      .select("id, content, role, created_at")
-      .eq("tutor_session_id", conversationId)
-      .eq("role", "assistant")
-      .order("created_at", { ascending: true });
+  const aggregateSessionContent = useCallback(async (conversationId: string, customContent?: string) => {
+    let messages: any[] = [];
+    
+    if (customContent) {
+      messages = [{ content: customContent, role: 'assistant' }];
+    } else {
+      const { data, error } = await supabaseClient
+        .from("tutor_messages")
+        .select("id, content, role, created_at")
+        .eq("tutor_session_id", conversationId)
+        .eq("role", "assistant")
+        .order("created_at", { ascending: true });
 
-    if (error) throw error;
-    if (!messages || messages.length === 0) throw new Error("Nenhuma mensagem encontrada na sessão.");
+      if (error) throw error;
+      messages = data || [];
+    }
+
+    if (messages.length === 0) throw new Error("Nenhuma mensagem encontrada para processar.");
 
     const fullText = messages.map(m => m.content).join("\n\n---\n\n");
     const blocks: { type: string; title: string; content: string; metadata?: any }[] = [];
-    const sections = fullText.split("\n#").filter(s => s.trim().length > 0);
+    
+    // Split by Markdown headers (H1 or H2)
+    let sections = fullText.split(/\n(?=#{1,2}\s)/).filter(s => s.trim().length > 0);
+    if (sections.length === 0 && fullText.trim()) {
+      sections = [fullText.trim()];
+    } else if (sections.length > 0 && !sections[0].trim().startsWith('#')) {
+      // If the first part doesn't have a header, it's the intro
+      const intro = sections[0];
+      if (intro.length > 0) {
+        // Leave it as is, will be handled in the loop
+      }
+    }
     
     sections.forEach((section, idx) => {
       const titleLine = section.split("\n")[0].replace(/^#+\s*/, "").trim();
@@ -253,14 +278,16 @@ export const useTutorCME = () => {
       if (!user) throw new Error("Usuário não autenticado");
 
       let aggregationId: string | null = null;
-      let lessonBlocks: any[] = params.blocks || [];
+      let lessonBlocks: any[] = [];
 
-      if (params.isFullSession) {
-        const result = await aggregateSessionContent(params.conversationId);
-        aggregationId = result.aggregation.id;
-        lessonBlocks = result.blocks;
-        setState(s => ({ ...s, aggregationId, progress: 10, message: "Sessão agregada..." }));
-      }
+      // Always create an aggregation to support Agile Player and structure
+      const result = await aggregateSessionContent(
+        params.conversationId, 
+        params.isFullSession ? undefined : params.sourceContent
+      );
+      aggregationId = result.aggregation.id;
+      lessonBlocks = result.blocks;
+      setState(s => ({ ...s, aggregationId, progress: 10, message: "Conteúdo estruturado..." }));
 
       const { data: project, error: projectError } = await supabaseClient
         .from("cme_video_projects")
@@ -307,12 +334,13 @@ export const useTutorCME = () => {
         visual_goal: 'high_engagement',
         status: 'ready',
         title: params.title,
-        scene_graph: sceneGraphData, // Ensure canonical column is filled
-        graph_payload: sceneGraphData, // Ensure legacy/compatibility column is filled
+        scene_graph: sceneGraphData,
+        graph_payload: sceneGraphData,
         metadata: {
           specialty: params.specialty,
           topic: params.topic,
-          source_content_length: params.sourceContent?.length
+          source_content_length: params.sourceContent?.length,
+          aggregation_id: aggregationId // Critical: link to aggregation
         }
       };
 
@@ -411,33 +439,48 @@ export const useTutorCME = () => {
       setState(s => ({ ...s, sceneGraphId: sceneGraph.id }));
       await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado e persistido", aggregationId || undefined);
 
+      // NOVO: Mostrar o Player Ágil imediatamente como fallback primário, enquanto a GPU trabalha no fundo
+      setShowAgilePlayer(true);
+      toast.success("Aula estruturada! Iniciando experiência interativa enquanto o vídeo cinematográfico é processado.");
+
       setState(s => ({ ...s, status: 'rendering', progress: 50, message: "Orquestrando Renderização..." }));
       
+      console.log("[CME] Invoking orchestrator for project:", projectId);
       const { data: orchestratorResult, error: orchError } = await supabaseClient.functions.invoke('cme-orchestrator', {
         body: { 
           action: 'start_render', 
           projectId,
-          payload: { priority: 1, title: params.title }
+          payload: { 
+            priority: 1, 
+            title: params.title,
+            aggregationId // Pass the aggregation ID to the orchestrator
+          }
         }
       });
 
       if (orchError) {
-        throw new Error(orchError.message || "Erro no orquestrador");
+        console.error("[CME] Orchestrator Invoke Error:", orchError);
+        throw new Error(orchError.message || "Erro de conexão com o orquestrador");
       }
+
+      console.log("[CME] Orchestrator Result:", orchestratorResult);
 
       // Structured failure from orchestrator (never blank screen)
       if (orchestratorResult && orchestratorResult.success === false) {
         const techReason = orchestratorResult.technical_reason || orchestratorResult.message || orchestratorResult.code;
-        if (orchestratorResult.code === 'WORKER_ASSIGN_FAILED' || orchestratorResult.fallback_available) {
+        
+        // If it's a hardware issue, we can still proceed to Agile mode
+        if (orchestratorResult.code === 'WORKER_ASSIGN_FAILED' || orchestratorResult.status === 'waiting_hardware' || orchestratorResult.fallback_available) {
           setState(s => ({
             ...s,
-            status: 'failed',
-            error: orchestratorResult.message || 'Falha no orquestrador',
-            message: techReason,
+            status: 'pending_hardware',
+            isStuck: true,
+            message: orchestratorResult.message || "GPU Workers offline. Fallback disponível.",
+            progress: 65
           }));
-          await reportIncident('cme-orchestrator', new Error(techReason));
-          return null;
+          return projectId;
         }
+        
         throw new Error(`${orchestratorResult.code || 'ORCHESTRATOR_ERROR'}: ${techReason}`);
       }
 
@@ -445,10 +488,11 @@ export const useTutorCME = () => {
         setState(s => ({ 
           ...s, 
           status: 'pending_hardware', 
-          message: orchestratorResult.message,
-          progress: 60
+          message: orchestratorResult.message || "Aguardando hardware GPU...",
+          progress: 60,
+          isStuck: true
         }));
-      } else if (orchestratorResult?.status === 'rendering') {
+      } else if (orchestratorResult?.status === 'rendering' || orchestratorResult?.status === 'completed') {
         setState(s => ({
           ...s,
           status: 'gpu_rendering' as any,
@@ -461,7 +505,8 @@ export const useTutorCME = () => {
       return projectId;
     } catch (err: any) {
       console.error("CME Transform Error:", err);
-      setState(s => ({ ...s, status: 'failed', error: err.message }));
+      setState(s => ({ ...s, status: 'failed', error: err.message, message: err.message }));
+      toast.error(`Falha ao iniciar aula: ${err.message}`);
       
       // Phase 8: Hardening - Automatic Incident Reporting
       await reportIncident("TutorCME_Pipeline", err);
