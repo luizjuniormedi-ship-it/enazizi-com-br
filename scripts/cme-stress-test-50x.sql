@@ -24,8 +24,8 @@ BEGIN
 
     -- 3. Create Render Job
     v_start_time := now() - (interval '5 minutes');
-    INSERT INTO public.cme_render_jobs (project_id, status, queue_id, user_id, render_metadata, queued_at)
-    VALUES (v_project_id, 'queued', v_queue_id, v_user_id, '{"priority": "standard"}'::jsonb, v_start_time)
+    INSERT INTO public.cme_render_jobs (project_id, status, queue_id, user_id, render_metadata, queued_at, render_type)
+    VALUES (v_project_id, 'queued', v_queue_id, v_user_id, '{"priority": "standard"}'::jsonb, v_start_time, 'full_lecture')
     RETURNING id INTO v_job_id;
 
     -- 4. Complete Render Job (to trigger costs)
