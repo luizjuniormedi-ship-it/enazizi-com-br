@@ -24,12 +24,22 @@ export interface EducationalLesson {
   is_favorite: boolean;
   is_recommended: boolean;
   hidden_from_student: boolean;
+  // Legacy fields for compatibility
+  source_type?: string;
+  session_id?: string;
+  aggregation_id?: string;
+  favorite?: boolean;
+  archived?: boolean;
+  short_summary?: string;
+  estimated_duration?: number;
+  difficulty_level?: string;
   progress?: {
     progress_percent: number;
     last_position: number;
     completed: boolean;
   };
 }
+
 
 export const useEducationalMemory = () => {
   const fetchMemory = async () => {
@@ -49,8 +59,17 @@ export const useEducationalMemory = () => {
     // Transform progress to single object if exists
     return (data || []).map(lesson => ({
       ...lesson,
+      // Map legacy fields
+      source_type: 'tutor_chat',
+      session_id: lesson.source_session_id,
+      favorite: lesson.is_favorite,
+      archived: lesson.status === 'archived',
+      short_summary: lesson.subtitle || lesson.topic,
+      estimated_duration: lesson.duration || 900,
+      difficulty_level: 'Médio',
       progress: lesson.progress?.[0] || null
     })) as EducationalLesson[];
+
   };
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -62,15 +81,28 @@ export const useEducationalMemory = () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
+    const payload: any = {
+      ...lesson,
+      user_id: user.id,
+      status: 'pending_review'
+    };
+
+    // Clean up legacy fields before insert
+    delete payload.source_type;
+    delete payload.session_id;
+    delete payload.aggregation_id;
+    delete payload.favorite;
+    delete payload.archived;
+    delete payload.short_summary;
+    delete payload.estimated_duration;
+    delete payload.difficulty_level;
+
     const { data: inserted, error } = await supabase
       .from('tutor_lesson_memory')
-      .insert([{ 
-        ...lesson, 
-        user_id: user.id,
-        status: 'pending_review'
-      }])
+      .insert([payload])
       .select()
       .single();
+
 
     if (error) throw error;
     
@@ -109,6 +141,9 @@ export const useEducationalMemory = () => {
     error,
     requestLesson,
     updateLessonProgress,
-    refetch
+    refetch,
+    // Legacy alias
+    addToMemory: requestLesson
   };
 };
+

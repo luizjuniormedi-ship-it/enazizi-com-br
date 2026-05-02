@@ -126,12 +126,17 @@ function LessonCard({ lesson }: { lesson: any }) {
   const navigate = useNavigate();
 
   const handleOpen = () => {
-    if (lesson.source_type === 'cme' && lesson.aggregation_id) {
+    if (lesson.status === 'published' && lesson.id) {
+      navigate(`/dashboard/videoaulas/${lesson.id}`);
+    } else if (lesson.source_session_id) {
+      navigate(`/dashboard/chatgpt?sessionId=${lesson.source_session_id}`);
+    } else if (lesson.source_type === 'cme' && lesson.aggregation_id) {
       navigate(`/dashboard/videoaulas?aggregationId=${lesson.aggregation_id}`);
     } else if (lesson.source_type === 'tutor_chat' && lesson.session_id) {
       navigate(`/dashboard/chatgpt?sessionId=${lesson.session_id}`);
     }
   };
+
 
   const getSourceIcon = (type: string) => {
     switch (type) {
@@ -151,7 +156,18 @@ function LessonCard({ lesson }: { lesson: any }) {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending_review': return 'Aguardando revisão';
+      case 'in_production': return 'Em produção';
+      case 'published': return 'Assistir';
+      case 'rejected': return 'Não aprovada';
+      default: return null;
+    }
+  };
+
   return (
+
     <Card 
       onClick={handleOpen}
       className="group relative bg-[#1a1a2e]/50 border-white/5 hover:border-primary/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-sm"
@@ -176,6 +192,14 @@ function LessonCard({ lesson }: { lesson: any }) {
             <span>{getSourceLabel(lesson.source_type)}</span>
           </Badge>
         </div>
+
+        {lesson.status && lesson.status !== 'published' && (
+          <div className="absolute top-3 right-3">
+            <Badge className="bg-amber-500/80 backdrop-blur-md border-white/10 text-[9px] py-0.5 px-1.5">
+              {getStatusLabel(lesson.status)}
+            </Badge>
+          </div>
+        )}
 
         {lesson.favorite && (
           <div className="absolute top-3 right-3">
