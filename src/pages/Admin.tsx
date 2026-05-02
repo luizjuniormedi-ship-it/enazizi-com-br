@@ -469,7 +469,7 @@ const Admin = () => {
                   Centro de operações
                 </>
               }
-              title="Painel Administrativo"
+              title="ENAFLIX Operations Center"
               subtitle="Operação, qualidade e governança do ENAZIZI em tempo real."
               actions={
                 <Button variant="outline" size="lg" onClick={loadData} disabled={loading} className="gap-2">
