@@ -75,6 +75,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: LayoutDashboard,
       items: [
         { key: "overview", label: "Dashboard", icon: LayoutDashboard },
+        { key: "automation-lab", label: "Automação Lab (P2)", icon: Sparkles },
         { key: "online", label: "Usuários Online", icon: Activity },
       ],
     },
@@ -145,7 +146,6 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "uploads", label: "Uploads", icon: Upload },
         { key: "upload2gb", label: "Upload 2GB", icon: HardDrive },
         { key: "multimodal", label: "Multimodal", icon: ImageIcon },
-        { key: "automation-lab", label: "Automação Lab", icon: Sparkles },
       ],
     },
   ];
