@@ -28,6 +28,7 @@ import { CinematicMetricHalo } from "@/components/cinematic";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
 import { Progress } from "@/components/ui/progress";
+import { motion } from "framer-motion";
 
 type Tone = "primary" | "success" | "warn" | "danger" | "muted";
 
