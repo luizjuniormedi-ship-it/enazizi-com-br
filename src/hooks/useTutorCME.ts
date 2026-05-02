@@ -549,6 +549,20 @@ export const useTutorCME = () => {
       } catch (e) {
         console.error("Eligibility log error:", e);
       }
+    },
+    getLessonForMessage: async (messageId: string) => {
+      try {
+        const { data: project } = await supabaseClient
+          .from("cme_video_projects")
+          .select("*, aggregation:cme_session_aggregations(*)")
+          .contains('config', { tutor_message_id: messageId })
+          .maybeSingle();
+        
+        return project;
+      } catch (e) {
+        console.error("Error fetching lesson for message:", e);
+        return null;
+      }
     }
   };
 };
