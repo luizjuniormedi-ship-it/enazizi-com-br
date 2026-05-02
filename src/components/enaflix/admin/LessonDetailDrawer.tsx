@@ -233,11 +233,12 @@ export function LessonDetailDrawer({
                 <div className="h-px bg-white/5 my-2" />
                 <Section title="Exportações de Vídeo">
                   <div className="grid grid-cols-2 gap-2 mt-2">
-                  <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
-                  <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Gemini" onClick={() => onExport(lesson, "gemini")} disabled={!isStructured} />
-                  <ActionPill icon={<Film className="h-4 w-4" />} label="Google Vids" onClick={() => onExport(lesson, "google_vids")} disabled={!isStructured} />
-                  <ActionPill icon={<Download className="h-4 w-4" />} label="Markdown" onClick={() => onExport(lesson, "markdown")} disabled={!isStructured} />
-                </div>
+                    <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
+                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Gemini" onClick={() => onExport(lesson, "gemini")} disabled={!isStructured} />
+                    <ActionPill icon={<Film className="h-4 w-4" />} label="Google Vids" onClick={() => onExport(lesson, "google_vids")} disabled={!isStructured} />
+                    <ActionPill icon={<Download className="h-4 w-4" />} label="Markdown" onClick={() => onExport(lesson, "markdown")} disabled={!isStructured} />
+                  </div>
+                </Section>
 
                 <ActionPill
                   icon={uploadingId === lesson.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
