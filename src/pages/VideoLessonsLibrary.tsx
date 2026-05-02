@@ -101,21 +101,27 @@ const VideoLessonsLibrary = () => {
   };
 
   const filteredLessons = lessons?.filter(lesson => {
-    const matchesSearch = lesson.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lesson.specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lesson.topic.toLowerCase().includes(searchTerm.toLowerCase());
+    const title = lesson.title || "";
+    const specialty = (lesson as any).specialty || "";
+    const topic = lesson.topic || "";
+    const difficulty = (lesson as any).difficulty_level || "intermediate";
+    const isGold = (lesson as any).is_gold_content || false;
+
+    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         specialty.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         topic.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesSpecialty = specialtyFilter === "all" || lesson.specialty === specialtyFilter;
-    const matchesDifficulty = difficultyFilter === "all" || lesson.difficulty_level === difficultyFilter;
+    const matchesSpecialty = specialtyFilter === "all" || specialty === specialtyFilter;
+    const matchesDifficulty = difficultyFilter === "all" || difficulty === difficultyFilter;
     
     if (activeTab === "all") return matchesSearch && matchesSpecialty && matchesDifficulty;
-    if (activeTab === "gold") return matchesSearch && matchesSpecialty && matchesDifficulty && lesson.is_gold_content;
-    if (activeTab === "trending") return matchesSearch && matchesSpecialty && matchesDifficulty; // Placeholder
+    if (activeTab === "gold") return matchesSearch && matchesSpecialty && matchesDifficulty && isGold;
     
     return matchesSearch && matchesSpecialty && matchesDifficulty;
   });
 
-  const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
+
+  const specialties = Array.from(new Set(lessons?.map(l => (l as any).specialty) || []));
 
   return (
     <div className="container mx-auto p-6 space-y-8 animate-in fade-in duration-500 bg-[#0a0a12] text-white min-h-screen">
@@ -209,69 +215,76 @@ const VideoLessonsLibrary = () => {
                 filteredLessons?.map((lesson) => {
                   const progress = getLessonProgress(lesson.id);
                   return (
-                    <Card 
-                      key={lesson.id} 
-                      className={`group overflow-hidden hover:shadow-xl transition-all duration-300 border-primary/10 cursor-pointer ${lesson.is_gold_content ? 'ring-1 ring-yellow-400/50' : ''}`} 
-                      onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
-                    >
-                      <div className="relative aspect-video bg-muted overflow-hidden">
-                        {lesson.thumbnail_url ? (
-                          <img 
-                            src={lesson.thumbnail_url} 
-                            alt={lesson.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-primary/5">
-                            <Stethoscope className="h-12 w-12 text-primary/20" />
+                    const isGold = (lesson as any).is_gold_content;
+                    const duration = lesson.duration || (lesson as any).duration_seconds || 900;
+                    const specialty = (lesson as any).specialty;
+
+                    return (
+                      <Card 
+                        key={lesson.id} 
+                        className={`group overflow-hidden hover:shadow-xl transition-all duration-300 border-primary/10 cursor-pointer ${isGold ? 'ring-1 ring-yellow-400/50' : ''}`} 
+                        onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
+                      >
+                        <div className="relative aspect-video bg-muted overflow-hidden">
+                          {lesson.thumbnail_url ? (
+                            <img 
+                              src={lesson.thumbnail_url} 
+                              alt={lesson.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-primary/5">
+                              <Stethoscope className="h-12 w-12 text-primary/20" />
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
+                              <Play className="h-6 w-6 text-white fill-white ml-1" />
+                            </div>
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-lg transform scale-90 group-hover:scale-100 transition-transform">
-                            <Play className="h-6 w-6 text-white fill-white ml-1" />
+                          <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
+                            {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
                           </div>
-                        </div>
-                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded">
-                          {Math.floor(lesson.duration_seconds / 60)}:{(lesson.duration_seconds % 60).toString().padStart(2, '0')}
-                        </div>
-                        <Badge className="absolute top-2 left-2 bg-primary/90">
-                          {lesson.specialty}
-                        </Badge>
-                        {lesson.is_gold_content && (
-                          <Badge className="absolute top-2 right-2 bg-yellow-500 text-black gap-1">
-                            <Sparkles className="h-3 w-3" /> Conteúdo Ouro
+                          <Badge className="absolute top-2 left-2 bg-primary/90">
+                            {specialty}
                           </Badge>
-                        )}
-                      </div>
-                      <CardHeader className="p-4 space-y-1">
-                        <div className="flex justify-between items-start">
-                          <CardTitle className="text-lg line-clamp-2 leading-tight group-hover:text-primary transition-colors">
-                            {lesson.title}
-                          </CardTitle>
+                          {isGold && (
+                            <Badge className="absolute top-2 right-2 bg-yellow-500 text-black gap-1">
+                              <Sparkles className="h-3 w-3" /> Conteúdo Ouro
+                            </Badge>
+                          )}
                         </div>
-                        <p className="text-sm text-muted-foreground line-clamp-2">
-                          {lesson.topic} • {lesson.subtopic || 'Geral'}
-                        </p>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs text-muted-foreground">
-                            <span>Progresso</span>
-                            <span>{Math.floor(progress)}%</span>
+                        <CardHeader className="p-4 space-y-1">
+                          <div className="flex justify-between items-start">
+                            <CardTitle className="text-lg line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                              {lesson.title}
+                            </CardTitle>
                           </div>
-                          <Progress value={progress} className="h-1.5" />
-                        </div>
-                      </CardContent>
-                      <CardFooter className="p-4 pt-0 flex justify-between items-center">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <GraduationCap className="h-3 w-3" />
-                          <span>Tutor IA</span>
-                        </div>
-                        <Button variant="ghost" size="sm" className="gap-1 px-0 hover:bg-transparent hover:text-primary">
-                          {progress > 0 ? 'Continuar Aula' : 'Assistir Agora'} <ChevronRight className="h-4 w-4" />
-                        </Button>
-                      </CardFooter>
-                    </Card>
+                          <p className="text-sm text-muted-foreground line-clamp-2">
+                            {lesson.topic} • {lesson.subtopic || 'Geral'}
+                          </p>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-xs text-muted-foreground">
+                              <span>Progresso</span>
+                              <span>{Math.floor(progress)}%</span>
+                            </div>
+                            <Progress value={progress} className="h-1.5" />
+                          </div>
+                        </CardContent>
+                        <CardFooter className="p-4 pt-0 flex justify-between items-center">
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <GraduationCap className="h-3 w-3" />
+                            <span>Tutor IA</span>
+                          </div>
+                          <Button variant="ghost" size="sm" className="gap-1 px-0 hover:bg-transparent hover:text-primary">
+                            {progress > 0 ? 'Continuar Aula' : 'Assistir Agora'} <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </CardFooter>
+                      </Card>
+                    );
+
                   );
                 })
               )}
@@ -300,7 +313,7 @@ const VideoLessonsLibrary = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium line-clamp-1 group-hover:text-primary transition-colors">{lesson.title}</p>
-                    <p className="text-xs text-muted-foreground">{lesson.specialty} • {Math.floor(lesson.duration_seconds / 60)}min</p>
+                    <p className="text-xs text-muted-foreground">{(lesson as any).specialty} • {Math.floor((lesson.duration || (lesson as any).duration_seconds || 900) / 60)}min</p>
                   </div>
                 </div>
               ))}
