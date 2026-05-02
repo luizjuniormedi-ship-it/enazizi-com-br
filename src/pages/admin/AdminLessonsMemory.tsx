@@ -318,7 +318,12 @@ const AdminLessonsMemory = () => {
           <div className="grid grid-cols-1 gap-4">
             {filteredLessons?.map((lesson) => {
               const hasVideo = !!lesson.video_url;
-              const canPublish = lesson.status === "ready_to_publish";
+              const sc = (lesson.structured_content as any) ?? {};
+              const isStructured = !!sc?.title;
+              const checklist = (lesson.quality_checklist as any) ?? {};
+              const checklistComplete = MIN_CHECKLIST.every(([k]) => !!checklist[k]);
+              const canPublish =
+                lesson.status === "ready_to_publish" && checklistComplete && hasVideo;
               const isPublished = lesson.status === "published";
               return (
                 <Card
@@ -328,7 +333,7 @@ const AdminLessonsMemory = () => {
                   <CardContent className="p-0">
                     <div className="flex flex-col md:flex-row">
                       <div className="flex-1 p-6">
-                        <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-3 mb-2 flex-wrap">
                           <Badge
                             className={cn(
                               "uppercase text-[10px] font-black tracking-widest",
@@ -343,6 +348,11 @@ const AdminLessonsMemory = () => {
                               <Video className="h-3 w-3" /> Vídeo anexado
                             </Badge>
                           )}
+                          {isStructured && (
+                            <Badge variant="outline" className="text-[10px] gap-1 border-emerald-300 text-emerald-700">
+                              <Sparkles className="h-3 w-3" /> Estruturada IA
+                            </Badge>
+                          )}
                           <span className="text-[10px] text-slate-400 font-mono">
                             #{lesson.id.slice(0, 8)}
                           </span>
@@ -352,7 +362,7 @@ const AdminLessonsMemory = () => {
                           {lesson.title || "Sem título"}
                         </h3>
 
-                        <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
+                        <div className="flex items-center gap-4 text-xs text-slate-500 font-medium mb-4">
                           <div className="flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
                             {new Date(lesson.created_at).toLocaleDateString()}
@@ -362,50 +372,109 @@ const AdminLessonsMemory = () => {
                             {lesson.subject || "—"} / {lesson.topic || "—"}
                           </div>
                         </div>
+
+                        {/* Checklist mínimo */}
+                        <div className="rounded-xl border border-slate-200 bg-white p-3">
+                          <div className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-2">
+                            Checklist mínimo de publicação
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {MIN_CHECKLIST.map(([key, label]) => (
+                              <label
+                                key={key}
+                                className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer"
+                              >
+                                <Checkbox
+                                  checked={!!checklist[key]}
+                                  onCheckedChange={() => toggleChecklistItem(lesson, key)}
+                                  disabled={isPublished}
+                                />
+                                {label}
+                              </label>
+                            ))}
+                          </div>
+                          {!checklistComplete && !isPublished && (
+                            <div className="text-[10px] text-amber-600 font-bold mt-2">
+                              Complete o checklist para liberar a publicação.
+                            </div>
+                          )}
+                        </div>
                       </div>
 
                       <div className="md:w-[420px] bg-slate-50/50 border-l p-6 flex flex-col justify-center gap-3">
+                        <Button
+                          variant="outline"
+                          className="w-full text-[10px] font-black uppercase h-10 gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                          onClick={() => restructureLesson(lesson)}
+                        >
+                          <Sparkles className="h-3.5 w-3.5" /> Reestruturar IA
+                        </Button>
+
                         <div className="grid grid-cols-2 gap-2">
                           <Button
                             variant="outline"
                             className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
                             onClick={() => exportLesson(lesson, "notebooklm")}
-                            disabled={!lesson.structured_content?.title}
+                            disabled={!isStructured}
                           >
-                            <Download className="h-3.5 w-3.5" /> NotebookLM
+                            <BookOpen className="h-3.5 w-3.5" /> NotebookLM
                           </Button>
+                          <Button
+                            variant="outline"
+                            className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
+                            onClick={() => exportLesson(lesson, "gemini")}
+                            disabled={!isStructured}
+                          >
+                            <Sparkles className="h-3.5 w-3.5" /> Gemini
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
+                            onClick={() => exportLesson(lesson, "google_vids")}
+                            disabled={!isStructured}
+                          >
+                            <Film className="h-3.5 w-3.5" /> Google Vids
+                          </Button>
+                          <Button
+                            variant="outline"
+                            className="text-[10px] font-black uppercase h-10 gap-2 border-slate-200"
+                            onClick={() => exportLesson(lesson, "markdown")}
+                            disabled={!isStructured}
+                          >
+                            <Download className="h-3.5 w-3.5" /> Markdown
+                          </Button>
+                        </div>
 
-                          <div className="relative">
-                            <input
-                              type="file"
-                              id={`video-upload-${lesson.id}`}
-                              className="hidden"
-                              accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/x-msvideo"
-                              onChange={(e) => handleFileUpload(lesson.id, e)}
-                              disabled={uploadingId === lesson.id}
-                            />
-                            <Button
-                              asChild
-                              variant={hasVideo ? "outline" : "default"}
-                              className={cn(
-                                "w-full text-[10px] font-black uppercase h-10 gap-2",
-                                !hasVideo && "bg-amber-600 hover:bg-amber-700",
-                              )}
-                              disabled={uploadingId === lesson.id}
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id={`video-upload-${lesson.id}`}
+                            className="hidden"
+                            accept="video/mp4,video/webm,video/quicktime,video/x-matroska,video/x-msvideo"
+                            onChange={(e) => handleFileUpload(lesson.id, e)}
+                            disabled={uploadingId === lesson.id}
+                          />
+                          <Button
+                            asChild
+                            variant={hasVideo ? "outline" : "default"}
+                            className={cn(
+                              "w-full text-[10px] font-black uppercase h-10 gap-2",
+                              !hasVideo && "bg-amber-600 hover:bg-amber-700",
+                            )}
+                            disabled={uploadingId === lesson.id}
+                          >
+                            <label
+                              htmlFor={`video-upload-${lesson.id}`}
+                              className="cursor-pointer"
                             >
-                              <label
-                                htmlFor={`video-upload-${lesson.id}`}
-                                className="cursor-pointer"
-                              >
-                                {uploadingId === lesson.id ? (
-                                  <Clock className="h-3.5 w-3.5 animate-spin" />
-                                ) : (
-                                  <Upload className="h-3.5 w-3.5" />
-                                )}
-                                {hasVideo ? "Substituir vídeo" : "Subir vídeo"}
-                              </label>
-                            </Button>
-                          </div>
+                              {uploadingId === lesson.id ? (
+                                <Clock className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Upload className="h-3.5 w-3.5" />
+                              )}
+                              {hasVideo ? "Substituir vídeo" : "Subir vídeo"}
+                            </label>
+                          </Button>
                         </div>
 
                         {hasVideo && (
@@ -418,10 +487,10 @@ const AdminLessonsMemory = () => {
                           </Button>
                         )}
 
-                        {canPublish && (
+                        {!isPublished && (
                           <Button
-                            className="w-full text-[10px] font-black uppercase h-10 gap-2 bg-emerald-600 hover:bg-emerald-700"
-                            disabled={publishingId === lesson.id}
+                            className="w-full text-[10px] font-black uppercase h-10 gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300"
+                            disabled={!canPublish || publishingId === lesson.id}
                             onClick={() => {
                               setPublishingId(lesson.id);
                               publishMutation.mutate(lesson);
