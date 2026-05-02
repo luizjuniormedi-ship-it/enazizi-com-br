@@ -70,6 +70,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
   const [configState, setConfigState] = useState<'config_validated' | 'config_warning' | 'config_invalid' | 'retry_using_original_config' | 'fallback_using_config' | 'unknown'>('unknown');
   const [devWorkerLoading, setDevWorkerLoading] = useState(false);
   const [devWorkerError, setDevWorkerError] = useState<string | null>(null);
+  const [showAgilePlayer, setShowAgilePlayer] = useState(false);
   const lastEventRef = useRef<number>(Date.now());
 
   useEffect(() => {
