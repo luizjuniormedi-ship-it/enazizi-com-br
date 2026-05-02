@@ -150,6 +150,47 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: corsHeaders });
     }
 
+    if (action === 'retry_render') {
+      const { jobId } = payload || {};
+      if (!jobId) throw new Error('jobId required for retry_render');
+
+      // CRITICAL: reuse the original persisted config — do NOT rebuild from payload.
+      const { data: original, error: oErr } = await supabaseClient
+        .from('cme_render_jobs')
+        .select('id, project_id, generation_id, queue_id, config, user_id')
+        .eq('id', jobId)
+        .single();
+      if (oErr || !original) throw new Error('ORIGINAL_JOB_NOT_FOUND');
+
+      const reuseValidation = validateRenderConfig(original.config);
+      if (!reuseValidation.valid) {
+        await supabaseClient.from('cme_system_incidents').insert({
+          component: 'cme-orchestrator',
+          severity: 'high',
+          error_message: 'Retry attempted with invalid persisted config',
+          stack_trace: JSON.stringify(reuseValidation.errors),
+          user_id: user.id,
+        }).then(() => {}, () => {});
+      }
+
+      const { data: retryJob, error: rErr } = await supabaseClient
+        .from('cme_render_jobs')
+        .insert({
+          project_id: original.project_id,
+          generation_id: original.generation_id,
+          queue_id: original.queue_id,
+          status: 'queued',
+          user_id: original.user_id,
+          config: original.config, // reuse, do not overwrite
+          idempotency_key: `${original.project_id}-retry-${Date.now()}`,
+        })
+        .select()
+        .single();
+      if (rErr) throw rErr;
+
+      return new Response(JSON.stringify({ success: true, jobId: retryJob.id, reused_config: true }), { headers: corsHeaders });
+    }
+
     return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400, headers: corsHeaders });
 
   } catch (error) {
