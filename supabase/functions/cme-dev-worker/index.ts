@@ -153,21 +153,57 @@ serve(async (req) => {
     }
 
     if (action === 'pickup_and_run') {
-      // Pega 1 job aguardando hardware OU já rendering atribuído a este worker
-      const { data: jobs } = await supabase
+      const targetProjectId = body?.projectId as string | undefined
+      const targetAggregationId = body?.aggregationId as string | undefined
+
+      // Build query — prefer matching the user's current project if provided
+      let query = supabase
         .from('cme_render_jobs')
-        .select('id, project_id, aggregation_id, status, gpu_worker_id')
-        .in('status', ['queued', 'waiting_hardware', 'rendering'])
-        .order('queued_at', { ascending: true })
-        .limit(5)
+        .select('id, project_id, aggregation_id, status, gpu_worker_id, queued_at, updated_at')
+        .in('status', ['queued', 'waiting_hardware', 'rendering', 'failed', 'stalled'])
+
+      if (targetProjectId) query = query.eq('project_id', targetProjectId)
+
+      const { data: jobs, error: jobsErr } = await query
+        .order('updated_at', { ascending: false })
+        .limit(10)
+
+      console.log('[cme-dev-worker] pickup query', {
+        targetProjectId,
+        targetAggregationId,
+        found: jobs?.length ?? 0,
+        error: jobsErr?.message,
+      })
 
       const target = (jobs ?? []).find((j: any) => j.status !== 'completed')
       if (!target) {
-        return jsonResponse({ success: true, workerId, message: 'Nenhum job pendente.' })
+        // Return diagnostics so the UI can show what's available
+        const { data: recent } = await supabase
+          .from('cme_render_jobs')
+          .select('id, project_id, status, progress, updated_at')
+          .order('updated_at', { ascending: false })
+          .limit(5)
+        return jsonResponse({
+          success: false,
+          code: 'NO_PENDING_JOB',
+          workerId,
+          message: 'Nenhum job pendente encontrado.',
+          recent_jobs: recent ?? [],
+          searched_project_id: targetProjectId,
+        }, 404)
       }
 
+      console.log('[cme-dev-worker] processing', { jobId: target.id, status: target.status })
       const outputUrl = await processJob(supabase, workerId, target)
-      return jsonResponse({ success: true, workerId, jobId: target.id, outputUrl })
+      return jsonResponse({
+        success: true,
+        workerId,
+        jobId: target.id,
+        previousStatus: target.status,
+        outputUrl,
+        aggregationId: target.aggregation_id,
+        projectId: target.project_id,
+      })
     }
 
     return jsonResponse({ success: false, code: 'INVALID_ACTION', message: 'Ação inválida.' }, 400)
