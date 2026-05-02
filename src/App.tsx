@@ -246,8 +246,10 @@ const App = () => (
               </Route>
               {/* Fullscreen mind map viewer */}
               <Route path="/dashboard/mapas-mentais/:id" element={<MindMapFullscreen />} />
-              <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
-                <Route index element={<Admin />} />
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                <Route index element={<CentroComando />} />
+                <Route path="users" element={<Admin />} />
+                <Route path="ingestion-network" element={<AdminLessonsMemory />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
                 <Route path="metrics" element={<ProductMetricsPage />} />
