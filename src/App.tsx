@@ -263,8 +263,9 @@ const App = () => (
                 <Route path="generator-telemetry" element={<GeneratorTelemetry />} />
                 <Route path="banca-readiness" element={<BancaReadiness />} />
                 <Route path="simulado-selection" element={<SimuladoSelectionTelemetry />} />
-                <Route path="simulado-selection/:id" element={<SimuladoSelectionRunDetail />} />
+                 <Route path="simulado-selection/:id" element={<SimuladoSelectionRunDetail />} />
                  <Route path="tutor-memory" element={<TutorMemoryAdmin />} />
+                 <Route path="lessons-memory" element={<AdminLessonsMemory />} />
                   <Route path="telemetry" element={<TelemetryAdmin />} />
                   <Route path="ai-studio" element={<AIStudio />} />
                   <Route path="medical-review-queue" element={<MedicalReviewQueue />} />
@@ -276,7 +277,7 @@ const App = () => (
                    <Route path="video-lessons" element={<VideoLessonsAdmin />} />
                    <Route path="video-lessons/:id" element={<VideoLessonDetailsAdmin />} />
                    <Route path="specialty-friction" element={<SpecialtyFrictionReport />} />
-                   <Route path="ingestion-network" element={<OfficialExamIngestion />} />
+                   <Route path="ingestion-provas" element={<OfficialExamIngestion />} />
                    <Route path="knowledge-graph" element={<MedicalKnowledgeGraph />} />
                    <Route path="adaptive-engine" element={<AdaptiveEngineAdmin />} />
                    <Route path="intervention-policies" element={<AdminInterventionPolicies />} />
