@@ -438,6 +438,7 @@ const QuestionsBank = () => {
           subtitle={`${totalCount} questões disponíveis para o seu treinamento.`}
         />
       </div>
+      <div className="px-4 sm:px-8 lg:px-14">
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={() => setShowStats(!showStats)} className="gap-1.5">
             <BarChart3 className="h-4 w-4" /> Estatísticas
