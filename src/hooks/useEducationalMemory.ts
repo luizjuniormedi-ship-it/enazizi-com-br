@@ -186,10 +186,12 @@ export const useEducationalMemory = () => {
     isLoading,
     error,
     requestLesson,
+    restructureLesson,
+    exportLesson,
     updateLessonProgress,
     refetch,
     // Legacy alias
-    addToMemory: requestLesson
+    addToMemory: requestLesson,
   };
 };
 
