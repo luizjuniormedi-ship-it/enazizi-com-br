@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Brain, Activity, ShieldCheck, Zap, Ghost, GraduationCap, AlertTriangle, TrendingUp, Info } from "lucide-react";
 import { useMedicalMastery, MasteryMetric } from "@/hooks/useMedicalMastery";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function MedicalMasteryDashboard() {
   const { data: metrics, isLoading } = useMedicalMastery();
