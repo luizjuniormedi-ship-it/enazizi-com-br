@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, Bell, Search, X } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -17,6 +18,8 @@ interface Props {
  * - Botões "ghost" com hover suave (scale 1.03 + bg fade).
  */
 export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Props) {
+  const navigate = useNavigate();
+  const location = useLocation();
   // 0 = no topo (transparente), 1 = totalmente sólida.
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -117,28 +120,30 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
           <nav className="hidden md:flex items-center gap-6 ml-4">
             <button 
-              onClick={() => (window.location.href = "/enaflix")}
+              onClick={() => navigate("/enaflix")}
               className={cn(
                 "text-sm font-semibold transition-colors hover:text-white",
-                window.location.pathname === "/enaflix" ? "text-white" : "text-white/60"
+                location.pathname === "/enaflix" ? "text-white" : "text-white/60"
               )}
             >
               Início
             </button>
             <button 
-              onClick={() => (window.location.href = "/dashboard/videoaulas/explorar")}
+              type="button"
+              onClick={() => navigate("/dashboard/videoaulas/explorar")}
               className={cn(
                 "text-sm font-semibold transition-colors hover:text-white",
-                window.location.pathname.includes("explorar") ? "text-white" : "text-white/60"
+                location.pathname.includes("explorar") ? "text-white" : "text-white/60"
               )}
             >
               Explorar Videoaulas
             </button>
             <button 
-              onClick={() => (window.location.href = "/dashboard/videoaulas")}
+              type="button"
+              onClick={() => navigate("/dashboard/videoaulas")}
               className={cn(
                 "text-sm font-semibold transition-colors hover:text-white",
-                window.location.pathname.includes("/dashboard/videoaulas") && !window.location.pathname.includes("explorar") ? "text-white" : "text-white/60"
+                location.pathname.includes("/dashboard/videoaulas") && !location.pathname.includes("explorar") ? "text-white" : "text-white/60"
               )}
             >
               Minhas Aulas
