@@ -66,6 +66,34 @@ import { useCinematicEngine } from "@/hooks/useCinematicEngine";
 import { useNeuroanalytics } from "@/hooks/useNeuroanalytics";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
+interface LessonData {
+  id: string;
+  title: string;
+  subtitle?: string;
+  subject?: string;
+  topic?: string;
+  subtopic?: string;
+  video_url?: string;
+  thumbnail_url?: string;
+  duration?: number;
+  duration_seconds?: number;
+  media_status?: string;
+  status?: string;
+  tutor_lesson_id?: string;
+  tutor_session_id?: string;
+  source_session_id?: string;
+  tutor_lesson_summary?: string;
+  learning_objectives?: string[];
+  health_score?: number;
+  pipeline_last_error?: string;
+  cme_project_id?: string;
+  hls_manifest_url?: string;
+  hls_url?: string;
+  playback_url?: string;
+  specialty?: string;
+}
+
+
 const VideoLessonPlayer = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -93,16 +121,16 @@ const VideoLessonPlayer = () => {
   const { trackViewing, updateNeuroanalytics, profile } = useNeuroanalytics(id);
   const { trackAction } = useTelemetry();
 
-  const { data: lesson, isLoading } = useQuery({
+  const { data: lesson, isLoading } = useQuery<LessonData>({
     queryKey: ["video-lesson", id],
     queryFn: async () => {
-      const { data: memoryData, error: memoryError } = await supabase
+      const { data: memoryData } = await supabase
         .from("tutor_lesson_memory")
         .select("*")
         .eq("id", id)
         .maybeSingle();
 
-      if (memoryData) return memoryData;
+      if (memoryData) return memoryData as LessonData;
 
       const { data, error } = await supabase
         .from("ai_video_lessons")
@@ -115,9 +143,10 @@ const VideoLessonPlayer = () => {
         logPlaybackAudit("error", error.message);
         throw error;
       }
-      return data;
+      return data as LessonData;
     }
   });
+
 
 
   const logPlaybackAudit = async (state: string, errorMessage?: string) => {
