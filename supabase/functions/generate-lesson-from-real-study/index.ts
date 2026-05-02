@@ -131,6 +131,7 @@ Deno.serve(async (req) => {
       .insert({
         user_id,
         topic,
+        title: topic,
         subject: tracking?.subject || "Medicina",
         generated_from_real_usage: true,
         pedagogical_interest_score: score,
