@@ -93,6 +93,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "pipeline", label: "Pipeline", icon: Layers },
         { key: "cinematic-engine", label: "Cinematic (CME)", icon: Film },
         { key: "questions", label: "Questões", icon: FileText },
+        { key: "tutor-lessons", label: "Memória Aulas", icon: FileText },
         { key: "image-upgrade", label: "Upgrade Imagem", icon: ImageIcon },
         { key: "image-review", label: "Review Imagem", icon: ImageIcon },
         { key: "hygiene", label: "Higiene", icon: Bug },
