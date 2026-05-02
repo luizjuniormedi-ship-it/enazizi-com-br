@@ -8933,6 +8933,39 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          gradual_rollout_percentage: number | null
+          id: string
+          metadata: Json | null
+          name: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          gradual_rollout_percentage?: number | null
+          id?: string
+          metadata?: Json | null
+          name: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          gradual_rollout_percentage?: number | null
+          id?: string
+          metadata?: Json | null
+          name?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       flashcards: {
         Row: {
           answer: string
@@ -18970,6 +19003,10 @@ export type Database = {
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
         Returns: number
+      }
+      check_feature_access: {
+        Args: { f_name: string; u_id: string }
+        Returns: boolean
       }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
