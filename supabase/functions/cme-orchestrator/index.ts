@@ -78,6 +78,7 @@ serve(async (req) => {
           project_id: projectId,
           generation_id: project.aggregation_id,
           aggregation_id: project.aggregation_id,
+          render_type: renderConfig.render_mode || 'cinematic',
           status: 'queued',
           queue_id: queue?.id,
           user_id: user.id,
