@@ -24,13 +24,13 @@ BEGIN
 
     -- 3. Create Render Job
     v_start_time := now() - (interval '5 minutes');
-    INSERT INTO public.cme_render_jobs (project_id, status, queue_id, user_id, render_metadata, created_at)
+    INSERT INTO public.cme_render_jobs (project_id, status, queue_id, user_id, render_metadata, queued_at)
     VALUES (v_project_id, 'queued', v_queue_id, v_user_id, '{"priority": "standard"}'::jsonb, v_start_time)
     RETURNING id INTO v_job_id;
 
     -- 4. Complete Render Job (to trigger costs)
     UPDATE public.cme_render_jobs 
-    SET status = 'completed', updated_at = now()
+    SET status = 'completed', completed_at = now(), updated_at = now()
     WHERE id = v_job_id;
 
     -- 5. Add Lineage Node
