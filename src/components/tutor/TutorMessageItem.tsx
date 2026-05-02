@@ -232,16 +232,20 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                       { id: 'planning', label: 'Semantic Planning' },
                       { id: 'mapping', label: 'Knowledge Mapping' },
                       { id: 'graphing', label: 'Scene Graphing' },
-                      { id: 'rendering', label: 'Cinematic Render' }
+                      { id: 'worker_selection', label: 'Worker Selection' },
+                      { id: 'gpu_rendering', label: 'GPU Render' },
+                      { id: 'pending_hardware', label: 'Waiting Hardware' }
                     ].map((step, idx) => (
                       <div key={step.id} className={cn(
                         "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
-                        state.progress > (idx * 25) || state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-600"
+                        state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+                        state.progress >= ([30, 35, 50, 70, 80, 65][idx]) ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+                        "bg-white/5 border-white/5 text-slate-600"
                       )}>
                         <div className={cn(
                           "h-1.5 w-1.5 rounded-full",
                           state.status === step.id ? "bg-amber-500 animate-pulse" : 
-                          state.progress > (idx * 25) ? "bg-amber-500" : "bg-slate-700"
+                          state.progress >= ([30, 35, 50, 70, 80, 65][idx]) ? "bg-amber-500" : "bg-slate-700"
                         )} />
                         {step.label}
                       </div>
@@ -306,7 +310,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   >
                     Fechar
                   </Button>
-                  {state.status === 'rendering' && (
+                  {['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware'].includes(String(state.status)) && (
                     <Button
                       type="button"
                       className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"

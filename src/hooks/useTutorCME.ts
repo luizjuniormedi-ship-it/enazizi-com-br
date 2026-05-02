@@ -10,6 +10,13 @@ import { useCMEAnalytics } from "./useCMEAnalytics";
 type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'];
 type CmeRenderStatus = Database['public']['Enums']['cme_render_status'];
 
+const WORKER_HEARTBEAT_TTL_MS = 5 * 60 * 1000;
+
+const hasFreshHeartbeat = (lastHeartbeat?: string | null) => {
+  if (!lastHeartbeat) return false;
+  return Date.now() - new Date(lastHeartbeat).getTime() <= WORKER_HEARTBEAT_TTL_MS;
+};
+
 export interface CMEProjectState {
   status: CmeAggregationStatus | CmeRenderStatus | 'idle' | 'mapping' | 'scripting' | 'graphing' | 'voicing' | 'chunking' | 'uploading' | 'pending_hardware';
   projectId?: string;
@@ -34,11 +41,17 @@ export const useTutorCME = () => {
 
     try {
       const { data, error } = await supabaseClient.from('cme_worker_nodes')
-        .select('id, status, last_heartbeat')
+        .select('id, status, last_heartbeat, vram_total_mb, vram_used_mb, gpu_utilization_pct, is_draining')
         .eq('status', 'online');
       
-      const workersOnline = data?.length || 0;
-      setWorkerHealth({ workers_online: workersOnline });
+      const freshWorkers = (data || []).filter((worker: any) => !worker.is_draining && hasFreshHeartbeat(worker.last_heartbeat));
+      const workersOnline = freshWorkers.length;
+      const totalVram = freshWorkers.reduce((sum: number, worker: any) => sum + (worker.vram_total_mb || 0), 0);
+      const usedVram = freshWorkers.reduce((sum: number, worker: any) => sum + (worker.vram_used_mb || 0), 0);
+      const avgLoad = workersOnline
+        ? freshWorkers.reduce((sum: number, worker: any) => sum + (worker.gpu_utilization_pct || 0), 0) / workersOnline
+        : 0;
+      setWorkerHealth({ workers_online: workersOnline, total_vram_mb: totalVram, used_vram_mb: usedVram, avg_load: avgLoad });
       return workersOnline;
     } catch (e) {
       console.warn("Failed to fetch CME status", e);
@@ -79,17 +92,39 @@ export const useTutorCME = () => {
     const stuckCheckInterval = setInterval(async () => {
       const elapsed = Date.now() - lastEventRef.current;
       
-      // If we are in rendering stage and no updates for 20s
-      if (state.status === 'rendering' && elapsed > 20000) {
+      // If the backend is between render job creation and GPU rendering without fresh telemetry, verify real state.
+      if (['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering'].includes(String(state.status)) && elapsed > 20000) {
         const onlineCount = await checkWorkerHealth();
-        if (onlineCount === 0) {
+        const { data: job } = state.projectId
+          ? await supabaseClient
+              .from('cme_render_jobs' as any)
+              .select('status, progress, gpu_worker_id, pipeline_last_error')
+              .eq('project_id', state.projectId)
+              .order('updated_at', { ascending: false })
+              .limit(1)
+              .maybeSingle()
+          : { data: null };
+
+        if ((job as any)?.pipeline_last_error) {
+          setState(s => ({ ...s, status: 'failed', error: (job as any).pipeline_last_error, message: (job as any).pipeline_last_error, isStuck: true }));
+          return;
+        }
+
+        if ((job as any)?.status === 'waiting_hardware' || onlineCount === 0) {
           setState(s => ({ 
             ...s, 
             status: 'pending_hardware',
             workerStatus: 'offline_or_unavailable',
-            message: "Renderização pendente de hardware. O Worker/GPU parece estar offline.",
+            progress: Math.max(s.progress, (job as any)?.progress ?? 65),
+            message: "Renderização pendente de hardware. Nenhum Worker/GPU com heartbeat recente.",
             isStuck: true 
           }));
+          return;
+        }
+
+        if ((job as any)?.gpu_worker_id) {
+          setState(s => ({ ...s, status: 'gpu_rendering' as any, progress: Math.max(s.progress, (job as any).progress ?? 80), message: "GPU renderizando com worker ativo", isStuck: false, workerStatus: 'online' }));
+          lastEventRef.current = Date.now();
         }
       }
     }, 5000);
@@ -375,6 +410,14 @@ export const useTutorCME = () => {
           status: 'pending_hardware', 
           message: orchestratorResult.message,
           progress: 60
+        }));
+      } else if (orchestratorResult?.status === 'rendering') {
+        setState(s => ({
+          ...s,
+          status: 'gpu_rendering' as any,
+          message: "GPU renderizando com worker ativo",
+          progress: 80,
+          workerStatus: 'online'
         }));
       }
 

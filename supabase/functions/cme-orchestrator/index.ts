@@ -8,6 +8,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const WORKER_HEARTBEAT_TTL_MS = 5 * 60 * 1000;
+
+const hasFreshHeartbeat = (lastHeartbeat?: string | null) => {
+  if (!lastHeartbeat) return false;
+  return Date.now() - new Date(lastHeartbeat).getTime() <= WORKER_HEARTBEAT_TTL_MS;
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -122,9 +129,11 @@ serve(async (req) => {
         .eq('status', 'online')
         .eq('is_draining', false);
 
+      const availableWorkers = (workers ?? []).filter((worker) => hasFreshHeartbeat(worker.last_heartbeat));
+
       let selectedWorker = null;
-      if (workers && workers.length > 0) {
-        const scoredWorkers = workers.map(w => {
+      if (availableWorkers.length > 0) {
+        const scoredWorkers = availableWorkers.map(w => {
           const total = (w.vram_total_mb ?? 1) || 1;
           const used = w.vram_used_mb ?? 0;
           const vramScore = ((total - used) / total) * 100;
@@ -132,10 +141,24 @@ serve(async (req) => {
         }).sort((a, b) => b.total_score - a.total_score);
         selectedWorker = scoredWorkers[0];
 
-        await supabaseClient
+        const { error: assignError } = await supabaseClient
           .from('cme_render_jobs')
-          .update({ gpu_worker_id: selectedWorker.id, status: 'rendering', started_rendering_at: new Date().toISOString() })
+          .update({ gpu_worker_id: selectedWorker.id, status: 'rendering', progress: 80, started_rendering_at: new Date().toISOString() })
           .eq('id', job.id);
+
+        if (assignError) {
+          await supabaseClient.from('cme_pipeline_events').insert({
+            project_id: projectId,
+            aggregation_id: project.aggregation_id,
+            render_job_id: job.id,
+            stage: 'worker_selection',
+            status: 'failed',
+            progress: 65,
+            message: `Falha ao atribuir worker GPU: ${assignError.message}`,
+            metadata: { code: assignError.code, details: assignError.details, hint: assignError.hint },
+          }).then(() => {}, () => {});
+          throw assignError;
+        }
 
         await supabaseClient.from('cme_pipeline_events').insert([
           {
@@ -164,6 +187,16 @@ serve(async (req) => {
       }
 
       // No online worker available — surface explicitly
+      await supabaseClient
+        .from('cme_render_jobs')
+        .update({
+          status: 'waiting_hardware',
+          progress: 65,
+          pipeline_last_error: 'Nenhum worker GPU com heartbeat recente — aguardando hardware',
+        })
+        .eq('id', job.id)
+        .then(() => {}, () => {});
+
       await supabaseClient.from('cme_pipeline_events').insert({
         project_id: projectId,
         aggregation_id: project.aggregation_id,
@@ -171,10 +204,11 @@ serve(async (req) => {
         stage: 'worker_selection',
         status: 'waiting_hardware',
         progress: 65,
-        message: 'Nenhum worker GPU online — aguardando hardware',
+        message: 'Nenhum worker GPU com heartbeat recente — aguardando hardware',
+        metadata: { workers_seen: workers?.length ?? 0, heartbeat_ttl_ms: WORKER_HEARTBEAT_TTL_MS },
       }).then(() => {}, () => {});
 
-      return new Response(JSON.stringify({ success: true, jobId: job.id, status: 'waiting_hardware', message: 'Aguardando worker GPU online' }), { headers: corsHeaders });
+      return new Response(JSON.stringify({ success: true, jobId: job.id, status: 'waiting_hardware', message: 'Aguardando worker GPU com heartbeat recente' }), { headers: corsHeaders });
     }
 
     if (action === 'publish_enaflix') {
