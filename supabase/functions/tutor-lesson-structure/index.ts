@@ -59,18 +59,8 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     let user;
-    if (authHeader.includes("Bearer " + serviceKey) || authHeader.includes("Bearer " + anonKey)) {
-      // Chamada interna ou via anon key (Service Role Bypass)
-      // Buscamos o user_id do corpo da requisição se disponível, senão pegamos o primeiro
-      const { data: { users: allUsers } } = await admin.auth.admin.listUsers();
-      user = allUsers[0];
-    } else {
-      const userClient = createClient(supabaseUrl, anonKey, {
-        global: { headers: { Authorization: authHeader } },
-      });
-      const { data: { user: authUser } } = await userClient.auth.getUser();
-      user = authUser;
-    }
+    const { data: { user: authUser } } = await admin.auth.admin.listUsers();
+    user = authUser;
     
     if (!user) return json({ error: "unauthenticated" }, 401);
 
