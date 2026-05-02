@@ -316,6 +316,17 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     accent: "primary",
   },
   {
+    id: "minhas-aulas",
+    title: "Minhas Aulas",
+    description: "Sua memória educacional centralizada",
+    route: "/dashboard/minhas-aulas",
+    category: "progresso",
+    icon: History,
+    badge: "novo",
+    accent: "success",
+    featured: true,
+  },
+  {
     id: "planner",
     title: "Planner IA",
     description: "Cronograma estratégico personalizado",
