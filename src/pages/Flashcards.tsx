@@ -32,6 +32,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { createPortal } from "react-dom";
 import FlashcardExam, { type FlashcardItem } from "@/components/flashcards/FlashcardExam";
+import { EnaflixActionCard } from "@/components/enaflix/EnaflixActionCard";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
+import { cn } from "@/lib/utils";
 
 type Phase = "setup" | "active" | "finished";
 
@@ -303,29 +307,30 @@ const Flashcards = () => {
   // ── Empty state ──
   if (allCards.length === 0) {
     return (
-      <div className="space-y-8 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold flex items-center gap-2">
-              <FlipVertical className="h-6 w-6 text-primary" /> Flashcards
-            </h1>
-            <p className="text-muted-foreground">Revise seus flashcards com repetição espaçada.</p>
-          </div>
-          <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
-            "Vá em 'Gerar Flashcards' no menu lateral para criar cards com IA por tema",
-            "Cada card tem frente (pergunta) e verso (resposta) — clique para virar",
-            "Após virar, avalie: Fácil, Bom ou Errei — o algoritmo agenda revisões",
-            "Use o modo Sprint ⚡ para revisar vários cards com cronômetro",
-          ]} />
+      <div className="pb-24 pt-8 space-y-12">
+        <div className="px-4 sm:px-8 lg:px-14">
+          <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
+            <FlipVertical className="h-8 w-8 text-primary" /> 
+            Revisão Inteligente
+          </h1>
+          <p className="text-sm text-white/50 mt-1 font-medium">Revise seus conhecimentos com repetição espaçada personalizada.</p>
         </div>
-        <ModuleEmptyState
-          icon="📚"
-          title="Nenhum flashcard ainda"
-          description="Gere flashcards com IA a partir de qualquer tema médico ou envie um PDF."
-          steps={["Vá em 'Gerar Flashcards' e escolha um tema", "A IA cria flashcards com casos clínicos", "Revise marcando Fácil/Difícil — o algoritmo agenda revisões"]}
-          actionLabel="Gerar Flashcards Agora"
-          actionPath="/dashboard/flashcard-generator"
-        />
+
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <EnaflixActionCard
+            title="Gerar novos Flashcards"
+            description="Use a IA para criar novos cards a partir de temas médicos ou materiais de estudo."
+            icon={Sparkles}
+            variant="primary"
+            onClick={() => navigate("/dashboard/gerar-flashcards")}
+          />
+          <EnaflixActionCard
+            title="Importar Conteúdo"
+            description="Adicione seus próprios materiais em PDF ou texto para gerar revisões."
+            icon={DatabaseZap}
+            onClick={() => navigate("/dashboard/uploads")}
+          />
+        </div>
       </div>
     );
   }
@@ -413,196 +418,137 @@ const Flashcards = () => {
 
   // ── PHASE: Setup ──
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl mx-auto pb-20">
-      <div className="flex items-center gap-2 -mb-2">
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={() => navigate("/dashboard")}
-          className="gap-2 text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Voltar ao Panorama
-        </Button>
+    <div className="pb-24 pt-8 space-y-12">
+      <div className="px-4 sm:px-8 lg:px-14">
+        <div className="flex items-center gap-2 mb-4">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => navigate("/dashboard")}
+            className="gap-2 text-white/40 hover:text-white"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+        </div>
+        
+        <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
+          <FlipVertical className="h-8 w-8 text-primary" /> 
+          Revisões Inteligentes
+        </h1>
+        <p className="text-sm text-white/50 mt-1 font-medium">Foco total na retenção de longo prazo com IA.</p>
       </div>
+
       {pendingSession && (
-        <ResumeSessionBanner
-          updatedAt={pendingSession.updated_at}
-          onResume={handleRestoreSession}
-          onDiscard={abandonSession}
-        />
-      )}
-      <StudyContextBanner />
-
-      <CinematicHero
-        module="flashcard"
-        eyebrow={<><Sparkles className="h-3.5 w-3.5" /> Memória ativa · FSRS</>}
-        title="Flashcards"
-        subtitle={`${allCards.length} cards no acervo · ${dueCards.length} prontos para revisão · ${reviewedCount} em dia. Repetição espaçada elegante para fixação de longo prazo.`}
-        actions={
-          <div className="flex items-center gap-2">
-            <ModuleHelpButton moduleKey="flashcards" moduleName="Flashcards" steps={[
-              "Escolha um modo de revisão e inicie a sessão",
-              "Responda cada card e avalie seu desempenho",
-              "O algoritmo FSRS agenda revisões automáticas",
-            ]} />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-9 w-9">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem
-                  onClick={() => exportToPdf(
-                    allCards.map(c => ({ title: c.question, content: c.answer, subtitle: c.topic || undefined })),
-                    "Flashcards_ENAZIZI"
-                  )}
-                >
-                  <Download className="h-4 w-4 mr-2" /> Exportar PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        }
-        media={
-          <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
-            <FlipVertical className="h-10 w-10 text-module" />
-          </div>
-        }
-      />
-
-      {/* FSRS Stats */}
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          { label: "Novos", count: Array.from(fsrsStates.values()).filter(s => s.state === 0).length },
-          { label: "Aprendendo", count: Array.from(fsrsStates.values()).filter(s => s.state === 1 || s.state === 3).length },
-          { label: "Revisão", count: Array.from(fsrsStates.values()).filter(s => s.state === 2).length },
-          { label: "Total", count: allCards.length },
-        ].map(({ label, count }) => (
-          <div key={label} className="glass-card p-3 text-center">
-            <div className="text-lg font-bold text-primary">{count}</div>
-            <div className="text-xs text-muted-foreground">{label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Topic search + generate from bank */}
-      <div className="glass-card p-4 space-y-3">
-        <h3 className="text-sm font-semibold flex items-center gap-2">
-          <Search className="h-4 w-4" /> Gerar e Filtrar por Tema
-        </h3>
-        <div className="flex gap-2">
-          <Input
-            placeholder="Digite o tema (ex: Cardiologia, IAM, Pneumonia)"
-            value={topicSearch}
-            onChange={e => setTopicSearch(e.target.value)}
-            className="flex-1"
+        <div className="px-4 sm:px-8 lg:px-14">
+          <ResumeSessionBanner
+            updatedAt={pendingSession.updated_at}
+            onResume={handleRestoreSession}
+            onDiscard={abandonSession}
           />
-          {topicSearch.trim() && (
-            <Button variant="ghost" size="sm" className="text-xs shrink-0" onClick={() => setTopicSearch("")}>
-              Limpar
+        </div>
+      )}
+
+      {/* Stats Row */}
+      <EnaflixRow title="Status da sua memória">
+        <div className="flex gap-4">
+          {[
+            { label: "Novos", count: Array.from(fsrsStates.values()).filter(s => s.state === 0).length, color: "text-blue-400" },
+            { label: "Aprendendo", count: Array.from(fsrsStates.values()).filter(s => s.state === 1 || s.state === 3).length, color: "text-amber-400" },
+            { label: "Revisão", count: Array.from(fsrsStates.values()).filter(s => s.state === 2).length, color: "text-emerald-400" },
+            { label: "Total", count: allCards.length, color: "text-white" },
+          ].map(({ label, count, color }) => (
+            <div key={label} className="bg-white/5 border border-white/5 rounded-2xl p-6 min-w-[140px] text-center">
+              <div className={cn("text-3xl font-black mb-1", color)}>{count}</div>
+              <div className="text-[10px] uppercase font-bold tracking-widest text-white/40">{label}</div>
+            </div>
+          ))}
+        </div>
+      </EnaflixRow>
+
+      {/* Modes Row */}
+      <EnaflixSection title="Escolha seu modo de estudo">
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <EnaflixActionCard
+            title="Revisão Prioritária"
+            description={`${dueCards.length} cards com alto risco de esquecimento.`}
+            icon={Brain}
+            variant="primary"
+            badge="IA Recomendou"
+            onClick={() => handleStartSession("due")}
+          />
+          <EnaflixActionCard
+            title="Modo Sprint"
+            description={`${sprintConfig.cardCount} cards em ${sprintConfig.timeMinutes} minutos.`}
+            icon={Zap}
+            onClick={() => handleStartSession("sprint")}
+          />
+          <EnaflixActionCard
+            title="Todos os Cards"
+            description={`Revisar todo o acervo de ${allCards.length} cards.`}
+            icon={GraduationCap}
+            onClick={() => handleStartSession("all")}
+          />
+        </div>
+      </EnaflixSection>
+
+      {/* Tool Row */}
+      <EnaflixSection title="Ferramentas de Produção" subtitle="Gere e filtre por tema para focar seu estudo.">
+        <div className="px-4 sm:px-8 lg:px-14">
+          <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-2xl p-8 space-y-6 max-w-2xl">
+            <div className="flex gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                <Input
+                  placeholder="Digite o tema (ex: Cardiologia, IAM, Pneumonia)"
+                  value={topicSearch}
+                  onChange={e => setTopicSearch(e.target.value)}
+                  className="pl-12 h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary focus:border-primary text-white"
+                />
+              </div>
+              {topicSearch.trim() && (
+                <Button variant="ghost" className="h-12 text-white/40 hover:text-white" onClick={() => setTopicSearch("")}>
+                  Limpar
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold uppercase tracking-widest text-white/30">Quantidade de flashcards</label>
+              <div className="flex gap-2">
+                {[5, 10, 15, 20, 30].map(q => (
+                  <button
+                    key={q}
+                    onClick={() => setGenerateQuantity(q)}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl border text-sm font-bold transition-all",
+                      generateQuantity === q
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-white/5 bg-white/5 text-white/40 hover:bg-white/10"
+                    )}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <Button
+              size="lg"
+              className="w-full h-14 gap-3 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-glow-sm"
+              onClick={() => handleGenerateFromBank(true)}
+              disabled={generatingFromBank || !topicSearch.trim()}
+            >
+              {generatingFromBank ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <DatabaseZap className="h-5 w-5" />
+              )}
+              Gerar {generateQuantity} Flashcards e Iniciar
             </Button>
-          )}
-        </div>
-
-        {/* Quantity selector */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Quantidade de flashcards</label>
-          <div className="flex gap-2">
-            {[5, 10, 15, 20, 30].map(q => (
-              <button
-                key={q}
-                onClick={() => setGenerateQuantity(q)}
-                className={`flex-1 py-1.5 rounded-lg border text-sm font-medium transition-all ${
-                  generateQuantity === q
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border bg-card hover:bg-secondary"
-                }`}
-              >
-                {q}
-              </button>
-            ))}
           </div>
         </div>
-
-        <Button
-          className="w-full gap-2"
-          onClick={() => handleGenerateFromBank(true)}
-          disabled={generatingFromBank || !topicSearch.trim()}
-        >
-          {generatingFromBank ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <DatabaseZap className="h-4 w-4" />
-          )}
-          Gerar {generateQuantity} Flashcards e Iniciar
-        </Button>
-        {topicSearch.trim() && (
-          <p className="text-xs text-muted-foreground">
-            {filteredCards.length} card(s) existente(s) para "{topicSearch}"
-          </p>
-        )}
-      </div>
-
-      {/* Mode selection */}
-      <div className="grid gap-3">
-        <button
-          onClick={() => handleStartSession("due")}
-          className="glass-card p-5 text-left hover:border-primary/40 transition-all group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Brain className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold">Revisão Inteligente</h3>
-              <p className="text-xs text-muted-foreground">
-                {dueCards.length} cards pendentes — prioridade por risco de esquecimento
-              </p>
-            </div>
-            <Badge variant="secondary">{dueCards.length}</Badge>
-          </div>
-        </button>
-
-        <button
-          onClick={() => handleStartSession("all")}
-          className="glass-card p-5 text-left hover:border-primary/40 transition-all group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <GraduationCap className="h-5 w-5 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold">Todos os Cards</h3>
-              <p className="text-xs text-muted-foreground">
-                Revise todos os flashcards disponíveis
-              </p>
-            </div>
-            <Badge variant="secondary">{allCards.length}</Badge>
-          </div>
-        </button>
-
-        <button
-          onClick={() => handleStartSession("sprint")}
-          className="glass-card p-5 text-left hover:border-primary/40 transition-all group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-yellow-500/10">
-              <Zap className="h-5 w-5 text-yellow-500" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold">Modo Sprint</h3>
-              <p className="text-xs text-muted-foreground">
-                {sprintConfig.cardCount} cards em {sprintConfig.timeMinutes} minutos — velocidade máxima
-              </p>
-            </div>
-            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" /> {sprintConfig.timeMinutes}min
-            </div>
-          </div>
-        </button>
-      </div>
+      </EnaflixSection>
     </div>
   );
 };
