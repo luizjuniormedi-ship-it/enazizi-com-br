@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Clock, ArrowRight, ArrowLeft, Bookmark, GraduationCap,
   CheckCircle2, XCircle, RotateCcw, Send, Eye, Flag,
