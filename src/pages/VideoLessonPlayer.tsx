@@ -130,7 +130,9 @@ const VideoLessonPlayer = () => {
         .eq("id", id)
         .maybeSingle();
 
-      if (memoryData) return memoryData as LessonData;
+      if (memoryData) {
+        return { ...(memoryData as any), __source: "tutor_memory" } as LessonData;
+      }
 
       const { data, error } = await supabase
         .from("ai_video_lessons")
@@ -143,7 +145,22 @@ const VideoLessonPlayer = () => {
         logPlaybackAudit("error", error.message);
         throw error;
       }
-      return data as LessonData;
+      return { ...(data as any), __source: "cme" } as LessonData;
+    }
+  });
+
+  // Signed URL para aulas vindas do tutor_lesson_memory (bucket privado)
+  const { data: signedUrlData } = useQuery({
+    queryKey: ["tutor-lesson-signed-url", id],
+    enabled: !!id && (lesson as any)?.__source === "tutor_memory" && !!(lesson as any)?.video_url,
+    refetchInterval: 50 * 60 * 1000, // renova antes de expirar (URL dura 60 min)
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke(
+        "tutor-lesson-signed-url",
+        { body: { lesson_id: id } }
+      );
+      if (error) throw error;
+      return data as { signed_url: string; expires_in: number };
     }
   });
 
@@ -398,13 +415,36 @@ const VideoLessonPlayer = () => {
     const ts = currentTs ?? watchedSeconds;
 
     // Track in new table
+    const progressPct = duration ? Math.min(Math.round((ts / duration) * 100), 100) : 0;
+    const isCompleted = action === "complete" || progressPct >= 90;
     await supabase.from("tutor_lesson_progress").upsert({
       lesson_id: id,
       user_id: user.id,
       last_position: ts,
-      progress_percent: duration ? Math.min(Math.round((ts / duration) * 100), 100) : 0,
-      completed: action === "complete"
+      progress_percent: progressPct,
+      completed: isCompleted,
+      completed_at: isCompleted ? new Date().toISOString() : null,
     }, { onConflict: 'lesson_id,user_id' });
+
+    // Eventos próprios para aulas humanas (não polui CME logs)
+    if ((lesson as any)?.__source === "tutor_memory" && id) {
+      if (action === "play" || action === "heartbeat") {
+        await supabase.from("tutor_lesson_events").insert([{
+          lesson_id: id,
+          actor_id: user.id,
+          event_type: "lesson_watched",
+          metadata: { watched_seconds: ts, progress_percent: progressPct },
+        }] as any);
+      }
+      if (isCompleted) {
+        await supabase.from("tutor_lesson_events").insert([{
+          lesson_id: id,
+          actor_id: user.id,
+          event_type: "lesson_completed",
+          metadata: { watched_seconds: ts, progress_percent: progressPct },
+        }] as any);
+      }
+    }
 
 
     const { error } = await supabase
@@ -604,12 +644,15 @@ const VideoLessonPlayer = () => {
   if (!lesson) return <div className="p-8 text-white bg-[#0a0a12] h-screen">Aula não encontrada.</div>;
 
   // FASE 2 & 6: Enterprise HLS & Variant Priority
+  const isTutorMemory = (lesson as any).__source === "tutor_memory";
   const hlsManifest = (lesson as any).hls_manifest_url;
-  const playbackUrl = hlsManifest || 
-                     (lesson as any).hls_url || 
-                     lesson.video_url || 
-                     (lesson as any).playback_url ||
-                     (lesson as any).notebooklm_video_url;
+  const playbackUrl = isTutorMemory
+    ? signedUrlData?.signed_url
+    : (hlsManifest ||
+       (lesson as any).hls_url ||
+       lesson.video_url ||
+       (lesson as any).playback_url ||
+       (lesson as any).notebooklm_video_url);
 
   // Anti-placeholder logic
   const isPlaceholder = !playbackUrl || 

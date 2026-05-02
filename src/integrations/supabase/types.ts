@@ -19008,6 +19008,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_lesson_staff: { Args: { _user_id: string }; Returns: boolean }
       list_student_facets_for_professor: {
         Args: never
         Returns: {
