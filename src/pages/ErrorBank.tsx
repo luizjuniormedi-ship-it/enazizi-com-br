@@ -29,13 +29,12 @@ interface ErrorEntry {
   dominado_em: string | null;
 }
 
-interface ThemeStats {
-  tema: string;
-  total: number;
-  trend: "improving" | "worsening" | "stable";
-  subtemas: { subtema: string; count: number }[];
-  categorias: { cat: string; count: number }[];
-}
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
+import { ErrorThemeCard } from "@/components/enaflix/ErrorThemeCard";
+import { cn } from "@/lib/utils";
+
+interface ErrorEntry {
 
 const CATEGORIA_LABELS: Record<string, string> = {
   conceito: "Conceito",
