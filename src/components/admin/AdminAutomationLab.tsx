@@ -129,28 +129,28 @@ const AdminAutomationLab = ({ userId }: Props) => {
                 <Activity className="h-4 w-4 text-emerald-300" />
                 Engine Intelligence
               </h4>
-...
-            
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-                <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Geração Threshold</span>
-                <span className="text-xs font-black text-white">85 / 100</span>
+              
+              <div className="space-y-2">
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+                  <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Geração Threshold</span>
+                  <span className="text-xs font-black text-white">85 / 100</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+                  <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Deduplicação</span>
+                  <span className="text-xs font-black text-emerald-400">ATIVO</span>
+                </div>
+                <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
+                  <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Rollout Control</span>
+                  <span className="text-xs font-black text-violet-400">ADMIN ONLY</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-                <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Deduplicação</span>
-                <span className="text-xs font-black text-emerald-400">ATIVO</span>
-              </div>
-              <div className="flex items-center justify-between p-2 rounded-lg bg-white/5 border border-white/5">
-                <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest">Rollout Control</span>
-                <span className="text-xs font-black text-violet-400">ADMIN ONLY</span>
-              </div>
-            </div>
 
-            <div className="flex items-start gap-2 pt-1">
-              <Info className="h-3.5 w-3.5 text-white/30 shrink-0 mt-0.5" />
-              <p className="text-[10px] text-white/30 leading-tight">
-                Aulas geradas automaticamente aparecerão em "Memória Aulas" (tutor-lessons) com o selo "Uso Real".
-              </p>
+              <div className="flex items-start gap-2 pt-1">
+                <Info className="h-3.5 w-3.5 text-white/30 shrink-0 mt-0.5" />
+                <p className="text-[10px] text-white/30 leading-tight">
+                  Aulas geradas automaticamente aparecerão em "Memória Aulas" (tutor-lessons) com o selo "Uso Real".
+                </p>
+              </div>
             </div>
           </div>
         </div>
