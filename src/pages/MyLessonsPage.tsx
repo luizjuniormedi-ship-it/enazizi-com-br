@@ -18,10 +18,11 @@ export default function MyLessonsPage() {
     document.title = "Minhas Aulas — ENAFLIX";
   }, []);
 
-  const continueLessons = memory.filter(m => !m.archived).slice(0, 10);
-  const favorites = memory.filter(m => m.favorite);
-  const cmeLessons = memory.filter(m => m.source_type === 'cme');
-  const tutorLessons = memory.filter(m => m.source_type === 'tutor_chat');
+  const continueLessons = memory.filter(m => m.status === 'published' && !m.archived).slice(0, 10);
+  const favorites = memory.filter(m => m.is_favorite);
+  const inProduction = memory.filter(m => ['pending_review', 'in_production', 'ready_to_publish'].includes(m.status));
+  const otherLessons = memory.filter(m => m.status === 'published' && !m.is_favorite);
+
 
   const handleClose = () => navigate("/dashboard");
 
@@ -77,35 +78,36 @@ export default function MyLessonsPage() {
             </div>
           )}
 
-          {/* Por Tipo: CME */}
-          {cmeLessons.length > 0 && (
+          {/* Em Produção */}
+          {inProduction.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center gap-2">
-                <Video className="w-5 h-5 text-purple-400" />
-                <h2 className="text-2xl font-bold">Cinemática (CME)</h2>
+                <Clock className="w-5 h-5 text-amber-400" />
+                <h2 className="text-2xl font-bold">Aulas em Produção</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {cmeLessons.map(lesson => (
+                {inProduction.map(lesson => (
                   <LessonCard key={lesson.id} lesson={lesson} />
                 ))}
               </div>
             </div>
           )}
 
-          {/* Por Tipo: Tutor */}
-          {tutorLessons.length > 0 && (
+          {/* Outras Aulas */}
+          {otherLessons.length > 0 && (
             <div className="space-y-6">
               <div className="flex items-center gap-2">
-                <Brain className="w-5 h-5 text-primary" />
-                <h2 className="text-2xl font-bold">Conversas com Tutor</h2>
+                <Video className="w-5 h-5 text-primary" />
+                <h2 className="text-2xl font-bold">Biblioteca de Aulas</h2>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {tutorLessons.map(lesson => (
+                {otherLessons.map(lesson => (
                   <LessonCard key={lesson.id} lesson={lesson} />
                 ))}
               </div>
             </div>
           )}
+
 
           {memory.length === 0 && !isLoading && (
             <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm">
@@ -201,11 +203,12 @@ function LessonCard({ lesson }: { lesson: any }) {
           </div>
         )}
 
-        {lesson.favorite && (
+        {lesson.is_favorite && (
           <div className="absolute top-3 right-3">
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 drop-shadow-lg" />
           </div>
         )}
+
       </div>
 
       <CardContent className="p-4">

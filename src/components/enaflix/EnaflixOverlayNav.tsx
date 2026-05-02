@@ -135,14 +135,15 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               Explorar Videoaulas
             </button>
             <button 
-              onClick={() => (window.location.href = "/dashboard/minhas-aulas")}
+              onClick={() => (window.location.href = "/dashboard/videoaulas")}
               className={cn(
                 "text-sm font-semibold transition-colors hover:text-white",
-                window.location.pathname.includes("minhas-aulas") ? "text-white" : "text-white/60"
+                window.location.pathname.includes("/dashboard/videoaulas") && !window.location.pathname.includes("explorar") ? "text-white" : "text-white/60"
               )}
             >
               Minhas Aulas
             </button>
+
           </nav>
         </div>
 
