@@ -264,6 +264,16 @@ const QuestionsBank = () => {
     // Award XP
     await addXp(isCorrect ? XP_REWARDS.question_correct : XP_REWARDS.question_answered);
 
+    // Rastreamento pedagógico para automação ENAFLIX
+    const { trackStudyActivity } = await import("@/lib/educationalEngine");
+    trackStudyActivity({
+      userId: user.id,
+      topic: practiceQuestion.topic || "Geral",
+      questionsCount: 1,
+      errorsCount: isCorrect ? 0 : 1,
+      studyTimeSeconds: 60, // Estimativa por questão
+    });
+
     // Update medical domain map
     if (practiceQuestion.topic) {
       await updateDomainMap(user.id, [{ topic: practiceQuestion.topic, correct: isCorrect }]);

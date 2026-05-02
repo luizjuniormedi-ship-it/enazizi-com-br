@@ -375,6 +375,21 @@ const StudySession = () => {
     const errorCategory = signal.errorCategory;
     trackAction('first_answer_submitted', { topic, correct, subtopic, error_category: errorCategory, confidence: signal.confidence });
 
+    // Rastreamento pedagógico para automação ENAFLIX
+    try {
+      const { trackStudyActivity } = await import("@/lib/educationalEngine");
+      trackStudyActivity({
+        userId: user.id,
+        topic,
+        questionsCount: 1,
+        errorsCount: correct ? 0 : 1,
+        interactionCount: 1,
+        studyTimeSeconds: 120, // Sessão de tutor é mais profunda
+      });
+    } catch (err) {
+      console.error("ENAFLIX tracking failed:", err);
+    }
+
     try {
       // Update local domain map (lightweight; not adaptive critical-path)
       const { updateDomainMap } = await import("@/lib/updateDomainMap");
