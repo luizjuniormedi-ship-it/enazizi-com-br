@@ -12,6 +12,8 @@ import { Play, Sparkles, Clock, FileText, AlertTriangle, Target, Brain, Info, Hi
 import { supabase } from "@/integrations/supabase/client";
 import { useTelemetry } from "@/hooks/useTelemetry";
 import { motion } from "framer-motion";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 
 import CinematicMissionHero from "@/components/dashboard-v2/CinematicMissionHero";
 import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
@@ -61,13 +63,16 @@ const Dashboard = () => {
   if (initialLoading) return <MissionControlSkeleton />;
 
   return (
-    <div className="pb-24 pt-8 space-y-12">
+    <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
       <AchievementToast />
 
       {/* Header & Status */}
       <div className="px-4 sm:px-8 lg:px-14">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mb-2">Hoje no ENAFLIX</h1>
-        <DashboardTopBar />
+        <EnaflixSectionTitle 
+          title="Hoje no ENAFLIX" 
+          subtitle={<DashboardTopBar />}
+        />
         <RecoveryModeBanner />
       </div>
 
@@ -163,25 +168,35 @@ const Dashboard = () => {
       {/* Progresso e Domínio */}
       <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Target className="h-5 w-5 text-primary" />
-            Meu Progresso
-          </h2>
+          <EnaflixSectionTitle
+            kicker="Performance"
+            title={
+              <span className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                Meu Progresso
+              </span>
+            }
+          />
           <Suspense fallback={null}>
             <ProgressOverview />
           </Suspense>
         </div>
         <div className="space-y-4">
-          <h2 className="text-xl font-bold flex items-center gap-2">
-            <Brain className="h-5 w-5 text-primary" />
-            Domínio Clínico
-          </h2>
+          <EnaflixSectionTitle
+            kicker="Maestria"
+            title={
+              <span className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-primary" />
+                Domínio Clínico
+              </span>
+            }
+          />
           <Suspense fallback={null}>
             <MedicalMasteryDashboard />
           </Suspense>
         </div>
       </div>
-      
+
       {/* Tutor IA Section */}
       <div className="px-4 sm:px-8 lg:px-14">
         <Suspense fallback={null}>

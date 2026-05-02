@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play } from "lucide-react";
+import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
+import { EnaflixLoader } from "@/components/enaflix/EnaflixLoader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +16,6 @@ import { ALL_MODULES } from "@/hooks/useModuleAccess";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
-import { CinematicHero } from "@/components/cinematic";
 
 // Lazy load all admin panels
 const WhatsAppPanel = lazy(() => import("@/components/admin/WhatsAppPanel"));
@@ -153,8 +156,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
 
 function PanelLoader() {
   return (
-    <div className="flex items-center justify-center py-16">
-      <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    <div className="flex items-center justify-center py-24">
+      <EnaflixLoader variant="default" label="Orquestrando dados..." />
     </div>
   );
 }
@@ -400,445 +403,462 @@ const Admin = () => {
 
   // ─── Render ─────────────────────────────
   return (
-    <div className="flex h-[calc(100vh-4rem)] overflow-hidden -m-4 sm:-m-6">
-      {/* ─── Sidebar ─── */}
-      <aside className={cn(
-        "flex-shrink-0 border-r border-border bg-muted/30 transition-all duration-300 overflow-hidden",
-        sidebarCollapsed ? "w-14" : "w-56"
-      )}>
-        <div className="flex items-center justify-between p-3 border-b border-border/50">
-          {!sidebarCollapsed && (
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Admin</span>
-            </div>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 flex-shrink-0"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          >
-            {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
+    <div className="relative min-h-screen bg-background text-foreground p-6 sm:p-10 space-y-10 overflow-x-hidden">
+      <EnaflixBackgroundFX intensity="subtle" />
+      
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <EnaflixSectionTitle
+          kicker="Admin Command Center"
+          title="Gestão Global ENAFLIX"
+          subtitle="Controle total de usuários, infraestrutura e motores de IA."
+        />
+        <div className="flex items-center gap-3">
+          <Enaflix3DButton variant="outline" size="sm" onClick={loadData} disabled={loading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+            Sincronizar
+          </Enaflix3DButton>
         </div>
+      </div>
 
-        <ScrollArea className="h-[calc(100%-3rem)]">
-          <nav className="p-2 space-y-4">
-            {navGroups.map((group) => (
-              <div key={group.title}>
-                {!sidebarCollapsed && (
-                  <p className="px-2 mb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                    {group.title}
-                  </p>
-                )}
-                <div className="space-y-0.5">
-                  {group.items.map((item) => {
-                    const active = activeSection === item.key;
-                    return (
-                      <button
-                        key={item.key}
-                        onClick={() => setActiveSection(item.key)}
-                        className={cn(
-                          "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors",
-                          active
-                            ? "bg-primary/10 text-primary font-medium"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                        )}
-                        title={sidebarCollapsed ? item.label : undefined}
-                      >
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        {!sidebarCollapsed && (
-                          <>
-                            <span className="truncate flex-1 text-left">{item.label}</span>
-                            {item.badge && item.badge > 0 && (
-                              <Badge className="h-5 min-w-[20px] px-1 text-[10px] bg-amber-500 text-white border-0">
-                                {item.badge}
-                              </Badge>
-                            )}
-                          </>
-                        )}
-                        {sidebarCollapsed && item.badge && item.badge > 0 && (
-                          <span className="absolute right-1 top-0 h-2 w-2 rounded-full bg-amber-500" />
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+      <div className="flex h-[calc(100vh-14rem)] overflow-hidden">
+        {/* ─── Sidebar ─── */}
+        <aside className={cn(
+          "flex-shrink-0 border border-white/5 rounded-2xl bg-black/20 backdrop-blur-xl transition-all duration-300 overflow-hidden mr-4 shadow-floating",
+          sidebarCollapsed ? "w-14" : "w-56"
+        )}>
+          <div className="flex items-center justify-between p-3 border-b border-border/50">
+            {!sidebarCollapsed && (
+              <div className="flex items-center gap-2">
+                <Shield className="h-4 w-4 text-primary" />
+                <span className="text-sm font-semibold">Admin</span>
               </div>
-            ))}
-          </nav>
-        </ScrollArea>
-      </aside>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 flex-shrink-0"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            >
+              {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            </Button>
+          </div>
 
-      {/* ─── Main Content ─── */}
-      <main className="flex-1 overflow-auto">
-        <div className="p-4 sm:p-6 space-y-6 max-w-7xl">
-          {/* Cinematic hero — sóbrio, técnico, premium */}
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-3 p-4 bg-violet-600 rounded-2xl shadow-2xl shadow-violet-500/40 border border-violet-400">
-              <Sparkles className="h-6 w-6 text-white animate-pulse" />
-              <div className="flex-1">
-                <h2 className="text-white font-black text-sm uppercase tracking-tighter">Área de Produção Urgente</h2>
-                <p className="text-violet-100 text-xs">Inicie a geração automática das 41 aulas para a P2 agora.</p>
-              </div>
-              <Button 
-                onClick={handleBatchP2} 
-                disabled={loadingBatch}
-                className="bg-white text-violet-600 hover:bg-violet-50 font-black px-6 h-10 shadow-lg"
-              >
-                {loadingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current mr-2" />}
-                {loadingBatch ? "PROCESSANDO..." : "INICIAR LOTE P2 AGORA"}
-              </Button>
-            </div>
-
-            {activeSection === "overview" && (
-            <CinematicHero
-              module="admin"
-              eyebrow={
-                <>
-                  <Shield className="h-3.5 w-3.5" />
-                  Centro de operações
-                </>
-              }
-              title="ENAFLIX Operations Center"
-              subtitle="Operação, qualidade e governança do ENAZIZI em tempo real."
-              actions={
-                <div className="flex flex-col sm:flex-row flex-wrap gap-4">
-                  <div className="flex flex-wrap gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="lg" 
-                      onClick={loadData} 
-                      disabled={loading} 
-                      className="gap-2"
-                    >
-                      <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                      Atualizar dados
-                    </Button>
-                    <Button 
-                      size="lg" 
-                      onClick={handleBatchP2} 
-                      disabled={loadingBatch}
-                      className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0 shadow-xl shadow-violet-500/30 ring-2 ring-violet-400/20"
-                    >
-                      {loadingBatch ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Play className="h-4 w-4 fill-white" />
-                      )}
-                      <span className="font-black">INICIAR PRODUÇÃO LOTE P2</span>
-                    </Button>
+          <ScrollArea className="h-[calc(100%-3rem)]">
+            <nav className="p-2 space-y-4">
+              {navGroups.map((group) => (
+                <div key={group.title}>
+                  {!sidebarCollapsed && (
+                    <p className="px-2 mb-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                      {group.title}
+                    </p>
+                  )}
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const active = activeSection === item.key;
+                      return (
+                        <button
+                          key={item.key}
+                          onClick={() => setActiveSection(item.key)}
+                          className={cn(
+                            "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors",
+                            active
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                          )}
+                          title={sidebarCollapsed ? item.label : undefined}
+                        >
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          {!sidebarCollapsed && (
+                            <>
+                              <span className="truncate flex-1 text-left">{item.label}</span>
+                              {item.badge && item.badge > 0 && (
+                                <Badge className="h-5 min-w-[20px] px-1 text-[10px] bg-amber-500 text-white border-0">
+                                  {item.badge}
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                          {sidebarCollapsed && item.badge && item.badge > 0 && (
+                            <span className="absolute right-1 top-0 h-2 w-2 rounded-full bg-amber-500" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-              }
-              className="py-6 sm:py-8"
-            />
-          )}
+              ))}
+            </nav>
+          </ScrollArea>
+        </aside>
 
-          {/* Header bar (para outras seções) */}
-          {activeSection !== "overview" && (
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-lg font-bold">
-                  {navGroups.flatMap(g => g.items).find(i => i.key === activeSection)?.label || "Painel Admin"}
-                </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs h-7">
-                  {users.length} usuários
-                </Badge>
-                <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
-                  <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                  <span className="hidden sm:inline">Atualizar</span>
+        {/* ─── Main Content ─── */}
+        <main className="flex-1 overflow-auto">
+          <div className="p-4 sm:p-6 space-y-6 max-w-7xl">
+            {/* Cinematic hero — sóbrio, técnico, premium */}
+            <div className="flex flex-col gap-6">
+              <div className="flex items-center gap-3 p-4 bg-violet-600 rounded-2xl shadow-2xl shadow-violet-500/40 border border-violet-400">
+                <Sparkles className="h-6 w-6 text-white animate-pulse" />
+                <div className="flex-1">
+                  <h2 className="text-white font-black text-sm uppercase tracking-tighter">Área de Produção Urgente</h2>
+                  <p className="text-violet-100 text-xs">Inicie a geração automática das 41 aulas para a P2 agora.</p>
+                </div>
+                <Button 
+                  onClick={handleBatchP2} 
+                  disabled={loadingBatch}
+                  className="bg-white text-violet-600 hover:bg-violet-50 font-black px-6 h-10 shadow-lg"
+                >
+                  {loadingBatch ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current mr-2" />}
+                  {loadingBatch ? "PROCESSANDO..." : "INICIAR LOTE P2 AGORA"}
                 </Button>
               </div>
-            </div>
-          )}
 
-          {/* Pending alert (shown in overview & user sections) */}
-          {pendingCount > 0 && (activeSection === "overview" || activeSection === "users-pending") && (
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <Bell className="h-5 w-5 text-amber-500 animate-pulse flex-shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold">🔔 {pendingCount} usuário{pendingCount > 1 ? "s" : ""} aguardando aprovação</p>
-              </div>
-              <Button size="sm" className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white flex-shrink-0" onClick={() => setActiveSection("users-pending")}>
-                <UserCheck className="h-4 w-4" /> Revisar
-              </Button>
-            </div>
-          )}
-
-          {/* ═══ Section Content ═══ */}
-          <Suspense fallback={<PanelLoader />}>
-            {/* Overview */}
-            {activeSection === "overview" && (
-              <div className="space-y-6">
-                {/* Alerta de contaminação da baseline (apenas-leitura, admin-only) */}
-                <BaselineFreezeAlert />
-                <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
-                <AdminPlanDistribution stats={stats} />
-                <AdminDailyGenerationAlert />
-                <AdminAutomationLab userId={session?.user?.id} />
-
-                {/* Atalhos para ferramentas administrativas internas (rotas /admin/*) */}
-                <div className="rounded-lg border bg-card p-4 sm:p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Wrench className="h-4 w-4 text-primary" />
-                    <h3 className="text-sm font-semibold">Ferramentas administrativas</h3>
-                    <Badge variant="outline" className="text-[10px]">rotas internas</Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Páginas operacionais não listadas na sidebar. Acesse aqui para evitar perder a URL.
-                  </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    <Link
-                      to="/admin/classification-runner"
-                      className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
-                    >
-                      <GitBranch className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium flex items-center gap-1">
-                          Classification Runner
-                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          Executor + auditoria do classify-question-hierarchy
-                        </div>
-                      </div>
-                    </Link>
-                    <Link
-                      to="/admin/classification"
-                      className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
-                    >
-                      <Layers className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium flex items-center gap-1">
-                          Classification Backfill
-                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          Backfill incremental de classificação
-                        </div>
-                      </div>
-                    </Link>
-                    <Link
-                      to="/admin/coverage-boost"
-                      className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
-                    >
-                      <Activity className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium flex items-center gap-1">
-                          Coverage Boost
-                          <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                        </div>
-                        <div className="text-xs text-muted-foreground truncate">
-                          Bridge coverage → study engine
-                        </div>
-                      </div>
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSection === "online" && (
-              <AdminOnlineUsers stats={stats} onUserClick={(userId) => {
-                const found = users.find(u => u.user_id === userId);
-                if (found) setUserDetailDialog({ open: true, user: found });
-                else toast({ title: "Usuário não encontrado" });
-              }} />
-            )}
-
-            {/* Users sections */}
-            {isUserSection && (
-              <div className="space-y-4">
-                {/* Search + filters */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-                  </div>
-                  <div className="flex gap-2">
-                    <Select value={filterFaculdade} onValueChange={setFilterFaculdade}>
-                      <SelectTrigger className="w-[180px] h-9 text-xs">
-                        <SelectValue placeholder="Universidade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todas universidades</SelectItem>
-                        {uniqueFaculdades.map((f) => (
-                          <SelectItem key={f} value={f}>{f}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
-                      <SelectTrigger className="w-[130px] h-9 text-xs">
-                        <SelectValue placeholder="Período" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Todos</SelectItem>
-                        {uniquePeriodos.map((p) => (
-                          <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
-                      <Button variant="ghost" size="sm" className="h-9 px-2 text-xs" onClick={() => { setFilterFaculdade("all"); setFilterPeriodo("all"); }}>
-                        <X className="h-3 w-3" />
+              {activeSection === "overview" && (
+              <CinematicHero
+                module="admin"
+                eyebrow={
+                  <>
+                    <Shield className="h-3.5 w-3.5" />
+                    Centro de operações
+                  </>
+                }
+                title="ENAFLIX Operations Center"
+                subtitle="Operação, qualidade e governança do ENAZIZI em tempo real."
+                actions={
+                  <div className="flex flex-col sm:flex-row flex-wrap gap-4">
+                    <div className="flex flex-wrap gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="lg" 
+                        onClick={loadData} 
+                        disabled={loading} 
+                        className="gap-2"
+                      >
+                        <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                        Atualizar dados
                       </Button>
-                    )}
+                      <Button 
+                        size="lg" 
+                        onClick={handleBatchP2} 
+                        disabled={loadingBatch}
+                        className="gap-2 bg-violet-600 hover:bg-violet-700 text-white border-0 shadow-xl shadow-violet-500/30 ring-2 ring-violet-400/20"
+                      >
+                        {loadingBatch ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Play className="h-4 w-4 fill-white" />
+                        )}
+                        <span className="font-black">INICIAR PRODUÇÃO LOTE P2</span>
+                      </Button>
+                    </div>
+                  </div>
+                }
+                className="py-6 sm:py-8"
+              />
+            )}
+
+            {/* Header bar (para outras seções) */}
+            {activeSection !== "overview" && (
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-lg font-bold">
+                    {navGroups.flatMap(g => g.items).find(i => i.key === activeSection)?.label || "Painel Admin"}
+                  </h1>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs h-7">
+                    {users.length} usuários
+                  </Badge>
+                  <Button variant="outline" size="sm" onClick={loadData} disabled={loading} className="gap-1.5">
+                    <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+                    <span className="hidden sm:inline">Atualizar</span>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Pending alert (shown in overview & user sections) */}
+            {pendingCount > 0 && (activeSection === "overview" || activeSection === "users-pending") && (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                <Bell className="h-5 w-5 text-amber-500 animate-pulse flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold">🔔 {pendingCount} usuário{pendingCount > 1 ? "s" : ""} aguardando aprovação</p>
+                </div>
+                <Button size="sm" className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white flex-shrink-0" onClick={() => setActiveSection("users-pending")}>
+                  <UserCheck className="h-4 w-4" /> Revisar
+                </Button>
+              </div>
+            )}
+
+            {/* ═══ Section Content ═══ */}
+            <Suspense fallback={<PanelLoader />}>
+              {/* Overview */}
+              {activeSection === "overview" && (
+                <div className="space-y-6">
+                  {/* Alerta de contaminação da baseline (apenas-leitura, admin-only) */}
+                  <BaselineFreezeAlert />
+                  <AdminStatsCards stats={stats} pendingCount={pendingCount} activeCount={activeCount} blockedCount={blockedCount} />
+                  <AdminPlanDistribution stats={stats} />
+                  <AdminDailyGenerationAlert />
+                  <AdminAutomationLab userId={session?.user?.id} />
+
+                  {/* Atalhos para ferramentas administrativas internas (rotas /admin/*) */}
+                  <div className="rounded-lg border bg-card p-4 sm:p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Wrench className="h-4 w-4 text-primary" />
+                      <h3 className="text-sm font-semibold">Ferramentas administrativas</h3>
+                      <Badge variant="outline" className="text-[10px]">rotas internas</Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      Páginas operacionais não listadas na sidebar. Acesse aqui para evitar perder a URL.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      <Link
+                        to="/admin/classification-runner"
+                        className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
+                      >
+                        <GitBranch className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium flex items-center gap-1">
+                            Classification Runner
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            Executor + auditoria do classify-question-hierarchy
+                          </div>
+                        </div>
+                      </Link>
+                      <Link
+                        to="/admin/classification"
+                        className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
+                      >
+                        <Layers className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium flex items-center gap-1">
+                            Classification Backfill
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            Backfill incremental de classificação
+                          </div>
+                        </div>
+                      </Link>
+                      <Link
+                        to="/admin/coverage-boost"
+                        className="flex items-start gap-2 p-3 rounded-md border hover:bg-muted/50 transition-colors"
+                      >
+                        <Activity className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium flex items-center gap-1">
+                            Coverage Boost
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                          </div>
+                          <div className="text-xs text-muted-foreground truncate">
+                            Bridge coverage → study engine
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                {/* Sub-tabs for user status */}
-                <Tabs value={userTab} onValueChange={(v) => setActiveSection(`users-${v}`)}>
-                  <TabsList className="h-9">
-                    <TabsTrigger value="all" className="text-xs gap-1">Todos <Badge variant="secondary" className="text-[10px] ml-1">{users.length}</Badge></TabsTrigger>
-                    <TabsTrigger value="pending" className="text-xs gap-1">Pendentes {pendingCount > 0 && <Badge className="text-[10px] ml-1 bg-amber-500 text-white">{pendingCount}</Badge>}</TabsTrigger>
-                    <TabsTrigger value="active" className="text-xs gap-1">Ativos <Badge variant="secondary" className="text-[10px] ml-1">{activeCount}</Badge></TabsTrigger>
-                    <TabsTrigger value="blocked" className="text-xs gap-1">Bloqueados <Badge variant="secondary" className="text-[10px] ml-1">{blockedCount}</Badge></TabsTrigger>
-                  </TabsList>
-                </Tabs>
+              {activeSection === "online" && (
+                <AdminOnlineUsers stats={stats} onUserClick={(userId) => {
+                  const found = users.find(u => u.user_id === userId);
+                  if (found) setUserDetailDialog({ open: true, user: found });
+                  else toast({ title: "Usuário não encontrado" });
+                }} />
+              )}
 
-                {/* Results */}
-                <div className="text-xs text-muted-foreground">{filteredUsers.length} resultado{filteredUsers.length !== 1 ? "s" : ""}</div>
-
-                {loading ? (
-                  <PanelLoader />
-                ) : filteredUsers.length === 0 ? (
-                  <p className="text-center text-muted-foreground py-8">
-                    {userTab === "pending" ? "Nenhum usuário aguardando aprovação." : "Nenhum usuário encontrado."}
-                  </p>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      <div className="col-span-2">Usuário</div>
-                      <div className="col-span-2">Email</div>
-                      <div className="col-span-1">Plano</div>
-                      <div className="col-span-1">Status</div>
-                      <div className="col-span-1">Último acesso</div>
-                      <div className="col-span-3">Evolução</div>
-                      <div className="col-span-4 text-right">Ações</div>
+              {/* Users sections */}
+              {isUserSection && (
+                <div className="space-y-4">
+                  {/* Search + filters */}
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="Buscar por nome ou email..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
                     </div>
-                    {filteredUsers.map((u) => (
-                      <AdminUserRow
-                        key={u.user_id}
-                        u={u}
-                        actionLoading={actionLoading}
-                        session={session}
-                        getStatusBadge={getStatusBadge}
-                        getUserPlan={getUserPlan}
-                        onApprove={handleApproveUser}
-                        onReject={handleRejectUser}
-                        onOpenDetail={(u) => setUserDetailDialog({ open: true, user: u })}
-                        onOpenAdmin={(u, makeAdmin) => setAdminDialog({ open: true, user: u, makeAdmin })}
-                        onOpenProfessor={(u, makeProfessor) => setProfessorDialog({ open: true, user: u, makeProfessor })}
-                        onOpenPlan={(u, plan) => setPlanDialog({ open: true, user: u, plan })}
-                        onOpenPassword={(u) => setPasswordDialog({ open: true, user: u, password: "" })}
-                        onOpenBlock={(u, block) => setBlockDialog({ open: true, user: u, block })}
-                        onOpenLogout={(u) => setLogoutDialog({ open: true, user: u })}
-                        onOpenTracking={loadUserTracking}
-                        onOpenAccess={loadUserAccess}
-                        onOpenDelete={(u) => setDeleteDialog({ open: true, user: u })}
-                      />
-                    ))}
+                    <div className="flex gap-2">
+                      <Select value={filterFaculdade} onValueChange={setFilterFaculdade}>
+                        <SelectTrigger className="w-[180px] h-9 text-xs">
+                          <SelectValue placeholder="Universidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas universidades</SelectItem>
+                          {uniqueFaculdades.map((f) => (
+                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={filterPeriodo} onValueChange={setFilterPeriodo}>
+                        <SelectTrigger className="w-[130px] h-9 text-xs">
+                          <SelectValue placeholder="Período" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos</SelectItem>
+                          {uniquePeriodos.map((p) => (
+                            <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {(filterFaculdade !== "all" || filterPeriodo !== "all") && (
+                        <Button variant="ghost" size="sm" className="h-9 px-2 text-xs" onClick={() => { setFilterFaculdade("all"); setFilterPeriodo("all"); }}>
+                          <X className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
 
-            {/* Content */}
-            {activeSection === "pipeline" && <AdminPipelineMonitor />}
-            {activeSection === "cinematic-engine" && <AdminCinematicEngine />}
-            {activeSection === "questions" && <AdminQuestionReviewPanel />}
-            {activeSection === "tutor-lessons" && <AdminLessonsMemory />}
-            {activeSection === "image-upgrade" && <ImageQuestionUpgradePanel />}
-            {activeSection === "image-review" && <AdminImageQuestionReviewPanel />}
-            {activeSection === "hygiene" && <AdminHygieneDashboard />}
-            {activeSection === "ingestion" && <AdminIngestionPanel />}
-            {activeSection === "scraping" && <AdminWebScrapingPanel />}
-            {activeSection === "automation-lab" && <AdminAutomationLab userId={session?.user?.id} />}
-            {activeSection === "qa" && <AdminQAPanel />}
-            {activeSection === "ai-studio" && <AIStudio />}
-            {activeSection === "system-checklist" && <SystemChecklist />}
+                  {/* Sub-tabs for user status */}
+                  <Tabs value={userTab} onValueChange={(v) => setActiveSection(`users-${v}`)}>
+                    <TabsList className="h-9">
+                      <TabsTrigger value="all" className="text-xs gap-1">Todos <Badge variant="secondary" className="text-[10px] ml-1">{users.length}</Badge></TabsTrigger>
+                      <TabsTrigger value="pending" className="text-xs gap-1">Pendentes {pendingCount > 0 && <Badge className="text-[10px] ml-1 bg-amber-500 text-white">{pendingCount}</Badge>}</TabsTrigger>
+                      <TabsTrigger value="active" className="text-xs gap-1">Ativos <Badge variant="secondary" className="text-[10px] ml-1">{activeCount}</Badge></TabsTrigger>
+                      <TabsTrigger value="blocked" className="text-xs gap-1">Bloqueados <Badge variant="secondary" className="text-[10px] ml-1">{blockedCount}</Badge></TabsTrigger>
+                    </TabsList>
+                  </Tabs>
 
-            {/* Intelligence Engine */}
-            {activeSection === "intelligence-overview" && <IntelligenceOverviewPanel />}
-            {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
-            {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
-            {activeSection === "cognitive-orchestrator" && <AdminCognitiveOrchestrator />}
-            {activeSection === "intervention-policies" && <AdminInterventionPolicies />}
-            {activeSection === "adaptive-experiments" && <AdminAdaptiveExperiments />}
-            {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
+                  {/* Results */}
+                  <div className="text-xs text-muted-foreground">{filteredUsers.length} resultado{filteredUsers.length !== 1 ? "s" : ""}</div>
 
-            {/* Communication */}
-            {activeSection === "messages" && <AdminMessagesPanel />}
-            {activeSection === "whatsapp" && <WhatsAppPanel session={session} />}
-            {activeSection === "telegram" && <TelegramConfigPanel />}
+                  {loading ? (
+                    <PanelLoader />
+                  ) : filteredUsers.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">
+                      {userTab === "pending" ? "Nenhum usuário aguardando aprovação." : "Nenhum usuário encontrado."}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="hidden md:grid grid-cols-14 gap-3 px-4 py-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        <div className="col-span-2">Usuário</div>
+                        <div className="col-span-2">Email</div>
+                        <div className="col-span-1">Plano</div>
+                        <div className="col-span-1">Status</div>
+                        <div className="col-span-1">Último acesso</div>
+                        <div className="col-span-3">Evolução</div>
+                        <div className="col-span-4 text-right">Ações</div>
+                      </div>
+                      {filteredUsers.map((u) => (
+                        <AdminUserRow
+                          key={u.user_id}
+                          u={u}
+                          actionLoading={actionLoading}
+                          session={session}
+                          getStatusBadge={getStatusBadge}
+                          getUserPlan={getUserPlan}
+                          onApprove={handleApproveUser}
+                          onReject={handleRejectUser}
+                          onOpenDetail={(u) => setUserDetailDialog({ open: true, user: u })}
+                          onOpenAdmin={(u, makeAdmin) => setAdminDialog({ open: true, user: u, makeAdmin })}
+                          onOpenProfessor={(u, makeProfessor) => setProfessorDialog({ open: true, user: u, makeProfessor })}
+                          onOpenPlan={(u, plan) => setPlanDialog({ open: true, user: u, plan })}
+                          onOpenPassword={(u) => setPasswordDialog({ open: true, user: u, password: "" })}
+                          onOpenBlock={(u, block) => setBlockDialog({ open: true, user: u, block })}
+                          onOpenLogout={(u) => setLogoutDialog({ open: true, user: u })}
+                          onOpenTracking={loadUserTracking}
+                          onOpenAccess={loadUserAccess}
+                          onOpenDelete={(u) => setDeleteDialog({ open: true, user: u })}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
-            {/* Analytics */}
-            {activeSection === "bi" && (
-              <div className="space-y-4">
-                <AdminHealthHistory />
-                <AdminBIPanel callAdmin={callAdmin} />
-              </div>
-            )}
-            {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
-            {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
-            {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
-            {activeSection === "feedbacks" && <AdminFeedbackPanel />}
-            {activeSection === "audit" && <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />}
+              {/* Content */}
+              {activeSection === "pipeline" && <AdminPipelineMonitor />}
+              {activeSection === "cinematic-engine" && <AdminCinematicEngine />}
+              {activeSection === "questions" && <AdminQuestionReviewPanel />}
+              {activeSection === "tutor-lessons" && <AdminLessonsMemory />}
+              {activeSection === "image-upgrade" && <ImageQuestionUpgradePanel />}
+              {activeSection === "image-review" && <AdminImageQuestionReviewPanel />}
+              {activeSection === "hygiene" && <AdminHygieneDashboard />}
+              {activeSection === "ingestion" && <AdminIngestionPanel />}
+              {activeSection === "scraping" && <AdminWebScrapingPanel />}
+              {activeSection === "automation-lab" && <AdminAutomationLab userId={session?.user?.id} />}
+              {activeSection === "qa" && <AdminQAPanel />}
+              {activeSection === "ai-studio" && <AIStudio />}
+              {activeSection === "system-checklist" && <SystemChecklist />}
 
-            {/* Settings */}
-            {activeSection === "flags" && <AdminFeatureFlags />}
-            {activeSection === "uploads" && <AdminUploadsPanel />}
-            {activeSection === "upload2gb" && <AdminLargeUploadPanel />}
-            {activeSection === "multimodal" && <AdminModalityPanel />}
-          </Suspense>
-        </div>
-        </div>
-      </main>
+              {/* Intelligence Engine */}
+              {activeSection === "intelligence-overview" && <IntelligenceOverviewPanel />}
+              {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
+              {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
+              {activeSection === "cognitive-orchestrator" && <AdminCognitiveOrchestrator />}
+              {activeSection === "intervention-policies" && <AdminInterventionPolicies />}
+              {activeSection === "adaptive-experiments" && <AdminAdaptiveExperiments />}
+              {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
 
-      {/* Dialogs */}
-      <Suspense fallback={null}>
-        <AdminDialogs
-          users={users}
-          actionLoading={actionLoading}
-          getStatusBadge={getStatusBadge}
-          getUserPlan={getUserPlan}
-          callAdmin={callAdmin}
-          toast={toast}
-          session={session}
-          userDetailDialog={userDetailDialog}
-          setUserDetailDialog={setUserDetailDialog}
-          blockDialog={blockDialog}
-          setBlockDialog={setBlockDialog}
-          handleBlock={handleBlock}
-          logoutDialog={logoutDialog}
-          setLogoutDialog={setLogoutDialog}
-          setActionLoading={setActionLoading}
-          planDialog={planDialog}
-          setPlanDialog={setPlanDialog}
-          handleChangePlan={handleChangePlan}
-          adminDialog={adminDialog}
-          setAdminDialog={setAdminDialog}
-          handleToggleAdmin={handleToggleAdmin}
-          professorDialog={professorDialog}
-          setProfessorDialog={setProfessorDialog}
-          handleToggleProfessor={handleToggleProfessor}
-          passwordDialog={passwordDialog}
-          setPasswordDialog={setPasswordDialog}
-          handleResetPassword={handleResetPassword}
-          trackingDialog={trackingDialog}
-          setTrackingDialog={setTrackingDialog}
-          accessDialog={accessDialog}
-          setAccessDialog={setAccessDialog}
-          handleSaveAccess={handleSaveAccess}
-          deleteDialog={deleteDialog}
-          setDeleteDialog={setDeleteDialog}
-          handleDeleteUser={handleDeleteUser}
-        />
-      </Suspense>
+              {/* Communication */}
+              {activeSection === "messages" && <AdminMessagesPanel />}
+              {activeSection === "whatsapp" && <WhatsAppPanel session={session} />}
+              {activeSection === "telegram" && <TelegramConfigPanel />}
+
+              {/* Analytics */}
+              {activeSection === "bi" && (
+                <div className="space-y-4">
+                  <AdminHealthHistory />
+                  <AdminBIPanel callAdmin={callAdmin} />
+                </div>
+              )}
+              {activeSection === "knowledge-graph" && <MedicalKnowledgeGraph />}
+              {activeSection === "adaptive-engine" && <AdaptiveEngineAdmin />}
+              {activeSection === "specialty-friction" && <SpecialtyFrictionReport />}
+              {activeSection === "feedbacks" && <AdminFeedbackPanel />}
+              {activeSection === "audit" && <AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} />}
+
+              {/* Settings */}
+              {activeSection === "flags" && <AdminFeatureFlags />}
+              {activeSection === "uploads" && <AdminUploadsPanel />}
+              {activeSection === "upload2gb" && <AdminLargeUploadPanel />}
+              {activeSection === "multimodal" && <AdminModalityPanel />}
+            </Suspense>
+          </div>
+        </main>
+
+        {/* Dialogs */}
+        <Suspense fallback={null}>
+          <AdminDialogs
+            users={users}
+            actionLoading={actionLoading}
+            getStatusBadge={getStatusBadge}
+            getUserPlan={getUserPlan}
+            callAdmin={callAdmin}
+            toast={toast}
+            session={session}
+            userDetailDialog={userDetailDialog}
+            setUserDetailDialog={setUserDetailDialog}
+            blockDialog={blockDialog}
+            setBlockDialog={setBlockDialog}
+            handleBlock={handleBlock}
+            logoutDialog={logoutDialog}
+            setLogoutDialog={setLogoutDialog}
+            setActionLoading={setActionLoading}
+            planDialog={planDialog}
+            setPlanDialog={setPlanDialog}
+            handleChangePlan={handleChangePlan}
+            adminDialog={adminDialog}
+            setAdminDialog={setAdminDialog}
+            handleToggleAdmin={handleToggleAdmin}
+            professorDialog={professorDialog}
+            setProfessorDialog={setProfessorDialog}
+            handleToggleProfessor={handleToggleProfessor}
+            passwordDialog={passwordDialog}
+            setPasswordDialog={setPasswordDialog}
+            handleResetPassword={handleResetPassword}
+            trackingDialog={trackingDialog}
+            setTrackingDialog={setTrackingDialog}
+            accessDialog={accessDialog}
+            setAccessDialog={setAccessDialog}
+            handleSaveAccess={handleSaveAccess}
+            deleteDialog={deleteDialog}
+            setDeleteDialog={setDeleteDialog}
+            handleDeleteUser={handleDeleteUser}
+          />
+        </Suspense>
+      </div>
     </div>
   );
 };
