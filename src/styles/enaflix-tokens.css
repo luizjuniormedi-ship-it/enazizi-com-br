@@ -1,0 +1,145 @@
+/* ════════════════════════════════════════════════════════════════
+   ENAFLIX GLOBAL VISUAL ENGINE — Design Tokens (Fase 5)
+   Camada visual mestre. Aditiva. Não substitui index.css.
+   Todas as cores em HSL para herdar bem com Tailwind.
+   ════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── Surfaces / Backgrounds ─────────────────────────────────── */
+  --enaflix-bg:          222 47% 6%;
+  --enaflix-bg-soft:     222 42% 9%;
+  --enaflix-surface:     222 40% 12%;
+  --enaflix-surface-2:   222 38% 16%;
+  --enaflix-surface-3:   222 36% 20%;
+
+  /* ── Brand colors ───────────────────────────────────────────── */
+  --enaflix-violet:       268 92% 66%;
+  --enaflix-cyan:         188 95% 60%;
+  --enaflix-mint:         158 84% 56%;
+  --enaflix-medical-blue: 199 96% 56%;
+  --enaflix-danger:         0 84% 60%;
+  --enaflix-warning:       38 96% 55%;
+  --enaflix-success:      152 70% 48%;
+
+  /* ── Glows ──────────────────────────────────────────────────── */
+  --glow-violet:  0 0 32px hsl(var(--enaflix-violet) / 0.55);
+  --glow-cyan:    0 0 32px hsl(var(--enaflix-cyan) / 0.55);
+  --glow-medical: 0 0 32px hsl(var(--enaflix-medical-blue) / 0.55);
+  --glow-success: 0 0 32px hsl(var(--enaflix-success) / 0.55);
+  --glow-danger:  0 0 32px hsl(var(--enaflix-danger) / 0.55);
+
+  /* ── Cinematic shadows ──────────────────────────────────────── */
+  --shadow-pixar:
+    0 1px 0 hsl(0 0% 100% / 0.15) inset,
+    0 14px 28px -10px hsl(220 60% 4% / 0.6),
+    0 22px 60px -22px hsl(220 60% 4% / 0.85);
+  --shadow-cinematic:
+    0 36px 80px -32px hsl(230 60% 4% / 0.95),
+    0 8px 24px -10px hsl(230 60% 4% / 0.55);
+  --shadow-soft:
+    0 4px 12px -2px hsl(220 60% 4% / 0.35);
+  --shadow-medical:
+    0 8px 28px -8px hsl(var(--enaflix-medical-blue) / 0.45);
+
+  /* ── Radii ──────────────────────────────────────────────────── */
+  --radius-pixar:    28px;
+  --radius-card:     22px;
+  --radius-button:   999px;
+  --radius-overlay:  18px;
+
+  /* ── Motion ─────────────────────────────────────────────────── */
+  --ease-cinematic:  cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-pixar:      cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast:   180ms;
+  --duration-normal: 320ms;
+  --duration-slow:   560ms;
+
+  /* ── Cinematic gradients ────────────────────────────────────── */
+  --enaflix-grad-violet: linear-gradient(180deg, hsl(286 92% 72%) 0%, hsl(var(--enaflix-violet)) 50%, hsl(258 88% 38%) 100%);
+  --enaflix-grad-cyan:   linear-gradient(180deg, hsl(192 95% 70%) 0%, hsl(var(--enaflix-cyan)) 50%, hsl(206 95% 36%) 100%);
+  --enaflix-grad-mint:   linear-gradient(180deg, hsl(158 92% 70%) 0%, hsl(var(--enaflix-mint)) 55%, hsl(168 90% 28%) 100%);
+  --enaflix-grad-danger: linear-gradient(180deg, hsl(8 95% 70%) 0%, hsl(var(--enaflix-danger)) 50%, hsl(354 80% 36%) 100%);
+  --enaflix-grad-medical:linear-gradient(180deg, hsl(192 96% 68%) 0%, hsl(var(--enaflix-medical-blue)) 50%, hsl(218 95% 36%) 100%);
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Utility classes (Pixar Medical Design Language)
+   ════════════════════════════════════════════════════════════════ */
+
+/* Holographic text */
+.enaflix-text-holo {
+  background: linear-gradient(135deg,
+    hsl(var(--enaflix-cyan)) 0%,
+    hsl(var(--enaflix-violet)) 50%,
+    hsl(var(--enaflix-mint)) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 0 24px hsl(var(--enaflix-violet) / 0.25);
+}
+
+/* HUD label (cinematic monospace tracking) */
+.enaflix-hud-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: hsl(var(--enaflix-cyan));
+  text-shadow: 0 0 8px hsl(var(--enaflix-cyan) / 0.5);
+}
+
+/* Section title cinemático */
+.enaflix-section-title {
+  font-size: clamp(1.1rem, 1.4vw, 1.5rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: hsl(var(--foreground));
+}
+.enaflix-section-title::before {
+  content: "";
+  display: inline-block;
+  width: 4px;
+  height: 1em;
+  margin-right: 0.6rem;
+  border-radius: 2px;
+  background: var(--enaflix-grad-violet);
+  box-shadow: var(--glow-violet);
+  vertical-align: -0.15em;
+}
+
+/* Glassmorphism premium */
+.enaflix-glass {
+  background: hsl(var(--enaflix-surface) / 0.55);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid hsl(0 0% 100% / 0.08);
+  box-shadow: var(--shadow-cinematic);
+}
+
+/* Floating motion */
+@keyframes enaflix-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+.enaflix-float { animation: enaflix-float 5s ease-in-out infinite; }
+
+/* Holographic pulse */
+@keyframes enaflix-holo-pulse {
+  0%, 100% { opacity: 0.45; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.04); }
+}
+.enaflix-holo-pulse { animation: enaflix-holo-pulse 3.2s ease-in-out infinite; }
+
+/* Neural lines drift */
+@keyframes enaflix-drift {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-40px, -20px, 0); }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .enaflix-float,
+  .enaflix-holo-pulse {
+    animation: none !important;
+  }
+}

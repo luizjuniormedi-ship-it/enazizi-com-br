@@ -12,6 +12,7 @@ import {
 } from "./lib/app-release";
 import { performHardAppReset, unregisterServiceWorkers } from "./lib/app-hard-reset";
 import "./index.css";
+import "./styles/enaflix-tokens.css";
 
 const canonical = "enazizi.com";
 
