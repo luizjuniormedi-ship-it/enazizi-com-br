@@ -16960,6 +16960,174 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_lesson_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string | null
+          event_type: string
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_lesson_events_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_lesson_memory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_lesson_memory: {
+        Row: {
+          created_at: string | null
+          delete_reason: string | null
+          deleted_at: string | null
+          deleted_by: string | null
+          duration: number | null
+          hard_deleted: boolean | null
+          hidden_from_student: boolean | null
+          id: string
+          is_favorite: boolean | null
+          is_recommended: boolean | null
+          priority: string | null
+          published_at: string | null
+          source_session_id: string | null
+          status: string
+          structured_content: Json | null
+          subject: string | null
+          subtitle: string | null
+          subtopic: string | null
+          teacher_id: string | null
+          thumbnail_url: string | null
+          title: string
+          topic: string | null
+          updated_at: string | null
+          user_id: string
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          duration?: number | null
+          hard_deleted?: boolean | null
+          hidden_from_student?: boolean | null
+          id?: string
+          is_favorite?: boolean | null
+          is_recommended?: boolean | null
+          priority?: string | null
+          published_at?: string | null
+          source_session_id?: string | null
+          status?: string
+          structured_content?: Json | null
+          subject?: string | null
+          subtitle?: string | null
+          subtopic?: string | null
+          teacher_id?: string | null
+          thumbnail_url?: string | null
+          title: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id: string
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          delete_reason?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          duration?: number | null
+          hard_deleted?: boolean | null
+          hidden_from_student?: boolean | null
+          id?: string
+          is_favorite?: boolean | null
+          is_recommended?: boolean | null
+          priority?: string | null
+          published_at?: string | null
+          source_session_id?: string | null
+          status?: string
+          structured_content?: Json | null
+          subject?: string | null
+          subtitle?: string | null
+          subtopic?: string | null
+          teacher_id?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          topic?: string | null
+          updated_at?: string | null
+          user_id?: string
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_lesson_memory_source_session_id_fkey"
+            columns: ["source_session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_lesson_progress: {
+        Row: {
+          completed: boolean | null
+          completed_at: string | null
+          id: string
+          last_position: number | null
+          lesson_id: string | null
+          progress_percent: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          last_position?: number | null
+          lesson_id?: string | null
+          progress_percent?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed?: boolean | null
+          completed_at?: string | null
+          id?: string
+          last_position?: number | null
+          lesson_id?: string | null
+          progress_percent?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_lesson_memory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_memory_search_logs: {
         Row: {
           abbreviation_overlap_count: number | null
