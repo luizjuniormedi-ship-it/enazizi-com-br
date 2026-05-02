@@ -78,6 +78,7 @@ serve(async (req) => {
           project_id: projectId,
           generation_id: project.aggregation_id,
           aggregation_id: project.aggregation_id,
+          render_type: renderConfig.render_mode || 'cinematic',
           status: 'queued',
           queue_id: queue?.id,
           user_id: user.id,
@@ -207,7 +208,7 @@ serve(async (req) => {
       // CRITICAL: reuse the original persisted config — do NOT rebuild from payload.
       const { data: original, error: oErr } = await supabaseClient
         .from('cme_render_jobs')
-        .select('id, project_id, generation_id, queue_id, config, user_id')
+        .select('id, project_id, generation_id, queue_id, config, user_id, render_type')
         .eq('id', jobId)
         .single();
       if (oErr || !original) throw new Error('ORIGINAL_JOB_NOT_FOUND');
@@ -229,6 +230,7 @@ serve(async (req) => {
           project_id: original.project_id,
           generation_id: original.generation_id,
           queue_id: original.queue_id,
+          render_type: original.render_type || (original.config as any)?.render_mode || 'cinematic',
           status: 'queued',
           user_id: original.user_id,
           config: original.config, // reuse, do not overwrite
