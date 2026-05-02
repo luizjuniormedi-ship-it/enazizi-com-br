@@ -273,12 +273,26 @@ const AdminLessonsMemory = () => {
       />
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
-        <ProductionHeroHeader
-          total={counters.total}
-          published={counters.published}
-          structuring={counters.structuring}
-          pendingReview={counters.pendingReview}
-        />
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
+          <ProductionHeroHeader
+            total={counters.total}
+            published={counters.published}
+            structuring={counters.structuring}
+            pendingReview={counters.pendingReview}
+          />
+          
+          <div className="shrink-0 pb-10">
+            <Button 
+              size="lg" 
+              onClick={handleBatchP2} 
+              disabled={loadingBatch}
+              className="w-full sm:w-auto bg-violet-600 hover:bg-violet-700 text-white font-black uppercase tracking-widest text-xs h-14 px-8 rounded-2xl shadow-2xl shadow-violet-500/40 ring-4 ring-violet-500/20 gap-3 transition-all active:scale-95"
+            >
+              {loadingBatch ? <Loader2 className="h-5 w-5 animate-spin" /> : <Play className="h-5 w-5 fill-white" />}
+              {loadingBatch ? "Processando Lote..." : "Iniciar Lote P2 Urgente"}
+            </Button>
+          </div>
+        </div>
 
         {/* filters */}
         <div className="flex flex-col lg:flex-row lg:items-center gap-4 mb-8">
