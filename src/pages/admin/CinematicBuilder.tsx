@@ -156,12 +156,30 @@ export default function CinematicBuilder() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="bg-orange-600/5 border-orange-600/20 text-orange-600 text-[9px] font-black uppercase tracking-tighter">
-                        {block.block_type}
+                      <Badge variant="outline" className={cn(
+                        "text-[9px] font-black uppercase tracking-tighter px-2",
+                        block.block_type === 'mini_quiz' ? "bg-purple-500/10 text-purple-500 border-purple-500/20" : "bg-orange-600/5 border-orange-600/20 text-orange-600"
+                      )}>
+                        {block.block_type === 'mini_quiz' ? 'QUIZ INTERATIVO' : block.block_type}
                       </Badge>
                       <h3 className="text-sm font-bold text-white truncate">{block.title}</h3>
                     </div>
-                    <p className="text-xs text-zinc-500 truncate">{block.content?.substring(0, 100)}...</p>
+                    {block.block_type === 'mini_quiz' ? (
+                      <div className="space-y-1">
+                        <p className="text-xs text-zinc-400 line-clamp-2 italic font-medium">
+                          {block.content?.split('\n').find(l => l.trim().length > 0 && !l.startsWith('#'))}
+                        </p>
+                        {block.scene_graph_data?.questions?.length > 0 && (
+                          <div className="flex gap-2">
+                            <Badge variant="ghost" className="text-[8px] p-0 text-zinc-600 uppercase">
+                              {block.scene_graph_data.questions.length} Perguntas extraídas
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-zinc-500 truncate">{block.content?.substring(0, 100)}...</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-xs font-bold text-zinc-500">
                     <div className="flex items-center gap-1">
