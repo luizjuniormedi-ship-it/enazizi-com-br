@@ -66,6 +66,7 @@ const Dashboard = () => {
 
       {/* Header & Status */}
       <div className="px-4 sm:px-8 lg:px-14">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white mb-2">Hoje no ENAFLIX</h1>
         <DashboardTopBar />
         <RecoveryModeBanner />
       </div>
