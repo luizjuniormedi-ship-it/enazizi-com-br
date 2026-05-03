@@ -25,7 +25,9 @@ import {
   ShieldAlert,
   Film,
   Sparkles,
-  Play
+  Play,
+  Settings,
+  Database
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +65,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { motion } from "framer-motion";
 
 const VideoLessonsAdmin = () => {
   const navigate = useNavigate();
@@ -204,68 +208,47 @@ const VideoLessonsAdmin = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Biblioteca de Videoaulas IA v1.5</h1>
-          <p className="text-muted-foreground">Governança e auditoria de conteúdos multimídia médicos.</p>
+    <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
+      <EnaflixBackgroundFX intensity="intense" />
+      
+      <div className="px-4 sm:px-8 lg:px-14 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+        <div className="space-y-2">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex items-center gap-3"
+          >
+            <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
+            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Gestão de Conteúdo</span>
+          </motion.div>
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
+            Biblioteca <span className="gradient-text">Studio</span>
+          </h1>
+          <p className="text-white/50 text-lg max-w-2xl font-medium mt-4">Governança e auditoria de conteúdos multimídia médicos.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2 border-red-500/20 text-red-500" onClick={() => navigate('/admin/cme-status')}>
-            <Activity className="h-4 w-4" /> CME Status {stats.critical > 0 && <Badge variant="destructive" className="h-4 px-1 ml-1">{stats.critical}</Badge>}
+
+        <div className="flex flex-wrap gap-3 relative z-10">
+          <Button 
+            variant="outline" 
+            className="h-12 px-6 rounded-2xl bg-white/5 border-white/10 hover:bg-white/10 transition-all font-bold text-sm gap-2" 
+            onClick={() => navigate('/admin/cme-status')}
+          >
+            <Activity className="h-4 w-4 text-primary" /> Status CME {stats.critical > 0 && <Badge variant="destructive" className="h-4 px-1.5 ml-1 rounded-full">{stats.critical}</Badge>}
           </Button>
-          <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/cme-incidents')}>
-            <ShieldAlert className="h-4 w-4 text-orange-500" /> Incidentes
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/notebooklm-analytics')}>
-            <BarChart3 className="h-4 w-4" /> Analytics
-          </Button>
-          <Button variant="outline" className="gap-2" onClick={() => navigate('/admin/notebooklm-sync')}>
-            <ExternalLink className="h-4 w-4" /> NotebookLM Sync
-          </Button>
-          <Button className="gap-2" onClick={() => navigate('/admin/ai-studio')}>
-            <Plus className="h-4 w-4" /> Nova Videoaula (AI Studio)
+          <Button 
+            className="h-12 px-8 rounded-2xl bg-primary hover:bg-primary/90 transition-all font-black text-sm gap-2 shadow-[0_0_20px_rgba(var(--primary),0.3)]" 
+            onClick={() => navigate('/admin/ai-studio')}
+          >
+            <Plus className="h-4 w-4" /> Novo Conteúdo
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Total de Aulas</CardTitle>
-            <Video className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Aguardando Vídeo</CardTitle>
-            <Clock className="h-4 w-4 text-orange-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.waitingVideo}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Em Revisão</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.waitingReview}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-            <CardTitle className="text-sm font-medium">Publicadas</CardTitle>
-            <CheckCircle2 className="h-4 w-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.published}</div>
-          </CardContent>
-        </Card>
+      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+        <StatsCard title="Total de Aulas" value={stats.total} icon={<Video className="h-5 w-5" />} />
+        <StatsCard title="Aguardando Vídeo" value={stats.waitingVideo} icon={<Clock className="h-5 w-5 text-orange-500" />} />
+        <StatsCard title="Em Revisão" value={stats.waitingReview} icon={<ShieldCheck className="h-5 w-5 text-blue-500" />} />
+        <StatsCard title="Publicadas" value={stats.published} icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />} />
       </div>
 
       <Card>
@@ -410,7 +393,7 @@ const VideoLessonsAdmin = () => {
                                     messageId: undefined
                                   })}
                                 >
-                                  <Film className="h-4 w-4" /> 🎬 Transformar em Videoaula
+                                  <Film className="h-4 w-4" /> 🎬 Gerar Vídeo (Pipeline)
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
@@ -522,5 +505,17 @@ const VideoLessonsAdmin = () => {
     </div>
   );
 };
+
+const StatsCard = ({ title, value, icon }: { title: string, value: number, icon: React.ReactNode }) => (
+  <div className="bg-white/5 border border-white/5 rounded-3xl p-6 backdrop-blur-xl shadow-inner relative overflow-hidden group">
+    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-primary">
+      {icon}
+    </div>
+    <div className="space-y-1 relative z-10">
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{title}</p>
+      <div className="text-3xl font-black text-white tracking-tighter">{value}</div>
+    </div>
+  </div>
+);
 
 export default VideoLessonsAdmin;
