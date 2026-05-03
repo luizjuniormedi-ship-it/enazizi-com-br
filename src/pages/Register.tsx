@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Brain, Mail, Lock, User, GraduationCap, Building, Phone } from "lucide-react";
+import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isValidPhone, isValidName } from "@/lib/profileValidation";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const formatPhone = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 11);
@@ -79,137 +83,140 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] overflow-y-auto flex items-start sm:items-center justify-center bg-background p-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-6">
-            <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center glow">
-              <Brain className="h-6 w-6 text-primary" />
-            </div>
-            <span className="text-xl font-bold">ENAZIZI</span>
+    <div className="min-h-[100dvh] overflow-y-auto flex items-start sm:items-center justify-center bg-[#0a0a0e] p-4 py-12 relative">
+      <EnaflixBackgroundFX intensity="subtle" />
+      
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="w-full max-w-lg relative z-10"
+      >
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-flex items-center gap-3 mb-8 group">
+            <img src={enazizi} alt="ENAZIZI" className="h-12 w-12 rounded-2xl object-cover ring-2 ring-white/10 shadow-2xl group-hover:scale-110 transition-transform" />
+            <span className="text-2xl font-black tracking-tighter text-white uppercase">ENAFLIX</span>
           </Link>
-          <h1 className="text-2xl font-bold">Crie sua conta</h1>
-          <p className="text-muted-foreground mt-1">Comece sua preparação agora</p>
+          <h1 className="text-3xl font-black text-white tracking-tighter mb-2">Crie sua conta Studio</h1>
+          <p className="text-white/40 font-medium">Inicie sua jornada para a aprovação definitiva</p>
         </div>
 
-        <form onSubmit={handleRegister} className="glass-card p-8 space-y-4">
-          <div className="space-y-2">
-            <Label>Eu sou</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setUserType("estudante")}
-                className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${userType === "estudante" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
-              >
-                <GraduationCap className="h-4 w-4" />
-                Estudante
-              </button>
-              <button
-                type="button"
-                onClick={() => setUserType("professor")}
-                className={`flex items-center gap-2 p-3 rounded-lg border text-sm font-medium transition-colors ${userType === "professor" ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground hover:bg-accent"}`}
-              >
-                <Building className="h-4 w-4" />
-                Professor
-              </button>
+        <div className="card-pixar p-8 bg-[#0a0a0e]/60 border-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)]">
+          <form onSubmit={handleRegister} className="space-y-6">
+            <div className="space-y-3">
+              <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Identificação</Label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUserType("estudante")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 p-4 rounded-2xl border text-xs font-black uppercase tracking-widest transition-all",
+                    userType === "estudante" 
+                      ? "border-primary bg-primary/20 text-white shadow-glow-sm" 
+                      : "border-white/5 bg-white/5 text-white/40 hover:bg-white/10"
+                  )}
+                >
+                  <GraduationCap className="h-4 w-4" />
+                  Aluno
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserType("professor")}
+                  className={cn(
+                    "flex items-center justify-center gap-2 p-4 rounded-2xl border text-xs font-black uppercase tracking-widest transition-all",
+                    userType === "professor" 
+                      ? "border-primary bg-primary/20 text-white shadow-glow-sm" 
+                      : "border-white/5 bg-white/5 text-white/40 hover:bg-white/10"
+                  )}
+                >
+                  <Building className="h-4 w-4" />
+                  Professor
+                </button>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Nome completo</label>
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Nome e sobrenome" className="pl-10 bg-secondary border-border" value={name} onChange={(e) => setName(e.target.value)} required />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Email</label>
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} required />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Senha</label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input type="password" placeholder="Mínimo 6 caracteres" className="pl-10 bg-secondary border-border" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-            </div>
-          </div>
-
-          {userType === "estudante" && (
-            <>
+            <div className="grid grid-cols-1 gap-5">
               <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                  WhatsApp
-                </Label>
-                <Input
-                  placeholder="(11) 99999-9999"
-                  className="bg-secondary border-border"
-                  value={phone}
-                  onChange={(e) => setPhone(formatPhone(e.target.value))}
-                  required
-                />
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Nome Completo</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <Input placeholder="Seu nome" className="pl-12 h-12" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <Building className="h-3.5 w-3.5 text-muted-foreground" />
-                  Faculdade
-                </Label>
-                <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Email Corporativo</label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="flex items-center gap-1.5">
-                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground" />
-                  Período
-                </Label>
-                <Select value={periodo} onValueChange={setPeriodo}>
-                  <SelectTrigger className="bg-secondary border-border">
-                    <SelectValue placeholder="Selecione o período" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <SelectItem key={i + 1} value={String(i + 1)}>
-                        {i + 1}º período
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Senha de Acesso</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                  <Input type="password" placeholder="Mínimo 6 caracteres" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                </div>
               </div>
-            </>
-          )}
 
-          {userType === "professor" && (
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5">
-                <Building className="h-3.5 w-3.5 text-muted-foreground" />
-                Universidade
-              </Label>
-              <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+              {userType === "estudante" && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">WhatsApp</Label>
+                      <Input
+                        placeholder="(11) 99999-9999"
+                        className="h-12"
+                        value={phone}
+                        onChange={(e) => setPhone(formatPhone(e.target.value))}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Período Atual</Label>
+                      <Select value={periodo} onValueChange={setPeriodo}>
+                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-[#0a0a0e] border-white/10">
+                          {Array.from({ length: 12 }, (_, i) => (
+                            <SelectItem key={i + 1} value={String(i + 1)}>
+                              {i + 1}º período
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Instituição de Ensino</Label>
+                    <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+                  </div>
+                </>
+              )}
+
+              {userType === "professor" && (
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Universidade / Hospital</Label>
+                  <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+                </div>
+              )}
             </div>
-          )}
 
-          <p className="text-xs text-muted-foreground">
-            {userType === "professor"
-              ? "Após o cadastro, você terá acesso ao painel do professor com seus alunos da universidade selecionada."
-              : "Ao criar sua conta, você terá acesso imediato à plataforma após confirmar seu email."}
-          </p>
+            <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-glow-sm mt-4" disabled={loading}>
+              {loading ? "Processando..." : "Criar Minha Conta Studio"}
+            </Button>
+          </form>
+        </div>
 
-          <Button type="submit" className="w-full glow" disabled={loading}>
-            {loading ? "Criando conta..." : "Criar conta"}
-          </Button>
-        </form>
-
-        <p className="text-center text-sm text-muted-foreground mt-6">
-          Já tem conta?{" "}
-          <Link to="/login" className="text-primary hover:underline">Entrar</Link>
+        <p className="text-center text-sm font-medium text-white/40 mt-10">
+          Já possui conta Studio?{" "}
+          <Link to="/login" className="text-white font-black hover:text-primary transition-colors underline-offset-4 underline">Entrar no painel</Link>
         </p>
-      </div>
+      </motion.div>
     </div>
   );
 };
