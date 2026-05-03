@@ -208,6 +208,14 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["tutor", "memory", "rag", "embeddings"],
       },
       {
+        to: "/admin/tutor-video-recommendations",
+        label: "Recomendações Tutor",
+        description: "Auditoria de recomendações de videoaulas automáticas.",
+        icon: Activity,
+        scopes: ["super_admin", "admin_pedagogico"],
+        keywords: ["tutor", "video", "recomendações", "cliques", "analytics"],
+      },
+      {
         to: "/admin/ai-studio",
         label: "Prompts",
         description: "Central de produção de conteúdo IA e prompts.",
