@@ -114,7 +114,9 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "cinematic-engine", label: "CME Studio", icon: Film },
         { key: "tutor-lessons", label: "Aulas Memory", icon: BookOpen },
         { key: "lesson-ratings", label: "Avaliações Aulas", icon: Star },
+        { key: "tutor-structure-tests", label: "Testes Estrutura", icon: Microscope },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
+
       ],
     },
     {
