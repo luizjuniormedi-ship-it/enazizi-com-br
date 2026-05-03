@@ -556,7 +556,43 @@ const VideoLessonPlayer = () => {
       params.set("video_ts", String(watchedSeconds));
       params.set("hotspot_type", "temporal_context");
     }
+    if (tutorMode !== "standard") {
+      params.set("tutor_mode", tutorMode);
+    }
     
+    navigate(`/dashboard/mentor?${params.toString()}`);
+  };
+
+  const openTutorWithMode = (mode: "feynman" | "exam_sprint") => {
+    if (!lesson || !id) return;
+    setTutorMode(mode);
+    const ctx = buildContext({
+      videoLessonId: id,
+      segment: currentSegment,
+      currentTimestamp: watchedSeconds,
+      lesson: {
+        specialty: (lesson as any).specialty || "Geral",
+        topic: (lesson as any).topic || "Clínica Médica",
+        subtopic: (lesson as any).subtopic || "",
+        tutor_lesson_summary: (lesson as any).tutor_lesson_summary || "",
+      },
+    });
+    logEvent({
+      videoLessonId: id,
+      segmentId: currentSegment?.id ?? null,
+      eventType: "tutor_open",
+      timestampSeconds: watchedSeconds,
+      metadata: { temporal: !!ctx, source: mode, tutor_mode: mode },
+    });
+    handleAction(mode === "feynman" ? "open_tutor_feynman" : "open_tutor_exam_sprint");
+    const params = new URLSearchParams({
+      context: (lesson as any).id,
+      session: (lesson as any).tutor_session_id || (lesson as any).source_session_id || "",
+      tutor_mode: mode,
+      video_ts: String(watchedSeconds),
+    });
+    if (currentSegment?.id) params.set("video_segment", currentSegment.id);
+    if (ctx) params.set("hotspot_type", "temporal_context");
     navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
