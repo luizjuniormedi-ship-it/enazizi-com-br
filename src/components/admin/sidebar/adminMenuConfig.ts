@@ -87,12 +87,53 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Curadoria de aulas, banco de questões e biblioteca.",
     items: [
       {
+        to: "/admin/users?tab=uploads",
+        label: "Upload de Arquivos",
+        description: "Upload de materiais brutos, PDFs e provas para o sistema.",
+        icon: FileText,
+        scopes: ["super_admin", "admin_operacional"],
+        keywords: ["upload", "arquivo", "pdf", "bruto"],
+      },
+      {
         to: "/admin/lessons-memory",
         label: "Curadoria de Aulas",
         description: "Memória de aulas do Tutor IA — estruturação, vídeo e publicação.",
         icon: BookOpenCheck,
         scopes: ["super_admin", "admin_pedagogico"],
         keywords: ["aulas", "tutor", "memória", "lessons", "ingestion"],
+      },
+      {
+        to: "/admin/users?tab=lesson-ratings",
+        label: "Avaliações",
+        description: "Analytics de satisfação cinematográfica das videoaulas.",
+        icon: Sparkles,
+        scopes: ["super_admin", "admin_pedagogico"],
+        badge: "Novo",
+        keywords: ["avaliação", "rating", "star", "satisfação"],
+      },
+      {
+        to: "/admin/users?tab=ingestion",
+        label: "Gerar Questões",
+        description: "Pipeline de IA para geração de questões a partir de PDF/Texto.",
+        icon: Sparkles,
+        scopes: ["super_admin", "admin_pedagogico"],
+        keywords: ["gerar", "questões", "ai", "ingestion"],
+      },
+      {
+        to: "/admin/users?tab=question-review",
+        label: "Aprovar Questões",
+        description: "Painel de curadoria para aprovação de questões geradas.",
+        icon: BookOpenCheck,
+        scopes: ["super_admin", "admin_pedagogico"],
+        keywords: ["aprovar", "questões", "revisão"],
+      },
+      {
+        to: "/admin/users?tab=image-review",
+        label: "Aprovar Imagens",
+        description: "Curadoria visual de questões com imagens.",
+        icon: ImageIcon,
+        scopes: ["super_admin", "admin_pedagogico"],
+        keywords: ["imagem", "fotos", "review"],
       },
       {
         to: "/admin/medical-review-queue",
@@ -127,7 +168,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Usuários, mensagens e feedbacks.",
     items: [
       {
-        to: "/admin#users",
+        to: "/admin/users",
         label: "Usuários",
         description: "Gestão de contas, planos, bloqueios e aprovações.",
         icon: Users,

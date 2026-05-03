@@ -698,6 +698,9 @@ const VideoLessonPlayer = () => {
             Sincronização Supabase Realtime Ativa
           </Badge>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-2 border-primary/30 text-primary" onClick={() => setShowRating(true)}>
+              <Star className="h-4 w-4 fill-primary" /> Avaliar Aula
+            </Button>
             <Button variant="outline" size="sm" className="gap-2 border-white/10" onClick={() => {
               const url = `${window.location.origin}/videoaulas/${id}`;
               navigator.clipboard.writeText(url);

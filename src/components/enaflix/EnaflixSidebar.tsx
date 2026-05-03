@@ -25,7 +25,8 @@ import {
   Users,
   Activity,
   UserCheck,
-  ImageIcon
+  ImageIcon,
+  Star
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -216,6 +217,12 @@ export function EnaflixSidebar() {
                         label="AI Studio"
                         icon={Sparkles}
                         active={location.search === "?tab=ai-studio"}
+                      />
+                      <SidebarItem
+                        to="/admin?tab=lesson-ratings"
+                        label="Avaliações"
+                        icon={Star}
+                        active={location.search === "?tab=lesson-ratings"}
                       />
                     </div>
 
