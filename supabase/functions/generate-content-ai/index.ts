@@ -219,7 +219,7 @@ serve(async (req) => {
         await supabaseClient.rpc('log_ai_alert', { 
           p_type: 'json_failure', 
           p_severity: 'critical', 
-          p_message: `Falha crítica ao parsear JSON do Gemini para ${content.title}`,
+          p_message: `Falha crítica ao parsear JSON do OpenAI para ${content.title}`,
           p_content_id: contentId,
           p_metadata: { raw_text: aiResponseText.substring(0, 500) }
         });
