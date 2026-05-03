@@ -16294,7 +16294,9 @@ export type Database = {
           properties: Json | null
           route: string | null
           screen_size: string | null
+          scroll_depth: number | null
           session_id: string
+          time_to_first_block: number | null
           timestamp: string | null
           user_id: string | null
         }
@@ -16305,7 +16307,9 @@ export type Database = {
           properties?: Json | null
           route?: string | null
           screen_size?: string | null
+          scroll_depth?: number | null
           session_id: string
+          time_to_first_block?: number | null
           timestamp?: string | null
           user_id?: string | null
         }
@@ -16316,7 +16320,9 @@ export type Database = {
           properties?: Json | null
           route?: string | null
           screen_size?: string | null
+          scroll_depth?: number | null
           session_id?: string
+          time_to_first_block?: number | null
           timestamp?: string | null
           user_id?: string | null
         }
@@ -19213,8 +19219,8 @@ export type Database = {
         }[]
       }
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
-      admin_telemetry_v2_ai_quality: { Args: { _days?: number }; Returns: Json }
-      admin_telemetry_v2_pedagogy: { Args: { _days?: number }; Returns: Json }
+      admin_telemetry_v2_ai_quality: { Args: { _days: number }; Returns: Json }
+      admin_telemetry_v2_pedagogy: { Args: { _days: number }; Returns: Json }
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
         Returns: number
