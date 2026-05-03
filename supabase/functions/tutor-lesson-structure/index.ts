@@ -484,7 +484,13 @@ Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o
 
   const data = await resp.json();
   const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  return { data: args ? JSON.parse(args) : null, status: resp.status };
+  let parsed = null;
+  try {
+    if (args) parsed = JSON.parse(args);
+  } catch (e) {
+    console.error("Failed to parse tool arguments:", e, "Raw:", args);
+  }
+  return { data: parsed, status: resp.status };
 }
 
 function computeQualityScore(s: StructuredLesson): number {
