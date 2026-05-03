@@ -81,8 +81,9 @@ export async function logComplianceTelemetry(params: {
     if (!auth?.user) return;
     await supabase.from("telemetry_events").insert({
       user_id: auth.user.id,
-      event_type: "tutor_protocol_compliance",
-      payload: {
+      session_id: (params.conversationId as any) ?? crypto.randomUUID(),
+      event_name: "tutor_protocol_compliance",
+      properties: {
         conversation_id: params.conversationId ?? null,
         topic: params.topic ?? null,
         score: params.report.score,
