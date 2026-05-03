@@ -41,7 +41,7 @@ serve(async (req) => {
       throw new Error(`Failed to download file: ${dlErr?.message || 'no data returned'}`);
     }
 
-    // Convert PDF to base64 for Gemini (chunk-safe for large files)
+    // Convert PDF to base64 for Vision (chunk-safe for large files)
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     const fileSizeMB = bytes.length / (1024 * 1024);
