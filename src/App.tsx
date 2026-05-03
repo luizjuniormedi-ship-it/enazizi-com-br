@@ -92,7 +92,7 @@ const StudySession = lazyWithRetry(() => import("./pages/StudySession"), "StudyS
 const Rankings = lazyWithRetry(() => import("./pages/Rankings"), "Rankings");
 const MedicalImageQuiz = lazyWithRetry(() => import("./pages/MedicalImageQuiz"), "MedicalImageQuiz");
 const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "PracticalExam");
-const MnemonicStudio = lazyWithRetry(() => import("./pages/MnemonicStudio"), "MnemonicStudio");
+
 const MnemonicStudioPage = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
 const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryPage"), "MnemonicHistoryPage");
 const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
