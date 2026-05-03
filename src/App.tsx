@@ -1,4 +1,5 @@
 import { Toaster } from "@/components/ui/toaster";
+import { GlobalErrorBoundary } from "@/components/monitoring/GlobalErrorBoundary";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -109,6 +110,7 @@ const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "Rese
 const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowcase"), "CognitiveShowcase");
 const AdminLessonsMemory = lazyWithRetry(() => import("./pages/admin/AdminLessonsMemory"), "AdminLessonsMemory");
 const TutorMemoryAdmin = lazyWithRetry(() => import("./pages/admin/TutorMemoryAdmin"), "TutorMemoryAdmin");
+const SystemHealth = lazyWithRetry(() => import("./pages/admin/SystemHealth"), "SystemHealth");
 const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"), "TelemetryAdmin");
 const TutorVideoRecommendations = lazyWithRetry(() => import("./pages/admin/TutorVideoRecommendations"), "TutorVideoRecommendations");
 const AIStudio = lazyWithRetry(() => import("./pages/admin/AIStudio"), "AIStudio");
@@ -166,7 +168,7 @@ const queryClient = new QueryClient({
 });
 
 const App = () => (
-  <ErrorBoundary>
+  <GlobalErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <TooltipProvider>
