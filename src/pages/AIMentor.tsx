@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,12 @@ import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import {
+  PedagogicalMissionHero,
+  PEDAGOGICAL_STAGES,
+  deriveStagesFromBlockTypes,
+} from "@/components/tutor/pedagogical/PedagogicalMissionHero";
+import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { cn } from "@/lib/utils";
 
 const quickActions = [
@@ -153,6 +159,51 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
   );
 };
 
+/**
+ * Bridge entre AgentChat e o hero pedagógico.
+ * Deriva missão atual, progresso e etapas a partir das mensagens do tutor,
+ * varrendo blocos cognitivos JSON embutidos.
+ */
+const PedagogicalHeaderBridge = ({ messages }: { messages: { role: string; content: string }[] }) => {
+  const { mission, stages, progress } = useMemo(() => {
+    const assistant = messages.filter((m) => m.role === "assistant");
+    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+    const seen = new Set<string>();
+    for (const m of assistant) {
+      try {
+        const { blocks } = extractInlineTutorBlocks(m.content);
+        blocks.forEach((b) => seen.add(b.type));
+      } catch {
+        /* noop */
+      }
+    }
+    const stages = deriveStagesFromBlockTypes(seen);
+    const doneCount = stages.filter((s) => s.status === "done").length;
+    const progress = (doneCount / PEDAGOGICAL_STAGES.length) * 100;
+
+    const mission =
+      lastUser?.content?.slice(0, 80)?.trim() ||
+      "Sessão Pedagógica ENAZIZI";
+
+    return { mission, stages, progress };
+  }, [messages]);
+
+  // Esconde quando ainda não há interação real (apenas welcome)
+  if (messages.length <= 1) return null;
+
+  return (
+    <PedagogicalMissionHero
+      missionTitle={mission}
+      missionSubtitle="Jornada cognitiva guiada · Streaming pedagógico"
+      stages={stages}
+      progress={progress}
+      estimatedMinutes={Math.max(2, Math.round((100 - progress) / 8))}
+      feynmanActive
+      recallActive
+    />
+  );
+};
+
 const AIMentor = () => {
   const onSendRef = { current: null as any };
   const [hasStarted, setHasStarted] = useState(false);
@@ -225,11 +276,12 @@ const AIMentor = () => {
                     title="ENAZIZI Cognitive Engine"
                     subtitle="Núcleo de Inteligência Médica Premium"
                     icon={<Sparkles className="h-6 w-6 text-primary animate-pulse" />}
-                    welcomeMessage="Olá! Sou o MentorMed, seu núcleo pedagógico ENAZIZI. Estou pronto para transformar seu material em aprendizado profundo com foco em residência médica. Como vamos começar hoje? 🩺"
-                    placeholder="Inicie um caso clínico ou tire uma dúvida técnica..."
+                    welcomeMessage="🩺 Sessão pedagógica ativa. Vou guiar você por uma jornada estruturada: Introdução → Leigo → Técnico → Clínico → Recall → Questões → Resumo Feynman. Qual será nossa missão de hoje?"
+                    placeholder="Continue sua missão… (ex: 'aprofunde a fisiopatologia da ICC')"
                     functionName="mentor-chat"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
+                    pedagogicalHeader={({ messages }) => <PedagogicalHeaderBridge messages={messages} />}
                   />
                 </div>
               </div>
