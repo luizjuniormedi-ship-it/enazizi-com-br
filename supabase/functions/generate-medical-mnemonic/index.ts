@@ -84,7 +84,7 @@ interface ConsolidatedOutput {
 // CONSTANTS
 // ══════════════════════════════════════════════════
 
-const OPENAI_MODEL = "gpt-4.1-mini";
+const OPENAI_MODEL = "google/gemini-2.5-flash";
 const OPENAI_TEMP = 0.2;
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
@@ -297,7 +297,7 @@ async function callOpenAIJson<T>(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<T> {
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
