@@ -41,17 +41,21 @@ const TutorMessageList = forwardRef<HTMLDivElement, TutorMessageListProps>(
 
         {/* Conteúdo (acima da atmosfera) */}
         <div className="relative space-y-3 sm:space-y-4">
-          {messages.map((msg, i) => (
-            <TutorMessageItem 
-              key={i} 
-              msg={msg} 
-              onCopy={handleCopy} 
-              isLoading={isLoading}
-              conversationId={conversationId}
-              topic={topic}
-              specialty={specialty}
-            />
-          ))}
+          {messages.map((msg, i) => {
+            const isFirstAssistantMessage = msg.role === "assistant" && !messages.slice(0, i).some(m => m.role === "assistant");
+            return (
+              <TutorMessageItem 
+                key={i} 
+                msg={msg} 
+                onCopy={handleCopy} 
+                isLoading={isLoading}
+                conversationId={conversationId}
+                topic={topic}
+                specialty={specialty}
+                isFirstMessage={isFirstAssistantMessage}
+              />
+            );
+          })}
 
           {isLoading && messages[messages.length - 1]?.role === "user" && (
             <TutorThinkingIndicator />
