@@ -139,6 +139,7 @@ export async function findRecommendedVideoForTutorContext(
 
   // 1) ai_video_lessons (Publicadas e não ocultas)
   try {
+    const { data: aiLessons } = await supabase
       .from("ai_video_lessons")
       .select("*")
       .eq('status', 'published')
