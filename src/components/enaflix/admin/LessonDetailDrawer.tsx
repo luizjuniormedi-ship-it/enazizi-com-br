@@ -231,9 +231,9 @@ export function LessonDetailDrawer({
               </TabsContent>
 
               <TabsContent value="prompts" className="space-y-5 mt-0">
-                {(sc?.cinematic_video_prompt || sc?.gemini_prompt) && (
+                {sc?.cinematic_video_prompt && (
                   <Section title="Prompt Vídeo Cinematográfico">
-                    <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.cinematic_video_prompt || sc.gemini_prompt}</pre>
+                    <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.cinematic_video_prompt}</pre>
                   </Section>
                 )}
                 {sc?.notebooklm_prompt && (
