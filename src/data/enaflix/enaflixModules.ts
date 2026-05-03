@@ -50,6 +50,7 @@ import {
   Wand2,
   Zap,
   Video,
+  Upload,
 } from "lucide-react";
 
 import type { EnaflixCategoryId } from "./enaflixCategories";
