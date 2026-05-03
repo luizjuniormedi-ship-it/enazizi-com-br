@@ -177,7 +177,7 @@ export default function AIAuditMode() {
                         <DialogHeader>
                           <DialogTitle>Auditoria Técnica: {log.master_content_library?.title}</DialogTitle>
                           <DialogDescription>
-                            Detalhes de execução v{log.prompt_version} do motor Gemini.
+                            Detalhes de execução v{log.prompt_version} do motor OpenAI.
                           </DialogDescription>
                         </DialogHeader>
                         <ScrollArea className="mt-4 h-[600px] p-4 bg-muted/50 rounded-lg">
