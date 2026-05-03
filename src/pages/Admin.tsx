@@ -162,6 +162,19 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveSection(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveSection(tab);
+    setSearchParams({ tab });
+  };
   const [loadingBatch, setLoadingBatch] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
