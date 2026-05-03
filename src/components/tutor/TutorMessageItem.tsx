@@ -230,16 +230,8 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             <div className="flex flex-col gap-3 mt-4 pt-3 border-t border-border/30 empty:hidden">
               <div className="flex gap-2">
 
-              {showCMEButton && !lessonData && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-7 text-xs gap-1.5 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 animate-fade-in"
-                  onClick={handleCMETransform}
-                >
-                  <Film className="h-3.5 w-3.5" /> 🎓 Gerar Aula Interativa
-                </Button>
-              )}
+              {/* Botão de gerar aula interativa removido a pedido do usuário */}
+
 
               {lessonData && (
                 <Button
@@ -258,17 +250,8 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                 </Button>
               )}
 
-              {showFallbackButton && !lessonData && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-[10px] gap-1.5 text-muted-foreground hover:text-amber-500 border border-transparent hover:border-amber-500/20"
-                  onClick={handleCMETransform}
-                  title="Forçar criação mesmo sem estrutura detectada"
-                >
-                  <AlertCircle className="h-3 w-3" /> Gerar aula a partir desta resposta
-                </Button>
-              )}
+              {/* Botão de fallback removido a pedido do usuário */}
+
               </div>
               
               {msg.role === "assistant" && hasPermission && (
