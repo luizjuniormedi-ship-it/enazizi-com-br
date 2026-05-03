@@ -162,16 +162,24 @@ serve(async (req) => {
       }
     `;
 
-    // Resilient fetch with retry logic for 429
     let response;
     let retries = 3;
+    const model = 'openai/gpt-5-mini';
+    
     while (retries > 0) {
-      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/openai/gpt-5-mini:generateContent?key=${GEMINI_API_KEY}`, {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: finalPrompt }] }],
-          generationConfig: { response_mime_type: "application/json" }
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: finalPrompt }
+          ],
+          response_format: { type: "json_object" }
         })
       });
       
@@ -189,10 +197,13 @@ serve(async (req) => {
       break;
     }
 
-    const geminiData = await response.json()
-    if (geminiData.error) throw new Error(`Gemini Error: ${geminiData.error.message}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gateway Error ${response.status}: ${errorText}`);
+    }
 
-    let aiResponseText = geminiData.candidates[0].content.parts[0].text;
+    const aiData = await response.json();
+    const aiResponseText = aiData.choices[0].message.content;
     aiResponseText = aiResponseText.replace(/```json|```/g, '').trim();
 
     let parsedData: GeminiResponse;
