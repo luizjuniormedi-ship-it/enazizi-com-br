@@ -23,6 +23,8 @@ import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
 import { EnaflixSectionRowVideo } from "@/components/enaflix/EnaflixSectionRowVideo";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
 import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
+import { EnaflixBillboardSkeleton } from "@/components/enaflix/EnaflixBillboardSkeleton";
+import { EnaflixRowSkeleton } from "@/components/enaflix/EnaflixRowSkeleton";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
@@ -42,19 +44,20 @@ export default function EnaflixPage() {
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
 
-  const { data: aiLessons } = useQuery({
+  const { data: aiLessons, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["enaflix-ai-lessons"],
     queryFn: async () => {
+      // Query otimizada: selecionando apenas o necessário e evitando select("*")
       const { data } = await supabase
         .from("ai_video_lessons")
-        .select("*")
+        .select("id, title, thumbnail_url, specialty, is_gold_content, duration_seconds, published_at, status")
         .eq("status", "published")
         .order("published_at", { ascending: false })
         .limit(10);
 
       const { data: memoryData } = await supabase
         .from("tutor_lesson_memory")
-        .select("*")
+        .select("id, title, thumbnail_url, subject, duration, published_at, status, hidden_from_student")
         .eq("status", "published")
         .eq("hidden_from_student", false)
         .order("published_at", { ascending: false })
@@ -74,7 +77,7 @@ export default function EnaflixPage() {
     }
   });
 
-  const { data: usageLogs } = useQuery({
+  const { data: usageLogs, isLoading: isLoadingUsage } = useQuery({
     queryKey: ["enaflix-video-usage"],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -86,6 +89,8 @@ export default function EnaflixPage() {
       return data || [];
     }
   });
+
+  const isLoading = isLoadingLessons || isLoadingUsage;
 
   const continueLessons = useMemo(() => {
     if (!aiLessons || !usageLogs) return [];
@@ -151,7 +156,6 @@ export default function EnaflixPage() {
   }, [visibleModules, popularIds]);
 
   // Vitrine rotativa: até 4 destaques cinematográficos com narrativa diferente.
-  // Cada slide carrega seu próprio eyebrow (contexto emocional).
   const billboardSlides = useMemo<Array<{ module: EnaflixModule; eyebrow: string }>>(() => {
     const slides: Array<{ module: EnaflixModule; eyebrow: string }> = [];
     const seen = new Set<string>();
@@ -190,8 +194,6 @@ export default function EnaflixPage() {
   );
 
   const handleClose = () => {
-    // Sair do ENAFLIX sempre leva ao Dashboard (destino canônico).
-    // Limpa a flag de origem para não mostrar o botão flutuante "Voltar ao ENAFLIX".
     try {
       sessionStorage.removeItem("enaflix:origin");
       sessionStorage.removeItem("enaflix:lastModule");
@@ -259,118 +261,125 @@ export default function EnaflixPage() {
       ) : (
         <main>
           {/* Vitrine cinematográfica rotativa (até 4 destaques) */}
-          {billboardSlides.length > 0 && (
+          {isLoading ? (
+            <EnaflixBillboardSkeleton />
+          ) : billboardSlides.length > 0 ? (
             <EnaflixBillboardRotator
               modules={billboardSlides}
               onNavigate={handleNavigate}
             />
-          )}
+          ) : null}
 
           {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 5 */}
           <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
-            {(() => {
-              // Curadoria: no máximo 5 fileiras visíveis para preservar foco.
-              // Prioridade: Continuar → Recomendados IA → Videoaulas IA → Mais usados → 1 categoria rotativa.
-              const rows: React.ReactNode[] = [];
+            {isLoading ? (
+              <div className="space-y-12">
+                <EnaflixRowSkeleton />
+                <EnaflixRowSkeleton />
+              </div>
+            ) : (
+              (() => {
+                const rows: React.ReactNode[] = [];
 
-              if (continueModules.length > 0 || continueLessons.length > 0) {
-                rows.push(
-                  <div key="continue-container" className="space-y-8">
-                    {continueModules.length > 0 && (
-                      <EnaflixSectionRow
-                        key="continue"
-                        title="Continuar de onde parou"
-                        subtitle="Módulos e ferramentas que você estava usando"
-                        modules={continueModules}
-                        onNavigate={handleNavigate}
-                      />
-                    )}
-                    {continueLessons.length > 0 && (
-                      <EnaflixSectionRowVideo
-                        key="continue-lessons"
-                        title="Continuar Assistindo"
-                        subtitle="Suas videoaulas IA em andamento"
-                        lessons={continueLessons}
-                      />
-                    )}
-                  </div>
-                );
-              }
+                if (continueModules.length > 0 || continueLessons.length > 0) {
+                  rows.push(
+                    <div key="continue-container" className="space-y-8">
+                      {continueModules.length > 0 && (
+                        <EnaflixSectionRow
+                          key="continue"
+                          title="Continuar de onde parou"
+                          subtitle="Módulos e ferramentas que você estava usando"
+                          modules={continueModules}
+                          onNavigate={handleNavigate}
+                        />
+                      )}
+                      {continueLessons.length > 0 && (
+                        <EnaflixSectionRowVideo
+                          key="continue-lessons"
+                          title="Continuar Assistindo"
+                          subtitle="Suas videoaulas IA em andamento"
+                          lessons={continueLessons}
+                        />
+                      )}
+                    </div>
+                  );
+                }
 
-              if (aiLessons && aiLessons.length > 0 && rows.length < 5) {
-                rows.push(
-                  <EnaflixSectionRowVideo
-                    key="ai-videoaulas"
-                    title="Videoaulas IA (CME)"
-                    subtitle="Conteúdo médico cinematográfico personalizado"
-                    lessons={aiLessons}
-                  />
-                );
-              }
+                if (aiLessons && aiLessons.length > 0 && rows.length < 5) {
+                  rows.push(
+                    <EnaflixSectionRowVideo
+                      key="ai-videoaulas"
+                      title="Videoaulas IA (CME)"
+                      subtitle="Conteúdo médico cinematográfico personalizado"
+                      lessons={aiLessons}
+                    />
+                  );
+                }
 
-              if (recommendedModules.length > 0 && rows.length < 5) {
-                rows.push(
-                  <EnaflixSectionRow
-                    key="recommended"
-                    title="Recomendados pela IA"
-                    subtitle="Sugestões inteligentes do ENAZIZI"
-                    modules={recommendedModules}
-                    onNavigate={handleNavigate}
-                  />,
-                );
-              }
-
-              if (popularModules.length > 1 && rows.length < 5) {
-                rows.push(
-                  <EnaflixSectionRow
-                    key="popular"
-                    title="Mais usados"
-                    subtitle="Os queridinhos do seu dia a dia"
-                    modules={popularModules}
-                    onNavigate={handleNavigate}
-                  />,
-                );
-              }
-
-              // 1 categoria rotativa (rotaciona por dia da semana para variar a descoberta)
-              if (rows.length < 5) {
-                const rotatable = ENAFLIX_CATEGORIES.filter((c) => {
-                  if (c.dynamic) return false;
-                  if (c.requires === "admin" && !isAdmin) return false;
-                  if (c.requires === "professor" && !isProfessor && !isAdmin) return false;
-                  const items = visibleModules.filter((m) => m.category === c.id);
-                  return items.length >= (c.minItems ?? 2);
-                });
-                if (rotatable.length > 0) {
-                  const idx = new Date().getDay() % rotatable.length;
-                  const cat = rotatable[idx];
-                  const items = visibleModules.filter((m) => m.category === cat.id);
+                if (recommendedModules.length > 0 && rows.length < 5) {
                   rows.push(
                     <EnaflixSectionRow
-                      key={cat.id}
-                      title={cat.title}
-                      subtitle={cat.subtitle}
-                      modules={items}
+                      key="recommended"
+                      title="Recomendados pela IA"
+                      subtitle="Sugestões inteligentes do ENAZIZI"
+                      modules={recommendedModules}
                       onNavigate={handleNavigate}
                     />,
                   );
                 }
-              }
 
-              return rows;
-            })()}
+                if (popularModules.length > 1 && rows.length < 5) {
+                  rows.push(
+                    <EnaflixSectionRow
+                      key="popular"
+                      title="Mais usados"
+                      subtitle="Os queridinhos do seu dia a dia"
+                      modules={popularModules}
+                      onNavigate={handleNavigate}
+                    />,
+                  );
+                }
 
-            {/* CTA "Ver tudo" — descobertas além das 5 fileiras curadas */}
-            <div className="px-4 sm:px-8 lg:px-14 pt-2">
-              <button
-                type="button"
-                onClick={() => navigate("/enaflix/tudo")}
-                className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors rounded-full px-4 py-2 hover:bg-white/[0.06] border border-white/10 hover:border-white/20"
-              >
-                <span>Ver todos os módulos</span>
-                <span aria-hidden>→</span>
-              </button>
-            </div>
+                if (rows.length < 5) {
+                  const rotatable = ENAFLIX_CATEGORIES.filter((c) => {
+                    if (c.dynamic) return false;
+                    if (c.requires === "admin" && !isAdmin) return false;
+                    if (c.requires === "professor" && !isProfessor && !isAdmin) return false;
+                    const items = visibleModules.filter((m) => m.category === c.id);
+                    return items.length >= (c.minItems ?? 2);
+                  });
+                  if (rotatable.length > 0) {
+                    const idx = new Date().getDay() % rotatable.length;
+                    const cat = rotatable[idx];
+                    const items = visibleModules.filter((m) => m.category === cat.id);
+                    rows.push(
+                      <EnaflixSectionRow
+                        key={cat.id}
+                        title={cat.title}
+                        subtitle={cat.subtitle}
+                        modules={items}
+                        onNavigate={handleNavigate}
+                      />,
+                    );
+                  }
+                }
+
+                return rows;
+              })()
+            )}
+
+            {!isLoading && (
+              <div className="px-4 sm:px-8 lg:px-14 pt-2">
+                <button
+                  type="button"
+                  onClick={() => navigate("/enaflix/tudo")}
+                  className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors rounded-full px-4 py-2 hover:bg-white/[0.06] border border-white/10 hover:border-white/20"
+                >
+                  <span>Ver todos os módulos</span>
+                  <span aria-hidden>→</span>
+                </button>
+              </div>
+            )}
           </div>
         </main>
       )}
