@@ -1224,7 +1224,7 @@ ${content.generated_video_script || "Roteiro pendente."}
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
                 <FileJson className="h-5 w-5 text-primary" />
-                Rastreabilidade Gemini v1.0
+                Rastreabilidade de Inteligência OpenAI v2.0
               </CardTitle>
               <CardDescription>Logs detalhados de cada chamada de IA, latência e validação de JSON.</CardDescription>
             </CardHeader>
