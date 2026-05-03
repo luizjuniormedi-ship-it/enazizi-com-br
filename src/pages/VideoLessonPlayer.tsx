@@ -111,6 +111,7 @@ const VideoLessonPlayer = () => {
   const [quizScore, setQuizScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [tutorMode, setTutorMode] = useState<"standard" | "feynman" | "exam_sprint">("standard");
   const lastLogTime = useRef(0);
   const pauseStartTime = useRef<number | null>(null);
   const hasNotifiedDifficulty = useRef<Set<string>>(new Set());
