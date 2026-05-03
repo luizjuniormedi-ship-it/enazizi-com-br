@@ -232,7 +232,7 @@ export function LessonDetailDrawer({
 
               <TabsContent value="prompts" className="space-y-5 mt-0">
                 {sc?.gemini_prompt && (
-                  <Section title="Prompt Gemini">
+                  <Section title="Prompt Vídeo GPT-5">
                     <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.gemini_prompt}</pre>
                   </Section>
                 )}
