@@ -81,7 +81,7 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
     <Link
       to={to}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden",
+        "group relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 overflow-hidden",
         active 
           ? "bg-white/10 text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/10" 
           : "text-white/40 hover:text-white hover:bg-white/5"
@@ -98,7 +98,7 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
 
       <div className={cn(
         "p-2 rounded-xl transition-all duration-500",
-        active ? "bg-primary/20 shadow-[0_0_15px_rgba(var(--pixar-blue),0.3)]" : "bg-transparent"
+        active ? "bg-primary/20 shadow-[0_0_20px_rgba(var(--pixar-blue),0.4)] ring-1 ring-primary/40" : "bg-white/5 group-hover:bg-white/10 ring-1 ring-white/5"
       )}>
         <Icon className={cn(
           "h-4 w-4 transition-all duration-500",
@@ -132,7 +132,7 @@ export function EnaflixSidebar() {
   const { isProfessor } = useProfessorCheck();
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0a0a0e]/95 backdrop-blur-3xl border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_40px_-20px_rgba(0,0,0,0.8)]">
+    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#050508]/80 backdrop-blur-[100px] border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_60px_-20px_rgba(0,0,0,0.9)]">
       {/* Brand */}
       <div className="p-8 pb-4">
         <Link to="/" className="flex items-center gap-4 group">
@@ -145,8 +145,8 @@ export function EnaflixSidebar() {
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-2xl tracking-[0.15em] text-white leading-none drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">ENAFLIX</span>
-            <span className="text-[8px] font-black text-primary tracking-[0.3em] uppercase opacity-60">Studio Engine</span>
+            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--pixar-blue),0.5)]">ENAFLIX</span>
+            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">AI Studio</span>
           </div>
         </Link>
       </div>
