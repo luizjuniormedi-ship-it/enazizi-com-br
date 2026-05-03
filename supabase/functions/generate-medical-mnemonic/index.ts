@@ -310,7 +310,7 @@ async function callOpenAIJson<T>(
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      response_format: { type: "json_object" },
+      ...(OPENAI_MODEL.includes("gpt") ? { response_format: { type: "json_object" } } : {}),
     }),
   });
 
