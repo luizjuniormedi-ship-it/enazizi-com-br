@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-type Format = "notebooklm" | "gemini" | "google_vids" | "markdown" | "txt";
+type Format = "notebooklm" | "cinematic" | "google_vids" | "markdown" | "txt";
 
 const CINEMATIC_3D_BLOCK = `---
 IMPORTANTE — PADRÃO VISUAL OBRIGATÓRIO ENAZIZI/ENAFLIX
