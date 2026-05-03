@@ -172,7 +172,7 @@ const AgentMessageItem = memo(
                 renderAssistantMessage ? (
                   renderAssistantMessage(renderedMarkdown)
                 ) : (
-                  <div className="prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-li:my-1">
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-base sm:prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-headings:text-white prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-primary prose-strong:font-bold">
                     <ReactMarkdown components={markdownComponents}>{renderedMarkdown}</ReactMarkdown>
                   </div>
                 )
