@@ -204,9 +204,7 @@ serve(async (req) => {
 
     const aiData = await response.json();
     const aiResponseText = aiData.choices[0].message.content;
-    aiResponseText = aiResponseText.replace(/```json|```/g, '').trim();
-
-    let parsedData: GeminiResponse;
+    let parsedData: any;
     let validationStatus: 'valid' | 'repaired' | 'failed' = 'valid';
 
     try {
