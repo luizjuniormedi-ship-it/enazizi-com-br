@@ -57,6 +57,13 @@ Deno.serve(async (req) => {
     
     const admin = createClient(supabaseUrl, serviceKey);
 
+    const body = await req.json().catch(() => ({}));
+    
+    // Healthcheck support - move BEFORE auth to allow debugging env issues
+    if (body?.action === "healthcheck") {
+      return await runHealthcheck(admin, lovableKey);
+    }
+
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(supabaseUrl, anonKey!, {
       global: { headers: { Authorization: authHeader } },
@@ -71,12 +78,6 @@ Deno.serve(async (req) => {
       }, 401);
     }
 
-    const body = await req.json().catch(() => ({}));
-    
-    // Healthcheck support
-    if (body?.action === "healthcheck") {
-      return await runHealthcheck(admin, lovableKey);
-    }
 
 
     const lessonId: string | undefined = body?.lesson_id;
