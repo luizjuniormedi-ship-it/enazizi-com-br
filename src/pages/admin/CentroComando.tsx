@@ -12,13 +12,14 @@
 import { lazy, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  LayoutDashboard, BarChart3, Activity, Users,
+  LayoutDashboard, BarChart3, Activity, Users, Globe,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 const AdminPage = lazy(() => import("@/pages/Admin"));
 const AdminCEO = lazy(() => import("@/pages/AdminCEO"));
 const AdminMonitoring = lazy(() => import("@/pages/AdminMonitoring"));
+const NOCDashboard = lazy(() => import("./NOCDashboard"));
 
 const Fallback = () => (
   <div className="flex items-center justify-center p-12">
@@ -41,6 +42,9 @@ const CentroComando = () => {
 
       <Tabs defaultValue="executive" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1 bg-muted/50 p-1">
+          <TabsTrigger value="noc" className="text-xs gap-1.5 bg-black text-white hover:bg-black/90 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Globe className="h-3.5 w-3.5" /> NOC Enterprise
+          </TabsTrigger>
           <TabsTrigger value="executive" className="text-xs gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" /> Executivo
           </TabsTrigger>
@@ -51,6 +55,12 @@ const CentroComando = () => {
             <Users className="h-3.5 w-3.5" /> Usuários
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="noc">
+          <Suspense fallback={<Fallback />}>
+            <NOCDashboard />
+          </Suspense>
+        </TabsContent>
 
         <TabsContent value="executive">
           <Suspense fallback={<Fallback />}>
