@@ -1,35 +1,42 @@
-# Robustez da Estruturação de Aulas do Tutor IA
+# Relatório de Resiliência: Estruturação de Aulas Tutor IA
 
-## Resumo da Causa Raiz
-O erro de unicidade (`duplicate key value violates unique constraint "tutor_lesson_memory_user_id_topic_key"`) ocorria porque a IA alterava o `topic` original para algo mais detalhado. Como o banco exige que `(user_id, topic)` seja único, ao mudar "Pericardite" para "Pericardite Aguda", se o usuário já tivesse uma aula com esse tema exato, a transação falhava, deixando a aula original travada no status `structuring`.
+## 1. Causa Raiz dos Problemas Anteriores
+- **Conflito de Unicidade:** A IA tentava "melhorar" o tema original (ex: "Pericardite" -> "Pericardite Aguda"). Como o banco possui uma restrição `UNIQUE(user_id, topic)`, se o usuário já tivesse uma aula com o novo nome, a inserção falhava.
+- **Aulas Travadas:** Falhas no Gateway de IA (502/Timeout) deixavam as aulas no status `structuring` indefinidamente sem um mecanismo de timeout visual ou recuperação automática no frontend.
 
-## Implementações de Segurança
+## 2. Implementação do Topic Canônico
+- A função `tutor-lesson-structure` foi blindada. Agora, os campos `topic`, `subject` e `subtopic` originais são preservados integralmente.
+- As sugestões da IA são armazenadas exclusivamente no objeto `metadata` (campos `ai_suggested_topic`, etc.), garantindo que a integridade referencial do banco nunca seja quebrada por variações semânticas da IA.
 
-### 1. Proteção de Campos Canônicos
-A Edge Function `tutor-lesson-structure` agora protege explicitamente os campos:
-- `id`, `user_id`, `source_session_id`, `topic`, `subject`.
-- Se a IA sugerir um tema diferente, ele é salvo em `metadata.ai_suggested_topic` mas o campo principal `topic` permanece intacto.
+## 3. Auditoria e Telemetria
+Cada ciclo de estruturação agora registra eventos detalhados na tabela `tutor_lesson_events`:
+- **Eventos:** `lesson_structuring_started`, `lesson_structuring_retry`, `lesson_structured`, `lesson_structure_failed`.
+- **Metadados Gravados:**
+  - `model_used` (Gemini Pro vs Flash)
+  - `fallback_used` (Booleano)
+  - `duration_ms` (Tempo total de processamento)
+  - `gateway_status` (Código HTTP retornado pelo Gateway)
+  - `attempt_count` (Número da tentativa atual)
+  - `original_topic` vs `ai_returned_topic`
 
-### 2. Normalização Segura
-- Criada coluna `topic_normalized` via migração SQL.
-- Trigger Postgres `tr_tutor_lesson_normalize_topic` garante que buscas por temas funcionem independente de acentos ou caixa, sem alterar o dado original exibido ao usuário.
+## 4. Novo Painel de Controle (Admin)
+Criado o painel **"Testes de Estruturação IA"** com:
+- **Healthcheck em Tempo Real:** Valida conexão com Supabase, Gateway Lovable e disponibilidade dos modelos Gemini.
+- **Detecção de Gargalos:** Monitora aulas presas em `structuring` por mais de 15 minutos.
+- **Recuperação Automática:** Botão para reprocessar em lote todas as aulas com falha ou travadas.
+- **Métricas de Performance:** Tempo médio de resposta e taxa de uso de fallback.
 
-### 3. Recuperação de Aulas Travadas (Stuck)
-- **Timeouts:** Aulas em `structuring` há mais de 15 minutos são detectadas como "travadas".
-- **Painel Admin:** Adicionado contador e botão "Reprocessar Falhas" que identifica aulas travadas ou com erro e reinicia o fluxo automaticamente.
-- **Healthcheck:** Endpoint dedicado na Edge Function para validar conectividade com DB e Gateway IA em tempo real.
+## 5. Estratégia de Fallback e Retry
+- **Hierarquia de Modelos:** O sistema tenta primeiro `gemini-2.0-pro-exp-02-05` para máxima qualidade pedagógica.
+- **Fallback Automático:** Em caso de erro (exceto 429), o sistema degrada graciosamente para `gemini-2.0-flash-exp` para garantir a entrega, registrando a ocorrência para auditoria.
+- **Retry Lógico:** O painel Admin permite que falhas temporárias (502) sejam reprocessadas com um clique.
 
-## Logs e Rastreabilidade
-Eventos registrados na tabela `tutor_lesson_events`:
-- `lesson_structuring_started` (com `original_topic`)
-- `lesson_structured` (com `model_used`, `fallback_used` e `duration_ms`)
-- `lesson_structure_failed` (com mensagem de erro detalhada)
+## 6. Testes de Resiliência Executados
+- [x] **Unicidade:** IA retornou tema diferente, banco manteve o original. **PASSOU.**
+- [x] **Timeout:** Aula forçada a ficar `structuring` foi detectada pelo painel como "Travada". **PASSOU.**
+- [x] **Fallback:** Simulação de erro no Pro ativou o Flash com sucesso. **PASSOU.**
+- [x] **Segurança:** Operações restritas ao `service_role` dentro da Edge Function, garantindo bypass de RLS apenas onde necessário. **PASSOU.**
 
-## Testes Executados
-1. **Divergência de Tema:** Simulado aula com "Pericardite" onde IA retornou "Pericardite Aguda". Resultado: Topic mantido, sugestão salva em metadata.
-2. **Gateway Error:** Simulado erro 502. Resultado: Retry automático e fallback para Gemini Flash bem-sucedido.
-3. **Recuperação Manual:** Botão "Reprocessar" no Admin testado com sucesso em aulas com `last_structuring_error`.
-
-## Próximos Passos
-- Monitorar a taxa de reuso das aulas estruturadas via `pedagogical_quality_score`.
-- Expandir o Healthcheck para incluir latência média da IA.
+---
+**Status Final:** RESILIENTE
+**Próximos Passos:** Monitorar `fallback_rate` no novo painel para ajustar prompts se a qualidade do Flash for insuficiente.

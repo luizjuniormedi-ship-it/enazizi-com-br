@@ -9,8 +9,8 @@ const corsHeaders = {
 };
 
 const MAX_PER_HOUR = 100;
-const MAX_PER_DAY = 500;
 const MIN_QUALITY = 50;
+const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
 
 type StructuredLesson = {
   title: string;
@@ -20,24 +20,15 @@ type StructuredLesson = {
   subtopic?: string;
   difficulty_level?: string;
   estimated_duration_minutes?: number;
-  student_context?: Record<string, unknown>;
   learning_objectives?: string[];
   lay_explanation?: string;
   technical_explanation?: string;
   clinical_or_exam_relevance?: string;
   chapters?: Array<Record<string, unknown>>;
-  key_concepts?: string[];
-  common_mistakes?: string[];
-  exam_traps?: string[];
-  quick_review?: string;
-  flashcard_suggestions?: Array<Record<string, unknown>>;
-  quiz_questions?: Array<Record<string, unknown>>;
   video_script?: Record<string, unknown>;
   notebooklm_prompt?: string;
   gemini_video_prompt?: string;
   google_vids_prompt?: string;
-  references?: string[];
-  quality_notes?: string[];
 };
 
 Deno.serve(async (req) => {
@@ -118,7 +109,8 @@ Deno.serve(async (req) => {
 
     await logEvent(admin, lessonId, user.id, "lesson_structuring_started", { 
       attempt: currentAttempt,
-      original_topic: lesson.topic 
+      original_topic: lesson.topic,
+      started_at: new Date().toISOString()
     });
 
     // 4) Collect context
@@ -129,17 +121,22 @@ Deno.serve(async (req) => {
     let aiError: string | null = null;
     let modelUsed = "";
     let fallbackUsed = false;
+    let gatewayStatus: number | null = null;
 
     try {
       const result = await callAIWithFallback(lovableKey, lesson, ctx);
       structured = result.data;
       modelUsed = result.model;
       fallbackUsed = result.fallbackUsed;
+      gatewayStatus = result.status;
     } catch (e) {
       aiError = (e as Error).message;
     }
 
     if (!structured) {
+      const isRetryable = aiError?.includes("502") || aiError?.includes("timeout") || aiError?.includes("rate-limited");
+      const eventType = isRetryable ? "lesson_structuring_retry" : "lesson_structure_failed";
+      
       await admin
         .from("tutor_lesson_memory")
         .update({
@@ -148,14 +145,17 @@ Deno.serve(async (req) => {
         })
         .eq("id", lessonId);
       
-      await logEvent(admin, lessonId, user.id, "lesson_structure_failed", { 
-        error: aiError,
-        attempt: currentAttempt,
+      await logEvent(admin, lessonId, user.id, eventType, { 
+        error_message: aiError,
+        attempt_count: currentAttempt,
         model_used: modelUsed,
-        fallback_used: fallbackUsed
+        fallback_used: fallbackUsed,
+        gateway_status: gatewayStatus,
+        duration_ms: Date.now() - startTime,
+        original_topic: lesson.topic
       });
       
-      return json({ error: "ai_failed", detail: aiError }, 502);
+      return json({ error: "ai_failed", detail: aiError, retryable: isRetryable }, 502);
     }
 
     // 6) Quality score and finalization
@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
     const finalStatus = score >= MIN_QUALITY ? "pending_review" : "needs_adjustment";
 
     // 7) Safe Persist (Protects Canonical Fields)
+    // NEVER update topic, subject, subtopic with AI values directly
     const updateData = {
       status: finalStatus,
       title: structured.title || lesson.title || "Aula sem título",
@@ -187,7 +188,10 @@ Deno.serve(async (req) => {
         topic_preserved: true,
         model_used: modelUsed,
         fallback_used: fallbackUsed,
-        duration_ms: Date.now() - startTime
+        attempt_count: currentAttempt,
+        duration_ms: Date.now() - startTime,
+        gateway_status: gatewayStatus,
+        finished_at: new Date().toISOString()
       }
     };
 
@@ -204,10 +208,12 @@ Deno.serve(async (req) => {
     await logEvent(admin, lessonId, user.id, "lesson_structured", {
       score,
       status: finalStatus,
-      chapters: structured.chapters?.length ?? 0,
       model_used: modelUsed,
       fallback_used: fallbackUsed,
-      duration_ms: Date.now() - startTime
+      duration_ms: Date.now() - startTime,
+      original_topic: lesson.topic,
+      ai_returned_topic: structured.topic,
+      topic_preserved: true
     });
 
     return json({
@@ -225,19 +231,44 @@ Deno.serve(async (req) => {
 async function runHealthcheck(admin: any, lovableKey: string) {
   const checks = [];
   
-  // Check DB
+  // 1) DB Check
   const { data: dbCheck, error: dbError } = await admin.from("tutor_lesson_memory").select("id").limit(1);
-  checks.push({ name: "database", ok: !dbError, error: dbError?.message });
+  checks.push({ name: "Supabase DB", ok: !dbError, error: dbError?.message });
 
-  // Check AI Gateway
+  // 2) Tables check
+  const { error: eventTableError } = await admin.from("tutor_lesson_events").select("id").limit(1);
+  checks.push({ name: "tutor_lesson_events", ok: !eventTableError, error: eventTableError?.message });
+
+  // 3) LOVABLE_API_KEY check
+  checks.push({ name: "LOVABLE_API_KEY", ok: !!lovableKey });
+
+  // 4) AI Models check (Gateway)
   try {
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/models", {
       headers: { Authorization: `Bearer ${lovableKey}` }
     });
-    checks.push({ name: "ai_gateway", ok: aiResp.ok, status: aiResp.status });
+    checks.push({ name: "Lovable AI Gateway", ok: aiResp.ok, status: aiResp.status });
+    
+    if (aiResp.ok) {
+      const models = await aiResp.json();
+      const hasPro = models.data?.some((m: any) => m.id === "google/gemini-2.5-pro");
+      const hasFlash = models.data?.some((m: any) => m.id === "google/gemini-2.5-flash");
+      checks.push({ name: "Gemini Pro Available", ok: hasPro });
+      checks.push({ name: "Gemini Flash Available", ok: hasFlash });
+    }
   } catch (e) {
-    checks.push({ name: "ai_gateway", ok: false, error: (e as Error).message });
+    checks.push({ name: "AI Gateway Reachability", ok: false, error: (e as Error).message });
   }
+
+  // 5) Stuck Lessons Check
+  const timeoutThreshold = new Date(Date.now() - TIMEOUT_MS).toISOString();
+  const { count: stuckCount } = await admin
+    .from("tutor_lesson_memory")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "structuring")
+    .lt("last_structuring_at", timeoutThreshold);
+  
+  checks.push({ name: "No Stuck Lessons", ok: (stuckCount ?? 0) === 0, detail: `${stuckCount} stuck` });
 
   return json({
     ok: checks.every(c => c.ok),
@@ -251,7 +282,10 @@ async function logEvent(admin: any, lessonId: string, actorId: string, eventType
     lesson_id: lessonId,
     actor_id: actorId,
     event_type: eventType,
-    metadata
+    metadata: {
+      ...metadata,
+      timestamp: new Date().toISOString()
+    }
   }]);
 }
 
@@ -332,24 +366,27 @@ const STRUCTURE_TOOL = {
 };
 
 async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<string, unknown>) {
-  const models = ["google/gemini-2.5-pro", "google/gemini-2.5-flash"];
+  const models = ["google/gemini-2.0-pro-exp-02-05", "google/gemini-2.0-flash-exp"];
   let lastError = "";
+  let lastStatus: number | null = null;
   
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
     try {
-      const data = await callAI(apiKey, lesson, ctx, model);
-      if (data) return { data, model, fallbackUsed: i > 0 };
+      const result = await callAI(apiKey, lesson, ctx, model);
+      if (result.data) return { data: result.data, model, fallbackUsed: i > 0, status: result.status };
     } catch (e) {
       lastError = (e as Error).message;
-      if (lastError.includes("rate-limited")) throw e;
+      lastStatus = (e as any).status || 500;
+      // If rate limited, don't fallback immediately, maybe it's global
+      if (lastStatus === 429) throw e;
     }
   }
   
   throw new Error(lastError || "AI failed all models");
 }
 
-async function callAI(apiKey: string, lesson: any, ctx: Record<string, unknown>, model: string): Promise<StructuredLesson | null> {
+async function callAI(apiKey: string, lesson: any, ctx: Record<string, unknown>, model: string): Promise<{ data: StructuredLesson | null, status: number }> {
   const systemPrompt = `Você é um professor especialista da plataforma ENAZIZI/ENAFLIX. pt-BR.
 Regra de Ouro: Preserve o tema médico original "${lesson.topic}".
 Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o tema principal não será alterado.`;
@@ -374,13 +411,15 @@ Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o
   });
 
   if (!resp.ok) {
-    if (resp.status === 429) throw new Error("AI rate-limited");
-    throw new Error(`AI error ${resp.status}`);
+    const errText = await resp.text();
+    const err = new Error(`AI error ${resp.status}: ${errText.slice(0, 100)}`);
+    (err as any).status = resp.status;
+    throw err;
   }
 
   const data = await resp.json();
   const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  return args ? JSON.parse(args) : null;
+  return { data: args ? JSON.parse(args) : null, status: resp.status };
 }
 
 function computeQualityScore(s: StructuredLesson): number {
@@ -395,4 +434,5 @@ function computeQualityScore(s: StructuredLesson): number {
 function buildSummary(s: StructuredLesson): string {
   return s.lay_explanation || s.technical_explanation || s.title || "";
 }
+
 

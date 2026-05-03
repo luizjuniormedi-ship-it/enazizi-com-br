@@ -5,8 +5,9 @@ import {
   BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, 
   Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, 
   Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play,
-  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal
+  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal, Microscope
 } from "lucide-react";
+
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
@@ -67,6 +68,8 @@ const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCogniti
 const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
 const AdminLessonsMemory = lazy(() => import("@/pages/admin/AdminLessonsMemory"));
 const AdminLessonRatingsPanel = lazy(() => import("@/components/admin/AdminLessonRatingsPanel").then(m => ({ default: m.AdminLessonRatingsPanel })));
+const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/TutorLessonStructureDashboard").then(m => ({ default: m.TutorLessonStructureDashboard })));
+
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -112,7 +115,9 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "cinematic-engine", label: "CME Studio", icon: Film },
         { key: "tutor-lessons", label: "Aulas Memory", icon: BookOpen },
         { key: "lesson-ratings", label: "Avaliações Aulas", icon: Star },
+        { key: "tutor-structure-tests", label: "Testes Estrutura", icon: Microscope },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
+
       ],
     },
     {
@@ -592,7 +597,9 @@ const Admin = () => {
                   {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
                   {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
                   {activeSection === "lesson-ratings" && <Suspense fallback={<PanelLoader />}><AdminLessonRatingsPanel /></Suspense>}
+                  {activeSection === "tutor-structure-tests" && <Suspense fallback={<PanelLoader />}><TutorLessonStructureDashboard /></Suspense>}
                   {activeSection === "intelligence-overview" && <Suspense fallback={<PanelLoader />}><IntelligenceOverviewPanel /></Suspense>}
+
                   {activeSection === "adaptive-engine" && <Suspense fallback={<PanelLoader />}><AdaptiveEngineAdmin /></Suspense>}
                   {activeSection === "cognitive-orchestrator" && <Suspense fallback={<PanelLoader />}><AdminCognitiveOrchestrator /></Suspense>}
                   {activeSection === "specialty-friction" && <Suspense fallback={<PanelLoader />}><SpecialtyFrictionReport /></Suspense>}
