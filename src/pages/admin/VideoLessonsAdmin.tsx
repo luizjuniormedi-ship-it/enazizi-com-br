@@ -393,7 +393,7 @@ const VideoLessonsAdmin = () => {
                                     messageId: undefined
                                   })}
                                 >
-                                  <Film className="h-4 w-4" /> 🎬 Transformar em Videoaula
+                                  <Film className="h-4 w-4" /> 🎬 Gerar Vídeo (Pipeline)
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>
