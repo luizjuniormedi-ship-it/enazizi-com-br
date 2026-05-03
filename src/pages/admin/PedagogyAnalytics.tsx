@@ -34,9 +34,11 @@ export default function PedagogyAnalytics() {
 
       if (error) throw error;
       
-      setData({
-        ...res,
-        totalEvents: 0 // Will be aggregated in stats if needed
+      setData(res || {
+        avg_session_time: 0,
+        abandonment_rate: 0,
+        blocks: [],
+        module_stats: []
       });
     } catch (error) {
       console.error("Error loading pedagogy data:", error);
