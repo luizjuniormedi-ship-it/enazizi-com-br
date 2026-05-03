@@ -101,40 +101,47 @@ export default function MnemonicGeneratorPage() {
 
   const { data: errorSuggestions } = useErrorSuggestions();
 
-  // ── Auto-suggest terms from curriculum_matrix ──
-  const [suggestedTerms, setSuggestedTerms] = useState<string[]>([]);
-  const [loadingTerms, setLoadingTerms] = useState(false);
+  // ── Auto-suggest topics/subthemes from curriculum_matrix ──
+  const [suggestedTopics, setSuggestedTopics] = useState<Array<{ tema: string; subtema: string | null }>>([]);
+  const [loadingTopics, setLoadingTopics] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!tema || tema.trim().length < 3) { setSuggestedTerms([]); return; }
-    setLoadingTerms(true);
+    if (!tema || tema.trim().length < 2 || tema.includes(" — ")) { 
+      setSuggestedTopics([]); 
+      return; 
+    }
+    
+    setLoadingTopics(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const searchTerm = tema.split("—")[0].trim();
+        const searchTerm = tema.trim();
         const { data } = await supabase
           .from("curriculum_matrix")
-          .select("gatilhos_clinicos, palavras_chave, subtema, tema")
+          .select("tema, subtema")
           .eq("ativo", true)
-          .or(`tema.ilike.%${searchTerm}%,subtema.ilike.%${searchTerm}%,palavras_chave.cs.{${searchTerm}}`)
-          .limit(5);
+          .or(`tema.ilike.%${searchTerm}%,subtema.ilike.%${searchTerm}%`)
+          .limit(6);
 
         if (data && data.length > 0) {
-          const allTerms = new Set<string>();
-          for (const row of data) {
-            if (Array.isArray(row.gatilhos_clinicos)) row.gatilhos_clinicos.forEach((t: string) => allTerms.add(t));
-            if (Array.isArray(row.palavras_chave)) row.palavras_chave.forEach((t: string) => allTerms.add(t));
-          }
-          const terms = [...allTerms].slice(0, 10);
-          setSuggestedTerms(terms);
-          // NÃO auto-preenche mais — modo automático extrai via IA quando usuário não digita.
+          const unique = new Map<string, { tema: string; subtema: string | null }>();
+          data.forEach(item => {
+            const key = item.subtema ? `${item.tema} — ${item.subtema}` : item.tema;
+            if (!unique.has(key)) {
+              unique.set(key, { tema: item.tema, subtema: item.subtema });
+            }
+          });
+          setSuggestedTopics(Array.from(unique.values()));
         } else {
-          setSuggestedTerms([]);
+          setSuggestedTopics([]);
         }
-      } catch { setSuggestedTerms([]); }
-      finally { setLoadingTerms(false); }
-    }, 500);
+      } catch { 
+        setSuggestedTopics([]); 
+      } finally { 
+        setLoadingTopics(false); 
+      }
+    }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [tema]);
 
