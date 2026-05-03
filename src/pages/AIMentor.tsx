@@ -13,6 +13,12 @@ import {
   deriveStagesFromBlockTypes,
 } from "@/components/tutor/pedagogical/PedagogicalMissionHero";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
+import {
+  evaluateProtocolCompliance,
+  buildComplementPrompt,
+  logComplianceTelemetry,
+} from "@/lib/tutor/protocolCompliance";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 
 const quickActions = [
