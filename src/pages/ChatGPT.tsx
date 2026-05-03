@@ -92,6 +92,7 @@ const ChatGPT = () => {
   const perf = useTutorPerformance(user?.id);
   const { performance, savePerformance, sessionQuestions, setSessionQuestions, sessionCorrect, setSessionCorrect, handleFinishSession } = perf;
   const sessionMemory = useSessionMemory();
+  const { findLessonByTopic } = useTutorCME();
   const { data: missionData } = useStudyNext();
 
   // Session persistence
