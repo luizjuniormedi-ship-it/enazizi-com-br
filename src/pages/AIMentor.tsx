@@ -18,7 +18,7 @@ import {
   buildComplementPrompt,
   logComplianceTelemetry,
 } from "@/lib/tutor/protocolCompliance";
-import { useEffect, useRef } from "react";
+
 import { cn } from "@/lib/utils";
 
 const quickActions = [
