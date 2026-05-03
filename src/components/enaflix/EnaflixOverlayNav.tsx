@@ -148,7 +148,16 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             >
               Minhas Aulas
             </button>
-
+            <button 
+              type="button"
+              onClick={() => navigate("/dashboard/mentor")}
+              className={cn(
+                "text-sm font-semibold transition-colors hover:text-white",
+                location.pathname.includes("/dashboard/mentor") ? "text-white" : "text-white/60"
+              )}
+            >
+              Tutor IA
+            </button>
           </nav>
         </div>
 
