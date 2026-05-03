@@ -66,13 +66,25 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
 
   useEffect(() => {
     const fetchLesson = async () => {
-      if (msg.role === "assistant" && (msg as any).id) {
-        const lesson = await getLessonForMessage((msg as any).id);
-        if (lesson) setLessonData(lesson);
+      if (msg.role === "assistant") {
+        // First try by message ID (if already associated)
+        if ((msg as any).id) {
+          const lesson = await getLessonForMessage((msg as any).id);
+          if (lesson) {
+            setLessonData(lesson);
+            return;
+          }
+        }
+        
+        // If no lesson by ID, try by topic
+        if (topic) {
+          const lesson = await findLessonByTopic(topic);
+          if (lesson) setLessonData(lesson);
+        }
       }
     };
     fetchLesson();
-  }, [msg, getLessonForMessage]);
+  }, [msg, topic, getLessonForMessage, findLessonByTopic]);
 
   const isCoordinator = roles.includes("coordenador") || roles.includes("coordinator");
   const hasPermission = isAdmin || isProfessor || isCoordinator;
