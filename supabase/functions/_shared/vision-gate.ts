@@ -62,7 +62,7 @@ export function extractCleanImageUrls(html: string): string[] {
 }
 
 /**
- * FAIL-CLOSED vision validation using Gemini.
+ * FAIL-CLOSED vision validation using OpenAI via Lovable Gateway.
  * Any failure = { valid: false }. Never allow on error.
  */
 export async function validateImageVision(
