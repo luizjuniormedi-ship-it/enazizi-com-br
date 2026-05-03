@@ -33,7 +33,7 @@ type StructuredLesson = {
 
 Deno.serve(async (req) => {
   try {
-    console.log("Tutor Lesson Structure v2.3 (Final Armor)");
+    console.log("Tutor Lesson Structure v2.4 (OpenAI 5 Ready)");
     if (req.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
