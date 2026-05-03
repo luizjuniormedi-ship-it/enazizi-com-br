@@ -63,17 +63,8 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["centro de comando", "ceo", "kpi", "executivo"],
       },
       {
-        to: "/admin/automation-lab",
-        label: "Produção Lote P2",
-        description: "Geração síncrona em lote para temas de prova (P2 Clínica/Pediatria).",
-        icon: Sparkles,
-        scopes: ["super_admin", "admin_pedagogico"],
-        badge: "Novo",
-        keywords: ["automação", "p2", "lote", "geração"],
-      },
-      {
         to: "/admin/monitoring",
-        label: "Monitor de Alunos",
+        label: "Alunos",
         description: "Painel do mentor: alunos em risco, progresso e intervenções.",
         icon: Users,
         scopes: ["super_admin", "admin_pedagogico", "admin_operacional"],
@@ -81,7 +72,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/ai-audit-mode",
-        label: "Auditoria de Ações",
+        label: "Auditoria",
         description: "Log de todas as ações administrativas e mudanças sensíveis.",
         icon: ClipboardList,
         scopes: ["super_admin", "admin_operacional"],
@@ -91,7 +82,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
   },
   {
     id: "conteudo",
-    label: "Gestão de Conteúdo",
+    label: "Conteúdo",
     icon: BookOpenCheck,
     description: "Curadoria de aulas, banco de questões e biblioteca.",
     items: [
@@ -113,7 +104,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/banca-readiness",
-        label: "Simulados & Provas",
+        label: "Simulados",
         description: "Cobertura de bancas, prontidão e telemetria de simulados.",
         icon: FileText,
         scopes: ["super_admin", "admin_pedagogico"],
@@ -121,19 +112,11 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/video-lessons",
-        label: "Biblioteca de Ativos",
+        label: "Biblioteca",
         description: "Vídeos publicados, materiais e ativos pedagógicos.",
         icon: ImageIcon,
         scopes: ["super_admin", "admin_pedagogico"],
         keywords: ["vídeo", "videoaulas", "biblioteca", "ativos"],
-      },
-      {
-        to: "/admin/ingestion-provas",
-        label: "Importação de Conteúdo",
-        description: "Ingestão de provas oficiais e bancos externos.",
-        icon: Upload,
-        scopes: ["super_admin", "admin_pedagogico"],
-        keywords: ["import", "ingestion", "provas oficiais"],
       },
     ],
   },
@@ -171,7 +154,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
   },
   {
     id: "inteligencia",
-    label: "Inteligência ENA",
+    label: "IA",
     icon: BrainCircuit,
     description: "Tutor IA, motor adaptativo e custos.",
     items: [
@@ -185,19 +168,11 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/ai-studio",
-        label: "Configurações IA",
+        label: "Prompts",
         description: "Central de produção de conteúdo IA e prompts.",
         icon: Settings2,
         scopes: ["super_admin"],
         keywords: ["prompt", "studio", "ia", "geração"],
-      },
-      {
-        to: "/admin/adaptive-engine",
-        label: "Motor Adaptativo",
-        description: "Regras, políticas e experimentos do ACE Loop.",
-        icon: GitBranch,
-        scopes: ["super_admin"],
-        keywords: ["ace", "adaptive", "engine", "policies"],
       },
       {
         to: "/admin/medical-governance",
@@ -217,6 +192,14 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     scopes: ["super_admin"],
     items: [
       {
+        to: "/admin#roles",
+        label: "Permissões",
+        description: "Gestão de roles e escopos administrativos.",
+        icon: KeyRound,
+        scopes: ["super_admin"],
+        keywords: ["role", "permission", "rbac"],
+      },
+      {
         to: "/admin/intervention-policies",
         label: "Feature Flags",
         description: "Políticas de intervenção e flags de funcionalidades.",
@@ -225,28 +208,12 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["flag", "policy", "toggle"],
       },
       {
-        to: "/admin#roles",
-        label: "Permissões & Papéis",
-        description: "Gestão de roles e escopos administrativos.",
-        icon: KeyRound,
-        scopes: ["super_admin"],
-        keywords: ["role", "permission", "rbac"],
-      },
-      {
         to: "/admin/notebooklm",
         label: "Integrações",
         description: "Conectores externos (NotebookLM, Stripe, etc).",
         icon: Plug,
         scopes: ["super_admin"],
         keywords: ["integration", "connector", "external"],
-      },
-      {
-        to: "/admin/cme-media-monitor",
-        label: "Storage",
-        description: "Saúde de buckets, mídias e ativos hospedados.",
-        icon: HardDrive,
-        scopes: ["super_admin"],
-        keywords: ["storage", "bucket", "asset"],
       },
     ],
   },
