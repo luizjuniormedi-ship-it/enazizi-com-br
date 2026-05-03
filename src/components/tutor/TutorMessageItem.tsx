@@ -183,19 +183,20 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     size="sm" 
                     className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
                     onClick={() => {
-                      const url = lessonData.playback_url || lessonData.video_url || lessonData.aggregation?.manual_video_url;
-                      if (url) {
-                        window.open(url, '_blank');
+                      if (lessonData?.id) {
+                        navigate(`/dashboard/videoaulas/${lessonData.id}`);
                       } else {
                         const aggId = lessonData.aggregation_id || lessonData.aggregation?.id;
                         if (aggId) {
                           setActiveAggregationId(aggId);
                           setShowAgilePlayer(true);
+                        } else {
+                          toast.info("Aula completa em preparação. Tente novamente em breve.");
                         }
                       }
                     }}
                   >
-                    <Play className="h-3 w-3 fill-current" /> Assistir Agora
+                    <Play className="h-3 w-3 fill-current" /> Abrir Aula Completa
                   </Button>
                 </div>
                 <p className="text-[10px] text-muted-foreground italic leading-relaxed">
@@ -242,27 +243,18 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
 
               {lessonData && (
                 <Button
-                  variant={lessonData.aggregation?.manual_video_url ? "default" : "outline"}
+                  variant="default"
                   size="sm"
-                  className={cn(
-                    "h-7 text-xs gap-1.5 animate-fade-in",
-                    lessonData.aggregation?.manual_video_url 
-                      ? "bg-primary hover:bg-primary/90 text-white" 
-                      : "border-amber-500/20 text-amber-500/70 cursor-wait"
-                  )}
+                  className="h-7 text-xs gap-1.5 animate-fade-in bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={() => {
-                    if (lessonData.aggregation?.manual_video_url) {
-                      window.open(lessonData.aggregation.manual_video_url, '_blank');
+                    if (lessonData?.id) {
+                      navigate(`/dashboard/videoaulas/${lessonData.id}`);
                     } else {
-                      toast.info("Esta aula está sendo preparada por um professor. Tente novamente em breve.");
+                      toast.info("Esta aula está sendo preparada. Tente novamente em breve.");
                     }
                   }}
                 >
-                  {lessonData.aggregation?.manual_video_url ? (
-                    <><Play className="h-3.5 w-3.5 fill-current" /> Assistir Aula</>
-                  ) : (
-                    <><Clock className="h-3.5 w-3.5" /> Aula em Produção</>
-                  )}
+                  <Play className="h-3.5 w-3.5 fill-current" /> Abrir Aula Completa
                 </Button>
               )}
 
