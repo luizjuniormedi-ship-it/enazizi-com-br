@@ -39,7 +39,6 @@ type StructuredLesson = {
   video_script?: Record<string, unknown>;
   notebooklm_prompt?: string;
   cinematic_video_prompt?: string;
-  google_vids_prompt?: string;
 };
 
 Deno.serve(async (req) => {
