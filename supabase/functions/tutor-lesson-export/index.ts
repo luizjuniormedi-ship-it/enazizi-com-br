@@ -226,7 +226,7 @@ Tema: ${sc.subject ?? "—"} / ${sc.topic ?? "—"}
 Duração-alvo: ${sc.estimated_duration_minutes ?? 8} minutos
 
 ## Briefing
-${sc.gemini_video_prompt ?? "Crie uma videoaula didática em pt-BR sobre o conteúdo abaixo."}
+${sc.cinematic_video_prompt || sc.gemini_video_prompt || "Crie uma videoaula didática em pt-BR sobre o conteúdo abaixo."}
 
 ## Abertura
 ${vs.opening ?? "—"}
