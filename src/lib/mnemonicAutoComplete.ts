@@ -178,9 +178,9 @@ Responda EXCLUSIVAMENTE em formato JSON usando esta estrutura: { "suggestedItems
     const { data, error } = await supabase.functions.invoke("ai-proxy", {
       body: {
         prompt,
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-5-mini",
         responseFormat: "json",
-        systemPrompt: "Responda apenas JSON válido.",
+        systemPrompt: "Responda apenas JSON válido. Use apenas OpenAI gpt-5-mini.",
       },
     });
 
