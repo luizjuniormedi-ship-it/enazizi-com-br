@@ -1008,16 +1008,16 @@ const VideoLessonPlayer = () => {
                   <div className="flex gap-2">
                     <Button 
                       variant="ghost" 
-                      size="xs" 
-                      className="h-7 text-[10px] gap-1.5 border border-primary/20 hover:bg-primary/10 text-primary"
+                      size="sm" 
+                      className="h-7 text-[10px] gap-1.5 border border-primary/20 hover:bg-primary/10 text-primary px-2"
                       onClick={() => toast.info("Modo Feynman (IA) Ativado: O Tutor agora usará explicações simplificadas para esta aula.")}
                     >
                       <Volume2 className="h-3 w-3" /> Tutor Feynman
                     </Button>
                     <Button 
                       variant="ghost" 
-                      size="xs" 
-                      className="h-7 text-[10px] gap-1.5 border border-orange-500/20 hover:bg-orange-500/10 text-orange-500"
+                      size="sm" 
+                      className="h-7 text-[10px] gap-1.5 border border-orange-500/20 hover:bg-orange-500/10 text-orange-500 px-2"
                       onClick={() => toast.info("Modo Exam Sprint (IA) Ativado: O Tutor focará em pontos críticos de prova e bizus.")}
                     >
                       <Flame className="h-3 w-3" /> Tutor Sprint
