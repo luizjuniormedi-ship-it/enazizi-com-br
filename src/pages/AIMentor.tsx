@@ -37,7 +37,7 @@ const suggestions = [
   "Antibióticos na UTI"
 ];
 
-const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
+const TutorPremiumHero = forwardRef<HTMLDivElement, { onSend: (p: string) => void }>(({ onSend }, ref) => {
   const { user } = useAuth();
   const firstName = user?.user_metadata?.display_name?.split(" ")[0] || "Doutor";
   const [inputValue, setInputValue] = useState("");
@@ -50,7 +50,7 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
   };
 
   return (
-    <div className="relative min-h-[60vh] flex flex-col items-center justify-center pt-12 pb-20 px-6 overflow-hidden">
+    <div ref={ref} className="relative min-h-[60vh] flex flex-col items-center justify-center pt-12 pb-20 px-6 overflow-hidden">
       {/* Cinematic Background Atmosphere */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-radial-gradient from-primary/10 via-transparent to-transparent opacity-40" />
