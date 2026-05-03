@@ -790,13 +790,30 @@ const VideoLessonPlayer = () => {
                     </div>
                   )}
                   <div className="flex gap-4">
-                    <Button 
-                      variant="default" 
-                      className="gap-2"
-                      onClick={() => toast.info("Solicitação de re-renderização enviada ao cluster GPU.")}
-                    >
-                      <RotateCcw className="h-4 w-4" /> Reprocessar Aula
-                    </Button>
+                    {!isTutorMemory && (
+                      <Button
+                        variant="default"
+                        className="gap-2"
+                        onClick={async () => {
+                          const { error } = await supabase.from("cme_media_reprocessing_jobs").insert({
+                            video_lesson_id: lesson.id,
+                            reprocess_status: "queued",
+                            failure_reason: "Solicitação manual pelo player do aluno",
+                          });
+                          if (error) {
+                            toast.error("Erro ao solicitar reprocessamento: " + error.message);
+                            return;
+                          }
+                          await supabase
+                            .from("ai_video_lessons")
+                            .update({ media_status: "rendering" as any })
+                            .eq("id", lesson.id);
+                          toast.success("Aula enviada para reprocessamento.");
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4" /> Reprocessar Aula
+                      </Button>
+                    )}
                     <Button variant="outline" onClick={() => navigate("/dashboard/videoaulas")}>
                       Voltar à Biblioteca
                     </Button>
