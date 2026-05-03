@@ -11,61 +11,35 @@ import {
   Loader2, Brain, Timer, UserMinus, BookOpen, 
   Repeat, ShieldCheck, Download, RefreshCw 
 } from "lucide-react";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+import { AdminAlertCenter } from "@/components/admin/AdminAlertCenter";
 
 export default function PedagogyAnalytics() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
+  const [days, setDays] = useState(7);
 
   async function loadData() {
     setLoading(true);
     try {
-      // Get session starts vs completions/abandonments
-      const { data: events } = await supabase
-        .from('telemetry_events')
-        .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(1000);
+      const { data: res, error } = await supabase
+        .rpc('admin_telemetry_v2_pedagogy', { _days: days });
 
-      // Process data for charts (Simplified client-side processing for now)
-      // In a real scenario, this should be done via RPC for performance
-      const moduleStats: Record<string, any> = {};
-      const pedagogicalBlocks: Record<string, number> = {
-        'Feynman': 0,
-        'Active Recall': 0,
-        'Clinical Reasoning': 0,
-        'Simplification': 0
-      };
+      if (error) throw error;
       
-      let totalTime = 0;
-      let sessionsWithTime = 0;
-
-      events?.forEach(evt => {
-        const route = evt.route || 'unknown';
-        const props = evt.properties as any;
-        if (!moduleStats[route]) moduleStats[route] = { name: route, started: 0, abandoned: 0, completed: 0 };
-        
-        if (evt.event_name === 'session_started') moduleStats[route].started++;
-        if (evt.event_name === 'session_abandoned') moduleStats[route].abandoned++;
-        if (evt.event_name === 'session_completed') moduleStats[route].completed++;
-
-        if (evt.event_name === 'tutor_opened') pedagogicalBlocks['Clinical Reasoning']++;
-        if (evt.event_name === 'tutor_helpful_clicked') pedagogicalBlocks['Simplification']++;
-        if (evt.event_name === 'tutor_memory_reused') pedagogicalBlocks['Active Recall']++;
-        
-        if (props?.duration_ms) {
-          totalTime += props.duration_ms;
-          sessionsWithTime++;
-        }
-      });
-
-      setData({
-        moduleStats: Object.values(moduleStats).slice(0, 10),
-        blocks: Object.entries(pedagogicalBlocks).map(([name, value]) => ({ name, value })),
-        avgSessionTime: sessionsWithTime > 0 ? Math.round(totalTime / sessionsWithTime / 1000 / 60) : 0,
-        abandonmentRate: 24, // Mocked for now
-        totalEvents: events?.length || 0
+      setData(res || {
+        avg_session_time: 0,
+        abandonment_rate: 0,
+        blocks: [],
+        module_stats: []
       });
     } catch (error) {
       console.error("Error loading pedagogy data:", error);
@@ -76,7 +50,7 @@ export default function PedagogyAnalytics() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [days]);
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-background/50 backdrop-blur-md">
@@ -94,41 +68,47 @@ export default function PedagogyAnalytics() {
           <p className="text-muted-foreground mt-2">Observabilidade profunda do fluxo cognitivo e retenção.</p>
         </div>
         <div className="flex gap-3">
+          <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
+            <SelectTrigger className="w-[140px] bg-card/50">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1">Hoje</SelectItem>
+              <SelectItem value="7">Últimos 7 dias</SelectItem>
+              <SelectItem value="30">Últimos 30 dias</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="sm" onClick={loadData}>
             <RefreshCw className="h-4 w-4 mr-2" /> Atualizar
-          </Button>
-          <Button size="sm">
-            <Download className="h-4 w-4 mr-2" /> Exportar Relatório
           </Button>
         </div>
       </header>
 
+      <AdminAlertCenter />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Tempo Médio" 
-          value={`${data.avgSessionTime} min`} 
+          value={`${data.avg_session_time} min`} 
           description="Duração média da sessão"
           icon={<Timer className="h-5 w-5 text-blue-500" />}
         />
         <StatCard 
           title="Taxa de Abandono" 
-          value={`${data.abandonmentRate}%`} 
+          value={`${data.abandonment_rate}%`} 
           description="Usuários que saem prematuramente"
           icon={<UserMinus className="h-5 w-5 text-red-500" />}
-          trend="-2.4%"
         />
         <StatCard 
-          title="Uso Feynman" 
-          value="842" 
-          description="Blocos de simplificação gerados"
+          title="Feynman / Ativo" 
+          value={data.blocks?.find((b: any) => b.name === 'Feynman/Simplification')?.value || 0} 
+          description="Blocos de simplificação"
           icon={<Brain className="h-5 w-5 text-purple-500" />}
         />
         <StatCard 
           title="Active Recall" 
-          value="1.2k" 
-          description="Interações de recuperação ativa"
+          value={data.blocks?.find((b: any) => b.name === 'Active Recall')?.value || 0} 
+          description="Interações de recuperação"
           icon={<Repeat className="h-5 w-5 text-green-500" />}
-          trend="+12%"
         />
       </div>
 

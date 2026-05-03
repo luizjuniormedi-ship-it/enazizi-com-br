@@ -41,6 +41,14 @@ export class GlobalErrorBoundary extends Component<Props, State> {
           userAgent: navigator.userAgent
         }
       });
+      
+      // Also track as telemetry event for operational dashboards
+      const { telemetry } = await import('@/lib/pedagogicalTelemetry');
+      telemetry.track('session_abandoned', {
+        reason: 'react_error',
+        error_message: error.message,
+        severity: 'critical'
+      });
       if (dbError) console.error('Supabase logging error:', dbError);
     } catch (e) {
       console.error('Failed to log error to Supabase:', e);
@@ -83,7 +91,12 @@ window.addEventListener('unhandledrejection', (event) => {
       url: window.location.href,
       type: 'unhandled_rejection'
     }
-  }).then(({ error }: any) => {
+  }).then(async ({ error }: any) => {
     if (error) console.error('Failed to log unhandled rejection:', error);
+    const { telemetry } = await import('@/lib/pedagogicalTelemetry');
+    telemetry.track('supabase_timeout', {
+      reason: 'unhandled_rejection',
+      message: event.reason?.message || 'Unknown'
+    });
   });
 });

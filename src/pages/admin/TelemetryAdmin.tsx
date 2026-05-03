@@ -109,7 +109,7 @@ const TelemetryAdmin = () => {
   async function handleExport(kind: "raw" | "funnel" | "cohorts" | "alerts" | "tutor") {
     const stamp = new Date().toISOString().slice(0, 10);
     if (kind === "raw") {
-      const { data } = await supabase.rpc("admin_telemetry_export", { _days: days, _limit: 5000 });
+      const { data } = await supabase.rpc("admin_telemetry_export", { _days: days, _limit: 10000 });
       downloadCSV(`telemetria_eventos_${stamp}.csv`, data ?? []);
     } else if (kind === "funnel") {
       downloadCSV(`telemetria_funil_${stamp}.csv`, funnel.map(r => ({ stage: r.name, value: r.value })));
@@ -119,7 +119,8 @@ const TelemetryAdmin = () => {
     } else if (kind === "alerts") {
       downloadCSV(`telemetria_alertas_${stamp}.csv`, alerts);
     } else if (kind === "tutor") {
-      downloadCSV(`telemetria_tutor_${stamp}.csv`, [tutorQ ?? {}]);
+      const { data: aiRes } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: days });
+      downloadCSV(`telemetria_tutor_v2_${stamp}.csv`, [aiRes ?? {}]);
     }
   }
 
