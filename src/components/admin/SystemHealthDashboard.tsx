@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Activity, AlertTriangle, CheckCircle, Clock, Users, Zap } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle, Zap, Users } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -16,14 +16,17 @@ export const SystemHealthDashboard = () => {
         .select('*', { count: 'exact', head: true })
         .gt('updated_at', fiveMinsAgo);
 
-      // Fetch recent errors
-      const { data: recentErrors } = await supabase
+      // Fetch recent errors - use any to bypass type issues with dynamic table
+      const { data: recentErrors } = await (supabase as any)
         .from('error_log')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
 
-      // Simple mock for Edge Function latency (in real app, fetch from logs table)
+      const hourAgo = new Date(Date.now() - 3600000);
+      const errorsLastHour = (recentErrors || []).filter((e: any) => new Date(e.created_at) > hourAgo).length;
+
+      // Simple mock for Edge Function latency
       const mockLatency = Array.from({ length: 10 }, (_, i) => ({
         time: i,
         ms: Math.floor(Math.random() * 200) + 100
@@ -31,7 +34,7 @@ export const SystemHealthDashboard = () => {
 
       return {
         onlineUsers: onlineUsers || 0,
-        errorsLastHour: recentErrors?.filter(e => new Date(e.created_at) > new Date(Date.now() - 3600000)).length || 0,
+        errorsLastHour,
         recentErrors: recentErrors || [],
         avgLatency: "142ms",
         latencyHistory: mockLatency
@@ -44,7 +47,7 @@ export const SystemHealthDashboard = () => {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center text-foreground">
         <h1 className="text-3xl font-bold tracking-tight">Saúde do Sistema</h1>
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20">
           <CheckCircle className="w-4 h-4" />
@@ -53,7 +56,7 @@ export const SystemHealthDashboard = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="bg-card text-card-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Usuários Online</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
@@ -63,7 +66,7 @@ export const SystemHealthDashboard = () => {
             <p className="text-xs text-muted-foreground">Atividade nos últimos 5 min</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card text-card-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Erros (1h)</CardTitle>
             <AlertTriangle className="h-4 w-4 text-destructive" />
@@ -73,7 +76,7 @@ export const SystemHealthDashboard = () => {
             <p className="text-xs text-muted-foreground">Taxa de erro está estável</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card text-card-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Latência Média</CardTitle>
             <Zap className="h-4 w-4 text-yellow-500" />
@@ -83,7 +86,7 @@ export const SystemHealthDashboard = () => {
             <p className="text-xs text-muted-foreground">Tempo de resposta da API</p>
           </CardContent>
         </Card>
-        <Card>
+        <Card className="bg-card text-card-foreground">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Uptime</CardTitle>
             <Activity className="h-4 w-4 text-blue-500" />
@@ -96,7 +99,7 @@ export const SystemHealthDashboard = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-7">
-        <Card className="col-span-4">
+        <Card className="col-span-4 bg-card text-card-foreground">
           <CardHeader>
             <CardTitle>Latência das Edge Functions (ms)</CardTitle>
           </CardHeader>
@@ -117,7 +120,7 @@ export const SystemHealthDashboard = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="col-span-3">
+        <Card className="col-span-3 bg-card text-card-foreground">
           <CardHeader>
             <CardTitle>Logs de Erro Recentes</CardTitle>
           </CardHeader>

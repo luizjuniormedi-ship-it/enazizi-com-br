@@ -23,14 +23,14 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     
-    // Log to Supabase error_log table for monitoring
+    // Log to Supabase for monitoring - using any to bypass type issues with dynamically added table
     this.logError(error, errorInfo);
   }
 
   private async logError(error: Error, errorInfo: ErrorInfo) {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      await supabase.from('error_log').insert({
+      const { error: dbError } = await (supabase as any).from('error_log').insert({
         error_message: error.message,
         stack_trace: error.stack,
         component_stack: errorInfo.componentStack,
@@ -41,6 +41,7 @@ export class GlobalErrorBoundary extends Component<Props, State> {
           userAgent: navigator.userAgent
         }
       });
+      if (dbError) console.error('Supabase logging error:', dbError);
     } catch (e) {
       console.error('Failed to log error to Supabase:', e);
     }
@@ -73,8 +74,8 @@ export class GlobalErrorBoundary extends Component<Props, State> {
 // Global Rejection Handler
 window.addEventListener('unhandledrejection', (event) => {
   console.error('Unhandled promise rejection:', event.reason);
-  // Log to Supabase
-  supabase.from('error_log').insert({
+  // Log to Supabase using any
+  (supabase as any).from('error_log').insert({
     error_message: `Unhandled Rejection: ${event.reason?.message || event.reason}`,
     stack_trace: event.reason?.stack,
     severity: 'warning',
@@ -82,5 +83,7 @@ window.addEventListener('unhandledrejection', (event) => {
       url: window.location.href,
       type: 'unhandled_rejection'
     }
-  }).catch(console.error);
+  }).then(({ error }: any) => {
+    if (error) console.error('Failed to log unhandled rejection:', error);
+  });
 });
