@@ -36,7 +36,7 @@ export function evaluateProtocolCompliance(
   const missingStageLabels: string[] = [];
 
   for (const stage of PEDAGOGICAL_STAGES) {
-    const byBlock = stage.blockTypes.some((t) => seenTypes.has(t));
+    const byBlock = stage.blockTypes.some((t) => seenTypes.has(t as any));
     const byText = stage.textMarkers.some((m) => lower.includes(m));
     if (byBlock || byText) {
       presentStageIds.push(stage.id);
