@@ -309,6 +309,7 @@ export default function MnemonicGeneratorPage() {
   const handleUseSuggestion = useCallback((s: { tema: string; subtema: string | null }) => {
     setTema(s.subtema ? `${s.tema} — ${s.subtema}` : s.tema);
     setTermosText("");
+    setSuggestedTopics([]); // Fecha o dropdown ao selecionar
     toast.info("Tema selecionado — IA extrairá os termos automaticamente.");
   }, []);
 
