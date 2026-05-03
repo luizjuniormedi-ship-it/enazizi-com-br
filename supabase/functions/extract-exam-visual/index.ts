@@ -157,7 +157,7 @@ serve(async (req) => {
 
     // For questions with images, we need to upload the page screenshot
     // Since we can't extract individual pages in Deno, we upload the full PDF page as context
-    // We'll use Gemini to generate the page image for each unique page that has images
+    // We'll use AI to generate the page image for each unique page that has images
     const pagesWithImages = new Set<number>();
     for (const q of questions) {
       if (q.has_image && q.page_number) {
