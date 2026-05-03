@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  *  - Respeita prefers-reduced-motion
  */
 const THINKING_LABELS = [
-  "Sincronizando base de dados...",
+  "Conectando à base ENAFLIX...",
   "Analisando fisiopatologia...",
   "Buscando raciocínio clínico...",
   "Cruzando diagnósticos...",
