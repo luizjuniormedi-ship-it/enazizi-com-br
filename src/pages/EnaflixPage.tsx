@@ -324,6 +324,97 @@ export default function EnaflixPage() {
 
           {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 5 */}
           <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
+            {/* NOVO: Hub Inteligente (Missão + Maestria) */}
+            <div className="px-4 sm:px-8 lg:px-14">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Card Missão do Dia */}
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  className="lg:col-span-1 p-6 rounded-[24px] bg-white/[0.03] border border-white/10 backdrop-blur-md relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative z-10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-primary" />
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white/90">Missão do Dia</h3>
+                      </div>
+                      {studyNext?.recommendation && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[10px] font-bold text-primary">
+                          <Sparkles className="h-3 w-3" />
+                          <span>IA-READY</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {studyNext?.recommendation ? (
+                      <div className="space-y-2">
+                        <p className="text-xl font-bold text-white leading-tight">
+                          {studyNext.recommendation.title}
+                        </p>
+                        <p className="text-sm text-white/60 line-clamp-2">
+                          {studyNext.recommendation.description}
+                        </p>
+                        <button 
+                          onClick={() => {
+                            const rec = studyNext.recommendation;
+                            const route = rec.type === 'review' ? '/dashboard/sessao-estudo' : 
+                                         rec.type === 'mnemonic' ? '/dashboard/mnemonic-studio' :
+                                         rec.type === 'error_review' ? '/dashboard/banco-erros' :
+                                         rec.type === 'image_quiz' ? '/dashboard/image-quiz' : '/dashboard/sessao-estudo';
+                            navigate(route);
+                          }}
+                          className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-white text-black font-bold text-sm hover:scale-[1.02] transition-transform"
+                        >
+                          <Play className="h-4 w-4 fill-black" />
+                          <span>Retomar Estudo</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-8 flex flex-col items-center justify-center text-center space-y-2">
+                        <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                          <Brain className="h-5 w-5 text-white/30" />
+                        </div>
+                        <p className="text-xs text-white/40">Sua próxima missão está sendo gerada...</p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Card Maestria Médica (Resumo) */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="lg:col-span-2 p-6 rounded-[24px] bg-white/[0.03] border border-white/10 backdrop-blur-md relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative z-10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-purple-400" />
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white/90">Evolução Cognitiva</h3>
+                      </div>
+                      <button 
+                        onClick={() => navigate("/dashboard/analytics")}
+                        className="text-[10px] font-bold text-white/40 hover:text-white flex items-center gap-1 transition-colors"
+                      >
+                        VER DETALHES <ChevronRight className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    <Suspense fallback={<div className="h-40 animate-pulse bg-white/5 rounded-xl" />}>
+                      <div className="max-h-[160px] overflow-hidden">
+                        <MedicalMasteryDashboard />
+                      </div>
+                    </Suspense>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+
             {isLoading ? (
               <div className="space-y-12">
                 <EnaflixRowSkeleton />
