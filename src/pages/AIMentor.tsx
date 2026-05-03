@@ -40,6 +40,7 @@ const suggestions = [
 
 const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const firstName = user?.user_metadata?.display_name?.split(" ")[0] || "Doutor";
   const [inputValue, setInputValue] = useState("");
 
@@ -52,6 +53,13 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
 
   return (
     <div className="relative min-h-[60vh] flex flex-col items-center justify-center pt-12 pb-20 px-6 overflow-hidden">
+      {/* Back button */}
+      <button
+        onClick={() => navigate("/dashboard")}
+        className="absolute top-4 left-4 z-30 flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white text-xs font-bold uppercase tracking-widest backdrop-blur-md transition-all"
+      >
+        <ArrowLeft className="h-4 w-4" /> Voltar
+      </button>
       {/* Cinematic Background Atmosphere */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-radial-gradient from-primary/10 via-transparent to-transparent opacity-40" />
