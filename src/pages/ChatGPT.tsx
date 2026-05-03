@@ -304,11 +304,13 @@ const ChatGPT = () => {
     if (!text.trim() || isLoading || !user) return;
 
     // Topic change detection
+    let activeTopic = currentTopic;
     const topicChangeMatch = text.match(/(?:quero estudar|vamos estudar|mudar (?:tema|assunto) (?:para)?|agora (?:quero|vamos) (?:estudar)?)\s+(.+)/i);
     if (topicChangeMatch && studyStarted) {
       const detectedTopic = topicChangeMatch[1].replace(/[.!?]+$/, "").trim();
       if (detectedTopic && detectedTopic.toLowerCase() !== currentTopic.toLowerCase()) {
         setCurrentTopic(detectedTopic);
+        activeTopic = detectedTopic;
         setEnaziziStep(3);
         setChangingTopic(false);
         saveEnaziziStep(3, detectedTopic, performance, sessionQuestions);
