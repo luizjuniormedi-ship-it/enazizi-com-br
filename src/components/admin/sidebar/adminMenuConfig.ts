@@ -18,11 +18,11 @@
  *   6. Laboratório Técnico  (oculto para não-devops)
  */
 import {
-  LayoutDashboard, Users, ShieldCheck, BookOpenCheck, FileQuestion, FileText,
-  Image as ImageIcon, Upload, MessageSquare, Bell, MessageCircleHeart, Bot,
-  Settings2, GitBranch, DollarSign, Flag, KeyRound, Plug, HardDrive, Cpu,
-  Workflow, Server, Activity, Wrench, Stethoscope, BarChart3, BrainCircuit,
-  ClipboardList, Network, Eye, Layers, Sparkles,
+  LayoutDashboard, Users, BookOpenCheck, FileQuestion, FileText,
+  Image as ImageIcon, MessageSquare, Bell, MessageCircleHeart, Bot,
+  Settings2, Flag, KeyRound, Plug, Cpu,
+  Workflow, Server, Activity, Wrench, Network, BrainCircuit,
+  ClipboardList, Sparkles, DollarSign
 } from "lucide-react";
 import type { AdminScope } from "@/hooks/useAdminScope";
 
@@ -122,7 +122,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
   },
   {
     id: "comunidade",
-    label: "Comunidade & Suporte",
+    label: "Comunidade",
     icon: MessageSquare,
     description: "Usuários, mensagens e feedbacks.",
     items: [
@@ -136,7 +136,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/telemetry",
-        label: "Mensagens & Alertas",
+        label: "Mensagens",
         description: "Sistema de notificações e alertas em massa.",
         icon: Bell,
         scopes: ["super_admin", "admin_operacional"],
@@ -144,7 +144,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/specialty-friction",
-        label: "Feedbacks dos Alunos",
+        label: "Feedbacks",
         description: "Atrito por especialidade e relatórios qualitativos.",
         icon: MessageCircleHeart,
         scopes: ["super_admin", "admin_pedagogico"],
@@ -219,7 +219,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
   },
   {
     id: "laboratorio",
-    label: "Laboratório Técnico",
+    label: "Laboratório",
     icon: Wrench,
     description: "Áreas avançadas de DevOps e infraestrutura.",
     scopes: ["devops", "super_admin"],
@@ -249,29 +249,12 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["render", "queue", "fila"],
       },
       {
-        to: "/admin/orchestrator-insights",
-        label: "AI Router",
-        description: "Roteamento de modelos IA e insights do orquestrador.",
-        icon: Network,
-        scopes: ["devops", "super_admin"],
-        keywords: ["router", "orchestrator", "ai"],
-      },
-      {
         to: "/admin/cme-incidents",
-        label: "Incident Ops",
+        label: "Logs técnicos",
         description: "Incidentes, alertas e postmortems.",
         icon: Activity,
         scopes: ["devops", "super_admin"],
-        keywords: ["incident", "alert", "ops"],
-      },
-      {
-        to: "/admin/system-checklist",
-        label: "Ferramentas DEV",
-        description: "Checklist de sistema, telemetria e diagnósticos.",
-        icon: Wrench,
-        scopes: ["devops", "super_admin"],
-        keywords: ["dev", "tools", "diagnostic", "checklist"],
-        badge: "Dev",
+        keywords: ["incident", "alert", "ops", "logs"],
       },
     ],
   },
