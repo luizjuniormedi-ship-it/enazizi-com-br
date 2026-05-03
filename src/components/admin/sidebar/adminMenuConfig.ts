@@ -87,6 +87,14 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Curadoria de aulas, banco de questões e biblioteca.",
     items: [
       {
+        to: "/admin/users?tab=uploads",
+        label: "Upload de Arquivos",
+        description: "Upload de materiais brutos, PDFs e provas para o sistema.",
+        icon: FileText,
+        scopes: ["super_admin", "admin_operacional"],
+        keywords: ["upload", "arquivo", "pdf", "bruto"],
+      },
+      {
         to: "/admin/lessons-memory",
         label: "Curadoria de Aulas",
         description: "Memória de aulas do Tutor IA — estruturação, vídeo e publicação.",
