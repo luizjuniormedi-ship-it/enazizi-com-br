@@ -175,13 +175,14 @@ export function EnaflixLessonRating({ lessonId, onClose, watchedPercentage = 0 }
                 </Enaflix3DButton>
                 <Enaflix3DButton 
                   onClick={handleSubmit}
-                  isLoading={isSubmitting}
+                  loading={isSubmitting}
                   className="flex-1"
                   glow
                   iconRight={<Send className="h-4 w-4" />}
                 >
                   Enviar
                 </Enaflix3DButton>
+
               </div>
             </motion.div>
           )}

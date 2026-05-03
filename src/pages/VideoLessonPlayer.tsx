@@ -104,6 +104,8 @@ const VideoLessonPlayer = () => {
   const navigate = useNavigate();
   const [watchedSeconds, setWatchedSeconds] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showRating, setShowRating] = useState(false);
+  const [hasRated, setHasRated] = useState(false);
   const [showQuiz, setShowQuiz] = useState(false);
   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
   const [quizScore, setQuizScore] = useState(0);
@@ -112,6 +114,8 @@ const VideoLessonPlayer = () => {
   const lastLogTime = useRef(0);
   const pauseStartTime = useRef<number | null>(null);
   const hasNotifiedDifficulty = useRef<Set<string>>(new Set());
+  const ratingThresholdTriggered = useRef(false);
+
   const loadStartTime = useRef(Date.now());
   const hasLoggedReady = useRef(false);
   
@@ -336,7 +340,16 @@ const VideoLessonPlayer = () => {
   const completionRate = duration ? Math.min((watchedSeconds / duration) * 100, 100) : 0;
 
 
+  // Check for rating trigger (70% or completion)
+  useEffect(() => {
+    if (id && completionRate >= 70 && !ratingThresholdTriggered.current && !hasRated) {
+      setShowRating(true);
+      ratingThresholdTriggered.current = true;
+    }
+  }, [completionRate, id, hasRated]);
+
   // Simulação de log de progresso e detecção de pausa longa / abandono
+
   useEffect(() => {
     let interval: any;
     if (isPlaying) {
@@ -474,7 +487,9 @@ const VideoLessonPlayer = () => {
     }
     
     if (action === "complete") {
+      if (!hasRated) setShowRating(true);
       toast.success("Aula concluída! Sugerimos revisar os flashcards agora.");
+
       const hasFlashcardsInSegments = segments.some(s => s.has_flashcards);
       if (hasFlashcardsInSegments) {
         toast("Revisão Recomendada", {
