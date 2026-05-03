@@ -311,7 +311,13 @@ const AIMentor = () => {
                     functionName="mentor-chat"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
-                    pedagogicalHeader={({ messages }) => <PedagogicalHeaderBridge messages={messages} />}
+                    hideUploadsPicker
+                    pedagogicalHeader={({ messages }) => (
+                      <PedagogicalHeaderBridge
+                        messages={messages}
+                        onRetry={(p) => onSendRef.current?.(p)}
+                      />
+                    )}
                   />
                 </div>
               </div>
