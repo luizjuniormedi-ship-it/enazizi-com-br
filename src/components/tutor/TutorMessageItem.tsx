@@ -182,12 +182,15 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     size="sm" 
                     className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
                     onClick={() => {
-                      if (lessonData.playback_url || lessonData.video_url || lessonData.aggregation?.manual_video_url) {
-                        const url = lessonData.playback_url || lessonData.video_url || lessonData.aggregation?.manual_video_url;
+                      const url = lessonData.playback_url || lessonData.video_url || lessonData.aggregation?.manual_video_url;
+                      if (url) {
                         window.open(url, '_blank');
-                      } else if (lessonData.aggregation_id) {
-                        // Launch Agile Player if we have an aggregation
-                        setShowAgilePlayer(true);
+                      } else {
+                        const aggId = lessonData.aggregation_id || lessonData.aggregation?.id;
+                        if (aggId) {
+                          setActiveAggregationId(aggId);
+                          setShowAgilePlayer(true);
+                        }
                       }
                     }}
                   >
