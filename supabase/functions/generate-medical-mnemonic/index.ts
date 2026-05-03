@@ -84,7 +84,7 @@ interface ConsolidatedOutput {
 // CONSTANTS
 // ══════════════════════════════════════════════════
 
-const OPENAI_MODEL = "openai/gpt-5-mini";
+const OPENAI_MODEL = "google/gemini-2.0-flash";
 const OPENAI_TEMP = 1.0; // Fixed: gpt-5-mini only supports default (1.0)
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
@@ -310,7 +310,7 @@ async function callOpenAIJson<T>(
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt },
       ],
-      response_format: { type: "json_object" },
+      ...(OPENAI_MODEL.includes("gpt") ? { response_format: { type: "json_object" } } : {}),
     }),
   });
 

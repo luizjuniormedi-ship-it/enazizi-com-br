@@ -113,7 +113,7 @@ async function processInBackground(
     await updateProgress(supabaseAdmin, uploadId, { step: "validating", progress: 25 });
 
     const validationResponse = await aiFetch({
-      model: "openai/gpt-5-mini-lite",
+      model: "openai/gpt-5-mini",
       messages: [
         {
           role: "system",
