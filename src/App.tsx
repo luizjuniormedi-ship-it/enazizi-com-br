@@ -150,6 +150,7 @@ const CMEGPUFleet = lazyWithRetry(() => import("./pages/admin/cme/GPUFleet"), "C
 const CMERenderQueues = lazyWithRetry(() => import("./pages/admin/cme/RenderQueues"), "CMERenderQueues");
 const CMEObservability = lazyWithRetry(() => import("./pages/admin/cme/Observability"), "CMEObservability");
 
+const NOCDashboard = lazyWithRetry(() => import("./pages/admin/NOCDashboard"), "NOCDashboard");
 
 
 
@@ -280,6 +281,7 @@ const App = () => (
                 <Route path="/mission-control" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                   <Route index element={<MissionControlPage />} />
                 </Route>
+                  <Route path="noc" element={<NOCDashboard />} />
 
                 {/* --- ADMIN (PROTECTED) --- */}
                 <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
