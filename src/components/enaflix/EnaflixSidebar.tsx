@@ -21,8 +21,11 @@ import {
   ChevronRight,
   MonitorPlay,
   BrainCircuit,
-  LayoutGrid
+  LayoutGrid,
+  Users,
+  Activity
 } from "lucide-react";
+
 import { motion } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
