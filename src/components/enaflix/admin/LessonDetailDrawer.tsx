@@ -270,7 +270,7 @@ export function LessonDetailDrawer({
                 <Section title="Exportações de Vídeo">
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
-                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Vídeo GPT-5" onClick={() => onExport(lesson, "gemini")} disabled={!isStructured} />
+                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Vídeo Cinematográfico" onClick={() => onExport(lesson, "cinematic")} disabled={!isStructured} />
                     <ActionPill icon={<Film className="h-4 w-4" />} label="Google Vids" onClick={() => onExport(lesson, "google_vids")} disabled={!isStructured} />
                     <ActionPill icon={<Download className="h-4 w-4" />} label="Markdown" onClick={() => onExport(lesson, "markdown")} disabled={!isStructured} />
                   </div>
