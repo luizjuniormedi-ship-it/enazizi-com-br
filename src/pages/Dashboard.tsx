@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,8 +6,11 @@ import { useStudyNext } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
+import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
+import { ENAFLIX_MODULES } from "@/data/enaflix/enaflixModules";
 import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
+
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
@@ -31,6 +34,14 @@ const Dashboard = () => {
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
   const { data: studyNext, isLoading: missionLoading, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
+  const { recentIds } = useEnaflixUsage();
+
+  const continueModules = useMemo(() => {
+    return recentIds
+      .map(id => ENAFLIX_MODULES.find(m => m.id === id))
+      .filter((m): m is any => !!m)
+      .slice(0, 4);
+  }, [recentIds]);
 
   const autostartConsumedRef = useRef(false);
 
