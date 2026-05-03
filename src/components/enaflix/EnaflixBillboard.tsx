@@ -11,19 +11,14 @@ interface Props {
   /** Tagline pequena sobre o título (ex.: "Recomendado pela IA") */
   eyebrow?: string;
   onNavigate?: (m: EnaflixModule) => void;
+  customTitle?: string;
+  customDesc?: string;
 }
 
 /**
  * EnaflixBillboard — hero full-bleed cinematográfico (calibrado).
- *
- * Calibração moderada:
- *  - Removido parallax mouse + scroll (causava motion sickness e overhead RAF)
- *  - Removido animate-breathe (glow respirando)
- *  - Removido shine-sweep no hover do CTA (excesso visual)
- *  - Mantido: zoom-in suave da arte, text-reveal stagger, float discreto
- *  - Adicionado: faixa contextual com revisões/streak/dias até banca
  */
-export function EnaflixBillboard({ module, eyebrow, onNavigate }: Props) {
+export function EnaflixBillboard({ module, eyebrow, onNavigate, customTitle, customDesc }: Props) {
   const navigate = useNavigate();
   const art = getHeroArt(module.id) ?? ENAFLIX_MASCOT;
 
@@ -35,18 +30,13 @@ export function EnaflixBillboard({ module, eyebrow, onNavigate }: Props) {
 
   return (
     <section
-      aria-label={`Destaque: ${module.title}`}
+      aria-label={`Destaque: ${customTitle || module.title}`}
       className="relative w-full h-[78vh] min-h-[520px] max-h-[820px] overflow-hidden"
     >
       {/* Backdrop art (full-bleed) */}
       <div aria-hidden className="absolute inset-0">
-        {/* Camada base ambiente */}
         <div className="absolute inset-0 bg-[#0a0a12]" />
-
-        {/* Glow ambiente atrás da arte — estático (sem breathe) */}
         <div className="absolute right-[5%] top-1/4 h-[60%] w-[45%] bg-gradient-radial from-primary/25 via-violet-500/8 to-transparent blur-3xl pointer-events-none" />
-
-        {/* Arte hero dominante — entrada zoom-in apenas */}
         <div
           className={cn(
             "absolute right-0 top-0 h-full w-[70%] sm:w-[60%] lg:w-[55%]",
@@ -60,21 +50,14 @@ export function EnaflixBillboard({ module, eyebrow, onNavigate }: Props) {
             loading="eager"
           />
         </div>
-
-        {/* Gradiente cinematográfico esquerda → direita (legibilidade do texto) */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a12] via-[#0a0a12]/85 via-40% to-transparent" />
-
-        {/* Fade inferior para emergir o conteúdo seguinte */}
         <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-b from-transparent via-[#0a0a12]/80 to-[#0a0a12]" />
-
-        {/* Vinheta superior sutil (deixa a topbar overlay legível) */}
         <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-black/60 to-transparent" />
       </div>
 
       {/* Conteúdo */}
       <div className="relative h-full flex items-end pb-20 sm:pb-28 px-4 sm:px-8 lg:px-14">
         <div className="max-w-2xl space-y-5">
-          {/* Faixa contextual: revisões vencidas / streak / dias até banca */}
           <EnaflixContextStrip />
 
           {eyebrow && (
@@ -100,14 +83,14 @@ export function EnaflixBillboard({ module, eyebrow, onNavigate }: Props) {
             className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight text-white leading-[0.95] drop-shadow-[0_4px_20px_rgba(0,0,0,0.8)] opacity-0 animate-text-reveal"
             style={{ animationDelay: "320ms" }}
           >
-            {module.title}
+            {customTitle || module.title}
           </h1>
 
           <p
             className="text-base sm:text-lg text-white/80 leading-relaxed max-w-xl drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] opacity-0 animate-text-reveal"
             style={{ animationDelay: "460ms" }}
           >
-            {module.description}
+            {customDesc || module.description}
           </p>
 
           <div
@@ -126,7 +109,7 @@ export function EnaflixBillboard({ module, eyebrow, onNavigate }: Props) {
               )}
             >
               <Play className="h-5 w-5 fill-black" />
-              <span>Começar agora</span>
+              <span>Estudar Agora</span>
             </button>
 
             <button
