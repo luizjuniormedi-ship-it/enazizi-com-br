@@ -49,13 +49,15 @@ interface AgentChatProps {
   topic?: string | null;
   subtopic?: string | null;
   specialty?: string | null;
+  /** Optional pedagogical header rendered above the chat (e.g. mission hero + roadmap). */
+  pedagogicalHeader?: (ctx: { messages: { role: string; content: string }[]; isLoading: boolean; userInput: string }) => React.ReactNode;
 }
 
 const AgentChat = ({
   title, subtitle, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName,
   onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload,
   linkToAgent, previousContentLoader, initialPrompt, onSendRef,
-  topic, subtopic, specialty,
+  topic, subtopic, specialty, pedagogicalHeader,
 }: AgentChatProps) => {
   const navigate = useNavigate();
   const chat = useAgentChat({
