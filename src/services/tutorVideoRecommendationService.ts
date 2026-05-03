@@ -24,21 +24,45 @@ type LogEvent =
   | 'skipped_unpublished'
   | 'skipped_no_video';
 
-export function logVideoRecommendationEvent(
+/**
+ * Persiste eventos de telemetria no banco de dados.
+ * Garante auditabilidade das recomendações do Tutor.
+ */
+export async function logVideoRecommendationEvent(
   event: LogEvent,
   payload: Record<string, unknown> = {},
 ) {
-  // Logger leve — front e back compatível.
-  // Mantém um único ponto para futura ingestão em telemetry_events.
-  // eslint-disable-next-line no-console
-  console.log(`[TutorVideoRec] ${event}`, payload);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    // Log no console para debug rápido (ambiente dev)
+    if (import.meta.env.DEV) {
+      console.log(`[TutorVideoRec] ${event}`, payload);
+    }
+
+    // Persistência em telemetry_events
+    await supabase.from('telemetry_events').insert({
+      event_name: `tutor_video_${event}`,
+      user_id: user?.id || payload.userId,
+      session_id: payload.session_id || payload.conversationId,
+      properties: {
+        ...payload,
+        service: 'tutor_video_recommendation',
+        timestamp: new Date().toISOString()
+      },
+      route: window.location.pathname
+    });
+  } catch (error) {
+    console.error("[TutorVideoRec] Erro ao persistir telemetria:", error);
+  }
 }
 
 /**
  * Normaliza termos médicos para busca semântica simples.
  * Retorna a query principal + sinônimos diretos (sem encadeamento transitivo).
  */
-function normalizeMedicalTerm(term: string): string[] {
+export function normalizeMedicalTerm(term: string): string[] {
+  if (!term) return [];
   const t = term.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
   const synonyms: Record<string, string[]> = {
@@ -73,33 +97,47 @@ function normalizeMedicalTerm(term: string): string[] {
  * Faz match seguro: termos curtos (<=3 chars) exigem word boundary,
  * para evitar que "fa" case com "Falência".
  */
-function termMatches(haystack: string, term: string): boolean {
+export function termMatches(haystack: string, term: string): boolean {
   if (!haystack || !term) return false;
-  if (term.length <= 3) {
-    const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\b`);
-    return re.test(haystack);
+  const h = haystack.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const t = term.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  if (t.length <= 3) {
+    const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\b`);
+    return re.test(h);
   }
-  return haystack.includes(term);
+  return h.includes(t);
 }
 
 function hasValidVideo(url?: string | null): boolean {
-  return !!url && typeof url === 'string' && url.trim().length > 5;
+  if (!url) return false;
+  const u = String(url).trim().toLowerCase();
+  // Player interno ou URLs válidas (Vimeo, YouTube, Cloudfront, etc)
+  return u.length > 10 && (u.includes('http') || u.includes('player'));
 }
 
 export async function findRecommendedVideoForTutorContext(
   topic: string,
-  userId?: string
+  userId?: string,
+  conversationId?: string
 ): Promise<RecommendedVideo> {
   const terms = normalizeMedicalTerm(topic);
-  logVideoRecommendationEvent('search_started', { topic, terms, userId });
+  
+  // Persistir início da busca
+  logVideoRecommendationEvent('search_started', { 
+    topic, 
+    terms, 
+    userId,
+    conversationId 
+  });
 
   const results: RecommendedVideo[] = [];
 
-  // 1) ai_video_lessons (publicadas)
+  // 1) ai_video_lessons (Publicadas e não ocultas)
   try {
     const { data: aiLessons } = await supabase
       .from("ai_video_lessons")
-      .select("*, project:cme_video_projects(aggregation_id)")
+      .select("*")
       .eq('status', 'published')
       .order('is_gold_content', { ascending: false });
 
@@ -112,13 +150,18 @@ export async function findRecommendedVideoForTutorContext(
         terms.forEach(term => {
           if (termMatches(lTitle, term)) score += 40;
           if (termMatches(lTopic, term)) score += 30;
+          if (lTopic === term) score += 30; // Bonus por match exato
         });
 
         if (score < 40) return;
 
         const watchUrl = lesson.playback_url || lesson.video_url;
         if (!hasValidVideo(watchUrl)) {
-          logVideoRecommendationEvent('skipped_no_video', { source: 'ai_video_lessons', id: lesson.id });
+          logVideoRecommendationEvent('skipped_no_video', { 
+            source: 'ai_video_lessons', 
+            id: lesson.id,
+            topic: lesson.topic 
+          });
           return;
         }
 
@@ -139,23 +182,23 @@ export async function findRecommendedVideoForTutorContext(
     console.error("[TutorVideoService] Erro em ai_video_lessons:", e);
   }
 
-  // 2) tutor_lesson_memory (publicadas, não excluídas)
+  // 2) tutor_lesson_memory (Publicadas, não excluídas, não ocultas)
   try {
     const { data: memoryLessons } = await supabase
       .from("tutor_lesson_memory")
       .select("*")
       .eq('status', 'published')
+      .eq('hidden_from_student', false)
       .is('deleted_at', null);
 
     if (memoryLessons) {
       memoryLessons.forEach((lesson: any) => {
-        // Defesa-em-profundidade: se por algum motivo vier não publicada, ignora
-        if (lesson.status !== 'published') {
-          logVideoRecommendationEvent('skipped_unpublished', { id: lesson.id, status: lesson.status });
-          return;
-        }
         if (!hasValidVideo(lesson.video_url)) {
-          logVideoRecommendationEvent('skipped_no_video', { source: 'tutor_lesson_memory', id: lesson.id });
+          logVideoRecommendationEvent('skipped_no_video', { 
+            source: 'tutor_lesson_memory', 
+            id: lesson.id,
+            topic: lesson.topic
+          });
           return;
         }
 
@@ -164,7 +207,6 @@ export async function findRecommendedVideoForTutorContext(
         const lTopic = (lesson.topic || "").toLowerCase();
         const lSubject = (lesson.subject || "").toLowerCase();
         const lSubtopic = (lesson.subtopic || "").toLowerCase();
-        const videoUrl = (lesson.video_url || "").toLowerCase();
 
         terms.forEach(term => {
           if (!term) return;
@@ -173,7 +215,6 @@ export async function findRecommendedVideoForTutorContext(
           if (termMatches(lTitle, term)) score += 40;
           if (termMatches(lSubject, term)) score += 25;
           if (termMatches(lSubtopic, term)) score += 25;
-          if (termMatches(videoUrl, term)) score += 60;
         });
 
         if (score >= 50) {
@@ -197,16 +238,19 @@ export async function findRecommendedVideoForTutorContext(
   }
 
   if (results.length === 0) {
-    logVideoRecommendationEvent('not_found', { topic, terms });
+    logVideoRecommendationEvent('not_found', { topic, terms, conversationId });
     return { found: false, confidence: 0 };
   }
 
+  // Pegar o melhor match
   const bestMatch = results.sort((a, b) => b.confidence - a.confidence)[0];
+  
   logVideoRecommendationEvent('found', {
     topic,
     lessonId: bestMatch.lessonId,
     confidence: bestMatch.confidence,
     source: bestMatch.source,
+    conversationId
   });
 
   return bestMatch;
