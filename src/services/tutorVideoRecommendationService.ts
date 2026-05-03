@@ -109,10 +109,17 @@ export async function findRecommendedVideoForTutorContext(
         const lTopic = lesson.topic?.toLowerCase() || "";
         
         terms.forEach(term => {
-          if (lTopic.includes(term)) score += 50; // Match direto no tópico da memória de aula
+          if (lTopic === term) score += 100; // Match exato
+          else if (lTopic.includes(term)) score += 50;
         });
 
-        if (score >= 40) {
+        // Se o video_url contém o termo da busca (ex: pericardite no nome do arquivo)
+        const videoUrl = lesson.video_url?.toLowerCase() || "";
+        terms.forEach(term => {
+          if (videoUrl.includes(term)) score += 60;
+        });
+
+        if (score >= 50) {
           results.push({
             found: true,
             lessonId: lesson.id,
