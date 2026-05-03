@@ -466,14 +466,23 @@ const ChatGPT = () => {
         setIsLoading(false);
       },
       onError: (errMsg) => {
-        toast({ title: "Erro", description: errMsg, variant: "destructive" });
+        setIsLoading(false);
+        toast({ title: "Erro na geração", description: "O Tutor permanece disponível para apoio pedagógico. Tente novamente.", variant: "destructive" });
+        
+        // 6. Telemetry: Answer Generation Failed
+        logVideoRecommendationEvent('answer_generation_failed' as any, { 
+          topic: activeTopic, 
+          conversationId: convId || sessionId,
+          error: errMsg,
+          duration_ms: Date.now() - startTime
+        });
+        
         // Remove empty assistant placeholder
         setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
           return prev;
         });
-        setIsLoading(false);
       },
     });
   };
