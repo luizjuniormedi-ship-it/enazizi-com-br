@@ -3,12 +3,13 @@ import { useLocation } from 'react-router-dom';
 import { telemetry } from '@/lib/pedagogicalTelemetry';
 import { useAuth } from '@/hooks/useAuth';
 
-const INACTIVITY_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+const INACTIVITY_TIMEOUT = 5 * 60 * 1000; // 5 minutes (reduced for better detection)
 
 export function useSessionAbandonmentTracker() {
   const { user } = useAuth();
   const location = useLocation();
   const lastActivityRef = useRef<number>(Date.now());
+  const startTimeRef = useRef<number>(Date.now());
   const currentSessionIdRef = useRef<string>(telemetry.getSessionId());
   const activeModuleRef = useRef<string>(location.pathname);
 
@@ -19,6 +20,8 @@ export function useSessionAbandonmentTracker() {
     telemetry.track('session_started', {
       module: location.pathname,
       device: navigator.userAgent,
+      origin: document.referrer || 'direct',
+      screen: `${window.innerWidth}x${window.innerHeight}`
     });
 
     const handleActivity = () => {
@@ -33,6 +36,8 @@ export function useSessionAbandonmentTracker() {
           reason: 'inactivity',
           last_module: activeModuleRef.current,
           duration_ms: now - lastActivityRef.current,
+          device: navigator.userAgent,
+          scroll_depth: Math.round((window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100)
         });
         // Reset last activity to avoid multiple triggers
         lastActivityRef.current = now;
@@ -57,6 +62,8 @@ export function useSessionAbandonmentTracker() {
       telemetry.track('session_completed', {
         module: location.pathname,
         final_route: location.pathname,
+        total_duration_ms: Date.now() - startTimeRef.current,
+        scroll_depth: Math.round((window.scrollY + window.innerHeight) / document.documentElement.scrollHeight * 100)
       });
     };
 
