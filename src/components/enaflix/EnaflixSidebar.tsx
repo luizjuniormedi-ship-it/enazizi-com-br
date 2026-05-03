@@ -82,7 +82,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
     <Link
       to={to}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden",
+        "group relative z-10 flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden isolate cursor-pointer",
         active 
           ? "text-white" 
           : "text-white/40 hover:text-white"
@@ -92,7 +92,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
         {active && (
           <motion.div
             layoutId="sidebar-active-pill"
-            className="absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] -z-10"
+            className="pointer-events-none absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] -z-10"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -106,7 +106,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
         active ? "bg-primary/20 ring-1 ring-primary/30" : "bg-white/5 group-hover:bg-white/10 ring-1 ring-white/5"
       )}>
         {active && (
-          <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
+          <div className="pointer-events-none absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
         )}
         <Icon className={cn(
           "h-4 w-4 relative z-10 transition-all duration-500",
@@ -130,7 +130,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
       {active && (
         <motion.div
           layoutId="sidebar-active-indicator"
-          className="absolute left-0 w-0.5 h-5 bg-primary rounded-r-full shadow-[0_0_15px_hsl(var(--primary))]"
+          className="pointer-events-none absolute left-0 w-0.5 h-5 bg-primary rounded-r-full shadow-[0_0_15px_hsl(var(--primary))]"
           initial={{ height: 0 }}
           animate={{ height: 20 }}
           transition={{ duration: 0.3 }}
