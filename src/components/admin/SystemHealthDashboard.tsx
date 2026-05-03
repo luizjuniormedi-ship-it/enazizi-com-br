@@ -147,6 +147,7 @@ export const SystemHealthDashboard = () => {
             </div>
           </CardContent>
         </Card>
+      </div>
       <Card className="bg-card text-card-foreground">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
