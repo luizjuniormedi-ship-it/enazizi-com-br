@@ -25,7 +25,8 @@ import {
   Users,
   Activity,
   UserCheck,
-  ImageIcon
+  ImageIcon,
+  Star
 } from "lucide-react";
 
 import { motion } from "framer-motion";

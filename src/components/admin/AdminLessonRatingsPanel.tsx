@@ -12,11 +12,13 @@ export function AdminLessonRatingsPanel() {
   const { data: ratings, isLoading } = useQuery({
     queryKey: ["admin-lesson-ratings"],
     queryFn: async () => {
+      // Fetching ratings with manual join logic for views if needed, 
+      // but for base table lesson_ratings, the join should work if FKs exist in DB (even if not in metadata query)
       const { data, error } = await supabase
         .from("lesson_ratings")
         .select(`
           *,
-          ai_video_lessons (title, subject),
+          ai_video_lessons:lesson_id (title, subject),
           profiles:user_id (display_name, email)
         `)
         .order("created_at", { ascending: false });
@@ -30,11 +32,7 @@ export function AdminLessonRatingsPanel() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("lesson_rating_stats")
-        .select(`
-          *,
-          ai_video_lessons (title)
-        `)
-        .order("avg_rating", { ascending: false });
+        .select(`*`);
       if (error) throw error;
       return data;
     }
@@ -76,15 +74,15 @@ export function AdminLessonRatingsPanel() {
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/30">Últimas Avaliações</h3>
           <ScrollArea className="h-[600px] pr-4">
             <div className="space-y-4">
-              {ratings?.map((r) => (
+              {ratings?.map((r: any) => (
                 <EnaflixCinematicCard key={r.id} className="p-6 space-y-4 group">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <h4 className="font-bold text-white group-hover:text-primary transition-colors">
-                        {(r.ai_video_lessons as any)?.title || "Aula Removida"}
+                        {r.ai_video_lessons?.title || "Aula #" + r.lesson_id.substring(0, 8)}
                       </h4>
                       <p className="text-[10px] text-white/40 uppercase tracking-widest">
-                        {(r.ai_video_lessons as any)?.subject || "Geral"}
+                        {r.ai_video_lessons?.subject || "Geral"}
                       </p>
                     </div>
                     <div className="flex gap-0.5">
@@ -109,14 +107,14 @@ export function AdminLessonRatingsPanel() {
                   <div className="flex items-center justify-between pt-2 border-t border-white/5 text-[10px] font-medium text-white/30">
                     <div className="flex items-center gap-2">
                       <User className="h-3 w-3" />
-                      {(r.profiles as any)?.display_name || (r.profiles as any)?.email || "Aluno"}
+                      {r.profiles?.display_name || r.profiles?.email || "Aluno"}
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="h-3 w-3" />
                       {new Date(r.created_at).toLocaleDateString()}
                     </div>
                     <Badge variant="outline" className="text-[8px] border-white/10">
-                      Assitiu {r.watched_percentage}%
+                      Assistiu {r.watched_percentage}%
                     </Badge>
                   </div>
                 </EnaflixCinematicCard>
@@ -128,21 +126,21 @@ export function AdminLessonRatingsPanel() {
         <div className="space-y-6">
           <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/30">Top Aulas</h3>
           <div className="space-y-3">
-            {stats?.slice(0, 5).map((s, idx) => (
+            {stats?.slice(0, 5).map((s: any, idx) => (
               <EnaflixCinematicCard key={s.lesson_id} className="p-4 flex items-center gap-4">
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center font-black text-primary">
                   #{idx + 1}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-bold text-white truncate">
-                    {(s.ai_video_lessons as any)?.title}
+                    Aula #{s.lesson_id.substring(0, 8)}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="flex gap-0.5">
                       <Star className="h-3 w-3 text-primary fill-primary" />
                     </div>
                     <span className="text-[10px] font-bold text-white/60">
-                      {s.avg_rating.toFixed(1)}
+                      {s.average_rating.toFixed(1)}
                     </span>
                     <span className="text-[10px] text-white/20">
                       ({s.total_ratings} votos)
