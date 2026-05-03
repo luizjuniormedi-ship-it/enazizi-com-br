@@ -75,6 +75,7 @@ Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
 
     const startMs = Date.now();
     const response = await aiFetch({
+      model: "openai/gpt-5",
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
     });
