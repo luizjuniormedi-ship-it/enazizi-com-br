@@ -13,6 +13,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 import { ENAFLIX_MODULES, type EnaflixModule } from "@/data/enaflix/enaflixModules";
 import { ENAFLIX_CATEGORIES } from "@/data/enaflix/enaflixCategories";
@@ -40,57 +41,84 @@ export default function EnaflixPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
-  const { isAdmin } = useAdminCheck();
+  const { user } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
 
   const { data: aiLessons, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["enaflix-ai-lessons"],
     queryFn: async () => {
-      // Query otimizada: selecionando apenas o necessário e evitando select("*")
-      const { data } = await supabase
-        .from("ai_video_lessons")
-        .select("id, title, thumbnail_url, specialty, is_gold_content, duration_seconds, published_at, status")
-        .eq("status", "published")
-        .order("published_at", { ascending: false })
-        .limit(10);
+      try {
+        const { data, error } = await supabase
+          .from("ai_video_lessons")
+          .select("id, title, thumbnail_url, specialty, is_gold_content, duration_seconds, published_at, status")
+          .eq("status", "published")
+          .order("published_at", { ascending: false })
+          .limit(10);
 
-      const { data: memoryData } = await supabase
-        .from("tutor_lesson_memory")
-        .select("id, title, thumbnail_url, subject, duration, published_at, status, hidden_from_student")
-        .eq("status", "published")
-        .eq("hidden_from_student", false)
-        .order("published_at", { ascending: false })
-        .limit(10);
+        if (error) throw error;
 
-      const memoryLessons = (memoryData || []).map((l: any) => ({
-        ...l,
-        specialty: l.subject,
-        duration_seconds: l.duration || 900,
-      }));
+        const { data: memoryData, error: memoryError } = await supabase
+          .from("tutor_lesson_memory")
+          .select("id, title, thumbnail_url, subject, duration, published_at, status, hidden_from_student")
+          .eq("status", "published")
+          .eq("hidden_from_student", false)
+          .order("published_at", { ascending: false })
+          .limit(10);
 
-      return [...(data || []), ...memoryLessons].sort(
-        (a: any, b: any) =>
-          new Date(b.published_at || b.created_at).getTime() -
-          new Date(a.published_at || a.created_at).getTime()
-      );
-    }
+        if (memoryError) throw memoryError;
+
+        const memoryLessons = (memoryData || []).map((l: any) => ({
+          ...l,
+          specialty: l.subject,
+          duration_seconds: l.duration || 900,
+        }));
+
+        return [...(data || []), ...memoryLessons].sort(
+          (a: any, b: any) =>
+            new Date(b.published_at || b.created_at).getTime() -
+            new Date(a.published_at || a.created_at).getTime()
+        );
+      } catch (err) {
+        console.error("Error fetching Enaflix lessons:", err);
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const { data: usageLogs, isLoading: isLoadingUsage } = useQuery({
-    queryKey: ["enaflix-video-usage"],
+    queryKey: ["enaflix-video-usage", user?.id],
     queryFn: async () => {
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return [];
-      const { data } = await supabase
-        .from("video_lesson_usage_logs")
-        .select("video_lesson_id, completion_rate")
-        .eq("user_id", user.id);
-      return data || [];
-    }
+      try {
+        const { data, error } = await supabase
+          .from("video_lesson_usage_logs")
+          .select("video_lesson_id, completion_rate")
+          .eq("user_id", user.id);
+        
+        if (error) throw error;
+        return data || [];
+      } catch (err) {
+        console.error("Error fetching video usage:", err);
+        return [];
+      }
+    },
+    enabled: !!user,
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
-  const isLoading = isLoadingLessons || isLoadingUsage;
+  const [forceReady, setForceReady] = useState(false);
+  const isLoading = (isLoadingLessons || (isLoadingUsage && !!user) || adminLoading) && !forceReady;
+
+  useEffect(() => {
+    // Safety valve: don't let the page stay stuck in skeleton mode for more than 5s
+    const timer = setTimeout(() => {
+      setForceReady(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const continueLessons = useMemo(() => {
     if (!aiLessons || !usageLogs) return [];
@@ -113,13 +141,14 @@ export default function EnaflixPage() {
   }, []);
 
   const visibleModules = useMemo<EnaflixModule[]>(() => {
+    if (adminLoading) return []; // Wait for admin check to finish
     return ENAFLIX_MODULES.filter((m) => {
       if (m.enabled === false) return false;
       if (m.requires === "admin" && !isAdmin) return false;
       if (m.requires === "professor" && !isProfessor && !isAdmin) return false;
       return true;
     });
-  }, [isAdmin, isProfessor]);
+  }, [isAdmin, isProfessor, adminLoading]);
 
   const filteredModules = useMemo(() => {
     const q = normalize(query.trim());
