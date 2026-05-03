@@ -936,9 +936,47 @@ const VideoLessonPlayer = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><Settings className="h-5 w-5" /></Button>
-                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><Share2 className="h-5 w-5" /></Button>
-                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><ArrowRight className="h-5 w-5" /></Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="rounded-full hover:bg-white/10"
+                  title="Abrir configurações do vídeo"
+                  onClick={() => toast.info("Use os controles nativos do player para volume, velocidade, legenda e tela cheia.")}
+                >
+                  <Settings className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="rounded-full hover:bg-white/10"
+                  title="Copiar link público da aula"
+                  onClick={() => {
+                    const url = `${window.location.origin}/videoaulas/${id}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Link público copiado!");
+                  }}
+                >
+                  <Share2 className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="rounded-full hover:bg-white/10"
+                  title="Próximo passo"
+                  onClick={() => {
+                    if (segments.length > 0) {
+                      const next = segments.find((seg) => (seg.start_second ?? 0) > watchedSeconds);
+                      if (next) {
+                        handleSelectSegment(next);
+                        toast.success(`Indo para: ${next.title}`);
+                        return;
+                      }
+                    }
+                    handleAction("complete");
+                  }}
+                >
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
               </div>
             </div>
 
