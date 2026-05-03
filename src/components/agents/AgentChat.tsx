@@ -23,6 +23,7 @@ import AgentMessageList from "./AgentMessageList";
 import AgentInputBar from "./AgentInputBar";
 import type { QuickAction, LinkToAgent, Upload as UploadType } from "./agentChatTypes";
 import { useTutorCME } from "@/hooks/useTutorCME";
+import { useTutorAdaptiveSync } from "@/components/agents/hooks/useTutorAdaptiveSync";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { cn } from "@/lib/utils";
