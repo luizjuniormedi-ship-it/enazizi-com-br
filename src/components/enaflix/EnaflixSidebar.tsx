@@ -130,7 +130,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
       {active && (
         <motion.div
           layoutId="sidebar-active-indicator"
-          className="absolute left-0 w-0.5 h-5 bg-primary rounded-r-full shadow-[0_0_15px_hsl(var(--primary))]"
+          className="pointer-events-none absolute left-0 w-0.5 h-5 bg-primary rounded-r-full shadow-[0_0_15px_hsl(var(--primary))]"
           initial={{ height: 0 }}
           animate={{ height: 20 }}
           transition={{ duration: 0.3 }}
