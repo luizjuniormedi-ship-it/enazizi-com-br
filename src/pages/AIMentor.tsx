@@ -163,7 +163,8 @@ const TutorPremiumHero = forwardRef<HTMLDivElement, { onSend: (p: string) => voi
       </div>
     </div>
   );
-};
+});
+TutorPremiumHero.displayName = "TutorPremiumHero";
 
 /**
  * Bridge entre AgentChat e o hero pedagógico.
