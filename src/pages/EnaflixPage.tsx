@@ -47,6 +47,8 @@ export default function EnaflixPage() {
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
+  const { data: studyNext, isLoading: missionLoading } = useStudyNext();
+  const { data: dashData } = useDashboardData();
 
   const { data: aiLessons, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["enaflix-ai-lessons"],
