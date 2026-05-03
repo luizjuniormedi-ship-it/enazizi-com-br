@@ -304,7 +304,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-[#0a0a0e] text-white selection:bg-primary/30 relative">
-      <EnaflixBackgroundFX intensity="soft" />
+      <EnaflixBackgroundFX intensity="subtle" />
       
       {/* Cinematic Hero - Command Center Style */}
       <div className="pt-8 pb-12 px-6 lg:px-12 max-w-[1600px] mx-auto space-y-8 relative z-10">
@@ -338,16 +338,16 @@ const Admin = () => {
            <EnaflixCinematicCard variant="analytics" className="p-6 space-y-2">
              <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Usuários Totais</p>
              <div className="flex items-baseline gap-2">
-               <h3 className="text-3xl font-black text-white">{stats?.total_users || "—"}</h3>
+               <h3 className="text-3xl font-black text-white">{stats?.totalUsers || "—"}</h3>
                <span className="text-xs text-emerald-400 font-bold">+12%</span>
              </div>
              <Users className="absolute top-4 right-4 h-5 w-5 text-white/10" />
            </EnaflixCinematicCard>
            <EnaflixCinematicCard variant="analytics" className="p-6 space-y-2">
-             <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Novas Ingestões</p>
+             <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Usuários Online</p>
              <div className="flex items-baseline gap-2">
-               <h3 className="text-3xl font-black text-white">{stats?.total_questions || "—"}</h3>
-               <span className="text-xs text-primary font-bold">Stable</span>
+               <h3 className="text-3xl font-black text-white">{stats?.onlineUsers || 0}</h3>
+               <span className="text-xs text-primary font-bold">Live</span>
              </div>
              <Layers className="absolute top-4 right-4 h-5 w-5 text-white/10" />
            </EnaflixCinematicCard>
@@ -360,10 +360,10 @@ const Admin = () => {
              <Activity className="absolute top-4 right-4 h-5 w-5 text-white/10" />
            </EnaflixCinematicCard>
            <EnaflixCinematicCard variant="analytics" className="p-6 space-y-2">
-             <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Latência IA</p>
+             <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Assinaturas Pro</p>
              <div className="flex items-baseline gap-2">
-               <h3 className="text-3xl font-black text-white">1.2s</h3>
-               <span className="text-xs text-emerald-400 font-bold">Fast</span>
+               <h3 className="text-3xl font-black text-white">{stats?.activeSubs || 0}</h3>
+               <span className="text-xs text-emerald-400 font-bold">Active</span>
              </div>
              <Zap className="absolute top-4 right-4 h-5 w-5 text-white/10" />
            </EnaflixCinematicCard>
@@ -428,9 +428,16 @@ const Admin = () => {
                    <div className="space-y-8">
                      <EnaflixSectionTitle kicker="STATUS OPERACIONAL" title="Visão Geral" />
                      <BaselineFreezeAlert />
-                     <Suspense fallback={<PanelLoader />}><AdminStatsCards stats={stats} /></Suspense>
+                     <Suspense fallback={<PanelLoader />}>
+                       <AdminStatsCards 
+                         stats={stats} 
+                         pendingCount={users.filter(u => u.status === "pending").length} 
+                         activeCount={users.filter(u => u.status === "active").length} 
+                         blockedCount={users.filter(u => u.is_blocked).length} 
+                       />
+                     </Suspense>
                      <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
-                        <Suspense fallback={<PanelLoader />}><AdminOnlineUsers users={users} /></Suspense>
+                        <Suspense fallback={<PanelLoader />}><AdminOnlineUsers stats={stats} /></Suspense>
                         <Suspense fallback={<PanelLoader />}><AdminPlanDistribution stats={stats} /></Suspense>
                      </div>
                    </div>
@@ -453,13 +460,15 @@ const Admin = () => {
                        <ScrollArea className="h-[600px]">
                          <div className="p-4 space-y-2">
                            {users
-                             .filter(u => u.display_name?.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()))
+                             .filter(u => u.display_name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()))
                              .map(u => (
                                <AdminUserRow 
                                  key={u.user_id} 
                                  u={u} 
                                  actionLoading={actionLoading}
                                  session={session}
+                                 getStatusBadge={(u) => <Badge variant={u.status === "active" ? "default" : "secondary"}>{u.status}</Badge>}
+                                 getUserPlan={(u) => u.subscription?.plans?.name || "Free"}
                                  onApprove={handleApproveUser}
                                  onReject={handleRejectUser}
                                  onOpenDetail={(u) => setUserDetailDialog({ open: true, user: u })}
@@ -519,7 +528,7 @@ const Admin = () => {
                  {activeSection === "adaptive-engine" && <Suspense fallback={<PanelLoader />}><AdaptiveEngineAdmin /></Suspense>}
                  {activeSection === "cognitive-orchestrator" && <Suspense fallback={<PanelLoader />}><AdminCognitiveOrchestrator /></Suspense>}
                  {activeSection === "specialty-friction" && <Suspense fallback={<PanelLoader />}><SpecialtyFrictionReport /></Suspense>}
-                 {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel stats={stats} /></Suspense>}
+                 {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} stats={stats} /></Suspense>}
                  {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog logs={auditLogs} loading={auditLoading} /></Suspense>}
                  {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
 
