@@ -334,21 +334,23 @@ const AgentChat = ({
         />
       )}
 
-      <AgentUploadsPicker
-        totalUploads={chat.totalUploads}
-        selectedCount={chat.selectedCount}
-        showUploads={chat.showUploads}
-        onToggleShow={onToggleShowUploads}
-        showUploadButton={showUploadButton}
-        isUploading={chat.isUploading}
-        onUploadClick={onUploadClick}
-        uploadSearch={chat.uploadSearch}
-        onSearchChange={chat.setUploadSearch}
-        availableUploads={chat.availableUploads}
-        selectedUploadIds={chat.selectedUploadIds}
-        onToggleUpload={chat.toggleUpload}
-        onToggleAll={chat.toggleAll}
-      />
+      {!hideUploadsPicker && (
+        <AgentUploadsPicker
+          totalUploads={chat.totalUploads}
+          selectedCount={chat.selectedCount}
+          showUploads={chat.showUploads}
+          onToggleShow={onToggleShowUploads}
+          showUploadButton={showUploadButton}
+          isUploading={chat.isUploading}
+          onUploadClick={onUploadClick}
+          uploadSearch={chat.uploadSearch}
+          onSearchChange={chat.setUploadSearch}
+          availableUploads={chat.availableUploads}
+          selectedUploadIds={chat.selectedUploadIds}
+          onToggleUpload={chat.toggleUpload}
+          onToggleAll={chat.toggleAll}
+        />
+      )}
 
       {chat.showHistory && (
         <AgentHistoryPanel
