@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock, MessageSquare, Target } from "lucide-react";
+import { User, Camera, Loader2, Save, GraduationCap, Building, Phone, Stethoscope, CalendarDays, Clock, MessageSquare, Target, RefreshCw } from "lucide-react";
+import { ForceUpdateButton } from "@/components/layout/ForceUpdateButton";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -535,6 +537,17 @@ const Profile = () => {
           )}
         </Button>
 
+        <div className="pt-6 border-t border-border space-y-4">
+          <div className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold">Sistema</h3>
+          </div>
+          <ForceUpdateButton 
+            variant="menu" 
+            className="bg-secondary/50 border border-border hover:bg-secondary text-foreground rounded-xl"
+          />
+        </div>
+
         {user?.id && (
           <>
             <Separator className="my-6" />
@@ -547,6 +560,7 @@ const Profile = () => {
             </div>
           </>
         )}
+
       </div>
     </div>
   );
