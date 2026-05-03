@@ -23,6 +23,7 @@ import { useChatMessages } from "@/hooks/tutor/useChatMessages";
 import { useChatProgress } from "@/hooks/tutor/useChatProgress";
 import { useChatContext } from "@/hooks/tutor/useChatContext";
 import { useTutorPerformance } from "@/hooks/tutor/useTutorPerformance";
+import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
 import { useStudyNext } from "@/hooks/useStudyNext";
 
 import TutorHeader from "@/components/tutor/CinematicTutorHero";
