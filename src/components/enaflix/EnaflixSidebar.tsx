@@ -54,6 +54,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
+      { to: "/dashboard/mnemonic-studio", label: "Mnemônicos", icon: BrainCircuit },
       { to: "/dashboard/chatgpt", label: "Tutor IA", icon: Sparkles },
     ]
   },
