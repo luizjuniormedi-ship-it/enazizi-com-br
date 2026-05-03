@@ -231,11 +231,12 @@ const AIMentor = () => {
                     title="ENAZIZI Cognitive Engine"
                     subtitle="Núcleo de Inteligência Médica Premium"
                     icon={<Sparkles className="h-6 w-6 text-primary animate-pulse" />}
-                    welcomeMessage="Olá! Sou o MentorMed, seu núcleo pedagógico ENAZIZI. Estou pronto para transformar seu material em aprendizado profundo com foco em residência médica. Como vamos começar hoje? 🩺"
-                    placeholder="Inicie um caso clínico ou tire uma dúvida técnica..."
+                    welcomeMessage="🩺 Sessão pedagógica ativa. Vou guiar você por uma jornada estruturada: Introdução → Leigo → Técnico → Clínico → Recall → Questões → Resumo Feynman. Qual será nossa missão de hoje?"
+                    placeholder="Continue sua missão… (ex: 'aprofunde a fisiopatologia da ICC')"
                     functionName="mentor-chat"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
+                    pedagogicalHeader={({ messages }) => <PedagogicalHeaderBridge messages={messages} />}
                   />
                 </div>
               </div>
