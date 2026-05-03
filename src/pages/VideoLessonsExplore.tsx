@@ -39,7 +39,10 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
-import { useVideoSegmentAnalytics } from "@/hooks/useVideoSegmentAnalytics";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
+import { EnaflixCard } from "@/components/enaflix/EnaflixCard";
+import { motion } from "framer-motion";
 
 const VideoLessonsExplore = () => {
   const [searchTerm, setSearchTerm] = useState("");
