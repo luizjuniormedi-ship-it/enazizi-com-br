@@ -19213,6 +19213,8 @@ export type Database = {
         }[]
       }
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
+      admin_telemetry_v2_ai_quality: { Args: { _days?: number }; Returns: Json }
+      admin_telemetry_v2_pedagogy: { Args: { _days?: number }; Returns: Json }
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
         Returns: number
