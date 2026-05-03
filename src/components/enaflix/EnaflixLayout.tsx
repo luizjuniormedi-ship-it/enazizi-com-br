@@ -4,6 +4,8 @@ import { EnaflixMobileNav } from "./EnaflixMobileNav";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { EnaflixBackgroundFX } from "./EnaflixBackgroundFX";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 
 interface Props {
   children: ReactNode;
@@ -11,18 +13,27 @@ interface Props {
 
 export function EnaflixLayout({ children }: Props) {
   const location = useLocation();
+  const { isAdmin } = useAdminCheck();
+  const { isProfessor } = useProfessorCheck();
+  
+  // Sidebar is only for Admin/Professor in this new AI-first era
+  const showSidebar = isAdmin || isProfessor;
 
   return (
     <div className="min-h-screen bg-[#050508] text-white selection:bg-primary/30 selection:text-white antialiased">
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 
-      {/* Navigation Layer */}
-      <EnaflixSidebar />
-      <EnaflixMobileNav />
+      {/* Navigation Layer - Hidden for Students */}
+      {showSidebar && (
+        <>
+          <EnaflixSidebar />
+          <EnaflixMobileNav />
+        </>
+      )}
 
-      {/* Main Content Area */}
-      <main className="lg:pl-64 min-h-screen transition-all duration-700 pb-20 lg:pb-0 relative z-10">
+      {/* Main Content Area - Adjust padding if sidebar is hidden */}
+      <main className={`${showSidebar ? 'lg:pl-64' : 'pl-0'} min-h-screen transition-all duration-700 pb-20 lg:pb-0 relative z-10`}>
         <AnimatePresence mode="wait">
           <motion.div
             key={location.pathname}
