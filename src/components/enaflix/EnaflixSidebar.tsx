@@ -148,6 +148,8 @@ export function EnaflixSidebar() {
             <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--pixar-blue),0.5)]">ENAFLIX</span>
             <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">AI Studio</span>
           </div>
+        </Link>
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 custom-scrollbar mt-6">
