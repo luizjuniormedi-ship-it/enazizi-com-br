@@ -85,7 +85,7 @@ interface ConsolidatedOutput {
 // ══════════════════════════════════════════════════
 
 const OPENAI_MODEL = "openai/gpt-5-mini";
-const OPENAI_TEMP = 0.2;
+const OPENAI_TEMP = 1.0; // Fixed: gpt-5-mini only supports default (1.0)
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
 
