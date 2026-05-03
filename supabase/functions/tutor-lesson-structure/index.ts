@@ -40,12 +40,20 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+  
   const admin = createClient(supabaseUrl, serviceKey);
 
   try {
-    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableKey) {
-      return json({ error: "LOVABLE_API_KEY not configured" }, 500);
+    // 0) Validate Env
+    if (!lovableKey || !supabaseUrl || !serviceKey) {
+      console.error("Missing environment variables");
+      return json({ 
+        success: false,
+        code: "MISSING_ENV",
+        message: "Configuração do servidor incompleta (API Keys ausentes).",
+        technical_reason: `Lovable: ${!!lovableKey}, URL: ${!!supabaseUrl}, Key: ${!!serviceKey}`
+      }, 500);
     }
 
     const authHeader = req.headers.get("Authorization") ?? "";
@@ -54,7 +62,13 @@ Deno.serve(async (req) => {
     });
 
     const { data: { user }, error: authErr } = await userClient.auth.getUser();
-    if (authErr || !user) return json({ error: "unauthenticated" }, 401);
+    if (authErr || !user) {
+      return json({ 
+        success: false,
+        code: "UNAUTHENTICATED",
+        message: "Sessão expirada ou inválida." 
+      }, 401);
+    }
 
     const body = await req.json().catch(() => ({}));
     
@@ -64,7 +78,13 @@ Deno.serve(async (req) => {
     }
 
     const lessonId: string | undefined = body?.lesson_id;
-    if (!lessonId) return json({ error: "lesson_id required" }, 400);
+    if (!lessonId) {
+      return json({ 
+        success: false,
+        code: "MISSING_PARAMS",
+        message: "ID da aula não fornecido." 
+      }, 400);
+    }
 
     // 1) Load lesson
     const { data: lesson, error: lessonErr } = await admin
@@ -74,7 +94,12 @@ Deno.serve(async (req) => {
       .maybeSingle();
       
     if (lessonErr || !lesson) {
-      return json({ error: "lesson_not_found" }, 404);
+      return json({ 
+        success: false,
+        code: "LESSON_NOT_FOUND",
+        message: "Aula não encontrada no banco de dados.",
+        technical_reason: lessonErr?.message 
+      }, 404);
     }
 
     // 2) Rate limit (skip for staff)
@@ -91,7 +116,11 @@ Deno.serve(async (req) => {
         .gte("created_at", new Date(Date.now() - 3600 * 1000).toISOString());
       
       if ((hourCount ?? 0) >= MAX_PER_HOUR) {
-        return json({ error: "rate_limited", message: "Limite por hora atingido." }, 429);
+        return json({ 
+          success: false,
+          code: "RATE_LIMITED",
+          message: "Você atingiu o limite de estruturação por hora." 
+        }, 429);
       }
     }
 
@@ -135,7 +164,7 @@ Deno.serve(async (req) => {
     }
 
     if (!structured) {
-      const isRetryable = aiError?.includes("502") || aiError?.includes("timeout") || aiError?.includes("rate-limited");
+      const isRetryable = aiError?.includes("502") || aiError?.includes("503") || aiError?.includes("504") || aiError?.includes("timeout") || aiError?.includes("429");
       const eventType = isRetryable ? "lesson_structuring_retry" : "lesson_structure_failed";
       
       await admin
@@ -143,6 +172,7 @@ Deno.serve(async (req) => {
         .update({
           status: "needs_adjustment",
           last_structuring_error: aiError ?? "AI returned empty",
+          last_structuring_at: new Date().toISOString(),
         })
         .eq("id", lessonId);
       
@@ -156,7 +186,14 @@ Deno.serve(async (req) => {
         original_topic: lesson.topic
       });
       
-      return json({ error: "ai_failed", detail: aiError, retryable: isRetryable }, 502);
+      return json({ 
+        success: false,
+        code: "STRUCTURE_FAILED",
+        message: "Não foi possível estruturar esta aula agora. Tente reprocessar em alguns instantes.",
+        technical_reason: aiError,
+        fallback_available: true,
+        retryable: isRetryable 
+      }, gatewayStatus || 502);
     }
 
     // 6) Quality score and finalization
@@ -164,7 +201,7 @@ Deno.serve(async (req) => {
     const finalStatus = score >= MIN_QUALITY ? "pending_review" : "needs_adjustment";
 
     // 7) Safe Persist (Protects Canonical Fields)
-    // NEVER update topic, subject, subtopic with AI values directly
+    // NEVER update topic, subject, subtopic, user_id, source_session_id with AI values directly
     const updateData = {
       status: finalStatus,
       title: structured.title || lesson.title || "Aula sem título",
@@ -174,6 +211,7 @@ Deno.serve(async (req) => {
       structured_content: structured as unknown as Record<string, unknown>,
       pedagogical_quality_score: score,
       last_structuring_error: null,
+      last_structuring_at: new Date().toISOString(),
       notebooklm_export: structured.notebooklm_prompt || null,
       gemini_export: structured.gemini_video_prompt || null,
       google_vids_export: structured.google_vids_prompt || null,
@@ -203,7 +241,12 @@ Deno.serve(async (req) => {
 
     if (updErr) {
       console.error("Persist error:", updErr);
-      return json({ error: "persist_failed", detail: updErr.message }, 500);
+      return json({ 
+        success: false,
+        code: "PERSIST_FAILED",
+        message: "Erro ao salvar os dados estruturados.",
+        technical_reason: updErr.message 
+      }, 500);
     }
 
     await logEvent(admin, lessonId, user.id, "lesson_structured", {
@@ -218,6 +261,7 @@ Deno.serve(async (req) => {
     });
 
     return json({
+      success: true,
       ok: true,
       status: finalStatus,
       pedagogical_quality_score: score,
@@ -225,7 +269,12 @@ Deno.serve(async (req) => {
 
   } catch (e) {
     console.error("Global structure error:", e);
-    return json({ error: "internal", detail: (e as Error).message }, 500);
+    return json({ 
+      success: false,
+      code: "INTERNAL_ERROR",
+      message: "Ocorreu um erro inesperado no servidor.",
+      technical_reason: (e as Error).message 
+    }, 500);
   }
 });
 
