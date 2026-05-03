@@ -87,9 +87,15 @@ export function isProfileComplete(data: {
   const isProfessor = userType === "professor";
 
   const nameCheck = isValidName(data.display_name || "");
-  const phoneCheck = isValidPhone(data.phone || "");
+  if (!nameCheck.valid) return false;
 
-  if (!nameCheck.valid || !phoneCheck.valid) return false;
+  // Phone check relaxed: allow missing phone for existing users (91 users currently blocked)
+  // New signups still required via form 'required' attribute, but validation here won't block access.
+  if (data.phone) {
+    const phoneCheck = isValidPhone(data.phone);
+    if (!phoneCheck.valid) return false;
+  }
+
   if (isStudent && (!data.periodo || !data.faculdade)) return false;
   if (isProfessor && !data.faculdade) return false;
   if (data.faculdade && !FACULDADES.includes(data.faculdade)) return false;
