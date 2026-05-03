@@ -12,7 +12,8 @@ export function AdminAlertCenter() {
   const checkAlerts = async () => {
     try {
       // 1. Check AI Latency
-      const { data: aiQuality } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: 1 });
+      const { data: aiQualityRes } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: 1 });
+      const aiQuality = aiQualityRes as any;
       const newAlerts = [];
 
       if (aiQuality?.avg_latency_ms > 5000) {
@@ -36,7 +37,8 @@ export function AdminAlertCenter() {
       }
 
       // 2. Check Abandonment Spikes
-      const { data: pedagogy } = await supabase.rpc('admin_telemetry_v2_pedagogy', { _days: 1 });
+      const { data: pedagogyRes } = await supabase.rpc('admin_telemetry_v2_pedagogy', { _days: 1 });
+      const pedagogy = pedagogyRes as any;
       if (pedagogy?.abandonment_rate > 35) {
         newAlerts.push({
           id: 'high-abandonment',
