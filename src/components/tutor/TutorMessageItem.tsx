@@ -167,7 +167,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
         {msg.role === "assistant" ? (
           <>
             {/* Topic-based Video Lesson Preview (Before text) */}
-            {lessonData && (
+            {lessonData && (isFirstMessage || (msg as any).id) && (
               <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20 animate-in fade-in slide-in-from-top-4 duration-500">
                 <div className="flex items-center justify-between gap-3 mb-2">
                   <div className="flex items-center gap-2">
