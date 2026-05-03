@@ -940,15 +940,6 @@ const VideoLessonPlayer = () => {
                   size="icon"
                   variant="ghost"
                   className="rounded-full hover:bg-white/10"
-                  title="Abrir configurações do vídeo"
-                  onClick={() => toast.info("Use os controles nativos do player para volume, velocidade, legenda e tela cheia.")}
-                >
-                  <Settings className="h-5 w-5" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="rounded-full hover:bg-white/10"
                   title="Copiar link público da aula"
                   onClick={() => {
                     const url = `${window.location.origin}/videoaulas/${id}`;
