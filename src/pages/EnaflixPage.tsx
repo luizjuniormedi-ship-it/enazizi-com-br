@@ -29,6 +29,8 @@ import { EnaflixRowSkeleton } from "@/components/enaflix/EnaflixRowSkeleton";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
+import { useStudyNext } from "@/hooks/useStudyNext";
+import { useDashboardData } from "@/hooks/useDashboardData";
 
 function normalize(s: string) {
   return s
