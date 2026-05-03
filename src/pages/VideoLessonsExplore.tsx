@@ -368,77 +368,7 @@ const VideoLessonsExplore = () => {
   );
 };
 
-const ExploreLessonCard = ({ lesson, progress, onClick }: { lesson: any, progress: number, onClick: () => void }) => {
-  return (
-    <Card 
-      className="group bg-white/5 border-white/10 overflow-hidden hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 cursor-pointer"
-      onClick={onClick}
-    >
-      <div className="relative aspect-video overflow-hidden">
-        {lesson.thumbnail_url ? (
-          <img 
-            src={lesson.thumbnail_url} 
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
-            alt={lesson.title} 
-          />
-        ) : (
-          <div className="w-full h-full bg-primary/5 flex items-center justify-center">
-            <Stethoscope className="h-10 w-10 text-primary/20" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-        
-        <div className="absolute top-2 left-2 flex gap-1">
-          <Badge className="bg-primary/80 backdrop-blur-md text-[10px] h-5">{lesson.specialty}</Badge>
-          {lesson.is_gold_content && (
-            <Badge className="bg-yellow-500 text-black text-[10px] h-5 gap-1">
-              <Sparkles className="h-2 w-2" /> OURO
-            </Badge>
-          )}
-        </div>
-
-        <div className="absolute bottom-2 right-2 text-[10px] bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-white/80">
-          {Math.floor(lesson.duration_seconds / 60)}:{(lesson.duration_seconds % 60).toString().padStart(2, '0')}
-        </div>
-        
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/40 backdrop-blur-[2px]">
-           <div className="h-12 w-12 bg-primary rounded-full flex items-center justify-center scale-90 group-hover:scale-100 transition-transform shadow-xl">
-             <Play className="h-5 w-5 fill-white ml-0.5" />
-           </div>
-        </div>
-      </div>
-
-      <CardHeader className="p-4 pb-2">
-        <CardTitle className="text-base line-clamp-1 group-hover:text-primary transition-colors">{lesson.title}</CardTitle>
-        <p className="text-xs text-white/40 line-clamp-1">{lesson.topic}</p>
-      </CardHeader>
-
-      <CardContent className="p-4 pt-0 space-y-3">
-        <div className="flex justify-between items-center text-[10px] text-white/30">
-          <span className="flex items-center gap-1"><BarChart3 className="h-3 w-3" /> CME: {lesson.cme_score || '8.5'}</span>
-          <span className="flex items-center gap-1"><Zap className="h-3 w-3" /> Retenção: {lesson.avg_retention || '92'}%</span>
-        </div>
-        <div className="space-y-1">
-          <div className="flex justify-between text-[10px] text-white/40">
-            <span>Progresso</span>
-            <span>{Math.floor(progress)}%</span>
-          </div>
-          <Progress value={progress} className="h-1 bg-white/5" />
-        </div>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0 flex justify-between">
-         <div className="flex gap-1">
-           {(lesson as any).cme_profile === 'exam_sprint' && <Badge variant="outline" className="text-[9px] border-orange-500/30 text-orange-500">Sprint</Badge>}
-           {(lesson as any).has_feynman && <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-500">Feynman</Badge>}
-         </div>
-         <Button variant="ghost" size="sm" className="h-7 text-[10px] px-0 hover:bg-transparent hover:text-primary gap-1">
-           {progress > 0 ? 'Continuar' : 'Assistir'} <ChevronRight className="h-3 w-3" />
-         </Button>
-      </CardFooter>
-    </Card>
-  );
-};
+// ExploreLessonCard removed as EnaflixCard is now used directly.
 
 // Placeholder for missing icons
 const BrainCircuit = ({ className }: { className?: string }) => (
