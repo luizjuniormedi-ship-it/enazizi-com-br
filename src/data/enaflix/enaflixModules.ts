@@ -40,6 +40,7 @@ import {
   Rocket,
   ScrollText,
   Settings,
+  Shield,
   ShieldCheck,
   Sparkles,
   Stethoscope,
