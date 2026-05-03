@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
+import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
 
 /** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
 function linkifyBareUrls(text: string): string {
