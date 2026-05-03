@@ -31,8 +31,6 @@ import { cn } from "@/lib/utils";
 
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
-import { useStudyNext } from "@/hooks/useStudyNext";
-import { useDashboardData } from "@/hooks/useDashboardData";
 
 function normalize(s: string) {
   return s
