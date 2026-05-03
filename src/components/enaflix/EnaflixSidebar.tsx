@@ -145,11 +145,9 @@ export function EnaflixSidebar() {
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-2xl tracking-[0.15em] text-white leading-none drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)]">ENAFLIX</span>
-            <span className="text-[8px] font-black text-primary tracking-[0.3em] uppercase opacity-60">Studio Engine</span>
+            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--pixar-blue),0.5)]">ENAFLIX</span>
+            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">AI Studio</span>
           </div>
-        </Link>
-      </div>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 custom-scrollbar mt-6">
