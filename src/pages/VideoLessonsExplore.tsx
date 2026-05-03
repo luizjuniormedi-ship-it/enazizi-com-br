@@ -169,7 +169,7 @@ const VideoLessonsExplore = () => {
 
   return (
     <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
-      <EnaflixBackgroundFX intensity="high" />
+      <EnaflixBackgroundFX intensity="intense" />
       
       <div className="px-4 sm:px-8 lg:px-14 space-y-2">
         <motion.div
