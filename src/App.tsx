@@ -29,7 +29,8 @@ const Register = lazyWithRetry(() => import("./pages/Register"), "Register");
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Flashcards = lazyWithRetry(() => import("./pages/Flashcards"), "Flashcards");
 const FlashcardGenerator = lazyWithRetry(() => import("./pages/FlashcardGenerator"), "FlashcardGenerator");
-const MnemonicGenerator = lazyWithRetry(() => import("./pages/MnemonicGenerator"), "MnemonicGenerator");
+// MnemonicGenerator archived, redirecting to MnemonicStudioPage
+// const MnemonicGenerator = lazyWithRetry(() => import("./pages/MnemonicGenerator"), "MnemonicGenerator");
 const CronogramaInteligente = lazyWithRetry(() => import("./pages/CronogramaInteligente"), "CronogramaInteligente");
 const Simulados = lazyWithRetry(() => import("./pages/Simulados"), "Simulados");
 const Uploads = lazyWithRetry(() => import("./pages/Uploads"), "Uploads");
@@ -207,7 +208,9 @@ const App = () => (
                   <Route path="resumos" element={<ContentSummarizer />} />
                   <Route path="apostilas" element={<StudyGuides />} />
                   <Route path="mapas-mentais" element={<MindMaps />} />
-                  <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
+                  <Route path="mnemonic-studio" element={<MnemonicStudioPage />} />
+                  <Route path="mnemonic-generator" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
+                  <Route path="mnemonicos" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
                   <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
                   
                   {/* Clínica & Simulação */}
