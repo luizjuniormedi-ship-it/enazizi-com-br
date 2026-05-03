@@ -48,6 +48,7 @@ import {
   TrendingUp,
   Trophy,
   Users,
+  UserCheck,
   Wand2,
   Zap,
   Video,
