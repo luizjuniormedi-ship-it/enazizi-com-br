@@ -35,35 +35,51 @@ export function logVideoRecommendationEvent(
 }
 
 /**
- * Normaliza termos médicos para busca semântica simples
+ * Normaliza termos médicos para busca semântica simples.
+ * Retorna a query principal + sinônimos diretos (sem encadeamento transitivo).
  */
 function normalizeMedicalTerm(term: string): string[] {
   const t = term.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
   const synonyms: Record<string, string[]> = {
-    "ira": ["insuficiencia renal aguda", "injuria renal aguda", "rim", "funcao renal"],
-    "insuficiencia renal": ["ira", "injuria renal", "rim", "funcao renal", "sindrome uremica"],
+    "ira": ["insuficiencia renal aguda", "injuria renal aguda"],
+    "insuficiencia renal": ["ira", "injuria renal"],
     "has": ["hipertensao arterial", "pressao alta"],
-    "fa": ["fibrilacao atrial", "arritmia supraventricular"],
-    "tep": ["tromboembolismo pulmonar", "embolia"],
-    "iam": ["infarto agudo do miocardio", "ataque cardiaco"],
-    "ic": ["insuficiencia cardiaca", "coracao"],
-    "icc": ["insuficiencia cardiaca congestiva", "coracao"],
-    "pericardite": ["pericardio", "inflamacao cardiaca", "tamponamento", "cardiologia"],
-    "endocardite": ["cardiologia", "valvula", "vegetacao"],
-    "cardiologia": ["coracao", "cardiaco", "pericardite", "endocardite", "fa", "iam"],
-    "pneumonia": ["infeccao pulmonar", "broncopneumonia", "pulmao"],
+    "fa": ["fibrilacao atrial"],
+    "fibrilacao atrial": ["fa", "arritmia supraventricular"],
+    "tep": ["tromboembolismo pulmonar", "embolia pulmonar"],
+    "iam": ["infarto agudo do miocardio"],
+    "ic": ["insuficiencia cardiaca"],
+    "icc": ["insuficiencia cardiaca congestiva"],
+    "pericardite": ["pericardio", "tamponamento cardiaco"],
+    "endocardite": ["valvula cardiaca", "vegetacao valvar"],
+    "cardiologia": ["coracao", "cardiaco"],
+    "pneumonia": ["infeccao pulmonar", "broncopneumonia"],
   };
 
   const results = new Set<string>([t]);
+  // Apenas sinônimos diretos do termo original (sem chain)
   Object.keys(synonyms).forEach(key => {
-    if (t.includes(key) || synonyms[key].some(s => t.includes(s))) {
+    if (t === key || t.includes(key) || synonyms[key].some(s => t.includes(s))) {
       results.add(key);
       synonyms[key].forEach(s => results.add(s));
     }
   });
 
-  return Array.from(results);
+  return Array.from(results).filter(Boolean);
+}
+
+/**
+ * Faz match seguro: termos curtos (<=3 chars) exigem word boundary,
+ * para evitar que "fa" case com "Falência".
+ */
+function termMatches(haystack: string, term: string): boolean {
+  if (!haystack || !term) return false;
+  if (term.length <= 3) {
+    const re = new RegExp(`\\b${term.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\b`);
+    return re.test(haystack);
+  }
+  return haystack.includes(term);
 }
 
 function hasValidVideo(url?: string | null): boolean {
