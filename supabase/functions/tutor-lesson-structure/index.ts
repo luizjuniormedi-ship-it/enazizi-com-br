@@ -12,6 +12,16 @@ const MAX_PER_HOUR = 100;
 const MIN_QUALITY = 50;
 const STUCK_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
 
+// Gemini Guard: Proteção contra regressão de modelo
+const FORBIDDEN_MODELS = ["gemini", "google/"];
+
+function checkGeminiGuard(model: string) {
+  if (FORBIDDEN_MODELS.some(m => model.toLowerCase().includes(m))) {
+    console.error(`GEMINI_GUARD_TRIGGERED: Model "${model}" is forbidden.`);
+    throw new Error(`CRITICAL_ERROR: Model "${model}" is forbidden by Gemini Guard policy.`);
+  }
+}
+
 type StructuredLesson = {
   title: string;
   subtitle?: string;
