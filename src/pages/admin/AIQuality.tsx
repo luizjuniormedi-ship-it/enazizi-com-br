@@ -86,14 +86,14 @@ export default function AIQuality() {
         />
         <StatCard 
           title="Taxa de Fallback" 
-          value={`${data.fallback_rate}%`} 
+          value={`${data?.fallback_rate || 0}%`} 
           description="Uso de modelos leves/emergência"
           icon={<AlertTriangle className="h-5 w-5 text-orange-500" />}
-          trend={data.fallback_rate > 15 ? "Alto" : undefined}
+          trend={data?.fallback_rate > 15 ? "Alto" : undefined}
         />
         <StatCard 
           title="Score Pedagógico" 
-          value={`${data.pedagogical_score}/100`} 
+          value={`${data?.pedagogical_score || 0}/100`} 
           description="Avaliação de precisão clínica"
           icon={<Target className="h-5 w-5 text-green-500" />}
         />
@@ -114,7 +114,7 @@ export default function AIQuality() {
         </CardHeader>
         <CardContent className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data.latencyHistory}>
+            <AreaChart data={data?.latency_history || []}>
               <defs>
                 <linearGradient id="colorMs" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
