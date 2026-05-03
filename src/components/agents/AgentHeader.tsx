@@ -56,18 +56,18 @@ const AgentHeader = memo(({
             size="sm" 
             onClick={onTransformSession}
              className={cn(
-               "hidden md:flex h-8 text-[10px] gap-1.5 shadow-sm px-3 font-black uppercase tracking-widest transition-all",
+               "hidden md:flex h-10 text-[10px] gap-2 shadow-xl px-5 font-black uppercase tracking-[0.2em] transition-all rounded-full",
                lessonStatus === 'ready' 
-                ? "bg-primary hover:bg-primary/90 text-white" 
-                : "border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shadow-amber-500/20"
+                ? "bg-white text-black hover:bg-white/90 scale-105" 
+                : "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
              )}
           >
             {lessonStatus === 'ready' ? (
-              <><Play className="h-3.5 w-3.5 fill-current" /> Assistir Aula</>
+              <><Play className="h-4 w-4 fill-current" /> Assistir Aula</>
             ) : lessonStatus === 'processing' ? (
-              <><Clock className="h-3.5 w-3.5" /> Aula em Produção</>
+              <><Clock className="h-4 w-4" /> Em Produção</>
             ) : (
-              <><Film className="h-3.5 w-3.5" /> 🎓 Gerar Aula Interativa</>
+              <><Film className="h-4 w-4" /> Gerar Aula</>
             )}
           </Button>
         )}
