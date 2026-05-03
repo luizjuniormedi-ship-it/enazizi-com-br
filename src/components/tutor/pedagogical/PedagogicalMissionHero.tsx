@@ -155,36 +155,50 @@ export function PedagogicalMissionHero({
  * A ordem reflete a sequência cognitiva obrigatória:
  * Introdução → Leigo → Técnico → Clínico → Recall → Questões → Resumo.
  */
-export const PEDAGOGICAL_STAGES: { id: string; label: string; blockTypes: string[] }[] = [
-  { id: "intro", label: "Introdução", blockTypes: ["lay_explanation"] },
-  { id: "leigo", label: "Leigo", blockTypes: ["lay_explanation", "summary"] },
-  { id: "tecnico", label: "Técnico", blockTypes: ["deep_dive", "comparison_table"] },
-  {
-    id: "clinico",
-    label: "Clínico",
-    blockTypes: [
-      "clinical_flow",
-      "differential_diagnosis",
-      "pharmacology_compare",
-      "semiology_insight",
-    ],
-  },
-  { id: "recall", label: "Recall", blockTypes: ["mini_quiz", "mnemonic_reinforce"] },
-  { id: "questoes", label: "Questões", blockTypes: ["mini_quiz"] },
-  { id: "resumo", label: "Resumo", blockTypes: ["summary", "next_steps", "reference"] },
+/**
+ * Sequência cognitiva oficial ENAZIZI — protocolo das 15 fases pedagógicas.
+ * Cada fase pode ser detectada via blockType JSON ou via marcador textual no markdown.
+ */
+export const PEDAGOGICAL_STAGES: {
+  id: string;
+  label: string;
+  blockTypes: string[];
+  /** Padrões case-insensitive que identificam a fase no markdown puro. */
+  textMarkers: string[];
+}[] = [
+  { id: "missao", label: "Missão", blockTypes: [], textMarkers: ["missão da sessão", "missão atual", "🎯 missão"] },
+  { id: "roadmap", label: "Roadmap", blockTypes: [], textMarkers: ["roadmap cognitivo", "roadmap da aula", "mapa da sessão"] },
+  { id: "leigo", label: "Leigo", blockTypes: ["lay_explanation"], textMarkers: ["explicação leiga", "para leigos", "modo leigo"] },
+  { id: "tecnico", label: "Técnico", blockTypes: ["deep_dive", "comparison_table"], textMarkers: ["explicação técnica", "modo técnico"] },
+  { id: "fisiopato", label: "Fisiopatologia", blockTypes: [], textMarkers: ["fisiopatologia", "mecanismo", "fisiopato"] },
+  { id: "clinica", label: "Clínica", blockTypes: ["clinical_flow", "semiology_insight"], textMarkers: ["integração clínica", "quadro clínico", "manifestações clínicas"] },
+  { id: "raciocinio", label: "Raciocínio Dx", blockTypes: [], textMarkers: ["raciocínio diagnóstico", "raciocinio clinico", "raciocínio clínico"] },
+  { id: "ddx", label: "Diferenciais", blockTypes: ["differential_diagnosis"], textMarkers: ["diagnósticos diferenciais", "diagnostico diferencial", "ddx"] },
+  { id: "conduta", label: "Conduta", blockTypes: ["pharmacology_compare"], textMarkers: ["conduta", "tratamento", "manejo"] },
+  { id: "pegadinhas", label: "Pegadinhas", blockTypes: [], textMarkers: ["pegadinhas", "armadilhas de prova", "pontos cobrados"] },
+  { id: "recall", label: "Active Recall", blockTypes: ["mnemonic_reinforce"], textMarkers: ["active recall", "recall ativo", "recall guiado"] },
+  { id: "questao", label: "Questão", blockTypes: ["mini_quiz"], textMarkers: ["questão comentada", "questão de prova", "questao comentada"] },
+  { id: "feynman", label: "Feynman", blockTypes: [], textMarkers: ["resumo feynman", "modo feynman", "analogia feynman"] },
+  { id: "mapa", label: "Mapa Mental", blockTypes: [], textMarkers: ["mapa mental", "árvore conceitual", "mind map"] },
+  { id: "proximos", label: "Próximos Passos", blockTypes: ["next_steps", "reference"], textMarkers: ["próximos passos", "proximos passos", "next steps"] },
 ];
 
 /**
- * Deriva o estado das etapas a partir dos tipos de bloco já renderizados.
+ * Deriva o estado das etapas a partir dos tipos de bloco e do conteúdo textual.
  */
-export function deriveStagesFromBlockTypes(seenTypes: Set<string>): MissionStage[] {
+export function deriveStagesFromBlockTypes(
+  seenTypes: Set<string>,
+  combinedText: string = ""
+): MissionStage[] {
+  const lower = combinedText.toLowerCase();
   let activeAssigned = false;
-  const stages = PEDAGOGICAL_STAGES.map((stage) => {
-    const done = stage.blockTypes.some((t) => seenTypes.has(t));
-    return { id: stage.id, label: stage.label, done };
+  const evaluated = PEDAGOGICAL_STAGES.map((stage) => {
+    const byBlock = stage.blockTypes.some((t) => seenTypes.has(t));
+    const byText = stage.textMarkers.some((m) => lower.includes(m));
+    return { id: stage.id, label: stage.label, done: byBlock || byText };
   });
 
-  return stages.map((s, i, arr) => {
+  return evaluated.map((s) => {
     if (s.done) return { id: s.id, label: s.label, status: "done" as const };
     if (!activeAssigned) {
       activeAssigned = true;
