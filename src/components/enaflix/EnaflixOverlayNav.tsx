@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Search, X } from "lucide-react";
+import { ArrowLeft, Bell, Search, X, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 
 interface Props {
   onClose: () => void;
@@ -9,17 +11,12 @@ interface Props {
   searchActive?: boolean;
 }
 
-/**
- * EnaflixOverlayNav — topbar overlay flutuante estilo Netflix/Apple TV.
- *
- * - Scroll progressivo: 3 estágios (top → mid → solid) usando o mesmo
- *   easing cinematográfico, em vez de um boolean cru.
- * - ENAFLIX wordmark com glow ambient + dot pulsante (vida discreta).
- * - Botões "ghost" com hover suave (scale 1.03 + bg fade).
- */
 export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin } = useAdminCheck();
+  const { isProfessor } = useProfessorCheck();
+  const isSpecialUser = isAdmin || isProfessor;
   // 0 = no topo (transparente), 1 = totalmente sólida.
   const [scrollProgress, setScrollProgress] = useState(0);
 
@@ -78,19 +75,34 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
       <div className="relative flex items-center justify-between px-4 sm:px-8 lg:px-14 h-16">
         {/* Esquerda: Voltar + wordmark ENAFLIX */}
         <div className="flex items-center gap-4 sm:gap-8 min-w-0">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Sair do modo ENAFLIX"
-            className={cn(
-              "inline-flex items-center gap-1.5 text-sm font-medium",
-              "text-white/70 hover:text-white transition-all duration-300",
-              "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
-            )}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </button>
+          {isSpecialUser ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Sair do modo ENAFLIX"
+              className={cn(
+                "inline-flex items-center gap-1.5 text-sm font-medium",
+                "text-white/70 hover:text-white transition-all duration-300",
+                "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
+              )}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Painel Admin</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/perfil")}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-sm font-medium",
+                "text-white/70 hover:text-white transition-all duration-300",
+                "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
+              )}
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Meu Perfil</span>
+            </button>
+          )}
 
           <div className="flex items-center gap-2 min-w-0 group">
             {/* Dot vermelho com pulse cinematográfico */}

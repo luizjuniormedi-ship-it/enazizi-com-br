@@ -2,17 +2,18 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { 
   Home, 
-  Calendar, 
+  Brain,
   PlayCircle, 
   Sparkles, 
   User,
-  MonitorPlay
+  MonitorPlay,
+  Search
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const MOBILE_ITEMS = [
-  { to: "/enaflix", label: "Início", icon: Home },
-  { to: "/dashboard", label: "Hoje", icon: Calendar },
+  { to: "/dashboard", label: "Início", icon: Home },
+  { to: "/dashboard/mentor", label: "Tutor IA", icon: Brain },
   { to: "/dashboard/sessao-estudo", label: "Estudar", icon: PlayCircle },
   { to: "/dashboard/videoaulas", label: "Aulas", icon: MonitorPlay },
   { to: "/dashboard/perfil", label: "Perfil", icon: User },

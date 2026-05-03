@@ -191,7 +191,7 @@ const App = () => (
 
                 {/* --- DASHBOARD (PROTECTED) --- */}
                 <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                  <Route index element={<Dashboard />} />
+                  <Route index element={<EnaflixPage />} />
                   
                   {/* Estudar & Treinar */}
                   <Route path="sessao-estudo" element={<StudySession />} />

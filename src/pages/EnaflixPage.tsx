@@ -1,15 +1,9 @@
 /**
  * EnaflixPage — Modo cinematográfico de descoberta inteligente.
- *
- * Estrutura (Netflix/Apple TV style):
- * 1. Topbar OVERLAY flutuante (transparente no topo, sólida ao rolar)
- * 2. Billboard hero full-bleed dominante (recomendação IA)
- * 3. Fileiras horizontais emergindo do gradiente do hero
- * 4. Busca em modo "drawer" sobre tudo (não ocupa espaço fixo)
- *
- * Sem sidebar, sem header sólido, sem caixas administrativas.
+ * 
+ * Agora promovido a HOME principal do sistema.
  */
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +23,14 @@ import { EnaflixRowSkeleton } from "@/components/enaflix/EnaflixRowSkeleton";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
+import { useStudyNext } from "@/hooks/useStudyNext";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { Brain, Target, TrendingUp, Award, Sparkles, ChevronRight, Play } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
+const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 
 function normalize(s: string) {
   return s
@@ -45,6 +47,8 @@ export default function EnaflixPage() {
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
+  const { data: studyNext, isLoading: missionLoading } = useStudyNext();
+  const { data: dashData } = useDashboardData();
 
   const { data: aiLessons, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["enaflix-ai-lessons"],
@@ -185,35 +189,54 @@ export default function EnaflixPage() {
   }, [visibleModules, popularIds]);
 
   // Vitrine rotativa: até 4 destaques cinematográficos com narrativa diferente.
-  const billboardSlides = useMemo<Array<{ module: EnaflixModule; eyebrow: string }>>(() => {
-    const slides: Array<{ module: EnaflixModule; eyebrow: string }> = [];
+  const billboardSlides = useMemo<Array<{ module: EnaflixModule; eyebrow: string; customTitle?: string; customDesc?: string }>>(() => {
+    const slides: Array<{ module: EnaflixModule; eyebrow: string; customTitle?: string; customDesc?: string }> = [];
     const seen = new Set<string>();
 
-    const push = (m: EnaflixModule | undefined, eyebrow: string) => {
-      if (!m || seen.has(m.id)) return;
+    const push = (m: EnaflixModule | undefined, eyebrow: string, customTitle?: string, customDesc?: string) => {
+      if (!m || (seen.has(m.id) && !customTitle)) return;
       seen.add(m.id);
-      slides.push({ module: m, eyebrow });
+      slides.push({ module: m, eyebrow, customTitle, customDesc });
     };
 
-    // 1. Continuar de onde parou (se existe)
-    push(continueModules[0], "Continuar de onde parou");
-    // 2. Recomendação IA
-    push(recommendedModules[0], "Recomendado pela IA");
-    // 3. Sessão de estudo (centro pedagógico)
-    push(
-      visibleModules.find((m) => m.id === "sessao-estudo"),
-      "Centro pedagógico",
-    );
-    // 4. Destaque popular (se houver mais de um popular distinto)
-    push(popularModules[0], "Mais usado por você");
+    // 1. MISSÃO DO DIA (A IA que guia o aluno) - Protagonista
+    if (studyNext?.recommendation) {
+      const rec = studyNext.recommendation;
+      const targetModuleId = rec.type === 'review' ? 'sessao-estudo' : 
+                           rec.type === 'mnemonic' ? 'mnemonico' :
+                           rec.type === 'error_review' ? 'banco-erros' :
+                           rec.type === 'image_quiz' ? 'image-quiz' : 'sessao-estudo';
+      
+      const targetModule = ENAFLIX_MODULES.find(m => m.id === targetModuleId);
+      if (targetModule) {
+        push(
+          targetModule, 
+          "Missão Crítica do Dia", 
+          rec.title, 
+          `${rec.description} • ~${rec.estimatedMinutes} min`
+        );
+      }
+    }
 
-    // Fallback: se nada acima rendeu nada, pega o primeiro visível
+    // 2. Continuar de onde parou
+    push(continueModules[0], "Continuar de onde parou");
+    
+    // 3. Recomendação IA (secundária ao billboard se não for a missão)
+    push(recommendedModules[0], "Recomendado para você");
+
+    // 4. Tutor IA (Sempre um destaque)
+    push(
+      visibleModules.find((m) => m.id === "mentor"),
+      "Inteligência Pedagógica",
+    );
+
+    // Fallback
     if (slides.length === 0 && visibleModules[0]) {
       push(visibleModules[0], "Em destaque hoje");
     }
 
     return slides.slice(0, 4);
-  }, [continueModules, recommendedModules, popularModules, visibleModules]);
+  }, [continueModules, recommendedModules, visibleModules, studyNext]);
 
   const handleNavigate = useCallback(
     (m: EnaflixModule) => {
@@ -301,6 +324,97 @@ export default function EnaflixPage() {
 
           {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 5 */}
           <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
+            {/* NOVO: Hub Inteligente (Missão + Maestria) */}
+            <div className="px-4 sm:px-8 lg:px-14">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Card Missão do Dia */}
+                <motion.div 
+                  initial={{ opacity: 0, x: -20 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  className="lg:col-span-1 p-6 rounded-[24px] bg-white/[0.03] border border-white/10 backdrop-blur-md relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative z-10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Target className="h-5 w-5 text-primary" />
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white/90">Missão do Dia</h3>
+                      </div>
+                      {studyNext?.recommendation && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[10px] font-bold text-primary">
+                          <Sparkles className="h-3 w-3" />
+                          <span>IA-READY</span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {studyNext?.recommendation ? (
+                      <div className="space-y-2">
+                        <p className="text-xl font-bold text-white leading-tight">
+                          {studyNext.recommendation.title}
+                        </p>
+                        <p className="text-sm text-white/60 line-clamp-2">
+                          {studyNext.recommendation.description}
+                        </p>
+                        <button 
+                          onClick={() => {
+                            const rec = studyNext.recommendation;
+                            const route = rec.type === 'review' ? '/dashboard/sessao-estudo' : 
+                                         rec.type === 'mnemonic' ? '/dashboard/mnemonic-studio' :
+                                         rec.type === 'error_review' ? '/dashboard/banco-erros' :
+                                         rec.type === 'image_quiz' ? '/dashboard/image-quiz' : '/dashboard/sessao-estudo';
+                            navigate(route);
+                          }}
+                          className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-white text-black font-bold text-sm hover:scale-[1.02] transition-transform"
+                        >
+                          <Play className="h-4 w-4 fill-black" />
+                          <span>Retomar Estudo</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="py-8 flex flex-col items-center justify-center text-center space-y-2">
+                        <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center">
+                          <Brain className="h-5 w-5 text-white/30" />
+                        </div>
+                        <p className="text-xs text-white/40">Sua próxima missão está sendo gerada...</p>
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+
+                {/* Card Maestria Médica (Resumo) */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  className="lg:col-span-2 p-6 rounded-[24px] bg-white/[0.03] border border-white/10 backdrop-blur-md relative overflow-hidden group"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-tr from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative z-10 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5 text-purple-400" />
+                        <h3 className="text-sm font-black uppercase tracking-widest text-white/90">Evolução Cognitiva</h3>
+                      </div>
+                      <button 
+                        onClick={() => navigate("/dashboard/analytics")}
+                        className="text-[10px] font-bold text-white/40 hover:text-white flex items-center gap-1 transition-colors"
+                      >
+                        VER DETALHES <ChevronRight className="h-3 w-3" />
+                      </button>
+                    </div>
+
+                    <Suspense fallback={<div className="h-40 animate-pulse bg-white/5 rounded-xl" />}>
+                      <div className="max-h-[160px] overflow-hidden">
+                        <MedicalMasteryDashboard />
+                      </div>
+                    </Suspense>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+
             {isLoading ? (
               <div className="space-y-12">
                 <EnaflixRowSkeleton />
@@ -374,23 +488,23 @@ export default function EnaflixPage() {
                     if (c.dynamic) return false;
                     if (c.requires === "admin" && !isAdmin) return false;
                     if (c.requires === "professor" && !isProfessor && !isAdmin) return false;
-                    const items = visibleModules.filter((m) => m.category === c.id);
-                    return items.length >= (c.minItems ?? 2);
+                    return true;
                   });
-                  if (rotatable.length > 0) {
-                    const idx = new Date().getDay() % rotatable.length;
-                    const cat = rotatable[idx];
+
+                  rotatable.forEach((cat) => {
                     const items = visibleModules.filter((m) => m.category === cat.id);
-                    rows.push(
-                      <EnaflixSectionRow
-                        key={cat.id}
-                        title={cat.title}
-                        subtitle={cat.subtitle}
-                        modules={items}
-                        onNavigate={handleNavigate}
-                      />,
-                    );
-                  }
+                    if (items.length > 0) {
+                      rows.push(
+                        <EnaflixSectionRow
+                          key={cat.id}
+                          title={cat.title}
+                          subtitle={cat.subtitle}
+                          modules={items}
+                          onNavigate={handleNavigate}
+                        />,
+                      );
+                    }
+                  });
                 }
 
                 return rows;
@@ -401,7 +515,7 @@ export default function EnaflixPage() {
               <div className="px-4 sm:px-8 lg:px-14 pt-2">
                 <button
                   type="button"
-                  onClick={() => navigate("/enaflix/tudo")}
+                  onClick={handleSearchToggle}
                   className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors rounded-full px-4 py-2 hover:bg-white/[0.06] border border-white/10 hover:border-white/20"
                 >
                   <span>Ver todos os módulos</span>
