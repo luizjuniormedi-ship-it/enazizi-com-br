@@ -21,8 +21,11 @@ import {
   ChevronRight,
   MonitorPlay,
   BrainCircuit,
-  LayoutGrid
+  LayoutGrid,
+  Users,
+  Activity
 } from "lucide-react";
+
 import { motion } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -178,12 +181,26 @@ export function EnaflixSidebar() {
                   />
                 )}
                 {isAdmin && (
-                  <SidebarItem
-                    to="/admin"
-                    label="Admin"
-                    icon={Shield}
-                    active={location.pathname === "/admin"}
-                  />
+                  <>
+                    <SidebarItem
+                      to="/admin"
+                      label="Admin Hub"
+                      icon={Shield}
+                      active={location.pathname === "/admin" && !location.pathname.includes("/admin/users")}
+                    />
+                    <SidebarItem
+                      to="/admin/users"
+                      label="Usuários"
+                      icon={Users}
+                      active={location.pathname === "/admin/users"}
+                    />
+                    <SidebarItem
+                      to="/admin/monitoring"
+                      label="Monitoramento"
+                      icon={Activity}
+                      active={location.pathname === "/admin/monitoring"}
+                    />
+                  </>
                 )}
               </div>
             </div>
