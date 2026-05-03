@@ -72,7 +72,7 @@ async function callAI<T>(apiKey: string, sys: string, user: string): Promise<T> 
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: AI_MODEL, temperature: 0.4,
+        model: AI_MODEL,
         messages: [{ role: "system", content: sys }, { role: "user", content: user }],
       }),
       signal: ctrl.signal,
