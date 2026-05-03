@@ -169,11 +169,11 @@ export async function findRecommendedVideoForTutorContext(
         terms.forEach(term => {
           if (!term) return;
           if (lTopic === term) score += 100;
-          else if (lTopic.includes(term)) score += 50;
-          if (lTitle.includes(term)) score += 40;
-          if (lSubject.includes(term)) score += 25;
-          if (lSubtopic.includes(term)) score += 25;
-          if (videoUrl.includes(term)) score += 60;
+          else if (termMatches(lTopic, term)) score += 50;
+          if (termMatches(lTitle, term)) score += 40;
+          if (termMatches(lSubject, term)) score += 25;
+          if (termMatches(lSubtopic, term)) score += 25;
+          if (termMatches(videoUrl, term)) score += 60;
         });
 
         if (score >= 50) {
