@@ -18,39 +18,46 @@ import {
   Search,
   Bell,
   Settings,
-  ChevronRight
+  ChevronRight,
+  MonitorPlay,
+  BrainCircuit,
+  LayoutGrid
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 
 const NAV_SECTIONS = [
   {
-    title: "PANORAMA",
+    title: "PRINCIPAL",
     items: [
-      { to: "/enaflix", label: "Início ENAFLIX", icon: Home },
+      { to: "/enaflix", label: "Início", icon: Home },
       { to: "/dashboard", label: "Hoje", icon: Calendar },
-      { to: "/dashboard/analytics", label: "Meu Progresso", icon: Target },
-    ]
-  },
-  {
-    title: "ESTUDAR",
-    items: [
       { to: "/dashboard/sessao-estudo", label: "Continuar", icon: PlayCircle },
-      { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: PlayCircle },
-      { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
-      { to: "/dashboard/simulados", label: "Simulados", icon: FileText },
-      { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
-      { to: "/dashboard/chatgpt", label: "Tutor IA", icon: Sparkles },
     ]
   },
   {
-    title: "MINHA ÁREA",
+    title: "CONTEÚDO",
+    items: [
+      { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
+      { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
+      { to: "/dashboard/simulados", label: "Questões", icon: FileText },
+      { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
+    ]
+  },
+  {
+    title: "INTELIGÊNCIA",
+    items: [
+      { to: "/dashboard/chatgpt", label: "Tutor IA", icon: Sparkles },
+      { to: "/dashboard/analytics", label: "Meu Radar", icon: BrainCircuit },
+      { to: "/dashboard/banco-erros", label: "Zonas de Risco", icon: AlertTriangle },
+    ]
+  },
+  {
+    title: "USUÁRIO",
     items: [
       { to: "/dashboard/videoaulas", label: "Minhas Aulas", icon: LayoutDashboard },
-      { to: "/dashboard/favoritos", label: "Favoritos", icon: Heart },
-      { to: "/dashboard/historico", label: "Histórico", icon: History },
       { to: "/dashboard/perfil", label: "Perfil", icon: User },
     ]
   }
@@ -68,13 +75,12 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
     <Link
       to={to}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-500 overflow-hidden",
+        "group relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 overflow-hidden",
         active 
           ? "bg-white/10 text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/10" 
           : "text-white/40 hover:text-white hover:bg-white/5"
       )}
     >
-      {/* Selection Glow */}
       {active && (
         <motion.div
           layoutId="sidebar-active-bg"
@@ -84,28 +90,23 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
         />
       )}
 
-      <Icon className={cn(
-        "h-5 w-5 transition-all duration-500 group-hover:scale-125",
-        active ? "text-primary drop-shadow-[0_0_8px_rgba(var(--pixar-blue),0.8)] scale-110" : "opacity-70 group-hover:opacity-100"
-      )} />
+      <div className={cn(
+        "p-2 rounded-xl transition-all duration-500",
+        active ? "bg-primary/20 shadow-[0_0_15px_rgba(var(--pixar-blue),0.3)]" : "bg-transparent"
+      )}>
+        <Icon className={cn(
+          "h-4 w-4 transition-all duration-500",
+          active ? "text-primary scale-110" : "opacity-70 group-hover:opacity-100 group-hover:scale-110"
+        )} />
+      </div>
       
       <span className={cn(
-        "text-sm font-black tracking-tight transition-all duration-500",
+        "text-xs font-black tracking-tight transition-all duration-500",
         active ? "translate-x-1" : "group-hover:translate-x-0.5"
       )}>
         {label}
       </span>
       
-      {active && (
-        <motion.div
-          className="ml-auto"
-          initial={{ scale: 0, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-        >
-          <ChevronRight className="h-3 w-3 text-primary/60" />
-        </motion.div>
-      )}
-
       {active && (
         <motion.div
           layoutId="sidebar-active-indicator"
@@ -149,7 +150,7 @@ export function EnaflixSidebar() {
         <div className="space-y-8 pb-8">
           {NAV_SECTIONS.map((section) => (
             <div key={section.title} className="space-y-2">
-              <h3 className="px-4 text-[10px] font-bold tracking-[0.2em] text-white/20 uppercase">
+              <h3 className="px-4 text-[9px] font-black tracking-[0.2em] text-white/20 uppercase">
                 {section.title}
               </h3>
               <div className="space-y-1">
@@ -166,7 +167,7 @@ export function EnaflixSidebar() {
 
           {(isAdmin || isProfessor) && (
             <div className="space-y-2">
-              <h3 className="px-4 text-[10px] font-bold tracking-[0.2em] text-white/20 uppercase">
+              <h3 className="px-4 text-[9px] font-black tracking-[0.2em] text-white/20 uppercase">
                 ADMINISTRAÇÃO
               </h3>
               <div className="space-y-1">
@@ -181,7 +182,7 @@ export function EnaflixSidebar() {
                 {isAdmin && (
                   <SidebarItem
                     to="/admin"
-                    label="Admin"
+                    label="Centro de Comando"
                     icon={Shield}
                     active={location.pathname === "/admin"}
                   />
