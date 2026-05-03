@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // ═══ CONFIG ═══
-const AI_MODEL = "google/gemini-2.5-flash";
+const AI_MODEL = "openai/gpt-5-mini";
 const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;
@@ -74,6 +74,7 @@ async function callAI<T>(apiKey: string, sys: string, user: string): Promise<T> 
       body: JSON.stringify({
         model: AI_MODEL,
         messages: [{ role: "system", content: sys }, { role: "user", content: user }],
+        temperature: 1.0, // Fixed: gpt-5-mini only supports default (1.0)
       }),
       signal: ctrl.signal,
     });

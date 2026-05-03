@@ -15,6 +15,12 @@ serve(async (req: Request) => {
 
     if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
 
+    // Default to gpt-5-mini if no model provided
+    const targetModel = model || "openai/gpt-5-mini";
+    
+    // gpt-5-mini only supports temperature 1.0 (default) in current gateway config
+    const targetTemperature = targetModel.includes("gpt-5") ? 1.0 : (temperature ?? 0.7);
+
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -22,12 +28,12 @@ serve(async (req: Request) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: model || "openai/gpt-5-mini",
+        model: targetModel,
         messages: [
           ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
           { role: "user", content: prompt },
         ],
-        temperature: temperature ?? 0.7,
+        temperature: targetTemperature,
         ...(responseFormat === "json" ? { response_format: { type: "json_object" } } : {}),
       }),
     });

@@ -67,9 +67,9 @@ Se o tema não for válido para mnemônico médico, responda:
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
-        temperature: 0.3,
+        temperature: 1.0,
       }),
     });
 
