@@ -109,7 +109,16 @@ export default function EnaflixPage() {
     staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
-  const isLoading = isLoadingLessons || (isLoadingUsage && !!user) || adminLoading;
+  const [forceReady, setForceReady] = useState(false);
+  const isLoading = (isLoadingLessons || (isLoadingUsage && !!user) || adminLoading) && !forceReady;
+
+  useEffect(() => {
+    // Safety valve: don't let the page stay stuck in skeleton mode for more than 5s
+    const timer = setTimeout(() => {
+      setForceReady(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const continueLessons = useMemo(() => {
     if (!aiLessons || !usageLogs) return [];
