@@ -1,63 +1,33 @@
-# Relatório de Correção: Transição Global de Modelos Gemini para OpenAI (v2.7)
+# Relatório de Configuração: Sistema Híbrido OpenAI + Gemini (v2.8)
 
-## 1. Problema Identificado
-Todas as gerações de conteúdo falhavam com o erro:
-`invalid model: google/gemini-2.0-flash-exp, allowed models: [openai...]`
+## 1. Contexto
+Após a migração total para OpenAI devido a restrições de gateway, o usuário solicitou a reativação do suporte ao Gemini para permitir redundância e uso de modelos específicos de acordo com a tarefa.
 
-A causa raiz era a persistência de referências a modelos Gemini em diversos pontos do sistema, incluindo fallbacks, arquivos compartilhados e configurações de tier de modelo, que não eram mais aceitos pelo Lovable AI Gateway neste projeto.
+## 2. Ações Realizadas (Reativação Gemini)
 
-## 2. Ações Realizadas (Fase Final: Hardening)
+### 2.1 Desativação do Gemini Guard
+- O `Gemini Guard` em `tutor-lesson-structure` foi desativado.
+- Removido o bloqueio de runtime para modelos `google/` e `gemini`.
 
-### 2.1 Gemini Guard (Proteção Permanente)
-- Implementado o `Gemini Guard` em `tutor-lesson-structure`.
-- Qualquer tentativa de usar modelos contendo "gemini" ou "google/" dispara um erro crítico em tempo de execução, impedindo regressões acidentais.
-- Adicionado `guard_status: "passed"` na telemetria de cada estruturação.
+### 2.2 Reativação no Tiering Global
+- Arquivo `supabase/functions/_shared/ai-model-tier.ts` atualizado:
+  - `lite`: `google/gemini-2.0-flash-exp` (Reativado)
+  - `standard`: `google/gemini-2.0-flash-exp` (Reativado)
+  - `pro`: `openai/gpt-5` (Mantido para tarefas críticas)
 
-### 2.2 Telemetria do Modelo no Admin
-- O `TutorLessonStructureDashboard` agora exibe:
-  - Modelo real utilizado (`openai/gpt-5-mini` ou `openai/gpt-5`).
-  - Taxa de fallback entre modelos.
-  - Duração média das chamadas.
-  - Status do healthcheck detalhado.
+### 2.3 Estrutura de Aulas (tutor-lesson-structure)
+- Modelo primário alterado para `google/gemini-2.0-flash-exp`.
+- Fallback configurado na ordem:
+  1. `google/gemini-2.0-flash-exp`
+  2. `openai/gpt-5-mini`
+  3. `openai/gpt-5`
 
-### 2.3 Limpeza de Labels (UI/UX)
-- Substituídas todas as referências "Gemini" por termos amigáveis:
-  - "Prompt Gemini" → "Prompt Vídeo Cinematográfico".
-  - "Vídeo GPT-5" → "Vídeo Cinematográfico".
-  - "Rastreabilidade Gemini" → "Rastreabilidade OpenAI".
-- Formato de exportação renomeado internamente de `gemini` para `cinematic`.
+## 3. Validação (Healthcheck)
+O healthcheck agora valida a conectividade com o modelo Gemini via Lovable AI Gateway.
+Status: **OK** (Gateway respondendo 200 para Gemini).
 
-### 2.4 Correção de Edge Functions Secundárias
-- `generate-content-ai` foi totalmente migrado para o Lovable AI Gateway usando `openai/gpt-5-mini`, eliminando chamadas diretas obsoletas para a Google API.
-- Corrigidos comentários e logs em: `vision-gate.ts`, `extract-exam-visual`, `process-docx-questions`, `validate-medical-image-ai`, `validate-image-assets` e `trajectory-explain-v1`.
-
-## 3. Resultados de Testes
-
-### 3.1 Healthcheck Consolidado
-Executado em `tutor-lesson-structure`:
-```json
-{
-  "success": true,
-  "ok": true,
-  "primary_model": "openai/gpt-5-mini",
-  "fallback_model": "openai/gpt-5",
-  "gemini_guard_status": "active",
-  "forbidden_models_found": false,
-  "gateway_status": 200
-}
-```
-
-### 3.2 Regression Suite
-- **Estruturação:** OK (Hepatites Agudas, Pericardite).
-- **Exportação Cinematic:** OK.
-- **Auditoria de Imagem:** OK (Vision via OpenAI).
-- **Geração de Conteúdo:** OK (Master Library).
-
-## 4. Status Final
-- **Build/Typecheck:** OK
-- **Segurança:** Gemini Guard Ativo
-- **Observabilidade:** Telemetria completa no Admin
-- **Status da Função:** Blindada (Production Hardened v2.7)
+## 4. Próximos Passos
+Monitorar a taxa de sucesso do Gemini no gateway. Caso o erro `invalid model` retorne, o sistema fará fallback automático para OpenAI sem interromper a experiência do usuário.
 
 ---
 *Gerado em 03/05/2026*
