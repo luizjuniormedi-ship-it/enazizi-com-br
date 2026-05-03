@@ -22,7 +22,7 @@ import {
   Image as ImageIcon, MessageSquare, Bell, MessageCircleHeart, Bot,
   Settings2, Flag, KeyRound, Plug, Cpu,
   Workflow, Server, Activity, Wrench, Network, BrainCircuit,
-  ClipboardList, Sparkles, DollarSign
+  ClipboardList, Sparkles, DollarSign, ShieldCheck
 } from "lucide-react";
 import type { AdminScope } from "@/hooks/useAdminScope";
 
@@ -77,6 +77,22 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         icon: ClipboardList,
         scopes: ["super_admin", "admin_operacional"],
         keywords: ["log", "audit", "histórico"],
+      },
+      {
+        to: "/admin/settings",
+        label: "Governança",
+        description: "Configuração de thresholds e limites operacionais enterprise.",
+        icon: Settings2,
+        scopes: ["super_admin", "admin_operacional"],
+        keywords: ["governança", "settings", "thresholds", "limites"],
+      },
+      {
+        to: "/admin/audit",
+        label: "Integridade",
+        description: "Auditoria técnica de pipeline de dados e gaps de telemetria.",
+        icon: ShieldCheck,
+        scopes: ["super_admin", "devops"],
+        keywords: ["integridade", "audit", "gaps", "dados"],
       },
     ],
   },
@@ -177,6 +193,14 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/telemetry",
+        label: "Telemetria",
+        description: "Dashboards de engajamento, funil e comportamento real.",
+        icon: Activity,
+        scopes: ["super_admin", "admin_operacional", "admin_pedagogico"],
+        keywords: ["telemetria", "funil", "comportamento", "analytics"],
+      },
+      {
+        to: "/admin/users?tab=broadcast",
         label: "Mensagens",
         description: "Sistema de notificações e alertas em massa.",
         icon: Bell,
