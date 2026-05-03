@@ -122,6 +122,16 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       ],
     },
     {
+      title: "SISTEMA & FEEDBACK",
+      icon: Settings,
+      items: [
+        { key: "messages", label: "Mensagens ADM", icon: MessageSquare },
+        { key: "feedback", label: "Feedbacks", icon: Star },
+        { key: "features", label: "Flags de Sistema", icon: ShieldCheck },
+        { key: "integrations", label: "WhatsApp/Chat", icon: Send },
+      ],
+    },
+    {
       title: "AUDITORIA & DADOS",
       icon: Database,
       items: [
@@ -132,6 +142,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
     },
   ];
 }
+
 
 
 function PanelLoader() {
