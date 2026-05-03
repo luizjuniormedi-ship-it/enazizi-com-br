@@ -309,6 +309,8 @@ const App = () => (
                   <Route path="telemetry" element={<TelemetryAdmin />} />
                   <Route path="pedagogy-analytics" element={<PedagogyAnalytics />} />
                   <Route path="ai-quality" element={<AIQuality />} />
+                  <Route path="incidents/:id" element={<AdminIncidentDetail />} />
+                  <Route path="governance" element={<AdminGovernanceLogs />} />
                   <Route path="ai-studio" element={<AIStudio />} />
                   <Route path="medical-review-queue" element={<MedicalReviewQueue />} />
                   <Route path="medical-governance" element={<MedicalGovernanceDashboard />} />
