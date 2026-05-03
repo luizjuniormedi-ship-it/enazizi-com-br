@@ -201,7 +201,7 @@ export function EnaflixSidebar() {
                       />
                       <SidebarItem
                         to="/admin?tab=question-review"
-                        label="Aprovar Questões"
+                        label="Banco & Aprovações"
                         icon={UserCheck}
                         active={location.search === "?tab=question-review"}
                       />
