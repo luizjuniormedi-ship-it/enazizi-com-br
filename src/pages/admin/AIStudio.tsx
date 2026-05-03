@@ -49,7 +49,8 @@ import {
   FileJson,
   Activity,
   DollarSign,
-  Package
+  Package,
+  Settings
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -73,7 +74,6 @@ import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-// useAuth already imported above
 import { PedagogicalQualityDashboard } from "@/components/admin/PedagogicalQualityDashboard";
 import { 
   Table, 
@@ -83,6 +83,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { motion } from "framer-motion";
 
 export function AIStudio() {
    const { user } = useAuth();
