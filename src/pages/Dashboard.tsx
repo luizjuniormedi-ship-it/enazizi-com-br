@@ -72,8 +72,8 @@ const Dashboard = () => {
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt="Medical Mission"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0e] via-[#0a0a0e]/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0e]/80 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#050508]/80 via-transparent to-transparent" />
           </div>
 
           <div className="relative z-10 max-w-3xl space-y-6">
@@ -84,7 +84,7 @@ const Dashboard = () => {
                 className="flex items-center gap-3"
               >
                 <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40 shadow-[0_0_15px_rgba(var(--pixar-blue),0.5)]" />
-                <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
               </motion.div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
                 Sua missão de hoje, <span className="gradient-text">{firstName}</span>
@@ -122,6 +122,7 @@ const Dashboard = () => {
           </div>
         </motion.div>
       </div>
+
 
       {/* Rows Style - Netflix Grid */}
       <div className="enaflix-stagger space-y-16">
