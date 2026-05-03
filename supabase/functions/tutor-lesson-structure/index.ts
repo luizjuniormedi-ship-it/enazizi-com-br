@@ -12,11 +12,14 @@ const MAX_PER_HOUR = 100;
 const MIN_QUALITY = 50;
 const STUCK_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
 
-// Gemini Guard: Desativado para permitir uso híbrido (OpenAI + Gemini)
-const FORBIDDEN_MODELS: string[] = [];
+// Gemini Guard: Ativado para garantir política OpenAI-only
+const FORBIDDEN_MODELS = ["gemini", "google", "claude"];
 
 function checkGeminiGuard(model: string) {
-  // Guard desativado conforme solicitação do usuário para reativar Gemini
+  const isForbidden = FORBIDDEN_MODELS.some(m => model.toLowerCase().includes(m));
+  if (isForbidden) {
+    throw new Error(`POLÍTICA DE SEGURANÇA: Modelo ${model} é proibido. Use apenas OpenAI.`);
+  }
   return true;
 }
 
