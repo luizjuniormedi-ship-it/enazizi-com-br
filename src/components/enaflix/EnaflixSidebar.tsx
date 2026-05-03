@@ -30,34 +30,31 @@ import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 
 const NAV_SECTIONS = [
   {
-    title: "PRINCIPAL",
+    title: "PANORAMA",
     items: [
-      { to: "/enaflix", label: "Início", icon: Home },
+      { to: "/enaflix", label: "Início ENAFLIX", icon: Home },
       { to: "/dashboard", label: "Hoje", icon: Calendar },
-      { to: "/dashboard/sessao-estudo", label: "Continuar", icon: PlayCircle },
+      { to: "/dashboard/analytics", label: "Meu Progresso", icon: BrainCircuit },
     ]
   },
   {
-    title: "CONTEÚDO",
+    title: "ESTUDAR",
     items: [
+      { to: "/dashboard/sessao-estudo", label: "Continuar", icon: PlayCircle },
       { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
       { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
       { to: "/dashboard/simulados", label: "Questões", icon: FileText },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
-    ]
-  },
-  {
-    title: "INTELIGÊNCIA",
-    items: [
+      { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
       { to: "/dashboard/chatgpt", label: "Tutor IA", icon: Sparkles },
-      { to: "/dashboard/analytics", label: "Meu Radar", icon: BrainCircuit },
-      { to: "/dashboard/banco-erros", label: "Zonas de Risco", icon: AlertTriangle },
     ]
   },
   {
-    title: "USUÁRIO",
+    title: "MINHA ÁREA",
     items: [
       { to: "/dashboard/videoaulas", label: "Minhas Aulas", icon: LayoutDashboard },
+      { to: "/dashboard/favoritos", label: "Favoritos", icon: Heart },
+      { to: "/dashboard/historico", label: "Histórico", icon: History },
       { to: "/dashboard/perfil", label: "Perfil", icon: User },
     ]
   }
@@ -75,7 +72,7 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
     <Link
       to={to}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 overflow-hidden",
+        "group relative flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden",
         active 
           ? "bg-white/10 text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/10" 
           : "text-white/40 hover:text-white hover:bg-white/5"
@@ -84,7 +81,7 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
       {active && (
         <motion.div
           layoutId="sidebar-active-bg"
-          className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent -z-10"
+          className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent -z-10"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
         />
@@ -182,7 +179,7 @@ export function EnaflixSidebar() {
                 {isAdmin && (
                   <SidebarItem
                     to="/admin"
-                    label="Centro de Comando"
+                    label="Admin"
                     icon={Shield}
                     active={location.pathname === "/admin"}
                   />

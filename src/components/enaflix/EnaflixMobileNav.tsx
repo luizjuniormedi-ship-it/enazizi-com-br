@@ -6,15 +6,15 @@ import {
   PlayCircle, 
   Sparkles, 
   User,
-  Menu
+  MonitorPlay
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const MOBILE_ITEMS = [
   { to: "/enaflix", label: "Início", icon: Home },
   { to: "/dashboard", label: "Hoje", icon: Calendar },
-  { to: "/dashboard/sessao-estudo", label: "Continuar", icon: PlayCircle },
-  { to: "/dashboard/chatgpt", label: "Tutor IA", icon: Sparkles },
+  { to: "/dashboard/sessao-estudo", label: "Estudar", icon: PlayCircle },
+  { to: "/dashboard/videoaulas", label: "Aulas", icon: MonitorPlay },
   { to: "/dashboard/perfil", label: "Perfil", icon: User },
 ];
 

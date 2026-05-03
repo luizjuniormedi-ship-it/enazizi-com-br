@@ -18,11 +18,11 @@
  *   6. Laboratório Técnico  (oculto para não-devops)
  */
 import {
-  LayoutDashboard, Users, ShieldCheck, BookOpenCheck, FileQuestion, FileText,
-  Image as ImageIcon, Upload, MessageSquare, Bell, MessageCircleHeart, Bot,
-  Settings2, GitBranch, DollarSign, Flag, KeyRound, Plug, HardDrive, Cpu,
-  Workflow, Server, Activity, Wrench, Stethoscope, BarChart3, BrainCircuit,
-  ClipboardList, Network, Eye, Layers, Sparkles,
+  LayoutDashboard, Users, BookOpenCheck, FileQuestion, FileText,
+  Image as ImageIcon, MessageSquare, Bell, MessageCircleHeart, Bot,
+  Settings2, Flag, KeyRound, Plug, Cpu,
+  Workflow, Server, Activity, Wrench, Network, BrainCircuit,
+  ClipboardList, Sparkles, DollarSign
 } from "lucide-react";
 import type { AdminScope } from "@/hooks/useAdminScope";
 
@@ -63,17 +63,8 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["centro de comando", "ceo", "kpi", "executivo"],
       },
       {
-        to: "/admin/automation-lab",
-        label: "Produção Lote P2",
-        description: "Geração síncrona em lote para temas de prova (P2 Clínica/Pediatria).",
-        icon: Sparkles,
-        scopes: ["super_admin", "admin_pedagogico"],
-        badge: "Novo",
-        keywords: ["automação", "p2", "lote", "geração"],
-      },
-      {
         to: "/admin/monitoring",
-        label: "Monitor de Alunos",
+        label: "Alunos",
         description: "Painel do mentor: alunos em risco, progresso e intervenções.",
         icon: Users,
         scopes: ["super_admin", "admin_pedagogico", "admin_operacional"],
@@ -81,7 +72,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/ai-audit-mode",
-        label: "Auditoria de Ações",
+        label: "Auditoria",
         description: "Log de todas as ações administrativas e mudanças sensíveis.",
         icon: ClipboardList,
         scopes: ["super_admin", "admin_operacional"],
@@ -91,7 +82,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
   },
   {
     id: "conteudo",
-    label: "Gestão de Conteúdo",
+    label: "Conteúdo",
     icon: BookOpenCheck,
     description: "Curadoria de aulas, banco de questões e biblioteca.",
     items: [
@@ -113,7 +104,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/banca-readiness",
-        label: "Simulados & Provas",
+        label: "Simulados",
         description: "Cobertura de bancas, prontidão e telemetria de simulados.",
         icon: FileText,
         scopes: ["super_admin", "admin_pedagogico"],
@@ -121,25 +112,17 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/video-lessons",
-        label: "Biblioteca de Ativos",
+        label: "Biblioteca",
         description: "Vídeos publicados, materiais e ativos pedagógicos.",
         icon: ImageIcon,
         scopes: ["super_admin", "admin_pedagogico"],
         keywords: ["vídeo", "videoaulas", "biblioteca", "ativos"],
       },
-      {
-        to: "/admin/ingestion-provas",
-        label: "Importação de Conteúdo",
-        description: "Ingestão de provas oficiais e bancos externos.",
-        icon: Upload,
-        scopes: ["super_admin", "admin_pedagogico"],
-        keywords: ["import", "ingestion", "provas oficiais"],
-      },
     ],
   },
   {
     id: "comunidade",
-    label: "Comunidade & Suporte",
+    label: "Comunidade",
     icon: MessageSquare,
     description: "Usuários, mensagens e feedbacks.",
     items: [
@@ -153,7 +136,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/telemetry",
-        label: "Mensagens & Alertas",
+        label: "Mensagens",
         description: "Sistema de notificações e alertas em massa.",
         icon: Bell,
         scopes: ["super_admin", "admin_operacional"],
@@ -161,7 +144,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/specialty-friction",
-        label: "Feedbacks dos Alunos",
+        label: "Feedbacks",
         description: "Atrito por especialidade e relatórios qualitativos.",
         icon: MessageCircleHeart,
         scopes: ["super_admin", "admin_pedagogico"],
@@ -171,7 +154,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
   },
   {
     id: "inteligencia",
-    label: "Inteligência ENA",
+    label: "IA",
     icon: BrainCircuit,
     description: "Tutor IA, motor adaptativo e custos.",
     items: [
@@ -185,19 +168,11 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
       },
       {
         to: "/admin/ai-studio",
-        label: "Configurações IA",
+        label: "Prompts",
         description: "Central de produção de conteúdo IA e prompts.",
         icon: Settings2,
         scopes: ["super_admin"],
         keywords: ["prompt", "studio", "ia", "geração"],
-      },
-      {
-        to: "/admin/adaptive-engine",
-        label: "Motor Adaptativo",
-        description: "Regras, políticas e experimentos do ACE Loop.",
-        icon: GitBranch,
-        scopes: ["super_admin"],
-        keywords: ["ace", "adaptive", "engine", "policies"],
       },
       {
         to: "/admin/medical-governance",
@@ -217,20 +192,20 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     scopes: ["super_admin"],
     items: [
       {
+        to: "/admin#roles",
+        label: "Permissões",
+        description: "Gestão de roles e escopos administrativos.",
+        icon: KeyRound,
+        scopes: ["super_admin"],
+        keywords: ["role", "permission", "rbac"],
+      },
+      {
         to: "/admin/intervention-policies",
         label: "Feature Flags",
         description: "Políticas de intervenção e flags de funcionalidades.",
         icon: Flag,
         scopes: ["super_admin"],
         keywords: ["flag", "policy", "toggle"],
-      },
-      {
-        to: "/admin#roles",
-        label: "Permissões & Papéis",
-        description: "Gestão de roles e escopos administrativos.",
-        icon: KeyRound,
-        scopes: ["super_admin"],
-        keywords: ["role", "permission", "rbac"],
       },
       {
         to: "/admin/notebooklm",
@@ -240,19 +215,11 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         scopes: ["super_admin"],
         keywords: ["integration", "connector", "external"],
       },
-      {
-        to: "/admin/cme-media-monitor",
-        label: "Storage",
-        description: "Saúde de buckets, mídias e ativos hospedados.",
-        icon: HardDrive,
-        scopes: ["super_admin"],
-        keywords: ["storage", "bucket", "asset"],
-      },
     ],
   },
   {
     id: "laboratorio",
-    label: "Laboratório Técnico",
+    label: "Laboratório",
     icon: Wrench,
     description: "Áreas avançadas de DevOps e infraestrutura.",
     scopes: ["devops", "super_admin"],
@@ -282,29 +249,12 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["render", "queue", "fila"],
       },
       {
-        to: "/admin/orchestrator-insights",
-        label: "AI Router",
-        description: "Roteamento de modelos IA e insights do orquestrador.",
-        icon: Network,
-        scopes: ["devops", "super_admin"],
-        keywords: ["router", "orchestrator", "ai"],
-      },
-      {
         to: "/admin/cme-incidents",
-        label: "Incident Ops",
+        label: "Logs técnicos",
         description: "Incidentes, alertas e postmortems.",
         icon: Activity,
         scopes: ["devops", "super_admin"],
-        keywords: ["incident", "alert", "ops"],
-      },
-      {
-        to: "/admin/system-checklist",
-        label: "Ferramentas DEV",
-        description: "Checklist de sistema, telemetria e diagnósticos.",
-        icon: Wrench,
-        scopes: ["devops", "super_admin"],
-        keywords: ["dev", "tools", "diagnostic", "checklist"],
-        badge: "Dev",
+        keywords: ["incident", "alert", "ops", "logs"],
       },
     ],
   },
