@@ -322,8 +322,8 @@ const ChatGPT = () => {
     
     // Check for related video lessons to inform the AI
     let videoContext = "";
-    if (currentTopic && messages.length < 5) {
-      const lesson = await findLessonByTopic(currentTopic);
+    if (activeTopic && messages.length < 5) {
+      const lesson = await findLessonByTopic(activeTopic);
       if (lesson) {
         videoContext = `\n\n[CONTEXTO DE VÍDEO: Encontrei uma videoaula disponível sobre "${currentTopic}". O sistema já exibiu o link para o aluno no topo da sua resposta. Por favor, recomende que ele assista ao vídeo antes de prosseguir com a explicação detalhada.]`;
       }
