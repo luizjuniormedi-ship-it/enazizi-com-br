@@ -183,21 +183,26 @@ const AIMentor = () => {
           ) : (
             <motion.div
               key="chat"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 sm:p-8 lg:p-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex flex-col pt-4 pb-0 sm:pt-6"
             >
-              <div className="max-w-7xl mx-auto h-[80vh] border border-white/5 rounded-[40px] overflow-hidden bg-slate-950/40 backdrop-blur-3xl shadow-2xl shadow-primary/5">
-                <AgentChat
-                  title="MentorMed Premium"
-                  subtitle="Inteligência ENAZIZI em Tempo Real"
-                  icon={<Sparkles className="h-6 w-6 text-primary" />}
-                  welcomeMessage="Olá! Sou o MentorMed, seu núcleo pedagógico ENAZIZI. Estou pronto para transformar seu material em aprendizado profundo com foco em residência médica. Como vamos começar hoje? 🩺"
-                  placeholder="Inicie um caso clínico ou tire uma dúvida técnica..."
-                  functionName="mentor-chat"
-                  quickActions={quickActions}
-                  onSendRef={onSendRef}
-                />
+              <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col px-2 sm:px-6 lg:px-12">
+                <div className="flex-1 relative flex flex-col rounded-t-[40px] border-t border-x border-white/10 bg-black/40 backdrop-blur-[80px] shadow-2xl overflow-hidden transition-all duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+                  
+                  <AgentChat
+                    title="ENAZIZI Cognitive Engine"
+                    subtitle="Núcleo de Inteligência Médica Premium"
+                    icon={<Sparkles className="h-6 w-6 text-primary animate-pulse" />}
+                    welcomeMessage="Olá! Sou o MentorMed, seu núcleo pedagógico ENAZIZI. Estou pronto para transformar seu material em aprendizado profundo com foco em residência médica. Como vamos começar hoje? 🩺"
+                    placeholder="Inicie um caso clínico ou tire uma dúvida técnica..."
+                    functionName="mentor-chat"
+                    quickActions={quickActions}
+                    onSendRef={onSendRef}
+                  />
+                </div>
               </div>
             </motion.div>
           )}
