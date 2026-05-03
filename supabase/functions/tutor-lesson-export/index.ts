@@ -83,8 +83,8 @@ Deno.serve(async (req) => {
       case "notebooklm":
         content = renderNotebookLM(lesson, sc);
         break;
-      case "gemini":
-        content = renderGeminiPrompt(lesson, sc);
+      case "cinematic":
+        content = renderCinematicPrompt(lesson, sc);
         break;
       case "google_vids":
         content = renderGoogleVidsPrompt(lesson, sc);
