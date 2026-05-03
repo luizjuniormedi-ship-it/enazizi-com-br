@@ -8,10 +8,10 @@ const corsHeaders = {
 };
 
 // ═══ CONFIG ═══
-const AI_MODEL = "openai/gpt-5-mini";
-const IMAGE_MODEL = "openai/gpt-5-mini";
-const GLOBAL_TIMEOUT_MS = 45_000;
-const AGENT_TIMEOUT_MS = 30_000;
+const AI_MODEL = "google/gemini-2.5-flash";
+const IMAGE_MODEL = "google/gemini-2.5-flash-image";
+const GLOBAL_TIMEOUT_MS = 110_000;
+const AGENT_TIMEOUT_MS = 45_000;
 
 // ═══ TYPES ═══
 interface MnemonicRequest { tema: string; termos: string[]; estilo?: string; publico?: string; regenerate_image_only?: boolean; original_result_id?: string; auto_extract_terms?: boolean; }
