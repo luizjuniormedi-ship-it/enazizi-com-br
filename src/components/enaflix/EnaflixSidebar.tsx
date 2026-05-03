@@ -82,7 +82,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
     <Link
       to={to}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden",
+        "group relative z-10 flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden isolate cursor-pointer",
         active 
           ? "text-white" 
           : "text-white/40 hover:text-white"
