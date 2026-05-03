@@ -1,5 +1,5 @@
 import { memo, useMemo, useEffect, useState } from "react";
-import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info, Zap, Clock } from "lucide-react";
+import { User, Copy, Film, Sparkles, Play, AlertCircle, Activity, Info, Zap, Clock, Terminal } from "lucide-react";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -15,11 +15,14 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogTrigger
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import { TutorBlockRenderer } from "./blocks/TutorBlockRenderer";
+import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
@@ -161,6 +164,8 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
     });
   };
 
+  const { cleanedMarkdown, blocks } = useMemo(() => extractInlineTutorBlocks(msg.content), [msg.content]);
+
   return (
     <div className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
       {msg.role === "assistant" && (
@@ -246,8 +251,18 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     );
                   },
                 }}
-              >{linkifyBareUrls(msg.content)}</ReactMarkdown>
+              >{linkifyBareUrls(cleanedMarkdown)}</ReactMarkdown>
             </div>
+
+            {blocks.length > 0 && (
+              <div className="mt-4">
+                <TutorBlockRenderer 
+                  blocks={blocks} 
+                  conversationId={conversationId} 
+                  topic={topic}
+                />
+              </div>
+            )}
             <MultimediaControls text={msg.content} />
             <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
               <button onClick={() => onCopy(msg.content)} className="p-1.5 rounded-lg hover:bg-background/50 backdrop-blur-sm" title="Copiar">
@@ -289,6 +304,45 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     Análise Cognitiva & Lineage
                   </span>
                   <div className="flex gap-2">
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-6 text-[10px] gap-1 px-2">
+                          <Terminal className="h-3 w-3" /> Debug IA
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-2xl bg-slate-950 border-white/10 text-white max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2 text-primary">
+                            <Terminal className="h-5 w-5" />
+                            Modo Debug Pedagógico (Admin)
+                          </DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4 font-mono text-[10px]">
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground uppercase font-bold">Metadata da Mensagem</p>
+                            <div className="bg-white/5 p-2 rounded border border-white/10">
+                              <p>ConversationID: {conversationId || 'N/A'}</p>
+                              <p>Topic: {topic || 'N/A'}</p>
+                              <p>Blocks Found: {blocks.length}</p>
+                              <p>Tokens Estimated: {Math.ceil(msg.content.length / 4)}</p>
+                              <p>Model: GPT-5 (Standard)</p>
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground uppercase font-bold">Estrutura de Blocos</p>
+                            <div className="bg-white/5 p-2 rounded border border-white/10 whitespace-pre-wrap">
+                              {JSON.stringify(blocks, null, 2)}
+                            </div>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-muted-foreground uppercase font-bold">Conteúdo Original (Raw)</p>
+                            <div className="bg-white/5 p-2 rounded border border-white/10 whitespace-pre-wrap">
+                              {msg.content}
+                            </div>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                     <Button 
                       variant="ghost" 
                       size="sm" 
