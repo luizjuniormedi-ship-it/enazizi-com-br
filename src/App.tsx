@@ -326,6 +326,7 @@ const App = () => (
                   <Route path="render-queues" element={<CMERenderQueues />} />
                   <Route path="cme-observability" element={<CMEObservability />} />
                   <Route path="system-checklist" element={<SystemChecklist />} />
+                  <Route path="health" element={<SystemHealth />} />
                   <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
                   <Route path="builder/:id" element={<CinematicBuilder />} />
                 </Route>
@@ -372,6 +373,6 @@ const App = () => (
       </TooltipProvider>
     </AuthProvider>
   </QueryClientProvider>
-  </ErrorBoundary>
+  </GlobalErrorBoundary>
 );
 export default App;
