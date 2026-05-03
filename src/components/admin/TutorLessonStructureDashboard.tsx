@@ -125,6 +125,14 @@ export const TutorLessonStructureDashboard = () => {
     
     for (const f of failures) {
       try {
+        const eventType = f.status === "structuring" ? "lesson_structuring_recovered" : "lesson_structuring_retry";
+        
+        await supabase.from("tutor_lesson_events").insert({
+          lesson_id: f.id,
+          event_type: eventType,
+          metadata: { reason: "manual_reprocess", prev_status: f.status }
+        });
+
         await supabase.functions.invoke("tutor-lesson-structure", { body: { lesson_id: f.id } });
       } catch (e) {
         console.error("Erro reprocessando:", f.id, e);
