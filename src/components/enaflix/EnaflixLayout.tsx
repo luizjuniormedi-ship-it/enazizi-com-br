@@ -46,21 +46,11 @@ export function EnaflixLayout({ children }: Props) {
 
       {/* Main Content Area - Adjust padding if sidebar is hidden */}
       <main className={`${showSidebar ? 'lg:pl-64' : 'pl-0'} ${showTopNav ? 'pt-16' : ''} min-h-screen transition-all duration-700 pb-20 lg:pb-0 relative z-10`}>
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            transition={{ 
-              duration: 0.5, 
-              ease: [0.16, 1, 0.3, 1] // ease-out-expo
-            }}
-            className="w-full min-h-screen"
-          >
-            {children}
-          </motion.div>
-        </AnimatePresence>
+        {/* Route-level AnimatePresence is owned by CinematicRouteTransition.
+            Nested AnimatePresence here triggered spurious forwardRef warnings. */}
+        <div className="w-full min-h-screen">
+          {children}
+        </div>
       </main>
 
       {/* Vignette Overlay for extra depth */}
