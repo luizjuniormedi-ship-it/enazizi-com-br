@@ -109,6 +109,7 @@ const CognitiveShowcase = lazyWithRetry(() => import("./pages/dev/CognitiveShowc
 const AdminLessonsMemory = lazyWithRetry(() => import("./pages/admin/AdminLessonsMemory"), "AdminLessonsMemory");
 const TutorMemoryAdmin = lazyWithRetry(() => import("./pages/admin/TutorMemoryAdmin"), "TutorMemoryAdmin");
 const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"), "TelemetryAdmin");
+const TutorVideoRecommendations = lazyWithRetry(() => import("./pages/admin/TutorVideoRecommendations"), "TutorVideoRecommendations");
 const AIStudio = lazyWithRetry(() => import("./pages/admin/AIStudio"), "AIStudio");
 const MedicalReviewQueue = lazyWithRetry(() => import("./pages/admin/MedicalReviewQueue"), "MedicalReviewQueue");
 const MedicalGovernanceDashboard = lazyWithRetry(() => import("./pages/admin/MedicalGovernanceDashboard"), "MedicalGovernanceDashboard");
@@ -268,7 +269,8 @@ const App = () => (
                 <Route path="banca-readiness" element={<BancaReadiness />} />
                 <Route path="simulado-selection" element={<SimuladoSelectionTelemetry />} />
                  <Route path="simulado-selection/:id" element={<SimuladoSelectionRunDetail />} />
-                 <Route path="tutor-memory" element={<TutorMemoryAdmin />} />
+                  <Route path="tutor-memory" element={<TutorMemoryAdmin />} />
+                  <Route path="tutor-video-recommendations" element={<TutorVideoRecommendations />} />
                  <Route path="lessons-memory" element={<AdminLessonsMemory />} />
                   <Route path="telemetry" element={<TelemetryAdmin />} />
                   <Route path="ai-studio" element={<AIStudio />} />

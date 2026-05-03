@@ -567,9 +567,9 @@ export const useTutorCME = () => {
         return null;
       }
     },
-     findLessonByTopic: async (topic: string) => {
+     findLessonByTopic: async (topic: string, conversationId?: string) => {
        try {
-         const recommendation = await findRecommendedVideoForTutorContext(topic);
+         const recommendation = await findRecommendedVideoForTutorContext(topic, undefined, conversationId);
          if (recommendation.found) {
            return {
              id: recommendation.lessonId,
