@@ -394,24 +394,30 @@ const SmartPlanner = () => {
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <CinematicHero
-        module="planner"
-        eyebrow={
-          <>
-            <Brain className="h-3.5 w-3.5" />
-            Inteligência adaptativa
-          </>
-        }
-        title="Planner Estratégico"
-        subtitle="Sua trajetória até a aprovação — fases, prioridades e revisões orquestradas em tempo real."
-        actions={
-          <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)} className="gap-2">
-            <RefreshCw className="h-4 w-4" />
-            Recalcular cronograma
+    <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
+      <div className="px-4 sm:px-8 lg:px-14">
+        <div className="flex items-center gap-2 mb-4">
+          <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 text-white/40 hover:text-white">
+            <ChevronLeft className="h-4 w-4" /> Voltar
           </Button>
-        }
-      />
+        </div>
+        <EnaflixSectionTitle
+          kicker="INTELIGÊNCIA ADAPTATIVA"
+          title={
+            <>
+              Planner <span className="gradient-text">Estratégico</span>
+            </>
+          }
+          subtitle="Sua trajetória até a aprovação — fases, prioridades e revisões orquestradas em tempo real."
+          action={
+            <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)} className="gap-2">
+              <RefreshCw className="h-4 w-4" /> Recalcular Plano
+            </Button>
+          }
+        />
+      </div>
+
 
       {/* Reprocess Panel */}
       {showReprocess && (
