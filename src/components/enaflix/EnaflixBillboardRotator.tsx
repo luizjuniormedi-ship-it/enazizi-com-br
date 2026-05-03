@@ -5,7 +5,7 @@ import { EnaflixBillboard } from "./EnaflixBillboard";
 
 interface Props {
   /** Lista de módulos a alternar no billboard (ordem importa) */
-  modules: Array<{ module: EnaflixModule; eyebrow: string }>;
+  modules: Array<{ module: EnaflixModule; eyebrow: string; customTitle?: string; customDesc?: string }>;
   /** Intervalo de rotação em ms (0 desativa) */
   intervalMs?: number;
   onNavigate?: (m: EnaflixModule) => void;
