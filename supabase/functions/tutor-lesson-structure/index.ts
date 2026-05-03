@@ -313,7 +313,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
       body: JSON.stringify({
         model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: "hi" }],
-        max_completion_tokens: 1
+        max_completion_tokens: 10
       })
     });
     const aiOk = aiResp.ok;
