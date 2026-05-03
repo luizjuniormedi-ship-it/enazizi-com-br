@@ -51,6 +51,8 @@ export function EnaflixBillboardRotator({ modules, intervalMs = 9000, onNavigate
       <EnaflixBillboard
         module={modules[0].module}
         eyebrow={modules[0].eyebrow}
+        customTitle={modules[0].customTitle}
+        customDesc={modules[0].customDesc}
         onNavigate={onNavigate}
       />
     );
