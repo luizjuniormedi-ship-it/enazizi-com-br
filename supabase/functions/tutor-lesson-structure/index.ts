@@ -476,7 +476,6 @@ const STRUCTURE_TOOL = {
         },
         notebooklm_prompt: { type: "string" },
         cinematic_video_prompt: { type: "string" },
-        google_vids_prompt: { type: "string" },
       },
       required: ["title", "chapters", "video_script", "notebooklm_prompt"],
     },
