@@ -122,7 +122,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-[#0a0a0e] relative">
+    <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-[#050508] relative">
       <EnaflixBackgroundFX intensity="subtle" />
       
       {/* Left panel - Hero */}
