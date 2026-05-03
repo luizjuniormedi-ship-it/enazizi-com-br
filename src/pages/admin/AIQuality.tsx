@@ -79,10 +79,10 @@ export default function AIQuality() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Latência Média" 
-          value={`${data.avg_latency_ms}ms`} 
+          value={`${data?.avg_latency_ms || 0}ms`} 
           description="Tempo de resposta do Tutor"
           icon={<Zap className="h-5 w-5 text-yellow-500" />}
-          trend={data.avg_latency_ms > 5000 ? "Crítico" : "Normal"}
+          trend={data?.avg_latency_ms > 5000 ? "Crítico" : "Normal"}
         />
         <StatCard 
           title="Taxa de Fallback" 
