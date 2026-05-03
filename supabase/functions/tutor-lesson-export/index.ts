@@ -206,7 +206,7 @@ ${(sc.flashcard_suggestions ?? [])
 ## Prompt para NotebookLM
 ${sc.notebooklm_prompt ?? "Gerar resumo, áudio guiado e mapa de estudo fiel ao conteúdo acima."}
 
-## Prompt para Gemini / Google Vids
+## Prompt para Vídeo GPT-5 / Google Vids
 ${sc.gemini_video_prompt ?? "—"}
 
 ## Referências
@@ -219,7 +219,7 @@ ${bullet(sc.quality_notes)}
 
 function renderGeminiPrompt(lesson: any, sc: any): string {
   const vs = sc.video_script ?? {};
-  return `# Prompt — Gemini Video
+  return `# Prompt — Vídeo GPT-5
 
 Título: ${sc.title ?? lesson.title}
 Tema: ${sc.subject ?? "—"} / ${sc.topic ?? "—"}

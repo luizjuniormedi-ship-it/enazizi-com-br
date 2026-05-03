@@ -312,7 +312,7 @@ Se não encontrar questões válidas de ${specialty}, retorne: {"questions": []}
 
   try {
     const response = await aiFetch({
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-5-mini",
       messages: [
         { role: "system", content: "Você extrai questões de provas de residência médica a partir de conteúdo web. Responda APENAS com JSON válido, sem markdown, sem explicações adicionais." },
         { role: "user", content: prompt },

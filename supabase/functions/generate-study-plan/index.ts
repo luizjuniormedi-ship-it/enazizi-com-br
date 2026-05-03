@@ -186,10 +186,10 @@ REGRAS OBRIGATÓRIAS:
     if (!aiResp.ok) {
       const errText = await aiResp.text();
       console.error("AI error:", aiResp.status, errText);
-      logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "google/gemini-3-flash-preview", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast", errorMessage: `status ${aiResp.status}` }).catch(() => {});
+      logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "openai/gpt-5-mini", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast", errorMessage: `status ${aiResp.status}` }).catch(() => {});
       return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), { status: aiResp.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "google/gemini-3-flash-preview", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
+    logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "openai/gpt-5-mini", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
 
     const aiData = await aiResp.json();
     const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");

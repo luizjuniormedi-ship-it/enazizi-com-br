@@ -67,7 +67,7 @@ async function processTextToQuestions(
 
   const processChunk = async (chunk: string): Promise<number> => {
     const response = await aiFetch({
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-5-mini",
       messages: [
         {
           role: "system",

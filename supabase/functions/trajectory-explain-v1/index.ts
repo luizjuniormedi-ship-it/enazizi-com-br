@@ -16,7 +16,7 @@ interface ExplainBody {
 }
 
 const LOVABLE_AI_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const MODEL = "google/gemini-3-flash-preview";
+const MODEL = "openai/gpt-5-mini";
 
 function deterministicNarrative(snap: any, risks: any[], recs: any[]) {
   const overall = Number(snap.overall_score ?? 0);

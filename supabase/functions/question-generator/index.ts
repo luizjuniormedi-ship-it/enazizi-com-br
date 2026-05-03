@@ -554,7 +554,7 @@ ${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) 
     logAiUsage({
       userId: "system-question-gen",
       functionName: "question-generator",
-      modelUsed: "google/gemini-3-flash-preview",
+      modelUsed: "openai/gpt-5-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",

@@ -578,7 +578,7 @@ Responda APENAS em JSON válido.`,
     // Call AI
     const startMs = Date.now();
     const aiResp = await aiFetch({
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-5-mini",
       messages,
       timeoutMs: 60000,
     });
@@ -587,7 +587,7 @@ Responda APENAS em JSON válido.`,
     logAiUsage({
       userId: user.id,
       functionName: "clinical-simulation",
-      modelUsed: "google/gemini-2.5-flash",
+      modelUsed: "openai/gpt-5-mini",
       success: aiResp.ok,
       responseTimeMs: elapsed,
       cacheHit: false,

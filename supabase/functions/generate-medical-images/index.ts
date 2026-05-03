@@ -43,7 +43,7 @@ async function generateMedicalImage(prompt: string): Promise<string | null> {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
+        model: "openai/gpt-5-mini-image",
         messages: [{ role: "user", content: prompt }],
         modalities: ["image", "text"],
       }),

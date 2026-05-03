@@ -88,7 +88,7 @@ Estes são artigos REAIS indexados no PubMed. NÃO invente artigos.`;
     logAiUsage({
       userId: "system-summarizer",
       functionName: "content-summarizer",
-      modelUsed: "google/gemini-3-flash-preview",
+      modelUsed: "openai/gpt-5-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       cacheHit: false,

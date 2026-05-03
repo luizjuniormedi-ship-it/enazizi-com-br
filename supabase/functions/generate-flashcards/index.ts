@@ -177,7 +177,7 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
 
     const startMs = Date.now();
     const response = await aiFetch({
-      model: "google/gemini-3-flash-preview",
+      model: "openai/gpt-5-mini",
       messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
       stream: true,
       maxTokens: 8192,
@@ -187,7 +187,7 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
     logAiUsage({
       userId,
       functionName: "generate-flashcards",
-      modelUsed: "google/gemini-3-flash-preview",
+      modelUsed: "openai/gpt-5-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",

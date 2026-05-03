@@ -232,7 +232,7 @@ export function LessonDetailDrawer({
 
               <TabsContent value="prompts" className="space-y-5 mt-0">
                 {sc?.gemini_prompt && (
-                  <Section title="Prompt Gemini">
+                  <Section title="Prompt Vídeo GPT-5">
                     <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.gemini_prompt}</pre>
                   </Section>
                 )}
@@ -270,7 +270,7 @@ export function LessonDetailDrawer({
                 <Section title="Exportações de Vídeo">
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
-                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Gemini" onClick={() => onExport(lesson, "gemini")} disabled={!isStructured} />
+                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Vídeo GPT-5" onClick={() => onExport(lesson, "gemini")} disabled={!isStructured} />
                     <ActionPill icon={<Film className="h-4 w-4" />} label="Google Vids" onClick={() => onExport(lesson, "google_vids")} disabled={!isStructured} />
                     <ActionPill icon={<Download className="h-4 w-4" />} label="Markdown" onClick={() => onExport(lesson, "markdown")} disabled={!isStructured} />
                   </div>

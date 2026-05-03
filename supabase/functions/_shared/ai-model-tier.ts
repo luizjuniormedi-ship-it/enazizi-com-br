@@ -9,9 +9,9 @@
 export type ModelTier = "lite" | "standard" | "pro";
 
 const TIER_MODELS: Record<ModelTier, string> = {
-  lite: "google/gemini-2.5-flash-lite",
-  standard: "google/gemini-3-flash-preview",
-  pro: "google/gemini-2.5-pro",
+  lite: "openai/gpt-5-mini",
+  standard: "openai/gpt-5-mini",
+  pro: "openai/gpt-5",
 };
 
 /** Get the model for a given tier */

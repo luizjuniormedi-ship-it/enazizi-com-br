@@ -13,10 +13,8 @@ const OPENAI_MAX_TOKENS: Record<string, number> = {
 };
 
 const MODEL_MAP: Record<string, string> = {
-  "google/gemini-3-flash-preview": "gpt-4o-mini",
-  "google/gemini-2.5-flash": "gpt-4o-mini",
-  "google/gemini-2.5-pro": "gpt-4o",
-  "google/gemini-2.5-flash-lite": "gpt-4o-mini",
+  "openai/gpt-5-mini": "gpt-4o-mini",
+  "openai/gpt-5": "gpt-4o",
 };
 
 // Retryable status codes (transient errors)
@@ -124,7 +122,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  const lovableModel = options.model || "google/gemini-3-flash-preview";
+  const lovableModel = options.model || "openai/gpt-5-mini";
   const maxRetries = options.maxRetries ?? 2;
   const timeoutMs = options.timeoutMs ?? 45000;
 

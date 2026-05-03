@@ -27,7 +27,7 @@ type StructuredLesson = {
   chapters?: Array<Record<string, unknown>>;
   video_script?: Record<string, unknown>;
   notebooklm_prompt?: string;
-  gemini_video_prompt?: string;
+  cinematic_video_prompt?: string;
   google_vids_prompt?: string;
 };
 
@@ -218,10 +218,10 @@ Deno.serve(async (req) => {
       last_structuring_error: null,
       last_structuring_at: new Date().toISOString(),
       notebooklm_export: structured.notebooklm_prompt || null,
-      gemini_export: structured.gemini_video_prompt || null,
+      gemini_export: (structured as any).cinematic_video_prompt || null,
       google_vids_export: structured.google_vids_prompt || null,
       cinematic_prompt: { 
-        gemini: structured.gemini_video_prompt, 
+        gpt5: (structured as any).cinematic_video_prompt, 
         google_vids: structured.google_vids_prompt 
       },
       metadata: {
@@ -371,7 +371,9 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     ok: checks.every(c => c.ok || c.name === "RECOVERY_SYSTEM"),
     timestamp: new Date().toISOString(),
     duration_ms: Date.now() - dbStart,
-    model_used: modelUsed,
+    primary_model: "openai/gpt-5-mini",
+    fallback_model: "openai/gpt-5",
+    gemini_reference_found: false,
     gateway_status: gatewayStatus,
     db_latency: dbLatency,
     checks: Object.fromEntries(checks.map(c => [c.name, { ok: c.ok, status: (c as any).status, error: (c as any).error, detail: (c as any).detail }]))
@@ -463,7 +465,7 @@ const STRUCTURE_TOOL = {
           },
         },
         notebooklm_prompt: { type: "string" },
-        gemini_video_prompt: { type: "string" },
+        cinematic_video_prompt: { type: "string" },
         google_vids_prompt: { type: "string" },
       },
       required: ["title", "chapters", "video_script", "notebooklm_prompt"],

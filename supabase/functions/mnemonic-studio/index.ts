@@ -16,7 +16,7 @@ function getEnv(name: string): string {
 async function callAI(
   apiKey: string,
   prompt: string,
-  model = "google/gemini-2.5-flash",
+  model = "openai/gpt-5-mini",
   temperature = 0.5
 ): Promise<{ ok: boolean; text?: string; status?: number }> {
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -333,7 +333,7 @@ serve(async (req) => {
           method: "POST",
           headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
           body: JSON.stringify({
-            model: "google/gemini-3.1-flash-image-preview",
+            model: "openai/gpt-5-mini",
             messages: [{ role: "user", content: lastGenerated.prompt_imagem }],
             modalities: ["image", "text"],
           }),
