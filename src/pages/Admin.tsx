@@ -168,6 +168,19 @@ const Admin = () => {
     return data;
   }, [session, API_URL]);
 
+  const loadAuditLog = useCallback(async () => {
+    if (!session) return;
+    setAuditLoading(true);
+    try {
+      const res = await callAdmin({ action: "get_audit_log", limit: 50 });
+      setAuditLogs(res.logs || []);
+    } catch {
+      toast({ title: "Erro", description: "Erro ao carregar log de auditoria", variant: "destructive" });
+    } finally {
+      setAuditLoading(false);
+    }
+  }, [session, callAdmin, toast]);
+
   const loadData = useCallback(async () => {
     if (!session) return;
     setLoading(true);
@@ -185,7 +198,10 @@ const Admin = () => {
     }
   }, [session, callAdmin, toast]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { 
+    loadData(); 
+    loadAuditLog();
+  }, [loadData, loadAuditLog]);
 
   const handleAction = useCallback(async (userId: string, fn: () => Promise<void>) => {
     setActionLoading(userId);
