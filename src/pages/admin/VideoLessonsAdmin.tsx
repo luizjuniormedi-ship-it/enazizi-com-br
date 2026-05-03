@@ -25,7 +25,9 @@ import {
   ShieldAlert,
   Film,
   Sparkles,
-  Play
+  Play,
+  Settings,
+  Database
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -63,6 +65,8 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { motion } from "framer-motion";
 
 const VideoLessonsAdmin = () => {
   const navigate = useNavigate();
