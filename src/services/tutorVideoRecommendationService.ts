@@ -40,7 +40,6 @@ export async function logVideoRecommendationEvent(
     }
 
     // Persistência em telemetry_events
-    // session_id é obrigatório no schema
     const sessionId = (payload.session_id || payload.conversationId || payload.userId || user?.id || 'anonymous') as string;
 
     await (supabase.from('telemetry_events') as any).insert({
@@ -70,10 +69,10 @@ export function normalizeMedicalTerm(term: string): string[] {
     "ira": ["insuficiencia renal aguda", "injuria renal aguda"],
     "insuficiencia renal": ["ira", "injuria renal"],
     "has": ["hipertensao arterial", "pressao alta"],
-    "fa": ["fibrilacao atrial"],
+    "fa": ["fibrilacao atrial", "arritmia"],
     "fibrilacao atrial": ["fa", "arritmia supraventricular"],
-    "tep": ["tromboembolismo pulmonar", "embolia pulmonar"],
-    "iam": ["infarto agudo do miocardio"],
+    "tep": ["tromboembolismo pulmonar", "embolia pulmonar", "tromboembolismo"],
+    "iam": ["infarto agudo do miocardio", "infarto", "miocardio", "coronariana"],
     "ic": ["insuficiencia cardiaca"],
     "icc": ["insuficiencia cardiaca congestiva"],
     "pericardite": ["pericardio", "tamponamento cardiaco"],
@@ -113,7 +112,6 @@ export function termMatches(haystack: string, term: string): boolean {
 function hasValidVideo(url?: string | null): boolean {
   if (!url) return false;
   const u = String(url).trim().toLowerCase();
-  // Player interno ou URLs válidas (Vimeo, YouTube, Cloudfront, etc)
   return u.length > 10 && (u.includes('http') || u.includes('player'));
 }
 
@@ -124,7 +122,6 @@ export async function findRecommendedVideoForTutorContext(
 ): Promise<RecommendedVideo> {
   const terms = normalizeMedicalTerm(topic);
   
-  // Persistir início da busca
   logVideoRecommendationEvent('search_started', { 
     topic, 
     terms, 
@@ -134,16 +131,18 @@ export async function findRecommendedVideoForTutorContext(
 
   const results: RecommendedVideo[] = [];
 
-  // 1) ai_video_lessons (Publicadas e não ocultas)
+  // 1) ai_video_lessons
   try {
-    const { data: aiLessons } = await supabase
-      .from("ai_video_lessons")
+    const { data: aiLessons } = await (supabase.from("ai_video_lessons") as any)
       .select("*")
       .eq('status', 'published')
       .order('is_gold_content', { ascending: false });
 
     if (aiLessons) {
       aiLessons.forEach((lesson: any) => {
+        // Final security check
+        if (lesson.status !== 'published') return;
+
         let score = 0;
         const lTitle = (lesson.title || "").toLowerCase();
         const lTopic = (lesson.topic || "").toLowerCase();
@@ -151,7 +150,7 @@ export async function findRecommendedVideoForTutorContext(
         terms.forEach(term => {
           if (termMatches(lTitle, term)) score += 40;
           if (termMatches(lTopic, term)) score += 30;
-          if (lTopic === term) score += 30; // Bonus por match exato
+          if (lTopic === term) score += 30;
         });
 
         if (score < 40) return;
@@ -183,7 +182,7 @@ export async function findRecommendedVideoForTutorContext(
     console.error("[TutorVideoService] Erro em ai_video_lessons:", e);
   }
 
-  // 2) tutor_lesson_memory (Publicadas, não excluídas, não ocultas)
+  // 2) tutor_lesson_memory
   try {
     const { data: memoryLessons } = await supabase
       .from("tutor_lesson_memory")
@@ -243,7 +242,6 @@ export async function findRecommendedVideoForTutorContext(
     return { found: false, confidence: 0 };
   }
 
-  // Pegar o melhor match
   const bestMatch = results.sort((a, b) => b.confidence - a.confidence)[0];
   
   logVideoRecommendationEvent('found', {
