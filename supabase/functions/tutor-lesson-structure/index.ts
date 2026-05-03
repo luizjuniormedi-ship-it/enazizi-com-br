@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const MAX_PER_HOUR = 100;
 const MIN_QUALITY = 50;
-const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
+const STUCK_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
 
 type StructuredLesson = {
   title: string;
@@ -33,7 +33,7 @@ type StructuredLesson = {
 
 Deno.serve(async (req) => {
   try {
-    console.log("Tutor Lesson Structure v2.4 (OpenAI 5 Ready)");
+    console.log("Tutor Lesson Structure v2.5 (Production Hardened)");
     if (req.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders });
     }
@@ -66,7 +66,6 @@ Deno.serve(async (req) => {
       return await runHealthcheck(admin, lovableKey);
     }
 
-
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(supabaseUrl, anonKey!, {
       global: { headers: { Authorization: authHeader } },
@@ -80,8 +79,6 @@ Deno.serve(async (req) => {
         message: "Sessão expirada ou inválida." 
       }, 401);
     }
-
-
 
     const lessonId: string | undefined = body?.lesson_id;
     if (!lessonId) {
@@ -157,6 +154,7 @@ Deno.serve(async (req) => {
     let modelUsed = "";
     let fallbackUsed = false;
     let gatewayStatus: number | null = null;
+    let parsingStrategy = "none";
 
     try {
       const result = await callAIWithFallback(lovableKey, lesson, ctx);
@@ -164,6 +162,7 @@ Deno.serve(async (req) => {
       modelUsed = result.model;
       fallbackUsed = result.fallbackUsed;
       gatewayStatus = result.status;
+      parsingStrategy = result.parsingStrategy || "tool_call";
     } catch (e: any) {
       aiError = e.message;
       gatewayStatus = e.status || 500;
@@ -210,8 +209,8 @@ Deno.serve(async (req) => {
     // NEVER update topic, subject, subtopic, user_id, source_session_id with AI values directly
     const updateData = {
       status: finalStatus,
-      title: structured.title || lesson.title || "Aula sem título",
-      subtitle: structured.subtitle || lesson.subtitle || null,
+      title: (structured.title || lesson.title || "Aula sem título").slice(0, 255),
+      subtitle: structured.subtitle ? structured.subtitle.slice(0, 255) : null,
       summary: buildSummary(structured),
       estimated_duration_minutes: structured.estimated_duration_minutes ?? null,
       structured_content: structured as unknown as Record<string, unknown>,
@@ -236,6 +235,8 @@ Deno.serve(async (req) => {
         attempt_count: currentAttempt,
         duration_ms: Date.now() - startTime,
         gateway_status: gatewayStatus,
+        parsing_strategy: parsingStrategy,
+        score: score,
         finished_at: new Date().toISOString()
       }
     };
@@ -263,7 +264,8 @@ Deno.serve(async (req) => {
       duration_ms: Date.now() - startTime,
       original_topic: lesson.topic,
       ai_returned_topic: structured.topic,
-      topic_preserved: true
+      topic_preserved: true,
+      parsing_strategy: parsingStrategy
     });
 
     return json({
@@ -288,10 +290,13 @@ Deno.serve(async (req) => {
 
 async function runHealthcheck(admin: any, lovableKey: string) {
   const checks = [];
+  const results: any = {};
   
   // 1) DB Access Check
+  const dbStart = Date.now();
   const { data: dbCheck, error: dbError } = await admin.from("tutor_lesson_memory").select("id").limit(1);
-  checks.push({ name: "DB_ACCESS", ok: !dbError, error: dbError?.message });
+  const dbLatency = Date.now() - dbStart;
+  checks.push({ name: "DB_ACCESS", ok: !dbError, error: dbError?.message, latency: dbLatency });
 
   // 2) Tables check
   const { error: eventTableError } = await admin.from("tutor_lesson_events").select("id").limit(1);
@@ -302,7 +307,9 @@ async function runHealthcheck(admin: any, lovableKey: string) {
   checks.push({ name: "SERVICE_ROLE", ok: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") });
   checks.push({ name: "LOVABLE_API_KEY", ok: !!lovableKey });
 
-  // 4) AI Gateway check (Simple POST test)
+  // 4) AI Gateway check (Real GPT-5-mini call)
+  let gatewayStatus = 0;
+  let modelUsed = "openai/gpt-5-mini";
   try {
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -311,56 +318,81 @@ async function runHealthcheck(admin: any, lovableKey: string) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openai/gpt-5-mini",
+        model: modelUsed,
         messages: [{ role: "user", content: "hi" }],
-        max_completion_tokens: 10
+        max_completion_tokens: 5
       })
     });
+    gatewayStatus = aiResp.status;
     const aiOk = aiResp.ok;
     let aiErr = null;
     if (!aiOk) {
       aiErr = await aiResp.text();
     }
-    checks.push({ name: "Lovable AI Gateway", ok: aiOk, status: aiResp.status, error: aiErr });
+    checks.push({ name: "Lovable AI Gateway", ok: aiOk, status: gatewayStatus, error: aiErr });
   } catch (e) {
     checks.push({ name: "AI Gateway Reachability", ok: false, error: (e as Error).message });
   }
 
-
-
-  // 5) Stuck Lessons Check
-  const timeoutThreshold = new Date(Date.now() - TIMEOUT_MS).toISOString();
-  const { count: stuckCount } = await admin
+  // 5) Automatic Recovery / Stuck Lessons Detection
+  const timeoutThreshold = new Date(Date.now() - STUCK_THRESHOLD_MS).toISOString();
+  const { data: stuckLessons, error: stuckErr } = await admin
     .from("tutor_lesson_memory")
-    .select("id", { count: "exact", head: true })
+    .select("id, topic")
     .eq("status", "structuring")
     .lt("last_structuring_at", timeoutThreshold);
   
+  if (stuckLessons && stuckLessons.length > 0) {
+    console.log(`Detected ${stuckLessons.length} stuck lessons. Recovering...`);
+    for (const lesson of stuckLessons) {
+      await admin
+        .from("tutor_lesson_memory")
+        .update({ 
+          status: "needs_adjustment", 
+          last_structuring_error: "lesson_structure_timeout_detected" 
+        })
+        .eq("id", lesson.id);
+      
+      await logEvent(admin, lesson.id, "system", "lesson_structure_timeout_detected", {
+        topic: lesson.topic,
+        threshold_ms: STUCK_THRESHOLD_MS
+      });
+    }
+  }
+
   checks.push({ 
-    name: "NO_STUCK_LESSONS", 
-    ok: (stuckCount ?? 0) === 0, 
-    detail: `${stuckCount} stuck` 
+    name: "RECOVERY_SYSTEM", 
+    ok: !stuckErr, 
+    detail: stuckLessons ? `${stuckLessons.length} recovered` : "0 stuck" 
   });
 
   return json({
     success: true,
-    ok: checks.every(c => c.ok || c.name === "NO_STUCK_LESSONS"), // Stuck lessons don't necessarily mean the service is down
+    ok: checks.every(c => c.ok || c.name === "RECOVERY_SYSTEM"),
     timestamp: new Date().toISOString(),
-    checks: Object.fromEntries(checks.map(c => [c.name, { ok: c.ok, status: (c as any).status, error: (c as any).error }]))
+    duration_ms: Date.now() - dbStart,
+    model_used: modelUsed,
+    gateway_status: gatewayStatus,
+    db_latency: dbLatency,
+    checks: Object.fromEntries(checks.map(c => [c.name, { ok: c.ok, status: (c as any).status, error: (c as any).error, detail: (c as any).detail }]))
   });
 }
 
 
 async function logEvent(admin: any, lessonId: string, actorId: string, eventType: string, metadata: any) {
-  return await admin.from("tutor_lesson_events").insert([{
-    lesson_id: lessonId,
-    actor_id: actorId,
-    event_type: eventType,
-    metadata: {
-      ...metadata,
-      timestamp: new Date().toISOString()
-    }
-  }]);
+  try {
+    return await admin.from("tutor_lesson_events").insert([{
+      lesson_id: lessonId,
+      actor_id: actorId === "system" ? "00000000-0000-0000-0000-000000000000" : actorId,
+      event_type: eventType,
+      metadata: {
+        ...metadata,
+        timestamp: new Date().toISOString()
+      }
+    }]);
+  } catch (e) {
+    console.error("Telemetry failed:", e);
+  }
 }
 
 function json(b: unknown, status = 200) {
@@ -448,11 +480,16 @@ async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<strin
     const model = models[i];
     try {
       const result = await callAI(apiKey, lesson, ctx, model);
-      if (result.data) return { data: result.data, model, fallbackUsed: i > 0, status: result.status };
+      if (result.data) return { 
+        data: result.data, 
+        model, 
+        fallbackUsed: i > 0, 
+        status: result.status,
+        parsingStrategy: result.parsingStrategy
+      };
     } catch (e) {
       lastError = (e as Error).message;
       lastStatus = (e as any).status || 500;
-      // If rate limited, don't fallback immediately, maybe it's global
       if (lastStatus === 429) throw e;
     }
   }
@@ -460,10 +497,11 @@ async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<strin
   throw new Error(lastError || "AI failed all models");
 }
 
-async function callAI(apiKey: string, lesson: any, ctx: Record<string, unknown>, model: string): Promise<{ data: StructuredLesson | null, status: number }> {
+async function callAI(apiKey: string, lesson: any, ctx: Record<string, unknown>, model: string): Promise<{ data: StructuredLesson | null, status: number, parsingStrategy: string }> {
   const systemPrompt = `Você é um professor especialista da plataforma ENAZIZI/ENAFLIX. pt-BR.
 Regra de Ouro: Preserve o tema médico original "${lesson.topic}".
-Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o tema principal não será alterado.`;
+Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o tema principal não será alterado.
+Sempre responda usando a ferramenta publish_lesson_structure.`;
 
   const userPrompt = `Aula: ${lesson.topic} (${lesson.subject}). Contexto: ${JSON.stringify(ctx).slice(0, 4000)}`;
 
@@ -492,27 +530,61 @@ Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o
   }
 
   const data = await resp.json();
-  const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
+  const choice = data?.choices?.[0];
+  const toolCall = choice?.message?.tool_calls?.[0];
+  const args = toolCall?.function?.arguments;
+  
   let parsed = null;
-  try {
-    if (args) parsed = JSON.parse(args);
-  } catch (e) {
-    console.error("Failed to parse tool arguments:", e, "Raw:", args);
+  let strategy = "tool_call";
+
+  if (args) {
+    try {
+      parsed = JSON.parse(args);
+    } catch (e) {
+      console.error("Tool parse fail, trying regex fallback");
+      const jsonMatch = args.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+          strategy = "regex_fallback";
+        } catch (inner) {
+          console.error("Regex fallback failed");
+        }
+      }
+    }
   }
-  return { data: parsed, status: resp.status };
+
+  // Final fallback: check content for raw JSON if tool_call was missed
+  if (!parsed && choice?.message?.content) {
+    const content = choice.message.content;
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+        strategy = "content_json_fallback";
+      } catch (e) {
+        console.error("Content JSON parse failed");
+      }
+    }
+  }
+
+  return { data: parsed, status: resp.status, parsingStrategy: strategy };
 }
 
 function computeQualityScore(s: StructuredLesson): number {
   let score = 0;
+  if (!s) return 0;
   if (s.title) score += 20;
   if (s.learning_objectives?.length) score += 20;
   if (s.chapters && s.chapters.length >= 2) score += 30;
-  if (s.video_script?.narration) score += 30;
+  if (s.video_script?.narration || (s.video_script as any)?.content) score += 30;
   return score;
 }
 
 function buildSummary(s: StructuredLesson): string {
-  return s.lay_explanation || s.technical_explanation || s.title || "";
+  const sum = s.lay_explanation || s.technical_explanation || s.title || "";
+  return sum.slice(0, 1000); // Protection against massive payloads
 }
+
 
 
