@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
 import { ErrorThemeCard } from "@/components/enaflix/ErrorThemeCard";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { cn } from "@/lib/utils";
+
 
 const ErrorBankWeeklyChart = lazy(() => import("@/components/error-bank/ErrorBankWeeklyChart"));
 
