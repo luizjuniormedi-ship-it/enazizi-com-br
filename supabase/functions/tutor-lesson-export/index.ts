@@ -217,9 +217,9 @@ ${bullet(sc.quality_notes)}
 `;
 }
 
-function renderGeminiPrompt(lesson: any, sc: any): string {
+function renderCinematicPrompt(lesson: any, sc: any): string {
   const vs = sc.video_script ?? {};
-  return `# Prompt — Vídeo GPT-5
+  return `# Prompt — Vídeo Cinematográfico (OpenAI GPT-5)
 
 Título: ${sc.title ?? lesson.title}
 Tema: ${sc.subject ?? "—"} / ${sc.topic ?? "—"}
