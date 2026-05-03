@@ -1,234 +1,151 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useEducationalMemory } from "@/hooks/useEducationalMemory";
 import { EnaflixOverlayNav } from "@/components/enaflix/EnaflixOverlayNav";
-import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
-import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionRowVideo } from "@/components/enaflix/EnaflixSectionRowVideo";
 import { useNavigate } from "react-router-dom";
-import { Brain, History, Star, Video, FileText, Search, Filter, Clock } from "lucide-react";
+import { Brain, History, Star, Video, FileText, Search, Filter, Clock, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
 export default function MyLessonsPage() {
   const navigate = useNavigate();
   const { memory, isLoading } = useEducationalMemory();
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     document.title = "Minhas Aulas — ENAFLIX";
   }, []);
 
-  const continueLessons = memory.filter(m => m.status === 'published' && !m.archived).slice(0, 10);
-  const favorites = memory.filter(m => m.is_favorite);
-  const inProduction = memory.filter(m => ['pending_review', 'in_production', 'ready_to_publish'].includes(m.status));
-  const otherLessons = memory.filter(m => m.status === 'published' && !m.is_favorite);
+  const lessons = memory.map(m => ({
+    ...m,
+    specialty: m.subject || "Geral",
+    duration_seconds: m.duration || 900,
+    progress: m.status === 'published' ? 100 : 0
+  }));
 
+  const filteredLessons = lessons.filter(l => 
+    l.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    l.specialty.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const continueLessons = filteredLessons.filter(m => m.status === 'published' && !m.archived).slice(0, 10);
+  const favorites = filteredLessons.filter(m => m.is_favorite);
+  const inProduction = filteredLessons.filter(m => ['pending_review', 'in_production', 'ready_to_publish'].includes(m.status));
+  const library = filteredLessons.filter(m => m.status === 'published' && !m.is_favorite);
 
   const handleClose = () => navigate("/dashboard");
 
   return (
-    <div className="min-h-screen bg-[#0a0a12] text-white relative overflow-x-hidden">
-      <div className="fixed inset-0 z-0 pointer-events-none">
-        <EnaflixAmbientParticles count={20} hue="violet" />
-      </div>
+    <div className="min-h-screen bg-[#050508] text-white relative overflow-x-hidden">
+      <EnaflixBackgroundFX intensity="medium" />
 
       <EnaflixOverlayNav onClose={handleClose} />
 
-      <main className="pt-24 pb-20 px-4 sm:px-8 lg:px-14 relative z-10">
-        <header className="mb-12">
-          <div className="flex items-center gap-3 mb-2">
-            <Brain className="w-8 h-8 text-primary animate-pulse" />
-            <h1 className="text-4xl font-black tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-              Minha Memória Educacional
-            </h1>
-          </div>
-          <p className="text-white/50 text-lg max-w-2xl">
-            Todas as suas aulas, sessões do tutor e conteúdos gerados pela IA organizados em um só lugar.
-          </p>
-        </header>
-
-        <section className="space-y-16">
-          {/* Continuar Estudando */}
-          {continueLessons.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <History className="w-5 h-5 text-blue-400" />
-                <h2 className="text-2xl font-bold">Continuar Estudando</h2>
+      <main className="pt-24 pb-20 px-4 sm:px-8 lg:px-14 relative z-10 space-y-16">
+        
+        {/* Header Hero Section */}
+        <header className="relative py-10">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="flex flex-col md:flex-row md:items-end justify-between gap-8"
+          >
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-2xl bg-primary/20 ring-1 ring-primary/30 shadow-lg shadow-primary/10">
+                  <Brain className="w-8 h-8 text-primary" />
+                </div>
+                <Badge variant="outline" className="bg-white/5 border-white/10 text-primary font-black tracking-widest text-[10px] uppercase py-1">
+                  Cloud Memory v2.4
+                </Badge>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {continueLessons.map(lesson => (
-                  <LessonCard key={lesson.id} lesson={lesson} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Favoritos */}
-          {favorites.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                <h2 className="text-2xl font-bold">Favoritas</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {favorites.map(lesson => (
-                  <LessonCard key={lesson.id} lesson={lesson} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Em Produção */}
-          {inProduction.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-amber-400" />
-                <h2 className="text-2xl font-bold">Aulas em Produção</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {inProduction.map(lesson => (
-                  <LessonCard key={lesson.id} lesson={lesson} />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Outras Aulas */}
-          {otherLessons.length > 0 && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2">
-                <Video className="w-5 h-5 text-primary" />
-                <h2 className="text-2xl font-bold">Biblioteca de Aulas</h2>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {otherLessons.map(lesson => (
-                  <LessonCard key={lesson.id} lesson={lesson} />
-                ))}
-              </div>
-            </div>
-          )}
-
-
-          {memory.length === 0 && !isLoading && (
-            <div className="text-center py-20 bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm">
-              <Search className="w-12 h-12 text-white/20 mx-auto mb-4" />
-              <h3 className="text-xl font-bold mb-2">Nenhuma aula memorizada ainda</h3>
-              <p className="text-white/40 max-w-md mx-auto">
-                Comece a usar o Tutor IA ou gere uma aula CME para que ela apareça aqui automaticamente.
+              <h1 className="text-5xl sm:text-6xl font-black tracking-tighter leading-none">
+                Minha <span className="text-primary">Memória</span> <br className="hidden sm:block" /> Educacional
+              </h1>
+              <p className="text-white/40 text-lg sm:text-xl font-medium max-w-2xl leading-relaxed">
+                Aulas personalizadas, sessões do tutor e conteúdos cinematográficos gerados pela sua IA.
               </p>
             </div>
+
+            {/* Stats / Quick Search */}
+            <div className="flex flex-col gap-4 w-full md:w-auto">
+               <div className="flex gap-4">
+                 <div className="flex-1 md:w-64 relative group">
+                    <div className="absolute inset-0 bg-primary/10 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-white/30" />
+                    <input 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="Buscar na memória..." 
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl py-3 pl-10 pr-4 text-sm focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                    />
+                 </div>
+                 <button className="p-3 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all">
+                    <Filter className="h-6 w-6 text-white/40" />
+                 </button>
+               </div>
+            </div>
+          </motion.div>
+        </header>
+
+        {/* Sections Grid */}
+        <div className="space-y-20 pb-20">
+          {continueLessons.length > 0 && (
+            <EnaflixSectionRowVideo 
+              title="Continuar Estudando" 
+              subtitle="Retome sua jornada de onde parou"
+              lessons={continueLessons} 
+            />
           )}
-        </section>
+
+          {favorites.length > 0 && (
+            <EnaflixSectionRowVideo 
+              title="Aulas Favoritas" 
+              subtitle="Seus conteúdos premium salvos"
+              lessons={favorites} 
+            />
+          )}
+
+          {inProduction.length > 0 && (
+            <EnaflixSectionRowVideo 
+              title="CME em Produção" 
+              subtitle="Aguarde o processamento da nossa GPU Cloud"
+              lessons={inProduction} 
+            />
+          )}
+
+          {library.length > 0 && (
+            <EnaflixSectionRowVideo 
+              title="Biblioteca Geral" 
+              subtitle="Conteúdo médico sob demanda"
+              lessons={library} 
+            />
+          )}
+
+          {lessons.length === 0 && !isLoading && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-32 rounded-[40px] border border-white/5 bg-white/[0.02] backdrop-blur-3xl relative overflow-hidden group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <Search className="w-16 h-16 text-white/10 mx-auto mb-6" />
+              <h3 className="text-2xl font-black mb-3">Memória em Branco</h3>
+              <p className="text-white/30 max-w-md mx-auto font-medium">
+                Sua IA ainda não gerou aulas personalizadas. Experimente perguntar algo ao Tutor Premium!
+              </p>
+              <button 
+                onClick={() => navigate("/dashboard/mentor")}
+                className="mt-8 px-8 py-4 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-sm hover:scale-105 transition-transform"
+              >
+                Ativar Tutor IA
+              </button>
+            </motion.div>
+          )}
+        </div>
       </main>
     </div>
-  );
-}
-
-function LessonCard({ lesson }: { lesson: any }) {
-  const navigate = useNavigate();
-
-  const handleOpen = () => {
-    if (lesson.status === 'published' && lesson.id) {
-      navigate(`/dashboard/videoaulas/${lesson.id}`);
-    } else if (lesson.source_session_id) {
-      navigate(`/dashboard/chatgpt?sessionId=${lesson.source_session_id}`);
-    } else if (lesson.source_type === 'cme' && lesson.aggregation_id) {
-      navigate(`/dashboard/videoaulas?aggregationId=${lesson.aggregation_id}`);
-    } else if (lesson.source_type === 'tutor_chat' && lesson.session_id) {
-      navigate(`/dashboard/chatgpt?sessionId=${lesson.session_id}`);
-    }
-  };
-
-
-  const getSourceIcon = (type: string) => {
-    switch (type) {
-      case 'cme': return <Video className="w-3 h-3" />;
-      case 'tutor_chat': return <Brain className="w-3 h-3" />;
-      case 'pdf': return <FileText className="w-3 h-3" />;
-      default: return <Brain className="w-3 h-3" />;
-    }
-  };
-
-  const getSourceLabel = (type: string) => {
-    switch (type) {
-      case 'cme': return 'CME';
-      case 'tutor_chat': return 'Tutor';
-      case 'pdf': return 'PDF';
-      default: return 'Aula';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'pending_review': return 'Aguardando revisão';
-      case 'in_production': return 'Em produção';
-      case 'published': return 'Assistir';
-      case 'rejected': return 'Não aprovada';
-      default: return null;
-    }
-  };
-
-  return (
-
-    <Card 
-      onClick={handleOpen}
-      className="group relative bg-[#1a1a2e]/50 border-white/5 hover:border-primary/50 transition-all duration-500 cursor-pointer overflow-hidden backdrop-blur-sm"
-    >
-      <div className="aspect-video relative overflow-hidden">
-        {lesson.thumbnail_url ? (
-          <img 
-            src={lesson.thumbnail_url} 
-            alt={lesson.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
-            <Brain className="w-12 h-12 text-white/10 group-hover:text-primary/40 transition-colors duration-500" />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
-        
-        <div className="absolute top-3 left-3">
-          <Badge className="bg-black/60 backdrop-blur-md border-white/10 flex items-center gap-1.5 py-1">
-            {getSourceIcon(lesson.source_type)}
-            <span>{getSourceLabel(lesson.source_type)}</span>
-          </Badge>
-        </div>
-
-        {lesson.status && lesson.status !== 'published' && (
-          <div className="absolute top-3 right-3">
-            <Badge className="bg-amber-500/80 backdrop-blur-md border-white/10 text-[9px] py-0.5 px-1.5">
-              {getStatusLabel(lesson.status)}
-            </Badge>
-          </div>
-        )}
-
-        {lesson.is_favorite && (
-          <div className="absolute top-3 right-3">
-            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400 drop-shadow-lg" />
-          </div>
-        )}
-
-      </div>
-
-      <CardContent className="p-4">
-        <div className="space-y-2">
-          <div className="text-xs font-bold text-primary/80 uppercase tracking-wider">
-            {lesson.subject || 'Medicina'}
-          </div>
-          <h3 className="font-bold text-lg leading-tight line-clamp-2 group-hover:text-primary transition-colors">
-            {lesson.title}
-          </h3>
-          <p className="text-xs text-white/40 line-clamp-2">
-            {lesson.short_summary || lesson.topic || 'Sem descrição.'}
-          </p>
-          
-          <div className="pt-3 flex items-center justify-between text-[10px] text-white/30 uppercase font-bold tracking-widest border-t border-white/5">
-            <span>{lesson.difficulty_level || 'Médio'}</span>
-            <span>{Math.floor(lesson.estimated_duration / 60) || 15} MIN</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
