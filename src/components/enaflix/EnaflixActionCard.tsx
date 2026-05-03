@@ -1,30 +1,47 @@
-import { LucideIcon, Play, GraduationCap } from "lucide-react";
+import { LucideIcon, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 interface Props {
   title: string;
   description: string;
   icon: LucideIcon;
   onClick: () => void;
-  variant?: "primary" | "secondary";
+  variant?: "primary" | "secondary" | "danger" | "violet" | "mint";
   badge?: string;
+  className?: string;
 }
 
-export function EnaflixActionCard({ title, description, icon: Icon, onClick, variant = "secondary", badge }: Props) {
-  const accentClass =
-    variant === "primary" ? "card-pixar" : "card-pixar card-pixar-violet";
-  const iconBg =
-    variant === "primary"
-      ? "bg-[var(--pixar-grad-primary)] shadow-[0_8px_22px_-8px_hsl(var(--pixar-blue)/0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]"
-      : "bg-[var(--pixar-grad-violet)] shadow-[0_8px_22px_-8px_hsl(var(--pixar-violet)/0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]";
+export function EnaflixActionCard({ 
+  title, 
+  description, 
+  icon: Icon, 
+  onClick, 
+  variant = "secondary", 
+  badge,
+  className
+}: Props) {
+  const accentClass = cn(
+    "card-pixar",
+    variant === "violet" && "card-pixar-violet",
+    variant === "mint" && "card-pixar-mint",
+    variant === "danger" && "border-destructive/30",
+    className
+  );
+  
+  const iconBg = cn(
+    "h-14 w-14 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-white/25 transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 pixar-breathe",
+    variant === "primary" && "bg-[var(--pixar-grad-primary)] shadow-[0_8px_22px_-8px_hsl(var(--pixar-blue)/0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]",
+    (variant === "secondary" || variant === "violet") && "bg-[var(--pixar-grad-violet)] shadow-[0_8px_22px_-8px_hsl(var(--pixar-violet)/0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]",
+    variant === "mint" && "bg-emerald-500 shadow-[0_8px_22px_-8px_rgba(16,185,129,0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]",
+    variant === "danger" && "bg-destructive shadow-[0_8px_22px_-8px_rgba(239,68,68,0.7),0_1px_0_hsl(0_0%_100%/0.4)_inset]"
+  );
 
   return (
     <motion.button
       whileHover={{ 
         y: -10, 
         scale: 1.04,
-        rotateY: variant === 'primary' ? 5 : -5,
         z: 50
       }}
       whileTap={{ scale: 0.96 }}
@@ -34,29 +51,23 @@ export function EnaflixActionCard({ title, description, icon: Icon, onClick, var
         accentClass,
         "relative flex flex-col p-8 text-left group min-h-[190px] overflow-hidden perspective-1000",
       )}
-      style={{ ['--card-hover-glow' as any]: 'true' }}
     >
       {/* Background Ambient Glow */}
       <div className={cn(
         "absolute -inset-24 opacity-0 group-hover:opacity-20 transition-opacity duration-700 blur-[80px] -z-10",
-        variant === 'primary' ? "bg-primary" : "bg-violet-500"
+        variant === 'primary' ? "bg-primary" : variant === 'danger' ? "bg-destructive" : "bg-violet-500"
       )} />
       
       {/* Animated Shine Effect */}
       <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 -translate-x-[100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
+      
       {badge && (
         <span className="absolute top-4 right-4 z-10 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-white bg-[var(--pixar-grad-primary)] shadow-[0_4px_14px_-4px_hsl(var(--pixar-blue)/0.7)] ring-1 ring-white/30">
           {badge}
         </span>
       )}
 
-      <div
-        className={cn(
-          "h-14 w-14 rounded-2xl flex items-center justify-center mb-4 ring-1 ring-white/25",
-          "transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6 pixar-breathe",
-          iconBg,
-        )}
-      >
+      <div className={iconBg}>
         <Icon className="h-7 w-7 text-white drop-shadow-[0_2px_3px_rgba(0,0,0,0.5)]" />
       </div>
 
@@ -77,3 +88,4 @@ export function EnaflixActionCard({ title, description, icon: Icon, onClick, var
     </motion.button>
   );
 }
+
