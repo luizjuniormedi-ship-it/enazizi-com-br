@@ -10,11 +10,11 @@ import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { cn } from "@/lib/utils";
 
 const quickActions = [
-  { label: "🩺 Tirar dúvida", prompt: "Explique detalhadamente o tema principal do meu material, como se eu fosse estudar para a prova.", icon: "🩺" },
-  { label: "📌 Pontos de prova", prompt: "Quais são os pontos mais cobrados em provas de residência sobre o conteúdo do meu material?", icon: "📌" },
-  { label: "💊 Condutas", prompt: "Quais as condutas terapêuticas mais importantes e mais cobradas nos temas do meu material?", icon: "💊" },
-  { label: "🔄 Diagnóstico diferencial", prompt: "Faça uma análise de diagnóstico diferencial dos temas abordados no meu material.", icon: "🔄" },
-  { label: "🔬 Artigos PubMed", prompt: "Busque e cite artigos científicos relevantes do PubMed/NLM sobre o tema principal do meu material, com links e resumos.", icon: "🔬" },
+  { label: "🩺 Sessão Completa", prompt: "Iniciar uma sessão completa de estudo sobre o meu material. Siga rigorosamente as 4 mensagens: 1. Caso + Leigo + Fisiopato; 2. Técnico + Aplicação; 3. Conduta + Fluxograma; 4. Resumo + Recall.", icon: "🩺" },
+  { label: "🔬 Raciocínio Clínico", prompt: "Quais são os diagnósticos diferenciais e o raciocínio clínico para os sinais e sintomas do meu material?", icon: "🔬" },
+  { label: "💊 Farmacologia", prompt: "Faça uma comparação detalhada dos fármacos e condutas terapêuticas do meu material.", icon: "💊" },
+  { label: "🧠 Modo Feynman", prompt: "Explique o tema central do meu material usando o Modo Feynman: primeiro para um leigo, depois aprofunde tecnicamente.", icon: "🧠" },
+  { label: "📌 Pontos de Prova", prompt: "Quais as pegadinhas e os pontos mais cobrados em provas sobre este tema?", icon: "📌" },
 ];
 
 const suggestions = [
