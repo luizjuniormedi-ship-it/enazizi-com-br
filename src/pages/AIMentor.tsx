@@ -120,7 +120,7 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
                    className="h-14 sm:h-16 px-8 rounded-2xl text-base font-bold flex items-center gap-2 group/btn"
                  >
                    <span>Estudar Agora</span>
-                   <ChevronRight className="h-5 w-5 group-hover/btn:translate-x-1 transition-transform" />
+                   <Zap className="h-5 w-5 group-hover/btn:scale-110 transition-transform fill-current" />
                  </Enaflix3DButton>
               </div>
             </div>
