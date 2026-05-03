@@ -27,7 +27,7 @@ serve(async (req) => {
       });
     }
 
-    const MODEL = "google/gemini-2.5-flash";
+    const MODEL = "openai/gpt-5-mini";
     const cacheKey = buildCacheKey({ specialty, topic, extra: `study-guide-${depth || "completo"}` });
 
     // 1. Try cache

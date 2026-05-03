@@ -105,10 +105,10 @@ export async function logAiUsage(params: {
     const sb = getSupabaseAdmin();
     // Cost estimation per 1K tokens (approximate)
     const costPer1k: Record<string, number> = {
-      "google/gemini-2.5-flash-lite": 0.0001,
-      "google/gemini-3-flash-preview": 0.0003,
-      "google/gemini-2.5-flash": 0.0003,
-      "google/gemini-2.5-pro": 0.005,
+      "openai/gpt-5-mini-lite": 0.0001,
+      "openai/gpt-5-mini": 0.0003,
+      "openai/gpt-5-mini": 0.0003,
+      "openai/gpt-5": 0.005,
       "gpt-4o-mini": 0.0003,
       "gpt-4o": 0.005,
     };

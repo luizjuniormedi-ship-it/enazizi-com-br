@@ -199,7 +199,7 @@ FORMATO JSON OBRIGATÓRIO:
 
   try {
     const response = await aiFetch({
-      model: "google/gemini-2.5-flash",
+      model: "openai/gpt-5-mini",
       timeoutMs: 120000,
       maxRetries: 1,
       messages: [
@@ -219,7 +219,7 @@ FORMATO JSON OBRIGATÓRIO:
       try {
         console.log(`[${specialty}] Retrying with simplified prompt...`);
         const retryResponse = await aiFetch({
-          model: "google/gemini-2.5-flash",
+          model: "openai/gpt-5-mini",
           timeoutMs: 90000,
           maxRetries: 0,
           messages: [

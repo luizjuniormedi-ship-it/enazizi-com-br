@@ -422,7 +422,7 @@ serve(async (req) => {
         // AI call with higher token limit for 3 questions
         const response = await aiFetch({
           messages: [{ role: "user", content: prompt }],
-          model: "google/gemini-2.5-flash",
+          model: "openai/gpt-5-mini",
           maxTokens: 16384,
           timeoutMs: 90000,
         });

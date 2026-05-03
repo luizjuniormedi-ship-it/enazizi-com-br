@@ -86,7 +86,7 @@ serve(async (req) => {
             p_content_id: contentId,
             p_metadata: { source_id: hashMatch.id, type: 'hash' }
           });
-          await logPromptExecution(supabaseClient, contentId, content, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
+          await logPromptExecution(supabaseClient, contentId, content, 'openai/gpt-5-mini', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
           return new Response(JSON.stringify({ success: true, message: "Cache Hit (Hash)" }), { headers: corsHeaders });
         }
       }
@@ -112,7 +112,7 @@ serve(async (req) => {
           p_content_id: contentId,
           p_metadata: { source_id: topicMatch.id, type: 'topic' }
         });
-        await logPromptExecution(supabaseClient, contentId, content, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
+        await logPromptExecution(supabaseClient, contentId, content, 'openai/gpt-5-mini', 0, 0, 0, Date.now() - startTime, 'valid', cacheStatus);
         return new Response(JSON.stringify({ success: true, message: "Cache Hit (Topic/Semantic)" }), { headers: corsHeaders });
       }
     }
@@ -166,7 +166,7 @@ serve(async (req) => {
     let response;
     let retries = 3;
     while (retries > 0) {
-      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/openai/gpt-5-mini:generateContent?key=${GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -258,7 +258,7 @@ ${parsedData.notebooklm_package?.audio_script || parsedData.video_script}
       supabaseClient, 
       contentId, 
       content, 
-      'gemini-2.0-flash', 
+      'openai/gpt-5-mini', 
       inputTokens, 
       outputTokens, 
       estimatedCost, 
@@ -281,7 +281,7 @@ ${parsedData.notebooklm_package?.audio_script || parsedData.video_script}
         p_message: `Erro na pipeline IA: ${error.message}`,
         p_content_id: contentId
       });
-      await logPromptExecution(supabaseClient, contentId, null, 'gemini-2.0-flash', 0, 0, 0, Date.now() - startTime, 'failed', 'cache_miss', null, null, error.message);
+      await logPromptExecution(supabaseClient, contentId, null, 'openai/gpt-5-mini', 0, 0, 0, Date.now() - startTime, 'failed', 'cache_miss', null, null, error.message);
     }
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders })
   }
