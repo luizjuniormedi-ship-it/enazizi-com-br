@@ -506,4 +506,16 @@ const VideoLessonsAdmin = () => {
   );
 };
 
+const StatsCard = ({ title, value, icon }: { title: string, value: number, icon: React.ReactNode }) => (
+  <div className="bg-white/5 border border-white/5 rounded-3xl p-6 backdrop-blur-xl shadow-inner relative overflow-hidden group">
+    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity text-primary">
+      {icon}
+    </div>
+    <div className="space-y-1 relative z-10">
+      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">{title}</p>
+      <div className="text-3xl font-black text-white tracking-tighter">{value}</div>
+    </div>
+  </div>
+);
+
 export default VideoLessonsAdmin;
