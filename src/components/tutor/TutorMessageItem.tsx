@@ -421,10 +421,13 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             </Dialog>
 
             {/* Agile Player Overlay */}
-            {showAgilePlayer && state.aggregationId && (
+            {showAgilePlayer && (activeAggregationId || state.aggregationId) && (
               <AgileLessonPlayer 
-                aggregationId={state.aggregationId} 
-                onClose={() => setShowAgilePlayer(false)} 
+                aggregationId={activeAggregationId || state.aggregationId || ""} 
+                onClose={() => {
+                  setShowAgilePlayer(false);
+                  setActiveAggregationId(null);
+                }} 
               />
             )}
           </>
