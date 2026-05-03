@@ -127,149 +127,131 @@ const Login = () => {
       
       {/* Left panel - Hero */}
       <div className="lg:w-1/2 p-6 sm:p-10 lg:p-14 flex flex-col justify-center relative z-10">
-        <Link to="/" className="inline-flex items-center gap-3 mb-8 lg:mb-12 group">
-          <img src={enazizi} alt="ENAZIZI" className="h-12 w-12 rounded-2xl object-cover ring-2 ring-white/10 shadow-2xl group-hover:scale-110 transition-transform" />
-          <span className="text-2xl font-black tracking-tighter text-white">ENAFLIX</span>
-        </Link>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+        >
+          <Link to="/" className="inline-flex items-center gap-3 mb-8 lg:mb-12 group">
+            <img src={enazizi} alt="ENAZIZI" className="h-12 w-12 rounded-2xl object-cover ring-2 ring-white/10 shadow-2xl group-hover:scale-110 transition-transform" />
+            <span className="text-2xl font-black tracking-tighter text-white">ENAFLIX</span>
+          </Link>
 
-        <h2 className="text-xl lg:text-3xl font-bold mb-1 lg:mb-2">
-          Você não precisa estudar mais.
-          <br />
-          <span className="text-primary">Precisa estudar certo.</span>
-        </h2>
-        <p className="text-muted-foreground mb-4 lg:mb-8 text-sm lg:text-base">
-          O ENAZIZI cria seu plano diário com base nos seus erros e na sua prova.
-        </p>
+          <h2 className="text-3xl lg:text-5xl font-black mb-4 leading-[1.1] text-white tracking-tighter">
+            Você não precisa estudar mais.
+            <br />
+            <span className="gradient-text">Precisa estudar certo.</span>
+          </h2>
+          <p className="text-white/60 mb-8 lg:mb-12 text-base lg:text-lg max-w-md font-medium">
+            O ENAFLIX Studio cria seu plano diário adaptativo com base na sua performance real.
+          </p>
 
-        {/* Checklist de valor */}
-        <div className="hidden lg:flex flex-col gap-2 mb-6 text-sm">
-          {[
-            "Missão diária pronta ao abrir o app",
-            "Correção inteligente dos seus erros",
-            "Evolução real medida por IA",
-          ].map((item) => (
-            <div key={item} className="flex items-center gap-2 text-muted-foreground">
-              <span className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs">✓</span>
-              <span>{item}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Stats grid */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-3 mb-4 lg:mb-10">
-          {stats.map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="flex justify-center mb-0.5 lg:mb-1">
-                <div className="h-7 w-7 lg:h-9 lg:w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <s.icon className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-primary" />
-                </div>
-              </div>
-              <p className="text-base lg:text-xl font-black">{s.value}</p>
-              <p className="text-[10px] lg:text-xs text-muted-foreground">{s.label}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Features list */}
-        <div className="grid grid-cols-2 gap-1.5 lg:gap-3">
-          {features.map((f) => (
-            <div key={f.label} className="flex items-center gap-1.5 lg:gap-2 text-xs lg:text-sm">
-              <f.icon className="h-3.5 w-3.5 lg:h-4 lg:w-4 text-primary shrink-0" />
-              <span className="text-muted-foreground">{f.label}</span>
-            </div>
-          ))}
-        </div>
-
-        {/* Testimonials */}
-        {testimonials.length > 0 && (
-          <div className="hidden lg:block mt-6 lg:mt-8 space-y-3">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Avaliações de alunos</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {testimonials.map((t, i) => (
-                <div key={i} className="rounded-xl border border-border/40 bg-card/60 p-3 space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold">{t.display_name}</span>
-                    <div className="flex items-center gap-0.5">
-                      {Array.from({ length: 5 }).map((_, j) => (
-                        <Star key={j} className={`h-3 w-3 ${j < Math.round(t.avg_rating) ? "fill-primary text-primary" : "text-muted-foreground/30"}`} />
-                      ))}
-                    </div>
+          {/* Stats grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-12">
+            {stats.map((s, idx) => (
+              <motion.div 
+                key={s.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 + idx * 0.1 }}
+                className="card-pixar p-4 text-center bg-white/5 border-white/5"
+              >
+                <div className="flex justify-center mb-2">
+                  <div className="h-10 w-10 rounded-xl bg-primary/20 flex items-center justify-center">
+                    <s.icon className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-                    <Quote className="h-3 w-3 inline mr-1 text-primary/50" />
-                    {t.feedback_text}
-                  </p>
                 </div>
-              ))}
-            </div>
+                <p className="text-xl font-black text-white">{s.value}</p>
+                <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">{s.label}</p>
+              </motion.div>
+            ))}
           </div>
-        )}
+
+          {/* Features list */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {features.slice(0, 6).map((f, idx) => (
+              <motion.div 
+                key={f.label}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 + idx * 0.05 }}
+                className="flex items-center gap-3 text-sm font-bold text-white/70"
+              >
+                <div className="h-2 w-2 rounded-full bg-primary" />
+                <span>{f.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
       {/* Right panel - Form */}
-      <div className="lg:w-1/2 flex items-center justify-center p-6 sm:p-10">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8 lg:hidden">
-            {/* Logo already shown on left panel for desktop */}
-          </div>
-          <h1 className="text-2xl font-bold text-center mb-1">{forgotMode ? "Recuperar senha" : "Bem-vindo de volta"}</h1>
-          <p className="text-muted-foreground text-center mb-6 text-sm">
-            {forgotMode ? "Digite seu email para receber o link de redefinição" : "Continue evoluindo até a aprovação"}
-          </p>
-
-          {forgotMode ? (
-            <form onSubmit={handleForgotPassword} className="glass-card p-8 space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={forgotLoading}>
-                {forgotLoading ? "Enviando..." : "Enviar link de redefinição"}
-              </Button>
-              <button type="button" onClick={() => setForgotMode(false)} className="text-sm text-primary hover:underline w-full text-center">
-                Voltar ao login
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleLogin} className="glass-card p-8 space-y-5">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="email" placeholder="seu@email.com" className="pl-10 bg-secondary border-border" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Senha</label>
-                  <button type="button" onClick={() => setForgotMode(true)} className="text-xs text-primary hover:underline">
-                    Esqueci minha senha
-                  </button>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input type="password" placeholder="••••••••" className="pl-10 bg-secondary border-border" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                </div>
-              </div>
-              <Button type="submit" className="w-full glow" disabled={loading}>
-                {loading ? "Entrando..." : "Entrar"}
-              </Button>
-            </form>
-          )}
-
-          <div className="text-center mt-6 space-y-2">
-            <p className="text-sm text-muted-foreground">
-              Não tem conta?{" "}
-              <Link to="/register" className="text-primary hover:underline">Criar conta grátis</Link>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <Link to="/register" className="text-primary/80 hover:underline">É professor? Cadastre-se e acesse o painel exclusivo</Link>
+      <div className="lg:w-1/2 flex items-center justify-center p-6 sm:p-10 relative z-10">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+          className="w-full max-w-md"
+        >
+          <div className="text-center mb-10">
+            <h1 className="text-3xl font-black text-white tracking-tighter mb-2">{forgotMode ? "Recuperar senha" : "Acesso Studio"}</h1>
+            <p className="text-white/40 font-medium">
+              {forgotMode ? "Digite seu email para receber o link de redefinição" : "Prossiga para sua estação de estudo"}
             </p>
           </div>
-        </div>
+
+          <div className="card-pixar p-8 bg-[#0a0a0e]/60 border-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)]">
+            {forgotMode ? (
+              <form onSubmit={handleForgotPassword} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-white/40">Email Corporativo</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs" disabled={forgotLoading}>
+                  {forgotLoading ? "Enviando..." : "Enviar link"}
+                </Button>
+                <button type="button" onClick={() => setForgotMode(false)} className="text-xs font-bold text-primary hover:text-white transition-colors w-full text-center uppercase tracking-widest">
+                  Voltar ao login
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleLogin} className="space-y-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-white/40">Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                    <Input type="email" placeholder="seu@email.com" className="pl-12 h-12" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black uppercase tracking-widest text-white/40">Senha</label>
+                    <button type="button" onClick={() => setForgotMode(true)} className="text-[10px] font-bold text-primary hover:text-white transition-colors uppercase tracking-wider">
+                      Esqueci a senha
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                    <Input type="password" placeholder="••••••••" className="pl-12 h-12" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-xs shadow-glow-sm" disabled={loading}>
+                  {loading ? "Autenticando..." : "Entrar no Studio"}
+                </Button>
+              </form>
+            )}
+          </div>
+
+          <div className="text-center mt-10 space-y-4">
+            <p className="text-sm font-medium text-white/40">
+              Novo no ENAFLIX?{" "}
+              <Link to="/register" className="text-white font-black hover:text-primary transition-colors underline-offset-4 underline">Criar conta</Link>
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
