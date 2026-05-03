@@ -565,6 +565,24 @@ export const useTutorCME = () => {
         console.error("Error fetching lesson for message:", e);
         return null;
       }
+    },
+    findLessonByTopic: async (topic: string) => {
+      try {
+        const { data, error } = await supabaseClient
+          .from("ai_video_lessons")
+          .select("*, aggregation:cme_session_aggregations(*)")
+          .or(`topic.ilike.%${topic}%,title.ilike.%${topic}%`)
+          .eq('status', 'published')
+          .order('is_gold_content', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        console.error("Error finding lesson for topic:", e);
+        return null;
+      }
     }
   };
 };
