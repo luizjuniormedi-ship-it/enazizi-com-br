@@ -42,8 +42,8 @@ export const TutorVideoAuditPanel = () => {
     const successRate = searches > 0 ? (found / searches) * 100 : 0;
 
     const topTopicsMap = new Map();
-    events.filter(e => e.properties?.topic).forEach(e => {
-      const t = e.properties.topic;
+    events.filter(e => (e.properties as any)?.topic).forEach(e => {
+      const t = (e.properties as any).topic;
       topTopicsMap.set(t, (topTopicsMap.get(t) || 0) + 1);
     });
 
@@ -163,7 +163,7 @@ export const TutorVideoAuditPanel = () => {
                   {events?.slice(0, 15).map(e => (
                     <tr key={e.id} className="hover:bg-white/5 transition-colors">
                       <td className="px-4 py-3">
-                        <div className="font-bold text-white">{e.properties?.topic || "---"}</div>
+                        <div className="font-bold text-white">{(e.properties as any)?.topic || "---"}</div>
                         <div className="text-[10px] text-white/30 truncate max-w-[200px]">
                           User: {e.user_id?.slice(0, 8) || "Anônimo"}
                         </div>
@@ -179,10 +179,10 @@ export const TutorVideoAuditPanel = () => {
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-white/60">
-                        {e.properties?.confidence ? `${e.properties.confidence}%` : "---"}
+                        {(e.properties as any)?.confidence ? `${(e.properties as any).confidence}%` : "---"}
                       </td>
                       <td className="px-4 py-3 text-white/40 italic">
-                        {e.properties?.source || "---"}
+                        {(e.properties as any)?.source || "---"}
                       </td>
                       <td className="px-4 py-3 text-right text-white/20">
                         {formatDistanceToNow(new Date(e.timestamp), { addSuffix: true, locale: ptBR })}

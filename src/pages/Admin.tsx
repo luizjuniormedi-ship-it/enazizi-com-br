@@ -5,7 +5,7 @@ import {
   BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, 
   Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, 
   Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play,
-  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal, Microscope
+  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal, Microscope, Video
 } from "lucide-react";
 
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
