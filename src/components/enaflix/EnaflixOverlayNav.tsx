@@ -75,19 +75,34 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
       <div className="relative flex items-center justify-between px-4 sm:px-8 lg:px-14 h-16">
         {/* Esquerda: Voltar + wordmark ENAFLIX */}
         <div className="flex items-center gap-4 sm:gap-8 min-w-0">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Sair do modo ENAFLIX"
-            className={cn(
-              "inline-flex items-center gap-1.5 text-sm font-medium",
-              "text-white/70 hover:text-white transition-all duration-300",
-              "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
-            )}
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Sair</span>
-          </button>
+          {isSpecialUser ? (
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Sair do modo ENAFLIX"
+              className={cn(
+                "inline-flex items-center gap-1.5 text-sm font-medium",
+                "text-white/70 hover:text-white transition-all duration-300",
+                "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
+              )}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Painel Admin</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard/perfil")}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-sm font-medium",
+                "text-white/70 hover:text-white transition-all duration-300",
+                "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
+              )}
+            >
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Meu Perfil</span>
+            </button>
+          )}
 
           <div className="flex items-center gap-2 min-w-0 group">
             {/* Dot vermelho com pulse cinematográfico */}
