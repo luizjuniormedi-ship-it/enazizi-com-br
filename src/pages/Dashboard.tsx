@@ -80,7 +80,7 @@ const Dashboard = () => {
                 animate={{ opacity: 1, x: 0 }}
                 className="flex items-center gap-3"
               >
-                <EnaflixBadge variant="cyan" glow>IA RECOMENDOU</EnaflixBadge>
+                <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40 shadow-[0_0_15px_rgba(var(--pixar-blue),0.5)]" />
                 <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
               </motion.div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
@@ -175,7 +175,7 @@ const Dashboard = () => {
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-start">
                 <Target className="h-8 w-8 text-primary" />
-                <EnaflixBadge variant="cyan">MUITO ALTA</EnaflixBadge>
+                <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40" />
               </div>
               <div className="space-y-1">
                 <h4 className="font-black text-xl text-white">Pediatria: Crescimento</h4>
@@ -192,7 +192,7 @@ const Dashboard = () => {
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-start">
                 <Clock className="h-8 w-8 text-primary" />
-                <EnaflixBadge>PENDENTE</EnaflixBadge>
+                <EnaflixBadge type="urgente" />
               </div>
               <div className="space-y-1">
                 <h4 className="font-black text-xl text-white">Cirurgia: Abdome Agudo</h4>
@@ -209,7 +209,7 @@ const Dashboard = () => {
             <div className="p-6 space-y-4">
               <div className="flex justify-between items-start">
                 <BookOpen className="h-8 w-8 text-primary" />
-                <EnaflixBadge variant="violet">IA BOOST</EnaflixBadge>
+                <EnaflixBadge type="ia" />
               </div>
               <div className="space-y-1">
                 <h4 className="font-black text-xl text-white">Gineco & Obstetrícia</h4>
