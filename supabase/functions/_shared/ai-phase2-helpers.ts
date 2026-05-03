@@ -109,7 +109,7 @@ export async function setCache(
         cache_key: key,
         content_type: type,
         content_json: json,
-        model_used: modelUsed || "gemini-2.5-flash",
+        model_used: modelUsed || "openai/gpt-5-mini",
         expires_at: new Date(Date.now() + ttlDays * 86_400_000).toISOString(),
         hit_count: 0,
       },
