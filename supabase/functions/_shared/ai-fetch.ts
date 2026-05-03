@@ -122,7 +122,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
 
-  const lovableModel = options.model || "google/gemini-3-flash-preview";
+  const lovableModel = options.model || "openai/gpt-5-mini";
   const maxRetries = options.maxRetries ?? 2;
   const timeoutMs = options.timeoutMs ?? 45000;
 
