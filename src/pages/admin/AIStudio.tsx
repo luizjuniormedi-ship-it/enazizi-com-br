@@ -637,7 +637,7 @@ ${content.generated_video_script || "Roteiro pendente."}
                 <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 flex gap-3">
                   <AlertCircle className="h-5 w-5 text-amber-500 shrink-0" />
                   <p className="text-[11px] text-amber-500/80 italic">
-                    Ao confirmar, a IA Gemini Flash processará o conteúdo. O sistema verificará automaticamente se este material já existe na Biblioteca Mestre para evitar custos duplicados.
+                    Ao confirmar, a engine de IA OpenAI processará o conteúdo. O sistema verificará automaticamente se este material já existe na Biblioteca Mestre para evitar custos duplicados.
                   </p>
                 </div>
               </div>
