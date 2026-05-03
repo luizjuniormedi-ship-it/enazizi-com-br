@@ -14,6 +14,7 @@ import {
   Smartphone, MessageSquare, Activity, Target, Brain, HeartPulse,
 } from "lucide-react";
 import { TelemetryHealthCheck } from "./TelemetryHealthCheck";
+import { toast } from "sonner";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
