@@ -118,8 +118,8 @@ serve(async (req) => {
     }
 
     // 3. AI Generation
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada')
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY não configurada')
 
     // Get Active Prompt
     const { data: promptData } = await supabaseClient
