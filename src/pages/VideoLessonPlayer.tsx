@@ -708,16 +708,7 @@ const VideoLessonPlayer = () => {
             }}>
               <Share2 className="h-4 w-4" /> Compartilhar Preview
             </Button>
-            <Button variant="outline" size="sm" className="gap-2 border-primary/30 text-primary" onClick={() => {
-              toast.info("Ajustando Pacing: Ativando modo didático amplificado.");
-            }}>
-              <Volume2 className="h-4 w-4" /> Voz Feynman
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2 border-orange-500/30 text-orange-500" onClick={() => {
-              toast.info("Ativando Exam Sprint: Pacing acelerado e foco em questões.");
-            }}>
-              <Flame className="h-4 w-4" /> Exam Sprint
-            </Button>
+            {/* Removidos botões de ajuste do Header para evitar confusão com o conteúdo do vídeo */}
           </div>
         </div>
       </header>
@@ -1010,8 +1001,28 @@ const VideoLessonPlayer = () => {
 
             <Card className="bg-white/5 border-white/5 shadow-2xl overflow-hidden group">
               <CardHeader className="pb-4">
-                <CardTitle className="text-sm font-bold flex items-center gap-2">
-                  <BrainCircuit className="h-4 w-4 text-primary" /> Seu Progresso Cognitivo
+                <CardTitle className="text-sm font-bold flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <BrainCircuit className="h-4 w-4 text-primary" /> Seu Progresso Cognitivo
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 text-[10px] gap-1.5 border border-primary/20 hover:bg-primary/10 text-primary px-2"
+                      onClick={() => toast.info("Modo Feynman (IA) Ativado: O Tutor agora usará explicações simplificadas para esta aula.")}
+                    >
+                      <Volume2 className="h-3 w-3" /> Tutor Feynman
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-7 text-[10px] gap-1.5 border border-orange-500/20 hover:bg-orange-500/10 text-orange-500 px-2"
+                      onClick={() => toast.info("Modo Exam Sprint (IA) Ativado: O Tutor focará em pontos críticos de prova e bizus.")}
+                    >
+                      <Flame className="h-3 w-3" /> Tutor Sprint
+                    </Button>
+                  </div>
                 </CardTitle>
               </CardHeader>
               <CardContent>
