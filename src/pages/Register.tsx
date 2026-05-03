@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Brain, Mail, Lock, User, GraduationCap, Building, Phone } from "lucide-react";
+import enazizi from "@/assets/enazizi-mascot.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { isValidPhone, isValidName } from "@/lib/profileValidation";
 import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 const formatPhone = (value: string) => {
   const digits = value.replace(/\D/g, "").slice(0, 11);
