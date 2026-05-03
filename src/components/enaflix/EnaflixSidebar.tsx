@@ -98,7 +98,7 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
 
       <div className={cn(
         "p-2 rounded-xl transition-all duration-500",
-        active ? "bg-primary/20 shadow-[0_0_15px_rgba(var(--pixar-blue),0.3)]" : "bg-transparent"
+        active ? "bg-primary/20 shadow-[0_0_20px_rgba(var(--pixar-blue),0.4)] ring-1 ring-primary/40" : "bg-white/5 group-hover:bg-white/10 ring-1 ring-white/5"
       )}>
         <Icon className={cn(
           "h-4 w-4 transition-all duration-500",
