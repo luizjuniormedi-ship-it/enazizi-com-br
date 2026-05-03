@@ -30,7 +30,7 @@ const AgentHeader = memo(({
   onTransformSession, hasMessages, lessonStatus = 'idle'
 }: AgentHeaderProps) => {
   return (
-    <div className="pt-2 pb-6 px-4 sm:px-12 flex items-center justify-between gap-4 border-b border-white/5 bg-black/20 backdrop-blur-md">
+    <div className="pt-2 pb-6 px-4 sm:px-12 flex items-center justify-between gap-4 border-b border-white/5 bg-transparent backdrop-blur-3xl">
       <div className="min-w-0 flex-1 flex items-center gap-4">
         <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-1 ring-primary/30 shadow-2xl bg-black">
           <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
