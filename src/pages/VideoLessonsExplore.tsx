@@ -188,34 +188,37 @@ const VideoLessonsExplore = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-4 gap-12 relative z-10">
         {/* Filtros Lateral */}
-        <aside className="lg:col-span-1 space-y-8">
+        <aside className="lg:col-span-1 space-y-10">
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-white/40 uppercase tracking-widest flex items-center gap-2">
-              <SearchCode className="h-4 w-4" /> Busca Global
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
+              <SearchCode className="h-4 w-4 text-primary" /> Busca Global
             </h3>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
-              <Input
-                placeholder="Título, tema, especialidade..."
-                className="pl-10 bg-white/5 border-white/10 h-11 focus:ring-primary"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-primary/10 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                <Input
+                  placeholder="Título, tema, especialidade..."
+                  className="pl-12 bg-white/5 border-white/10 h-12 rounded-2xl focus:ring-primary focus:border-primary transition-all text-sm font-medium"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-white/40 uppercase tracking-widest flex items-center gap-2">
-              <Filter className="h-4 w-4" /> Filtros Acadêmicos
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
+              <Filter className="h-4 w-4 text-primary" /> Filtros Acadêmicos
             </h3>
             <div className="space-y-3">
               <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
-                <SelectTrigger className="bg-white/5 border-white/10 h-11">
+                <SelectTrigger className="bg-white/5 border-white/10 h-12 rounded-2xl font-bold">
                   <SelectValue placeholder="Especialidade" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0a0a0e] border-white/10 rounded-2xl">
                   <SelectItem value="all">Todas Especialidades</SelectItem>
                   {specialties.map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
@@ -224,10 +227,10 @@ const VideoLessonsExplore = () => {
               </Select>
 
               <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                <SelectTrigger className="bg-white/5 border-white/10 h-11">
+                <SelectTrigger className="bg-white/5 border-white/10 h-12 rounded-2xl font-bold">
                   <SelectValue placeholder="Dificuldade" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0a0a0e] border-white/10 rounded-2xl">
                   <SelectItem value="all">Todos os Níveis</SelectItem>
                   <SelectItem value="beginner">Iniciante</SelectItem>
                   <SelectItem value="intermediate">Intermediário</SelectItem>
@@ -236,10 +239,10 @@ const VideoLessonsExplore = () => {
               </Select>
 
               <Select value={durationFilter} onValueChange={setDurationFilter}>
-                <SelectTrigger className="bg-white/5 border-white/10 h-11">
+                <SelectTrigger className="bg-white/5 border-white/10 h-12 rounded-2xl font-bold">
                   <SelectValue placeholder="Duração" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0a0a0e] border-white/10 rounded-2xl">
                   <SelectItem value="all">Qualquer Duração</SelectItem>
                   <SelectItem value="short">{"Curto (< 10min)"}</SelectItem>
                   <SelectItem value="medium">{"Médio (10-30min)"}</SelectItem>
@@ -250,70 +253,53 @@ const VideoLessonsExplore = () => {
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-white/40 uppercase tracking-widest flex items-center gap-2">
-              <Zap className="h-4 w-4" /> Modos de Entrega
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
+              <Zap className="h-4 w-4 text-primary" /> Modos de Entrega
             </h3>
             <div className="grid grid-cols-1 gap-2">
               <Button 
                 variant={examSprintOnly ? "default" : "outline"} 
-                className={cn("justify-start gap-3 h-11 border-white/10", examSprintOnly && "bg-orange-500 hover:bg-orange-600")}
+                className={cn(
+                  "justify-start gap-3 h-12 rounded-2xl border-white/10 font-bold transition-all", 
+                  examSprintOnly ? "bg-orange-500 hover:bg-orange-600 shadow-[0_0_20px_rgba(249,115,22,0.3)]" : "bg-white/5 hover:bg-white/10"
+                )}
                 onClick={() => setExamSprintOnly(!examSprintOnly)}
               >
-                <Flame className="h-4 w-4" /> Exam Sprint
+                <Flame className={cn("h-4 w-4", examSprintOnly ? "text-white" : "text-orange-500")} /> Exam Sprint
               </Button>
               <Button 
                 variant={recoveryOnly ? "default" : "outline"} 
-                className={cn("justify-start gap-3 h-11 border-white/10", recoveryOnly && "bg-blue-600 hover:bg-blue-700")}
+                className={cn(
+                  "justify-start gap-3 h-12 rounded-2xl border-white/10 font-bold transition-all", 
+                  recoveryOnly ? "bg-blue-600 hover:bg-blue-700 shadow-[0_0_20px_rgba(37,99,235,0.3)]" : "bg-white/5 hover:bg-white/10"
+                )}
                 onClick={() => setRecoveryOnly(!recoveryOnly)}
               >
-                <RotateCcw className="h-4 w-4" /> Recovery Mode
+                <RotateCcw className={cn("h-4 w-4", recoveryOnly ? "text-white" : "text-blue-500")} /> Recovery Mode
               </Button>
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-white/40 uppercase tracking-widest flex items-center gap-2">
-              <Activity className="h-4 w-4" /> Filtros Cognitivos (ACE)
+            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40 flex items-center gap-2">
+              <Activity className="h-4 w-4 text-primary" /> Filtros ACE
             </h3>
             <div className="grid grid-cols-1 gap-2">
               <Button 
                 variant={activeCategory === "recommended" ? "default" : "outline"} 
-                className="justify-start gap-3 h-11 border-white/10"
+                className={cn("justify-start gap-3 h-12 rounded-2xl border-white/10 font-bold transition-all", activeCategory === "recommended" ? "bg-primary" : "bg-white/5 hover:bg-white/10")}
                 onClick={() => setActiveCategory("recommended")}
               >
-                <Sparkles className="h-4 w-4 text-yellow-500" /> Recomendado pelo ACE
+                <Sparkles className="h-4 w-4 text-yellow-500" /> Recomendado IA
               </Button>
               <Button 
                 variant={activeCategory === "fsrs" ? "default" : "outline"} 
-                className="justify-start gap-3 h-11 border-white/10"
+                className={cn("justify-start gap-3 h-12 rounded-2xl border-white/10 font-bold transition-all", activeCategory === "fsrs" ? "bg-primary" : "bg-white/5 hover:bg-white/10")}
                 onClick={() => setActiveCategory("fsrs")}
               >
-                <History className="h-4 w-4 text-blue-500" /> Revisão FSRS Pendente
-              </Button>
-              <Button 
-                variant={activeCategory === "friction" ? "default" : "outline"} 
-                className="justify-start gap-3 h-11 border-white/10"
-                onClick={() => setActiveCategory("friction")}
-              >
-                <Zap className="h-4 w-4 text-red-500" /> Alto Atrito Cognitivo
+                <History className="h-4 w-4 text-blue-500" /> Revisão Pendente
               </Button>
             </div>
-          </div>
-
-          <div className="pt-6 border-t border-white/5">
-             <Card className="bg-primary/5 border-primary/20">
-               <CardHeader className="p-4">
-                 <CardTitle className="text-sm font-bold flex items-center gap-2">
-                   <Flame className="h-4 w-4 text-orange-500" /> Exam Sprint
-                 </CardTitle>
-               </CardHeader>
-               <CardContent className="p-4 pt-0">
-                 <p className="text-xs text-white/50 mb-3">Revisões ultrarrápidas de véspera com foco em alto rendimento.</p>
-                 <Button size="sm" className="w-full bg-primary/20 hover:bg-primary/30 text-primary border border-primary/30" onClick={() => setActiveCategory("exam_sprint")}>
-                   Ver Sprints
-                 </Button>
-               </CardContent>
-             </Card>
           </div>
         </aside>
 
