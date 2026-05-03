@@ -43,6 +43,7 @@ export default function PedagogyAnalytics() {
 
       events?.forEach(evt => {
         const route = evt.route || 'unknown';
+        const props = evt.properties as any;
         if (!moduleStats[route]) moduleStats[route] = { name: route, started: 0, abandoned: 0, completed: 0 };
         
         if (evt.event_name === 'session_started') moduleStats[route].started++;
@@ -53,8 +54,8 @@ export default function PedagogyAnalytics() {
         if (evt.event_name === 'tutor_helpful_clicked') pedagogicalBlocks['Simplification']++;
         if (evt.event_name === 'tutor_memory_reused') pedagogicalBlocks['Active Recall']++;
         
-        if (evt.properties?.duration_ms) {
-          totalTime += evt.properties.duration_ms;
+        if (props?.duration_ms) {
+          totalTime += props.duration_ms;
           sessionsWithTime++;
         }
       });
