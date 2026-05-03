@@ -428,34 +428,54 @@ ${JSON.stringify(ctx, null, 2).slice(0, 6000)}
 
 Gere a estrutura completa via tool.`;
 
-  const resp = await fetch(
-    "https://ai.gateway.lovable.dev/v1/chat/completions",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [STRUCTURE_TOOL],
-        tool_choice: {
-          type: "function",
-          function: { name: "publish_lesson_structure" },
+  const callGateway = async (model: string) => {
+    return await fetch(
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
         },
-      }),
-    },
-  );
+        body: JSON.stringify({
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          tools: [STRUCTURE_TOOL],
+          tool_choice: {
+            type: "function",
+            function: { name: "publish_lesson_structure" },
+          },
+        }),
+      },
+    );
+  };
 
-  if (!resp.ok) {
-    const t = await resp.text();
-    if (resp.status === 429) throw new Error("AI rate-limited");
-    if (resp.status === 402) throw new Error("AI credits exhausted");
-    throw new Error(`AI gateway ${resp.status}: ${t.slice(0, 300)}`);
+  // Retry com backoff exponencial e fallback para gemini-flash em 502/503/504
+  const models = ["google/gemini-2.5-pro", "google/gemini-2.5-flash"];
+  let resp: Response | null = null;
+  let lastError = "";
+  outer: for (const model of models) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      resp = await callGateway(model);
+      if (resp.ok) break outer;
+      if (resp.status === 429) throw new Error("AI rate-limited");
+      if (resp.status === 402) throw new Error("AI credits exhausted");
+      lastError = `${resp.status}`;
+      // 502/503/504 são transientes — retry
+      if ([502, 503, 504].includes(resp.status)) {
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+        continue;
+      }
+      break; // erro não-transiente, tenta próximo modelo
+    }
+  }
+
+  if (!resp || !resp.ok) {
+    const t = resp ? await resp.text() : "no response";
+    throw new Error(`AI gateway ${lastError || "unknown"}: ${t.slice(0, 300)}`);
   }
   const data = await resp.json();
   const call = data?.choices?.[0]?.message?.tool_calls?.[0];
