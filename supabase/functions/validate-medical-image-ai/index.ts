@@ -1,5 +1,5 @@
 /**
- * validate-medical-image-ai — Single-image AI validation via Gemini Vision.
+ * validate-medical-image-ai — Single-image AI validation via OpenAI Vision.
  * Supports single image, batch mode, and retroactive audit.
  * Sets quality_gate_passed and logs to asset_quality_audit_logs.
  */
