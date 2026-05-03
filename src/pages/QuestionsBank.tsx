@@ -508,57 +508,57 @@ const QuestionsBank = () => {
 
       {/* Stats Panel */}
       {showStats && globalStats.total > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {/* Global stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Target className="h-5 w-5 text-primary" />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="glass-card-pixar p-6 flex items-center gap-4 bg-card-pixar-violet/20 border-white/5">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
+                <Target className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{globalStats.total}</p>
-                <p className="text-xs text-muted-foreground">Questões respondidas</p>
+                <p className="text-3xl font-black text-white">{globalStats.total}</p>
+                <p className="text-[10px] uppercase font-bold tracking-widest text-white/40">Respondidas</p>
               </div>
             </div>
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-500" />
+            <div className="glass-card-pixar p-6 flex items-center gap-4 bg-card-pixar-violet/20 border-white/5">
+              <div className="h-12 w-12 rounded-xl bg-green-500/10 flex items-center justify-center ring-1 ring-green-500/20">
+                <TrendingUp className="h-6 w-6 text-green-500" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{globalStats.correct}</p>
-                <p className="text-xs text-muted-foreground">Acertos</p>
+                <p className="text-3xl font-black text-white">{globalStats.correct}</p>
+                <p className="text-[10px] uppercase font-bold tracking-widest text-white/40">Acertos</p>
               </div>
             </div>
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-accent/10 flex items-center justify-center">
-                <BarChart3 className="h-5 w-5 text-accent" />
+            <div className="glass-card-pixar p-6 flex items-center gap-4 bg-card-pixar-violet/20 border-white/5">
+              <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center ring-1 ring-accent/20">
+                <BarChart3 className="h-6 w-6 text-accent" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{globalRate}%</p>
-                <p className="text-xs text-muted-foreground">Taxa de acerto</p>
+                <p className="text-3xl font-black text-white">{globalRate}%</p>
+                <p className="text-[10px] uppercase font-bold tracking-widest text-white/40">Taxa de acerto</p>
               </div>
             </div>
           </div>
 
           {/* Per-topic stats */}
           {topicStats.length > 0 && (
-            <div className="glass-card p-4">
-              <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <div className="glass-card-pixar p-8 bg-card-pixar-violet/10 border-white/5">
+              <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/40 mb-6 flex items-center gap-3">
                 <BarChart3 className="h-4 w-4 text-primary" />
                 Desempenho por Tópico
               </h3>
-              <div className="space-y-3">
-                {topicStats.map((s) => (
-                  <div key={s.topic}>
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="font-medium truncate mr-2">{s.topic}</span>
-                      <span className="text-muted-foreground flex-shrink-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                {topicStats.slice(0, 10).map((s) => (
+                  <div key={s.topic} className="space-y-2">
+                    <div className="flex items-center justify-between text-xs mb-1">
+                      <span className="font-bold text-white/80 truncate mr-2">{s.topic}</span>
+                      <span className="text-white/40 flex-shrink-0 font-mono">
                         {s.correct}/{s.total} ({s.rate}%)
                       </span>
                     </div>
                     <Progress
                       value={s.rate}
-                      className="h-2"
+                      className="h-1.5 bg-white/5"
                     />
                   </div>
                 ))}
@@ -569,76 +569,68 @@ const QuestionsBank = () => {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <div className="flex flex-wrap gap-4 items-center">
+        <div className="relative flex-1 min-w-[280px]">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
           <Input
-            placeholder="Buscar questões..."
-            className="pl-9 bg-secondary"
+            placeholder="Buscar por termo médico, enunciado ou tema..."
+            className="pl-12 h-12 bg-white/5 border-white/10 rounded-xl focus:ring-primary/20 text-white placeholder:text-white/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        {topics.length > 0 && (
-          <Select value={topicFilter} onValueChange={(v) => { setTopicFilter(v); setSubtopicFilter("all"); }}>
-            <SelectTrigger className="w-[180px] bg-secondary">
-              <SelectValue placeholder="Tópico" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os tópicos</SelectItem>
-              {topics.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        {subtopics.length > 0 && (
-          <Select value={subtopicFilter} onValueChange={setSubtopicFilter}>
-            <SelectTrigger className="w-[180px] bg-secondary">
-              <SelectValue placeholder="Subtema" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os subtemas</SelectItem>
-              {subtopics.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
-        {sources.length > 0 && (
-          <Select value={sourceFilter} onValueChange={setSourceFilter}>
-            <SelectTrigger className="w-[180px] bg-secondary">
-              <SelectValue placeholder="Fonte" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as fontes</SelectItem>
-              {sources.map((s) => (
-                <SelectItem key={s} value={s}>{s}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          {topics.length > 0 && (
+            <Select value={topicFilter} onValueChange={(v) => { setTopicFilter(v); setSubtopicFilter("all"); }}>
+              <SelectTrigger className="w-[180px] h-12 bg-white/5 border-white/10 rounded-xl text-white">
+                <SelectValue placeholder="Tópico" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1a24] border-white/10">
+                <SelectItem value="all">Todos os tópicos</SelectItem>
+                {topics.map((t) => (
+                  <SelectItem key={t} value={t}>{t}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          {subtopics.length > 0 && (
+            <Select value={subtopicFilter} onValueChange={setSubtopicFilter}>
+              <SelectTrigger className="w-[180px] h-12 bg-white/5 border-white/10 rounded-xl text-white">
+                <SelectValue placeholder="Subtema" />
+              </SelectTrigger>
+              <SelectContent className="bg-[#1a1a24] border-white/10">
+                <SelectItem value="all">Todos os subtemas</SelectItem>
+                {subtopics.map((s) => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        </div>
       </div>
 
       {/* Questions list */}
       {loading ? (
-        <div className="text-center py-12 text-muted-foreground">Carregando...</div>
+        <div className="flex justify-center py-24">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+        </div>
       ) : filtered.length === 0 ? (
-        <div className="glass-card p-8 text-center">
-          <Database className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-          <p className="text-muted-foreground">
+        <div className="glass-card-pixar p-16 text-center border-dashed border-white/10">
+          <Database className="h-16 w-16 mx-auto text-white/10 mb-6" />
+          <p className="text-white/40 font-medium">
             {questions.length === 0
               ? "Nenhuma questão salva. Use o Gerador de Questões para criar e salvar questões."
               : "Nenhuma questão encontrada com os filtros atuais."}
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((q) => (
-            <div key={q.id} className="glass-card p-4">
-              <div className="flex items-start justify-between gap-3">
+        <div className="grid grid-cols-1 gap-6">
+          {filtered.slice(0, 50).map((q) => (
+            <div key={q.id} className="glass-card-pixar p-6 group hover:bg-white/[0.04] transition-all">
+              <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+
                     {q.topic && (
                       <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">
                         {q.topic}
