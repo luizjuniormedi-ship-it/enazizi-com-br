@@ -12,11 +12,14 @@ const MAX_PER_HOUR = 100;
 const MIN_QUALITY = 50;
 const STUCK_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
 
-// Gemini Guard: Desativado para permitir uso híbrido (OpenAI + Gemini)
-const FORBIDDEN_MODELS: string[] = [];
+// Gemini Guard: Ativado para garantir política OpenAI-only
+const FORBIDDEN_MODELS = ["gemini", "google", "claude"];
 
 function checkGeminiGuard(model: string) {
-  // Guard desativado conforme solicitação do usuário para reativar Gemini
+  const isForbidden = FORBIDDEN_MODELS.some(m => model.toLowerCase().includes(m));
+  if (isForbidden) {
+    throw new Error(`POLÍTICA DE SEGURANÇA: Modelo ${model} é proibido. Use apenas OpenAI.`);
+  }
   return true;
 }
 
@@ -36,7 +39,6 @@ type StructuredLesson = {
   video_script?: Record<string, unknown>;
   notebooklm_prompt?: string;
   cinematic_video_prompt?: string;
-  google_vids_prompt?: string;
 };
 
 Deno.serve(async (req) => {
@@ -226,11 +228,8 @@ Deno.serve(async (req) => {
       last_structuring_error: null,
       last_structuring_at: new Date().toISOString(),
       notebooklm_export: structured.notebooklm_prompt || null,
-      gemini_export: structured.cinematic_video_prompt || null, // Keeping column name for compatibility
-      google_vids_export: structured.google_vids_prompt || null,
       cinematic_prompt: { 
-        gpt5: structured.cinematic_video_prompt, 
-        google_vids: structured.google_vids_prompt 
+        gpt5: structured.cinematic_video_prompt
       },
       metadata: {
         ...(lesson.metadata || {}),
@@ -382,7 +381,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     duration_ms: Date.now() - dbStart,
     primary_model: "openai/gpt-5-mini",
     fallback_model: "openai/gpt-5",
-    gemini_guard_status: "disabled",
+    gemini_guard_status: "active",
     forbidden_models_found: false,
     gateway_status: gatewayStatus,
     db_latency: dbLatency,
@@ -476,7 +475,6 @@ const STRUCTURE_TOOL = {
         },
         notebooklm_prompt: { type: "string" },
         cinematic_video_prompt: { type: "string" },
-        google_vids_prompt: { type: "string" },
       },
       required: ["title", "chapters", "video_script", "notebooklm_prompt"],
     },

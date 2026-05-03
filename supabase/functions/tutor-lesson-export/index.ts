@@ -87,8 +87,7 @@ Deno.serve(async (req) => {
         content = renderCinematicPrompt(lesson, sc);
         break;
       case "google_vids":
-        content = renderGoogleVidsPrompt(lesson, sc);
-        break;
+        return json({ error: "format_deprecated", message: "Google Vids export is no longer supported." }, 400);
       case "markdown":
         content = renderMarkdown(lesson, sc);
         break;
@@ -206,8 +205,8 @@ ${(sc.flashcard_suggestions ?? [])
 ## Prompt para NotebookLM
 ${sc.notebooklm_prompt ?? "Gerar resumo, áudio guiado e mapa de estudo fiel ao conteúdo acima."}
 
-## Prompt para Vídeo GPT-5 / Google Vids
-${sc.cinematic_video_prompt || sc.gemini_video_prompt || "—"}
+## Prompt para Vídeo GPT-5
+${sc.cinematic_video_prompt || "—"}
 
 ## Referências
 ${bullet(sc.references)}
@@ -226,7 +225,7 @@ Tema: ${sc.subject ?? "—"} / ${sc.topic ?? "—"}
 Duração-alvo: ${sc.estimated_duration_minutes ?? 8} minutos
 
 ## Briefing
-${sc.cinematic_video_prompt || sc.gemini_video_prompt || "Crie uma videoaula didática em pt-BR sobre o conteúdo abaixo."}
+${sc.cinematic_video_prompt || "Crie uma videoaula didática em pt-BR sobre o conteúdo abaixo."}
 
 ## Abertura
 ${vs.opening ?? "—"}

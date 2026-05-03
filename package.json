@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "ai:guard": "node scripts/ai-guard.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

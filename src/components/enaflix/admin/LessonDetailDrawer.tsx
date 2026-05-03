@@ -231,9 +231,9 @@ export function LessonDetailDrawer({
               </TabsContent>
 
               <TabsContent value="prompts" className="space-y-5 mt-0">
-                {(sc?.cinematic_video_prompt || sc?.gemini_prompt) && (
+                {sc?.cinematic_video_prompt && (
                   <Section title="Prompt Vídeo Cinematográfico">
-                    <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.cinematic_video_prompt || sc.gemini_prompt}</pre>
+                    <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.cinematic_video_prompt}</pre>
                   </Section>
                 )}
                 {sc?.notebooklm_prompt && (
@@ -241,7 +241,7 @@ export function LessonDetailDrawer({
                     <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.notebooklm_prompt}</pre>
                   </Section>
                 )}
-                {!sc?.cinematic_video_prompt && !sc?.gemini_prompt && !sc?.notebooklm_prompt && (
+                {!sc?.cinematic_video_prompt && !sc?.notebooklm_prompt && (
                   <div className="text-sm text-white/50 text-center py-8">
                     Sem prompts dedicados nesta aula.
                   </div>
@@ -268,11 +268,14 @@ export function LessonDetailDrawer({
 
                 <div className="h-px bg-white/5 my-2" />
                 <Section title="Exportações de Vídeo">
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
-                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Vídeo Cinematográfico" onClick={() => onExport(lesson, "cinematic")} disabled={!isStructured} />
-                    <ActionPill icon={<Film className="h-4 w-4" />} label="Google Vids" onClick={() => onExport(lesson, "google_vids")} disabled={!isStructured} />
-                    <ActionPill icon={<Download className="h-4 w-4" />} label="Markdown" onClick={() => onExport(lesson, "markdown")} disabled={!isStructured} />
+                  <div className="flex flex-col gap-2 mt-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
+                      <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Vídeo Cinematográfico" onClick={() => onExport(lesson, "cinematic")} disabled={!isStructured} />
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                      <ActionPill icon={<Download className="h-4 w-4" />} label="Markdown" onClick={() => onExport(lesson, "markdown")} disabled={!isStructured} />
+                    </div>
                   </div>
                 </Section>
 
