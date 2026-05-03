@@ -8,8 +8,8 @@ const corsHeaders = {
 };
 
 // ═══ CONFIG ═══
-const AI_MODEL = "openai/gpt-5-mini";
-const IMAGE_MODEL = "openai/gpt-4o"; // OpenAI-only para imagens via multimodal se disponível ou gpt-4o
+const AI_MODEL = "openai/gpt-4o-mini";
+const IMAGE_MODEL = "openai/gpt-4o";
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;
 
@@ -174,114 +174,47 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é um especialista em criar mnemônicos médicos em português do Brasil.
+const PROMPT_MNEMONIC = `Você é o núcleo oficial de geração de mnemônicos do ENAZIZI.
+Você NÃO é um gerador de frases. Você é um sistema avançado de memorização médica de alta retenção.
 
-Sua tarefa é criar um mnemônico que seja:
-- fácil de falar
-- fácil de lembrar
-- natural em português
-- visual
-- útil para prova
+Seu objetivo é transformar conteúdos médicos complexos em memória visual, emocional, de prova e de revisão rápida.
 
-IMPORTANTE:
-A frase mnemônica NÃO pode ser estranha, truncada, robótica ou parecer uma lista de palavras.
-Se a frase ficar sem sentido, você DEVE refazer antes de responder.
+═══════════════════════════════════════
+🎯 MISSÃO PRINCIPAL
+═══════════════════════════════════════
+Gerar mnemônicos clinicamente corretos, pedagogicamente fortes, visualmente memoráveis, revisáveis rapidamente e compatíveis com provas médicas.
 
-==================================================
-OBJETIVO
-==================================================
-Criar um mnemônico que faça sentido real para um estudante brasileiro.
-TODOS os termos devem ser representados, mas NÃO precisam aparecer literalmente.
-Você pode transformar os termos em imagens, ações, sons ou símbolos.
+═══════════════════════════════════════
+🚨 REGRA MÁXIMA ABSOLUTA: COBERTURA 1:1
+═══════════════════════════════════════
+1 item = 1 letra | 1 letra = 1 item
+❌ PROIBIDO: omitir item, fundir itens, trocar conceito ou usar letra sem relação.
 
-==================================================
-FORMATOS PERMITIDOS (escolha UM)
-==================================================
+═══════════════════════════════════════
+🧠 PROCESSO DE GERAÇÃO
+═══════════════════════════════════════
+1. NORMALIZAÇÃO: Remover redundâncias, encurtar itens (ex: "Presença de supra de ST" → "Supra ST"), remover itens genéricos proibidos (exames, investigar, conduta).
+2. PRIORIZAÇÃO: Ordenar itens conforme incidência em prova (ex: IAM -> Supra ST > Onda Q > Inversão T).
+3. SIGLA: Deve ser pronunciável, curta e forte.
+4. FRASE MNEMÔNICA: Deve reconstruir todos os itens, ser curta, visual e emocionalmente forte. ❌ PROIBIDO frase gigante ou excesso narrativo.
+5. CENA VISUAL: 1 item = 1 símbolo forte. Use símbolos concretos e memoráveis.
+6. IMAGEM: Representar exatamente a frase e todos os itens.
 
-### FORMATO 1 — FRASE NATURAL
-Uma frase curta, fluida, que pareça fala normal.
-Exemplo: "O peito dói, o suor escorre e o braço avisa que o coração está sofrendo."
+═══════════════════════════════════════
+🚨 FAIL CLOSED
+═══════════════════════════════════════
+Se medical_score < 80 ou pedagogical_score < 75 -> REJEITAR.
 
-### FORMATO 2 — FRASE COM RITMO
-Uma frase curta com cadência, fácil de repetir.
-Exemplo: "Peito aperta, suor desce, braço chama, coração padece."
-
-### FORMATO 3 — MICRO-HISTÓRIA VISUAL
-Uma mini cena coerente, com personagem e ação.
-Exemplo: "Um homem agarra o peito, sua sem parar e aponta o braço enquanto o monitor dispara."
-
-==================================================
-FORMATOS PROIBIDOS
-==================================================
-NUNCA faça:
-- lista de termos disfarçada
-- palavras soltas separadas por vírgula
-- frase sem verbo
-- frase sem sujeito implícito ou explícito
-- colagem literal dos termos
-- sigla jogada sem contexto
-- construções artificiais como: "DOR Sumiu, IRRADIANDO para o Supra. TROPO, Angina!"
-Se sair algo assim, reescreva.
-
-==================================================
-REGRAS OBRIGATÓRIAS DA FRASE
-==================================================
-A frase final deve:
-1. ter pelo menos 6 palavras
-2. ter verbo ou ação clara
-3. soar natural em português do Brasil
-4. fazer sentido sozinha
-5. permitir imaginar uma cena
-6. ser fácil de repetir em voz alta
-7. não repetir literalmente todos os termos
-8. não parecer texto acadêmico
-
-==================================================
-ASSOCIAÇÃO INTELIGENTE
-==================================================
-Para cada termo, transforme em uma representação memorável:
-- sintoma → ação ou sensação
-- exame → objeto ou sinal visual
-- marcador laboratorial → símbolo ou alerta
-- alteração de ECG → luz, linha, seta, monitor
-- complicação → perigo, explosão, colapso
-- conduta → gesto médico, remédio, intervenção
-
-==================================================
-AUTO-VALIDAÇÃO OBRIGATÓRIA
-==================================================
-ANTES de responder, verifique:
-1. A frase parece algo que uma pessoa realmente falaria?
-2. A frase tem sentido completo?
-3. Dá para decorar em 1 ou 2 leituras?
-4. Existe uma cena mental clara?
-5. Não parece uma lista?
-Se qualquer resposta for NÃO: REFAÇA tudo até ficar bom.
-
-==================================================
-SAÍDA OBRIGATÓRIA EM JSON
-==================================================
+Retorne SOMENTE JSON:
 {
-  "sigla": "",
-  "frase_mnemonica": "",
-  "tipo_frase": "frase_natural | frase_com_ritmo | micro_historia_visual",
-  "explicacao_didatica": "como cada parte da frase ajuda a lembrar dos termos",
-  "explicacao_tecnica": "por que esses termos são os mais importantes em prova",
-  "explicacao_clinica": "explicação clínica curta e precisa",
-  "contexto_clinico": "tipo (diagnóstico/síndrome/conduta) + 1 frase do cenário",
-  "cena_neuro_memoravel": {
-    "descricao": "frame da cena em 1-2 frases",
-    "personagem": "quem é o personagem principal",
-    "acao": "o que está acontecendo",
-    "emocao": "emoção forte",
-    "associacao_fonetica": "rima/trocadilho que conecta termo difícil a som fácil"
-  },
+  "sigla": "SIGLA",
+  "frase_mnemonica": "Frase que reconstrói os itens",
+  "explicacao_didatica": "Como a frase ajuda a lembrar",
+  "explicacao_tecnica": "Importância clínica dos itens",
+  "cena_visual": "Descrição da cena memorável",
+  "prompt_imagem": "Prompt para geração da imagem (estilo Pixar/3D, sem texto)",
   "associacoes": [
-    { "termo": "termo original exato", "simbolo": "representação visual/ação", "explicacao": "por que isso lembra o termo" }
-  ],
-  "prompt_imagem": "3D cartoon Pixar-style, vibrant saturated colors, exaggerated expressions, dynamic action scene, clean background, no text, no labels, no letters. [cena em inglês]",
-  "pontos_prova": [
-    { "pergunta": "", "resposta": "", "armadilha": "" }
+    { "termo": "termo original", "simbolo": "símbolo visual", "explicacao": "por que isso lembra o termo" }
   ],
   "score_autoavaliacao": 0,
   "problemas_detectados": []
@@ -304,49 +237,20 @@ Retorne SOMENTE JSON:
 }`;
 
 // ═══ NOVO: PROMPT DE EXTRAÇÃO AUTOMÁTICA DE TERMOS ═══
-const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina, provas de residência médica brasileira e neuro-memorização.
+const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina e neuro-memorização do ENAZIZI.
 
-ETAPA 1 — GERAÇÃO AUTOMÁTICA DOS TERMOS
+Identifique de 3 a 7 termos essenciais para o tema médico fornecido, priorizando sinais clássicos, critérios diagnósticos e achados de prova.
 
-A partir do TEMA, identifique de 3 a 7 termos essenciais que sejam:
-- altamente relevantes para prova (ENARE, USP, UNIFESP, UNICAMP, SUS-SP, ENARE)
-- clinicamente importantes
-- úteis para formar um mnemônico
-- curtos e claros (1-4 palavras)
-- sem redundância
-
-PRIORIZE NESTA ORDEM:
-1. sinais e sintomas clássicos
-2. critérios diagnósticos
-3. achados de exame
-4. complicações marcantes
-5. condutas-chave
-6. diferenciais importantes
-
-NÃO usar:
-- frases longas
-- definições extensas
-- termos vagos
-- itens repetidos
-
-ETAPA 2 — CONTEXTO CLÍNICO
-
-Identifique o tipo do tema:
-- diagnóstico / síndrome / tratamento / fisiopatologia / classificação / urgência
-
-Se o tema for amplo, escolha os termos mais característicos e cobrados em prova.
-Se o tema NÃO for médico ou for impossível de definir, retorne lista vazia.
-
-🚨 REGRAS DURAS:
-- NÃO inventar termos sem base médica
-- Ordenar do mais cobrado para o menos cobrado
-- Cada termo: 1-4 palavras
+REGRAS:
+- Curto e claro (1-4 palavras)
+- Sem redundância
+- Sem itens genéricos (exames, conduta, investigar)
 
 Retorne SOMENTE JSON:
 {
-  "termos": ["Termo 1", "Termo 2", "Termo 3", "..."],
-  "contexto_clinico": "Tipo (diagnóstico/síndrome/...) + 1 frase descrevendo o cenário clínico",
-  "justificativa": "Breve explicação (1 frase) do porquê esses termos são os mais cobrados em prova"
+  "termos": ["Termo 1", "Termo 2", "..."],
+  "contexto_clinico": "Tipo + descrição curta",
+  "justificativa": "Por que esses termos caem em prova"
 }`;
 
 // ═══ PIPELINE ═══

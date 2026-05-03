@@ -34,7 +34,7 @@ interface RejectionState {
 const MnemonicGenerator = () => {
   const [topic, setTopic] = useState("");
   const [subtopic, setSubtopic] = useState("");
-  const [contentType, setContentType] = useState("criterios");
+  const [contentType, setContentType] = useState("lista");
   const [itemsText, setItemsText] = useState("");
   const [loading, setLoading] = useState(false);
   const [loadingItems, setLoadingItems] = useState(false);
