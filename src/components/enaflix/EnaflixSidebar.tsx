@@ -43,7 +43,6 @@ const NAV_SECTIONS = [
       { to: "/dashboard/sessao-estudo", label: "Continuar", icon: PlayCircle },
       { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
       { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
-      { to: "/dashboard/simulados", label: "Questões", icon: FileText },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
       { to: "/dashboard/chatgpt", label: "Tutor IA", icon: Sparkles },
