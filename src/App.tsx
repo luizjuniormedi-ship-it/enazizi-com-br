@@ -125,6 +125,8 @@ const NotebookLMAnalytics = lazyWithRetry(() => import("./pages/admin/NotebookLM
 const VideoLessonsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonsAdmin"), "VideoLessonsAdmin");
 const VideoLessonDetailsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonDetailsAdmin"), "VideoLessonDetailsAdmin");
 const OfficialExamIngestion = lazyWithRetry(() => import("./pages/admin/OfficialExamIngestion"), "OfficialExamIngestion");
+const AdminIncidentDetail = lazyWithRetry(() => import("./pages/admin/AdminIncidentDetail"), "AdminIncidentDetail");
+const AdminGovernanceLogs = lazyWithRetry(() => import("./pages/admin/AdminGovernanceLogs"), "AdminGovernanceLogs");
 const AdminSettings = lazyWithRetry(() => import("./pages/admin/AdminSettings"), "AdminSettings");
 const AdminAudit = lazyWithRetry(() => import("./pages/admin/AdminAudit"), "AdminAudit");
 const MyLessonsPage = lazyWithRetry(() => import("./pages/MyLessonsPage"), "MyLessonsPage");

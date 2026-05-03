@@ -78,8 +78,17 @@ export default function PedagogyAnalytics() {
               <SelectItem value="30">Últimos 30 dias</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={() => {
+          <Button variant="outline" size="sm" onClick={async () => {
             const stamp = new Date().toISOString().slice(0, 10);
+            
+            // Log governance action
+            await supabase.from('governance_logs').insert({
+              action_type: 'csv_export',
+              target_table: 'pedagogy_analytics',
+              severity: 'info',
+              details: { days, count: data.moduleStats?.length }
+            });
+
             const csvData = [
               { metric: "Tempo Médio", value: data.avg_session_time },
               { metric: "Taxa de Abandono", value: data.abandonment_rate },
