@@ -30,27 +30,28 @@ type LogEvent =
  */
 export async function logVideoRecommendationEvent(
   event: LogEvent,
-  payload: Record<string, unknown> = {},
+  payload: Record<string, any> = {},
 ) {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     
-    // Log no console para debug rápido (ambiente dev)
     if (import.meta.env.DEV) {
       console.log(`[TutorVideoRec] ${event}`, payload);
     }
 
     // Persistência em telemetry_events
-    await supabase.from('telemetry_events').insert({
+    // session_id é obrigatório no schema
+    const sessionId = (payload.session_id || payload.conversationId || payload.userId || user?.id || 'anonymous') as string;
+
+    await (supabase.from('telemetry_events') as any).insert({
       event_name: `tutor_video_${event}`,
-      user_id: user?.id || payload.userId,
-      session_id: payload.session_id || payload.conversationId,
+      user_id: user?.id || (typeof payload.userId === 'string' ? payload.userId : null),
+      session_id: sessionId,
       properties: {
         ...payload,
-        service: 'tutor_video_recommendation',
-        timestamp: new Date().toISOString()
+        service: 'tutor_video_recommendation'
       },
-      route: window.location.pathname
+      route: window.location.pathname || '/'
     });
   } catch (error) {
     console.error("[TutorVideoRec] Erro ao persistir telemetria:", error);
