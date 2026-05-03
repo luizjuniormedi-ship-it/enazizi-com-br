@@ -818,7 +818,7 @@ const StudySession = () => {
               className="gap-2 text-muted-foreground hover:text-foreground h-7"
             >
               <ChevronLeft className="h-4 w-4" />
-              Voltar ao Panorama
+              Voltar ao Início ENAFLIX
             </Button>
           </div>
         )}
