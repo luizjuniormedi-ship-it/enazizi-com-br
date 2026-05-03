@@ -1,24 +1,30 @@
-# Correção Crítica: Erro Runtime tutor-lesson-structure
+# Auditoria e Correção: Tutor Lesson Structure Runtime Error
 
-## 1. Causa Raiz
-A Edge Function estava retornando erros não-JSON (crus) ou códigos de status HTTP sem um corpo estruturado que o frontend pudesse interpretar, resultando na mensagem genérica "returned a non-2xx status code" e potencial instabilidade na UI.
+## 1. Problema Identificado
+O sistema de Curadoria de Aulas estava apresentando falhas críticas (502/500) ao tentar reestruturar aulas via IA.
+O erro principal era:
+`invalid model: google/gemini-2.0-flash-exp, allowed models: [openai`
 
-## 2. Blindagem Implementada
-- **Resposta Estruturada Global**: Toda e qualquer falha agora é capturada por um `try/catch` global que retorna um JSON com `success: false` e `technical_reason`.
-- **Validação de Ambiente**: Adicionada verificação rigorosa de segredos (`LOVABLE_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`) antes de qualquer processamento.
-- **Proteção Canônica**: O código foi modificado para realizar apenas `UPDATE` baseado no `lesson_id`. Os campos `topic`, `subject`, `subtopic`, `user_id` e `source_session_id` são **preservados**, e as sugestões da IA são salvas em `metadata.ai_suggested_*`.
+## 2. Diagnóstico Técnico
+- **Restrição de Gateway**: O Lovable AI Gateway para este projeto estava configurado para aceitar apenas modelos com o prefixo `openai/`.
+- **Modelos Depreciados**: O código anterior tentava utilizar o `google/gemini-2.0-flash-exp`, que não era reconhecido ou permitido.
+- **Cascata de Falhas**: A função `handleReprocessFailures` no frontend disparava múltiplas chamadas simultâneas, sobrecarregando o gateway com erros de modelo inválido.
 
-## 3. Gestão de Status e Telemetria
-- **Falha Suave**: Se a IA falhar (timeout ou gateway), a aula é marcada como `needs_adjustment` com o erro técnico registrado em `last_structuring_error`, permitindo reprocessamento manual.
-- **Eventos de Auditoria**: Registra `lesson_structure_failed` ou `lesson_structuring_retry` com detalhes do modelo e status do gateway.
+## 3. Ações Tomadas
+- **Migração para OpenAI**: Atualizada a lista de modelos para `["openai/gpt-4o-mini", "openai/gpt-4o"]`, garantindo compatibilidade canônica com o gateway.
+- **Resiliência de Parsing**: Adicionado bloco `try-catch` no parsing de argumentos das ferramentas da IA para evitar crashes silenciosos em caso de retorno mal-formado.
+- **Instrumentação de Logs**: Adicionados logs de versão (v2.1) e rastreamento de erros de parsing no console do Deno.
+- **Healthcheck Atualizado**: A função de diagnóstico interno agora valida a disponibilidade dos modelos OpenAI em vez de Gemini.
 
-## 4. Melhorias no Frontend (Admin)
-- **Interpretador de Resposta**: O `AdminLessonsMemory` agora verifica `data.success === false` e exibe o `technical_reason` no console, mantendo o usuário informado via Toast sem quebrar a tela.
+## 4. Testes de Validação
+- **Deploy**: Executado com sucesso.
+- **Auditoria de Banco**: Verificadas falhas anteriores na tabela `tutor_lesson_events` que confirmavam a rejeição do modelo Gemini.
+- **Proteção de Dados**: Confirmado que a função mantém a integridade do `topic`, `subject` e `subtopic` originais, salvando sugestões apenas em `metadata`.
 
-## 5. Validação Técnica
-- **Typecheck**: OK
-- **Build**: OK
-- **RLS**: Mantido via Service Role para persistência segura.
+## 5. Próximos Passos
+- Monitorar a taxa de sucesso das novas chamadas via painel admin.
+- Se necessário, habilitar modelos `google/` através de suporte ou configuração de gateway adicional se houver preferência por Gemini 2.0 futuramente.
 
 ---
-*Resultado: O fluxo de reestruturação agora é resiliente, auditável e não interfere na integridade dos dados originais.*
+**Status Final**: CORRIGIDO
+**Modelo Ativo**: openai/gpt-4o-mini

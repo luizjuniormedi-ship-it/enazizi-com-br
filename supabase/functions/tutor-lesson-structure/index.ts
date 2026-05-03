@@ -32,6 +32,7 @@ type StructuredLesson = {
 };
 
 Deno.serve(async (req) => {
+  console.log("Tutor Lesson Structure v2.1 (OpenAI Fixed)");
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -301,10 +302,10 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     
     if (aiResp.ok) {
       const models = await aiResp.json();
-      const hasPro = models.data?.some((m: any) => m.id === "google/gemini-2.5-pro");
-      const hasFlash = models.data?.some((m: any) => m.id === "google/gemini-2.5-flash");
-      checks.push({ name: "Gemini Pro Available", ok: hasPro });
-      checks.push({ name: "Gemini Flash Available", ok: hasFlash });
+      const hasMini = models.data?.some((m: any) => m.id === "openai/gpt-4o-mini");
+      const hasPro = models.data?.some((m: any) => m.id === "openai/gpt-4o");
+      checks.push({ name: "OpenAI Mini Available", ok: hasMini });
+      checks.push({ name: "OpenAI Pro Available", ok: hasPro });
     }
   } catch (e) {
     checks.push({ name: "AI Gateway Reachability", ok: false, error: (e as Error).message });
@@ -430,7 +431,7 @@ const STRUCTURE_TOOL = {
 };
 
 async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<string, unknown>) {
-  const models = ["google/gemini-2.5-pro", "google/gemini-2.5-flash"];
+  const models = ["openai/gpt-4o-mini", "openai/gpt-4o"];
   let lastError = "";
   let lastStatus: number | null = null;
   
@@ -483,7 +484,13 @@ Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o
 
   const data = await resp.json();
   const args = data?.choices?.[0]?.message?.tool_calls?.[0]?.function?.arguments;
-  return { data: args ? JSON.parse(args) : null, status: resp.status };
+  let parsed = null;
+  try {
+    if (args) parsed = JSON.parse(args);
+  } catch (e) {
+    console.error("Failed to parse tool arguments:", e, "Raw:", args);
+  }
+  return { data: parsed, status: resp.status };
 }
 
 function computeQualityScore(s: StructuredLesson): number {
