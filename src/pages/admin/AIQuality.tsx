@@ -70,8 +70,17 @@ export default function AIQuality() {
               <SelectItem value="30">Últimos 30 dias</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="sm" onClick={() => {
+          <Button variant="outline" size="sm" onClick={async () => {
             const stamp = new Date().toISOString().slice(0, 10);
+            
+            // Log governance action
+            await supabase.from('governance_logs').insert({
+              action_type: 'csv_export',
+              target_table: 'ai_quality',
+              severity: 'info',
+              details: { days }
+            });
+
             const csvData = [
               { metric: "Latência Média", value: data?.avg_latency_ms },
               { metric: "Taxa de Fallback", value: data?.fallback_rate },

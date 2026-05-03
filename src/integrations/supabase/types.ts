@@ -530,6 +530,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_alert_schedules: {
+        Row: {
+          admin_id: string | null
+          created_at: string | null
+          filters: Json | null
+          frequency: string
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          notification_channels: string[] | null
+        }
+        Insert: {
+          admin_id?: string | null
+          created_at?: string | null
+          filters?: Json | null
+          frequency: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          notification_channels?: string[] | null
+        }
+        Update: {
+          admin_id?: string | null
+          created_at?: string | null
+          filters?: Json | null
+          frequency?: string
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          notification_channels?: string[] | null
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -556,6 +589,74 @@ export type Database = {
           target_user_id?: string | null
         }
         Relationships: []
+      }
+      admin_incidents: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          edge_function: string | null
+          id: string
+          initial_event_id: string | null
+          last_occurrence_at: string | null
+          metrics_snapshot: Json | null
+          occurrence_count: number | null
+          rca_diagnosis: Json | null
+          resolution_notes: string | null
+          route: string | null
+          severity: string
+          status: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          edge_function?: string | null
+          id?: string
+          initial_event_id?: string | null
+          last_occurrence_at?: string | null
+          metrics_snapshot?: Json | null
+          occurrence_count?: number | null
+          rca_diagnosis?: Json | null
+          resolution_notes?: string | null
+          route?: string | null
+          severity: string
+          status?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          edge_function?: string | null
+          id?: string
+          initial_event_id?: string | null
+          last_occurrence_at?: string | null
+          metrics_snapshot?: Json | null
+          occurrence_count?: number | null
+          rca_diagnosis?: Json | null
+          resolution_notes?: string | null
+          route?: string | null
+          severity?: string
+          status?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_incidents_initial_event_id_fkey"
+            columns: ["initial_event_id"]
+            isOneToOne: false
+            referencedRelation: "telemetry_events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       admin_message_reads: {
         Row: {
@@ -9398,6 +9499,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      governance_logs: {
+        Row: {
+          action_type: string
+          admin_id: string | null
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          severity: string | null
+          target_table: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action_type: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          severity?: string | null
+          target_table?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action_type?: string
+          admin_id?: string | null
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          severity?: string | null
+          target_table?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
       }
       governance_thresholds: {
         Row: {
@@ -19283,6 +19420,7 @@ export type Database = {
         }
         Returns: string
       }
+      generate_incident_rca: { Args: { incident_id: string }; Returns: Json }
       get_banca_coverage_report: {
         Args: never
         Returns: {

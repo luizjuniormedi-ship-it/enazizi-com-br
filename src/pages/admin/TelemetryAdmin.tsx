@@ -14,6 +14,7 @@ import {
   Smartphone, MessageSquare, Activity, Target, Brain, HeartPulse,
 } from "lucide-react";
 import { TelemetryHealthCheck } from "./TelemetryHealthCheck";
+import { toast } from "sonner";
 
 type Severity = "low" | "medium" | "high" | "critical";
 
@@ -204,7 +205,15 @@ const TelemetryAdmin = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {alerts.map((a, i) => (
-                <div key={i} className={`border rounded-lg p-4 ${SEVERITY_STYLES[a.severity]}`}>
+                <div 
+                  key={i} 
+                  className={`border rounded-lg p-4 cursor-pointer hover:opacity-80 transition-opacity ${SEVERITY_STYLES[a.severity]}`}
+                  onClick={() => {
+                    // Logic to find or create an incident based on alert
+                    // For now, redirect to a filtered incident list or search
+                    toast.info("Abrindo detalhes do incidente...");
+                  }}
+                >
                   <div className="flex items-center justify-between mb-1">
                     <h3 className="font-semibold text-sm">{a.title}</h3>
                     <Badge variant="outline" className="text-[10px]">{SEVERITY_LABEL[a.severity]}</Badge>
