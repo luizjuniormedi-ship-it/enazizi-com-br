@@ -228,10 +228,10 @@ Deno.serve(async (req) => {
       last_structuring_error: null,
       last_structuring_at: new Date().toISOString(),
       notebooklm_export: structured.notebooklm_prompt || null,
-      gemini_export: (structured as any).cinematic_video_prompt || null,
+      gemini_export: structured.cinematic_video_prompt || null, // Keeping column name for compatibility
       google_vids_export: structured.google_vids_prompt || null,
       cinematic_prompt: { 
-        gpt5: (structured as any).cinematic_video_prompt, 
+        gpt5: structured.cinematic_video_prompt, 
         google_vids: structured.google_vids_prompt 
       },
       metadata: {
@@ -247,7 +247,8 @@ Deno.serve(async (req) => {
         gateway_status: gatewayStatus,
         parsing_strategy: parsingStrategy,
         score: score,
-        finished_at: new Date().toISOString()
+        finished_at: new Date().toISOString(),
+        guard_status: "passed"
       }
     };
 
