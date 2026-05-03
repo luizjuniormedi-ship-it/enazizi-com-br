@@ -47,17 +47,23 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     }
 
     const check = async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
-        .eq("user_id", user.id)
-        .maybeSingle();
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
+          .eq("user_id", user.id)
+          .maybeSingle();
 
-      if (data?.is_blocked) {
-        setProfileStatus("blocked");
-      } else {
+        if (error) throw error;
+
+        if (data?.is_blocked) {
+          setProfileStatus("blocked");
+          setCheckingProfile(false);
+          return;
+        }
+
         const userType = data?.user_type || "estudante";
-        const profileComplete = isProfileComplete({
+        const incomplete = !isProfileComplete({
           phone: data?.phone,
           display_name: data?.display_name,
           periodo: data?.periodo,
@@ -65,45 +71,39 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           user_type: userType,
         });
 
-        if (userType === "professor" && profileComplete && data?.status === "pending") {
+        setProfileIncomplete(incomplete);
+        if (incomplete) {
+          setFormName(data?.display_name || "");
+          setFormPhone(data?.phone || "");
+          setFormPeriodo(data?.periodo ? String(data.periodo) : "");
+          setFormFaculdade(data?.faculdade || "");
+          setFormUserType(userType);
+        }
+
+        const currentStatus = data?.status || "pending";
+        // Auto-activate pending professors if profile is complete
+        if (userType === "professor" && !incomplete && currentStatus === "pending") {
           await supabase.from("profiles").update({ status: "active" }).eq("user_id", user.id);
           setProfileStatus("active");
         } else {
-          setProfileStatus(data?.status || "pending");
+          setProfileStatus(currentStatus);
         }
+
+        const obVersion = (data as any)?.onboarding_version ?? 1;
+        setOnboardingVersion(obVersion);
+
+        // V2 Onboarding Logic
+        if (obVersion < 2 && !incomplete && (currentStatus === "active" || (userType === "professor" && !incomplete))) {
+          const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
+          const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
+          if (!welcomeSeen) setShowWelcome(true);
+          else if (!onboardingDone) setShowOnboarding(true);
+        }
+      } catch (err) {
+        console.error("Error checking profile:", err);
+      } finally {
+        setCheckingProfile(false);
       }
-
-      const userType = data?.user_type || "estudante";
-      const incomplete = !isProfileComplete({
-        phone: data?.phone,
-        display_name: data?.display_name,
-        periodo: data?.periodo,
-        faculdade: data?.faculdade,
-        user_type: userType,
-      });
-
-      setProfileIncomplete(incomplete);
-      if (incomplete) {
-        setFormName(data?.display_name || "");
-        setFormPhone(data?.phone || "");
-        setFormPeriodo(data?.periodo ? String(data.periodo) : "");
-        setFormFaculdade(data?.faculdade || "");
-        setFormUserType(userType);
-      }
-
-      const obVersion = (data as any)?.onboarding_version ?? 1;
-      setOnboardingVersion(obVersion);
-      const effectiveStatus =
-        userType === "professor" && !incomplete && data?.status === "pending" ? "active" : data?.status;
-
-      if (obVersion < 2 && !incomplete && effectiveStatus === "active") {
-        const welcomeSeen = localStorage.getItem("enazizi_v2_welcome_seen") === "true";
-        const onboardingDone = localStorage.getItem("enazizi_v2_onboarding_done") === "true";
-        if (!welcomeSeen) setShowWelcome(true);
-        else if (!onboardingDone) setShowOnboarding(true);
-      }
-
-      setCheckingProfile(false);
     };
 
     check();
