@@ -297,7 +297,7 @@ async function callOpenAIJson<T>(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<T> {
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
+  const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
