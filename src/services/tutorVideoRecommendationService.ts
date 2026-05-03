@@ -31,7 +31,7 @@ function normalizeMedicalTerm(term: string): string[] {
     "iam": ["infarto agudo do miocardio", "ataque cardiaco"],
     "ic": ["insuficiencia cardiaca", "coracao"],
     "icc": ["insuficiencia cardiaca congestiva", "coracao"],
-    "pericardite": ["pericardio", "inflamacao cardiaca", "tamponamento"],
+    "pericardite": ["pericardio", "inflamacao cardiaca", "tamponamento", "cardiologia"],
     "pneumonia": ["infeccao pulmonar", "broncopneumonia", "pulmao"],
   };
 
