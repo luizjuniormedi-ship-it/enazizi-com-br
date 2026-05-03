@@ -87,8 +87,7 @@ Deno.serve(async (req) => {
         content = renderCinematicPrompt(lesson, sc);
         break;
       case "google_vids":
-        content = renderGoogleVidsPrompt(lesson, sc);
-        break;
+        return json({ error: "format_deprecated", message: "Google Vids export is no longer supported." }, 400);
       case "markdown":
         content = renderMarkdown(lesson, sc);
         break;
