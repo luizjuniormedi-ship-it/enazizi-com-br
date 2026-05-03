@@ -168,6 +168,10 @@ export default function AdminMonitoring() {
               <Activity className="h-3.5 w-3.5" />
               Sistema
             </TabsTrigger>
+            <TabsTrigger value="video-audit" className="text-xs gap-1.5">
+              <Film className="h-3.5 w-3.5" />
+              Auditoria Vídeo
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
