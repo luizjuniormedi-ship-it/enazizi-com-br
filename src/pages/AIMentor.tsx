@@ -192,8 +192,8 @@ const AIMentor = () => {
                   title="MentorMed Premium"
                   subtitle="Inteligência ENAZIZI em Tempo Real"
                   icon={<Sparkles className="h-6 w-6 text-primary" />}
-                  welcomeMessage="Olá! Sou o MentorMed, seu mentor IA especializado em Residência Médica. Como posso ajudá-lo hoje? 🩺"
-                  placeholder="Faça uma pergunta sobre residência médica..."
+                  welcomeMessage="Olá! Sou o MentorMed, seu núcleo pedagógico ENAZIZI. Estou pronto para transformar seu material em aprendizado profundo com foco em residência médica. Como vamos começar hoje? 🩺"
+                  placeholder="Inicie um caso clínico ou tire uma dúvida técnica..."
                   functionName="mentor-chat"
                   quickActions={quickActions}
                   onSendRef={onSendRef}
