@@ -5,8 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Loader2, Save, ShieldCheck, Cpu, Zap, Timer, AlertTriangle, Blocks } from "lucide-react";
+import { 
+  Loader2, Save, ShieldCheck, Cpu, Zap, Timer, 
+  AlertTriangle, Blocks, Database, Trash2 
+} from "lucide-react";
 
 export default function AdminSettings() {
   const [loading, setLoading] = useState(true);
