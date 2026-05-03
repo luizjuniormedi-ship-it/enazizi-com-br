@@ -13,6 +13,7 @@ import { useSessionMemory } from "@/contexts/SessionMemoryContext";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { Button } from "@/components/ui/button";
+import { useTutorCME } from "@/hooks/useTutorCME";
 
 import { FUNCTION_NAME, NON_MEDICAL_KEYWORDS, ensureSequentialInitialMessage } from "@/components/tutor/TutorConstants";
 import type { Msg } from "@/components/tutor/TutorConstants";
