@@ -342,7 +342,6 @@ const AIMentor = () => {
       )}
     </div>
   );
-});
-AIMentor.displayName = "AIMentor";
+};
 
 export default AIMentor;
