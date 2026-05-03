@@ -1081,19 +1081,19 @@ const VideoLessonPlayer = () => {
                     <BrainCircuit className="h-4 w-4 text-primary" /> Seu Progresso Cognitivo
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant={tutorMode === "feynman" ? "secondary" : "ghost"}
+                      size="sm"
                       className="h-7 text-[10px] gap-1.5 border border-primary/20 hover:bg-primary/10 text-primary px-2"
-                      onClick={() => toast.info("Modo Feynman (IA) Ativado: O Tutor agora usará explicações simplificadas para esta aula.")}
+                      onClick={() => openTutorWithMode("feynman")}
                     >
                       <Volume2 className="h-3 w-3" /> Tutor Feynman
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant={tutorMode === "exam_sprint" ? "secondary" : "ghost"}
+                      size="sm"
                       className="h-7 text-[10px] gap-1.5 border border-orange-500/20 hover:bg-orange-500/10 text-orange-500 px-2"
-                      onClick={() => toast.info("Modo Exam Sprint (IA) Ativado: O Tutor focará em pontos críticos de prova e bizus.")}
+                      onClick={() => openTutorWithMode("exam_sprint")}
                     >
                       <Flame className="h-3 w-3" /> Tutor Sprint
                     </Button>
