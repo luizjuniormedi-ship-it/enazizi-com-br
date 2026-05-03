@@ -186,8 +186,31 @@ export function EnaflixSidebar() {
                       to="/admin"
                       label="Admin Hub"
                       icon={Shield}
-                      active={location.pathname === "/admin" && !location.pathname.includes("/admin/users")}
+                      active={location.pathname === "/admin" && !location.search}
                     />
+                    
+                    {/* Atalhos Rápidos de Gestão */}
+                    <div className="py-2 space-y-1">
+                      <SidebarItem
+                        to="/admin?tab=ingestion"
+                        label="Gerar Questões"
+                        icon={Sparkles}
+                        active={location.search === "?tab=ingestion"}
+                      />
+                      <SidebarItem
+                        to="/admin?tab=question-review"
+                        label="Aprovar Questões"
+                        icon={UserCheck}
+                        active={location.search === "?tab=question-review"}
+                      />
+                      <SidebarItem
+                        to="/admin?tab=image-review"
+                        label="Aprovar Imagens"
+                        icon={ImageIcon}
+                        active={location.search === "?tab=image-review"}
+                      />
+                    </div>
+
                     <SidebarItem
                       to="/admin/users"
                       label="Usuários"
