@@ -368,12 +368,18 @@ export default function MnemonicGeneratorPage() {
               </div>
             </div>
 
-            <div className="space-y-1 relative">
+            <div className="space-y-1 relative" id="mnemonic-topic-input">
               <label className="text-sm font-medium">Tema médico</label>
               <div className="relative group">
                 <Input
                   value={tema}
                   onChange={(e) => setTema(e.target.value)}
+                  onFocus={() => {
+                    if (tema.length >= 2 && !tema.includes(" — ")) {
+                      // Trigger suggestion search on focus if input already has enough length
+                      setTema(tema); 
+                    }
+                  }}
                   placeholder="Ex: Critérios de Light para derrame pleural"
                   className="pr-10"
                 />
@@ -387,16 +393,17 @@ export default function MnemonicGeneratorPage() {
               {suggestedTopics.length > 0 && (
                 <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                   <div className="p-1.5 border-b bg-muted/30">
-                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-2">Subtemas sugeridos</p>
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-2">Subtemas sugeridos (Matriz Curricular)</p>
                   </div>
                   <div className="max-h-[220px] overflow-y-auto">
                     {suggestedTopics.map((s, i) => (
                       <button
                         key={i}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors flex flex-col gap-0.5"
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors flex flex-col gap-0.5 border-b last:border-0 border-border/40"
                         onClick={() => handleUseSuggestion(s)}
                       >
-                        <span className="font-medium">{s.subtema || s.tema}</span>
+                        <span className="font-semibold text-primary/90">{s.subtema || s.tema}</span>
                         {s.subtema && <span className="text-[10px] text-muted-foreground italic">{s.tema}</span>}
                       </button>
                     ))}
