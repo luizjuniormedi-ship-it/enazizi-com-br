@@ -67,6 +67,8 @@ const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCogniti
 const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
 const AdminLessonsMemory = lazy(() => import("@/pages/admin/AdminLessonsMemory"));
 const AdminLessonRatingsPanel = lazy(() => import("@/components/admin/AdminLessonRatingsPanel").then(m => ({ default: m.AdminLessonRatingsPanel })));
+const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/TutorLessonStructureDashboard").then(m => ({ default: m.TutorLessonStructureDashboard })));
+
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
