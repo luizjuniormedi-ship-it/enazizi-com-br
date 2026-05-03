@@ -6,7 +6,7 @@ import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter"
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { updateDomainMap } from "@/lib/updateDomainMap";
-import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap, ChevronLeft, ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { Database, Play, Trash2, ChevronDown, ChevronUp, Search, BarChart3, Target, TrendingUp, GraduationCap, Download, HelpCircle, Zap, ChevronLeft, ArrowRight, CheckCircle2, Sparkles, Loader2 } from "lucide-react";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { cn } from "@/lib/utils";
