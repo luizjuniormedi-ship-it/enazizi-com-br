@@ -302,15 +302,25 @@ async function runHealthcheck(admin: any, lovableKey: string) {
   checks.push({ name: "SERVICE_ROLE", ok: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") });
   checks.push({ name: "LOVABLE_API_KEY", ok: !!lovableKey });
 
-  // 4) AI Models check (Gateway)
+  // 4) AI Gateway check (Simple POST test)
   try {
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/models", {
-      headers: { Authorization: `Bearer ${lovableKey}` }
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { 
+        Authorization: `Bearer ${lovableKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-4o-mini",
+        messages: [{ role: "user", content: "hi" }],
+        max_tokens: 1
+      })
     });
     checks.push({ name: "Lovable AI Gateway", ok: aiResp.ok, status: aiResp.status });
   } catch (e) {
     checks.push({ name: "AI Gateway Reachability", ok: false, error: (e as Error).message });
   }
+
 
   // 5) Stuck Lessons Check
   const timeoutThreshold = new Date(Date.now() - TIMEOUT_MS).toISOString();
