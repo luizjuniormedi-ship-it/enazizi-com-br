@@ -242,6 +242,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   size="sm"
                   className="h-7 text-xs gap-1.5 animate-fade-in bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={() => {
+                    logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'bottom_button' });
                     if (lessonData?.id) {
                       navigate(`/dashboard/videoaulas/${lessonData.id}`);
                     } else {
