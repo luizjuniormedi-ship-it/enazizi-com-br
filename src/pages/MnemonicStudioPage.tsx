@@ -101,42 +101,60 @@ export default function MnemonicGeneratorPage() {
 
   const { data: errorSuggestions } = useErrorSuggestions();
 
-  // ── Auto-suggest terms from curriculum_matrix ──
-  const [suggestedTerms, setSuggestedTerms] = useState<string[]>([]);
-  const [loadingTerms, setLoadingTerms] = useState(false);
+  // ── Auto-suggest topics/subthemes from curriculum_matrix ──
+  const [suggestedTopics, setSuggestedTopics] = useState<Array<{ tema: string; subtema: string | null }>>([]);
+  const [loadingTopics, setLoadingTopics] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!tema || tema.trim().length < 3) { setSuggestedTerms([]); return; }
-    setLoadingTerms(true);
+    if (!tema || tema.trim().length < 2 || tema.includes(" — ")) { 
+      setSuggestedTopics([]); 
+      return; 
+    }
+    
+    setLoadingTopics(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const searchTerm = tema.split("—")[0].trim();
+        const searchTerm = tema.trim();
         const { data } = await supabase
           .from("curriculum_matrix")
-          .select("gatilhos_clinicos, palavras_chave, subtema, tema")
+          .select("tema, subtema")
           .eq("ativo", true)
-          .or(`tema.ilike.%${searchTerm}%,subtema.ilike.%${searchTerm}%,palavras_chave.cs.{${searchTerm}}`)
-          .limit(5);
+          .or(`tema.ilike.%${searchTerm}%,subtema.ilike.%${searchTerm}%`)
+          .limit(6);
 
         if (data && data.length > 0) {
-          const allTerms = new Set<string>();
-          for (const row of data) {
-            if (Array.isArray(row.gatilhos_clinicos)) row.gatilhos_clinicos.forEach((t: string) => allTerms.add(t));
-            if (Array.isArray(row.palavras_chave)) row.palavras_chave.forEach((t: string) => allTerms.add(t));
-          }
-          const terms = [...allTerms].slice(0, 10);
-          setSuggestedTerms(terms);
-          // NÃO auto-preenche mais — modo automático extrai via IA quando usuário não digita.
+          const unique = new Map<string, { tema: string; subtema: string | null }>();
+          data.forEach(item => {
+            const key = item.subtema ? `${item.tema} — ${item.subtema}` : item.tema;
+            if (!unique.has(key)) {
+              unique.set(key, { tema: item.tema, subtema: item.subtema });
+            }
+          });
+          setSuggestedTopics(Array.from(unique.values()));
         } else {
-          setSuggestedTerms([]);
+          setSuggestedTopics([]);
         }
-      } catch { setSuggestedTerms([]); }
-      finally { setLoadingTerms(false); }
-    }, 500);
+      } catch { 
+        setSuggestedTopics([]); 
+      } finally { 
+        setLoadingTopics(false); 
+      }
+    }, 400);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [tema]);
+
+  // Fecha o dropdown se clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (suggestedTopics.length > 0 && !document.getElementById('mnemonic-topic-input')?.contains(e.target as Node)) {
+        setSuggestedTopics([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [suggestedTopics]);
 
   const favoriteMutation = useToggleFavorite();
   const regenerateMutation = useRegenerateMnemonic();
@@ -302,6 +320,7 @@ export default function MnemonicGeneratorPage() {
   const handleUseSuggestion = useCallback((s: { tema: string; subtema: string | null }) => {
     setTema(s.subtema ? `${s.tema} — ${s.subtema}` : s.tema);
     setTermosText("");
+    setSuggestedTopics([]); // Fecha o dropdown ao selecionar
     toast.info("Tema selecionado — IA extrairá os termos automaticamente.");
   }, []);
 
@@ -360,13 +379,49 @@ export default function MnemonicGeneratorPage() {
               </div>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 relative" id="mnemonic-topic-input">
               <label className="text-sm font-medium">Tema médico</label>
-              <Input
-                value={tema}
-                onChange={(e) => setTema(e.target.value)}
-                placeholder="Ex: Critérios de Light para derrame pleural"
-              />
+              <div className="relative group">
+                <Input
+                  value={tema}
+                  onChange={(e) => setTema(e.target.value)}
+                  onFocus={() => {
+                    if (tema.length >= 2 && !tema.includes(" — ")) {
+                      // Trigger suggestion search on focus if input already has enough length
+                      setTema(tema); 
+                    }
+                  }}
+                  placeholder="Ex: Critérios de Light para derrame pleural"
+                  className="pr-10"
+                />
+                {loadingTopics && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+
+              {suggestedTopics.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-background border rounded-md shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  <div className="p-1.5 border-b bg-muted/30">
+                    <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground px-2">Subtemas sugeridos (Matriz Curricular)</p>
+                  </div>
+                  <div className="max-h-[220px] overflow-y-auto">
+                    {suggestedTopics.map((s, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 transition-colors flex flex-col gap-0.5 border-b last:border-0 border-border/40"
+                        onClick={() => handleUseSuggestion(s)}
+                      >
+                        <span className="font-semibold text-primary/90">{s.subtema || s.tema}</span>
+                        {s.subtema && <span className="text-[10px] text-muted-foreground italic">{s.tema}</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {formErrors.tema && <p className="text-xs text-destructive">{formErrors.tema}</p>}
               <p className="text-[11px] text-muted-foreground">
                 Quanto mais específico, melhor o mnemônico (ex: "Tríade de Charcot na colangite", "Critérios de Ranson na pancreatite").
@@ -416,26 +471,7 @@ export default function MnemonicGeneratorPage() {
                 />
                 <p className="text-xs text-muted-foreground">{termos.length} termo(s)</p>
                 {formErrors.termos && <p className="text-xs text-destructive">{formErrors.termos}</p>}
-                {suggestedTerms.length > 0 && (
-                  <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-primary flex items-center gap-1.5">
-                        <Lightbulb className="h-3.5 w-3.5" /> Termos sugeridos do currículo
-                      </p>
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleApplySuggestedTerms(suggestedTerms)}>
-                        Usar todos
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {suggestedTerms.map((term, i) => (
-                        <Button key={i} variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleApplySuggestedTerms([term])}>
-                          + {term}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {loadingTerms && <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Loader2 className="h-3 w-3 animate-spin" /> Buscando termos do currículo...</p>}
+                {/* Termos sugeridos removidos para focar em temas e extração automática */}
               </CollapsibleContent>
             </Collapsible>
 
