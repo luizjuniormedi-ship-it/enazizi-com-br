@@ -6,7 +6,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-interface GeminiResponse {
+interface AIContentResponse {
   summary: string;
   feynman_summary: string;
   flashcards: Array<{ front: string; back: string }>;
