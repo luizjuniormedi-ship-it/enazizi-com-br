@@ -488,23 +488,23 @@ export default function EnaflixPage() {
                     if (c.dynamic) return false;
                     if (c.requires === "admin" && !isAdmin) return false;
                     if (c.requires === "professor" && !isProfessor && !isAdmin) return false;
-                    const items = visibleModules.filter((m) => m.category === c.id);
-                    return items.length >= (c.minItems ?? 2);
+                    return true;
                   });
-                  if (rotatable.length > 0) {
-                    const idx = new Date().getDay() % rotatable.length;
-                    const cat = rotatable[idx];
+
+                  rotatable.forEach((cat) => {
                     const items = visibleModules.filter((m) => m.category === cat.id);
-                    rows.push(
-                      <EnaflixSectionRow
-                        key={cat.id}
-                        title={cat.title}
-                        subtitle={cat.subtitle}
-                        modules={items}
-                        onNavigate={handleNavigate}
-                      />,
-                    );
-                  }
+                    if (items.length > 0) {
+                      rows.push(
+                        <EnaflixSectionRow
+                          key={cat.id}
+                          title={cat.title}
+                          subtitle={cat.subtitle}
+                          modules={items}
+                          onNavigate={handleNavigate}
+                        />,
+                      );
+                    }
+                  });
                 }
 
                 return rows;
