@@ -592,15 +592,18 @@ export type Database = {
       }
       admin_incidents: {
         Row: {
+          affected_users_count: number | null
           category: string
           created_at: string | null
           description: string | null
           edge_function: string | null
           id: string
+          impact_score: number | null
           initial_event_id: string | null
           last_occurrence_at: string | null
           metrics_snapshot: Json | null
           occurrence_count: number | null
+          priority: string | null
           rca_diagnosis: Json | null
           resolution_notes: string | null
           route: string | null
@@ -611,15 +614,18 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          affected_users_count?: number | null
           category: string
           created_at?: string | null
           description?: string | null
           edge_function?: string | null
           id?: string
+          impact_score?: number | null
           initial_event_id?: string | null
           last_occurrence_at?: string | null
           metrics_snapshot?: Json | null
           occurrence_count?: number | null
+          priority?: string | null
           rca_diagnosis?: Json | null
           resolution_notes?: string | null
           route?: string | null
@@ -630,15 +636,18 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          affected_users_count?: number | null
           category?: string
           created_at?: string | null
           description?: string | null
           edge_function?: string | null
           id?: string
+          impact_score?: number | null
           initial_event_id?: string | null
           last_occurrence_at?: string | null
           metrics_snapshot?: Json | null
           occurrence_count?: number | null
+          priority?: string | null
           rca_diagnosis?: Json | null
           resolution_notes?: string | null
           route?: string | null
@@ -1761,6 +1770,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      auto_mitigation_logs: {
+        Row: {
+          action_taken: string
+          created_at: string | null
+          id: string
+          incident_id: string | null
+          result_metadata: Json | null
+          status: string | null
+          target: string | null
+        }
+        Insert: {
+          action_taken: string
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          result_metadata?: Json | null
+          status?: string | null
+          target?: string | null
+        }
+        Update: {
+          action_taken?: string
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          result_metadata?: Json | null
+          status?: string | null
+          target?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_mitigation_logs_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "admin_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       automation_telemetry: {
         Row: {
@@ -8188,6 +8235,36 @@ export type Database = {
         }
         Relationships: []
       }
+      data_retention_policies: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          id: string
+          last_run_at: string | null
+          retention_days: number
+          table_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          id?: string
+          last_run_at?: string | null
+          retention_days: number
+          table_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          id?: string
+          last_run_at?: string | null
+          retention_days?: number
+          table_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       desempenho_questoes: {
         Row: {
           created_at: string
@@ -9850,6 +9927,51 @@ export type Database = {
           weight_student_weakness?: number
         }
         Relationships: []
+      }
+      incident_correlations: {
+        Row: {
+          confidence_score: number | null
+          correlated_incident_id: string | null
+          correlation_type: string
+          created_at: string | null
+          id: string
+          incident_id: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          correlated_incident_id?: string | null
+          correlation_type: string
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          confidence_score?: number | null
+          correlated_incident_id?: string | null
+          correlation_type?: string
+          created_at?: string | null
+          id?: string
+          incident_id?: string | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_correlations_correlated_incident_id_fkey"
+            columns: ["correlated_incident_id"]
+            isOneToOne: false
+            referencedRelation: "admin_incidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_correlations_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "admin_incidents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ingestion_log: {
         Row: {
@@ -12475,6 +12597,66 @@ export type Database = {
           name?: string
           updated_at?: string | null
           url?: string | null
+        }
+        Relationships: []
+      }
+      operational_digests: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          digest_type: string
+          id: string
+          period_end: string | null
+          period_start: string | null
+          status: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          digest_type: string
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          digest_type?: string
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      operational_playbooks: {
+        Row: {
+          created_at: string | null
+          id: string
+          incident_type: string
+          mitigation_strategy: string | null
+          steps: Json
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          incident_type: string
+          mitigation_strategy?: string | null
+          steps: Json
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          incident_type?: string
+          mitigation_strategy?: string | null
+          steps?: Json
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -19063,6 +19245,15 @@ export type Database = {
           },
         ]
       }
+      noc_metrics: {
+        Row: {
+          active_users: number | null
+          avg_latency: number | null
+          critical_incidents: number | null
+          hourly_abandonment: number | null
+        }
+        Relationships: []
+      }
       performance_unified: {
         Row: {
           data_registro: string | null
@@ -19420,6 +19611,7 @@ export type Database = {
         }
         Returns: string
       }
+      execute_data_retention: { Args: never; Returns: undefined }
       generate_incident_rca: { Args: { incident_id: string }; Returns: Json }
       get_banca_coverage_report: {
         Args: never
