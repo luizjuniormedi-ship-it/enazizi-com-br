@@ -280,18 +280,21 @@ const Simulados = () => {
 
   if (phase === "loading") {
     return (
-      <div className="flex flex-col items-center justify-center py-40 gap-6">
-        <div className="relative">
-          <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse" />
-          <Loader2 className="h-16 w-16 text-primary animate-spin relative" />
-        </div>
-        <div className="text-center space-y-2">
-          <h2 className="text-xl font-black text-white">{loadingProgress || "Gerando questões..."}</h2>
-          <p className="text-sm text-white/40 font-medium">IA organizadora preparando seu ambiente de prova.</p>
-        </div>
-        <div className="w-64 space-y-2">
-          <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
-          <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
+      <div className="relative min-h-screen">
+        <EnaflixBackgroundFX intensity="medium" />
+        <div className="relative flex flex-col items-center justify-center py-40 gap-6 px-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse" />
+            <Loader2 className="h-16 w-16 text-primary animate-spin relative" />
+          </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-black text-white">{loadingProgress || "Gerando questões..."}</h2>
+            <p className="text-sm text-white/40 font-medium">IA organizadora preparando seu ambiente de prova.</p>
+          </div>
+          <div className="w-64 space-y-2">
+            <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
+            <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
+          </div>
         </div>
       </div>
     );
@@ -299,23 +302,38 @@ const Simulados = () => {
 
   if (phase === "finished") {
     return (
-      <SimuladoResult
-        questions={questions} selectedAnswers={finalAnswers} onNewSimulado={handleNewSimulado}
-        onRetryErrors={() => {}} flaggedQuestions={flaggedQuestions} mode={mode}
-        elapsedSeconds={elapsedSecondsRef.current}
-      />
+      <div className="relative min-h-screen pb-24 pt-8">
+        <EnaflixBackgroundFX intensity="medium" />
+        <div className="relative px-4 sm:px-8 lg:px-14">
+          <div className="flex items-center gap-2 mb-4">
+            <Button variant="ghost" size="sm" onClick={handleNewSimulado} className="gap-2 text-white/40 hover:text-white">
+              <ChevronLeft className="h-4 w-4" /> Novo Simulado
+            </Button>
+          </div>
+          <SimuladoResult
+            questions={questions} selectedAnswers={finalAnswers} onNewSimulado={handleNewSimulado}
+            onRetryErrors={() => {}} flaggedQuestions={flaggedQuestions} mode={mode}
+            elapsedSeconds={elapsedSecondsRef.current}
+          />
+        </div>
+      </div>
     );
   }
 
   return (
-    <SimuladoExam
-      questions={questions}
-      timeSeconds={restoredState?.timeLeft ?? 0}
-      onFinish={handleFinish}
-      onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
-      onStateChange={() => {}}
-      mode={mode}
-    />
+    <div className="relative min-h-screen pb-24 pt-6">
+      <EnaflixBackgroundFX intensity="subtle" />
+      <div className="relative px-4 sm:px-8 lg:px-14">
+        <SimuladoExam
+          questions={questions}
+          timeSeconds={restoredState?.timeLeft ?? 0}
+          onFinish={handleFinish}
+          onAutoSaveState={() => ({ current: 0, selectedAnswers: {}, timeLeft: 0 })}
+          onStateChange={() => {}}
+          mode={mode}
+        />
+      </div>
+    </div>
   );
 };
 
