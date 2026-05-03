@@ -62,19 +62,16 @@ const VALID_TOP_ROUTES = [
 const SIDEBAR_ROUTES = [
   "/dashboard",
   "/dashboard/chatgpt",
-  "/dashboard/plano-dia",
+  "/dashboard/sessao-estudo",
   "/dashboard/diagnostico",
   "/dashboard/planner",
-  "/dashboard/cronograma",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
   "/dashboard/resumos",
   "/dashboard/apostilas",
   "/dashboard/cronicas",
-  "/dashboard/feynman",
   "/dashboard/simulados",
-  "/dashboard/questoes",
-  "/dashboard/banco-questoes",
+  "/dashboard/gerador-questoes",
   "/dashboard/discursivas",
   "/dashboard/anamnese",
   "/dashboard/plantao",
@@ -93,17 +90,15 @@ const SIDEBAR_ROUTES = [
 const MOBILE_NAV_ROUTES = [
   "/dashboard",
   "/dashboard/chatgpt",
-  "/dashboard/plano-dia",
   "/dashboard/diagnostico",
-  "/dashboard/cronograma",
+  "/dashboard/planner",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
   "/dashboard/resumos",
   "/dashboard/apostilas",
   "/dashboard/cronicas",
   "/dashboard/simulados",
-  "/dashboard/questoes",
-  "/dashboard/banco-questoes",
+  "/dashboard/gerador-questoes",
   "/dashboard/discursivas",
   "/dashboard/anamnese",
   "/dashboard/plantao",
@@ -119,7 +114,7 @@ const MOBILE_NAV_ROUTES = [
 // AgentsHub routes
 const AGENTS_HUB_ROUTES = [
   "/dashboard/chatgpt",
-  "/dashboard/questoes",
+  "/dashboard/gerador-questoes",
   "/dashboard/gerar-flashcards",
   "/dashboard/resumos",
   "/dashboard/plantao",
@@ -133,13 +128,13 @@ const AGENTS_HUB_ROUTES = [
 // Navigate() calls from various pages
 const NAVIGATE_TARGETS = [
   "/dashboard/chatgpt",        // ErrorBank, QuestionsBank, Flashcards, ExamSimulator, Diagnostic, MedicalDomainMap, TopicEvolution
-  "/dashboard/plano-dia",      // Diagnostic
-  "/dashboard/questoes",       // QuestionsBank "Gerar mais"
+  "/dashboard",               // Diagnostic
+  "/dashboard/gerador-questoes", // QuestionsBank "Gerar mais"
   "/dashboard/simulados",      // CronogramaRecursosRevisao
   "/dashboard/mapa-dominio",   // TopicEvolution
   "/dashboard/conquistas",     // XpWidget
   "/dashboard/perfil",         // DashboardSidebar, DashboardLayout
-  "/dashboard/banco-questoes", // Dashboard
+  "/dashboard/simulados",      // Dashboard
   "/dashboard/flashcards",     // Dashboard
 ];
 
