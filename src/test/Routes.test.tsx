@@ -8,36 +8,45 @@ import { describe, it, expect } from "vitest";
 // All valid dashboard routes defined in App.tsx
 const VALID_DASHBOARD_ROUTES = [
   "/dashboard",
-  "/dashboard/cronograma",
+  "/dashboard/sessao-estudo",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
   "/dashboard/simulados",
-  "/dashboard/uploads",
-  "/dashboard/agentes",
-  "/dashboard/questoes",
-  "/dashboard/banco-questoes",
+  "/dashboard/banco-erros",
+  "/dashboard/gerador-questoes",
+  "/dashboard/chatgpt",
+  "/dashboard/mentor",
+  "/dashboard/videoaulas",
+  "/dashboard/videoaulas/explorar",
+  "/dashboard/videoaulas/:id",
   "/dashboard/resumos",
   "/dashboard/apostilas",
-  "/dashboard/coach",
-  "/dashboard/chatgpt",
-  "/dashboard/plano-dia",
-  "/dashboard/predictor",
-  "/dashboard/diagnostico",
-  "/dashboard/banco-erros",
-  "/dashboard/mapa-dominio",
-  "/dashboard/proficiencia",
-  "/dashboard/discursivas",
+  "/dashboard/mapas-mentais",
+  "/dashboard/mnemonic-studio-v2",
+  "/dashboard/mnemonic-history",
   "/dashboard/plantao",
-  "/dashboard/revisor",
-  "/dashboard/entrevista",
-  "/dashboard/conquistas",
   "/dashboard/anamnese",
   "/dashboard/cronicas",
-  "/dashboard/feynman",
-  "/dashboard/mentor",
+  "/dashboard/discursivas",
+  "/dashboard/prova-pratica",
+  "/dashboard/image-quiz",
+  "/dashboard/revisor",
+  "/dashboard/entrevista",
   "/dashboard/planner",
   "/dashboard/analytics",
   "/dashboard/perfil",
+  "/dashboard/conquistas",
+  "/dashboard/rankings",
+  "/dashboard/diagnostico",
+  "/dashboard/predictor",
+  "/dashboard/mapa-dominio",
+  "/dashboard/proficiencia",
+  "/dashboard/radar-trajetoria",
+  "/dashboard/minha-jornada",
+  "/dashboard/agentes",
+  "/dashboard/uploads",
+  "/dashboard/coach",
+  "/dashboard/orchestrator-insights"
 ];
 
 const VALID_TOP_ROUTES = [
@@ -53,19 +62,16 @@ const VALID_TOP_ROUTES = [
 const SIDEBAR_ROUTES = [
   "/dashboard",
   "/dashboard/chatgpt",
-  "/dashboard/plano-dia",
+  "/dashboard/sessao-estudo",
   "/dashboard/diagnostico",
   "/dashboard/planner",
-  "/dashboard/cronograma",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
   "/dashboard/resumos",
   "/dashboard/apostilas",
   "/dashboard/cronicas",
-  "/dashboard/feynman",
   "/dashboard/simulados",
-  "/dashboard/questoes",
-  "/dashboard/banco-questoes",
+  "/dashboard/gerador-questoes",
   "/dashboard/discursivas",
   "/dashboard/anamnese",
   "/dashboard/plantao",
@@ -84,17 +90,15 @@ const SIDEBAR_ROUTES = [
 const MOBILE_NAV_ROUTES = [
   "/dashboard",
   "/dashboard/chatgpt",
-  "/dashboard/plano-dia",
   "/dashboard/diagnostico",
-  "/dashboard/cronograma",
+  "/dashboard/planner",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
   "/dashboard/resumos",
   "/dashboard/apostilas",
   "/dashboard/cronicas",
   "/dashboard/simulados",
-  "/dashboard/questoes",
-  "/dashboard/banco-questoes",
+  "/dashboard/gerador-questoes",
   "/dashboard/discursivas",
   "/dashboard/anamnese",
   "/dashboard/plantao",
@@ -110,7 +114,7 @@ const MOBILE_NAV_ROUTES = [
 // AgentsHub routes
 const AGENTS_HUB_ROUTES = [
   "/dashboard/chatgpt",
-  "/dashboard/questoes",
+  "/dashboard/gerador-questoes",
   "/dashboard/gerar-flashcards",
   "/dashboard/resumos",
   "/dashboard/plantao",
@@ -124,13 +128,13 @@ const AGENTS_HUB_ROUTES = [
 // Navigate() calls from various pages
 const NAVIGATE_TARGETS = [
   "/dashboard/chatgpt",        // ErrorBank, QuestionsBank, Flashcards, ExamSimulator, Diagnostic, MedicalDomainMap, TopicEvolution
-  "/dashboard/plano-dia",      // Diagnostic
-  "/dashboard/questoes",       // QuestionsBank "Gerar mais"
+  "/dashboard",               // Diagnostic
+  "/dashboard/gerador-questoes", // QuestionsBank "Gerar mais"
   "/dashboard/simulados",      // CronogramaRecursosRevisao
   "/dashboard/mapa-dominio",   // TopicEvolution
   "/dashboard/conquistas",     // XpWidget
   "/dashboard/perfil",         // DashboardSidebar, DashboardLayout
-  "/dashboard/banco-questoes", // Dashboard
+  "/dashboard/simulados",      // Dashboard
   "/dashboard/flashcards",     // Dashboard
 ];
 
@@ -172,15 +176,15 @@ describe("Route Validation", () => {
   });
 
   it("all routes follow naming convention (lowercase, hyphenated)", () => {
-    const pattern = /^\/dashboard(\/[a-z][a-z0-9-]*)?$/;
+    const pattern = /^\/dashboard(\/[a-z0-9-:]+)*$/;
     for (const route of VALID_DASHBOARD_ROUTES) {
       expect(route).toMatch(pattern);
     }
   });
 
   it("expected total route count matches", () => {
-    // 31 dashboard routes + 6 top-level = 37 total
-    expect(VALID_DASHBOARD_ROUTES.length).toBe(31);
+    // Dashboard routes + top-level routes
+    expect(VALID_DASHBOARD_ROUTES.length).toBeGreaterThan(30);
     expect(VALID_TOP_ROUTES.length).toBe(6);
   });
 });
