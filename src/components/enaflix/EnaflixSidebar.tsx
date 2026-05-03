@@ -217,6 +217,12 @@ export function EnaflixSidebar() {
                         icon={Sparkles}
                         active={location.search === "?tab=ai-studio"}
                       />
+                      <SidebarItem
+                        to="/admin?tab=lesson-ratings"
+                        label="Avaliações"
+                        icon={Star}
+                        active={location.search === "?tab=lesson-ratings"}
+                      />
                     </div>
 
                     <SidebarItem

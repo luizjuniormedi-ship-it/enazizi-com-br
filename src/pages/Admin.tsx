@@ -65,6 +65,7 @@ const IntelligenceOverviewPanel = lazy(() => import("@/components/admin/Intellig
 const AdminCognitiveOrchestrator = lazy(() => import("@/pages/admin/AdminCognitiveOrchestrator"));
 const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
 const AdminLessonsMemory = lazy(() => import("@/pages/admin/AdminLessonsMemory"));
+const AdminLessonRatingsPanel = lazy(() => import("@/components/admin/AdminLessonRatingsPanel").then(m => ({ default: m.AdminLessonRatingsPanel })));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -109,6 +110,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "pipeline", label: "Pipeline", icon: Layers },
         { key: "cinematic-engine", label: "CME Studio", icon: Film },
         { key: "tutor-lessons", label: "Aulas Memory", icon: BookOpen },
+        { key: "lesson-ratings", label: "Avaliações Aulas", icon: Star },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
       ],
     },
@@ -581,6 +583,7 @@ const Admin = () => {
                   {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
                   {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
                   {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
+                  {activeSection === "lesson-ratings" && <Suspense fallback={<PanelLoader />}><AdminLessonRatingsPanel /></Suspense>}
                   {activeSection === "intelligence-overview" && <Suspense fallback={<PanelLoader />}><IntelligenceOverviewPanel /></Suspense>}
                   {activeSection === "adaptive-engine" && <Suspense fallback={<PanelLoader />}><AdaptiveEngineAdmin /></Suspense>}
                   {activeSection === "cognitive-orchestrator" && <Suspense fallback={<PanelLoader />}><AdminCognitiveOrchestrator /></Suspense>}
