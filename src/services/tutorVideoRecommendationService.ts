@@ -198,6 +198,19 @@ export async function findRecommendedVideoForTutorContext(
 
     if (memoryLessons) {
       memoryLessons.forEach((lesson: any) => {
+        // Double check filters in code for robustness
+        if (lesson.status !== 'published') {
+          logVideoRecommendationEvent('skipped_unpublished', { source: 'tutor_lesson_memory', id: lesson.id, topic: lesson.topic });
+          return;
+        }
+        if (lesson.hidden_from_student) {
+          logVideoRecommendationEvent('skipped_hidden', { source: 'tutor_lesson_memory', id: lesson.id, topic: lesson.topic });
+          return;
+        }
+        if (lesson.deleted_at) {
+          logVideoRecommendationEvent('skipped_deleted', { source: 'tutor_lesson_memory', id: lesson.id, topic: lesson.topic });
+          return;
+        }
         if (!hasValidVideo(lesson.video_url)) {
           logVideoRecommendationEvent('skipped_no_video', { 
             source: 'tutor_lesson_memory', 
