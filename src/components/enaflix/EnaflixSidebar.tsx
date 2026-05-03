@@ -23,7 +23,9 @@ import {
   BrainCircuit,
   LayoutGrid,
   Users,
-  Activity
+  Activity,
+  UserCheck,
+  ImageIcon
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -186,8 +188,37 @@ export function EnaflixSidebar() {
                       to="/admin"
                       label="Admin Hub"
                       icon={Shield}
-                      active={location.pathname === "/admin" && !location.pathname.includes("/admin/users")}
+                      active={location.pathname === "/admin" && !location.search}
                     />
+                    
+                    {/* Atalhos Rápidos de Gestão */}
+                    <div className="py-2 space-y-1">
+                      <SidebarItem
+                        to="/admin?tab=ingestion"
+                        label="Gerar Questões"
+                        icon={Sparkles}
+                        active={location.search === "?tab=ingestion"}
+                      />
+                      <SidebarItem
+                        to="/admin?tab=question-review"
+                        label="Banco & Aprovações"
+                        icon={UserCheck}
+                        active={location.search === "?tab=question-review"}
+                      />
+                      <SidebarItem
+                        to="/admin?tab=image-review"
+                        label="Aprovar Imagens"
+                        icon={ImageIcon}
+                        active={location.search === "?tab=image-review"}
+                      />
+                      <SidebarItem
+                        to="/admin?tab=ai-studio"
+                        label="AI Studio"
+                        icon={Sparkles}
+                        active={location.search === "?tab=ai-studio"}
+                      />
+                    </div>
+
                     <SidebarItem
                       to="/admin/users"
                       label="Usuários"

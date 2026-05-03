@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { 
   Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, 
   BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, 
@@ -98,6 +98,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "uploads", label: "Upload Arquivos", icon: Upload },
         { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
+        { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
         { key: "scraping", label: "Web Scraping", icon: Search },
       ],
     },
@@ -161,6 +162,19 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeSection, setActiveSection] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) {
+      setActiveSection(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveSection(tab);
+    setSearchParams({ tab });
+  };
   const [loadingBatch, setLoadingBatch] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -421,7 +435,7 @@ const Admin = () => {
                     {group.items.map((item) => (
                       <button
                         key={item.key}
-                        onClick={() => setActiveSection(item.key)}
+                        onClick={() => handleTabChange(item.key)}
                         className={cn(
                           "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 relative group",
                           activeSection === item.key 
@@ -561,6 +575,7 @@ const Admin = () => {
                   {activeSection === "uploads" && <Suspense fallback={<PanelLoader />}><AdminUploadsPanel /></Suspense>}
                   {activeSection === "ingestion" && <Suspense fallback={<PanelLoader />}><AdminIngestionPanel /></Suspense>}
                   {activeSection === "question-review" && <Suspense fallback={<PanelLoader />}><AdminQuestionReviewPanel /></Suspense>}
+                  {activeSection === "image-review" && <Suspense fallback={<PanelLoader />}><AdminImageQuestionReviewPanel /></Suspense>}
                   {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
                   {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
                   {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
