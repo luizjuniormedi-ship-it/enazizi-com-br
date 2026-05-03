@@ -1,11 +1,18 @@
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
-import { Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play } from "lucide-react";
-import { CinematicHero } from "@/components/cinematic";
+import { 
+  Shield, UserCog, Search, RefreshCw, Bell, UserCheck, MessageSquare, Send, Star, Filter, X, Mail, 
+  BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, 
+  Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, 
+  Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play,
+  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal
+} from "lucide-react";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { EnaflixLoader } from "@/components/enaflix/EnaflixLoader";
+import { EnaflixCinematicCard } from "@/components/enaflix/EnaflixCinematicCard";
+import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +24,7 @@ import { ALL_MODULES } from "@/hooks/useModuleAccess";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { AdminUser, Stats } from "@/components/admin/AdminTypes";
+import { motion, AnimatePresence } from "framer-motion";
 
 // Lazy load all admin panels
 const WhatsAppPanel = lazy(() => import("@/components/admin/WhatsAppPanel"));
@@ -75,81 +83,41 @@ interface NavGroup {
 function buildNavGroups(pendingCount: number): NavGroup[] {
   return [
     {
-      title: "Visão Geral",
-      icon: LayoutDashboard,
+      title: "OPERATIVO",
+      icon: Terminal,
       items: [
         { key: "overview", label: "Dashboard", icon: LayoutDashboard },
-        { key: "automation-lab", label: "Automação Lab (P2)", icon: Sparkles },
-        { key: "online", label: "Usuários Online", icon: Activity },
+        { key: "users-all", label: "Usuários", icon: Users },
+        { key: "users-pending", label: "Aprovações", icon: Lock, badge: pendingCount },
       ],
     },
     {
-      title: "Usuários",
-      icon: Users,
-      items: [
-        { key: "users-all", label: "Todos", icon: UserCog },
-        { key: "users-pending", label: "Pendentes", icon: Bell, badge: pendingCount },
-        { key: "users-active", label: "Ativos", icon: UserCheck },
-        { key: "users-blocked", label: "Bloqueados", icon: Shield },
-      ],
-    },
-    {
-      title: "Conteúdo",
-      icon: FileText,
+      title: "PRODUÇÃO",
+      icon: MonitorPlay,
       items: [
         { key: "pipeline", label: "Pipeline", icon: Layers },
-        { key: "cinematic-engine", label: "Cinematic (CME)", icon: Film },
-        { key: "questions", label: "Questões", icon: FileText },
-        { key: "tutor-lessons", label: "Memória Aulas", icon: FileText },
-        { key: "image-upgrade", label: "Upgrade Imagem", icon: ImageIcon },
-        { key: "image-review", label: "Review Imagem", icon: ImageIcon },
-        { key: "hygiene", label: "Higiene", icon: Bug },
-        { key: "ingestion", label: "Ingestão", icon: Upload },
-        { key: "scraping", label: "Web Scraping", icon: HardDrive },
-        { key: "qa", label: "QA Bot", icon: Bug },
+        { key: "cinematic-engine", label: "CME Studio", icon: Film },
+        { key: "tutor-lessons", label: "Aulas Memory", icon: BookOpen },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
-        { key: "system-checklist", label: "System Checklist", icon: ShieldCheck },
       ],
     },
     {
-      title: "Comunicação",
-      icon: Megaphone,
-      items: [
-        { key: "messages", label: "Mensagens", icon: Mail },
-        { key: "whatsapp", label: "WhatsApp", icon: MessageSquare },
-        { key: "telegram", label: "Telegram", icon: Send },
-      ],
-    },
-    {
-      title: "Intelligence Engine",
+      title: "INTELLIGENCE ACE",
       icon: BrainCircuit,
       items: [
-        { key: "intelligence-overview", label: "Visão Geral IA", icon: LayoutDashboard },
-        { key: "knowledge-graph", label: "Knowledge Graph", icon: GitBranch },
+        { key: "intelligence-overview", label: "Radar IA", icon: ActivitySquare },
         { key: "adaptive-engine", label: "ACE Engine", icon: BrainCircuit },
-        { key: "cognitive-orchestrator", label: "Orquestrador Sessão", icon: Activity },
-        { key: "intervention-policies", label: "Governança/Políticas", icon: ShieldCheck },
-        { key: "adaptive-experiments", label: "Experimentos A/B", icon: Beaker },
-        { key: "specialty-friction", label: "Atrito Cognitivo", icon: TrendingDown },
+        { key: "cognitive-orchestrator", label: "Orquestrador", icon: Activity },
+        { key: "specialty-friction", label: "Atrito", icon: TrendingDown },
       ],
     },
     {
-      title: "Analytics & Auditoria",
-      icon: BarChart3,
+      title: "AUDITORIA & DADOS",
+      icon: Database,
       items: [
-        { key: "bi", label: "BI & Métricas", icon: BarChart3 },
-        { key: "feedbacks", label: "Feedbacks", icon: Star },
-        { key: "audit", label: "Log de Auditoria", icon: Shield },
-      ],
-    },
-    {
-      title: "Configurações",
-      icon: Settings,
-      items: [
-        { key: "flags", label: "Feature Flags", icon: ToggleLeft },
-        { key: "uploads", label: "Uploads", icon: Upload },
-        { key: "upload2gb", label: "Upload 2GB", icon: HardDrive },
-        { key: "multimodal", label: "Multimodal", icon: ImageIcon },
+        { key: "bi", label: "BI & KPIs", icon: BarChart3 },
+        { key: "audit", label: "Auditoria", icon: Shield },
+        { key: "system-checklist", label: "Checklist", icon: ShieldCheck },
       ],
     },
   ];
@@ -158,7 +126,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
 function PanelLoader() {
   return (
     <div className="flex items-center justify-center py-24">
-      <EnaflixLoader variant="default" label="Orquestrando dados..." />
+      <EnaflixLoader variant="default" label="Sincronizando Command Center..." />
     </div>
   );
 }
