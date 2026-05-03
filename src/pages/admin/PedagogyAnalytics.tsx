@@ -9,7 +9,7 @@ import {
 } from "recharts";
 import { 
   Loader2, Brain, Timer, UserMinus, BookOpen, 
-  Repeat, ShieldCheck, RefreshCw 
+  Repeat, ShieldCheck, RefreshCw, Download 
 } from "lucide-react";
 import { 
   Select, 
@@ -78,6 +78,24 @@ export default function PedagogyAnalytics() {
               <SelectItem value="30">Últimos 30 dias</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={() => {
+            const stamp = new Date().toISOString().slice(0, 10);
+            const csvData = [
+              { metric: "Tempo Médio", value: data.avg_session_time },
+              { metric: "Taxa de Abandono", value: data.abandonment_rate },
+              ...(data.moduleStats || []).map((m: any) => ({ metric: `Módulo: ${m.name}`, started: m.started, abandoned: m.abandoned }))
+            ];
+            const headers = Object.keys(csvData[0]);
+            const lines = [headers.join(",")].concat(
+              csvData.map(r => headers.map(h => String((r as any)[h])).join(","))
+            );
+            const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = `pedagogy_analytics_${stamp}.csv`; a.click();
+          }}>
+            <Download className="h-4 w-4 mr-2" /> Exportar CSV
+          </Button>
           <Button variant="outline" size="sm" onClick={loadData}>
             <RefreshCw className="h-4 w-4 mr-2" /> Atualizar
           </Button>

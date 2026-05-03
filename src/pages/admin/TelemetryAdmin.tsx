@@ -106,7 +106,7 @@ const TelemetryAdmin = () => {
     : baselineStatus === "EM COLETA" ? "bg-yellow-500/15 text-yellow-700 border-yellow-500/30"
     : "bg-muted text-muted-foreground";
 
-  async function handleExport(kind: "raw" | "funnel" | "cohorts" | "alerts" | "tutor") {
+  async function handleExport(kind: "raw" | "funnel" | "cohorts" | "alerts" | "tutor" | "pedagogy" | "health") {
     const stamp = new Date().toISOString().slice(0, 10);
     if (kind === "raw") {
       const { data } = await supabase.rpc("admin_telemetry_export", { _days: days, _limit: 10000 });
@@ -121,6 +121,11 @@ const TelemetryAdmin = () => {
     } else if (kind === "tutor") {
       const { data: aiRes } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: days });
       downloadCSV(`telemetria_tutor_v2_${stamp}.csv`, [aiRes ?? {}]);
+    } else if (kind === "pedagogy") {
+      const { data: pedRes } = await supabase.rpc('admin_telemetry_v2_pedagogy', { _days: days });
+      downloadCSV(`telemetria_pedagogica_${stamp}.csv`, [pedRes ?? {}]);
+    } else if (kind === "health") {
+      downloadCSV(`telemetria_health_${stamp}.csv`, [baseline ?? {}]);
     }
   }
 

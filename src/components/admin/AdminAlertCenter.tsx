@@ -8,50 +8,72 @@ import { toast } from "sonner";
 
 export function AdminAlertCenter() {
   const [alerts, setAlerts] = useState<any[]>([]);
+  const [rca, setRca] = useState<Record<string, any>>({});
+  const [thresholds, setThresholds] = useState<Record<string, any>>({});
+
+  const loadThresholds = async () => {
+    const { data } = await supabase.from("governance_thresholds").select("*");
+    if (data) {
+      const mapped = data.reduce((acc: any, curr: any) => {
+        acc[curr.key] = Object.values(curr.value)[0];
+        return acc;
+      }, {});
+      setThresholds(mapped);
+    }
+  };
+
+  const runRCA = async (alertId: string) => {
+    const { data } = await supabase.rpc('admin_telemetry_rca', { alert_id: alertId });
+    if (data) {
+      setRca(prev => ({ ...prev, [alertId]: data }));
+    }
+  };
 
   const checkAlerts = async () => {
     try {
-      // 1. Check AI Latency
+      if (Object.keys(thresholds).length === 0) await loadThresholds();
+      
       const { data: aiQualityRes } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: 1 });
       const aiQuality = aiQualityRes as any;
       const newAlerts = [];
 
-      if (aiQuality?.avg_latency_ms > 5000) {
+      const aiLatencyLimit = thresholds['ai_latency_threshold_ms'] || 5000;
+      if (aiQuality?.avg_latency_ms > aiLatencyLimit) {
         newAlerts.push({
           id: 'ai-latency',
           title: 'Tutor IA Lento',
-          description: `Latência média nas últimas 24h: ${aiQuality.avg_latency_ms}ms. Verifique as Edge Functions.`,
+          description: `Latência média nas últimas 24h: ${aiQuality.avg_latency_ms}ms. (Limite: ${aiLatencyLimit}ms)`,
           severity: 'critical',
           icon: <Activity className="h-4 w-4" />
         });
+        runRCA('ai-latency');
       }
 
-      if (aiQuality?.fallback_rate > 15) {
+      const fallbackLimit = thresholds['fallback_rate_critical'] || 15;
+      if (aiQuality?.fallback_rate > fallbackLimit) {
         newAlerts.push({
           id: 'ai-fallback',
           title: 'Taxa de Fallback Alta',
-          description: `Uso de modelos de emergência em ${aiQuality.fallback_rate}%. Possível sobrecarga da API principal.`,
+          description: `Uso de modelos de emergência em ${aiQuality.fallback_rate}%. (Limite: ${fallbackLimit}%)`,
           severity: 'high',
           icon: <AlertTriangle className="h-4 w-4" />
         });
       }
 
-      // 2. Check Abandonment Spikes
+      const abandonLimit = thresholds['session_abandonment_rate'] || 35;
       const { data: pedagogyRes } = await supabase.rpc('admin_telemetry_v2_pedagogy', { _days: 1 });
       const pedagogy = pedagogyRes as any;
-      if (pedagogy?.abandonment_rate > 35) {
+      if (pedagogy?.abandonment_rate > abandonLimit) {
         newAlerts.push({
           id: 'high-abandonment',
           title: 'Pico de Abandono',
-          description: `Taxa de abandono hoje está em ${pedagogy.abandonment_rate}%. Verifique fricção nas rotas principais.`,
+          description: `Taxa de abandono hoje em ${pedagogy.abandonment_rate}%. (Limite: ${abandonLimit}%)`,
           severity: 'high',
           icon: <ShieldCheck className="h-4 w-4" />
         });
       }
 
       setAlerts(newAlerts);
-      
-      // Notify via toast for new critical alerts
       newAlerts.filter(a => a.severity === 'critical').forEach(a => {
         toast.error(a.title, { description: a.description });
       });
@@ -63,9 +85,9 @@ export function AdminAlertCenter() {
 
   useEffect(() => {
     checkAlerts();
-    const interval = setInterval(checkAlerts, 5 * 60 * 1000); // Check every 5 min
+    const interval = setInterval(checkAlerts, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [thresholds]);
 
   if (alerts.length === 0) return null;
 
@@ -90,6 +112,14 @@ export function AdminAlertCenter() {
                 </AlertTitle>
                 <AlertDescription className="text-xs text-muted-foreground mt-1">
                   {alert.description}
+                  {rca[alert.id] && (
+                    <div className="mt-2 p-2 bg-muted/50 rounded border border-border/50">
+                      <p className="font-bold text-[10px] uppercase text-red-500 mb-1">Diagnóstico Automático (RCA):</p>
+                      <p className="font-medium">{rca[alert.id].probable_cause}</p>
+                      <p className="mt-1">Rotas afetadas: {rca[alert.id].affected_routes?.join(", ")}</p>
+                      <p className="mt-1 text-primary">Próximos passos: {rca[alert.id].next_steps}</p>
+                    </div>
+                  )}
                 </AlertDescription>
               </div>
             </div>

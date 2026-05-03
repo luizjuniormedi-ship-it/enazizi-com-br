@@ -70,6 +70,25 @@ export default function AIQuality() {
               <SelectItem value="30">Últimos 30 dias</SelectItem>
             </SelectContent>
           </Select>
+          <Button variant="outline" size="sm" onClick={() => {
+            const stamp = new Date().toISOString().slice(0, 10);
+            const csvData = [
+              { metric: "Latência Média", value: data?.avg_latency_ms },
+              { metric: "Taxa de Fallback", value: data?.fallback_rate },
+              { metric: "Score Pedagógico", value: data?.pedagogical_score },
+              ...(data?.latency_history || []).map((h: any) => ({ time: h.time, ms: h.ms }))
+            ];
+            const headers = Object.keys(csvData[0]);
+            const lines = [headers.join(",")].concat(
+              csvData.map(r => headers.map(h => String((r as any)[h])).join(","))
+            );
+            const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = `ai_quality_${stamp}.csv`; a.click();
+          }}>
+            <Download className="h-4 w-4 mr-2" /> Exportar CSV
+          </Button>
           <Button variant="outline" size="sm" onClick={loadData}>
             <RefreshCw className="h-4 w-4 mr-2" /> Atualizar
           </Button>

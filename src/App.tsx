@@ -125,6 +125,8 @@ const NotebookLMAnalytics = lazyWithRetry(() => import("./pages/admin/NotebookLM
 const VideoLessonsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonsAdmin"), "VideoLessonsAdmin");
 const VideoLessonDetailsAdmin = lazyWithRetry(() => import("./pages/admin/VideoLessonDetailsAdmin"), "VideoLessonDetailsAdmin");
 const OfficialExamIngestion = lazyWithRetry(() => import("./pages/admin/OfficialExamIngestion"), "OfficialExamIngestion");
+const AdminSettings = lazyWithRetry(() => import("./pages/admin/AdminSettings"), "AdminSettings");
+const AdminAudit = lazyWithRetry(() => import("./pages/admin/AdminAudit"), "AdminAudit");
 const MyLessonsPage = lazyWithRetry(() => import("./pages/MyLessonsPage"), "MyLessonsPage");
 const VideoLessonsLibrary = MyLessonsPage;
 
@@ -308,6 +310,9 @@ const App = () => (
                   <Route path="ai-studio" element={<AIStudio />} />
                   <Route path="medical-review-queue" element={<MedicalReviewQueue />} />
                   <Route path="medical-governance" element={<MedicalGovernanceDashboard />} />
+                  <Route path="alerts" element={<TelemetryAdmin />} />
+                  <Route path="settings" element={<AdminSettings />} />
+                  <Route path="audit" element={<AdminAudit />} />
                   <Route path="ai-audit-mode" element={<AIAuditMode />} />
                   <Route path="notebooklm" element={<NotebookLMDashboard />} />
                   <Route path="notebooklm-sync" element={<NotebookLMSync />} />
