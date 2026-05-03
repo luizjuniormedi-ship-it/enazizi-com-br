@@ -16,6 +16,8 @@ export interface RecommendedVideo {
 }
 
 type LogEvent =
+  | 'message_received'
+  | 'topic_detected'
   | 'search_started'
   | 'found'
   | 'not_found'
@@ -24,11 +26,14 @@ type LogEvent =
   | 'skipped_unpublished'
   | 'skipped_no_video'
   | 'skipped_hidden'
-  | 'skipped_deleted';
+  | 'skipped_deleted'
+  | 'answer_generation_started'
+  | 'answer_generation_completed'
+  | 'answer_generation_failed';
 
 /**
  * Persiste eventos de telemetria no banco de dados dedicado.
- * Garante auditabilidade das recomendações do Tutor.
+ * Garante auditabilidade total das recomendações e performance do Tutor.
  */
 export async function logVideoRecommendationEvent(
   event: LogEvent,
@@ -38,19 +43,21 @@ export async function logVideoRecommendationEvent(
     const { data: { user } } = await supabase.auth.getUser();
     
     if (import.meta.env.DEV) {
-      console.log(`[TutorVideoRec] ${event}`, payload);
+      console.log(`[TutorIA Telemetry] ${event}`, payload);
     }
 
-    // Persistência em tutor_video_recommendation_telemetry
-    await supabase.from('tutor_video_recommendation_telemetry').insert({
+    // Persistência em tutor_ia_telemetry (Auditável e Centralizada)
+    await supabase.from('tutor_ia_telemetry').insert({
       user_id: user?.id,
       session_id: payload.conversationId || payload.session_id || 'chat_session',
       lesson_id: payload.lessonId || null,
       topic: payload.topic || 'unknown',
       event_type: event,
       confidence: payload.confidence || 0,
-      source_table: payload.source || null,
-      reason: payload.reason || null,
+      model_used: payload.model || null,
+      fallback_used: !!payload.fallback_used,
+      parse_strategy: payload.parse_strategy || null,
+      duration_ms: payload.duration_ms || null,
       metadata: {
         ...payload,
         client_timestamp: new Date().toISOString(),
@@ -58,17 +65,22 @@ export async function logVideoRecommendationEvent(
       }
     });
   } catch (error) {
-    console.error("[TutorVideoRec] Erro ao persistir telemetria:", error);
+    console.error("[TutorIA Telemetry] Erro ao persistir telemetria:", error);
   }
 }
 
 /**
- * Normaliza termos médicos para busca semântica simples.
- * Retorna a query principal + sinônimos diretos (sem encadeamento transitivo).
+ * Normaliza termos médicos para busca semântica robusta.
+ * Otimizado para evitar falsos positivos em termos curtos.
  */
 export function normalizeMedicalTerm(term: string): string[] {
   if (!term) return [];
-  const t = term.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+  // Normalização agressiva para comparação
+  const t = term.toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^\w\s]/gi, '')
+    .trim();
 
   const synonyms: Record<string, string[]> = {
     "ira": ["insuficiencia renal aguda", "injuria renal aguda"],
@@ -89,7 +101,6 @@ export function normalizeMedicalTerm(term: string): string[] {
   };
 
   const results = new Set<string>([t]);
-  // Apenas sinônimos diretos do termo original (sem chain)
   Object.keys(synonyms).forEach(key => {
     if (t === key || t.includes(key) || synonyms[key].some(s => t.includes(s))) {
       results.add(key);
@@ -101,8 +112,7 @@ export function normalizeMedicalTerm(term: string): string[] {
 }
 
 /**
- * Faz match seguro: termos curtos (<=3 chars) exigem word boundary,
- * para evitar que "fa" case com "Falência".
+ * Match seguro com boundary para termos curtos.
  */
 export function termMatches(haystack: string, term: string): boolean {
   if (!haystack || !term) return false;
@@ -110,6 +120,7 @@ export function termMatches(haystack: string, term: string): boolean {
   const t = term.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
   if (t.length <= 3) {
+    // Word boundary rigoroso para evitar match de "fa" em "falencia"
     const re = new RegExp(`\\b${t.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\b`);
     return re.test(h);
   }
@@ -122,11 +133,42 @@ function hasValidVideo(url?: string | null): boolean {
   return u.length > 10 && (u.includes('http') || u.includes('player'));
 }
 
+/**
+ * Busca vídeo com Cache por Sessão para evitar queries redundantes.
+ */
 export async function findRecommendedVideoForTutorContext(
   topic: string,
   userId?: string,
   conversationId?: string
 ): Promise<RecommendedVideo> {
+  const normalizedTopic = topic.toLowerCase().trim();
+  const sessionId = conversationId || 'active_session';
+
+  // 1. Verificar Cache
+  try {
+    const { data: cacheHit } = await supabase
+      .from('tutor_recommendation_cache')
+      .select('*')
+      .eq('session_id', sessionId)
+      .eq('normalized_topic', normalizedTopic)
+      .gt('expires_at', new Date().toISOString())
+      .maybeSingle();
+
+    if (cacheHit) {
+      if (cacheHit.lesson_id) {
+        return {
+          found: true,
+          lessonId: cacheHit.lesson_id,
+          ...cacheHit.lesson_data,
+          confidence: cacheHit.confidence
+        } as RecommendedVideo;
+      }
+      return { found: false, confidence: 0 };
+    }
+  } catch (e) {
+    console.warn("[TutorVideoService] Erro ao ler cache:", e);
+  }
+
   const terms = normalizeMedicalTerm(topic);
   
   logVideoRecommendationEvent('search_started', { 
@@ -138,7 +180,7 @@ export async function findRecommendedVideoForTutorContext(
 
   const results: RecommendedVideo[] = [];
 
-  // 1) ai_video_lessons
+  // Busca em ai_video_lessons (Prioritário)
   try {
     const { data: aiLessons } = await (supabase.from("ai_video_lessons") as any)
       .select("*")
@@ -147,9 +189,7 @@ export async function findRecommendedVideoForTutorContext(
 
     if (aiLessons) {
       aiLessons.forEach((lesson: any) => {
-        // Final security check
         if (lesson.status !== 'published') return;
-
         let score = 0;
         const lTitle = (lesson.title || "").toLowerCase();
         const lTopic = (lesson.topic || "").toLowerCase();
@@ -163,33 +203,26 @@ export async function findRecommendedVideoForTutorContext(
         if (score < 40) return;
 
         const watchUrl = lesson.playback_url || lesson.video_url;
-        if (!hasValidVideo(watchUrl)) {
-          logVideoRecommendationEvent('skipped_no_video', { 
-            source: 'ai_video_lessons', 
-            id: lesson.id,
-            topic: lesson.topic 
+        if (hasValidVideo(watchUrl)) {
+          results.push({
+            found: true,
+            lessonId: lesson.id,
+            title: lesson.title,
+            topic: lesson.topic,
+            confidence: score,
+            source: 'ai_video_lessons',
+            watchUrl,
+            thumbnailUrl: lesson.thumbnail_url,
+            status: lesson.status,
           });
-          return;
         }
-
-        results.push({
-          found: true,
-          lessonId: lesson.id,
-          title: lesson.title,
-          topic: lesson.topic,
-          confidence: score,
-          source: 'ai_video_lessons',
-          watchUrl,
-          thumbnailUrl: lesson.thumbnail_url,
-          status: lesson.status,
-        });
       });
     }
   } catch (e) {
-    console.error("[TutorVideoService] Erro em ai_video_lessons:", e);
+    console.error("[TutorVideoService] ai_video_lessons lookup failed:", e);
   }
 
-  // 2) tutor_lesson_memory
+  // Busca em tutor_lesson_memory
   try {
     const { data: memoryLessons } = await supabase
       .from("tutor_lesson_memory")
@@ -200,41 +233,18 @@ export async function findRecommendedVideoForTutorContext(
 
     if (memoryLessons) {
       memoryLessons.forEach((lesson: any) => {
-        // Double check filters in code for robustness
-        if (lesson.status !== 'published') {
-          logVideoRecommendationEvent('skipped_unpublished', { source: 'tutor_lesson_memory', id: lesson.id, topic: lesson.topic });
-          return;
-        }
-        if (lesson.hidden_from_student) {
-          logVideoRecommendationEvent('skipped_hidden', { source: 'tutor_lesson_memory', id: lesson.id, topic: lesson.topic });
-          return;
-        }
-        if (lesson.deleted_at) {
-          logVideoRecommendationEvent('skipped_deleted', { source: 'tutor_lesson_memory', id: lesson.id, topic: lesson.topic });
-          return;
-        }
-        if (!hasValidVideo(lesson.video_url)) {
-          logVideoRecommendationEvent('skipped_no_video', { 
-            source: 'tutor_lesson_memory', 
-            id: lesson.id,
-            topic: lesson.topic
-          });
-          return;
-        }
+        if (lesson.status !== 'published' || lesson.hidden_from_student || lesson.deleted_at) return;
+        if (!hasValidVideo(lesson.video_url)) return;
 
         let score = 0;
         const lTitle = (lesson.title || "").toLowerCase();
         const lTopic = (lesson.topic || "").toLowerCase();
-        const lSubject = (lesson.subject || "").toLowerCase();
-        const lSubtopic = (lesson.subtopic || "").toLowerCase();
 
         terms.forEach(term => {
           if (!term) return;
           if (lTopic === term) score += 100;
           else if (termMatches(lTopic, term)) score += 50;
           if (termMatches(lTitle, term)) score += 40;
-          if (termMatches(lSubject, term)) score += 25;
-          if (termMatches(lSubtopic, term)) score += 25;
         });
 
         if (score >= 50) {
@@ -243,7 +253,6 @@ export async function findRecommendedVideoForTutorContext(
             lessonId: lesson.id,
             title: lesson.title || lesson.topic,
             topic: lesson.topic,
-            subject: lesson.subject,
             confidence: score,
             source: 'tutor_lesson_memory',
             watchUrl: lesson.video_url,
@@ -254,23 +263,47 @@ export async function findRecommendedVideoForTutorContext(
       });
     }
   } catch (e) {
-    console.error("[TutorVideoService] Erro em tutor_lesson_memory:", e);
+    console.error("[TutorVideoService] tutor_lesson_memory lookup failed:", e);
   }
 
-  if (results.length === 0) {
+  const bestMatch = results.length > 0 
+    ? results.sort((a, b) => b.confidence - a.confidence)[0]
+    : { found: false, confidence: 0 } as RecommendedVideo;
+
+  // 2. Salvar em Cache (Incluindo Negativo Cache)
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('tutor_recommendation_cache').insert({
+        user_id: user.id,
+        session_id: sessionId,
+        normalized_topic: normalizedTopic,
+        lesson_id: bestMatch.found ? bestMatch.lessonId : null,
+        confidence: bestMatch.confidence,
+        lesson_data: bestMatch.found ? {
+          title: bestMatch.title,
+          topic: bestMatch.topic,
+          watchUrl: bestMatch.watchUrl,
+          thumbnailUrl: bestMatch.thumbnailUrl,
+          source: bestMatch.source
+        } : null
+      });
+    }
+  } catch (e) {
+    console.warn("[TutorVideoService] Erro ao salvar cache:", e);
+  }
+
+  if (bestMatch.found) {
+    logVideoRecommendationEvent('found', {
+      topic,
+      lessonId: bestMatch.lessonId,
+      confidence: bestMatch.confidence,
+      source: bestMatch.source,
+      conversationId
+    });
+  } else {
     logVideoRecommendationEvent('not_found', { topic, terms, conversationId });
-    return { found: false, confidence: 0 };
   }
-
-  const bestMatch = results.sort((a, b) => b.confidence - a.confidence)[0];
-  
-  logVideoRecommendationEvent('found', {
-    topic,
-    lessonId: bestMatch.lessonId,
-    confidence: bestMatch.confidence,
-    source: bestMatch.source,
-    conversationId
-  });
 
   return bestMatch;
 }
