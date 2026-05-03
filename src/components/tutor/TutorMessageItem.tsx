@@ -78,7 +78,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
           }
         }
         if (topic) {
-          const lesson = await findLessonByTopic(topic);
+          const lesson = await findLessonByTopic(topic, conversationId);
           if (lesson) setLessonData(lesson);
         }
       }
