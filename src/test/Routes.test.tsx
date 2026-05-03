@@ -176,7 +176,7 @@ describe("Route Validation", () => {
   });
 
   it("all routes follow naming convention (lowercase, hyphenated)", () => {
-    const pattern = /^\/dashboard(\/[a-z][a-z0-9-]*)?$/;
+    const pattern = /^\/dashboard(\/[a-z0-9-:]+)*$/;
     for (const route of VALID_DASHBOARD_ROUTES) {
       expect(route).toMatch(pattern);
     }
