@@ -512,6 +512,7 @@ async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<strin
 }
 
 async function callAI(apiKey: string, lesson: any, ctx: Record<string, unknown>, model: string): Promise<{ data: StructuredLesson | null, status: number, parsingStrategy: string }> {
+  checkGeminiGuard(model);
   const systemPrompt = `Você é um professor especialista da plataforma ENAZIZI/ENAFLIX. pt-BR.
 Regra de Ouro: Preserve o tema médico original "${lesson.topic}".
 Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o tema principal não será alterado.
