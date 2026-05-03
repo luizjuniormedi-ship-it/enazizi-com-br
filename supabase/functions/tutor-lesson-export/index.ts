@@ -219,7 +219,7 @@ ${bullet(sc.quality_notes)}
 
 function renderGeminiPrompt(lesson: any, sc: any): string {
   const vs = sc.video_script ?? {};
-  return `# Prompt — Gemini Video
+  return `# Prompt — Vídeo GPT-5
 
 Título: ${sc.title ?? lesson.title}
 Tema: ${sc.subject ?? "—"} / ${sc.topic ?? "—"}
