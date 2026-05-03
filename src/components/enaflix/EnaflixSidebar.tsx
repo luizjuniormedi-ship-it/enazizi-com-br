@@ -27,6 +27,8 @@ import { motion } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
+import { ForceUpdateButton } from "@/components/layout/ForceUpdateButton";
+
 
 const NAV_SECTIONS = [
   {
@@ -191,6 +193,13 @@ export function EnaflixSidebar() {
 
       {/* Footer / User */}
       <div className="p-4 border-t border-white/5 space-y-4 bg-[#0a0a0e]/50 backdrop-blur-md">
+        <div className="px-2">
+          <ForceUpdateButton 
+            variant="sidebar" 
+            className="hover:bg-white/10 text-white/40 hover:text-white"
+          />
+        </div>
+        
         <div className="flex items-center justify-between px-2">
           <button className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
             <Search className="h-5 w-5" />
@@ -204,6 +213,7 @@ export function EnaflixSidebar() {
           </button>
         </div>
       </div>
+
     </aside>
   );
 }
