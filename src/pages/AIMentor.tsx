@@ -215,11 +215,11 @@ const AIMentor = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 flex flex-col pt-4 pb-0 sm:pt-6"
+              className="fixed inset-0 z-[60] flex flex-col pt-16 lg:pt-20 pb-20 lg:pb-0"
             >
-              <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col px-2 sm:px-6 lg:px-12">
-                <div className="flex-1 relative flex flex-col rounded-t-[40px] border-t border-x border-white/10 bg-black/40 backdrop-blur-[80px] shadow-2xl overflow-hidden transition-all duration-700">
-                  <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+              <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col px-0 sm:px-6 lg:px-12">
+                <div className="flex-1 relative flex flex-col lg:rounded-t-[40px] border-t border-x border-white/10 bg-black/60 backdrop-blur-[120px] shadow-2xl overflow-hidden transition-all duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none" />
                   
                   <AgentChat
                     title="ENAZIZI Cognitive Engine"

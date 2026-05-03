@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Search, X, User } from "lucide-react";
+import { ArrowLeft, Bell, Search, X, User, LayoutDashboard } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
@@ -17,7 +17,6 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
   const isSpecialUser = isAdmin || isProfessor;
-  // 0 = no topo (transparente), 1 = totalmente sólida.
   const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
@@ -26,7 +25,6 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
         const y = window.scrollY;
-        // 0–120px de scroll mapeia para 0–1
         const p = Math.min(1, Math.max(0, y / 120));
         setScrollProgress(p);
       });
@@ -39,9 +37,8 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
     };
   }, []);
 
-  // Estilo dinâmico interpolado (transição CSS dá o easing)
-  const bgAlpha = 0.15 + scrollProgress * 0.77; // 0.15 → 0.92
-  const blurPx = 2 + scrollProgress * 16; // 2 → 18
+  const bgAlpha = 0.15 + scrollProgress * 0.77; 
+  const blurPx = 2 + scrollProgress * 16; 
   const shadowAlpha = scrollProgress * 0.55;
 
   return (
@@ -54,14 +51,12 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
         boxShadow: `0 12px 40px -16px rgba(0,0,0,${shadowAlpha})`,
       }}
     >
-      {/* Gradiente preto top-down quando estamos no topo (cinematográfico) */}
       <div
         aria-hidden
         className="absolute inset-0 pointer-events-none transition-opacity duration-500 ease-out bg-gradient-to-b from-black/70 via-black/30 to-transparent"
         style={{ opacity: 1 - scrollProgress }}
       />
 
-      {/* Linha luminosa no fundo (aparece com o scroll) */}
       <div
         aria-hidden
         className="absolute inset-x-0 bottom-0 h-px pointer-events-none transition-opacity duration-500"
@@ -73,7 +68,6 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
       />
 
       <div className="relative flex items-center justify-between px-4 sm:px-8 lg:px-14 h-16">
-        {/* Esquerda: Voltar + wordmark ENAFLIX */}
         <div className="flex items-center gap-4 sm:gap-8 min-w-0">
           {isSpecialUser ? (
             <button
@@ -81,12 +75,12 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               onClick={onClose}
               aria-label="Sair do modo ENAFLIX"
               className={cn(
-                "inline-flex items-center gap-1.5 text-sm font-medium",
+                "inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest",
                 "text-white/70 hover:text-white transition-all duration-300",
-                "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
+                "rounded-full px-3 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03] border border-white/5",
               )}
             >
-              <ArrowLeft className="h-4 w-4" />
+              <LayoutDashboard className="h-3 w-3" />
               <span className="hidden sm:inline">Painel Admin</span>
             </button>
           ) : (
@@ -94,24 +88,22 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               type="button"
               onClick={() => navigate("/dashboard/perfil")}
               className={cn(
-                "inline-flex items-center gap-1.5 text-sm font-medium",
+                "inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest",
                 "text-white/70 hover:text-white transition-all duration-300",
-                "rounded-full px-2.5 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03]",
+                "rounded-full px-3 py-1.5 hover:bg-white/[0.06] hover:scale-[1.03] border border-white/5",
               )}
             >
-              <User className="h-4 w-4" />
+              <User className="h-3 w-3" />
               <span className="hidden sm:inline">Meu Perfil</span>
             </button>
           )}
 
-          <div className="flex items-center gap-2 min-w-0 group">
-            {/* Dot vermelho com pulse cinematográfico */}
+          <div className="flex items-center gap-2 min-w-0 group cursor-pointer" onClick={() => navigate("/enaflix")}>
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="absolute inset-0 rounded-full bg-red-500/60 animate-ping" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.85)]" />
             </span>
 
-            {/* Wordmark com shimmer ambient muito sutil */}
             <span
               className={cn(
                 "relative font-black text-lg sm:text-xl tracking-[0.25em] select-none",
@@ -130,51 +122,31 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 ml-4">
-            <button 
-              onClick={() => navigate("/enaflix")}
-              className={cn(
-                "text-sm font-semibold transition-colors hover:text-white",
-                location.pathname === "/enaflix" ? "text-white" : "text-white/60"
-              )}
-            >
-              Início
-            </button>
-            <button 
-              type="button"
-              onClick={() => navigate("/dashboard/videoaulas/explorar")}
-              className={cn(
-                "text-sm font-semibold transition-colors hover:text-white",
-                location.pathname.includes("explorar") ? "text-white" : "text-white/60"
-              )}
-            >
-              Explorar Videoaulas
-            </button>
-            <button 
-              type="button"
-              onClick={() => navigate("/dashboard/videoaulas")}
-              className={cn(
-                "text-sm font-semibold transition-colors hover:text-white",
-                location.pathname.includes("/dashboard/videoaulas") && !location.pathname.includes("explorar") ? "text-white" : "text-white/60"
-              )}
-            >
-              Minhas Aulas
-            </button>
-            <button 
-              type="button"
-              onClick={() => navigate("/dashboard/mentor")}
-              className={cn(
-                "text-sm font-semibold transition-colors hover:text-white",
-                location.pathname.includes("/dashboard/mentor") ? "text-white" : "text-white/60"
-              )}
-            >
-              Tutor IA
-            </button>
+          <nav className="hidden md:flex items-center gap-8 ml-4">
+            {[
+              { label: "Início", path: "/enaflix" },
+              { label: "Planner", path: "/dashboard/planner" },
+              { label: "Simulados", path: "/dashboard/simulados" },
+              { label: "Flashcards", path: "/dashboard/flashcards" },
+              { label: "Tutor IA", path: "/dashboard/mentor" },
+            ].map((item) => (
+              <button 
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={cn(
+                  "text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-white hover:scale-105",
+                  location.pathname === item.path || (item.path === "/enaflix" && location.pathname === "/dashboard")
+                    ? "text-white" 
+                    : "text-white/40"
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
           </nav>
         </div>
 
-        {/* Direita: ações secundárias discretas (ghost) */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onSearchClick}
@@ -183,18 +155,18 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               "h-9 w-9 rounded-full flex items-center justify-center",
               "transition-all duration-300 ease-out hover:scale-[1.06] active:scale-95",
               searchActive
-                ? "bg-white/15 text-white"
-                : "text-white/70 hover:text-white hover:bg-white/[0.08]",
+                ? "bg-primary/20 text-primary border border-primary/30"
+                : "text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/5",
             )}
           >
             {searchActive ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
           </button>
           <button
             type="button"
-            aria-label="Notificações"
+            onClick={() => navigate("/dashboard/perfil")}
             className={cn(
               "h-9 w-9 rounded-full flex items-center justify-center",
-              "text-white/70 hover:text-white hover:bg-white/[0.08]",
+              "text-white/70 hover:text-white hover:bg-white/[0.08] border border-white/5",
               "transition-all duration-300 ease-out hover:scale-[1.06] active:scale-95",
             )}
           >
