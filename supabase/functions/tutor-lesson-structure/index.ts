@@ -318,7 +318,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
 
   // 4) AI Gateway check (Real GPT-5-mini call)
   let gatewayStatus = 0;
-  let modelUsed = "google/gemini-2.0-flash-exp";
+  let modelUsed = "openai/gpt-5-mini";
   try {
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -380,7 +380,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     ok: checks.every(c => c.ok || c.name === "RECOVERY_SYSTEM"),
     timestamp: new Date().toISOString(),
     duration_ms: Date.now() - dbStart,
-    primary_model: "google/gemini-2.0-flash-exp",
+    primary_model: "openai/gpt-5-mini",
     fallback_model: "openai/gpt-5",
     gemini_guard_status: "disabled",
     forbidden_models_found: false,
@@ -484,7 +484,7 @@ const STRUCTURE_TOOL = {
 };
 
 async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<string, unknown>) {
-  const models = ["google/gemini-2.0-flash-exp", "openai/gpt-5-mini", "openai/gpt-5"];
+  const models = ["openai/gpt-5-mini", "openai/gpt-5"];
   let lastError = "";
   let lastStatus: number | null = null;
   

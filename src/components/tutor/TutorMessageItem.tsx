@@ -178,7 +178,6 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             {/* Topic-based Video Lesson Preview (Before text) */}
             {lessonData && (isFirstMessage || (msg as any).id) && (
               <div className="mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-4 duration-500 relative group/video overflow-hidden">
-                {/* ENAFLIX style glass effect */}
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
                 
                 <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -189,36 +188,38 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/80">Recomendação ENAFLIX</p>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/80">Aula disponível no ENAFLIX</p>
                       </div>
                       <h4 className="text-sm font-bold text-foreground line-clamp-1 group-hover/video:text-primary transition-colors">
                         {lessonData.title || lessonData.topic}
                       </h4>
                       <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
-                        {lessonData.subject || "Videoaula de Medicina"} • Videoaula
+                        {lessonData.subject || "Videoaula de Medicina"} • {lessonData.topic || "Tópico Médico"}
                       </p>
                     </div>
                   </div>
                   
-                  <Button 
-                    size="sm" 
-                    className="w-full sm:w-auto h-10 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 text-xs font-bold uppercase tracking-wider shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95"
-                    onClick={() => {
-                      logVideoRecommendationEvent('clicked', { 
-                        lessonId: lessonData?.id, 
-                        topic, 
-                        location: 'top_card_v2', 
-                        conversationId 
-                      });
-                      if (lessonData?.id) {
-                        navigate(`/dashboard/videoaulas/${lessonData.id}`);
-                      } else {
-                        toast.info("Abrindo aula completa...");
-                      }
-                    }}
-                  >
-                    <Play className="h-3.5 w-3.5 fill-current" /> Assistir Agora
-                  </Button>
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button 
+                      size="sm" 
+                      className="flex-1 sm:flex-initial h-10 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 text-xs font-bold uppercase tracking-wider shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95"
+                      onClick={() => {
+                        logVideoRecommendationEvent('clicked', { 
+                          lessonId: lessonData?.id, 
+                          topic: topic || lessonData.topic, 
+                          location: 'top_card_v2', 
+                          conversationId 
+                        });
+                        if (lessonData?.id) {
+                          navigate(`/dashboard/videoaulas/${lessonData.id}`);
+                        } else {
+                          toast.info("Abrindo aula completa...");
+                        }
+                      }}
+                    >
+                      <Play className="h-3.5 w-3.5 fill-current" /> Assistir Agora
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-primary/10 flex items-center gap-2">
@@ -226,7 +227,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     <Sparkles className="h-2.5 w-2.5 text-primary" />
                   </div>
                   <p className="text-[10px] text-muted-foreground italic leading-tight">
-                    "Identifiquei uma aula específica para aprofundar este tema. Recomendo o vídeo antes da leitura."
+                    "Antes de continuar, recomendo assistir esta aula para ter a visão geral do tema."
                   </p>
                 </div>
               </div>

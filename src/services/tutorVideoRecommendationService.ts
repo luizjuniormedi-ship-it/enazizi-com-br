@@ -84,6 +84,8 @@ export function normalizeMedicalTerm(term: string): string[] {
     "endocardite": ["valvula cardiaca", "vegetacao valvar"],
     "cardiologia": ["coracao", "cardiaco"],
     "pneumonia": ["infeccao pulmonar", "broncopneumonia"],
+    "hepatite": ["inflamacao figado", "hepatites agudas"],
+    "pancreatite": ["inflamacao pancreas", "dor abdominal"],
   };
 
   const results = new Set<string>([t]);
