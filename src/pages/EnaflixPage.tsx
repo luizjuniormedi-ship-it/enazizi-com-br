@@ -1,15 +1,9 @@
 /**
  * EnaflixPage — Modo cinematográfico de descoberta inteligente.
- *
- * Estrutura (Netflix/Apple TV style):
- * 1. Topbar OVERLAY flutuante (transparente no topo, sólida ao rolar)
- * 2. Billboard hero full-bleed dominante (recomendação IA)
- * 3. Fileiras horizontais emergindo do gradiente do hero
- * 4. Busca em modo "drawer" sobre tudo (não ocupa espaço fixo)
- *
- * Sem sidebar, sem header sólido, sem caixas administrativas.
+ * 
+ * Agora promovido a HOME principal do sistema.
  */
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +23,14 @@ import { EnaflixRowSkeleton } from "@/components/enaflix/EnaflixRowSkeleton";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
+import { useStudyNext } from "@/hooks/useStudyNext";
+import { useDashboardData } from "@/hooks/useDashboardData";
+import { Brain, Target, TrendingUp, Award, Sparkles, ChevronRight, Play } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
+const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 import { useStudyNext } from "@/hooks/useStudyNext";
 import { useDashboardData } from "@/hooks/useDashboardData";
 
