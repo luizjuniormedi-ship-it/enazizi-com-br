@@ -435,7 +435,7 @@ const Admin = () => {
                     {group.items.map((item) => (
                       <button
                         key={item.key}
-                        onClick={() => setActiveSection(item.key)}
+                        onClick={() => handleTabChange(item.key)}
                         className={cn(
                           "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 relative group",
                           activeSection === item.key 
