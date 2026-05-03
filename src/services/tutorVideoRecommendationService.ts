@@ -110,8 +110,8 @@ export async function findRecommendedVideoForTutorContext(
         const lTopic = (lesson.topic || "").toLowerCase();
 
         terms.forEach(term => {
-          if (lTitle.includes(term)) score += 40;
-          if (lTopic.includes(term)) score += 30;
+          if (termMatches(lTitle, term)) score += 40;
+          if (termMatches(lTopic, term)) score += 30;
         });
 
         if (score < 40) return;
