@@ -528,8 +528,8 @@ const Admin = () => {
                  {activeSection === "adaptive-engine" && <Suspense fallback={<PanelLoader />}><AdaptiveEngineAdmin /></Suspense>}
                  {activeSection === "cognitive-orchestrator" && <Suspense fallback={<PanelLoader />}><AdminCognitiveOrchestrator /></Suspense>}
                  {activeSection === "specialty-friction" && <Suspense fallback={<PanelLoader />}><SpecialtyFrictionReport /></Suspense>}
-                 {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} stats={stats} /></Suspense>}
-                 {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog logs={auditLogs} loading={auditLoading} /></Suspense>}
+                 {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} /></Suspense>}
+                 {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} /></Suspense>}
                  {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
 
                </motion.div>
