@@ -27,15 +27,15 @@ import {
   UserCheck,
   ImageIcon,
   Star,
-  Upload
+  Upload,
+  Brain
 } from "lucide-react";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import enazizi from "@/assets/enazizi-mascot.png";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { ForceUpdateButton } from "@/components/layout/ForceUpdateButton";
-
 
 const NAV_SECTIONS = [
   {
@@ -55,7 +55,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
       { to: "/dashboard/mnemonic-studio", label: "Mnemônicos", icon: BrainCircuit },
-      { to: "/dashboard/chatgpt", label: "Tutor IA", icon: Sparkles },
+      { to: "/dashboard/mentor", label: "Tutor IA", icon: Brain, badge: "Premium" },
     ]
   },
   {
@@ -74,52 +74,66 @@ interface SidebarItemProps {
   label: string;
   icon: React.ElementType;
   active: boolean;
+  badge?: string;
 }
 
-function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
+function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps) {
   return (
     <Link
       to={to}
       className={cn(
-        "group relative flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-500 overflow-hidden",
+        "group relative flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-500 overflow-hidden",
         active 
-          ? "bg-white/10 text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/10" 
-          : "text-white/40 hover:text-white hover:bg-white/5"
+          ? "text-white" 
+          : "text-white/40 hover:text-white"
       )}
     >
-      {active && (
-        <motion.div
-          layoutId="sidebar-active-bg"
-          className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent -z-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        />
-      )}
+      <AnimatePresence>
+        {active && (
+          <motion.div
+            layoutId="sidebar-active-pill"
+            className="absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] -z-10"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          />
+        )}
+      </AnimatePresence>
 
       <div className={cn(
-        "p-2 rounded-xl transition-all duration-500",
-        active ? "bg-primary/20 shadow-[0_0_20px_rgba(var(--pixar-blue),0.4)] ring-1 ring-primary/40" : "bg-white/5 group-hover:bg-white/10 ring-1 ring-white/5"
+        "p-2 rounded-xl transition-all duration-500 relative",
+        active ? "bg-primary/20 ring-1 ring-primary/30" : "bg-white/5 group-hover:bg-white/10 ring-1 ring-white/5"
       )}>
+        {active && (
+          <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
+        )}
         <Icon className={cn(
-          "h-4 w-4 transition-all duration-500",
+          "h-4 w-4 relative z-10 transition-all duration-500",
           active ? "text-primary scale-110" : "opacity-70 group-hover:opacity-100 group-hover:scale-110"
         )} />
       </div>
       
       <span className={cn(
-        "text-xs font-black tracking-tight transition-all duration-500",
+        "text-[11px] font-black tracking-tight transition-all duration-500 flex-1",
         active ? "translate-x-1" : "group-hover:translate-x-0.5"
       )}>
         {label}
       </span>
+
+      {badge && (
+        <span className="px-1.5 py-0.5 rounded-md bg-primary/20 text-primary text-[8px] font-black uppercase tracking-widest ring-1 ring-primary/30">
+          {badge}
+        </span>
+      )}
       
       {active && (
         <motion.div
           layoutId="sidebar-active-indicator"
-          className="absolute left-0 w-1 h-6 bg-primary rounded-r-full shadow-[0_0_10px_rgba(var(--pixar-blue),1)]"
-          initial={{ opacity: 0, x: -5 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          className="absolute left-0 w-0.5 h-5 bg-primary rounded-r-full shadow-[0_0_15px_hsl(var(--primary))]"
+          initial={{ height: 0 }}
+          animate={{ height: 20 }}
+          transition={{ duration: 0.3 }}
         />
       )}
     </Link>
@@ -132,151 +146,131 @@ export function EnaflixSidebar() {
   const { isProfessor } = useProfessorCheck();
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#050508]/80 backdrop-blur-[100px] border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_60px_-20px_rgba(0,0,0,0.9)]">
-      {/* Brand */}
+    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#050508]/60 backdrop-blur-[80px] border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_60px_-20px_rgba(0,0,0,1)]">
+      {/* Brand Header */}
       <div className="p-8 pb-4">
         <Link to="/" className="flex items-center gap-4 group">
           <div className="relative">
             <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full group-hover:bg-primary/50 transition-all duration-700 group-hover:scale-125" />
-            <img 
-              src={enazizi} 
-              alt="ENAZIZI" 
-              className="relative h-12 w-12 rounded-2xl object-cover border-2 border-white/10 shadow-pixar transition-transform duration-700 group-hover:rotate-6 group-hover:scale-110" 
-            />
+            <div className="relative h-14 w-14 rounded-2xl p-1 bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-2xl transition-transform duration-700 group-hover:rotate-6 group-hover:scale-110">
+              <img 
+                src={enazizi} 
+                alt="ENAZIZI" 
+                className="h-full w-full rounded-xl object-cover" 
+              />
+            </div>
           </div>
           <div className="flex flex-col">
-            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--pixar-blue),0.5)]">ENAFLIX</span>
-            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">AI Studio</span>
+            <span className="font-black text-2xl tracking-[0.2em] text-white leading-none drop-shadow-[0_2px_15px_rgba(var(--primary),0.5)]">ENAFLIX</span>
+            <span className="text-[9px] font-black text-primary tracking-[0.4em] uppercase opacity-80 mt-1">Cognitive v5</span>
           </div>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-4 custom-scrollbar mt-6">
-        <div className="space-y-8 pb-8">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.title} className="space-y-2">
-              <h3 className="px-4 text-[9px] font-black tracking-[0.2em] text-white/20 uppercase">
-                {section.title}
-              </h3>
-              <div className="space-y-1">
-                {section.items.map((item) => (
-                  <SidebarItem
-                    key={item.to}
-                    {...item}
-                    active={location.pathname === item.to}
-                  />
-                ))}
-              </div>
+      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-8 scrollbar-hide">
+        {NAV_SECTIONS.map((section) => (
+          <div key={section.title} className="space-y-3">
+            <h3 className="px-4 text-[9px] font-black tracking-[0.3em] text-white/20 uppercase">
+              {section.title}
+            </h3>
+            <div className="space-y-1">
+              {section.items.map((item) => (
+                <SidebarItem
+                  key={item.to}
+                  {...item}
+                  active={location.pathname === item.to}
+                />
+              ))}
             </div>
-          ))}
+          </div>
+        ))}
 
-          {(isAdmin || isProfessor) && (
-            <div className="space-y-2">
-              <h3 className="px-4 text-[9px] font-black tracking-[0.2em] text-white/20 uppercase">
-                ADMINISTRAÇÃO
-              </h3>
-              <div className="space-y-1">
-                {isProfessor && (
+        {(isAdmin || isProfessor) && (
+          <div className="space-y-3">
+            <h3 className="px-4 text-[9px] font-black tracking-[0.3em] text-white/20 uppercase">
+              ADMINISTRAÇÃO
+            </h3>
+            <div className="space-y-1">
+              {isProfessor && (
+                <SidebarItem
+                  to="/professor"
+                  label="Professor"
+                  icon={GraduationCap}
+                  active={location.pathname === "/professor"}
+                />
+              )}
+              {isAdmin && (
+                <>
                   <SidebarItem
-                    to="/professor"
-                    label="Professor"
-                    icon={GraduationCap}
-                    active={location.pathname === "/professor"}
+                    to="/admin"
+                    label="Admin Hub"
+                    icon={Shield}
+                    active={location.pathname === "/admin" && !location.search}
                   />
-                )}
-                {isAdmin && (
-                  <>
+                  
+                  <div className="py-2 space-y-1 opacity-80">
                     <SidebarItem
-                      to="/admin"
-                      label="Admin Hub"
-                      icon={Shield}
-                      active={location.pathname === "/admin" && !location.search}
+                      to="/admin?tab=uploads"
+                      label="Upload Arquivos"
+                      icon={Upload}
+                      active={location.search === "?tab=uploads"}
                     />
-                    
-                    {/* Atalhos Rápidos de Gestão */}
-                    <div className="py-2 space-y-1">
-                      <SidebarItem
-                        to="/admin?tab=uploads"
-                        label="Upload Arquivos"
-                        icon={Upload}
-                        active={location.search === "?tab=uploads"}
-                      />
-                      <SidebarItem
-                        to="/admin?tab=ingestion"
-                        label="Gerar Questões"
-                        icon={Sparkles}
-                        active={location.search === "?tab=ingestion"}
-                      />
-                      <SidebarItem
-                        to="/admin?tab=question-review"
-                        label="Aprovar Questões"
-                        icon={UserCheck}
-                        active={location.search === "?tab=question-review"}
-                      />
-                      <SidebarItem
-                        to="/admin?tab=image-review"
-                        label="Aprovar Imagens"
-                        icon={ImageIcon}
-                        active={location.search === "?tab=image-review"}
-                      />
-                      <SidebarItem
-                        to="/admin?tab=ai-studio"
-                        label="AI Studio"
-                        icon={Sparkles}
-                        active={location.search === "?tab=ai-studio"}
-                      />
-                      <SidebarItem
-                        to="/admin?tab=lesson-ratings"
-                        label="Avaliações"
-                        icon={Star}
-                        active={location.search === "?tab=lesson-ratings"}
-                      />
-                    </div>
+                    <SidebarItem
+                      to="/admin?tab=ingestion"
+                      label="Gerar Questões"
+                      icon={Sparkles}
+                      active={location.search === "?tab=ingestion"}
+                    />
+                    <SidebarItem
+                      to="/admin?tab=question-review"
+                      label="Aprovar Questões"
+                      icon={UserCheck}
+                      active={location.search === "?tab=question-review"}
+                    />
+                  </div>
 
-                    <SidebarItem
-                      to="/admin/users"
-                      label="Usuários"
-                      icon={Users}
-                      active={location.pathname === "/admin/users"}
-                    />
-                    <SidebarItem
-                      to="/admin/monitoring"
-                      label="Monitoramento"
-                      icon={Activity}
-                      active={location.pathname === "/admin/monitoring"}
-                    />
-                  </>
-                )}
-              </div>
+                  <SidebarItem
+                    to="/admin/users"
+                    label="Usuários"
+                    icon={Users}
+                    active={location.pathname === "/admin/users"}
+                  />
+                  <SidebarItem
+                    to="/admin/monitoring"
+                    label="Monitoramento"
+                    icon={Activity}
+                    active={location.pathname === "/admin/monitoring"}
+                  />
+                </>
+              )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </nav>
 
-      {/* Footer / User */}
-      <div className="p-4 border-t border-white/5 space-y-4 bg-[#0a0a0e]/50 backdrop-blur-md">
+      {/* Footer / User / Global Actions */}
+      <div className="p-4 bg-[#0a0a0e]/80 backdrop-blur-xl border-t border-white/5 space-y-4">
         <div className="px-2">
           <ForceUpdateButton 
             variant="sidebar" 
-            className="hover:bg-white/10 text-white/40 hover:text-white"
+            className="w-full justify-start h-10 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white border-white/5"
           />
         </div>
         
-        <div className="flex items-center justify-between px-2">
-          <button className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
-            <Search className="h-5 w-5" />
+        <div className="flex items-center justify-around px-2 py-1">
+          <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
+            <Search className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
           </button>
-          <button className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-[#0a0a0e]" />
+          <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all relative group/btn">
+            <Bell className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
+            <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-[#0a0a0e] shadow-[0_0_8px_hsl(var(--primary))]" />
           </button>
-          <button className="p-2 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-colors">
-            <Settings className="h-5 w-5" />
+          <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
+            <Settings className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
           </button>
         </div>
       </div>
-
     </aside>
   );
 }
