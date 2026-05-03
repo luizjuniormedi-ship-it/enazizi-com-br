@@ -567,29 +567,27 @@ export const useTutorCME = () => {
         return null;
       }
     },
-    findLessonByTopic: async (topic: string) => {
-      try {
-        const { data, error } = await supabaseClient
-          .from("ai_video_lessons")
-          .select("*, project:cme_video_projects(aggregation_id)")
-          .or(`topic.ilike.%${topic}%,title.ilike.%${topic}%`)
-          .eq('status', 'published')
-          .order('is_gold_content', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        
-        if (error) throw error;
-        
-        // Normalize the aggregation ID
-        if (data && (data as any).project?.aggregation_id) {
-          (data as any).aggregation_id = (data as any).project.aggregation_id;
-        }
-        
-        return data;
-      } catch (e) {
-        console.error("Error finding lesson for topic:", e);
-        return null;
-      }
-    }
+     findLessonByTopic: async (topic: string) => {
+       try {
+         const recommendation = await findRecommendedVideoForTutorContext(topic);
+         if (recommendation.found) {
+           return {
+             id: recommendation.lessonId,
+             title: recommendation.title,
+             topic: recommendation.topic,
+             playback_url: recommendation.watchUrl,
+             video_url: recommendation.watchUrl,
+             thumbnail_url: recommendation.thumbnailUrl,
+             status: recommendation.status,
+             source: recommendation.source,
+             confidence: recommendation.confidence
+           };
+         }
+         return null;
+       } catch (e) {
+         console.error("Error finding lesson for topic:", e);
+         return null;
+       }
+     }
   };
 };
