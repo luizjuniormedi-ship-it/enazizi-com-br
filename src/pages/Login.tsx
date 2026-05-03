@@ -200,7 +200,7 @@ const Login = () => {
             </p>
           </div>
 
-          <div className="card-pixar p-8 bg-[#0a0a0e]/60 border-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)]">
+          <div className="card-pixar p-8 bg-[#050508]/60 border-white/10 backdrop-blur-2xl shadow-[0_32px_64px_-12px_rgba(0,0,0,0.6)]">
             {forgotMode ? (
               <form onSubmit={handleForgotPassword} className="space-y-6">
                 <div className="space-y-2">
