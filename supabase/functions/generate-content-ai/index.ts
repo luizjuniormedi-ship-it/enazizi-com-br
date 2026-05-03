@@ -285,7 +285,7 @@ ${parsedData.notebooklm_package?.audio_script || parsedData.video_script}
     if (contentId) {
       await supabaseClient.from('master_content_library').update({ status: 'failed', last_error: error.message }).eq('id', contentId)
       await supabaseClient.rpc('log_ai_alert', { 
-        p_type: 'gemini_error', 
+        p_type: 'openai_error', 
         p_severity: 'critical', 
         p_message: `Erro na pipeline IA: ${error.message}`,
         p_content_id: contentId
