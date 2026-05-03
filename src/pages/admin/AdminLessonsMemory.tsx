@@ -182,14 +182,29 @@ const AdminLessonsMemory = () => {
   const restructureLesson = async (lesson: any) => {
     try {
       toast.info("Reestruturando aula com IA...");
-      const { error } = await supabase.functions.invoke("tutor-lesson-structure", {
+      const { data, error } = await supabase.functions.invoke("tutor-lesson-structure", {
         body: { lesson_id: lesson.id },
       });
-      if (error) throw error;
-      toast.success("Aula reestruturada");
+      
+      if (error) {
+        // Handle Edge Function non-2xx or connection errors
+        console.error("[Restructure] Function error:", error);
+        toast.error("Erro na comunicação com o servidor de IA.");
+        return;
+      }
+
+      if (data?.success === false) {
+        console.error("[Restructure] Business error:", data.technical_reason);
+        toast.error(data.message || "Não foi possível estruturar a aula agora.");
+        queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+        return;
+      }
+
+      toast.success("Aula reestruturada com sucesso.");
       queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
     } catch (e: any) {
-      toast.error(`Falha ao reestruturar: ${e.message ?? "erro"}`);
+      console.error("[Restructure] Global catch:", e);
+      toast.error(`Falha ao reestruturar: ${e.message ?? "erro inesperado"}`);
     }
   };
 
