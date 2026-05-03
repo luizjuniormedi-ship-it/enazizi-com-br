@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Target, BookOpen, CalendarDays, History,
   Loader2, Brain, AlertTriangle, GraduationCap, Clock, TrendingUp, BarChart3, RefreshCw,
-  Flame, Zap
+  Flame, Zap, ChevronLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -19,7 +19,9 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { CinematicHero } from "@/components/cinematic";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
+
 
 // Existing cronograma components
 import CronogramaNovoTema from "@/components/cronograma/CronogramaNovoTema";
