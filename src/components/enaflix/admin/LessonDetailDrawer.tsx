@@ -17,7 +17,7 @@ interface Props {
   // handlers (mantêm a mesma assinatura usada pela página admin)
   onToggleChecklistItem: (lesson: any, key: string) => void;
   onRestructure: (lesson: any) => void;
-  onExport: (lesson: any, format: "notebooklm" | "gemini" | "google_vids" | "markdown" | "txt") => void;
+  onExport: (lesson: any, format: "notebooklm" | "cinematic" | "google_vids" | "markdown" | "txt") => void;
   onPickVideo: (lesson: any) => void;
   onPreview: (lesson: any) => void;
   onPublish: (lesson: any) => void;
