@@ -430,7 +430,7 @@ const STRUCTURE_TOOL = {
 };
 
 async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<string, unknown>) {
-  const models = ["google/gemini-2.0-pro-exp-02-05", "google/gemini-2.0-flash-exp"];
+  const models = ["google/gemini-2.5-pro", "google/gemini-2.5-flash"];
   let lastError = "";
   let lastStatus: number | null = null;
   
