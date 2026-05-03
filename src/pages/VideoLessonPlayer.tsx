@@ -999,35 +999,163 @@ const VideoLessonPlayer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /> Resumo do Tutor</h3>
-                    <p className="text-white/70 leading-relaxed text-sm">
-                      {lesson.tutor_lesson_summary || "O Tutor IA está preparando o resumo cinematográfico desta aula."}
-                    </p>
+                    {lesson.tutor_lesson_summary ? (
+                      <p className="text-white/70 leading-relaxed text-sm whitespace-pre-line">
+                        {lesson.tutor_lesson_summary}
+                      </p>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-white/50 leading-relaxed text-sm italic">
+                          Resumo ainda não gerado para esta aula. Você pode pedir ao Tutor IA para criar uma síntese personalizada deste conteúdo.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-primary/30 text-primary hover:bg-primary/10 gap-2"
+                          onClick={() => {
+                            const params = new URLSearchParams({
+                              topic: lesson.topic || lesson.title || "",
+                              specialty: lesson.specialty || "",
+                              context: lesson.id,
+                            });
+                            navigate(`/dashboard/chatgpt?${params.toString()}`);
+                          }}
+                        >
+                          <Sparkles className="h-4 w-4" /> Gerar resumo com o Tutor
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-4">
                     <h3 className="text-lg font-bold flex items-center gap-2"><Target className="h-5 w-4 text-primary" /> Objetivos de Aprendizado</h3>
-                    <ul className="space-y-2">
-                      {lesson.learning_objectives?.map((obj: string, i: number) => (
-                        <li key={i} className="flex gap-3 text-sm text-white/70">
-                          <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                          {obj}
-                        </li>
-                      ))}
-                    </ul>
+                    {lesson.learning_objectives && lesson.learning_objectives.length > 0 ? (
+                      <ul className="space-y-2">
+                        {lesson.learning_objectives.map((obj: string, i: number) => (
+                          <li key={i} className="flex gap-3 text-sm text-white/70">
+                            <CheckCircle className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                            {obj}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-white/50 leading-relaxed text-sm italic">
+                          Esta aula ainda não tem objetivos pedagógicos cadastrados. Acesse a sessão guiada para estudar este tema com objetivos claros.
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-primary/30 text-primary hover:bg-primary/10 gap-2"
+                          onClick={() => {
+                            const params = new URLSearchParams({
+                              topic: lesson.topic || lesson.title || "",
+                              auto: "1",
+                              origin: "video-lesson",
+                            });
+                            navigate(`/dashboard/sessao-estudo?${params.toString()}`);
+                          }}
+                        >
+                          <Target className="h-4 w-4" /> Abrir Sessão de Estudo guiada
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
 
               <TabsContent value="segmentos" className="py-6">
-                <VideoSegmentList 
-                  segments={segments} 
-                  currentSegmentId={currentSegment?.id || null}
-                  onSelectSegment={handleSelectSegment}
-                  onAskTutor={handleAskTutorAtSegment}
-                  onReplaySegment={handleReplaySegment}
-                  getAnalytics={getForSegment}
-                  smartReplayEnabled={smartReplayEnabled}
-                  tutorTemporalEnabled={temporalEnabled}
-                />
+                {segments && segments.length > 0 ? (
+                  <VideoSegmentList 
+                    segments={segments} 
+                    currentSegmentId={currentSegment?.id || null}
+                    onSelectSegment={handleSelectSegment}
+                    onAskTutor={handleAskTutorAtSegment}
+                    onReplaySegment={handleReplaySegment}
+                    getAnalytics={getForSegment}
+                    smartReplayEnabled={smartReplayEnabled}
+                    tutorTemporalEnabled={temporalEnabled}
+                  />
+                ) : (
+                  <div className="text-center py-12 space-y-4 max-w-md mx-auto">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-base">Capítulos sendo gerados pela IA</h4>
+                      <p className="text-white/50 text-sm mt-2 leading-relaxed">
+                        Os capítulos inteligentes desta aula ainda não foram processados. Enquanto isso, peça ao Tutor para destacar os pontos-chave do conteúdo.
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-primary/30 text-primary hover:bg-primary/10 gap-2"
+                      onClick={() => {
+                        const params = new URLSearchParams({
+                          topic: lesson.topic || lesson.title || "",
+                          context: lesson.id,
+                        });
+                        navigate(`/dashboard/chatgpt?${params.toString()}`);
+                      }}
+                    >
+                      <Sparkles className="h-4 w-4" /> Pedir capítulos ao Tutor
+                    </Button>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="notas" className="py-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        topic: lesson.topic || lesson.title || "",
+                        lesson: lesson.id,
+                      });
+                      navigate(`/dashboard/flashcards?${params.toString()}`);
+                    }}
+                    className="text-left p-5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <BookOpen className="h-5 w-5 text-primary" />
+                      </div>
+                      <h4 className="font-bold text-sm">Flashcards do Tema</h4>
+                    </div>
+                    <p className="text-xs text-white/50 leading-relaxed">
+                      Acesse os flashcards de <span className="text-primary font-medium">{lesson.topic || lesson.specialty}</span> para fixar o conteúdo desta aula com repetição espaçada.
+                    </p>
+                    <span className="inline-flex items-center gap-1 mt-3 text-[10px] font-bold uppercase tracking-wider text-primary">
+                      Abrir <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        topic: lesson.topic || lesson.title || "",
+                        specialty: lesson.specialty || "",
+                        source: "video-lesson",
+                        lesson: lesson.id,
+                      });
+                      navigate(`/dashboard/gerar-flashcards?${params.toString()}`);
+                    }}
+                    className="text-left p-5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-primary/30 transition-all group"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                      </div>
+                      <h4 className="font-bold text-sm">Gerar notas & flashcards</h4>
+                    </div>
+                    <p className="text-xs text-white/50 leading-relaxed">
+                      A IA cria automaticamente flashcards e notas de estudo a partir do conteúdo desta videoaula.
+                    </p>
+                    <span className="inline-flex items-center gap-1 mt-3 text-[10px] font-bold uppercase tracking-wider text-primary">
+                      Gerar agora <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </button>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
