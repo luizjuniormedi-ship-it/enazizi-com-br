@@ -86,7 +86,7 @@ const MedicalGovernanceDashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${stats?.totalCost?.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Tokens Gemini consumidos</p>
+            <p className="text-xs text-muted-foreground">Tokens OpenAI consumidos</p>
           </CardContent>
         </Card>
         <Card>

@@ -12,6 +12,16 @@ const MAX_PER_HOUR = 100;
 const MIN_QUALITY = 50;
 const STUCK_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
 
+// Gemini Guard: Proteção contra regressão de modelo
+const FORBIDDEN_MODELS = ["gemini", "google/"];
+
+function checkGeminiGuard(model: string) {
+  if (FORBIDDEN_MODELS.some(m => model.toLowerCase().includes(m))) {
+    console.error(`GEMINI_GUARD_TRIGGERED: Model "${model}" is forbidden.`);
+    throw new Error(`CRITICAL_ERROR: Model "${model}" is forbidden by Gemini Guard policy.`);
+  }
+}
+
 type StructuredLesson = {
   title: string;
   subtitle?: string;
@@ -218,10 +228,10 @@ Deno.serve(async (req) => {
       last_structuring_error: null,
       last_structuring_at: new Date().toISOString(),
       notebooklm_export: structured.notebooklm_prompt || null,
-      gemini_export: (structured as any).cinematic_video_prompt || null,
+      gemini_export: structured.cinematic_video_prompt || null, // Keeping column name for compatibility
       google_vids_export: structured.google_vids_prompt || null,
       cinematic_prompt: { 
-        gpt5: (structured as any).cinematic_video_prompt, 
+        gpt5: structured.cinematic_video_prompt, 
         google_vids: structured.google_vids_prompt 
       },
       metadata: {
@@ -237,7 +247,8 @@ Deno.serve(async (req) => {
         gateway_status: gatewayStatus,
         parsing_strategy: parsingStrategy,
         score: score,
-        finished_at: new Date().toISOString()
+        finished_at: new Date().toISOString(),
+        guard_status: "passed"
       }
     };
 
@@ -373,7 +384,8 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     duration_ms: Date.now() - dbStart,
     primary_model: "openai/gpt-5-mini",
     fallback_model: "openai/gpt-5",
-    gemini_reference_found: false,
+    gemini_guard_status: "active",
+    forbidden_models_found: FORBIDDEN_MODELS.some(m => "openai/gpt-5-mini".includes(m)),
     gateway_status: gatewayStatus,
     db_latency: dbLatency,
     checks: Object.fromEntries(checks.map(c => [c.name, { ok: c.ok, status: (c as any).status, error: (c as any).error, detail: (c as any).detail }]))
@@ -500,6 +512,7 @@ async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<strin
 }
 
 async function callAI(apiKey: string, lesson: any, ctx: Record<string, unknown>, model: string): Promise<{ data: StructuredLesson | null, status: number, parsingStrategy: string }> {
+  checkGeminiGuard(model);
   const systemPrompt = `Você é um professor especialista da plataforma ENAZIZI/ENAFLIX. pt-BR.
 Regra de Ouro: Preserve o tema médico original "${lesson.topic}".
 Se você sugerir algo mais específico, o sistema salvará como sugestão, mas o tema principal não será alterado.

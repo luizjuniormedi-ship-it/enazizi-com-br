@@ -17,7 +17,7 @@ interface Props {
   // handlers (mantêm a mesma assinatura usada pela página admin)
   onToggleChecklistItem: (lesson: any, key: string) => void;
   onRestructure: (lesson: any) => void;
-  onExport: (lesson: any, format: "notebooklm" | "gemini" | "google_vids" | "markdown" | "txt") => void;
+  onExport: (lesson: any, format: "notebooklm" | "cinematic" | "google_vids" | "markdown" | "txt") => void;
   onPickVideo: (lesson: any) => void;
   onPreview: (lesson: any) => void;
   onPublish: (lesson: any) => void;
@@ -231,9 +231,9 @@ export function LessonDetailDrawer({
               </TabsContent>
 
               <TabsContent value="prompts" className="space-y-5 mt-0">
-                {sc?.gemini_prompt && (
-                  <Section title="Prompt Vídeo GPT-5">
-                    <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.gemini_prompt}</pre>
+                {(sc?.cinematic_video_prompt || sc?.gemini_prompt) && (
+                  <Section title="Prompt Vídeo Cinematográfico">
+                    <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.cinematic_video_prompt || sc.gemini_prompt}</pre>
                   </Section>
                 )}
                 {sc?.notebooklm_prompt && (
@@ -241,7 +241,7 @@ export function LessonDetailDrawer({
                     <pre className="text-xs text-white/70 whitespace-pre-wrap font-mono leading-relaxed bg-white/[0.03] border border-white/10 rounded-xl p-3">{sc.notebooklm_prompt}</pre>
                   </Section>
                 )}
-                {!sc?.gemini_prompt && !sc?.notebooklm_prompt && (
+                {!sc?.cinematic_video_prompt && !sc?.gemini_prompt && !sc?.notebooklm_prompt && (
                   <div className="text-sm text-white/50 text-center py-8">
                     Sem prompts dedicados nesta aula.
                   </div>
@@ -270,7 +270,7 @@ export function LessonDetailDrawer({
                 <Section title="Exportações de Vídeo">
                   <div className="grid grid-cols-2 gap-2 mt-2">
                     <ActionPill icon={<BookOpen className="h-4 w-4" />} label="NotebookLM" onClick={() => onExport(lesson, "notebooklm")} disabled={!isStructured} />
-                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Vídeo GPT-5" onClick={() => onExport(lesson, "gemini")} disabled={!isStructured} />
+                    <ActionPill icon={<Sparkles className="h-4 w-4" />} label="Vídeo Cinematográfico" onClick={() => onExport(lesson, "cinematic")} disabled={!isStructured} />
                     <ActionPill icon={<Film className="h-4 w-4" />} label="Google Vids" onClick={() => onExport(lesson, "google_vids")} disabled={!isStructured} />
                     <ActionPill icon={<Download className="h-4 w-4" />} label="Markdown" onClick={() => onExport(lesson, "markdown")} disabled={!isStructured} />
                   </div>

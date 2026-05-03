@@ -118,8 +118,8 @@ serve(async (req) => {
     }
 
     // 3. AI Generation
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY não configurada')
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY')
+    if (!LOVABLE_API_KEY) throw new Error('LOVABLE_API_KEY não configurada')
 
     // Get Active Prompt
     const { data: promptData } = await supabaseClient
@@ -162,16 +162,24 @@ serve(async (req) => {
       }
     `;
 
-    // Resilient fetch with retry logic for 429
     let response;
     let retries = 3;
+    const model = 'openai/gpt-5-mini';
+    
     while (retries > 0) {
-      response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/openai/gpt-5-mini:generateContent?key=${GEMINI_API_KEY}`, {
+      response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json' 
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: finalPrompt }] }],
-          generationConfig: { response_mime_type: "application/json" }
+          model,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: finalPrompt }
+          ],
+          response_format: { type: "json_object" }
         })
       });
       
@@ -189,13 +197,14 @@ serve(async (req) => {
       break;
     }
 
-    const geminiData = await response.json()
-    if (geminiData.error) throw new Error(`Gemini Error: ${geminiData.error.message}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gateway Error ${response.status}: ${errorText}`);
+    }
 
-    let aiResponseText = geminiData.candidates[0].content.parts[0].text;
-    aiResponseText = aiResponseText.replace(/```json|```/g, '').trim();
-
-    let parsedData: GeminiResponse;
+    const aiData = await response.json();
+    const aiResponseText = aiData.choices[0].message.content;
+    let parsedData: any;
     let validationStatus: 'valid' | 'repaired' | 'failed' = 'valid';
 
     try {
@@ -210,7 +219,7 @@ serve(async (req) => {
         await supabaseClient.rpc('log_ai_alert', { 
           p_type: 'json_failure', 
           p_severity: 'critical', 
-          p_message: `Falha crítica ao parsear JSON do Gemini para ${content.title}`,
+          p_message: `Falha crítica ao parsear JSON do OpenAI para ${content.title}`,
           p_content_id: contentId,
           p_metadata: { raw_text: aiResponseText.substring(0, 500) }
         });
@@ -276,7 +285,7 @@ ${parsedData.notebooklm_package?.audio_script || parsedData.video_script}
     if (contentId) {
       await supabaseClient.from('master_content_library').update({ status: 'failed', last_error: error.message }).eq('id', contentId)
       await supabaseClient.rpc('log_ai_alert', { 
-        p_type: 'gemini_error', 
+        p_type: 'openai_error', 
         p_severity: 'critical', 
         p_message: `Erro na pipeline IA: ${error.message}`,
         p_content_id: contentId

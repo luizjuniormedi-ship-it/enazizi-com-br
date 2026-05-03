@@ -1,6 +1,6 @@
 /**
  * trajectory-explain-v1 — Gera explicação narrativa em PT-BR sobre o snapshot
- * mais recente do Radar de Trajetória. 1 chamada Lovable AI (gemini flash).
+ * mais recente do Radar de Trajetória. 1 chamada Lovable AI (openai/gpt-5-mini).
  *
  * Falha silenciosa: se LOVABLE_API_KEY não existir ou a chamada falhar,
  * devolve uma narrativa fallback determinística baseada nos próprios scores.

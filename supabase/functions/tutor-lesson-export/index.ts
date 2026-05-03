@@ -1,4 +1,4 @@
-// tutor-lesson-export: gera exportação NotebookLM/Gemini/Google Vids/Markdown/TXT.
+// tutor-lesson-export: gera exportação NotebookLM/Cinematic/Google Vids/Markdown/TXT.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-type Format = "notebooklm" | "gemini" | "google_vids" | "markdown" | "txt";
+type Format = "notebooklm" | "cinematic" | "google_vids" | "markdown" | "txt";
 
 const CINEMATIC_3D_BLOCK = `---
 IMPORTANTE — PADRÃO VISUAL OBRIGATÓRIO ENAZIZI/ENAFLIX
@@ -83,8 +83,8 @@ Deno.serve(async (req) => {
       case "notebooklm":
         content = renderNotebookLM(lesson, sc);
         break;
-      case "gemini":
-        content = renderGeminiPrompt(lesson, sc);
+      case "cinematic":
+        content = renderCinematicPrompt(lesson, sc);
         break;
       case "google_vids":
         content = renderGoogleVidsPrompt(lesson, sc);
@@ -207,7 +207,7 @@ ${(sc.flashcard_suggestions ?? [])
 ${sc.notebooklm_prompt ?? "Gerar resumo, áudio guiado e mapa de estudo fiel ao conteúdo acima."}
 
 ## Prompt para Vídeo GPT-5 / Google Vids
-${sc.gemini_video_prompt ?? "—"}
+${sc.cinematic_video_prompt || sc.gemini_video_prompt || "—"}
 
 ## Referências
 ${bullet(sc.references)}
@@ -217,16 +217,16 @@ ${bullet(sc.quality_notes)}
 `;
 }
 
-function renderGeminiPrompt(lesson: any, sc: any): string {
+function renderCinematicPrompt(lesson: any, sc: any): string {
   const vs = sc.video_script ?? {};
-  return `# Prompt — Vídeo GPT-5
+  return `# Prompt — Vídeo Cinematográfico (OpenAI GPT-5)
 
 Título: ${sc.title ?? lesson.title}
 Tema: ${sc.subject ?? "—"} / ${sc.topic ?? "—"}
 Duração-alvo: ${sc.estimated_duration_minutes ?? 8} minutos
 
 ## Briefing
-${sc.gemini_video_prompt ?? "Crie uma videoaula didática em pt-BR sobre o conteúdo abaixo."}
+${sc.cinematic_video_prompt || sc.gemini_video_prompt || "Crie uma videoaula didática em pt-BR sobre o conteúdo abaixo."}
 
 ## Abertura
 ${vs.opening ?? "—"}

@@ -41,7 +41,7 @@ serve(async (req) => {
       throw new Error(`Failed to download file: ${dlErr?.message || 'no data returned'}`);
     }
 
-    // Convert PDF to base64 for Gemini (chunk-safe for large files)
+    // Convert PDF to base64 for Vision (chunk-safe for large files)
     const arrayBuffer = await fileData.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
     const fileSizeMB = bytes.length / (1024 * 1024);
@@ -66,7 +66,7 @@ serve(async (req) => {
       extracted_json: { step: "analyzing_visual", progress: 10 },
     }).eq("id", upload_id);
 
-    // Send entire PDF to Gemini Vision for analysis
+    // Send entire PDF to AI Gateway for analysis
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -157,7 +157,7 @@ serve(async (req) => {
 
     // For questions with images, we need to upload the page screenshot
     // Since we can't extract individual pages in Deno, we upload the full PDF page as context
-    // We'll use Gemini to generate the page image for each unique page that has images
+    // We'll use AI to generate the page image for each unique page that has images
     const pagesWithImages = new Set<number>();
     for (const q of questions) {
       if (q.has_image && q.page_number) {

@@ -1,6 +1,6 @@
 /**
  * validate-image-assets — AI-powered validation of medical image assets.
- * Uses Lovable AI (Gemini) vision to determine if an asset is genuinely medical.
+ * Uses Lovable AI (OpenAI) vision via Gateway to determine if an asset is genuinely medical.
  * Processes a batch of unvalidated assets and stores results.
  */
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
