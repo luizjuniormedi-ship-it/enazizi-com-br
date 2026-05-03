@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,12 @@ import {
   deriveStagesFromBlockTypes,
 } from "@/components/tutor/pedagogical/PedagogicalMissionHero";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
+import {
+  evaluateProtocolCompliance,
+  buildComplementPrompt,
+  logComplianceTelemetry,
+} from "@/lib/tutor/protocolCompliance";
+
 import { cn } from "@/lib/utils";
 
 const quickActions = [
@@ -164,11 +170,22 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
  * Deriva missão atual, progresso e etapas a partir das mensagens do tutor,
  * varrendo blocos cognitivos JSON embutidos.
  */
-const PedagogicalHeaderBridge = ({ messages }: { messages: { role: string; content: string }[] }) => {
-  const { mission, stages, progress } = useMemo(() => {
+const PedagogicalHeaderBridge = ({
+  messages,
+  conversationId,
+  onRetry,
+}: {
+  messages: { role: string; content: string }[];
+  conversationId?: string | null;
+  onRetry?: (prompt: string) => void;
+}) => {
+  const lastValidatedRef = useRef<string>("");
+
+  const { mission, stages, progress, lastAssistant, complianceScore } = useMemo(() => {
     const assistant = messages.filter((m) => m.role === "assistant");
     const lastUser = [...messages].reverse().find((m) => m.role === "user");
     const seen = new Set<string>();
+    const combined = assistant.map((m) => m.content).join("\n\n");
     for (const m of assistant) {
       try {
         const { blocks } = extractInlineTutorBlocks(m.content);
@@ -177,24 +194,37 @@ const PedagogicalHeaderBridge = ({ messages }: { messages: { role: string; conte
         /* noop */
       }
     }
-    const stages = deriveStagesFromBlockTypes(seen);
+    const stages = deriveStagesFromBlockTypes(seen, combined);
     const doneCount = stages.filter((s) => s.status === "done").length;
     const progress = (doneCount / PEDAGOGICAL_STAGES.length) * 100;
 
     const mission =
-      lastUser?.content?.slice(0, 80)?.trim() ||
-      "Sessão Pedagógica ENAZIZI";
+      lastUser?.content?.slice(0, 80)?.trim() || "Sessão Pedagógica ENAZIZI";
 
-    return { mission, stages, progress };
+    const lastAssistant = assistant[assistant.length - 1]?.content || "";
+    const complianceScore = Math.round((doneCount / PEDAGOGICAL_STAGES.length) * 100);
+
+    return { mission, stages, progress, lastAssistant, complianceScore };
   }, [messages]);
 
-  // Esconde quando ainda não há interação real (apenas welcome)
+  // Compliance validator + auto-retry (max 1 per assistant message)
+  useEffect(() => {
+    if (!lastAssistant || lastAssistant === lastValidatedRef.current) return;
+    if (lastAssistant.length < 400) return; // streaming partial — wait
+    lastValidatedRef.current = lastAssistant;
+    const report = evaluateProtocolCompliance(lastAssistant);
+    logComplianceTelemetry({ conversationId, topic: mission, report });
+    if (report.shouldRetry && onRetry) {
+      onRetry(buildComplementPrompt(report));
+    }
+  }, [lastAssistant, conversationId, mission, onRetry]);
+
   if (messages.length <= 1) return null;
 
   return (
     <PedagogicalMissionHero
       missionTitle={mission}
-      missionSubtitle="Jornada cognitiva guiada · Streaming pedagógico"
+      missionSubtitle={`Protocolo 15 fases · Compliance ${complianceScore}%`}
       stages={stages}
       progress={progress}
       estimatedMinutes={Math.max(2, Math.round((100 - progress) / 8))}
@@ -281,7 +311,13 @@ const AIMentor = () => {
                     functionName="mentor-chat"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
-                    pedagogicalHeader={({ messages }) => <PedagogicalHeaderBridge messages={messages} />}
+                    hideUploadsPicker
+                    pedagogicalHeader={({ messages }) => (
+                      <PedagogicalHeaderBridge
+                        messages={messages}
+                        onRetry={(p) => onSendRef.current?.(p)}
+                      />
+                    )}
                   />
                 </div>
               </div>

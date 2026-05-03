@@ -51,13 +51,15 @@ interface AgentChatProps {
   specialty?: string | null;
   /** Optional pedagogical header rendered above the chat (e.g. mission hero + roadmap). */
   pedagogicalHeader?: (ctx: { messages: { role: string; content: string }[]; isLoading: boolean; userInput: string }) => React.ReactNode;
+  /** Hide the uploads picker entirely (useful for pure tutor experiences). */
+  hideUploadsPicker?: boolean;
 }
 
 const AgentChat = ({
   title, subtitle, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName,
   onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload,
   linkToAgent, previousContentLoader, initialPrompt, onSendRef,
-  topic, subtopic, specialty, pedagogicalHeader,
+  topic, subtopic, specialty, pedagogicalHeader, hideUploadsPicker,
 }: AgentChatProps) => {
   const navigate = useNavigate();
   const chat = useAgentChat({
@@ -332,21 +334,23 @@ const AgentChat = ({
         />
       )}
 
-      <AgentUploadsPicker
-        totalUploads={chat.totalUploads}
-        selectedCount={chat.selectedCount}
-        showUploads={chat.showUploads}
-        onToggleShow={onToggleShowUploads}
-        showUploadButton={showUploadButton}
-        isUploading={chat.isUploading}
-        onUploadClick={onUploadClick}
-        uploadSearch={chat.uploadSearch}
-        onSearchChange={chat.setUploadSearch}
-        availableUploads={chat.availableUploads}
-        selectedUploadIds={chat.selectedUploadIds}
-        onToggleUpload={chat.toggleUpload}
-        onToggleAll={chat.toggleAll}
-      />
+      {!hideUploadsPicker && (
+        <AgentUploadsPicker
+          totalUploads={chat.totalUploads}
+          selectedCount={chat.selectedCount}
+          showUploads={chat.showUploads}
+          onToggleShow={onToggleShowUploads}
+          showUploadButton={showUploadButton}
+          isUploading={chat.isUploading}
+          onUploadClick={onUploadClick}
+          uploadSearch={chat.uploadSearch}
+          onSearchChange={chat.setUploadSearch}
+          availableUploads={chat.availableUploads}
+          selectedUploadIds={chat.selectedUploadIds}
+          onToggleUpload={chat.toggleUpload}
+          onToggleAll={chat.toggleAll}
+        />
+      )}
 
       {chat.showHistory && (
         <AgentHistoryPanel
