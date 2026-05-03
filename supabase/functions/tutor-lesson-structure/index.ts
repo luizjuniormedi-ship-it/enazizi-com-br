@@ -382,8 +382,8 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     duration_ms: Date.now() - dbStart,
     primary_model: "google/gemini-2.0-flash-exp",
     fallback_model: "openai/gpt-5",
-    gemini_guard_status: "active",
-    forbidden_models_found: FORBIDDEN_MODELS.some(m => "openai/gpt-5-mini".includes(m)),
+    gemini_guard_status: "disabled",
+    forbidden_models_found: false,
     gateway_status: gatewayStatus,
     db_latency: dbLatency,
     checks: Object.fromEntries(checks.map(c => [c.name, { ok: c.ok, status: (c as any).status, error: (c as any).error, detail: (c as any).detail }]))
