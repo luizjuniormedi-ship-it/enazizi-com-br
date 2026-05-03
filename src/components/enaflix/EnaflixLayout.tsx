@@ -49,13 +49,8 @@ export function EnaflixLayout({ children }: Props) {
       )}
 
       {/* Main Content Area - Adjust padding if sidebar is hidden */}
-      <main className={`${showSidebar ? 'lg:pl-64' : 'pl-0'} ${showTopNav ? 'pt-16' : ''} min-h-screen transition-all duration-700 pb-20 lg:pb-0 relative z-10`}>
-        {/* Route-level AnimatePresence is owned by CinematicRouteTransition.
-            Nested AnimatePresence here triggered spurious forwardRef warnings. */}
-        <div className="w-full min-h-screen">
-      {/* Main Content Area - Adjust padding if sidebar is hidden */}
       <main className={`${showSidebar ? 'lg:pl-64' : 'pl-0'} ${showTopNav ? 'pt-16' : ''} min-h-screen transition-all duration-700 ${isImmersive ? 'pb-0' : 'pb-20 lg:pb-0'} relative z-10`}>
-        <div className={`${isImmersive ? 'w-full min-h-screen' : 'w-full min-h-screen'}`}>
+        <div className="w-full min-h-screen">
           {children}
         </div>
       </main>
