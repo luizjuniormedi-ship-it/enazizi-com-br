@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
+import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
 
 /** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
 function linkifyBareUrls(text: string): string {
@@ -69,7 +70,6 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
   useEffect(() => {
     const fetchLesson = async () => {
       if (msg.role === "assistant") {
-        // First try by message ID (if already associated)
         if ((msg as any).id) {
           const lesson = await getLessonForMessage((msg as any).id);
           if (lesson) {
@@ -77,8 +77,6 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             return;
           }
         }
-        
-        // If no lesson by ID, try by topic
         if (topic) {
           const lesson = await findLessonByTopic(topic);
           if (lesson) setLessonData(lesson);
@@ -87,6 +85,16 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
     };
     fetchLesson();
   }, [msg, topic, getLessonForMessage, findLessonByTopic]);
+
+  useEffect(() => {
+    if (lessonData?.id) {
+      logVideoRecommendationEvent('shown', {
+        lessonId: lessonData.id,
+        topic,
+        title: lessonData.title,
+      });
+    }
+  }, [lessonData?.id, topic]);
 
   const isCoordinator = roles.includes("coordenador") || roles.includes("coordinator");
   const hasPermission = isAdmin || isProfessor || isCoordinator;
@@ -183,16 +191,11 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     size="sm" 
                     className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
                     onClick={() => {
+                      logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'top_card' });
                       if (lessonData?.id) {
                         navigate(`/dashboard/videoaulas/${lessonData.id}`);
                       } else {
-                        const aggId = lessonData.aggregation_id || lessonData.aggregation?.id;
-                        if (aggId) {
-                          setActiveAggregationId(aggId);
-                          setShowAgilePlayer(true);
-                        } else {
-                          toast.info("Aula completa em preparação. Tente novamente em breve.");
-                        }
+                        toast.info("Aula completa em preparação. Tente novamente em breve.");
                       }
                     }}
                   >
@@ -239,6 +242,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   size="sm"
                   className="h-7 text-xs gap-1.5 animate-fade-in bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={() => {
+                    logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'bottom_button' });
                     if (lessonData?.id) {
                       navigate(`/dashboard/videoaulas/${lessonData.id}`);
                     } else {
