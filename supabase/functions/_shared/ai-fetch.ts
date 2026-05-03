@@ -132,7 +132,10 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
       const modelMax = OPENAI_MAX_TOKENS[model] || 16384;
       maxTokens = Math.min(maxTokens, modelMax);
     }
-    const body: any = { model, messages: options.messages, max_tokens: maxTokens };
+    // GPT-5 family (and other newer OpenAI models) require `max_completion_tokens` instead of `max_tokens`.
+    const useCompletionTokens = /gpt-5|gpt-4\.1|o\d/i.test(model);
+    const tokenKey = useCompletionTokens ? "max_completion_tokens" : "max_tokens";
+    const body: any = { model, messages: options.messages, [tokenKey]: maxTokens };
     if (options.stream !== undefined) body.stream = options.stream;
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;
