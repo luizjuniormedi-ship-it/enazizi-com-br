@@ -365,7 +365,10 @@ const AgentChat = ({
 
       <AgentTimeline entries={chat.actionTimeline} />
 
+      {pedagogicalHeader?.({ messages: chat.messages, isLoading: chat.isLoading, userInput: chat.input })}
+
       <AgentMessageList
+
         ref={chat.scrollRef}
         messages={chat.messages}
         isLoading={chat.isLoading}
