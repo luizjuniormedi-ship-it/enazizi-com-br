@@ -35,7 +35,7 @@ vi.mock("@/integrations/supabase/client", () => ({
 describe("DashboardSidebar", () => {
   it("renders ENAZIZI branding", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
+    const DashboardSidebar = (await import("@/components/enaflix/EnaflixSidebar")).EnaflixSidebar;
     render(
       <QueryClientProvider client={qc}>
         <MemoryRouter>
@@ -43,12 +43,12 @@ describe("DashboardSidebar", () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    expect(screen.getByText("ENAZIZI")).toBeInTheDocument();
+    expect(screen.getByText("ENAFLIX")).toBeInTheDocument();
   });
 
   it("renders Tutor IA link", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
+    const DashboardSidebar = (await import("@/components/enaflix/EnaflixSidebar")).EnaflixSidebar;
     render(
       <QueryClientProvider client={qc}>
         <MemoryRouter>
@@ -61,7 +61,7 @@ describe("DashboardSidebar", () => {
 
   it("renders Sair button", async () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const DashboardSidebar = (await import("@/components/layout/DashboardSidebar")).default;
+    const DashboardSidebar = (await import("@/components/enaflix/EnaflixSidebar")).EnaflixSidebar;
     render(
       <QueryClientProvider client={qc}>
         <MemoryRouter>

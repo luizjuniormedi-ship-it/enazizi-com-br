@@ -31,7 +31,7 @@ vi.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({ user: null }),
 }));
 
-import BottomTabBar from "@/components/layout/BottomTabBar";
+import { EnaflixMobileNav } from "@/components/enaflix/EnaflixMobileNav";
 
 function renderWithProviders(ui: React.ReactNode, route = "/dashboard") {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -42,21 +42,21 @@ function renderWithProviders(ui: React.ReactNode, route = "/dashboard") {
   );
 }
 
-describe("Navigation smoke — BottomTabBar (mobile)", () => {
+describe("Navigation smoke — EnaflixMobileNav (mobile)", () => {
   it("renderiza os 5 itens cardeais", () => {
-    renderWithProviders(<BottomTabBar />);
-    for (const label of ["Hoje", "Continuar", "Simulados", "Tutor", "Perfil"]) {
+    renderWithProviders(<EnaflixMobileNav />);
+    for (const label of ["Início", "Hoje", "Estudar", "Aulas", "Perfil"]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }
   });
 
   it("aponta cada item para a rota correta", () => {
-    renderWithProviders(<BottomTabBar />);
+    renderWithProviders(<EnaflixMobileNav />);
     const expected: Record<string, string> = {
+      Início: "/enaflix",
       Hoje: "/dashboard",
-      Continuar: "/dashboard/sessao-estudo?auto=1&source=bottom_tab",
-      Simulados: "/dashboard/simulados",
-      Tutor: "/dashboard/chatgpt",
+      Estudar: "/dashboard/sessao-estudo",
+      Aulas: "/dashboard/videoaulas",
       Perfil: "/dashboard/perfil",
     };
     for (const [label, href] of Object.entries(expected)) {
