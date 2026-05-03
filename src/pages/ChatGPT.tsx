@@ -13,6 +13,7 @@ import { useSessionMemory } from "@/contexts/SessionMemoryContext";
 import { completeStudyAction } from "@/lib/completeStudyAction";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { Button } from "@/components/ui/button";
+import { useTutorCME } from "@/hooks/useTutorCME";
 
 import { FUNCTION_NAME, NON_MEDICAL_KEYWORDS, ensureSequentialInitialMessage } from "@/components/tutor/TutorConstants";
 import type { Msg } from "@/components/tutor/TutorConstants";
@@ -91,6 +92,7 @@ const ChatGPT = () => {
   const perf = useTutorPerformance(user?.id);
   const { performance, savePerformance, sessionQuestions, setSessionQuestions, sessionCorrect, setSessionCorrect, handleFinishSession } = perf;
   const sessionMemory = useSessionMemory();
+  const { findLessonByTopic } = useTutorCME();
   const { data: missionData } = useStudyNext();
 
   // Session persistence
@@ -302,11 +304,13 @@ const ChatGPT = () => {
     if (!text.trim() || isLoading || !user) return;
 
     // Topic change detection
+    let activeTopic = currentTopic;
     const topicChangeMatch = text.match(/(?:quero estudar|vamos estudar|mudar (?:tema|assunto) (?:para)?|agora (?:quero|vamos) (?:estudar)?)\s+(.+)/i);
     if (topicChangeMatch && studyStarted) {
       const detectedTopic = topicChangeMatch[1].replace(/[.!?]+$/, "").trim();
       if (detectedTopic && detectedTopic.toLowerCase() !== currentTopic.toLowerCase()) {
         setCurrentTopic(detectedTopic);
+        activeTopic = detectedTopic;
         setEnaziziStep(3);
         setChangingTopic(false);
         saveEnaziziStep(3, detectedTopic, performance, sessionQuestions);
@@ -315,7 +319,21 @@ const ChatGPT = () => {
     }
 
     const userMsg: Msg = { role: "user", content: text };
+    
+    // Check for related video lessons to inform the AI
+    let videoContext = "";
+    if (activeTopic && messages.length < 5) {
+      const lesson = await findLessonByTopic(activeTopic);
+      if (lesson) {
+        videoContext = `\n\n[CONTEXTO DE VÍDEO: Encontrei uma videoaula disponível sobre "${currentTopic}". O sistema já exibiu o link para o aluno no topo da sua resposta. Por favor, recomende que ele assista ao vídeo antes de prosseguir com a explicação detalhada.]`;
+      }
+    }
+
     const allMessages = [...messages, userMsg];
+    if (videoContext) {
+      allMessages[allMessages.length - 1].content += videoContext;
+    }
+    
     setMessages(allMessages);
     setInput("");
     setIsLoading(true);
