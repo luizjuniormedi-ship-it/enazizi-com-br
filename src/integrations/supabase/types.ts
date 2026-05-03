@@ -16950,6 +16950,54 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_ia_telemetry: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          duration_ms: number | null
+          event_type: string
+          fallback_used: boolean | null
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+          model_used: string | null
+          parse_strategy: string | null
+          session_id: string
+          topic: string | null
+          user_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          duration_ms?: number | null
+          event_type: string
+          fallback_used?: boolean | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          model_used?: string | null
+          parse_strategy?: string | null
+          session_id: string
+          topic?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          duration_ms?: number | null
+          event_type?: string
+          fallback_used?: boolean | null
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          model_used?: string | null
+          parse_strategy?: string | null
+          session_id?: string
+          topic?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       tutor_knowledge_memory: {
         Row: {
           answer_summary: string | null
@@ -17385,6 +17433,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tutor_recommendation_cache: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          lesson_data: Json | null
+          lesson_id: string | null
+          normalized_topic: string
+          session_id: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          lesson_data?: Json | null
+          lesson_id?: string | null
+          normalized_topic: string
+          session_id: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          lesson_data?: Json | null
+          lesson_id?: string | null
+          normalized_topic?: string
+          session_id?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       tutor_sessions: {
         Row: {
@@ -18834,6 +18918,20 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_health_metrics: {
+        Row: {
+          avg_latency_ms: number | null
+          ctr_pct: number | null
+          day: string | null
+          error_rate_pct: number | null
+          match_rate_pct: number | null
+          matches_found: number | null
+          total_clicks: number | null
+          total_errors: number | null
+          total_messages: number | null
+        }
+        Relationships: []
+      }
       v_abandoned_sessions: {
         Row: {
           day: string | null
@@ -19124,6 +19222,7 @@ export type Database = {
         Returns: boolean
       }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
+      cleanup_tutor_cache: { Args: never; Returns: undefined }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }

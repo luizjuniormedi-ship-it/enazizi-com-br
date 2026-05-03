@@ -23,6 +23,7 @@ import { useChatMessages } from "@/hooks/tutor/useChatMessages";
 import { useChatProgress } from "@/hooks/tutor/useChatProgress";
 import { useChatContext } from "@/hooks/tutor/useChatContext";
 import { useTutorPerformance } from "@/hooks/tutor/useTutorPerformance";
+import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
 import { useStudyNext } from "@/hooks/useStudyNext";
 
 import TutorHeader from "@/components/tutor/CinematicTutorHero";
@@ -302,6 +303,9 @@ const ChatGPT = () => {
   // --- Core send message ---
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading || !user) return;
+    
+    const startTime = Date.now();
+    const sessionId = activeConversationId || 'pending_session';
 
     // Topic change detection
     let activeTopic = currentTopic;
@@ -318,13 +322,27 @@ const ChatGPT = () => {
       }
     }
 
+    // 1. Telemetry: Message Received
+    logVideoRecommendationEvent('message_received' as any, { 
+      topic: activeTopic, 
+      conversationId: sessionId,
+      content_length: text.length 
+    });
+
     const userMsg: Msg = { role: "user", content: text };
     
     // Check for related video lessons to inform the AI
     let videoContext = "";
     if (activeTopic) {
-      const lesson = await findLessonByTopic(activeTopic);
+      // 2. Telemetry: Topic Detected
+      logVideoRecommendationEvent('topic_detected' as any, { 
+        topic: activeTopic, 
+        conversationId: sessionId 
+      });
+
+      const lesson = await findLessonByTopic(activeTopic, sessionId);
       if (lesson) {
+        // 3. Telemetry: Video Found handled via findLessonByTopic -> service
         videoContext = `\n\n[CONTEXTO DE VÍDEO: Encontrei uma videoaula disponível sobre "${activeTopic}". O sistema já exibiu o link para o aluno no topo da sua resposta. Por favor, obrigatoriamente recomende no início da sua resposta que ele assista ao vídeo antes de prosseguir com a explicação detalhada.]`;
       }
     }
@@ -346,6 +364,12 @@ const ChatGPT = () => {
 
     // Add placeholder assistant message
     setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+    // 4. Telemetry: Answer Generation Started
+    logVideoRecommendationEvent('answer_generation_started' as any, { 
+      topic: activeTopic, 
+      conversationId: convId || sessionId 
+    });
 
     const contextToSend = buildUserContext();
     await streamResponse({
@@ -375,6 +399,15 @@ const ChatGPT = () => {
         });
       },
       onComplete: async (finalText) => {
+        setIsLoading(false);
+        
+        // 5. Telemetry: Answer Generation Completed
+        logVideoRecommendationEvent('answer_generation_completed' as any, { 
+          topic: activeTopic, 
+          conversationId: convId || sessionId,
+          duration_ms: Date.now() - startTime,
+          response_length: finalText?.length || 0
+        });
         // Save assistant message
         if (convId && finalText) {
           await saveMessage(convId, "assistant", finalText);
@@ -433,14 +466,23 @@ const ChatGPT = () => {
         setIsLoading(false);
       },
       onError: (errMsg) => {
-        toast({ title: "Erro", description: errMsg, variant: "destructive" });
+        setIsLoading(false);
+        toast({ title: "Erro na geração", description: "O Tutor permanece disponível para apoio pedagógico. Tente novamente.", variant: "destructive" });
+        
+        // 6. Telemetry: Answer Generation Failed
+        logVideoRecommendationEvent('answer_generation_failed' as any, { 
+          topic: activeTopic, 
+          conversationId: convId || sessionId,
+          error: errMsg,
+          duration_ms: Date.now() - startTime
+        });
+        
         // Remove empty assistant placeholder
         setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last?.role === "assistant" && !last.content) return prev.slice(0, -1);
           return prev;
         });
-        setIsLoading(false);
       },
     });
   };
