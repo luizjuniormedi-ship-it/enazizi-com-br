@@ -145,6 +145,17 @@ export default function MnemonicGeneratorPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [tema]);
 
+  // Fecha o dropdown se clicar fora
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (suggestedTopics.length > 0 && !document.getElementById('mnemonic-topic-input')?.contains(e.target as Node)) {
+        setSuggestedTopics([]);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [suggestedTopics]);
+
   const favoriteMutation = useToggleFavorite();
   const regenerateMutation = useRegenerateMnemonic();
   const termos = termosText.split("\n").map(t => t.trim()).filter(Boolean);
