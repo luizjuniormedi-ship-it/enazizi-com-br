@@ -168,7 +168,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Usuários, mensagens e feedbacks.",
     items: [
       {
-        to: "/admin#users",
+        to: "/admin/users",
         label: "Usuários",
         description: "Gestão de contas, planos, bloqueios e aprovações.",
         icon: Users,
