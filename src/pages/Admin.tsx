@@ -575,6 +575,7 @@ const Admin = () => {
                   {activeSection === "uploads" && <Suspense fallback={<PanelLoader />}><AdminUploadsPanel /></Suspense>}
                   {activeSection === "ingestion" && <Suspense fallback={<PanelLoader />}><AdminIngestionPanel /></Suspense>}
                   {activeSection === "question-review" && <Suspense fallback={<PanelLoader />}><AdminQuestionReviewPanel /></Suspense>}
+                  {activeSection === "image-review" && <Suspense fallback={<PanelLoader />}><AdminImageQuestionReviewPanel /></Suspense>}
                   {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
                   {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
                   {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
