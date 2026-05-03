@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,6 +7,12 @@ import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import {
+  PedagogicalMissionHero,
+  PEDAGOGICAL_STAGES,
+  deriveStagesFromBlockTypes,
+} from "@/components/tutor/pedagogical/PedagogicalMissionHero";
+import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { cn } from "@/lib/utils";
 
 const quickActions = [
