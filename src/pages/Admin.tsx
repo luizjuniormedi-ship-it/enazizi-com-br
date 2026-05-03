@@ -98,6 +98,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "uploads", label: "Upload Arquivos", icon: Upload },
         { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
+        { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
         { key: "scraping", label: "Web Scraping", icon: Search },
       ],
     },
