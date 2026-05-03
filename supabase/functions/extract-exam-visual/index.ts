@@ -66,7 +66,7 @@ serve(async (req) => {
       extracted_json: { step: "analyzing_visual", progress: 10 },
     }).eq("id", upload_id);
 
-    // Send entire PDF to Gemini Vision for analysis
+    // Send entire PDF to AI Gateway for analysis
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
