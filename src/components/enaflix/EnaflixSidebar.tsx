@@ -132,7 +132,7 @@ export function EnaflixSidebar() {
   const { isProfessor } = useProfessorCheck();
 
   return (
-    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#0a0a0e]/95 backdrop-blur-3xl border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_40px_-20px_rgba(0,0,0,0.8)]">
+    <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#050508]/80 backdrop-blur-[100px] border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_60px_-20px_rgba(0,0,0,0.9)]">
       {/* Brand */}
       <div className="p-8 pb-4">
         <Link to="/" className="flex items-center gap-4 group">
