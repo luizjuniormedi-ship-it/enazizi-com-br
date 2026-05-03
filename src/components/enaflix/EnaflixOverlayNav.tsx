@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, Bell, Search, X } from "lucide-react";
+import { ArrowLeft, Bell, Search, X, User } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 
 interface Props {
   onClose: () => void;
@@ -9,17 +11,12 @@ interface Props {
   searchActive?: boolean;
 }
 
-/**
- * EnaflixOverlayNav — topbar overlay flutuante estilo Netflix/Apple TV.
- *
- * - Scroll progressivo: 3 estágios (top → mid → solid) usando o mesmo
- *   easing cinematográfico, em vez de um boolean cru.
- * - ENAFLIX wordmark com glow ambient + dot pulsante (vida discreta).
- * - Botões "ghost" com hover suave (scale 1.03 + bg fade).
- */
 export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Props) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin } = useAdminCheck();
+  const { isProfessor } = useProfessorCheck();
+  const isSpecialUser = isAdmin || isProfessor;
   // 0 = no topo (transparente), 1 = totalmente sólida.
   const [scrollProgress, setScrollProgress] = useState(0);
 
