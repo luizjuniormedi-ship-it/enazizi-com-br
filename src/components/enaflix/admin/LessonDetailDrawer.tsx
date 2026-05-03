@@ -3,8 +3,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, Upload, PlayCircle, CheckCircle2, BookOpen, Film, Download, X, Loader2,
+  Sparkles, Upload, PlayCircle, CheckCircle2, BookOpen, Film, Download, X, Loader2, AlertTriangle,
 } from "lucide-react";
+
 import { LessonStatusBadge } from "./LessonStatusBadge";
 import { LessonChecklistRing } from "./LessonChecklistRing";
 import { cn } from "@/lib/utils";
@@ -129,6 +130,40 @@ export function LessonDetailDrawer({
                     </ul>
                   </Section>
                 )}
+                {lesson.last_structuring_error && (
+                  <Section title="Último Erro de Estruturação">
+                    <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 mb-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertTriangle className="h-3.5 w-3.5 text-rose-300" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-rose-200">Falha na IA</span>
+                      </div>
+                      <p className="text-xs text-rose-100/90 leading-relaxed font-mono">{lesson.last_structuring_error}</p>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => onRestructure(lesson)}
+                        className="mt-2 h-7 text-[10px] text-rose-300 hover:text-rose-200 hover:bg-rose-500/20 px-2 uppercase font-black"
+                      >
+                        Tentar novamente agora
+                      </Button>
+                    </div>
+                  </Section>
+                )}
+
+                {lesson.metadata?.ai_suggested_topic && (
+                  <Section title="Sugestão Divergente da IA">
+                    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 mb-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+                        <span className="text-[10px] font-black uppercase tracking-widest text-amber-200">Topic Preservado</span>
+                      </div>
+                      <p className="text-xs text-amber-100/90 leading-relaxed">
+                        A IA sugeriu o tema <strong>"{lesson.metadata.ai_suggested_topic}"</strong>, mas mantivemos o original <strong>"{lesson.topic}"</strong> para evitar conflitos.
+                      </p>
+                    </div>
+                  </Section>
+                )}
+
                 {lesson.generation_reason && (
                   <Section title="Motivo da Geração (Voz do Aluno)">
                     <div className="rounded-xl border border-violet-500/30 bg-violet-500/10 p-3 mb-3">
@@ -147,6 +182,7 @@ export function LessonDetailDrawer({
                     </div>
                   </Section>
                 )}
+
               </TabsContent>
 
               <TabsContent value="content" className="space-y-5 mt-0">
