@@ -177,35 +177,58 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
           <>
             {/* Topic-based Video Lesson Preview (Before text) */}
             {lessonData && (isFirstMessage || (msg as any).id) && (
-              <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20 animate-in fade-in slide-in-from-top-4 duration-500">
-                <div className="flex items-center justify-between gap-3 mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
-                      <Film className="h-4 w-4" />
+              <div className="mb-6 p-4 rounded-2xl bg-primary/5 border border-primary/20 animate-in fade-in slide-in-from-top-4 duration-500 relative group/video overflow-hidden">
+                {/* ENAFLIX style glass effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+                
+                <div className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/20 flex items-center justify-center text-primary shadow-lg shadow-primary/20 shrink-0">
+                      <Film className="h-6 w-6" />
                     </div>
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">Aula em Vídeo Disponível</p>
-                      <h4 className="text-xs font-bold text-foreground line-clamp-1">{lessonData.title}</h4>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/80">Recomendação ENAFLIX</p>
+                      </div>
+                      <h4 className="text-sm font-bold text-foreground line-clamp-1 group-hover/video:text-primary transition-colors">
+                        {lessonData.title || lessonData.topic}
+                      </h4>
+                      <p className="text-[10px] text-muted-foreground line-clamp-1 mt-0.5">
+                        {lessonData.subject || "Videoaula de Medicina"} • Videoaula
+                      </p>
                     </div>
                   </div>
+                  
                   <Button 
                     size="sm" 
-                    className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
+                    className="w-full sm:w-auto h-10 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl px-5 text-xs font-bold uppercase tracking-wider shadow-xl shadow-primary/30 transition-all hover:scale-105 active:scale-95"
                     onClick={() => {
-                      logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'top_card', conversationId });
+                      logVideoRecommendationEvent('clicked', { 
+                        lessonId: lessonData?.id, 
+                        topic, 
+                        location: 'top_card_v2', 
+                        conversationId 
+                      });
                       if (lessonData?.id) {
                         navigate(`/dashboard/videoaulas/${lessonData.id}`);
                       } else {
-                        toast.info("Aula completa em preparação. Tente novamente em breve.");
+                        toast.info("Abrindo aula completa...");
                       }
                     }}
                   >
-                    <Play className="h-3 w-3 fill-current" /> Abrir Aula Completa
+                    <Play className="h-3.5 w-3.5 fill-current" /> Assistir Agora
                   </Button>
                 </div>
-                <p className="text-[10px] text-muted-foreground italic leading-relaxed">
-                  "Encontrei uma videoaula completa sobre este assunto. Recomendo assistir antes de seguirmos com a explicação técnica."
-                </p>
+
+                <div className="mt-4 pt-3 border-t border-primary/10 flex items-center gap-2">
+                  <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Sparkles className="h-2.5 w-2.5 text-primary" />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground italic leading-tight">
+                    "Identifiquei uma aula específica para aprofundar este tema. Recomendo o vídeo antes da leitura."
+                  </p>
+                </div>
               </div>
             )}
 

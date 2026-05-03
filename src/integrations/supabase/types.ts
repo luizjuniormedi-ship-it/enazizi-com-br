@@ -17496,6 +17496,56 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_video_recommendation_telemetry: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          event_type: string
+          id: string
+          lesson_id: string | null
+          metadata: Json | null
+          reason: string | null
+          session_id: string | null
+          source_table: string | null
+          topic: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          event_type: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          session_id?: string | null
+          source_table?: string | null
+          topic: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          lesson_id?: string | null
+          metadata?: Json | null
+          reason?: string | null
+          session_id?: string | null
+          source_table?: string | null
+          topic?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_video_recommendation_telemetry_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_lesson_memory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uploads: {
         Row: {
           category: string | null
