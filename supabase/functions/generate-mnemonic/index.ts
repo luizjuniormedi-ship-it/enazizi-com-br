@@ -8,8 +8,8 @@ const corsHeaders = {
 };
 
 // ═══ CONFIG ═══
-const AI_MODEL = "openai/gpt-5-mini";
-const IMAGE_MODEL = "google/gemini-2.5-flash-image";
+const AI_MODEL = "google/gemini-2.0-flash";
+const IMAGE_MODEL = "google/gemini-2.0-flash-exp"; // Using a valid image generation model or sticking to the one that worked
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;
 
@@ -74,7 +74,7 @@ async function callAI<T>(apiKey: string, sys: string, user: string): Promise<T> 
       body: JSON.stringify({
         model: AI_MODEL,
         messages: [{ role: "system", content: sys }, { role: "user", content: user }],
-        temperature: 1.0, // Fixed: gpt-5-mini only supports default (1.0)
+        temperature: 1.0, 
       }),
       signal: ctrl.signal,
     });
@@ -176,48 +176,30 @@ async function insertResult(db: SupabaseClient, p: {
 // ═══ PROMPTS ═══
 
 const PROMPT_MNEMONIC = `Você é o núcleo oficial de geração de mnemônicos do ENAZIZI.
-Você NÃO é um gerador de frases. Você é um sistema avançado de memorização médica de alta retenção.
+Você é um sistema avançado de memorização médica de alta retenção.
 
-Seu objetivo é transformar conteúdos médicos complexos em memória visual, emocional, de prova e de revisão rápida.
+🎯 MISSÃO: Transformar conteúdos médicos em mnemônicos visuais e lógicos.
 
-═══════════════════════════════════════
-🎯 MISSÃO PRINCIPAL
-═══════════════════════════════════════
-Gerar mnemônicos clinicamente corretos, pedagogicamente fortes, visualmente memoráveis, revisáveis rapidamente e compatíveis com provas médicas.
-
-═══════════════════════════════════════
-🚨 REGRA MÁXIMA ABSOLUTA: COBERTURA 1:1
-═══════════════════════════════════════
-1 item = 1 letra | 1 letra = 1 item
-❌ PROIBIDO: omitir item, fundir itens, trocar conceito ou usar letra sem relação.
-
-═══════════════════════════════════════
-🧠 PROCESSO DE GERAÇÃO
-═══════════════════════════════════════
-1. NORMALIZAÇÃO: Remover redundâncias, encurtar itens (ex: "Presença de supra de ST" → "Supra ST"), remover itens genéricos proibidos (exames, investigar, conduta).
-2. PRIORIZAÇÃO: Ordenar itens conforme incidência em prova (ex: IAM -> Supra ST > Onda Q > Inversão T).
-3. SIGLA: Deve ser pronunciável, curta e forte.
-4. FRASE MNEMÔNICA: Deve reconstruir todos os itens, ser curta, visual e emocionalmente forte. ❌ PROIBIDO frase gigante ou excesso narrativo.
-5. CENA VISUAL: 1 item = 1 símbolo forte. Use símbolos concretos e memoráveis.
-6. IMAGEM: Representar exatamente a frase e todos os itens.
-
-═══════════════════════════════════════
-🚨 FAIL CLOSED
-═══════════════════════════════════════
-Se medical_score < 80 ou pedagogical_score < 75 -> REJEITAR.
+🚨 REGRAS DE OURO (SISTEMA MESTRE):
+1. COBERTURA 1:1: Cada item fornecido DEVE ter uma correspondência clara na frase.
+2. FRASE LÓGICA (OBRIGATÓRIO): A frase NÃO pode ser apenas uma lista de palavras. Ela DEVE ser uma micro-história com SUJEITO, VERBO e COMPLEMENTO.
+   - Ruim: "Febre, Tosse, Dispneia"
+   - Bom: "O paciente tem FEBRE, TOSSE e sente DISPNEIA"
+3. NATURALIDADE: Use Português do Brasil fluído. Evite frases telegráficas ou robóticas.
+4. MEMORABILIDADE: Crie cenas inusitadas, engraçadas ou dramáticas.
 
 Retorne SOMENTE JSON:
 {
-  "sigla": "SIGLA",
-  "frase_mnemonica": "Frase que reconstrói os itens",
-  "explicacao_didatica": "Como a frase ajuda a lembrar",
+  "sigla": "SIGLA (curta)",
+  "frase_mnemonica": "Frase completa e natural com verbos",
+  "explicacao_didatica": "Como memorizar a frase",
   "explicacao_tecnica": "Importância clínica dos itens",
-  "cena_visual": "Descrição da cena memorável",
-  "prompt_imagem": "Prompt para geração da imagem (estilo Pixar/3D, sem texto)",
+  "cena_visual": "Descrição da cena (sujeito + ação + ambiente)",
+  "prompt_imagem": "Prompt 3D Pixar style, vivid colors, no text",
   "associacoes": [
-    { "termo": "termo original", "simbolo": "símbolo visual", "explicacao": "por que isso lembra o termo" }
+    { "termo": "item original", "simbolo": "representação na frase", "explicacao": "por que um lembra o outro" }
   ],
-  "score_autoavaliacao": 0,
+  "score_autoavaliacao": 100,
   "problemas_detectados": []
 }`;
 
