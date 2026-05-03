@@ -114,6 +114,8 @@ const SystemHealth = lazyWithRetry(() => import("./pages/admin/SystemHealth"), "
 const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"), "TelemetryAdmin");
 const TutorVideoRecommendations = lazyWithRetry(() => import("./pages/admin/TutorVideoRecommendations"), "TutorVideoRecommendations");
 const AIStudio = lazyWithRetry(() => import("./pages/admin/AIStudio"), "AIStudio");
+const PedagogyAnalytics = lazyWithRetry(() => import("./pages/admin/PedagogyAnalytics"), "PedagogyAnalytics");
+const AIQuality = lazyWithRetry(() => import("./pages/admin/AIQuality"), "AIQuality");
 const MedicalReviewQueue = lazyWithRetry(() => import("./pages/admin/MedicalReviewQueue"), "MedicalReviewQueue");
 const MedicalGovernanceDashboard = lazyWithRetry(() => import("./pages/admin/MedicalGovernanceDashboard"), "MedicalGovernanceDashboard");
 const AIAuditMode = lazyWithRetry(() => import("./pages/admin/AIAuditMode"), "AIAuditMode");
