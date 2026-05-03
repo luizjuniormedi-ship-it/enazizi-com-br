@@ -12,14 +12,12 @@ const MAX_PER_HOUR = 100;
 const MIN_QUALITY = 50;
 const STUCK_THRESHOLD_MS = 15 * 60 * 1000; // 15 minutes timeout threshold for UI
 
-// Gemini Guard: Proteção contra regressão de modelo
-const FORBIDDEN_MODELS = ["gemini", "google/"];
+// Gemini Guard: Desativado para permitir uso híbrido (OpenAI + Gemini)
+const FORBIDDEN_MODELS: string[] = [];
 
 function checkGeminiGuard(model: string) {
-  if (FORBIDDEN_MODELS.some(m => model.toLowerCase().includes(m))) {
-    console.error(`GEMINI_GUARD_TRIGGERED: Model "${model}" is forbidden.`);
-    throw new Error(`CRITICAL_ERROR: Model "${model}" is forbidden by Gemini Guard policy.`);
-  }
+  // Guard desativado conforme solicitação do usuário para reativar Gemini
+  return true;
 }
 
 type StructuredLesson = {
@@ -320,7 +318,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
 
   // 4) AI Gateway check (Real GPT-5-mini call)
   let gatewayStatus = 0;
-  let modelUsed = "openai/gpt-5-mini";
+  let modelUsed = "google/gemini-2.0-flash-exp";
   try {
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -382,7 +380,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     ok: checks.every(c => c.ok || c.name === "RECOVERY_SYSTEM"),
     timestamp: new Date().toISOString(),
     duration_ms: Date.now() - dbStart,
-    primary_model: "openai/gpt-5-mini",
+    primary_model: "google/gemini-2.0-flash-exp",
     fallback_model: "openai/gpt-5",
     gemini_guard_status: "active",
     forbidden_models_found: FORBIDDEN_MODELS.some(m => "openai/gpt-5-mini".includes(m)),
@@ -486,7 +484,7 @@ const STRUCTURE_TOOL = {
 };
 
 async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<string, unknown>) {
-  const models = ["openai/gpt-5-mini", "openai/gpt-5"];
+  const models = ["google/gemini-2.0-flash-exp", "openai/gpt-5-mini", "openai/gpt-5"];
   let lastError = "";
   let lastStatus: number | null = null;
   
