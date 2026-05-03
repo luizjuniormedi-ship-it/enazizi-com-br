@@ -34,6 +34,7 @@ const AdminStatsCards = lazy(() => import("@/components/admin/AdminStatsCards"))
 const AdminOnlineUsers = lazy(() => import("@/components/admin/AdminOnlineUsers"));
 const AdminPlanDistribution = lazy(() => import("@/components/admin/AdminPlanDistribution"));
 const AdminDailyGenerationAlert = lazy(() => import("@/components/admin/AdminDailyGenerationAlert"));
+const ForceUpdateButton = lazy(() => import("@/components/layout/ForceUpdateButton"));
 const BaselineFreezeAlert = lazy(() => import("@/components/admin/BaselineFreezeAlert"));
 const AdminPipelineMonitor = lazy(() => import("@/components/admin/AdminPipelineMonitor"));
 const AdminWebScrapingPanel = lazy(() => import("@/components/admin/AdminWebScrapingPanel"));
@@ -377,9 +378,16 @@ const Admin = () => {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-             <Enaflix3DButton variant="outline" size="sm" onClick={loadData} iconLeft={<RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />}>
+              <Enaflix3DButton variant="outline" size="sm" onClick={loadData} iconLeft={<RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />}>
                 Atualizar Sincronização
-             </Enaflix3DButton>
+              </Enaflix3DButton>
+              
+              <Suspense fallback={null}>
+                <ForceUpdateButton 
+                  variant="sidebar" 
+                  className="bg-white/5 border-white/10 text-white/60 hover:text-white h-11 px-4"
+                />
+              </Suspense>
              <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center relative">
                <Bell className="h-5 w-5 text-white/60" />
                <span className="absolute top-2 right-2 h-2 w-2 bg-primary rounded-full" />
