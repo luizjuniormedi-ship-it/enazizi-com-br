@@ -124,26 +124,22 @@ const Dashboard = () => {
       </div>
 
 
-      {/* Rows Style - Netflix Grid */}
-      <div className="enaflix-stagger space-y-16">
-        <EnaflixRow title="Continuar Estudando">
-          <EnaflixContinueCard
-            title="Insuficiência Cardíaca"
-            category="Cardiologia"
-            progress={65}
-            lastAccess="hoje"
-            timeLeft="12 min"
-            onClick={() => navigate("/dashboard/videoaulas")}
-          />
-          <EnaflixContinueCard
-            title="Diabetes Mellitus"
-            category="Endocrinologia"
-            progress={12}
-            lastAccess="ontem"
-            timeLeft="45 min"
-            onClick={() => navigate("/dashboard/videoaulas")}
-          />
-        </EnaflixRow>
+      <div className="enaflix-stagger space-y-16 pb-24">
+        {/* Atividade Recente / Continuar */}
+        {(continueModules.length > 0) && (
+          <EnaflixRow title="Continuar Estudando">
+            {continueModules.map(m => (
+              <EnaflixContinueCard
+                key={m.id}
+                title={m.title}
+                category={m.category}
+                progress={Math.floor(Math.random() * 90) + 10} // Mock progress
+                lastAccess="hoje"
+                onClick={() => navigate(m.path || `/dashboard/${m.id}`)}
+              />
+            ))}
+          </EnaflixRow>
+        )}
 
         <EnaflixRow title="Temas Populares">
           <EnaflixThemeCard title="Cardiologia" icon="🫀" gradient="from-red-500 to-orange-500" />
@@ -216,25 +212,26 @@ const Dashboard = () => {
                   <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
                   <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
-                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/chatgpt")}>
+                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/mentor")}>
                   Iniciar Conversa
                 </Enaflix3DButton>
               </div>
            </EnaflixCinematicCard>
         </EnaflixRow>
+
+        {/* Analysis Section */}
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
+          <div className="space-y-6">
+            <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
+            <Suspense fallback={null}><ProgressOverview /></Suspense>
+          </div>
+          <div className="space-y-6">
+            <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
+            <Suspense fallback={null}><MedicalMasteryDashboard /></Suspense>
+          </div>
+        </div>
       </div>
 
-      {/* Analysis Section */}
-      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
-        <div className="space-y-6">
-          <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
-          <Suspense fallback={null}><ProgressOverview /></Suspense>
-        </div>
-        <div className="space-y-6">
-          <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
-          <Suspense fallback={null}><MedicalMasteryDashboard /></Suspense>
-        </div>
-      </div>
     </div>
   );
 };
