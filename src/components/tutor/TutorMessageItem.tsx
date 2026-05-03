@@ -92,6 +92,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
         lessonId: lessonData.id,
         topic,
         title: lessonData.title,
+        conversationId,
       });
     }
   }, [lessonData?.id, topic]);
@@ -191,7 +192,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                     size="sm" 
                     className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
                     onClick={() => {
-                      logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'top_card' });
+                      logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'top_card', conversationId });
                       if (lessonData?.id) {
                         navigate(`/dashboard/videoaulas/${lessonData.id}`);
                       } else {
@@ -242,7 +243,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                   size="sm"
                   className="h-7 text-xs gap-1.5 animate-fade-in bg-primary hover:bg-primary/90 text-primary-foreground"
                   onClick={() => {
-                    logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'bottom_button' });
+                    logVideoRecommendationEvent('clicked', { lessonId: lessonData?.id, topic, location: 'bottom_button', conversationId });
                     if (lessonData?.id) {
                       navigate(`/dashboard/videoaulas/${lessonData.id}`);
                     } else {
