@@ -30,14 +30,17 @@ const AgentHeader = memo(({
   onTransformSession, hasMessages, lessonStatus = 'idle'
 }: AgentHeaderProps) => {
   return (
-    <div className="mb-2 sm:mb-3 flex items-center justify-between gap-2">
-      <div className="min-w-0 flex-1 flex items-center gap-3">
-        <div className="h-14 w-11 sm:h-[4.5rem] sm:w-14 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg">
+    <div className="pt-2 pb-6 px-4 sm:px-12 flex items-center justify-between gap-4 border-b border-white/5 bg-black/20 backdrop-blur-md">
+      <div className="min-w-0 flex-1 flex items-center gap-4">
+        <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-1 ring-primary/30 shadow-2xl bg-black">
           <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
         </div>
         <div className="min-w-0">
-          <h1 className="text-base sm:text-xl font-bold truncate">{title}</h1>
-          <p className="text-[10px] sm:text-xs text-muted-foreground">{subtitle}</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-base sm:text-lg font-black tracking-tight truncate text-white">{title}</h1>
+            <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+          </div>
+          <p className="text-[10px] sm:text-xs font-medium text-white/40 tracking-wider uppercase">{subtitle}</p>
         </div>
       </div>
       <div className="flex gap-1.5 flex-shrink-0 items-center">
