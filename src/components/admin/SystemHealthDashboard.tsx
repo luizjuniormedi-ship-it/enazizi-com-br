@@ -48,7 +48,10 @@ export const SystemHealthDashboard = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center text-foreground">
-        <h1 className="text-3xl font-bold tracking-tight">Saúde do Sistema</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Saúde & Estabilidade</h1>
+          <p className="text-muted-foreground">Monitoramento em tempo real de infraestrutura e performance IA.</p>
+        </div>
         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 text-green-500 text-sm font-medium border border-green-500/20">
           <CheckCircle className="w-4 h-4" />
           Sistemas Operacionais
