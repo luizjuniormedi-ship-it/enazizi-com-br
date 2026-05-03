@@ -69,7 +69,7 @@ const AdminCinematicEngine = lazy(() => import("@/pages/AdminCinematicEngine"));
 const AdminLessonsMemory = lazy(() => import("@/pages/admin/AdminLessonsMemory"));
 const AdminLessonRatingsPanel = lazy(() => import("@/components/admin/AdminLessonRatingsPanel").then(m => ({ default: m.AdminLessonRatingsPanel })));
 const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/TutorLessonStructureDashboard").then(m => ({ default: m.TutorLessonStructureDashboard })));
-
+const TutorVideoAuditPanel = lazy(() => import("@/components/admin/TutorVideoAuditPanel").then(m => ({ default: m.TutorVideoAuditPanel })));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -115,6 +115,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "cinematic-engine", label: "CME Studio", icon: Film },
         { key: "tutor-lessons", label: "Aulas Memory", icon: BookOpen },
         { key: "lesson-ratings", label: "Avaliações Aulas", icon: Star },
+        { key: "tutor-video-audit", label: "Auditoria Vídeo", icon: Video },
         { key: "tutor-structure-tests", label: "Testes Estrutura", icon: Microscope },
         { key: "ai-studio", label: "AI Studio", icon: Sparkles },
 

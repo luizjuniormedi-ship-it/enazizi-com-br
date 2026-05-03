@@ -80,6 +80,9 @@ export function normalizeMedicalTerm(term: string): string[] {
     "endocardite": ["valvula cardiaca", "vegetacao valvar"],
     "cardiologia": ["coracao", "cardiaco"],
     "pneumonia": ["infeccao pulmonar", "broncopneumonia"],
+    "iam": ["infarto", "miocardio", "coronariana"],
+    "tep": ["embolia pulmonar", "tromboembolismo"],
+    "fa": ["fibrilacao atrial", "arritmia"],
   };
 
   const results = new Set<string>([t]);
@@ -136,10 +139,11 @@ export async function findRecommendedVideoForTutorContext(
 
   // 1) ai_video_lessons (Publicadas e não ocultas)
   try {
-    const { data: aiLessons } = await supabase
       .from("ai_video_lessons")
       .select("*")
       .eq('status', 'published')
+      .is('deleted_at', null)
+      .eq('hidden_from_student', false)
       .order('is_gold_content', { ascending: false });
 
     if (aiLessons) {
@@ -155,6 +159,9 @@ export async function findRecommendedVideoForTutorContext(
         });
 
         if (score < 40) return;
+        
+        // Final security check: must have video and be published
+        if (lesson.status !== 'published' || lesson.hidden_from_student) return;
 
         const watchUrl = lesson.playback_url || lesson.video_url;
         if (!hasValidVideo(watchUrl)) {
