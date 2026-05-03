@@ -13,10 +13,8 @@ const OPENAI_MAX_TOKENS: Record<string, number> = {
 };
 
 const MODEL_MAP: Record<string, string> = {
-  "google/gemini-3-flash-preview": "gpt-4o-mini",
-  "google/gemini-2.5-flash": "gpt-4o-mini",
-  "google/gemini-2.5-pro": "gpt-4o",
-  "google/gemini-2.5-flash-lite": "gpt-4o-mini",
+  "openai/gpt-5-mini": "gpt-4o-mini",
+  "openai/gpt-5": "gpt-4o",
 };
 
 // Retryable status codes (transient errors)
