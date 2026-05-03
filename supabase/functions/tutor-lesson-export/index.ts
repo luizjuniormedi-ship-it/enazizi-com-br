@@ -206,8 +206,8 @@ ${(sc.flashcard_suggestions ?? [])
 ## Prompt para NotebookLM
 ${sc.notebooklm_prompt ?? "Gerar resumo, áudio guiado e mapa de estudo fiel ao conteúdo acima."}
 
-## Prompt para Vídeo GPT-5 / Google Vids
-${sc.cinematic_video_prompt || sc.gemini_video_prompt || "—"}
+## Prompt para Vídeo GPT-5
+${sc.cinematic_video_prompt || "—"}
 
 ## Referências
 ${bullet(sc.references)}
