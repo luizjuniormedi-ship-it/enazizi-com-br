@@ -7,6 +7,8 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { motion } from "framer-motion";
 
 const errorMessages: Record<string, string> = {
   "Invalid login credentials": "Email ou senha incorretos.",
@@ -120,12 +122,14 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-background">
+    <div className="min-h-[100dvh] overflow-y-auto flex flex-col lg:flex-row bg-[#0a0a0e] relative">
+      <EnaflixBackgroundFX intensity="subtle" />
+      
       {/* Left panel - Hero */}
-      <div className="lg:w-1/2 bg-gradient-to-br from-primary/20 via-primary/10 to-background p-4 sm:p-10 lg:p-14 flex flex-col justify-center">
-        <Link to="/" className="inline-flex items-center gap-2 mb-4 lg:mb-10">
-          <img src={enazizi} alt="ENAZIZI" className="h-10 w-10 rounded-xl object-cover" />
-          <span className="text-xl font-bold">ENAZIZI</span>
+      <div className="lg:w-1/2 p-6 sm:p-10 lg:p-14 flex flex-col justify-center relative z-10">
+        <Link to="/" className="inline-flex items-center gap-3 mb-8 lg:mb-12 group">
+          <img src={enazizi} alt="ENAZIZI" className="h-12 w-12 rounded-2xl object-cover ring-2 ring-white/10 shadow-2xl group-hover:scale-110 transition-transform" />
+          <span className="text-2xl font-black tracking-tighter text-white">ENAFLIX</span>
         </Link>
 
         <h2 className="text-xl lg:text-3xl font-bold mb-1 lg:mb-2">
