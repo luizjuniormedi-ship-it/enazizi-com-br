@@ -156,10 +156,15 @@ export async function findRecommendedVideoForTutorContext(
 
     if (cacheHit) {
       if (cacheHit.lesson_id) {
+        const lessonData = (cacheHit.lesson_data as Record<string, any>) || {};
         return {
           found: true,
           lessonId: cacheHit.lesson_id,
-          ...cacheHit.lesson_data,
+          title: lessonData.title,
+          topic: lessonData.topic,
+          watchUrl: lessonData.watchUrl,
+          thumbnailUrl: lessonData.thumbnailUrl,
+          source: lessonData.source,
           confidence: cacheHit.confidence
         } as RecommendedVideo;
       }
