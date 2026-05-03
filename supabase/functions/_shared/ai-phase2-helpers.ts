@@ -167,7 +167,7 @@ export async function logGeneratedContent(params: {
       request_payload: params.requestPayload as any,
       response_payload: params.responsePayload as any,
       source_endpoint: params.sourceEndpoint,
-      model_used: params.modelUsed || "gemini-2.5-flash",
+      model_used: params.modelUsed || "openai/gpt-5-mini",
       cache_hit: params.cacheHit,
       cost_units: params.costUnits,
     });
