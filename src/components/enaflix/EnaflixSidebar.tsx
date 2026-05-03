@@ -26,7 +26,8 @@ import {
   Activity,
   UserCheck,
   ImageIcon,
-  Star
+  Star,
+  Upload
 } from "lucide-react";
 
 import { motion } from "framer-motion";
@@ -195,6 +196,12 @@ export function EnaflixSidebar() {
                     {/* Atalhos Rápidos de Gestão */}
                     <div className="py-2 space-y-1">
                       <SidebarItem
+                        to="/admin?tab=uploads"
+                        label="Upload Arquivos"
+                        icon={Upload}
+                        active={location.search === "?tab=uploads"}
+                      />
+                      <SidebarItem
                         to="/admin?tab=ingestion"
                         label="Gerar Questões"
                         icon={Sparkles}
@@ -202,7 +209,7 @@ export function EnaflixSidebar() {
                       />
                       <SidebarItem
                         to="/admin?tab=question-review"
-                        label="Banco & Aprovações"
+                        label="Aprovar Questões"
                         icon={UserCheck}
                         active={location.search === "?tab=question-review"}
                       />
