@@ -156,13 +156,18 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
 const AIMentor = () => {
   const onSendRef = { current: null as any };
   const [hasStarted, setHasStarted] = useState(false);
+  const [isCinematicLoading, setIsCinematicLoading] = useState(false);
 
   const handleSend = (prompt: string) => {
-    setHasStarted(true);
-    // Give time for animation before focusing chat
+    setIsCinematicLoading(true);
+    // Cinematic delay for "Entering AI Mind"
     setTimeout(() => {
-      onSendRef.current?.(prompt);
-    }, 100);
+      setHasStarted(true);
+      setIsCinematicLoading(false);
+      setTimeout(() => {
+        onSendRef.current?.(prompt);
+      }, 500);
+    }, 1200);
   };
   
   return (
@@ -171,6 +176,30 @@ const AIMentor = () => {
       <EnaflixBackgroundFX intensity="medium" />
 
       <div className="relative z-10 w-full">
+        <AnimatePresence>
+          {isCinematicLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center space-y-8"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-[100px] animate-pulse" />
+                <CinematicAvatar isSpeaking={true} className="w-48 h-48 rounded-[48px] border-2 border-primary/40 shadow-[0_0_50px_rgba(var(--primary),0.3)]" />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-primary animate-pulse">Iniciando Sincronização Cognitiva</span>
+                <div className="flex gap-1">
+                  <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} className="h-1 w-1 rounded-full bg-primary" />
+                  <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1 w-1 rounded-full bg-primary" />
+                  <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1 w-1 rounded-full bg-primary" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence mode="wait">
           {!hasStarted ? (
             <motion.div
@@ -183,21 +212,26 @@ const AIMentor = () => {
           ) : (
             <motion.div
               key="chat"
-              initial={{ opacity: 0, y: 50 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 sm:p-8 lg:p-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex flex-col pt-4 pb-0 sm:pt-6"
             >
-              <div className="max-w-7xl mx-auto h-[80vh] border border-white/5 rounded-[40px] overflow-hidden bg-slate-950/40 backdrop-blur-3xl shadow-2xl shadow-primary/5">
-                <AgentChat
-                  title="MentorMed Premium"
-                  subtitle="Inteligência ENAZIZI em Tempo Real"
-                  icon={<Sparkles className="h-6 w-6 text-primary" />}
-                  welcomeMessage="Olá! Sou o MentorMed, seu núcleo pedagógico ENAZIZI. Estou pronto para transformar seu material em aprendizado profundo com foco em residência médica. Como vamos começar hoje? 🩺"
-                  placeholder="Inicie um caso clínico ou tire uma dúvida técnica..."
-                  functionName="mentor-chat"
-                  quickActions={quickActions}
-                  onSendRef={onSendRef}
-                />
+              <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col px-2 sm:px-6 lg:px-12">
+                <div className="flex-1 relative flex flex-col rounded-t-[40px] border-t border-x border-white/10 bg-black/40 backdrop-blur-[80px] shadow-2xl overflow-hidden transition-all duration-700">
+                  <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
+                  
+                  <AgentChat
+                    title="ENAZIZI Cognitive Engine"
+                    subtitle="Núcleo de Inteligência Médica Premium"
+                    icon={<Sparkles className="h-6 w-6 text-primary animate-pulse" />}
+                    welcomeMessage="Olá! Sou o MentorMed, seu núcleo pedagógico ENAZIZI. Estou pronto para transformar seu material em aprendizado profundo com foco em residência médica. Como vamos começar hoje? 🩺"
+                    placeholder="Inicie um caso clínico ou tire uma dúvida técnica..."
+                    functionName="mentor-chat"
+                    quickActions={quickActions}
+                    onSendRef={onSendRef}
+                  />
+                </div>
               </div>
             </motion.div>
           )}

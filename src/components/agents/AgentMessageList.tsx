@@ -44,7 +44,7 @@ const AgentMessageList = memo(
     ) => (
       <div
         ref={ref}
-        className="flex-1 rounded-xl border border-border/50 bg-card/50 p-2 sm:p-4 overflow-y-auto space-y-3 sm:space-y-4 mb-2 sm:mb-3 min-h-0 pattern-dots"
+        className="flex-1 px-4 sm:px-12 py-8 overflow-y-auto space-y-12 mb-2 sm:mb-3 min-h-0 scrollbar-hide selection:bg-primary/30"
       >
         {messages.map((msg, i) => (
           <AgentMessageItem

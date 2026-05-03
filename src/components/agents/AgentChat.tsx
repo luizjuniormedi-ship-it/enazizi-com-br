@@ -273,7 +273,9 @@ const AgentChat = ({
   const onToggleShowUploads = useCallback(() => chat.setShowUploads((v) => !v), [chat.setShowUploads]);
 
   const content = (
-    <div className={`flex flex-col animate-fade-in min-w-0 w-full ${chat.isFullscreen ? "fixed inset-0 z-[100] bg-background p-2 sm:p-4" : "h-full"}`}>
+    <div className={`flex flex-col animate-in fade-in duration-1000 min-w-0 w-full relative h-full selection:bg-primary/30 ${chat.isFullscreen ? "fixed inset-0 z-[100] bg-black" : ""}`}>
+      {/* Decorative Atmosphere inside chat */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-primary/5 blur-[120px] pointer-events-none -z-10" />
       <AgentHeader
         title={title}
         subtitle={subtitle}

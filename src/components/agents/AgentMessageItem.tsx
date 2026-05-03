@@ -142,18 +142,29 @@ const AgentMessageItem = memo(
     };
 
     return (
-      <div className={`flex gap-2 sm:gap-3 ${msg.role === "user" ? "justify-end" : ""} animate-fade-in`}>
+      <div className={cn(
+        "flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-700",
+        msg.role === "user" ? "items-end" : "items-start w-full"
+      )}>
         {msg.role === "assistant" && (
-          <div className="h-12 w-9 sm:h-14 sm:w-11 rounded-xl overflow-hidden flex-shrink-0 tutor-glow bot-breathing ring-1 ring-primary/25 shadow-md">
-            <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
+          <div className="flex items-center gap-4 group/avatar">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-1 ring-primary/40 shadow-xl bg-black/40">
+              <img src={tutorAvatar} alt={title} className="h-full w-full object-contain" />
+            </div>
+            <div className="flex flex-col">
+               <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/80">Cognitive Engine</span>
+               <span className="text-xs font-bold text-white/40">IA Mentor Premium</span>
+            </div>
           </div>
         )}
+        
         <div
-          className={`rounded-xl px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm leading-relaxed relative group ${
+          className={cn(
+            "rounded-3xl relative transition-all duration-500",
             msg.role === "user"
-              ? "max-w-[85%] sm:max-w-[75%] bg-gradient-to-br from-primary to-primary/80 text-primary-foreground"
-              : "w-full bg-secondary/80 backdrop-blur-sm text-secondary-foreground relative gradient-border-subtle"
-          }`}
+              ? "max-w-[85%] sm:max-w-[60%] px-6 py-4 bg-white/5 border border-white/10 text-white/90 backdrop-blur-xl shadow-xl hover:border-primary/30"
+              : "w-full px-0 py-2 text-white/90"
+          )}
         >
           {msg.role === "assistant" ? (
             <>
@@ -161,7 +172,7 @@ const AgentMessageItem = memo(
                 renderAssistantMessage ? (
                   renderAssistantMessage(renderedMarkdown)
                 ) : (
-                  <div className="prose prose-sm dark:prose-invert max-w-none text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-li:my-1">
+                  <div className="prose prose-sm dark:prose-invert max-w-none prose-p:text-base sm:prose-p:text-lg prose-p:leading-relaxed prose-p:text-white/80 prose-headings:text-white prose-headings:font-black prose-headings:tracking-tighter prose-strong:text-primary prose-strong:font-bold">
                     <ReactMarkdown components={markdownComponents}>{renderedMarkdown}</ReactMarkdown>
                   </div>
                 )
