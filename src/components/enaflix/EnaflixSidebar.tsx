@@ -86,6 +86,15 @@ function SidebarItem({ to, label, icon: Icon, active }: SidebarItemProps) {
           ? "bg-white/10 text-white shadow-[0_4px_20px_rgba(0,0,0,0.4)] ring-1 ring-white/10" 
           : "text-white/40 hover:text-white hover:bg-white/5"
       )}
+    >
+      {active && (
+        <motion.div
+          layoutId="sidebar-active-bg"
+          className="absolute inset-0 bg-gradient-to-r from-primary/15 via-primary/5 to-transparent -z-10"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+        />
+      )}
 
       <div className={cn(
         "p-2 rounded-xl transition-all duration-500",
