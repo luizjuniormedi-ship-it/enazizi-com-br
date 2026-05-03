@@ -385,7 +385,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     duration_ms: Date.now() - dbStart,
     primary_model: "openai/gpt-5-mini",
     fallback_model: "openai/gpt-5",
-    gemini_guard_status: "disabled",
+    gemini_guard_status: "active",
     forbidden_models_found: false,
     gateway_status: gatewayStatus,
     db_latency: dbLatency,
