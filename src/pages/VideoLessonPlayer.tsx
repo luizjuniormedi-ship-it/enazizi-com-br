@@ -560,7 +560,7 @@ const VideoLessonPlayer = () => {
       params.set("tutor_mode", tutorMode);
     }
     
-    navigate(`/dashboard/mentor?${params.toString()}`);
+    navigate(`/dashboard/chatgpt?${params.toString()}`);
   };
 
   const openTutorWithMode = (mode: "feynman" | "exam_sprint") => {
@@ -593,7 +593,7 @@ const VideoLessonPlayer = () => {
     });
     if (currentSegment?.id) params.set("video_segment", currentSegment.id);
     if (ctx) params.set("hotspot_type", "temporal_context");
-    navigate(`/dashboard/mentor?${params.toString()}`);
+    navigate(`/dashboard/chatgpt?${params.toString()}`);
   };
 
   const handleReplaySegment = (seg: VideoSegment) => {
