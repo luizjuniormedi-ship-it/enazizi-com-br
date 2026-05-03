@@ -311,7 +311,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: "hi" }],
         max_tokens: 1
       })
@@ -440,7 +440,7 @@ const STRUCTURE_TOOL = {
 };
 
 async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<string, unknown>) {
-  const models = ["openai/gpt-4o-mini", "openai/gpt-4o"];
+  const models = ["openai/gpt-5-mini", "openai/gpt-5"];
   let lastError = "";
   let lastStatus: number | null = null;
   
