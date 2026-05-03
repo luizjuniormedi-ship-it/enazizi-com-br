@@ -211,6 +211,12 @@ export function EnaflixSidebar() {
                         icon={ImageIcon}
                         active={location.search === "?tab=image-review"}
                       />
+                      <SidebarItem
+                        to="/admin?tab=ai-studio"
+                        label="AI Studio"
+                        icon={Sparkles}
+                        active={location.search === "?tab=ai-studio"}
+                      />
                     </div>
 
                     <SidebarItem
