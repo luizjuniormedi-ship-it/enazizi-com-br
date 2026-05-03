@@ -92,7 +92,17 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       ],
     },
     {
-      title: "PRODUÇÃO",
+      title: "CONTEÚDO & QUESTÕES",
+      icon: FileText,
+      items: [
+        { key: "uploads", label: "Upload Arquivos", icon: Upload },
+        { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
+        { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
+        { key: "scraping", label: "Web Scraping", icon: Search },
+      ],
+    },
+    {
+      title: "PRODUÇÃO ENAFLIX",
       icon: MonitorPlay,
       items: [
         { key: "pipeline", label: "Pipeline", icon: Layers },
@@ -122,6 +132,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
     },
   ];
 }
+
 
 function PanelLoader() {
   return (
@@ -536,17 +547,22 @@ const Admin = () => {
                    </div>
                  )}
 
-                 {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
-                 {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
-                 {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
-                 {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
-                 {activeSection === "intelligence-overview" && <Suspense fallback={<PanelLoader />}><IntelligenceOverviewPanel /></Suspense>}
-                 {activeSection === "adaptive-engine" && <Suspense fallback={<PanelLoader />}><AdaptiveEngineAdmin /></Suspense>}
-                 {activeSection === "cognitive-orchestrator" && <Suspense fallback={<PanelLoader />}><AdminCognitiveOrchestrator /></Suspense>}
-                 {activeSection === "specialty-friction" && <Suspense fallback={<PanelLoader />}><SpecialtyFrictionReport /></Suspense>}
-                 {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} /></Suspense>}
-                 {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} /></Suspense>}
-                 {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
+                  {activeSection === "uploads" && <Suspense fallback={<PanelLoader />}><AdminUploadsPanel /></Suspense>}
+                  {activeSection === "ingestion" && <Suspense fallback={<PanelLoader />}><AdminIngestionPanel /></Suspense>}
+                  {activeSection === "question-review" && <Suspense fallback={<PanelLoader />}><AdminQuestionReviewPanel /></Suspense>}
+                  {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
+                  {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
+                  {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
+                  {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
+                  {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
+                  {activeSection === "intelligence-overview" && <Suspense fallback={<PanelLoader />}><IntelligenceOverviewPanel /></Suspense>}
+                  {activeSection === "adaptive-engine" && <Suspense fallback={<PanelLoader />}><AdaptiveEngineAdmin /></Suspense>}
+                  {activeSection === "cognitive-orchestrator" && <Suspense fallback={<PanelLoader />}><AdminCognitiveOrchestrator /></Suspense>}
+                  {activeSection === "specialty-friction" && <Suspense fallback={<PanelLoader />}><SpecialtyFrictionReport /></Suspense>}
+                  {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} /></Suspense>}
+                  {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} /></Suspense>}
+                  {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
+
 
                </motion.div>
              </AnimatePresence>
