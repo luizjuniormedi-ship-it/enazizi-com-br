@@ -168,13 +168,23 @@ const VideoLessonsExplore = () => {
   const specialties = Array.from(new Set(lessons?.map(l => l.specialty) || []));
 
   return (
-    <div className="container mx-auto p-4 md:p-8 space-y-10 animate-in fade-in duration-500 bg-[#0a0a12] text-white min-h-screen">
-      <div className="space-y-2">
-        <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-primary via-white to-primary/40 bg-clip-text text-transparent tracking-tight">
-          Explorar Videoaulas IA
+    <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
+      <EnaflixBackgroundFX intensity="high" />
+      
+      <div className="px-4 sm:px-8 lg:px-14 space-y-2">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="flex items-center gap-3"
+        >
+          <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
+          <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Explorador de Conteúdo</span>
+        </motion.div>
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
+          Videoaulas <span className="gradient-text">ENAFLIX</span>
         </h1>
-        <p className="text-white/50 text-lg max-w-2xl">
-          Filtros avançados, busca global e inteligência adaptativa para encontrar o conteúdo perfeito para sua jornada médica.
+        <p className="text-white/50 text-lg max-w-2xl font-medium mt-4">
+          Filtros avançados e inteligência adaptativa para encontrar o conteúdo perfeito para sua jornada médica.
         </p>
       </div>
 
