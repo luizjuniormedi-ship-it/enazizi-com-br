@@ -1,30 +1,27 @@
-# Tutor IA: Relatório Final de Hardening (OpenAI-only)
+# TUTOR IA & ENAZIZI MNEMONIC GENERATOR — OPENAI HARDENING
 
-## 1. Arquitetura e Blindagem
-O Tutor IA foi migrado para uma arquitetura **100% OpenAI**, utilizando `openai/gpt-5-mini` e `openai/gpt-5` via Lovable AI Gateway. Qualquer regressão para modelos Gemini foi bloqueada.
+## Arquitetura Final
+- **Modelos de Linguagem:** `openai/gpt-4o-mini` (rápido, barato, preciso para medicina).
+- **Modelos de Imagem:** `openai/gpt-4o` (DALL-E 3 via API multimodal).
+- **Hardening:** Bloqueio total de modelos Gemini/Google para evitar regressões de gateway e inconsistências de telemetria.
 
-## 2. Implementações de Estabilidade
-- **AI Guard (scripts/ai-guard.mjs):** Script de pré-build que varre o projeto em busca de referências ao Gemini e interrompe o deploy em caso de violação.
-- **Gemini Guard (Runtime):** Verificação ativa nas Edge Functions que lança exceção imediata se um modelo não-OpenAI for solicitado.
-- **Cache de Sessão:** Tabela `tutor_recommendation_cache` implementada para reduzir latência em 80% em consultas repetidas.
-- **Timeout Gerenciável:** Thresholds de 110s global e 45s por agente para evitar erros 504.
+## Fluxo de Geração (ENAZIZI Definitivo)
+1. **Entrada:** Tema + Subtema + Itens (opcional).
+2. **Extração Automática:** Se itens vazios, IA extrai termos 1:1 baseados em incidência de prova.
+3. **Normalização & Otimização:** Encurtamento de termos, remoção de redundâncias e itens genéricos.
+4. **Geração 1:1:** 1 letra = 1 item. Cobertura total obrigatória.
+5. **Auditoria Fail-Closed:** Resultados com score < 80 são rejeitados e sofrem auto-reparo (até 3 tentativas).
+6. **Persistência & Telemetria:** Logs detalhados de cada agente e versão final salva no Supabase.
 
-## 3. Fluxo de Videoaula (ENAFLIX)
-1. **Detecção:** O sistema detecta o tema médico da dúvida.
-2. **Busca:** Procura videoaulas no ENAFLIX e `tutor_lesson_memory`.
-3. **Priorização:** O card da aula é renderizado **ANTES** da resposta da IA.
-4. **Explicação:** A IA gera a resposta técnica com contexto de que o vídeo já foi sugerido.
+## Tabelas Envolvidas
+- `mnemonic_requests`: Log de intenções.
+- `mnemonic_results`: Ativos de mnemônicos (Assets).
+- `user_mnemonic_links`: Vínculo usuário-mnemônico para sistema adaptativo.
+- `mnemonic_agent_logs`: Telemetria e auditoria.
 
-## 4. Telemetria e Observabilidade
-- Registro completo de eventos: `message_received`, `topic_detected`, `video_found`, `answer_generation`, `completed/failed`.
-- Métricas capturadas: `duration_ms`, `model_used`, `fallback_used`, `parse_strategy`.
-- View `tutor_health_metrics` disponível para auditoria administrativa.
-
-## 5. Próximos Passos
-- Monitoramento da `error_rate_pct` no Painel de Saúde.
-- Ajuste fino dos prompts de mnemônicos para reduzir `retry_gerador`.
-- Expansão da base de sinônimos em `normalizeMedicalTerm`.
-
----
-**Status Final:** Produção Blindada (OpenAI-only)
-**Data:** 3 de Maio de 2026
+## Status de Verificação
+- ✅ OpenAI Only
+- ✅ RLS Configurado
+- ✅ Auto-complete de Subtemas
+- ✅ Sugestão de Itens Automática
+- ✅ Fail-Closed Implementado
