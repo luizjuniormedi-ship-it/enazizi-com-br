@@ -1,5 +1,6 @@
 import { memo } from "react";
 import type { QuickAction, TimelineEntry } from "./agentChatTypes";
+import { cn } from "@/lib/utils";
 
 interface AgentQuickActionsProps {
   quickActions?: QuickAction[];
@@ -10,15 +11,18 @@ interface AgentQuickActionsProps {
 export const AgentQuickActions = memo(({ quickActions, visible, onSend }: AgentQuickActionsProps) => {
   if (!visible || !quickActions || quickActions.length === 0) return null;
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1.5 mb-2 scrollbar-hide">
+    <div className="flex gap-2 overflow-x-auto pb-4 px-4 sm:px-12 scrollbar-hide">
       {quickActions.map((action, idx) => (
         <button
           key={idx}
           onClick={() => onSend(action.prompt)}
-          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[10px] sm:text-xs font-medium bg-gradient-to-br from-primary/10 to-accent/10 text-primary hover:from-primary/20 hover:to-accent/20 transition-colors border border-primary/20 flex-shrink-0 whitespace-nowrap"
+          className={cn(
+            "flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex-shrink-0 whitespace-nowrap",
+            "bg-white/5 border border-white/10 text-white/40 hover:text-primary hover:border-primary/40 hover:bg-primary/5 hover:scale-105 active:scale-95"
+          )}
         >
-          {action.icon && <span>{action.icon}</span>}
-          {action.label.replace(/^[^\s]+\s/, "")}
+          {action.icon && <span className="text-base">{action.icon}</span>}
+          <span>{action.label.replace(/^[^\s]+\s/, "")}</span>
         </button>
       ))}
     </div>
@@ -33,15 +37,15 @@ interface AgentTimelineProps {
 export const AgentTimeline = memo(({ entries }: AgentTimelineProps) => {
   if (entries.length === 0) return null;
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1 mb-2 scrollbar-hide">
+    <div className="flex gap-2 overflow-x-auto pb-4 px-4 sm:px-12 scrollbar-hide opacity-40 hover:opacity-100 transition-opacity">
       {entries.map((entry, idx) => (
         <span
           key={idx}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border border-border/60 bg-muted/50 text-[10px] font-medium text-muted-foreground whitespace-nowrap flex-shrink-0"
+          className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/5 bg-white/5 text-[9px] font-bold uppercase tracking-wider text-white/60 whitespace-nowrap flex-shrink-0"
         >
           <span>{entry.icon}</span>
-          <span className="max-w-[100px] truncate">{entry.label}</span>
-          <span className="text-muted-foreground/60">{entry.time}</span>
+          <span className="max-w-[120px] truncate">{entry.label}</span>
+          <span className="text-white/20 ml-1">{entry.time}</span>
         </span>
       ))}
     </div>
