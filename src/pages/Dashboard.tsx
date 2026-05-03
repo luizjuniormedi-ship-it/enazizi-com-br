@@ -2,233 +2,251 @@ import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
-import { useStudyNext, type StudyNextRecommendation } from "@/hooks/useStudyNext";
+import { useStudyNext } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
-import { usePrefetch } from "@/hooks/usePrefetch";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
-import { useDashboardMnemonic } from "@/hooks/useDashboardMnemonic";
-import { Play, Sparkles, Clock, FileText, AlertTriangle, Target, Brain, Info, History } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useTelemetry } from "@/hooks/useTelemetry";
+import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
-
-import CinematicMissionHero from "@/components/dashboard-v2/CinematicMissionHero";
-import RecoveryModeBanner from "@/components/dashboard/RecoveryModeBanner";
-import DashboardTopBar from "@/components/dashboard/DashboardTopBar";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
-import { EnaflixCard } from "@/components/enaflix/EnaflixCard";
-import SafeCard from "@/components/layout/SafeCard";
+import { EnaflixCinematicCard } from "@/components/enaflix/EnaflixCinematicCard";
+import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
+import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import AchievementToast from "@/components/gamification/AchievementToast";
-import { fireCelebration } from "@/lib/celebrations";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
-const TutorContinueCard = lazy(() => import("@/components/dashboard/TutorContinueCard"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 
 const Dashboard = () => {
   useRevisionNotifier();
-  usePrefetch("/dashboard");
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const queryClient = useQueryClient();
-  const { trackAction } = useTelemetry();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
-  const { data: dashboardMnemonic } = useDashboardMnemonic();
-  const { data, isLoading: missionLoading, isError, refresh } = useStudyNext();
+  const { data: studyNext, isLoading: missionLoading, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
 
   const autostartConsumedRef = useRef(false);
 
-  const activeRec = data?.recommendation;
-  const adaptiveState = data?.adaptiveState;
+  const activeRec = studyNext?.recommendation;
+  const adaptiveState = studyNext?.adaptiveState;
 
-  // Autostart logic
   useEffect(() => {
     if (autostartConsumedRef.current) return;
-    if (missionLoading || !data) return;
+    if (missionLoading || !studyNext) return;
     const autostart = searchParams.get("autostart");
     if (autostart !== "true") return;
 
     autostartConsumedRef.current = true;
     navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
-  }, [missionLoading, data, searchParams, navigate]);
+  }, [missionLoading, studyNext, searchParams, navigate]);
 
-  // Loading state
-  const initialLoading = (missionLoading && !data) || (snapLoading && !snapshot) || (dashLoading && !dashData);
+  const initialLoading = (missionLoading && !studyNext) || (snapLoading && !snapshot) || (dashLoading && !dashData);
   if (initialLoading) return <MissionControlSkeleton />;
 
+  const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
+
   return (
-    <div className="pb-32 pt-12 space-y-16 relative min-h-screen overflow-x-hidden">
+    <div className="pb-32 pt-6 space-y-12 relative min-h-screen overflow-x-hidden">
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
 
-      {/* Header & Status — Pixar Portal style */}
-      <div className="px-4 sm:px-8 lg:px-14 flex flex-col gap-8">
-        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
-          <div className="space-y-2">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-3"
-            >
-              <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
-              <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Portal do Aluno</span>
-            </motion.div>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
-              Hoje no <span className="gradient-text">ENAFLIX</span>
-            </h1>
-          </div>
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="w-full lg:w-auto lg:max-w-md"
-          >
-            <DashboardTopBar />
-          </motion.div>
-        </div>
-        
+      {/* Hero Cinematic Style - Netflix Medical */}
+      <div className="px-4 sm:px-8 lg:px-14">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.98 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.3 }}
+          transition={{ duration: 0.8 }}
+          className="relative min-h-[500px] rounded-[40px] overflow-hidden flex items-end p-8 sm:p-12 lg:p-16 group"
         >
-          <RecoveryModeBanner />
+          {/* Background Poster */}
+          <div className="absolute inset-0">
+            <img 
+              src="https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=2000&auto=format&fit=crop" 
+              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+              alt="Medical Mission"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0e] via-[#0a0a0e]/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0e]/80 via-transparent to-transparent" />
+          </div>
+
+          <div className="relative z-10 max-w-3xl space-y-6">
+            <div className="flex flex-col gap-2">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-3"
+              >
+                <EnaflixBadge variant="cyan" glow>IA RECOMENDOU</EnaflixBadge>
+                <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
+              </motion.div>
+              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
+                Sua missão de hoje, <span className="gradient-text">{firstName}</span>
+              </h1>
+              <p className="text-lg sm:text-xl text-white/80 font-medium max-w-xl leading-tight">
+                {activeRec?.title || "Carregando próxima missão..."} — {activeRec?.description || "O motor ACE está calibrando sua jornada."}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-4 pt-4">
+              <Enaflix3DButton 
+                size="lg" 
+                glow 
+                iconLeft={<Rocket className="h-5 w-5" />}
+                onClick={() => navigate(`/dashboard/sessao-estudo?source=dashboard_hero`)}
+              >
+                Começar agora
+              </Enaflix3DButton>
+              <Enaflix3DButton 
+                variant="outline" 
+                size="lg" 
+                iconLeft={<Clock className="h-5 w-5" />}
+                onClick={() => navigate("/dashboard/flashcards")}
+              >
+                Ver revisões
+              </Enaflix3DButton>
+              
+              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
+                <Brain className="h-4 w-4 text-primary" />
+                <span className="text-xs font-bold text-white/70 italic">
+                   "IA ACE: {adaptiveState?.justification || 'Ajuste adaptativo baseado no seu ritmo.'}"
+                </span>
+              </div>
+            </div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Hero Principal - Missão de hoje */}
-      {activeRec && (
-        <div className="px-4 sm:px-8 lg:px-14">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <CinematicMissionHero
-              recommendation={activeRec}
-              adaptiveState={adaptiveState}
-              onStart={() => navigate(`/dashboard/sessao-estudo?source=dashboard_hero`)}
-              onRefresh={refresh}
-              onShowAlternatives={() => {}}
-            />
-          </motion.div>
-        </div>
-      )}
-
-      {/* Staggered Rows */}
+      {/* Rows Style - Netflix Grid */}
       <div className="enaflix-stagger space-y-16">
-        {/* Missão de Hoje - Grid de Ações Rápidas */}
-        <EnaflixRow title="Próximos Passos">
-          <EnaflixCard
-            title="Iniciar Sessão de Estudo"
-            subtitle="IA organizadora recomendou focar em revisões agora."
-            badge="Recomendado"
-            onClick={() => navigate("/dashboard/sessao-estudo")}
-            image="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=400&auto=format&fit=crop"
-          />
-          <EnaflixCard
-            title="Revisão Espaçada"
-            subtitle={`${dashData?.stats.flashcards || 0} pendentes para hoje.`}
+        <EnaflixRow title="Continuar Estudando">
+          <EnaflixCinematicCard 
+            variant="lesson" 
+            className="w-full aspect-video"
+            onClick={() => navigate("/dashboard/videoaulas")}
+          >
+             <div className="absolute inset-0">
+               <img src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=600&auto=format&fit=crop" className="w-full h-full object-cover" />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+             </div>
+             <div className="absolute bottom-4 left-4 right-4 space-y-1">
+               <h4 className="font-black text-lg text-white">Insuficiência Cardíaca</h4>
+               <p className="text-xs text-white/60">Cardiologia • Aula 3</p>
+               <div className="h-1 w-full bg-white/20 rounded-full mt-2 overflow-hidden">
+                 <div className="h-full bg-primary w-[65%]" />
+               </div>
+             </div>
+          </EnaflixCinematicCard>
+          <EnaflixCinematicCard 
+            variant="lesson" 
+            className="w-full aspect-video"
+            onClick={() => navigate("/dashboard/videoaulas")}
+          >
+             <div className="absolute inset-0">
+               <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=600&auto=format&fit=crop" className="w-full h-full object-cover" />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+             </div>
+             <div className="absolute bottom-4 left-4 right-4 space-y-1">
+               <h4 className="font-black text-lg text-white">Diabetes Mellitus</h4>
+               <p className="text-xs text-white/60">Endocrinologia • Aula 1</p>
+               <div className="h-1 w-full bg-white/20 rounded-full mt-2 overflow-hidden">
+                 <div className="h-full bg-primary w-[12%]" />
+               </div>
+             </div>
+          </EnaflixCinematicCard>
+          <EnaflixCinematicCard 
+            variant="poster" 
+            className="w-full aspect-video flex flex-col items-center justify-center bg-white/5 border-dashed border-white/10"
+            onClick={() => navigate("/dashboard/videoaulas/explorar")}
+          >
+            <Play className="h-8 w-8 text-white/20 mb-2" />
+            <span className="text-xs font-black uppercase tracking-widest text-white/30">Explorar Mais</span>
+          </EnaflixCinematicCard>
+        </EnaflixRow>
+
+        <EnaflixRow title="Revisões Recomendadas">
+          <EnaflixCinematicCard 
+            variant="poster"
             onClick={() => navigate("/dashboard/flashcards")}
-            progress={(dashData?.stats.todayCompleted / dashData?.stats.todayTotal) * 100}
-            image="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?q=80&w=400&auto=format&fit=crop"
-          />
-          <EnaflixCard
-            title="Simulado de Performance"
-            subtitle="Ginecologia e Obstetrícia"
+          >
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <Target className="h-8 w-8 text-primary" />
+                <EnaflixBadge variant="cyan">MUITO ALTA</EnaflixBadge>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-xl text-white">Pediatria: Crescimento</h4>
+                <p className="text-sm text-white/60 italic">"Risco de esquecimento alto detectado pela IA"</p>
+              </div>
+              <Enaflix3DButton size="sm" className="w-full">Revisar Agora</Enaflix3DButton>
+            </div>
+          </EnaflixCinematicCard>
+          
+          <EnaflixCinematicCard 
+            variant="poster"
+            onClick={() => navigate("/dashboard/flashcards")}
+          >
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <Clock className="h-8 w-8 text-primary" />
+                <EnaflixBadge>PENDENTE</EnaflixBadge>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-xl text-white">Cirurgia: Abdome Agudo</h4>
+                <p className="text-sm text-white/60 italic">Dificuldade estimada: Média (15 min)</p>
+              </div>
+              <Enaflix3DButton size="sm" variant="outline" className="w-full">Agendar</Enaflix3DButton>
+            </div>
+          </EnaflixCinematicCard>
+
+          <EnaflixCinematicCard 
+            variant="poster"
             onClick={() => navigate("/dashboard/simulados")}
-            image="https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=400&auto=format&fit=crop"
-          />
-          <EnaflixCard
-            title="Tutor IA Co-Pilot"
-            subtitle="Deep learning sobre temas médicos complexos"
-            onClick={() => navigate("/dashboard/chatgpt")}
-            image="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=400&auto=format&fit=crop"
-          />
+          >
+            <div className="p-6 space-y-4">
+              <div className="flex justify-between items-start">
+                <BookOpen className="h-8 w-8 text-primary" />
+                <EnaflixBadge variant="violet">IA BOOST</EnaflixBadge>
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-black text-xl text-white">Gineco & Obstetrícia</h4>
+                <p className="text-sm text-white/60 italic">"Focar em temas com queda de 12% no acerto"</p>
+              </div>
+              <Enaflix3DButton size="sm" variant="violet" className="w-full">Treinar Erros</Enaflix3DButton>
+            </div>
+          </EnaflixCinematicCard>
         </EnaflixRow>
 
-        {/* Continuar Assistindo */}
-        <EnaflixRow title="Continuar de onde parou">
-          <EnaflixCard
-            title="Insuficiência Cardíaca"
-            subtitle="Cardiologia - Aula 3"
-            progress={65}
-            onClick={() => navigate("/dashboard/videoaulas")}
-            image="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=400&auto=format&fit=crop"
-          />
-          <EnaflixCard
-            title="Diabetes Mellitus"
-            subtitle="Endocrinologia - Aula 1"
-            progress={12}
-            onClick={() => navigate("/dashboard/videoaulas")}
-            image="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=400&auto=format&fit=crop"
-          />
-        </EnaflixRow>
-
-        {/* Revisões Inteligentes */}
-        <EnaflixRow title="Revisões Críticas">
-          <EnaflixCard
-            title="Pediatria: Crescimento"
-            subtitle="Risco de esquecimento: Crítico"
-            badge="Urgente"
-            onClick={() => navigate("/dashboard/flashcards")}
-            image="https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?q=80&w=400&auto=format&fit=crop"
-          />
-          <EnaflixCard
-            title="Cirurgia Geral: Abdome Agudo"
-            subtitle="Revisão pendente há 2 dias"
-            onClick={() => navigate("/dashboard/flashcards")}
-            image="https://images.unsplash.com/photo-1551076805-e1869033e561?q=80&w=400&auto=format&fit=crop"
-          />
-        </EnaflixRow>
-
-        {/* Meus Erros */}
-        <EnaflixRow title="Zonas de Risco">
-          <EnaflixCard
-            title="Treinar Temas em Queda"
-            subtitle="Ginecologia e Infectologia"
-            badge="IA Boost"
-            onClick={() => navigate("/dashboard/banco-erros")}
-            image="https://images.unsplash.com/photo-1590105577767-e21a46b530f6?q=80&w=400&auto=format&fit=crop"
-          />
+        <EnaflixRow title="Tutor IA & Co-Pilot">
+           <EnaflixCinematicCard variant="tutor" className="col-span-full h-48 flex items-center p-8 gap-8">
+              <div className="h-32 w-32 rounded-3xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center border border-white/10 shrink-0">
+                <Sparkles className="h-16 w-16 text-primary animate-pulse" />
+              </div>
+              <div className="space-y-4 flex-1">
+                <div>
+                  <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
+                  <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
+                </div>
+                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/chatgpt")}>
+                  Iniciar Conversa
+                </Enaflix3DButton>
+              </div>
+           </EnaflixCinematicCard>
         </EnaflixRow>
       </div>
 
-      {/* Progresso e Domínio — Cinematic Dashboard style */}
-      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12">
+      {/* Analysis Section */}
+      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
         <div className="space-y-6">
-          <EnaflixSectionTitle
-            kicker="Análise de Performance"
-            title="Meu Panorama"
-          />
-          <Suspense fallback={null}>
-            <ProgressOverview />
-          </Suspense>
+          <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
+          <Suspense fallback={null}><ProgressOverview /></Suspense>
         </div>
         <div className="space-y-6">
-          <EnaflixSectionTitle
-            kicker="Brain Power"
-            title="Domínio Clínico"
-          />
-          <Suspense fallback={null}>
-            <MedicalMasteryDashboard />
-          </Suspense>
-        </div>
-      </div>
-
-      {/* Tutor IA Section */}
-      <div className="px-4 sm:px-8 lg:px-14">
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-accent/20 rounded-[32px] blur-xl opacity-0 group-hover:opacity-100 transition duration-1000"></div>
-          <Suspense fallback={null}>
-            <TutorContinueCard />
-          </Suspense>
+          <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
+          <Suspense fallback={null}><MedicalMasteryDashboard /></Suspense>
         </div>
       </div>
     </div>
