@@ -335,15 +335,17 @@ const AdminLessonsMemory = () => {
       />
 
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-8">
-          <ProductionHeroHeader
-            total={counters.total}
-            published={counters.published}
-            structuring={counters.structuring}
-            pendingReview={counters.pendingReview}
-          />
-          
-          <div className="shrink-0 pb-10 flex flex-wrap gap-3 items-center justify-end">
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 mb-8">
+          <div className="min-w-0 flex-1">
+            <ProductionHeroHeader
+              total={counters.total}
+              published={counters.published}
+              structuring={counters.structuring}
+              pendingReview={counters.pendingReview}
+            />
+          </div>
+
+          <div className="shrink-0 pb-10 flex flex-wrap gap-3 items-center xl:justify-end">
             <div className="flex flex-col gap-1 mr-4">
               <span className="text-[10px] font-black uppercase tracking-widest text-white/40 text-right">Diagnóstico & Recuperação</span>
               <div className="flex gap-2 justify-end">
