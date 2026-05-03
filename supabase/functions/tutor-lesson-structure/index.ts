@@ -218,10 +218,10 @@ Deno.serve(async (req) => {
       last_structuring_error: null,
       last_structuring_at: new Date().toISOString(),
       notebooklm_export: structured.notebooklm_prompt || null,
-      gemini_export: structured.gemini_video_prompt || null,
+      gemini_export: (structured as any).cinematic_video_prompt || null,
       google_vids_export: structured.google_vids_prompt || null,
       cinematic_prompt: { 
-        gemini: structured.gemini_video_prompt, 
+        gpt5: (structured as any).cinematic_video_prompt, 
         google_vids: structured.google_vids_prompt 
       },
       metadata: {
