@@ -17091,6 +17091,7 @@ export type Database = {
           is_recommended: boolean | null
           last_structuring_at: string | null
           last_structuring_error: string | null
+          metadata: Json | null
           notebooklm_export: string | null
           pedagogical_interest_score: number | null
           pedagogical_quality_score: number | null
@@ -17114,6 +17115,7 @@ export type Database = {
           thumbnail_url: string | null
           title: string
           topic: string | null
+          topic_normalized: string | null
           tutor_messages_count: number | null
           updated_at: string | null
           user_id: string
@@ -17141,6 +17143,7 @@ export type Database = {
           is_recommended?: boolean | null
           last_structuring_at?: string | null
           last_structuring_error?: string | null
+          metadata?: Json | null
           notebooklm_export?: string | null
           pedagogical_interest_score?: number | null
           pedagogical_quality_score?: number | null
@@ -17164,6 +17167,7 @@ export type Database = {
           thumbnail_url?: string | null
           title: string
           topic?: string | null
+          topic_normalized?: string | null
           tutor_messages_count?: number | null
           updated_at?: string | null
           user_id: string
@@ -17191,6 +17195,7 @@ export type Database = {
           is_recommended?: boolean | null
           last_structuring_at?: string | null
           last_structuring_error?: string | null
+          metadata?: Json | null
           notebooklm_export?: string | null
           pedagogical_interest_score?: number | null
           pedagogical_quality_score?: number | null
@@ -17214,6 +17219,7 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           topic?: string | null
+          topic_normalized?: string | null
           tutor_messages_count?: number | null
           updated_at?: string | null
           user_id?: string
@@ -19357,6 +19363,7 @@ export type Database = {
         }
         Returns: number
       }
+      normalize_medical_topic: { Args: { t: string }; Returns: string }
       professor_owns_clinical_case: {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
@@ -19402,6 +19409,7 @@ export type Database = {
         Args: { _memory_id: string }
         Returns: undefined
       }
+      unaccent: { Args: { "": string }; Returns: string }
       user_can_read_mentor_plan: {
         Args: { _plan_id: string; _user_id: string }
         Returns: boolean
