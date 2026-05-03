@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/select";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+import { AdminAlertCenter } from "@/components/admin/AdminAlertCenter";
 
 export default function PedagogyAnalytics() {
   const [loading, setLoading] = useState(true);
@@ -83,6 +84,7 @@ export default function PedagogyAnalytics() {
         </div>
       </header>
 
+      <AdminAlertCenter />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Tempo Médio" 
