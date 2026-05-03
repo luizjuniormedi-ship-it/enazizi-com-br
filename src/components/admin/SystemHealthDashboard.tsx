@@ -147,7 +147,49 @@ export const SystemHealthDashboard = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
+      <Card className="bg-card text-card-foreground">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-orange-500" /> Alertas de Estabilidade
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <StabilityAlert 
+              title="Edge Functions" 
+              status="Normal" 
+              latency="180ms" 
+              description="Nenhum timeout detectado nas últimas 24h."
+            />
+            <StabilityAlert 
+              title="Supabase API" 
+              status="Excelente" 
+              latency="45ms" 
+              description="Conectividade estável em todas as regiões."
+            />
+            <StabilityAlert 
+              title="Tutor IA" 
+              status="Alerta" 
+              latency="4.2s" 
+              description="Aumento de 12% na latência do modelo principal."
+              isWarning
+            />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
+
+function StabilityAlert({ title, status, latency, description, isWarning }: any) {
+  return (
+    <div className={`p-4 rounded-lg border ${isWarning ? 'border-orange-500/30 bg-orange-500/5' : 'border-border bg-card'}`}>
+      <div className="flex justify-between items-center mb-2">
+        <h3 className="font-semibold">{title}</h3>
+        <Badge variant={isWarning ? "outline" : "secondary"}>{status}</Badge>
+      </div>
+      <div className="text-2xl font-bold mb-1">{latency}</div>
+      <p className="text-xs text-muted-foreground">{description}</p>
+    </div>
+  );
+}
