@@ -380,7 +380,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     ok: checks.every(c => c.ok || c.name === "RECOVERY_SYSTEM"),
     timestamp: new Date().toISOString(),
     duration_ms: Date.now() - dbStart,
-    primary_model: "google/gemini-2.0-flash-exp",
+    primary_model: "openai/gpt-5-mini",
     fallback_model: "openai/gpt-5",
     gemini_guard_status: "disabled",
     forbidden_models_found: false,
