@@ -189,35 +189,54 @@ export default function EnaflixPage() {
   }, [visibleModules, popularIds]);
 
   // Vitrine rotativa: até 4 destaques cinematográficos com narrativa diferente.
-  const billboardSlides = useMemo<Array<{ module: EnaflixModule; eyebrow: string }>>(() => {
-    const slides: Array<{ module: EnaflixModule; eyebrow: string }> = [];
+  const billboardSlides = useMemo<Array<{ module: EnaflixModule; eyebrow: string; customTitle?: string; customDesc?: string }>>(() => {
+    const slides: Array<{ module: EnaflixModule; eyebrow: string; customTitle?: string; customDesc?: string }> = [];
     const seen = new Set<string>();
 
-    const push = (m: EnaflixModule | undefined, eyebrow: string) => {
-      if (!m || seen.has(m.id)) return;
+    const push = (m: EnaflixModule | undefined, eyebrow: string, customTitle?: string, customDesc?: string) => {
+      if (!m || (seen.has(m.id) && !customTitle)) return;
       seen.add(m.id);
-      slides.push({ module: m, eyebrow });
+      slides.push({ module: m, eyebrow, customTitle, customDesc });
     };
 
-    // 1. Continuar de onde parou (se existe)
-    push(continueModules[0], "Continuar de onde parou");
-    // 2. Recomendação IA
-    push(recommendedModules[0], "Recomendado pela IA");
-    // 3. Sessão de estudo (centro pedagógico)
-    push(
-      visibleModules.find((m) => m.id === "sessao-estudo"),
-      "Centro pedagógico",
-    );
-    // 4. Destaque popular (se houver mais de um popular distinto)
-    push(popularModules[0], "Mais usado por você");
+    // 1. MISSÃO DO DIA (A IA que guia o aluno) - Protagonista
+    if (studyNext?.recommendation) {
+      const rec = studyNext.recommendation;
+      const targetModuleId = rec.type === 'review' ? 'sessao-estudo' : 
+                           rec.type === 'mnemonic' ? 'mnemonico' :
+                           rec.type === 'error_review' ? 'banco-erros' :
+                           rec.type === 'image_quiz' ? 'image-quiz' : 'sessao-estudo';
+      
+      const targetModule = ENAFLIX_MODULES.find(m => m.id === targetModuleId);
+      if (targetModule) {
+        push(
+          targetModule, 
+          "Missão Crítica do Dia", 
+          rec.title, 
+          `${rec.description} • ~${rec.estimatedMinutes} min`
+        );
+      }
+    }
 
-    // Fallback: se nada acima rendeu nada, pega o primeiro visível
+    // 2. Continuar de onde parou
+    push(continueModules[0], "Continuar de onde parou");
+    
+    // 3. Recomendação IA (secundária ao billboard se não for a missão)
+    push(recommendedModules[0], "Recomendado para você");
+
+    // 4. Tutor IA (Sempre um destaque)
+    push(
+      visibleModules.find((m) => m.id === "mentor"),
+      "Inteligência Pedagógica",
+    );
+
+    // Fallback
     if (slides.length === 0 && visibleModules[0]) {
       push(visibleModules[0], "Em destaque hoje");
     }
 
     return slides.slice(0, 4);
-  }, [continueModules, recommendedModules, popularModules, visibleModules]);
+  }, [continueModules, recommendedModules, visibleModules, studyNext]);
 
   const handleNavigate = useCallback(
     (m: EnaflixModule) => {
