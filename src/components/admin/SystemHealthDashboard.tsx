@@ -27,18 +27,22 @@ export const SystemHealthDashboard = () => {
       const hourAgo = new Date(Date.now() - 3600000);
       const errorsLastHour = (recentErrors || []).filter((e: any) => new Date(e.created_at) > hourAgo).length;
 
-      // Simple mock for Edge Function latency
-      const mockLatency = Array.from({ length: 10 }, (_, i) => ({
-        time: i,
-        ms: Math.floor(Math.random() * 200) + 100
-      }));
+      // Fetch real AI quality metrics
+      const { data: aiQualityData } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: 1 });
+      const aiQuality = aiQualityData as any;
+      
+      const avgLatency = aiQuality?.avg_latency_ms ? `${aiQuality.avg_latency_ms}ms` : "0ms";
+      const latencyHistory = aiQuality?.latency_history?.map((h: any) => ({
+        time: h.time,
+        ms: h.ms
+      })) || [];
 
       return {
         onlineUsers: onlineUsers || 0,
         errorsLastHour,
         recentErrors: recentErrors || [],
-        avgLatency: "142ms",
-        latencyHistory: mockLatency
+        avgLatency,
+        latencyHistory
       };
     },
     refetchInterval: 30000 // Refresh every 30s
