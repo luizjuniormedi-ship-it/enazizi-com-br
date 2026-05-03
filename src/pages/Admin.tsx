@@ -555,16 +555,24 @@ const Admin = () => {
       </div>
 
       <AdminDialogs 
-        planDialog={planDialog} setPlanDialog={setPlanDialog} onChangePlan={handleChangePlan}
-        blockDialog={blockDialog} setBlockDialog={setBlockDialog} onBlock={handleBlock}
-        adminDialog={adminDialog} setAdminDialog={setAdminDialog} onAdmin={handleToggleAdmin}
-        professorDialog={professorDialog} setProfessorDialog={setProfessorDialog} onProfessor={handleToggleProfessor}
-        passwordDialog={passwordDialog} setPasswordDialog={setPasswordDialog} onPassword={handleResetPassword}
+        users={users}
+        actionLoading={actionLoading}
+        getStatusBadge={(u) => <Badge variant={u.status === "active" ? "default" : "secondary"}>{u.status}</Badge>}
+        getUserPlan={(u) => u.subscription?.plans?.name || "Free"}
+        callAdmin={callAdmin}
+        toast={toast}
+        session={session}
+        setActionLoading={setActionLoading}
+        planDialog={planDialog} setPlanDialog={setPlanDialog} handleChangePlan={handleChangePlan}
+        blockDialog={blockDialog} setBlockDialog={setBlockDialog} handleBlock={handleBlock}
+        adminDialog={adminDialog} setAdminDialog={setAdminDialog} handleToggleAdmin={handleToggleAdmin}
+        professorDialog={professorDialog} setProfessorDialog={setProfessorDialog} handleToggleProfessor={handleToggleProfessor}
+        passwordDialog={passwordDialog} setPasswordDialog={setPasswordDialog} handleResetPassword={handleResetPassword}
         userDetailDialog={userDetailDialog} setUserDetailDialog={setUserDetailDialog}
         trackingDialog={trackingDialog} setTrackingDialog={setTrackingDialog}
-        logoutDialog={logoutDialog} setLogoutDialog={setLogoutDialog} onLogout={() => {}}
-        accessDialog={accessDialog} setAccessDialog={setAccessDialog} onSaveAccess={handleSaveAccess}
-        deleteDialog={deleteDialog} setDeleteDialog={setDeleteDialog} onDelete={handleDeleteUser}
+        logoutDialog={logoutDialog} setLogoutDialog={setLogoutDialog}
+        accessDialog={accessDialog} setAccessDialog={setAccessDialog} handleSaveAccess={handleSaveAccess}
+        deleteDialog={deleteDialog} setDeleteDialog={setDeleteDialog} handleDeleteUser={handleDeleteUser}
       />
     </div>
   );
