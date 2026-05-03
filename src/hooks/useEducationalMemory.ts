@@ -154,7 +154,7 @@ export const useEducationalMemory = () => {
 
   const exportLesson = async (
     lessonId: string,
-    format: 'notebooklm' | 'gemini' | 'google_vids' | 'markdown' | 'txt',
+    format: 'notebooklm' | 'cinematic' | 'google_vids' | 'markdown' | 'txt',
   ) => {
     const { data, error } = await supabase.functions.invoke(
       'tutor-lesson-export',
