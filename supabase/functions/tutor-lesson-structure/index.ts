@@ -129,8 +129,9 @@ Deno.serve(async (req) => {
       modelUsed = result.model;
       fallbackUsed = result.fallbackUsed;
       gatewayStatus = result.status;
-    } catch (e) {
-      aiError = (e as Error).message;
+    } catch (e: any) {
+      aiError = e.message;
+      gatewayStatus = e.status || 500;
     }
 
     if (!structured) {
@@ -262,13 +263,27 @@ async function runHealthcheck(admin: any, lovableKey: string) {
 
   // 5) Stuck Lessons Check
   const timeoutThreshold = new Date(Date.now() - TIMEOUT_MS).toISOString();
-  const { count: stuckCount } = await admin
+  const { count: stuckCount, data: stuckLessons } = await admin
     .from("tutor_lesson_memory")
-    .select("id", { count: "exact", head: true })
+    .select("id, topic, last_structuring_at", { count: "exact" })
     .eq("status", "structuring")
     .lt("last_structuring_at", timeoutThreshold);
   
-  checks.push({ name: "No Stuck Lessons", ok: (stuckCount ?? 0) === 0, detail: `${stuckCount} stuck` });
+  if ((stuckCount ?? 0) > 0) {
+    for (const stuck of stuckLessons || []) {
+      await logEvent(admin, stuck.id, "system", "lesson_structure_timeout_detected", {
+        topic: stuck.topic,
+        last_at: stuck.last_structuring_at,
+        threshold: timeoutThreshold
+      });
+    }
+  }
+
+  checks.push({ 
+    name: "No Stuck Lessons (>15min)", 
+    ok: (stuckCount ?? 0) === 0, 
+    detail: `${stuckCount} stuck` 
+  });
 
   return json({
     ok: checks.every(c => c.ok),
