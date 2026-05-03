@@ -28,10 +28,11 @@ export const SystemHealthDashboard = () => {
       const errorsLastHour = (recentErrors || []).filter((e: any) => new Date(e.created_at) > hourAgo).length;
 
       // Fetch real AI quality metrics
-      const { data: aiQuality } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: 1 });
+      const { data: aiQualityData } = await supabase.rpc('admin_telemetry_v2_ai_quality', { _days: 1 });
+      const aiQuality = aiQualityData as any;
       
       const avgLatency = aiQuality?.avg_latency_ms ? `${aiQuality.avg_latency_ms}ms` : "0ms";
-      const latencyHistory = aiQuality?.latency_history?.map((h: any, i: number) => ({
+      const latencyHistory = aiQuality?.latency_history?.map((h: any) => ({
         time: h.time,
         ms: h.ms
       })) || [];
