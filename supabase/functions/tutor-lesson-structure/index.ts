@@ -32,21 +32,19 @@ type StructuredLesson = {
 };
 
 Deno.serve(async (req) => {
-  console.log("Tutor Lesson Structure v2.1 (OpenAI Fixed)");
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
-
-  const startTime = Date.now();
-  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const lovableKey = Deno.env.get("LOVABLE_API_KEY");
-  
-  const admin = createClient(supabaseUrl, serviceKey);
-
   try {
-    // 0) Validate Env
+    console.log("Tutor Lesson Structure v2.4 (OpenAI 5 Ready)");
+    if (req.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    const startTime = Date.now();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+
+    // 0) Validate Env immediately inside try
     if (!lovableKey || !supabaseUrl || !serviceKey) {
       console.error("Missing environment variables");
       return json({ 
@@ -56,9 +54,21 @@ Deno.serve(async (req) => {
         technical_reason: `Lovable: ${!!lovableKey}, URL: ${!!supabaseUrl}, Key: ${!!serviceKey}`
       }, 500);
     }
+    
+    const admin = createClient(supabaseUrl, serviceKey);
+
+    const body = await req.json().catch(() => ({}));
+    console.log("Body action received:", body?.action);
+    
+    // Healthcheck support - move BEFORE auth to allow debugging env issues
+    if (body?.action === "healthcheck") {
+      console.log("Running healthcheck...");
+      return await runHealthcheck(admin, lovableKey);
+    }
+
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, {
+    const userClient = createClient(supabaseUrl, anonKey!, {
       global: { headers: { Authorization: authHeader } },
     });
 
@@ -71,12 +81,7 @@ Deno.serve(async (req) => {
       }, 401);
     }
 
-    const body = await req.json().catch(() => ({}));
-    
-    // Healthcheck support
-    if (body?.action === "healthcheck") {
-      return await runHealthcheck(admin, lovableKey);
-    }
+
 
     const lessonId: string | undefined = body?.lesson_id;
     if (!lessonId) {
@@ -269,78 +274,82 @@ Deno.serve(async (req) => {
     });
 
   } catch (e) {
-    console.error("Global structure error:", e);
+    console.error("[tutor-lesson-structure] FATAL", e);
     return json({ 
       success: false,
-      code: "INTERNAL_ERROR",
-      message: "Ocorreu um erro inesperado no servidor.",
-      technical_reason: (e as Error).message 
+      code: "TUTOR_LESSON_STRUCTURE_RUNTIME_ERROR",
+      message: "Não foi possível estruturar esta aula agora.",
+      technical_reason: (e as Error).message ?? String(e),
+      fallback_available: true
     }, 500);
   }
 });
 
+
 async function runHealthcheck(admin: any, lovableKey: string) {
   const checks = [];
   
-  // 1) DB Check
+  // 1) DB Access Check
   const { data: dbCheck, error: dbError } = await admin.from("tutor_lesson_memory").select("id").limit(1);
-  checks.push({ name: "Supabase DB", ok: !dbError, error: dbError?.message });
+  checks.push({ name: "DB_ACCESS", ok: !dbError, error: dbError?.message });
 
   // 2) Tables check
   const { error: eventTableError } = await admin.from("tutor_lesson_events").select("id").limit(1);
   checks.push({ name: "tutor_lesson_events", ok: !eventTableError, error: eventTableError?.message });
 
-  // 3) LOVABLE_API_KEY check
+  // 3) Env Vars check
+  checks.push({ name: "SUPABASE_URL", ok: !!Deno.env.get("SUPABASE_URL") });
+  checks.push({ name: "SERVICE_ROLE", ok: !!Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") });
   checks.push({ name: "LOVABLE_API_KEY", ok: !!lovableKey });
 
-  // 4) AI Models check (Gateway)
+  // 4) AI Gateway check (Simple POST test)
   try {
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/models", {
-      headers: { Authorization: `Bearer ${lovableKey}` }
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: { 
+        Authorization: `Bearer ${lovableKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "openai/gpt-5-mini",
+        messages: [{ role: "user", content: "hi" }],
+        max_completion_tokens: 1
+      })
     });
-    checks.push({ name: "Lovable AI Gateway", ok: aiResp.ok, status: aiResp.status });
-    
-    if (aiResp.ok) {
-      const models = await aiResp.json();
-      const hasMini = models.data?.some((m: any) => m.id === "openai/gpt-4o-mini");
-      const hasPro = models.data?.some((m: any) => m.id === "openai/gpt-4o");
-      checks.push({ name: "OpenAI Mini Available", ok: hasMini });
-      checks.push({ name: "OpenAI Pro Available", ok: hasPro });
+    const aiOk = aiResp.ok;
+    let aiErr = null;
+    if (!aiOk) {
+      aiErr = await aiResp.text();
     }
+    checks.push({ name: "Lovable AI Gateway", ok: aiOk, status: aiResp.status, error: aiErr });
   } catch (e) {
     checks.push({ name: "AI Gateway Reachability", ok: false, error: (e as Error).message });
   }
 
+
+
   // 5) Stuck Lessons Check
   const timeoutThreshold = new Date(Date.now() - TIMEOUT_MS).toISOString();
-  const { count: stuckCount, data: stuckLessons } = await admin
+  const { count: stuckCount } = await admin
     .from("tutor_lesson_memory")
-    .select("id, topic, last_structuring_at", { count: "exact" })
+    .select("id", { count: "exact", head: true })
     .eq("status", "structuring")
     .lt("last_structuring_at", timeoutThreshold);
   
-  if ((stuckCount ?? 0) > 0) {
-    for (const stuck of stuckLessons || []) {
-      await logEvent(admin, stuck.id, "system", "lesson_structure_timeout_detected", {
-        topic: stuck.topic,
-        last_at: stuck.last_structuring_at,
-        threshold: timeoutThreshold
-      });
-    }
-  }
-
   checks.push({ 
-    name: "No Stuck Lessons (>15min)", 
+    name: "NO_STUCK_LESSONS", 
     ok: (stuckCount ?? 0) === 0, 
     detail: `${stuckCount} stuck` 
   });
 
   return json({
-    ok: checks.every(c => c.ok),
+    success: true,
+    ok: checks.every(c => c.ok || c.name === "NO_STUCK_LESSONS"), // Stuck lessons don't necessarily mean the service is down
     timestamp: new Date().toISOString(),
-    checks
+    checks: Object.fromEntries(checks.map(c => [c.name, { ok: c.ok, status: (c as any).status, error: (c as any).error }]))
   });
 }
+
 
 async function logEvent(admin: any, lessonId: string, actorId: string, eventType: string, metadata: any) {
   return await admin.from("tutor_lesson_events").insert([{
@@ -431,7 +440,7 @@ const STRUCTURE_TOOL = {
 };
 
 async function callAIWithFallback(apiKey: string, lesson: any, ctx: Record<string, unknown>) {
-  const models = ["openai/gpt-4o-mini", "openai/gpt-4o"];
+  const models = ["openai/gpt-5-mini", "openai/gpt-5"];
   let lastError = "";
   let lastStatus: number | null = null;
   
