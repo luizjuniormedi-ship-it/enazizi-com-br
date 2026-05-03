@@ -27,7 +27,7 @@ type StructuredLesson = {
   chapters?: Array<Record<string, unknown>>;
   video_script?: Record<string, unknown>;
   notebooklm_prompt?: string;
-  gemini_video_prompt?: string;
+  cinematic_video_prompt?: string;
   google_vids_prompt?: string;
 };
 
