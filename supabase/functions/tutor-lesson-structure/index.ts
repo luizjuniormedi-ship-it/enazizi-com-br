@@ -188,7 +188,8 @@ Deno.serve(async (req) => {
         title: structured.title || lesson.title || "Aula sem título",
         subtitle: structured.subtitle || lesson.subtitle || null,
         subject: structured.subject || lesson.subject || null,
-        topic: structured.topic || lesson.topic || null,
+        // Mantém o topic original para não colidir com unique (user_id, topic)
+        topic: lesson.topic || structured.topic || null,
         subtopic: structured.subtopic || lesson.subtopic || null,
         summary: buildSummary(structured),
         estimated_duration_minutes:
