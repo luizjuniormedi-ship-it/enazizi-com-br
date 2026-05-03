@@ -1,9 +1,10 @@
 import React, { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Search, Film, Play, Sparkles, Loader2 } from "lucide-react";
+import { Search, Film, Play, Sparkles, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+
 
 import { ProductionHeroHeader } from "@/components/enaflix/admin/ProductionHeroHeader";
 import { ProductionTabs } from "@/components/enaflix/admin/ProductionTabs";
@@ -33,6 +34,7 @@ const AdminLessonsMemory = () => {
   const [publishingId, setPublishingId] = useState<string | null>(null);
   const [openLessonId, setOpenLessonId] = useState<string | null>(null);
   const [loadingBatch, setLoadingBatch] = useState(false);
+  const [isHealthchecking, setIsHealthchecking] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingUploadLessonId = useRef<string | null>(null);
 
@@ -47,6 +49,7 @@ const AdminLessonsMemory = () => {
       return data;
     },
   });
+
 
   const logEvent = async (lessonId: string, eventType: string, metadata: Record<string, unknown> = {}) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -221,16 +224,75 @@ const AdminLessonsMemory = () => {
     }
   };
 
+  const handleHealthcheck = async () => {
+    setIsHealthchecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("tutor-lesson-structure", {
+        body: { action: "healthcheck" },
+      });
+      if (error) throw error;
+      if (data.ok) {
+        toast.success("Healthcheck IA: OK", {
+          description: "Banco de dados e Gateway IA operacionais.",
+        });
+      } else {
+        toast.error("Healthcheck IA: Falha", {
+          description: data.checks?.map((c: any) => `${c.name}: ${c.ok ? "OK" : "Erro"}`).join(", "),
+        });
+      }
+    } catch (e: any) {
+      toast.error(`Erro no Healthcheck: ${e.message}`);
+    } finally {
+      setIsHealthchecking(false);
+    }
+  };
+
+  const handleReprocessFailures = async () => {
+    const failures = (lessons ?? []).filter((l: any) => {
+      const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+      const isStuck = l.status === "structuring" && l.last_structuring_at && l.last_structuring_at < fifteenMinsAgo;
+      const hasError = !!l.last_structuring_error;
+      const needsAdjustment = l.status === "needs_adjustment";
+      return isStuck || hasError || needsAdjustment;
+    });
+
+    if (failures.length === 0) {
+      toast.info("Nenhuma aula com falha ou travada detectada.");
+      return;
+    }
+
+    toast.info(`Reprocessando ${failures.length} aulas...`);
+    
+    // Process in sequence to avoid hitting AI rate limits too hard
+    for (const failure of failures) {
+      try {
+        await supabase.functions.invoke("tutor-lesson-structure", {
+          body: { lesson_id: failure.id },
+        });
+      } catch (e) {
+        console.error(`Failed to reprocess lesson ${failure.id}`, e);
+      }
+    }
+    
+    toast.success("Processamento concluído.");
+    queryClient.invalidateQueries({ queryKey: ["admin-tutor-lessons"] });
+  };
+
+
   // counters
   const counters = useMemo(() => {
     const list = lessons ?? [];
+    const fifteenMinsAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     return {
       total: list.length,
       published: list.filter((l: any) => l.status === "published").length,
       structuring: list.filter((l: any) => l.status === "structuring" || l.status === "in_production").length,
       pendingReview: list.filter((l: any) => l.status === "pending_review" || l.status === "ready_to_publish").length,
+      stuck: list.filter((l: any) => l.status === "structuring" && l.last_structuring_at && l.last_structuring_at < fifteenMinsAgo).length,
+      withErrors: list.filter((l: any) => !!l.last_structuring_error).length,
     };
   }, [lessons]);
+
 
   const tabsWithCount = useMemo(() => {
     const list = lessons ?? [];
@@ -281,7 +343,32 @@ const AdminLessonsMemory = () => {
             pendingReview={counters.pendingReview}
           />
           
-          <div className="shrink-0 pb-10">
+          <div className="shrink-0 pb-10 flex flex-wrap gap-3 items-center justify-end">
+            <div className="flex flex-col gap-1 mr-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 text-right">Diagnóstico & Recuperação</span>
+              <div className="flex gap-2 justify-end">
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleHealthcheck}
+                  disabled={isHealthchecking}
+                  className="rounded-xl border-white/10 bg-white/5 hover:bg-white/10 text-[10px] font-bold uppercase tracking-wider h-9 px-4"
+                >
+                  {isHealthchecking ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Sparkles className="h-3 w-3 mr-2" />}
+                  Healthcheck
+                </Button>
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={handleReprocessFailures}
+                  className="rounded-xl border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/10 text-rose-300 text-[10px] font-bold uppercase tracking-wider h-9 px-4"
+                >
+                  <RefreshCw className="h-3 w-3 mr-2" />
+                  Reprocessar Falhas ({counters.stuck + counters.withErrors})
+                </Button>
+              </div>
+            </div>
+
             <Button 
               size="lg" 
               onClick={handleBatchP2} 
@@ -292,6 +379,7 @@ const AdminLessonsMemory = () => {
               {loadingBatch ? "Processando Lote..." : "Iniciar Lote P2 Urgente"}
             </Button>
           </div>
+
         </div>
 
         {/* filters */}
