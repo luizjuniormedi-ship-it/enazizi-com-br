@@ -1121,8 +1121,21 @@ const VideoLessonPlayer = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <Suspense fallback={null}>
+        {showRating && id && (
+          <EnaflixLessonRating 
+            lessonId={id} 
+            watchedPercentage={completionRate}
+            onClose={() => {
+              setShowRating(false);
+              setHasRated(true);
+            }} 
+          />
+        )}
+      </Suspense>
     </div>
   );
 };
+
 
 export default VideoLessonPlayer;
