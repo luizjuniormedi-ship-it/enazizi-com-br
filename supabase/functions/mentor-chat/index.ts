@@ -83,7 +83,7 @@ Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
     logAiUsage({
       userId,
       functionName: "mentor-chat",
-      modelUsed: "openai/gpt-5-mini",
+      modelUsed: "openai/gpt-5",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",
