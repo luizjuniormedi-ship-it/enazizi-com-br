@@ -9399,6 +9399,36 @@ export type Database = {
           },
         ]
       }
+      governance_thresholds: {
+        Row: {
+          category: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string | null
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          category: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string | null
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
       granular_generator_runs: {
         Row: {
           ab_bucket: string | null
@@ -19185,6 +19215,7 @@ export type Database = {
     }
     Functions: {
       admin_telemetry_alerts: { Args: { _days?: number }; Returns: Json }
+      admin_telemetry_audit: { Args: never; Returns: Json }
       admin_telemetry_baseline: { Args: never; Returns: Json }
       admin_telemetry_cohorts: { Args: { _days?: number }; Returns: Json }
       admin_telemetry_export: {
@@ -19218,6 +19249,7 @@ export type Database = {
           sessions: number
         }[]
       }
+      admin_telemetry_rca: { Args: { alert_id: string }; Returns: Json }
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
       admin_telemetry_v2_ai_quality: { Args: { _days: number }; Returns: Json }
       admin_telemetry_v2_pedagogy: { Args: { _days: number }; Returns: Json }
