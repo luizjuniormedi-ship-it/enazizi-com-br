@@ -164,6 +164,41 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
       }`}>
         {msg.role === "assistant" ? (
           <>
+            {/* Topic-based Video Lesson Preview (Before text) */}
+            {lessonData && (
+              <div className="mb-4 p-3 rounded-xl bg-primary/10 border border-primary/20 animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                      <Film className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-primary/70">Aula em Vídeo Disponível</p>
+                      <h4 className="text-xs font-bold text-foreground line-clamp-1">{lessonData.title}</h4>
+                    </div>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    className="h-8 gap-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 text-[10px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
+                    onClick={() => {
+                      if (lessonData.playback_url || lessonData.video_url || lessonData.aggregation?.manual_video_url) {
+                        const url = lessonData.playback_url || lessonData.video_url || lessonData.aggregation?.manual_video_url;
+                        window.open(url, '_blank');
+                      } else if (lessonData.aggregation_id) {
+                        // Launch Agile Player if we have an aggregation
+                        setShowAgilePlayer(true);
+                      }
+                    }}
+                  >
+                    <Play className="h-3 w-3 fill-current" /> Assistir Agora
+                  </Button>
+                </div>
+                <p className="text-[10px] text-muted-foreground italic leading-relaxed">
+                  "Encontrei uma videoaula completa sobre este assunto. Recomendo assistir antes de seguirmos com a explicação técnica."
+                </p>
+              </div>
+            )}
+
             <div className="prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 text-xs sm:text-sm prose-p:my-3 prose-headings:mt-5 prose-headings:mb-2 prose-ul:my-3 prose-ol:my-3 prose-li:my-1 [&_p:has(+ul)]:mb-1 [&_p:has(+ol)]:mb-1 [&>p+p]:mt-4 [&_strong]:text-foreground [&_hr]:my-4 [&_blockquote]:my-3">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
