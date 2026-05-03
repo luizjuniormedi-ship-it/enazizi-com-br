@@ -316,10 +316,16 @@ async function runHealthcheck(admin: any, lovableKey: string) {
         max_tokens: 1
       })
     });
-    checks.push({ name: "Lovable AI Gateway", ok: aiResp.ok, status: aiResp.status });
+    const aiOk = aiResp.ok;
+    let aiErr = null;
+    if (!aiOk) {
+      aiErr = await aiResp.text();
+    }
+    checks.push({ name: "Lovable AI Gateway", ok: aiOk, status: aiResp.status, error: aiErr });
   } catch (e) {
     checks.push({ name: "AI Gateway Reachability", ok: false, error: (e as Error).message });
   }
+
 
 
   // 5) Stuck Lessons Check
@@ -340,7 +346,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
     success: true,
     ok: checks.every(c => c.ok || c.name === "NO_STUCK_LESSONS"), // Stuck lessons don't necessarily mean the service is down
     timestamp: new Date().toISOString(),
-    checks: Object.fromEntries(checks.map(c => [c.name, c.ok]))
+    checks: Object.fromEntries(checks.map(c => [c.name, { ok: c.ok, status: (c as any).status, error: (c as any).error }]))
   });
 }
 
