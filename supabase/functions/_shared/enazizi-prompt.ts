@@ -617,6 +617,7 @@ export function getLessonPrompt(): string {
   return [
     IDENTITY,
     FORMATTING,
+    MANDATORY_15_BLOCK_PROTOCOL,
     LAYER1_TEACHING,
     LAYER2_ADAPTIVE,
     LAYER4_MEMORY,
