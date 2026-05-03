@@ -114,6 +114,8 @@ const SystemHealth = lazyWithRetry(() => import("./pages/admin/SystemHealth"), "
 const TelemetryAdmin = lazyWithRetry(() => import("./pages/admin/TelemetryAdmin"), "TelemetryAdmin");
 const TutorVideoRecommendations = lazyWithRetry(() => import("./pages/admin/TutorVideoRecommendations"), "TutorVideoRecommendations");
 const AIStudio = lazyWithRetry(() => import("./pages/admin/AIStudio"), "AIStudio");
+const PedagogyAnalytics = lazyWithRetry(() => import("./pages/admin/PedagogyAnalytics"), "PedagogyAnalytics");
+const AIQuality = lazyWithRetry(() => import("./pages/admin/AIQuality"), "AIQuality");
 const MedicalReviewQueue = lazyWithRetry(() => import("./pages/admin/MedicalReviewQueue"), "MedicalReviewQueue");
 const MedicalGovernanceDashboard = lazyWithRetry(() => import("./pages/admin/MedicalGovernanceDashboard"), "MedicalGovernanceDashboard");
 const AIAuditMode = lazyWithRetry(() => import("./pages/admin/AIAuditMode"), "AIAuditMode");
@@ -301,6 +303,8 @@ const App = () => (
                   <Route path="tutor-video-recommendations" element={<TutorVideoRecommendations />} />
                   <Route path="lessons-memory" element={<AdminLessonsMemory />} />
                   <Route path="telemetry" element={<TelemetryAdmin />} />
+                  <Route path="pedagogy-analytics" element={<PedagogyAnalytics />} />
+                  <Route path="ai-quality" element={<AIQuality />} />
                   <Route path="ai-studio" element={<AIStudio />} />
                   <Route path="medical-review-queue" element={<MedicalReviewQueue />} />
                   <Route path="medical-governance" element={<MedicalGovernanceDashboard />} />

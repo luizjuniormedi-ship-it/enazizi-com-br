@@ -7,6 +7,7 @@ import { useAlertTelemetry } from "@/hooks/useAlertTelemetry";
 import { useAlertResolutionTracker } from "@/hooks/useAlertResolutionTracker";
 import { useTimeToAction } from "@/hooks/useTimeToAction";
 import { EnaflixLayout } from "@/components/enaflix/EnaflixLayout";
+import { useSessionAbandonmentTracker } from "@/hooks/useSessionAbandonmentTracker";
 
 export default function EnaflixDashboardLayout() {
   usePresenceHeartbeat();
@@ -15,6 +16,7 @@ export default function EnaflixDashboardLayout() {
   useAlertTelemetry();
   useAlertResolutionTracker();
   useTimeToAction();
+  useSessionAbandonmentTracker();
 
   return (
     <SessionMemoryProvider>

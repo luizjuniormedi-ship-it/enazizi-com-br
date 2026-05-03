@@ -69,7 +69,17 @@ export type TelemetryEventName =
   | 'cme_overload_alert'
   | 'cme_knowledge_mesh_viewed'
   | 'cme_batch_generation_started'
-  | 'cme_batch_generation_completed';
+  | 'cme_batch_generation_completed'
+  // Fase 8: Enterprise Observability
+  | 'session_started'
+  | 'session_progress'
+  | 'session_paused'
+  | 'session_abandoned'
+  | 'session_completed'
+  | 'edge_function_latency'
+  | 'supabase_timeout'
+  | 'ia_pedagogical_score'
+  | 'ia_fallback_used';
 
 interface TelemetryProperties {
   [key: string]: any;
