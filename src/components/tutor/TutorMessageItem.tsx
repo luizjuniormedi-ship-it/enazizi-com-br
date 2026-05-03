@@ -70,7 +70,6 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
   useEffect(() => {
     const fetchLesson = async () => {
       if (msg.role === "assistant") {
-        // First try by message ID (if already associated)
         if ((msg as any).id) {
           const lesson = await getLessonForMessage((msg as any).id);
           if (lesson) {
@@ -78,8 +77,6 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             return;
           }
         }
-        
-        // If no lesson by ID, try by topic
         if (topic) {
           const lesson = await findLessonByTopic(topic);
           if (lesson) setLessonData(lesson);
@@ -88,6 +85,16 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
     };
     fetchLesson();
   }, [msg, topic, getLessonForMessage, findLessonByTopic]);
+
+  useEffect(() => {
+    if (lessonData?.id) {
+      logVideoRecommendationEvent('shown', {
+        lessonId: lessonData.id,
+        topic,
+        title: lessonData.title,
+      });
+    }
+  }, [lessonData?.id, topic]);
 
   const isCoordinator = roles.includes("coordenador") || roles.includes("coordinator");
   const hasPermission = isAdmin || isProfessor || isCoordinator;
