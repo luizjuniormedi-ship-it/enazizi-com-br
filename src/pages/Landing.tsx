@@ -14,25 +14,29 @@ import PricingSection from "@/components/landing/PricingSection";
 import FAQSection from "@/components/landing/FAQSection";
 import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 
 const Landing = () => (
-  <div className="min-h-screen bg-background">
-    <Navbar />
-    <HeroSection />
-    <ProblemSection />
-    <SolutionSection />
-    <HowItWorksSection />
-    <ForgettingCurveSection />
-    <StatsSection />
-    <FeaturesSection />
-    <CompetitorComparisonSection />
-    <BenefitsSection />
-    <TestimonialsSection />
-    <ConversionBadgesSection />
-    <PricingSection />
-    <FAQSection />
-    <CTASection />
-    <Footer />
+  <div className="min-h-screen bg-[#0a0a0e] relative overflow-hidden">
+    <EnaflixBackgroundFX intensity="subtle" />
+    <div className="relative z-10">
+      <Navbar />
+      <HeroSection />
+      <ProblemSection />
+      <SolutionSection />
+      <HowItWorksSection />
+      <ForgettingCurveSection />
+      <StatsSection />
+      <FeaturesSection />
+      <CompetitorComparisonSection />
+      <BenefitsSection />
+      <TestimonialsSection />
+      <ConversionBadgesSection />
+      <PricingSection />
+      <FAQSection />
+      <CTASection />
+      <Footer />
+    </div>
   </div>
 );
 
