@@ -201,6 +201,9 @@ export default function AdminMonitoring() {
           <TabsContent value="system">
             <SystemHealthTab d={d} />
           </TabsContent>
+          <TabsContent value="video-audit">
+            <VideoRecommendationAuditTab />
+          </TabsContent>
         </Tabs>
       ) : (
         <Card>
