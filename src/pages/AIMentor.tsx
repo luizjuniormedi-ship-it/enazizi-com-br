@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, forwardRef } from "react";
 import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/hooks/useAuth";
@@ -234,7 +234,7 @@ const PedagogicalHeaderBridge = ({
   );
 };
 
-const AIMentor = () => {
+const AIMentor = forwardRef<HTMLDivElement>((_props, _ref) => {
   const onSendRef = { current: null as any };
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
@@ -252,7 +252,7 @@ const AIMentor = () => {
   };
   
   return (
-    <div className="relative min-h-screen bg-[#050508] text-white">
+    <div ref={_ref} className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050508] text-white">
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 
@@ -296,10 +296,10 @@ const AIMentor = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] flex flex-col pt-16 lg:pt-20 pb-20 lg:pb-0"
+              className="fixed inset-0 z-[60] flex flex-col pt-16 lg:pt-20 pb-20 lg:pb-0 overflow-x-hidden"
             >
-              <div className="flex-1 w-full max-w-[1600px] mx-auto flex flex-col px-0 sm:px-6 lg:px-12">
-                <div className="flex-1 relative flex flex-col lg:rounded-t-[40px] border-t border-x border-white/10 bg-black/60 backdrop-blur-[120px] shadow-2xl overflow-hidden transition-all duration-700">
+              <div className="flex-1 w-full max-w-[1600px] min-w-0 mx-auto flex flex-col px-0 sm:px-6 lg:px-12 overflow-x-hidden">
+                <div className="flex-1 relative flex flex-col min-w-0 w-full max-w-full lg:rounded-t-[40px] border-t border-x border-white/10 bg-black/60 backdrop-blur-[120px] shadow-2xl overflow-hidden transition-all duration-700">
                   <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none" />
                   
                   <AgentChat
@@ -342,6 +342,7 @@ const AIMentor = () => {
       )}
     </div>
   );
-};
+});
+AIMentor.displayName = "AIMentor";
 
 export default AIMentor;
