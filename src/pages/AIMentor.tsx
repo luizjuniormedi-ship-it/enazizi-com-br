@@ -156,13 +156,18 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
 const AIMentor = () => {
   const onSendRef = { current: null as any };
   const [hasStarted, setHasStarted] = useState(false);
+  const [isCinematicLoading, setIsCinematicLoading] = useState(false);
 
   const handleSend = (prompt: string) => {
-    setHasStarted(true);
-    // Give time for animation before focusing chat
+    setIsCinematicLoading(true);
+    // Cinematic delay for "Entering AI Mind"
     setTimeout(() => {
-      onSendRef.current?.(prompt);
-    }, 100);
+      setHasStarted(true);
+      setIsCinematicLoading(false);
+      setTimeout(() => {
+        onSendRef.current?.(prompt);
+      }, 500);
+    }, 1200);
   };
   
   return (
