@@ -7,6 +7,7 @@ import { useCMEHardening } from "./useCMEHardening";
 import { useCMEAnalytics } from "./useCMEAnalytics";
 import { parseQuestionsFromText } from "@/lib/parseQuestions";
 import { useEducationalMemory } from "./useEducationalMemory";
+import { findRecommendedVideoForTutorContext } from "@/services/tutorVideoRecommendationService";
 
 
 type CmeAggregationStatus = Database['public']['Enums']['cme_aggregation_status'];
