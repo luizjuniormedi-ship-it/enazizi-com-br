@@ -689,6 +689,7 @@ export function getResponseBlocksSpec(): string {
 const ENAZIZI_PROMPT = [
   IDENTITY,
   FORMATTING,
+  MANDATORY_15_BLOCK_PROTOCOL,
   LAYER1_TEACHING,
   LAYER2_ADAPTIVE,
   LAYER3_RECALL,
