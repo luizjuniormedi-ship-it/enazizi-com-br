@@ -110,7 +110,7 @@ export function PedagogicalMissionHero({
         </div>
 
         {/* Roadmap cognitivo */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-thin">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 -mx-1 px-1">
           {stages.map((s, i) => {
             const isDone = s.status === "done";
             const isActive = s.status === "active";
