@@ -6,7 +6,7 @@ import {
   PlayCircle, 
   Sparkles, 
   User,
-  Menu
+  MonitorPlay
 } from "lucide-react";
 import { motion } from "framer-motion";
 
