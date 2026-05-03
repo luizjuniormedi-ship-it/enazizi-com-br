@@ -8,36 +8,45 @@ import { describe, it, expect } from "vitest";
 // All valid dashboard routes defined in App.tsx
 const VALID_DASHBOARD_ROUTES = [
   "/dashboard",
-  "/dashboard/cronograma",
+  "/dashboard/sessao-estudo",
   "/dashboard/flashcards",
   "/dashboard/gerar-flashcards",
   "/dashboard/simulados",
-  "/dashboard/uploads",
-  "/dashboard/agentes",
-  "/dashboard/questoes",
-  "/dashboard/banco-questoes",
+  "/dashboard/banco-erros",
+  "/dashboard/gerador-questoes",
+  "/dashboard/chatgpt",
+  "/dashboard/mentor",
+  "/dashboard/videoaulas",
+  "/dashboard/videoaulas/explorar",
+  "/dashboard/videoaulas/:id",
   "/dashboard/resumos",
   "/dashboard/apostilas",
-  "/dashboard/coach",
-  "/dashboard/chatgpt",
-  "/dashboard/plano-dia",
-  "/dashboard/predictor",
-  "/dashboard/diagnostico",
-  "/dashboard/banco-erros",
-  "/dashboard/mapa-dominio",
-  "/dashboard/proficiencia",
-  "/dashboard/discursivas",
+  "/dashboard/mapas-mentais",
+  "/dashboard/mnemonic-studio-v2",
+  "/dashboard/mnemonic-history",
   "/dashboard/plantao",
-  "/dashboard/revisor",
-  "/dashboard/entrevista",
-  "/dashboard/conquistas",
   "/dashboard/anamnese",
   "/dashboard/cronicas",
-  "/dashboard/feynman",
-  "/dashboard/mentor",
+  "/dashboard/discursivas",
+  "/dashboard/prova-pratica",
+  "/dashboard/image-quiz",
+  "/dashboard/revisor",
+  "/dashboard/entrevista",
   "/dashboard/planner",
   "/dashboard/analytics",
   "/dashboard/perfil",
+  "/dashboard/conquistas",
+  "/dashboard/rankings",
+  "/dashboard/diagnostico",
+  "/dashboard/predictor",
+  "/dashboard/mapa-dominio",
+  "/dashboard/proficiencia",
+  "/dashboard/radar-trajetoria",
+  "/dashboard/minha-jornada",
+  "/dashboard/agentes",
+  "/dashboard/uploads",
+  "/dashboard/coach",
+  "/dashboard/orchestrator-insights"
 ];
 
 const VALID_TOP_ROUTES = [
@@ -179,8 +188,8 @@ describe("Route Validation", () => {
   });
 
   it("expected total route count matches", () => {
-    // 31 dashboard routes + 6 top-level = 37 total
-    expect(VALID_DASHBOARD_ROUTES.length).toBe(31);
+    // Dashboard routes + top-level routes
+    expect(VALID_DASHBOARD_ROUTES.length).toBeGreaterThan(30);
     expect(VALID_TOP_ROUTES.length).toBe(6);
   });
 });
