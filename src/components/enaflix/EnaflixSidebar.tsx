@@ -23,7 +23,9 @@ import {
   BrainCircuit,
   LayoutGrid,
   Users,
-  Activity
+  Activity,
+  UserCheck,
+  ImageIcon
 } from "lucide-react";
 
 import { motion } from "framer-motion";
