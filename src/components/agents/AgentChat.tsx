@@ -65,8 +65,19 @@ const AgentChat = ({
   });
 
   const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage } = useTutorCME();
+  const sync = useTutorAdaptiveSync();
 
   const [sessionLesson, setSessionLesson] = useState<any>(null);
+
+  useEffect(() => {
+    if (chat.activeConversationId) {
+      sync.logSessionStarted({
+        conversationId: chat.activeConversationId,
+        topic: topic || undefined,
+        specialty: specialty || undefined
+      });
+    }
+  }, [chat.activeConversationId, topic, specialty, sync]);
 
   useEffect(() => {
     const fetchSessionLesson = async () => {
