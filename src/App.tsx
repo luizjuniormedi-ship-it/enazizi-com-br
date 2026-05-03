@@ -184,65 +184,71 @@ const App = () => (
                 <Route path="/register" element={<Register />} />
               <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
+                
+                {/* --- EXECUÇÃO (ESTUDAR) --- */}
+                <Route path="sessao-estudo" element={<StudySession />} />
+                <Route path="flashcards" element={<Flashcards />} />
+                <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
+                <Route path="simulados" element={<Simulados />} />
+                <Route path="banco-erros" element={<ErrorBank />} />
+                <Route path="gerador-questoes" element={<QuestionGenerator />} />
+                <Route path="chatgpt" element={<ChatGPT />} />
+                <Route path="mentor" element={<AIMentor />} />
+                
+                {/* --- CONTEÚDO --- */}
+                <Route path="videoaulas" element={<VideoLessonsLibrary />} />
+                <Route path="videoaulas/explorar" element={<VideoLessonsExplore />} />
+                <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
+                <Route path="resumos" element={<ContentSummarizer />} />
+                <Route path="apostilas" element={<StudyGuides />} />
+                <Route path="mapas-mentais" element={<MindMaps />} />
+                <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
+                <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
+                
+                {/* --- CLÍNICA & SIMULAÇÃO --- */}
+                <Route path="plantao" element={<ClinicalSimulation />} />
+                <Route path="simulacao-clinica" element={<Navigate to="/dashboard/plantao" replace />} />
+                <Route path="anamnese" element={<AnamnesisTrainer />} />
+                <Route path="cronicas" element={<MedicalChronicles />} />
+                <Route path="discursivas" element={<DiscursiveQuestions />} />
+                <Route path="prova-pratica" element={<PracticalExam />} />
+                <Route path="image-quiz" element={<MedicalImageQuiz />} />
+                <Route path="revisor" element={<MedicalReviewer />} />
+                <Route path="entrevista" element={<InterviewSimulator />} />
+                
+                {/* --- PROGRESSO & ESTRATÉGIA --- */}
+                <Route path="planner" element={<SmartPlanner />} />
+                <Route path="analytics" element={<Analytics />} />
+                <Route path="perfil" element={<Profile />} />
+                <Route path="conquistas" element={<Achievements />} />
+                <Route path="rankings" element={<Rankings />} />
+                <Route path="diagnostico" element={<Diagnostic />} />
+                <Route path="predictor" element={<PerformancePredictor />} />
+                <Route path="mapa-dominio" element={<MedicalDomainMap />} />
+                <Route path="proficiencia" element={<StudentSimulados />} />
+                <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
+                <Route path="minha-jornada" element={<MedicalAdaptiveJourney />} />
+                <Route path="agentes" element={<AgentsHub />} />
+                <Route path="uploads" element={<Uploads />} />
+                <Route path="coach" element={<MotivationalCoach />} />
+
+                {/* --- LEGADO / REDIRECTS --- */}
                 <Route path="cronograma" element={<PreserveQueryNavigate to="/dashboard/planner" />} />
                 <Route path="cronograma-inteligente" element={<PreserveQueryNavigate to="/dashboard/planner" />} />
-                {/* P0-bis: preserve ?did= so orchestrator decisions reach the destination */}
                 <Route path="quiz" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo" />} />
                 <Route path="revisoes" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo?focus=reviews" />} />
                 <Route path="revisao" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo?focus=reviews" />} />
                 <Route path="tutor" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo" />} />
-                <Route path="flashcards" element={<Flashcards />} />
-                <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
-                <Route path="simulados" element={<Simulados />} />
-                <Route path="uploads" element={<Uploads />} />
-                <Route path="agentes" element={<AgentsHub />} />
                 <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                 <Route path="banco-questoes" element={<Navigate to="/dashboard/simulados" replace />} />
-                <Route path="gerador-questoes" element={<QuestionGenerator />} />
-                <Route path="resumos" element={<ContentSummarizer />} />
-                 <Route path="apostilas" element={<StudyGuides />} />
-                 <Route path="videoaulas" element={<VideoLessonsLibrary />} />
-                 <Route path="videoaulas/explorar" element={<VideoLessonsExplore />} />
-                 <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
-                
-                <Route path="coach" element={<MotivationalCoach />} />
-                <Route path="chatgpt" element={<ChatGPT />} />
                 <Route path="plano-dia" element={<Navigate to="/dashboard" replace />} />
-                <Route path="predictor" element={<PerformancePredictor />} />
-                <Route path="diagnostico" element={<Diagnostic />} />
-                
-                <Route path="banco-erros" element={<ErrorBank />} />
-                <Route path="mapa-dominio" element={<MedicalDomainMap />} />
-                <Route path="proficiencia" element={<StudentSimulados />} />
-                <Route path="discursivas" element={<DiscursiveQuestions />} />
-                <Route path="plantao" element={<ClinicalSimulation />} />
-                <Route path="simulacao-clinica" element={<ClinicalSimulation />} />
-                <Route path="revisor" element={<MedicalReviewer />} />
-                <Route path="entrevista" element={<InterviewSimulator />} />
-                <Route path="conquistas" element={<Achievements />} />
-                <Route path="anamnese" element={<AnamnesisTrainer />} />
-                <Route path="cronicas" element={<MedicalChronicles />} />
                 <Route path="feynman" element={<Navigate to="/dashboard/chatgpt" replace />} />
-                <Route path="mentor" element={<AIMentor />} />
-                <Route path="planner" element={<SmartPlanner />} />
-                <Route path="missao" element={<Navigate to="/mission" replace />} />
-                <Route path="analytics" element={<Analytics />} />
-                <Route path="perfil" element={<Profile />} />
-                <Route path="sessao-estudo" element={<StudySession />} />
-                <Route path="image-quiz" element={<MedicalImageQuiz />} />
-                <Route path="rankings" element={<Rankings />} />
-                <Route path="prova-pratica" element={<PracticalExam />} />
-                {/* Fase 0 cleanup: rotas antigas de mnemônico redirecionam para v2 (motor oficial) */}
                 <Route path="mnemonico" element={<Navigate to="/dashboard/mnemonic-studio-v2" replace />} />
                 <Route path="mnemonic-studio" element={<Navigate to="/dashboard/mnemonic-studio-v2" replace />} />
-                <Route path="mnemonic-studio-v2" element={<MnemonicStudioPage />} />
-                <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
-                {/* Mapas Mentais — reativado: tabela mental_maps + 3 edge functions já existentes */}
-                <Route path="mapas-mentais" element={<MindMaps />} />
+                <Route path="missao" element={<Navigate to="/mission" replace />} />
+                <Route path="minhas-aulas" element={<Navigate to="/dashboard/videoaulas" replace />} />
                 <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
-                <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
-                <Route path="minha-jornada" element={<MedicalAdaptiveJourney />} />
-                <Route path="minhas-aulas" element={<MyLessonsPage />} />
+              </Route>
 
               </Route>
               {/* Fullscreen mind map viewer */}
