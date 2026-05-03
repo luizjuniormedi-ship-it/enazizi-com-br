@@ -302,6 +302,9 @@ const ChatGPT = () => {
   // --- Core send message ---
   const sendMessage = async (text: string) => {
     if (!text.trim() || isLoading || !user) return;
+    
+    const startTime = Date.now();
+    const sessionId = activeConversationId || 'pending_session';
 
     // Topic change detection
     let activeTopic = currentTopic;
@@ -318,13 +321,27 @@ const ChatGPT = () => {
       }
     }
 
+    // 1. Telemetry: Message Received
+    logVideoRecommendationEvent('message_received' as any, { 
+      topic: activeTopic, 
+      conversationId: sessionId,
+      content_length: text.length 
+    });
+
     const userMsg: Msg = { role: "user", content: text };
     
     // Check for related video lessons to inform the AI
     let videoContext = "";
     if (activeTopic) {
-      const lesson = await findLessonByTopic(activeTopic);
+      // 2. Telemetry: Topic Detected
+      logVideoRecommendationEvent('topic_detected' as any, { 
+        topic: activeTopic, 
+        conversationId: sessionId 
+      });
+
+      const lesson = await findLessonByTopic(activeTopic, sessionId);
       if (lesson) {
+        // 3. Telemetry: Video Found handled via findLessonByTopic -> service
         videoContext = `\n\n[CONTEXTO DE VÍDEO: Encontrei uma videoaula disponível sobre "${activeTopic}". O sistema já exibiu o link para o aluno no topo da sua resposta. Por favor, obrigatoriamente recomende no início da sua resposta que ele assista ao vídeo antes de prosseguir com a explicação detalhada.]`;
       }
     }
@@ -346,6 +363,12 @@ const ChatGPT = () => {
 
     // Add placeholder assistant message
     setMessages(prev => [...prev, { role: "assistant", content: "" }]);
+
+    // 4. Telemetry: Answer Generation Started
+    logVideoRecommendationEvent('answer_generation_started' as any, { 
+      topic: activeTopic, 
+      conversationId: convId || sessionId 
+    });
 
     const contextToSend = buildUserContext();
     await streamResponse({
@@ -375,6 +398,15 @@ const ChatGPT = () => {
         });
       },
       onComplete: async (finalText) => {
+        setIsLoading(false);
+        
+        // 5. Telemetry: Answer Generation Completed
+        logVideoRecommendationEvent('answer_generation_completed' as any, { 
+          topic: activeTopic, 
+          conversationId: convId || sessionId,
+          duration_ms: Date.now() - startTime,
+          response_length: finalText?.length || 0
+        });
         // Save assistant message
         if (convId && finalText) {
           await saveMessage(convId, "assistant", finalText);
