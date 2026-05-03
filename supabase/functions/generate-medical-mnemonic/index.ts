@@ -84,7 +84,7 @@ interface ConsolidatedOutput {
 // CONSTANTS
 // ══════════════════════════════════════════════════
 
-const OPENAI_MODEL = "gpt-4.1-mini";
+const OPENAI_MODEL = "google/gemini-2.5-flash";
 const OPENAI_TEMP = 0.2;
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
