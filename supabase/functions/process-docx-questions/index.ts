@@ -30,7 +30,7 @@ serve(async (req) => {
     let totalImages = 0;
     const errors: string[] = [];
 
-    // Process each page screenshot with Gemini Vision
+    // Process each page screenshot with OpenAI Vision via Gateway
     for (let i = 0; i < pageScreenshots.length; i++) {
       const screenshot = pageScreenshots[i]; // base64 data URL or URL
       
