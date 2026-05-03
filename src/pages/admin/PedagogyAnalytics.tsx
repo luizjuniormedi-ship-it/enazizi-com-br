@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line
+  PieChart, Pie, Cell
 } from "recharts";
 import { 
   Loader2, Brain, Timer, UserMinus, BookOpen, 
-  Repeat, ShieldCheck, Download, RefreshCw 
+  Repeat, ShieldCheck, RefreshCw 
 } from "lucide-react";
 import { 
   Select, 
@@ -18,9 +18,9 @@ import {
   SelectTrigger, 
   SelectValue 
 } from "@/components/ui/select";
+import { AdminAlertCenter } from "@/components/admin/AdminAlertCenter";
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
-import { AdminAlertCenter } from "@/components/admin/AdminAlertCenter";
 
 export default function PedagogyAnalytics() {
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function PedagogyAnalytics() {
         avg_session_time: 0,
         abandonment_rate: 0,
         blocks: [],
-        module_stats: []
+        moduleStats: []
       });
     } catch (error) {
       console.error("Error loading pedagogy data:", error);
@@ -65,7 +65,7 @@ export default function PedagogyAnalytics() {
           <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             Telemetria Pedagógica
           </h1>
-          <p className="text-muted-foreground mt-2">Observabilidade profunda do fluxo cognitivo e retenção.</p>
+          <p className="text-muted-foreground mt-2">Observabilidade profunda do fluxo cognitivo e retenção real.</p>
         </div>
         <div className="flex gap-3">
           <Select value={String(days)} onValueChange={(v) => setDays(Number(v))}>
@@ -85,11 +85,12 @@ export default function PedagogyAnalytics() {
       </header>
 
       <AdminAlertCenter />
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
           title="Tempo Médio" 
           value={`${data.avg_session_time} min`} 
-          description="Duração média da sessão"
+          description="Duração média da sessão real"
           icon={<Timer className="h-5 w-5 text-blue-500" />}
         />
         <StatCard 
@@ -97,17 +98,18 @@ export default function PedagogyAnalytics() {
           value={`${data.abandonment_rate}%`} 
           description="Usuários que saem prematuramente"
           icon={<UserMinus className="h-5 w-5 text-red-500" />}
+          trend={data.abandonment_rate > 25 ? "Crítico" : "Saudável"}
         />
         <StatCard 
-          title="Feynman / Ativo" 
-          value={data.blocks?.find((b: any) => b.name === 'Feynman/Simplification')?.value || 0} 
-          description="Blocos de simplificação"
+          title="Interações IA" 
+          value={data.blocks?.find((b: any) => b.name === 'Interação IA')?.value || 0} 
+          description="Total de mensagens enviadas"
           icon={<Brain className="h-5 w-5 text-purple-500" />}
         />
         <StatCard 
           title="Active Recall" 
           value={data.blocks?.find((b: any) => b.name === 'Active Recall')?.value || 0} 
-          description="Interações de recuperação"
+          description="Quizzes e desafios respondidos"
           icon={<Repeat className="h-5 w-5 text-green-500" />}
         />
       </div>
@@ -118,7 +120,7 @@ export default function PedagogyAnalytics() {
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" /> Engajamento por Módulo
             </CardTitle>
-            <CardDescription>Visualização de fluxo vs abandono por rota</CardDescription>
+            <CardDescription>Fluxo vs Abandono Real por Rota</CardDescription>
           </CardHeader>
           <CardContent className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
@@ -139,34 +141,34 @@ export default function PedagogyAnalytics() {
         <Card className="border-primary/10 bg-card/50 backdrop-blur-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ShieldCheck className="h-5 w-5" /> Blocos Pedagógicos
+              <ShieldCheck className="h-5 w-5" /> Distribuição de Eventos
             </CardTitle>
-            <CardDescription>Distribuição de tipos de interação IA</CardDescription>
+            <CardDescription>Composição das interações pedagógicas</CardDescription>
           </CardHeader>
-          <CardContent className="h-[400px] flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="h-[400px] flex flex-col items-center justify-center">
+            <ResponsiveContainer width="100%" height="250px">
               <PieChart>
                 <Pie
                   data={data.blocks}
                   cx="50%"
                   cy="50%"
-                  innerRadius={80}
-                  outerRadius={120}
+                  innerRadius={60}
+                  outerRadius={100}
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {data.blocks.map((entry: any, index: number) => (
+                  {data.blocks?.map((entry: any, index: number) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
               </PieChart>
             </ResponsiveContainer>
-            <div className="grid grid-cols-2 gap-4 ml-4">
-              {data.blocks.map((b: any, i: number) => (
+            <div className="grid grid-cols-2 gap-4 mt-4 w-full px-4">
+              {data.blocks?.map((b: any, i: number) => (
                 <div key={i} className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="text-sm font-medium">{b.name}</span>
+                  <span className="text-xs font-medium truncate">{b.name}: {b.value}</span>
                 </div>
               ))}
             </div>
@@ -189,7 +191,7 @@ function StatCard({ title, value, description, icon, trend }: any) {
         <div className="flex items-center gap-2 mt-1">
           <p className="text-xs text-muted-foreground">{description}</p>
           {trend && (
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${trend.startsWith('+') ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${trend === 'Saudável' ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'}`}>
               {trend}
             </span>
           )}
