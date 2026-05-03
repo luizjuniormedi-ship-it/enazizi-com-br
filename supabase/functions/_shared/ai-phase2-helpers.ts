@@ -239,8 +239,8 @@ export async function checkAndIncrementUsage(
 
 // ── AI calls ──
 const GATEWAY = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const LIGHT_MODEL = "google/gemini-2.5-flash-lite";
-const HEAVY_MODEL = "google/gemini-2.5-flash";
+const LIGHT_MODEL = "openai/gpt-5-mini";
+const HEAVY_MODEL = "openai/gpt-5";
 
 async function callAI(model: string, system: string, user: string, maxTokens: number): Promise<string> {
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
