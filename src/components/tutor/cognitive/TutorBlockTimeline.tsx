@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BookOpen,
   Brain,
@@ -80,6 +80,8 @@ export function TutorBlockTimeline({ blockTypes, className }: Props) {
         Progressão cognitiva
       </div>
       <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <AnimatePresence>
+
         {ORDER.map((step, idx) => {
           const active = reached.has(step);
           const meta = STEP_META[step];
@@ -110,6 +112,7 @@ export function TutorBlockTimeline({ blockTypes, className }: Props) {
             </div>
           );
         })}
+        </AnimatePresence>
       </div>
     </div>
   );
