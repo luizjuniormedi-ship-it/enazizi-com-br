@@ -63,6 +63,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
   const { isEnabled } = useFeatureFlags();
 
   const [lessonData, setLessonData] = useState<any>(null);
+  const [activeAggregationId, setActiveAggregationId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLesson = async () => {
