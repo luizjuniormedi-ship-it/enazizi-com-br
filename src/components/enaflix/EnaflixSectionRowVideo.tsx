@@ -1,9 +1,9 @@
-
 import { useEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Play, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Sparkles, Clock, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface VideoLesson {
   id: string;
@@ -12,6 +12,7 @@ interface VideoLesson {
   specialty: string;
   is_gold_content?: boolean;
   duration_seconds?: number;
+  progress?: number;
 }
 
 interface Props {
@@ -22,28 +23,22 @@ interface Props {
 
 export function EnaflixSectionRowVideo({ title, subtitle, lessons }: Props) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const sectionRef = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const el = sectionRef.current;
+  const handleScroll = () => {
+    const el = scrollerRef.current;
     if (!el) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            io.disconnect();
-            break;
-          }
-        }
-      },
-      { rootMargin: "0px 0px -10% 0px", threshold: 0.05 },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+    setCanScrollLeft(el.scrollLeft > 10);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 10);
+  };
+
+  useEffect(() => {
+    handleScroll();
+    window.addEventListener('resize', handleScroll);
+    return () => window.removeEventListener('resize', handleScroll);
+  }, [lessons]);
 
   const scrollBy = (dir: 1 | -1) => {
     const el = scrollerRef.current;
@@ -55,92 +50,162 @@ export function EnaflixSectionRowVideo({ title, subtitle, lessons }: Props) {
   if (!lessons.length) return null;
 
   return (
-    <section
-      ref={sectionRef}
-      className={cn(
-        "space-y-3 group/section transition-all duration-700 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)]",
-        visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6",
-      )}
-    >
+    <section className="space-y-4 group/section relative">
       <div className="flex items-end justify-between gap-3 px-4 sm:px-8 lg:px-14">
-        <div>
-          <h2 className="text-lg sm:text-xl font-bold text-white tracking-tight">{title}</h2>
-          {subtitle && <p className="text-xs sm:text-sm text-white/50 mt-0.5">{subtitle}</p>}
-        </div>
-
-        <div className="hidden md:flex gap-1 opacity-0 group-hover/section:opacity-100 transition-opacity duration-300">
-          <button
-            type="button"
-            onClick={() => scrollBy(-1)}
-            className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-sm"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => scrollBy(1)}
-            className="h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center backdrop-blur-sm"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </button>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+             <div className="h-4 w-1 bg-primary rounded-full" />
+             <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight uppercase">{title}</h2>
+          </div>
+          {subtitle && <p className="text-sm text-white/40 font-medium">{subtitle}</p>}
         </div>
       </div>
 
-      <div className="relative">
+      <div className="relative group/scroller">
+        {/* Navigation Arrows - Premium Overlay */}
+        <AnimatePresence>
+          {canScrollLeft && (
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              onClick={() => scrollBy(-1)}
+              className="absolute left-0 top-0 bottom-6 z-30 w-12 sm:w-16 bg-gradient-to-r from-[#0a0a12] to-transparent flex items-center justify-start pl-2 sm:pl-4 text-white/40 hover:text-white transition-all group/arrow"
+            >
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/40 backdrop-blur-md border border-white/5 flex items-center justify-center group-hover/arrow:scale-110 transition-transform">
+                <ChevronLeft className="h-6 w-6" />
+              </div>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {canScrollRight && (
+            <motion.button
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              onClick={() => scrollBy(1)}
+              className="absolute right-0 top-0 bottom-6 z-30 w-12 sm:w-16 bg-gradient-to-l from-[#0a0a12] to-transparent flex items-center justify-end pr-2 sm:pr-4 text-white/40 hover:text-white transition-all group/arrow"
+            >
+              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-black/40 backdrop-blur-md border border-white/5 flex items-center justify-center group-hover/arrow:scale-110 transition-transform">
+                <ChevronRight className="h-6 w-6" />
+              </div>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
         <div
           ref={scrollerRef}
+          onScroll={handleScroll}
           className={cn(
-            "flex gap-4 overflow-x-auto pb-6 scroll-smooth px-4 sm:px-8 lg:px-14",
+            "flex gap-4 sm:gap-6 overflow-x-auto pb-8 pt-2 scroll-smooth px-4 sm:px-8 lg:px-14",
             "[scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden snap-x snap-mandatory"
           )}
         >
-          {lessons.map((lesson, i) => (
-            <div
-              key={lesson.id}
-              className={cn(
-                "snap-start shrink-0 w-[240px] sm:w-[280px] group/card transition-all duration-700",
-                visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4",
-              )}
-              style={{ transitionDelay: visible ? `${Math.min(i, 8) * 60}ms` : "0ms" }}
-            >
-              <div 
-                className="relative aspect-video rounded-xl overflow-hidden bg-white/5 border border-white/10 cursor-pointer group-hover/card:scale-105 group-hover/card:border-primary/50 transition-all duration-500 shadow-xl"
-                onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
-              >
-                {lesson.thumbnail_url ? (
-                  <img src={lesson.thumbnail_url} className="w-full h-full object-cover" alt={lesson.title} />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-white/10"><Play className="h-10 w-10" /></div>
-                )}
-                
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
-                
-                <div className="absolute top-2 left-2 flex gap-1">
-                  <Badge className="bg-primary/80 text-[9px] h-4">{lesson.specialty}</Badge>
-                  {lesson.is_gold_content && (
-                    <Badge className="bg-yellow-500 text-black text-[9px] h-4 gap-1">
-                      <Sparkles className="h-2 w-2" /> OURO
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity bg-black/40">
-                  <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center">
-                    <Play className="h-4 w-4 fill-white ml-0.5" />
-                  </div>
-                </div>
-              </div>
-              <div className="mt-2 space-y-1">
-                <h3 className="text-sm font-bold text-white line-clamp-1 group-hover/card:text-primary transition-colors">{lesson.title}</h3>
-                <div className="flex justify-between text-[10px] text-white/40">
-                  <span>{lesson.duration_seconds ? `${Math.floor(lesson.duration_seconds / 60)} min` : "Vídeo IA"}</span>
-                  <span className="flex items-center gap-1"><Sparkles className="h-2 w-2 text-primary" /> CME 9.2</span>
-                </div>
-              </div>
-            </div>
+          {lessons.map((lesson) => (
+            <VideoCard key={lesson.id} lesson={lesson} onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)} />
           ))}
         </div>
       </div>
     </section>
+  );
+}
+
+function VideoCard({ lesson, onClick }: { lesson: VideoLesson; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <motion.div
+      layout
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="snap-start shrink-0 w-[260px] sm:w-[320px] relative"
+    >
+      <div 
+        className={cn(
+          "relative aspect-video rounded-2xl overflow-hidden bg-[#1a1a2e] border transition-all duration-500 cursor-pointer shadow-2xl",
+          hovered ? "scale-105 z-20 border-primary shadow-primary/20 -translate-y-2" : "border-white/5"
+        )}
+        onClick={onClick}
+      >
+        {/* Thumbnail with Overlay */}
+        {lesson.thumbnail_url ? (
+          <img 
+            src={lesson.thumbnail_url} 
+            className={cn("w-full h-full object-cover transition-transform duration-700", hovered && "scale-110")} 
+            alt={lesson.title} 
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-violet-500/10">
+            <Play className="h-12 w-12 text-white/20" />
+          </div>
+        )}
+        
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+        
+        {/* Header Badges */}
+        <div className="absolute top-3 left-3 flex gap-2 z-10">
+          <Badge className="bg-black/60 backdrop-blur-md border-white/10 text-[10px] h-5 font-black uppercase tracking-widest">
+            {lesson.specialty}
+          </Badge>
+          {lesson.is_gold_content && (
+            <Badge className="bg-yellow-500/90 text-black text-[10px] h-5 font-black gap-1 border-none shadow-lg">
+              <Star className="h-3 w-3 fill-black" /> GOLD
+            </Badge>
+          )}
+        </div>
+
+        {/* Play Icon - Premium style */}
+        <div className={cn(
+          "absolute inset-0 flex items-center justify-center transition-all duration-500",
+          hovered ? "bg-black/40 opacity-100" : "opacity-0"
+        )}>
+          <div className="h-14 w-14 bg-primary rounded-full flex items-center justify-center shadow-[0_0_30px_hsl(var(--primary)/0.5)] ring-4 ring-white/10">
+            <Play className="h-6 w-6 fill-white ml-1 text-white" />
+          </div>
+        </div>
+
+        {/* Progress Bar (if exists) */}
+        {lesson.progress !== undefined && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
+            <div 
+              className="h-full bg-primary shadow-[0_0_10px_hsl(var(--primary))]" 
+              style={{ width: `${lesson.progress}%` }} 
+            />
+          </div>
+        )}
+
+        {/* Duration / Info Overlay */}
+        {!hovered && (
+          <div className="absolute bottom-3 right-3 text-[10px] font-black text-white/60 bg-black/60 backdrop-blur-md px-2 py-1 rounded-md border border-white/5">
+            {lesson.duration_seconds ? `${Math.floor(lesson.duration_seconds / 60)}:00` : "Duração Variável"}
+          </div>
+        )}
+      </div>
+
+      {/* Metadata */}
+      <div className={cn(
+        "mt-4 space-y-2 transition-all duration-500 px-1",
+        hovered ? "opacity-100" : "opacity-80"
+      )}>
+        <h3 className={cn(
+          "text-base font-bold text-white line-clamp-1 transition-colors",
+          hovered && "text-primary"
+        )}>
+          {lesson.title}
+        </h3>
+        <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-widest text-white/30">
+          <div className="flex items-center gap-2">
+             <Clock className="h-3 w-3" />
+             <span>{lesson.duration_seconds ? `${Math.floor(lesson.duration_seconds / 60)} min` : "Video IA"}</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+             <Sparkles className="h-3 w-3 text-primary" />
+             <span>CME v5.0</span>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
