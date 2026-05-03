@@ -229,11 +229,8 @@ Deno.serve(async (req) => {
       last_structuring_error: null,
       last_structuring_at: new Date().toISOString(),
       notebooklm_export: structured.notebooklm_prompt || null,
-      gemini_export: structured.cinematic_video_prompt || null, // Keeping column name for compatibility
-      google_vids_export: structured.google_vids_prompt || null,
       cinematic_prompt: { 
-        gpt5: structured.cinematic_video_prompt, 
-        google_vids: structured.google_vids_prompt 
+        gpt5: structured.cinematic_video_prompt
       },
       metadata: {
         ...(lesson.metadata || {}),
