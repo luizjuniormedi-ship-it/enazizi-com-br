@@ -575,10 +575,11 @@ const Admin = () => {
                   {activeSection === "features" && <Suspense fallback={<PanelLoader />}><AdminFeatureFlags /></Suspense>}
                   {activeSection === "integrations" && (
                     <div className="space-y-8">
-                       <Suspense fallback={<PanelLoader />}><WhatsAppPanel /></Suspense>
+                       <Suspense fallback={<PanelLoader />}><WhatsAppPanel session={session} /></Suspense>
                        <Suspense fallback={<PanelLoader />}><TelegramConfigPanel /></Suspense>
                     </div>
                   )}
+
                   {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} /></Suspense>}
                   {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} /></Suspense>}
                   {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
