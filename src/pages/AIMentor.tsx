@@ -235,14 +235,13 @@ const PedagogicalHeaderBridge = ({
   );
 };
 
-const AIMentor = forwardRef<HTMLDivElement>((_props, _ref) => {
+const AIMentor = () => {
   const onSendRef = { current: null as any };
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
 
   const handleSend = (prompt: string) => {
     setIsCinematicLoading(true);
-    // Cinematic delay for "Entering AI Mind"
     setTimeout(() => {
       setHasStarted(true);
       setIsCinematicLoading(false);
@@ -251,9 +250,9 @@ const AIMentor = forwardRef<HTMLDivElement>((_props, _ref) => {
       }, 500);
     }, 1200);
   };
-  
+
   return (
-    <div ref={_ref} className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050508] text-white">
+    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050508] text-white">
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 
