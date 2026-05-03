@@ -58,11 +58,14 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey);
 
     const body = await req.json().catch(() => ({}));
+    console.log("Body action received:", body?.action);
     
     // Healthcheck support - move BEFORE auth to allow debugging env issues
     if (body?.action === "healthcheck") {
+      console.log("Running healthcheck...");
       return await runHealthcheck(admin, lovableKey);
     }
+
 
     const authHeader = req.headers.get("Authorization") ?? "";
     const userClient = createClient(supabaseUrl, anonKey!, {
