@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -36,7 +36,8 @@ import {
   Target,
   Brain,
   History,
-  FileText
+  FileText,
+  Star
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useVideoSegmentEvents } from "@/hooks/useVideoSegmentEvents";
@@ -59,6 +60,9 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
+
+const EnaflixLessonRating = lazy(() => import("@/components/enaflix/EnaflixLessonRating").then(m => ({ default: m.EnaflixLessonRating })));
+
 
 import AdaptiveRecommendationCard from "@/components/adaptive/AdaptiveRecommendationCard";
 import { useAdaptiveEngine } from "@/hooks/useAdaptiveEngine";

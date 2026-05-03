@@ -10134,6 +10134,47 @@ export type Database = {
           },
         ]
       }
+      lesson_ratings: {
+        Row: {
+          created_at: string | null
+          feedback: string | null
+          id: string
+          lesson_id: string
+          rating: number
+          updated_at: string | null
+          user_id: string
+          watched_percentage: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          lesson_id: string
+          rating: number
+          updated_at?: string | null
+          user_id: string
+          watched_percentage?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          feedback?: string | null
+          id?: string
+          lesson_id?: string
+          rating?: number
+          updated_at?: string | null
+          user_id?: string
+          watched_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_ratings_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_lesson_memory"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_segments: {
         Row: {
           ai_generated: boolean | null
@@ -18661,6 +18702,24 @@ export type Database = {
           title: string | null
         }
         Relationships: []
+      }
+      lesson_rating_stats: {
+        Row: {
+          average_rating: number | null
+          five_star_count: number | null
+          five_star_percentage: number | null
+          lesson_id: string | null
+          total_ratings: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_ratings_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_lesson_memory"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mnemonic_utility_agg: {
         Row: {
