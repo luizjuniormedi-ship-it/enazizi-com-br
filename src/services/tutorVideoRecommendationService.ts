@@ -22,10 +22,12 @@ type LogEvent =
   | 'shown'
   | 'clicked'
   | 'skipped_unpublished'
-  | 'skipped_no_video';
+  | 'skipped_no_video'
+  | 'skipped_hidden'
+  | 'skipped_deleted';
 
 /**
- * Persiste eventos de telemetria no banco de dados.
+ * Persiste eventos de telemetria no banco de dados dedicado.
  * Garante auditabilidade das recomendações do Tutor.
  */
 export async function logVideoRecommendationEvent(
@@ -39,18 +41,21 @@ export async function logVideoRecommendationEvent(
       console.log(`[TutorVideoRec] ${event}`, payload);
     }
 
-    // Persistência em telemetry_events
-    const sessionId = (payload.session_id || payload.conversationId || payload.userId || user?.id || 'anonymous') as string;
-
-    await (supabase.from('telemetry_events') as any).insert({
-      event_name: `tutor_video_${event}`,
-      user_id: user?.id || (typeof payload.userId === 'string' ? payload.userId : null),
-      session_id: sessionId,
-      properties: {
+    // Persistência em tutor_video_recommendation_telemetry
+    await supabase.from('tutor_video_recommendation_telemetry').insert({
+      user_id: user?.id,
+      session_id: payload.conversationId || payload.session_id || 'chat_session',
+      lesson_id: payload.lessonId || null,
+      topic: payload.topic || 'unknown',
+      event_type: event,
+      confidence: payload.confidence || 0,
+      source_table: payload.source || null,
+      reason: payload.reason || null,
+      metadata: {
         ...payload,
-        service: 'tutor_video_recommendation'
-      },
-      route: window.location.pathname || '/'
+        client_timestamp: new Date().toISOString(),
+        route: window.location.pathname
+      }
     });
   } catch (error) {
     console.error("[TutorVideoRec] Erro ao persistir telemetria:", error);
