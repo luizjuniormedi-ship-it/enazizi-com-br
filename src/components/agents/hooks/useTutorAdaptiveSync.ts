@@ -215,11 +215,25 @@ export function useTutorAdaptiveSync() {
     [writebackOn, logEvent]
   );
 
+  const logSessionStarted = useCallback(
+    async (args: { conversationId?: string; topic?: string; specialty?: string }) => {
+      if (!writebackOn) return;
+      await logEvent({
+        event_type: "session_started",
+        conversation_id: args.conversationId,
+        topic: args.topic,
+        payload: { specialty: args.specialty },
+      });
+    },
+    [writebackOn, logEvent]
+  );
+
   return {
     writebackEnabled: writebackOn,
     logEvent,
     logBlockRendered,
     logQuizAnswered,
     logNextStepClicked,
+    logSessionStarted,
   };
 }

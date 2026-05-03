@@ -254,7 +254,9 @@ export type TutorEventType =
   | "handoff_started"
   | "topic_mastered"
   | "reinforcement_saved"
-  | "block_rendered";
+  | "block_rendered"
+  | "session_started"
+  | "session_abandoned";
 
 export interface TutorEventInput {
   event_type: TutorEventType;

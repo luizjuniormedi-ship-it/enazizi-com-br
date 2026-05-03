@@ -23,6 +23,7 @@ import AgentMessageList from "./AgentMessageList";
 import AgentInputBar from "./AgentInputBar";
 import type { QuickAction, LinkToAgent, Upload as UploadType } from "./agentChatTypes";
 import { useTutorCME } from "@/hooks/useTutorCME";
+import { useTutorAdaptiveSync } from "@/components/agents/hooks/useTutorAdaptiveSync";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { cn } from "@/lib/utils";
@@ -64,8 +65,19 @@ const AgentChat = ({
   });
 
   const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage } = useTutorCME();
+  const sync = useTutorAdaptiveSync();
 
   const [sessionLesson, setSessionLesson] = useState<any>(null);
+
+  useEffect(() => {
+    if (chat.activeConversationId) {
+      sync.logSessionStarted({
+        conversationId: chat.activeConversationId,
+        topic: topic || undefined,
+        specialty: specialty || undefined
+      });
+    }
+  }, [chat.activeConversationId, topic, specialty, sync]);
 
   useEffect(() => {
     const fetchSessionLesson = async () => {
