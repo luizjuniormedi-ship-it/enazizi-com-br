@@ -1,8 +1,13 @@
-import { MessageSquare, Sparkles, Zap, Brain, Mic, GraduationCap } from "lucide-react";
+import { useState } from "react";
+import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import AgentChat from "@/components/agents/AgentChat";
-import { motion } from "framer-motion";
+import CinematicAvatar from "@/components/agents/CinematicAvatar";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { cn } from "@/lib/utils";
 
 const quickActions = [
   { label: "🩺 Tirar dúvida", prompt: "Explique detalhadamente o tema principal do meu material, como se eu fosse estudar para a prova.", icon: "🩺" },
@@ -12,95 +17,209 @@ const quickActions = [
   { label: "🔬 Artigos PubMed", prompt: "Busque e cite artigos científicos relevantes do PubMed/NLM sobre o tema principal do meu material, com links e resumos.", icon: "🔬" },
 ];
 
-const TutorHero = ({ onSend }: { onSend: (p: string) => void }) => {
+const suggestions = [
+  "ECG na Emergência",
+  "Protocolo de Sepse",
+  "GGO na Radiologia",
+  "Conduta em AVC",
+  "Antibióticos na UTI"
+];
+
+const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
+  const { user } = useAuth();
+  const firstName = user?.user_metadata?.display_name?.split(" ")[0] || "Doutor";
+  const [inputValue, setInputValue] = useState("");
+
+  const handleSend = () => {
+    if (inputValue.trim()) {
+      onSend(inputValue);
+      setInputValue("");
+    }
+  };
+
   return (
-    <div className="relative overflow-hidden rounded-[40px] bg-slate-950/50 border border-white/5 p-8 sm:p-12 mb-8 group">
-       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-violet-500/5 to-transparent" />
-       <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 blur-[120px] -z-10 animate-pulse" />
-       
-       <div className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-4xl mx-auto">
-         <motion.div
-           initial={{ scale: 0.8, opacity: 0 }}
-           animate={{ scale: 1, opacity: 1 }}
-           className="h-24 w-24 rounded-3xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center border border-primary/30 shadow-[0_0_40px_rgba(var(--pixar-blue),0.3)] float-gentle"
-         >
-           <Sparkles className="h-12 w-12 text-primary" />
-         </motion.div>
+    <div className="relative min-h-[60vh] flex flex-col items-center justify-center pt-12 pb-20 px-6 overflow-hidden">
+      {/* Cinematic Background Atmosphere */}
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-radial-gradient from-primary/10 via-transparent to-transparent opacity-40" />
+        <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-violet-600/10 blur-[150px]" />
+        <div className="absolute bottom-0 left-0 w-[50%] h-[50%] bg-primary/10 blur-[150px]" />
+      </div>
 
-         <div className="space-y-2">
-           <div className="flex items-center justify-center gap-3">
-             <EnaflixBadge type="ia" />
-             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Sessão Premium</span>
-           </div>
-           <h1 className="text-4xl sm:text-6xl font-black text-white tracking-tighter leading-none">
-             Olá 👋
-           </h1>
-           <p className="text-xl text-white/60 font-medium">O que vamos dominar hoje?</p>
-         </div>
+      <div className="relative z-10 w-full max-w-5xl mx-auto flex flex-col items-center text-center space-y-10">
+        
+        {/* IA Protagonista - Large Animated Avatar */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="relative group"
+        >
+          <div className="absolute -inset-4 bg-gradient-to-r from-primary/30 to-violet-500/30 rounded-full blur-2xl opacity-20 group-hover:opacity-40 transition duration-1000" />
+          <CinematicAvatar 
+            isSpeaking={false} 
+            className="w-40 h-40 sm:w-48 sm:h-48 rounded-[40px] border-2 border-white/10 shadow-2xl shadow-primary/20 float-gentle"
+          />
+          <div className="absolute -bottom-2 -right-2 bg-primary p-2 rounded-2xl shadow-lg border-4 border-[#050508] animate-bounce-subtle">
+            <Zap className="h-5 w-5 text-white fill-current" />
+          </div>
+        </motion.div>
 
-         <div className="w-full max-w-2xl relative group/input">
-           <div className="absolute -inset-1 bg-gradient-to-r from-primary/50 to-violet-500/50 rounded-2xl blur opacity-20 group-hover/input:opacity-40 transition duration-1000" />
-           <div className="relative flex items-center bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-2xl p-2 pl-6">
-             <Brain className="h-5 w-5 text-primary/60 mr-4" />
-             <input 
-               className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/30 text-lg py-4"
-               placeholder="Digite um tema, doença, prova ou dúvida..."
-               onKeyDown={(e) => e.key === 'Enter' && onSend((e.target as HTMLInputElement).value)}
-             />
-             <div className="flex items-center gap-2 px-2">
-                <button className="p-3 rounded-xl hover:bg-white/5 text-white/40 transition-colors">
-                  <Mic className="h-5 w-5" />
-                </button>
-                <Enaflix3DButton 
-                  size="sm" 
-                  glow 
-                  onClick={() => {}}
-                  className="h-12 px-6"
-                >
-                  Estudar Agora
-                </Enaflix3DButton>
-             </div>
-           </div>
-         </div>
+        {/* Personalized Greeting */}
+        <motion.div
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          className="space-y-4"
+        >
+          <div className="flex items-center justify-center gap-3">
+            <EnaflixBadge type="ia" className="scale-110" />
+            <div className="h-1 w-1 rounded-full bg-white/20" />
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Sessão Premium Ativa</span>
+          </div>
+          
+          <h1 className="text-5xl sm:text-7xl font-black text-white tracking-tighter leading-tight">
+            Olá, <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-white/40">{firstName} 👋</span>
+          </h1>
+          <p className="text-xl sm:text-2xl text-white/50 font-medium tracking-tight">
+            O que vamos <span className="text-primary font-bold">dominar</span> hoje?
+          </p>
+        </motion.div>
 
-         <div className="flex flex-wrap justify-center gap-2 pt-2">
-           {["ECG na Emergência", "Protocolo de Sepse", "GGO na Radiologia"].map(sug => (
-             <button 
-               key={sug}
-               onClick={() => onSend(sug)}
-               className="px-4 py-2 rounded-full bg-white/5 border border-white/5 text-xs font-bold text-white/40 hover:text-primary hover:border-primary/30 hover:bg-primary/5 transition-all"
-             >
-               {sug}
-             </button>
-           ))}
-         </div>
-       </div>
+        {/* Premium Input Area */}
+        <motion.div
+          initial={{ y: 30, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.4, ease: "easeOut" }}
+          className="w-full max-w-3xl relative"
+        >
+          <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-violet-500/20 to-primary/20 rounded-[32px] blur-xl opacity-20 group-hover:opacity-50 transition duration-1000" />
+          
+          <div className="relative group/input">
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl rounded-[28px] border border-white/10 group-hover/input:border-primary/40 transition-all duration-500 shadow-2xl" />
+            
+            <div className="relative flex items-center p-2 sm:p-3 pl-6 sm:pl-8">
+              <Brain className="h-6 w-6 text-primary/60 mr-4" />
+              <input 
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-lg sm:text-xl py-4 sm:py-5"
+                placeholder="Ex: 'Quais os critérios de Duke para Endocardite?'"
+              />
+              
+              <div className="flex items-center gap-2 pr-2">
+                 <button className="hidden sm:flex p-4 rounded-2xl hover:bg-white/5 text-white/40 hover:text-white transition-all">
+                   <Mic className="h-6 w-6" />
+                 </button>
+                 
+                 <Enaflix3DButton 
+                   size="lg" 
+                   glow 
+                   onClick={handleSend}
+                   className="h-14 sm:h-16 px-8 rounded-2xl text-base font-bold flex items-center gap-2 group/btn"
+                 >
+                   <span>Estudar Agora</span>
+                   <ChevronRight className="h-5 w-5 group-hover/btn:translate-x-1 transition-transform" />
+                 </Enaflix3DButton>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Intelligent Suggestions */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 0.8 }}
+          className="flex flex-wrap justify-center gap-3 pt-4"
+        >
+          {suggestions.map((sug, i) => (
+            <button 
+              key={sug}
+              onClick={() => onSend(sug)}
+              className={cn(
+                "px-5 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-sm font-bold text-white/40",
+                "hover:text-primary hover:border-primary/30 hover:bg-primary/5 hover:scale-105 transition-all duration-300",
+                "backdrop-blur-md shadow-lg"
+              )}
+            >
+              {sug}
+            </button>
+          ))}
+        </motion.div>
+      </div>
     </div>
   );
 };
 
 const AIMentor = () => {
   const onSendRef = { current: null as any };
+  const [hasStarted, setHasStarted] = useState(false);
+
+  const handleSend = (prompt: string) => {
+    setHasStarted(true);
+    // Give time for animation before focusing chat
+    setTimeout(() => {
+      onSendRef.current?.(prompt);
+    }, 100);
+  };
   
   return (
-    <div className="p-4 sm:p-8 lg:p-14 space-y-8">
-      <TutorHero onSend={(p) => onSendRef.current?.(p)} />
-      
-      <div className="h-[600px] border border-white/5 rounded-[40px] overflow-hidden bg-[#050508]/50 backdrop-blur-xl shadow-2xl">
-        <AgentChat
-          title="MentorMed Premium"
-          subtitle="Deep Learning especializado em Residência Médica."
-          icon={<Sparkles className="h-6 w-6 text-primary" />}
-          welcomeMessage="Olá! Sou o MentorMed, seu mentor IA especializado em Residência Médica. Como posso ajudá-lo hoje? 🩺"
-          placeholder="Faça uma pergunta sobre residência médica..."
-          functionName="mentor-chat"
-          quickActions={quickActions}
-          onSendRef={onSendRef}
-        />
+    <div className="relative min-h-screen bg-[#050508] text-white">
+      {/* Global Cinematic Background */}
+      <EnaflixBackgroundFX intensity="medium" />
+
+      <div className="relative z-10 w-full">
+        <AnimatePresence mode="wait">
+          {!hasStarted ? (
+            <motion.div
+              key="hero"
+              exit={{ opacity: 0, y: -50, scale: 0.95 }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
+            >
+              <TutorPremiumHero onSend={handleSend} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-4 sm:p-8 lg:p-12"
+            >
+              <div className="max-w-7xl mx-auto h-[80vh] border border-white/5 rounded-[40px] overflow-hidden bg-slate-950/40 backdrop-blur-3xl shadow-2xl shadow-primary/5">
+                <AgentChat
+                  title="MentorMed Premium"
+                  subtitle="Inteligência ENAZIZI em Tempo Real"
+                  icon={<Sparkles className="h-6 w-6 text-primary" />}
+                  welcomeMessage="Olá! Sou o MentorMed, seu mentor IA especializado em Residência Médica. Como posso ajudá-lo hoje? 🩺"
+                  placeholder="Faça uma pergunta sobre residência médica..."
+                  functionName="mentor-chat"
+                  quickActions={quickActions}
+                  onSendRef={onSendRef}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
+
+      {/* Footer / Decorative elements */}
+      {!hasStarted && (
+        <div className="fixed bottom-12 left-0 right-0 z-20 flex justify-center pointer-events-none">
+          <div className="flex items-center gap-8 px-8 py-4 rounded-full bg-white/5 border border-white/5 backdrop-blur-xl opacity-30">
+             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+               <Brain className="h-4 w-4" /> Cognitive Engine v5
+             </div>
+             <div className="w-[1px] h-4 bg-white/10" />
+             <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+               <GraduationCap className="h-4 w-4" /> 15k+ Questões Mapeadas
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default AIMentor;
-
