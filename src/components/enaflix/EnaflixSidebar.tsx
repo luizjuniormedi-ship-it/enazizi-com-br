@@ -92,7 +92,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
         {active && (
           <motion.div
             layoutId="sidebar-active-pill"
-            className="absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] -z-10"
+            className="pointer-events-none absolute inset-0 bg-white/5 backdrop-blur-md border border-white/10 shadow-[0_4px_20px_rgba(0,0,0,0.4)] -z-10"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
@@ -106,7 +106,7 @@ function SidebarItem({ to, label, icon: Icon, active, badge }: SidebarItemProps)
         active ? "bg-primary/20 ring-1 ring-primary/30" : "bg-white/5 group-hover:bg-white/10 ring-1 ring-white/5"
       )}>
         {active && (
-          <div className="absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
+          <div className="pointer-events-none absolute inset-0 bg-primary/20 blur-lg rounded-full animate-pulse" />
         )}
         <Icon className={cn(
           "h-4 w-4 relative z-10 transition-all duration-500",
