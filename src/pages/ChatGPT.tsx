@@ -189,6 +189,7 @@ const ChatGPT = () => {
     if (!user || !searchParams.get("video_ts") || temporalHandled.current) return;
     
     const videoTs = searchParams.get("video_ts");
+    const tutorMode = searchParams.get("tutor_mode");
     const ctx = temporal.readContext();
     
     if (temporal.temporalEnabled && ctx && !studyStarted) {
@@ -198,7 +199,13 @@ const ChatGPT = () => {
       const minutes = Math.floor(timestamp / 60);
       const seconds = timestamp % 60;
       
-      const prompt = `CONTEXTO TEMPORAL — Vídeo: ${ctx.video_lesson_id}. ` +
+      const modeInstruction = tutorMode === "feynman"
+        ? "Modo do Tutor: FEYNMAN — explique com linguagem simples, analogias concretas e sem jargão desnecessário. "
+        : tutorMode === "exam_sprint"
+          ? "Modo do Tutor: EXAM SPRINT — foque no que cai em prova, pegadinhas, condutas e pontos de alto rendimento. "
+          : "";
+
+      const prompt = `${modeInstruction}CONTEXTO TEMPORAL — Vídeo: ${ctx.video_lesson_id}. ` +
         `O aluno pausou aos ${minutes}:${seconds.toString().padStart(2, '0')} (Segmento: ${ctx.segment_title || 'Não identificado'}). ` +
         `O objetivo é tirar uma dúvida específica deste trecho. ` +
         `Contexto do segmento: ${ctx.segment_summary || 'Resumo indisponível'}. ` +

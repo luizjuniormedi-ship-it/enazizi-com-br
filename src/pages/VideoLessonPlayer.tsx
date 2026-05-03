@@ -111,6 +111,7 @@ const VideoLessonPlayer = () => {
   const [quizScore, setQuizScore] = useState(0);
   const [quizFinished, setQuizFinished] = useState(false);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
+  const [tutorMode, setTutorMode] = useState<"standard" | "feynman" | "exam_sprint">("standard");
   const lastLogTime = useRef(0);
   const pauseStartTime = useRef<number | null>(null);
   const hasNotifiedDifficulty = useRef<Set<string>>(new Set());
@@ -555,8 +556,44 @@ const VideoLessonPlayer = () => {
       params.set("video_ts", String(watchedSeconds));
       params.set("hotspot_type", "temporal_context");
     }
+    if (tutorMode !== "standard") {
+      params.set("tutor_mode", tutorMode);
+    }
     
-    navigate(`/dashboard/mentor?${params.toString()}`);
+    navigate(`/dashboard/chatgpt?${params.toString()}`);
+  };
+
+  const openTutorWithMode = (mode: "feynman" | "exam_sprint") => {
+    if (!lesson || !id) return;
+    setTutorMode(mode);
+    const ctx = buildContext({
+      videoLessonId: id,
+      segment: currentSegment,
+      currentTimestamp: watchedSeconds,
+      lesson: {
+        specialty: (lesson as any).specialty || "Geral",
+        topic: (lesson as any).topic || "Clínica Médica",
+        subtopic: (lesson as any).subtopic || "",
+        tutor_lesson_summary: (lesson as any).tutor_lesson_summary || "",
+      },
+    });
+    logEvent({
+      videoLessonId: id,
+      segmentId: currentSegment?.id ?? null,
+      eventType: "tutor_open",
+      timestampSeconds: watchedSeconds,
+      metadata: { temporal: !!ctx, source: mode, tutor_mode: mode },
+    });
+    handleAction(mode === "feynman" ? "open_tutor_feynman" : "open_tutor_exam_sprint");
+    const params = new URLSearchParams({
+      context: (lesson as any).id,
+      session: (lesson as any).tutor_session_id || (lesson as any).source_session_id || "",
+      tutor_mode: mode,
+      video_ts: String(watchedSeconds),
+    });
+    if (currentSegment?.id) params.set("video_segment", currentSegment.id);
+    if (ctx) params.set("hotspot_type", "temporal_context");
+    navigate(`/dashboard/chatgpt?${params.toString()}`);
   };
 
   const handleReplaySegment = (seg: VideoSegment) => {
@@ -753,13 +790,30 @@ const VideoLessonPlayer = () => {
                     </div>
                   )}
                   <div className="flex gap-4">
-                    <Button 
-                      variant="default" 
-                      className="gap-2"
-                      onClick={() => toast.info("Solicitação de re-renderização enviada ao cluster GPU.")}
-                    >
-                      <RotateCcw className="h-4 w-4" /> Reprocessar Aula
-                    </Button>
+                    {!isTutorMemory && (
+                      <Button
+                        variant="default"
+                        className="gap-2"
+                        onClick={async () => {
+                          const { error } = await supabase.from("cme_media_reprocessing_jobs").insert({
+                            video_lesson_id: lesson.id,
+                            reprocess_status: "queued",
+                            failure_reason: "Solicitação manual pelo player do aluno",
+                          });
+                          if (error) {
+                            toast.error("Erro ao solicitar reprocessamento: " + error.message);
+                            return;
+                          }
+                          await supabase
+                            .from("ai_video_lessons")
+                            .update({ media_status: "rendering" as any })
+                            .eq("id", lesson.id);
+                          toast.success("Aula enviada para reprocessamento.");
+                        }}
+                      >
+                        <RotateCcw className="h-4 w-4" /> Reprocessar Aula
+                      </Button>
+                    )}
                     <Button variant="outline" onClick={() => navigate("/dashboard/videoaulas")}>
                       Voltar à Biblioteca
                     </Button>
@@ -899,9 +953,38 @@ const VideoLessonPlayer = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><Settings className="h-5 w-5" /></Button>
-                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><Share2 className="h-5 w-5" /></Button>
-                <Button size="icon" variant="ghost" className="rounded-full hover:bg-white/10"><ArrowRight className="h-5 w-5" /></Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="rounded-full hover:bg-white/10"
+                  title="Copiar link público da aula"
+                  onClick={() => {
+                    const url = `${window.location.origin}/videoaulas/${id}`;
+                    navigator.clipboard.writeText(url);
+                    toast.success("Link público copiado!");
+                  }}
+                >
+                  <Share2 className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="rounded-full hover:bg-white/10"
+                  title="Próximo passo"
+                  onClick={() => {
+                    if (segments.length > 0) {
+                      const next = segments.find((seg) => (seg.start_second ?? 0) > watchedSeconds);
+                      if (next) {
+                        handleSelectSegment(next);
+                        toast.success(`Indo para: ${next.title}`);
+                        return;
+                      }
+                    }
+                    handleAction("complete");
+                  }}
+                >
+                  <ArrowRight className="h-5 w-5" />
+                </Button>
               </div>
             </div>
 
@@ -1006,19 +1089,19 @@ const VideoLessonPlayer = () => {
                     <BrainCircuit className="h-4 w-4 text-primary" /> Seu Progresso Cognitivo
                   </div>
                   <div className="flex gap-2">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant={tutorMode === "feynman" ? "secondary" : "ghost"}
+                      size="sm"
                       className="h-7 text-[10px] gap-1.5 border border-primary/20 hover:bg-primary/10 text-primary px-2"
-                      onClick={() => toast.info("Modo Feynman (IA) Ativado: O Tutor agora usará explicações simplificadas para esta aula.")}
+                      onClick={() => openTutorWithMode("feynman")}
                     >
                       <Volume2 className="h-3 w-3" /> Tutor Feynman
                     </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant={tutorMode === "exam_sprint" ? "secondary" : "ghost"}
+                      size="sm"
                       className="h-7 text-[10px] gap-1.5 border border-orange-500/20 hover:bg-orange-500/10 text-orange-500 px-2"
-                      onClick={() => toast.info("Modo Exam Sprint (IA) Ativado: O Tutor focará em pontos críticos de prova e bizus.")}
+                      onClick={() => openTutorWithMode("exam_sprint")}
                     >
                       <Flame className="h-3 w-3" /> Tutor Sprint
                     </Button>
