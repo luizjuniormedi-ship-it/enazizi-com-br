@@ -303,28 +303,27 @@ const VideoLessonsExplore = () => {
           </div>
         </aside>
 
-        {/* Grid de Resultados */}
-        <main className="lg:col-span-3 space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+        <main className="lg:col-span-3 space-y-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white/5 p-5 rounded-3xl border border-white/5 backdrop-blur-xl shadow-inner">
             <Tabs value={activeCategory} onValueChange={setActiveCategory} className="w-full md:w-auto">
-              <TabsList className="bg-black/40 border border-white/10">
-                <TabsTrigger value="all">Todas</TabsTrigger>
-                <TabsTrigger value="gold">Conteúdo Ouro</TabsTrigger>
-                <TabsTrigger value="exam_sprint">Exam Sprint</TabsTrigger>
-                <TabsTrigger value="recovery">Recovery Mode</TabsTrigger>
-                <TabsTrigger value="low_mastery">Baixa Maestria</TabsTrigger>
+              <TabsList className="bg-black/40 border border-white/5 p-1 h-11 rounded-2xl">
+                <TabsTrigger value="all" className="rounded-xl px-4 font-bold data-[state=active]:bg-primary">Todas</TabsTrigger>
+                <TabsTrigger value="gold" className="rounded-xl px-4 font-bold data-[state=active]:bg-yellow-500 data-[state=active]:text-black">Ouro</TabsTrigger>
+                <TabsTrigger value="exam_sprint" className="rounded-xl px-4 font-bold data-[state=active]:bg-orange-500">Sprint</TabsTrigger>
+                <TabsTrigger value="recovery" className="rounded-xl px-4 font-bold data-[state=active]:bg-blue-600">Recovery</TabsTrigger>
+                <TabsTrigger value="low_mastery" className="rounded-xl px-4 font-bold data-[state=active]:bg-primary">Baixa Maestria</TabsTrigger>
               </TabsList>
             </Tabs>
 
             <div className="flex items-center gap-3 self-end md:self-auto">
-              <span className="text-xs text-white/40 flex items-center gap-1">
-                <ArrowUpDown className="h-3 w-3" /> Ordenar por:
+              <span className="text-[10px] font-black uppercase tracking-wider text-white/40 flex items-center gap-1.5">
+                <ArrowUpDown className="h-3.5 w-3.5 text-primary" /> Ordenar:
               </span>
               <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-[160px] bg-transparent border-white/10 h-9 text-xs">
+                <SelectTrigger className="w-[180px] bg-white/5 border-white/10 h-10 rounded-xl text-xs font-bold">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-[#0a0a0e] border-white/10 rounded-2xl">
                   <SelectItem value="recent">Mais Recentes</SelectItem>
                   <SelectItem value="watched">Mais Assistidas</SelectItem>
                   <SelectItem value="retention">Maior Retenção</SelectItem>
@@ -334,26 +333,29 @@ const VideoLessonsExplore = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
             {isLoading ? (
               Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="aspect-video rounded-2xl bg-white/5 animate-pulse" />
+                <div key={i} className="aspect-video rounded-3xl bg-white/5 animate-pulse" />
               ))
             ) : filteredLessons.length === 0 ? (
-              <div className="col-span-full py-20 text-center space-y-4">
-                <div className="h-20 w-20 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/20">
-                  <Video className="h-10 w-10" />
+              <div className="col-span-full py-32 text-center space-y-6">
+                <div className="h-24 w-24 bg-white/5 rounded-full flex items-center justify-center mx-auto text-white/10 shadow-inner">
+                  <Video className="h-12 w-12" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold">Nenhum resultado</h3>
-                  <p className="text-white/40">Tente ajustar seus filtros para encontrar o que procura.</p>
+                  <h3 className="text-2xl font-black text-white tracking-tight">Nenhum resultado</h3>
+                  <p className="text-white/40 font-medium">IA não localizou conteúdos para estes critérios.</p>
                 </div>
               </div>
             ) : (
               filteredLessons.map((lesson) => (
-                <ExploreLessonCard 
-                  key={lesson.id} 
-                  lesson={lesson} 
+                <EnaflixCard
+                  key={lesson.id}
+                  title={lesson.title}
+                  subtitle={lesson.topic}
+                  image={lesson.thumbnail_url}
+                  badge={lesson.is_gold_content ? "Ouro" : (lesson as any).cme_profile === 'exam_sprint' ? "Sprint" : undefined}
                   progress={getLessonProgress(lesson.id)}
                   onClick={() => navigate(`/dashboard/videoaulas/${lesson.id}`)}
                 />
