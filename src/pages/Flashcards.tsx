@@ -459,12 +459,17 @@ const Flashcards = () => {
           </Button>
         </div>
         
-        <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-          <FlipVertical className="h-8 w-8 text-primary" /> 
-          Revisões Inteligentes
-        </h1>
-        <p className="text-sm text-white/50 mt-1 font-medium">Foco total na retenção de longo prazo com IA.</p>
+        <EnaflixSectionTitle
+          kicker="REVISÃO INTELIGENTE"
+          title={
+            <>
+              Consolidação <span className="gradient-text">Cognitiva</span>
+            </>
+          }
+          subtitle="Foco total na retenção de longo prazo com algoritmos de repetição espaçada (FSRS)."
+        />
       </div>
+
 
       {pendingSession && (
         <div className="px-4 sm:px-8 lg:px-14">

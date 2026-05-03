@@ -17,7 +17,7 @@ import Footer from "@/components/landing/Footer";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 
 const Landing = () => (
-  <div className="min-h-screen bg-[#0a0a0e] relative overflow-hidden">
+  <div className="min-h-screen bg-[#050508] relative overflow-hidden">
     <EnaflixBackgroundFX intensity="subtle" />
     <div className="relative z-10">
       <Navbar />

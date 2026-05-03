@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, lazy, Suspense } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,8 +6,11 @@ import { useStudyNext } from "@/hooks/useStudyNext";
 import { useAnalyticsSnapshot } from "@/hooks/useAnalyticsSnapshot";
 import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
+import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
+import { ENAFLIX_MODULES } from "@/data/enaflix/enaflixModules";
 import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
+
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
@@ -31,6 +34,14 @@ const Dashboard = () => {
   const { data: dashData, isLoading: dashLoading } = useDashboardData();
   const { data: studyNext, isLoading: missionLoading, refresh } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
+  const { recentIds } = useEnaflixUsage();
+
+  const continueModules = useMemo(() => {
+    return recentIds
+      .map(id => ENAFLIX_MODULES.find(m => m.id === id))
+      .filter((m): m is any => !!m)
+      .slice(0, 4);
+  }, [recentIds]);
 
   const autostartConsumedRef = useRef(false);
 
@@ -72,8 +83,8 @@ const Dashboard = () => {
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt="Medical Mission"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0e] via-[#0a0a0e]/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0a0a0e]/80 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/60 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#050508]/80 via-transparent to-transparent" />
           </div>
 
           <div className="relative z-10 max-w-3xl space-y-6">
@@ -84,7 +95,7 @@ const Dashboard = () => {
                 className="flex items-center gap-3"
               >
                 <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40 shadow-[0_0_15px_rgba(var(--pixar-blue),0.5)]" />
-                <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
+                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
               </motion.div>
               <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
                 Sua missão de hoje, <span className="gradient-text">{firstName}</span>
@@ -123,26 +134,23 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Rows Style - Netflix Grid */}
-      <div className="enaflix-stagger space-y-16">
-        <EnaflixRow title="Continuar Estudando">
-          <EnaflixContinueCard
-            title="Insuficiência Cardíaca"
-            category="Cardiologia"
-            progress={65}
-            lastAccess="hoje"
-            timeLeft="12 min"
-            onClick={() => navigate("/dashboard/videoaulas")}
-          />
-          <EnaflixContinueCard
-            title="Diabetes Mellitus"
-            category="Endocrinologia"
-            progress={12}
-            lastAccess="ontem"
-            timeLeft="45 min"
-            onClick={() => navigate("/dashboard/videoaulas")}
-          />
-        </EnaflixRow>
+
+      <div className="enaflix-stagger space-y-16 pb-24">
+        {/* Atividade Recente / Continuar */}
+        {(continueModules.length > 0) && (
+          <EnaflixRow title="Continuar Estudando">
+            {continueModules.map(m => (
+              <EnaflixContinueCard
+                key={m.id}
+                title={m.title}
+                category={m.category}
+                progress={Math.floor(Math.random() * 90) + 10} // Mock progress
+                lastAccess="hoje"
+                onClick={() => navigate(m.path || `/dashboard/${m.id}`)}
+              />
+            ))}
+          </EnaflixRow>
+        )}
 
         <EnaflixRow title="Temas Populares">
           <EnaflixThemeCard title="Cardiologia" icon="🫀" gradient="from-red-500 to-orange-500" />
@@ -215,25 +223,26 @@ const Dashboard = () => {
                   <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
                   <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
-                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/chatgpt")}>
+                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/mentor")}>
                   Iniciar Conversa
                 </Enaflix3DButton>
               </div>
            </EnaflixCinematicCard>
         </EnaflixRow>
+
+        {/* Analysis Section */}
+        <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
+          <div className="space-y-6">
+            <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
+            <Suspense fallback={null}><ProgressOverview /></Suspense>
+          </div>
+          <div className="space-y-6">
+            <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
+            <Suspense fallback={null}><MedicalMasteryDashboard /></Suspense>
+          </div>
+        </div>
       </div>
 
-      {/* Analysis Section */}
-      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
-        <div className="space-y-6">
-          <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
-          <Suspense fallback={null}><ProgressOverview /></Suspense>
-        </div>
-        <div className="space-y-6">
-          <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
-          <Suspense fallback={null}><MedicalMasteryDashboard /></Suspense>
-        </div>
-      </div>
     </div>
   );
 };

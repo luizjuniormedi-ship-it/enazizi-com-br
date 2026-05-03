@@ -133,7 +133,7 @@ export default function EnaflixPage() {
     const prev = document.title;
     document.title = "ENAFLIX — streaming inteligente do ENAZIZI";
     // Body bg cinematográfico para garantir continuidade visual
-    document.body.style.backgroundColor = "#0a0a12";
+    document.body.style.backgroundColor = "#050508";
     return () => {
       document.title = prev;
       document.body.style.backgroundColor = "";
@@ -241,7 +241,7 @@ export default function EnaflixPage() {
   };
 
   return (
-    <div className="min-h-[100dvh] bg-[#0a0a12] text-white relative overflow-x-hidden">
+    <div className="min-h-[100dvh] bg-[#050508] text-white relative overflow-x-hidden">
       {/* Partículas ambientais — sobem do bottom (fixed para acompanhar o scroll) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <EnaflixAmbientParticles count={24} hue="mixed" />
@@ -257,7 +257,7 @@ export default function EnaflixPage() {
       {/* Drawer de busca cinematográfico (slide + blur) */}
       {searchOpen && (
         <div
-          className="fixed top-16 inset-x-0 z-40 bg-[#0a0a12]/95 backdrop-blur-xl border-b border-white/5 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.85)] animate-drawer-in"
+          className="fixed top-16 inset-x-0 z-40 bg-[#050508]/95 backdrop-blur-xl border-b border-white/5 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.85)] animate-drawer-in"
         >
           <div className="px-4 sm:px-8 lg:px-14 py-5">
             <EnaflixSearchBar

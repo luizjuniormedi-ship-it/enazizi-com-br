@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixSection } from "@/components/enaflix/EnaflixSection";
 import { ErrorThemeCard } from "@/components/enaflix/ErrorThemeCard";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { cn } from "@/lib/utils";
+
 
 const ErrorBankWeeklyChart = lazy(() => import("@/components/error-bank/ErrorBankWeeklyChart"));
 
@@ -155,36 +158,39 @@ const ErrorBank = () => {
   if (loading) return <div className="p-24 text-center text-white/40">Carregando banco de erros...</div>;
 
   return (
-    <div className="pb-24 pt-8 space-y-12">
+    <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <EnaflixBackgroundFX intensity="medium" />
       <div className="px-4 sm:px-8 lg:px-14">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <AlertTriangle className="h-8 w-8 text-destructive" />
-              Meus Erros
-            </h1>
-            <p className="text-sm text-white/50 mt-1 font-medium">IA de estudos analisou seus pontos de fragilidade para recuperação ativa.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl gap-2 h-11"
-              onClick={generateFlashcardsFromErrors}
-              disabled={generatingFlashcards}
-            >
-              {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
-              Gerar Flashcards
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11"
-              onClick={loadErrors}
-            >
-              <RefreshCw className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <EnaflixSectionTitle
+          kicker="ANÁLISE DE RECUPERAÇÃO"
+          title={
+            <>
+              Meus <span className="gradient-text">Erros Ativos</span>
+            </>
+          }
+          subtitle="IA de estudos analisou seus pontos de fragilidade para recuperação ativa."
+          action={
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl gap-2 h-11"
+                onClick={generateFlashcardsFromErrors}
+                disabled={generatingFlashcards}
+              >
+                {generatingFlashcards ? <Loader2 className="h-4 w-4 animate-spin" /> : <FlipVertical className="h-4 w-4" />}
+                Gerar Flashcards
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11"
+                onClick={loadErrors}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          }
+        />
       </div>
 
       <EnaflixRow title="Status da Recuperação">
@@ -197,8 +203,9 @@ const ErrorBank = () => {
       </EnaflixRow>
 
       <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-          <EnaflixSection title="Ranking de Temas Críticos" subtitle="Onde você mais precisa focar agora." className="px-0">
+        <div className="lg:col-span-2 space-y-12">
+          <div>
+            <EnaflixSectionTitle kicker="RANKING" title="Temas Críticos" subtitle="Onde você mais precisa focar agora." className="mb-6" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {themeStats.map((stat) => (
                 <ErrorThemeCard
@@ -209,38 +216,38 @@ const ErrorBank = () => {
                 />
               ))}
             </div>
-          </EnaflixSection>
+          </div>
 
-          <EnaflixSection title="Evolução Semanal" className="px-0">
+          <div>
+            <EnaflixSectionTitle kicker="TELEMETRIA" title="Evolução Semanal" className="mb-6" />
             <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-2xl p-6 h-64">
               <Suspense fallback={<div className="h-full flex items-center justify-center text-white/20">Carregando telemetria...</div>}>
                 <ErrorBankWeeklyChart data={weeklyData} />
               </Suspense>
             </div>
-          </EnaflixSection>
+          </div>
         </div>
 
         <div className="space-y-8">
-          <EnaflixSection title="Ações Recomendadas" className="px-0">
-            <div className="space-y-3">
-              {REVIEW_MODES.map((mode) => (
-                <button
-                  key={mode.id}
-                  onClick={() => startReviewMode(mode.id)}
-                  className="w-full p-4 rounded-xl bg-white/5 border border-white/5 flex items-center gap-4 hover:bg-white/10 transition-all text-left group"
-                >
-                  <div className={cn("p-2 rounded-lg bg-white/5", mode.color)}>
-                    <mode.icon className="h-5 w-5" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors">{mode.label}</h4>
-                    <p className="text-[10px] text-white/40 font-medium leading-tight">{mode.description}</p>
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white transition-colors" />
-                </button>
-              ))}
-            </div>
-          </EnaflixSection>
+          <EnaflixSectionTitle kicker="AÇÕES" title="Recomendadas" className="mb-6" />
+          <div className="space-y-3">
+            {REVIEW_MODES.map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => startReviewMode(mode.id)}
+                className="w-full p-4 rounded-xl bg-white/5 border border-white/5 flex items-center gap-4 hover:bg-white/10 transition-all text-left group"
+              >
+                <div className={cn("p-2 rounded-lg bg-white/5", mode.color)}>
+                  <mode.icon className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-bold text-white group-hover:text-primary transition-colors">{mode.label}</h4>
+                  <p className="text-[10px] text-white/40 font-medium leading-tight">{mode.description}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-white/20 group-hover:text-white transition-colors" />
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>

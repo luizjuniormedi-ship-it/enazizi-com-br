@@ -22,6 +22,8 @@ import {
 } from "@/lib/triEngine";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, FileText, ChevronLeft, Play, Info, Sparkles, DatabaseZap, Clock } from "lucide-react";
+import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
+import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useStudyContext } from "@/lib/studyContext";
@@ -198,17 +200,23 @@ const Simulados = () => {
 
   if (phase === "setup") {
     return (
-      <div className="pb-24 pt-8 space-y-12">
+      <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+        <EnaflixBackgroundFX intensity="medium" />
         <div className="px-4 sm:px-8 lg:px-14">
           <div className="flex items-center gap-2 mb-4">
             <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 text-white/40 hover:text-white">
               <ChevronLeft className="h-4 w-4" /> Voltar
             </Button>
           </div>
-          <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-            <FileText className="h-8 w-8 text-primary" /> Simulados & Provas
-          </h1>
-          <p className="text-sm text-white/50 mt-1 font-medium">IA de estudos gera desafios reais para testar seu domínio clínico.</p>
+          <EnaflixSectionTitle
+            kicker="IA ORGANIZADORA"
+            title={
+              <>
+                Simulados <span className="gradient-text">& Provas</span>
+              </>
+            }
+            subtitle="IA de estudos gera desafios reais para testar seu domínio clínico."
+          />
         </div>
 
         {pendingSession && checked && (
@@ -245,7 +253,10 @@ const Simulados = () => {
           ))}
         </EnaflixRow>
 
-        <EnaflixSection title="Configuração Avançada" subtitle="Monte sua prova personalizada.">
+        <div>
+          <div className="px-4 sm:px-8 lg:px-14 mb-8">
+            <EnaflixSectionTitle kicker="PERSONALIZAR" title="Configuração Avançada" subtitle="Monte sua prova personalizada." />
+          </div>
           <div className="px-4 sm:px-8 lg:px-14">
             <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden">
               <SimuladoSetup
@@ -261,10 +272,11 @@ const Simulados = () => {
               />
             </div>
           </div>
-        </EnaflixSection>
+        </div>
       </div>
     );
   }
+
 
   if (phase === "loading") {
     return (
