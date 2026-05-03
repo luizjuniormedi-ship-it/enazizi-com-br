@@ -13,11 +13,12 @@ import { cn } from "@/lib/utils";
  *  - Respeita prefers-reduced-motion
  */
 const THINKING_LABELS = [
-  "Pensando...",
-  "Estruturando a aula...",
-  "Buscando referências...",
-  "Conectando conceitos...",
-  "Preparando explicação...",
+  "Conectando à base ENAFLIX...",
+  "Analisando fisiopatologia...",
+  "Buscando raciocínio clínico...",
+  "Cruzando diagnósticos...",
+  "Consultando fontes PubMed...",
+  "Preparando roteiro pedagógico...",
 ];
 
 export const TutorThinkingIndicator: React.FC = () => {
@@ -112,7 +113,9 @@ export const TutorThinkingIndicator: React.FC = () => {
           }}
         />
 
-        <div className="relative flex items-center gap-2">
+        <div className="relative flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+
           {/* 3 dots respirando, mas mais elegantes */}
           <div className="flex gap-1.5 items-center">
             {[0, 1, 2].map((i) => (
@@ -136,6 +139,12 @@ export const TutorThinkingIndicator: React.FC = () => {
           >
             {THINKING_LABELS[labelIdx]}
           </span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <span className="text-[10px] text-muted-foreground/60 font-mono tracking-tighter">
+              Buscando no PubMed...
+            </span>
+          </div>
         </div>
       </div>
     </div>
