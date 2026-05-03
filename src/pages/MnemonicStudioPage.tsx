@@ -452,26 +452,7 @@ export default function MnemonicGeneratorPage() {
                 />
                 <p className="text-xs text-muted-foreground">{termos.length} termo(s)</p>
                 {formErrors.termos && <p className="text-xs text-destructive">{formErrors.termos}</p>}
-                {suggestedTerms.length > 0 && (
-                  <div className="mt-2 p-3 rounded-lg border border-primary/20 bg-primary/5 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-medium text-primary flex items-center gap-1.5">
-                        <Lightbulb className="h-3.5 w-3.5" /> Termos sugeridos do currículo
-                      </p>
-                      <Button variant="ghost" size="sm" className="h-6 text-[10px] px-2" onClick={() => handleApplySuggestedTerms(suggestedTerms)}>
-                        Usar todos
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {suggestedTerms.map((term, i) => (
-                        <Button key={i} variant="outline" size="sm" className="h-7 text-xs" onClick={() => handleApplySuggestedTerms([term])}>
-                          + {term}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                {loadingTerms && <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Loader2 className="h-3 w-3 animate-spin" /> Buscando termos do currículo...</p>}
+                {/* Termos sugeridos removidos para focar em temas e extração automática */}
               </CollapsibleContent>
             </Collapsible>
 
