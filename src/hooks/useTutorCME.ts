@@ -570,7 +570,7 @@ export const useTutorCME = () => {
       try {
         const { data, error } = await supabaseClient
           .from("ai_video_lessons")
-          .select("*, aggregation:cme_session_aggregations(*)")
+          .select("*, project:cme_video_projects(aggregation_id)")
           .or(`topic.ilike.%${topic}%,title.ilike.%${topic}%`)
           .eq('status', 'published')
           .order('is_gold_content', { ascending: false })
@@ -578,6 +578,12 @@ export const useTutorCME = () => {
           .maybeSingle();
         
         if (error) throw error;
+        
+        // Normalize the aggregation ID
+        if (data && (data as any).project?.aggregation_id) {
+          (data as any).aggregation_id = (data as any).project.aggregation_id;
+        }
+        
         return data;
       } catch (e) {
         console.error("Error finding lesson for topic:", e);
