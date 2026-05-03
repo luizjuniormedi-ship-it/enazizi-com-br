@@ -211,7 +211,9 @@ const App = () => (
                   <Route path="mnemonic-studio" element={<MnemonicStudioPage />} />
                   <Route path="mnemonic-generator" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
                   <Route path="mnemonicos" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
+                  <Route path="mnemonico" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
                   <Route path="mnemonic-history" element={<MnemonicHistoryPage />} />
+
                   
                   {/* Clínica & Simulação */}
                   <Route path="plantao" element={<ClinicalSimulation />} />
@@ -251,8 +253,6 @@ const App = () => (
                   <Route path="banco-questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="plano-dia" element={<Navigate to="/dashboard" replace />} />
                   <Route path="feynman" element={<Navigate to="/dashboard/chatgpt" replace />} />
-                  <Route path="mnemonico" element={<Navigate to="/dashboard/mnemonic-studio-v2" replace />} />
-                  <Route path="mnemonic-studio" element={<Navigate to="/dashboard/mnemonic-studio-v2" replace />} />
                   <Route path="missao" element={<Navigate to="/mission" replace />} />
                   <Route path="minhas-aulas" element={<Navigate to="/dashboard/videoaulas" replace />} />
                   <Route path="simulacao-clinica" element={<Navigate to="/dashboard/plantao" replace />} />
