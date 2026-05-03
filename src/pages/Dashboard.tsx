@@ -123,48 +123,30 @@ const Dashboard = () => {
       {/* Rows Style - Netflix Grid */}
       <div className="enaflix-stagger space-y-16">
         <EnaflixRow title="Continuar Estudando">
-          <EnaflixCinematicCard 
-            variant="lesson" 
-            className="w-full aspect-video"
+          <EnaflixContinueCard
+            title="Insuficiência Cardíaca"
+            category="Cardiologia"
+            progress={65}
+            lastAccess="hoje"
+            timeLeft="12 min"
             onClick={() => navigate("/dashboard/videoaulas")}
-          >
-             <div className="absolute inset-0">
-               <img src="https://images.unsplash.com/photo-1505751172876-fa1923c5c528?q=80&w=600&auto=format&fit=crop" className="w-full h-full object-cover" />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-             </div>
-             <div className="absolute bottom-4 left-4 right-4 space-y-1">
-               <h4 className="font-black text-lg text-white">Insuficiência Cardíaca</h4>
-               <p className="text-xs text-white/60">Cardiologia • Aula 3</p>
-               <div className="h-1 w-full bg-white/20 rounded-full mt-2 overflow-hidden">
-                 <div className="h-full bg-primary w-[65%]" />
-               </div>
-             </div>
-          </EnaflixCinematicCard>
-          <EnaflixCinematicCard 
-            variant="lesson" 
-            className="w-full aspect-video"
+          />
+          <EnaflixContinueCard
+            title="Diabetes Mellitus"
+            category="Endocrinologia"
+            progress={12}
+            lastAccess="ontem"
+            timeLeft="45 min"
             onClick={() => navigate("/dashboard/videoaulas")}
-          >
-             <div className="absolute inset-0">
-               <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?q=80&w=600&auto=format&fit=crop" className="w-full h-full object-cover" />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-             </div>
-             <div className="absolute bottom-4 left-4 right-4 space-y-1">
-               <h4 className="font-black text-lg text-white">Diabetes Mellitus</h4>
-               <p className="text-xs text-white/60">Endocrinologia • Aula 1</p>
-               <div className="h-1 w-full bg-white/20 rounded-full mt-2 overflow-hidden">
-                 <div className="h-full bg-primary w-[12%]" />
-               </div>
-             </div>
-          </EnaflixCinematicCard>
-          <EnaflixCinematicCard 
-            variant="poster" 
-            className="w-full aspect-video flex flex-col items-center justify-center bg-white/5 border-dashed border-white/10"
-            onClick={() => navigate("/dashboard/videoaulas/explorar")}
-          >
-            <Play className="h-8 w-8 text-white/20 mb-2" />
-            <span className="text-xs font-black uppercase tracking-widest text-white/30">Explorar Mais</span>
-          </EnaflixCinematicCard>
+          />
+        </EnaflixRow>
+
+        <EnaflixRow title="Temas Populares">
+          <EnaflixThemeCard title="Cardiologia" icon="🫀" gradient="from-red-500 to-orange-500" />
+          <EnaflixThemeCard title="Pediatria" icon="👶" gradient="from-blue-500 to-cyan-500" />
+          <EnaflixThemeCard title="Cirurgia" icon="🔪" gradient="from-emerald-500 to-teal-500" />
+          <EnaflixThemeCard title="Gineco" icon="🤰" gradient="from-pink-500 to-rose-500" />
+          <EnaflixThemeCard title="Preventiva" icon="🛡️" gradient="from-violet-500 to-purple-500" />
         </EnaflixRow>
 
         <EnaflixRow title="Revisões Recomendadas">
