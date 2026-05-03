@@ -176,6 +176,30 @@ const AIMentor = () => {
       <EnaflixBackgroundFX intensity="medium" />
 
       <div className="relative z-10 w-full">
+        <AnimatePresence>
+          {isCinematicLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center space-y-8"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-[100px] animate-pulse" />
+                <CinematicAvatar isSpeaking={true} className="w-48 h-48 rounded-[48px] border-2 border-primary/40 shadow-[0_0_50px_rgba(var(--primary),0.3)]" />
+              </div>
+              <div className="flex flex-col items-center gap-2">
+                <span className="text-[10px] font-black uppercase tracking-[0.5em] text-primary animate-pulse">Iniciando Sincronização Cognitiva</span>
+                <div className="flex gap-1">
+                  <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0 }} className="h-1 w-1 rounded-full bg-primary" />
+                  <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.2 }} className="h-1 w-1 rounded-full bg-primary" />
+                  <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity, duration: 1, delay: 0.4 }} className="h-1 w-1 rounded-full bg-primary" />
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence mode="wait">
           {!hasStarted ? (
             <motion.div
