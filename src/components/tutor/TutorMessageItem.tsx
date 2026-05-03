@@ -54,9 +54,10 @@ interface TutorMessageItemProps {
   conversationId?: string;
   topic?: string;
   specialty?: string;
+  isFirstMessage?: boolean;
 }
 
-const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty }: TutorMessageItemProps) => {
+const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty, isFirstMessage }: TutorMessageItemProps) => {
   const navigate = useNavigate();
   const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer, getLessonForMessage, findLessonByTopic } = useTutorCME();
   const { isAdmin, isProfessor, roles } = useUserRoles();
