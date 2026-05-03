@@ -318,7 +318,7 @@ async function runHealthcheck(admin: any, lovableKey: string) {
 
   // 4) AI Gateway check (Real GPT-5-mini call)
   let gatewayStatus = 0;
-  let modelUsed = "google/gemini-2.0-flash-exp";
+  let modelUsed = "openai/gpt-5-mini";
   try {
     const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
