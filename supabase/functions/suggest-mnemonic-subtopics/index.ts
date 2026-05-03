@@ -108,7 +108,7 @@ Responda em JSON:
       method: "POST",
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
       }),
