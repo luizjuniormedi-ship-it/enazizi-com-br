@@ -14,6 +14,9 @@ import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixCinematicCard } from "@/components/enaflix/EnaflixCinematicCard";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
+import { EnaflixContinueCard } from "@/components/enaflix/EnaflixContinueCard";
+import { EnaflixThemeCard } from "@/components/enaflix/EnaflixThemeCard";
+import { EnaflixRecommendationCard } from "@/components/enaflix/EnaflixRecommendationRow";
 import AchievementToast from "@/components/gamification/AchievementToast";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 
