@@ -832,9 +832,26 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   </Button>
                 ))}
                 {mode !== "extremo" && (
-                  <Input type="number" placeholder="Outro..." className="w-24 h-9" min={1} max={100} value={customCount} onChange={e => setCustomCount(e.target.value)} />
+                  <Input 
+                    type="number" 
+                    placeholder="Outro..." 
+                    className="w-24 h-9" 
+                    min={1} 
+                    max={100} 
+                    value={customCount} 
+                    onChange={e => {
+                      const val = parseInt(e.target.value);
+                      if (val > 100) return;
+                      setCustomCount(e.target.value);
+                    }} 
+                  />
                 )}
               </div>
+              {(customCount ? parseInt(customCount) : questionCount) > 40 && (
+                <p className="text-[10px] text-amber-500 font-bold mt-2 uppercase tracking-widest animate-pulse flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> Geração em lote: levará mais tempo para preparar {customCount || questionCount} questões
+                </p>
+              )}
             </div>
           )}
 
