@@ -85,13 +85,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         }
 
         const currentStatus = data?.status || "pending";
-        // Auto-activate pending professors if profile is complete
-        if (userType === "professor" && !incomplete && currentStatus === "pending") {
-          await supabase.from("profiles").update({ status: "active" }).eq("user_id", user.id);
-          setProfileStatus("active");
-        } else {
-          setProfileStatus(currentStatus);
-        }
+        // Todos os novos usuários (incluindo professores) precisam de aprovação do admin
+        setProfileStatus(currentStatus);
 
         const obVersion = (data as any)?.onboarding_version ?? 1;
         setOnboardingVersion(obVersion);
