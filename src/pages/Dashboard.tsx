@@ -79,9 +79,35 @@ const Dashboard = () => {
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
 
   return (
-    <div className="pb-32 pt-6 space-y-12 relative min-h-screen overflow-x-hidden">
+    <div className="pb-32 pt-6 space-y-8 relative min-h-screen overflow-x-hidden">
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
+
+      {/* Sync Warning Banner */}
+      {cockpitTimedOut && isDataMissing && (
+        <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <RefreshCw className="h-4 w-4 text-amber-500 animate-spin-slow" />
+            <p className="text-sm font-medium text-amber-200/80">
+              Algumas métricas ainda estão sincronizando. Você já pode estudar.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => refresh?.()}
+              className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
+            >
+              Tentar atualizar
+            </button>
+            <button 
+              onClick={() => navigate("/dashboard/sessao-estudo")}
+              className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
+            >
+              Iniciar sessão mesmo assim
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hero Cinematic Style - Netflix Medical */}
       <div className="px-4 sm:px-8 lg:px-14">
@@ -116,7 +142,7 @@ const Dashboard = () => {
                 Sua missão de hoje, <span className="gradient-text">{firstName}</span>
               </h1>
               <p className="text-lg sm:text-xl text-white/80 font-medium max-w-xl leading-tight">
-                {activeRec?.title || "Carregando próxima missão..."} — {activeRec?.description || "O motor ACE está calibrando sua jornada."}
+                {activeRec?.title || "Começar revisão inteligente"} — {activeRec?.description || "O motor ACE está preparando sua jornada personalizada."}
               </p>
             </div>
 
