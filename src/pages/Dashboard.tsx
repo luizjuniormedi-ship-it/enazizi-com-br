@@ -58,13 +58,67 @@ const Dashboard = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCockpitTimedOut(true);
-      // Log diagnostics for slow queries
-      if (missionLoading) console.warn("[Dashboard] study-next query slow (>5s)");
-      if (snapLoading) console.warn("[Dashboard] analytics-snapshot query slow (>5s)");
-      if (dashLoading) console.warn("[Dashboard] dashboard-data query slow (>5s)");
+      
+      const failedBlocks = [];
+      if (missionLoading || !studyNext) failedBlocks.push("study_next");
+      if (snapLoading || !snapshot) failedBlocks.push("analytics_snapshot");
+      if (dashLoading || !dashData) failedBlocks.push("dashboard_data");
+
+      if (failedBlocks.length > 0 && !telemetryFiredRef.current && user) {
+        telemetryFiredRef.current = true;
+        const loadTime = Date.now() - mountTimeRef.current;
+        
+        // Registrar telemetria
+        import("@/integrations/supabase/client").then(({ supabase }) => {
+          supabase.from("telemetry_events").insert({
+            user_id: user.id,
+            event_name: "cockpit_partial_mode",
+            properties: {
+              route: window.location.pathname,
+              load_time_ms: loadTime,
+              timed_out: true,
+              failed_blocks: failedBlocks,
+              fallback_used: true,
+              timestamp: new Date().toISOString()
+            }
+          }).then();
+        });
+
+        // Persistência leve
+        sessionStorage.setItem("cockpit_partial_mode", "true");
+        sessionStorage.setItem("cockpit_partial_reason", failedBlocks.join(","));
+
+        if (import.meta.env.DEV) {
+          console.warn(`[Cockpit Diagnostic] Partial mode activated after ${loadTime}ms. Pending:`, failedBlocks);
+        }
+      }
     }, 5000);
     return () => clearTimeout(timer);
-  }, [missionLoading, snapLoading, dashLoading]);
+  }, [missionLoading, snapLoading, dashLoading, studyNext, snapshot, dashData, user]);
+
+  // Retry automático após 10s
+  useEffect(() => {
+    if (cockpitTimedOut && !retryFiredRef.current) {
+      const retryTimer = setTimeout(() => {
+        retryFiredRef.current = true;
+        if (import.meta.env.DEV) console.log("[Cockpit Diagnostic] Executing automatic secure retry...");
+        if (!studyNext) refreshStudyNext();
+        if (!snapshot) refreshSnapshot();
+      }, 10000);
+      return () => clearTimeout(retryTimer);
+    }
+  }, [cockpitTimedOut, studyNext, snapshot, refreshStudyNext, refreshSnapshot]);
+
+  // Limpar persistência quando tudo carregar
+  useEffect(() => {
+    if (studyNext && snapshot && dashData) {
+      sessionStorage.removeItem("cockpit_partial_mode");
+      sessionStorage.removeItem("cockpit_partial_reason");
+      if (telemetryFiredRef.current && import.meta.env.DEV) {
+        console.log(`[Cockpit Diagnostic] Full recovery complete at ${Date.now() - mountTimeRef.current}ms`);
+      }
+    }
+  }, [studyNext, snapshot, dashData]);
 
   useEffect(() => {
     if (autostartConsumedRef.current) return;
