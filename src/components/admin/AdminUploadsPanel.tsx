@@ -383,40 +383,6 @@ const AdminUploadsPanel = () => {
 };
 
 export default AdminUploadsPanel;
-
-      <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileSelect} />
-
-      <div
-        className="glass-card p-6 border-dashed border-2 border-primary/30 text-center hover:border-primary/50 transition-colors cursor-pointer"
-        onClick={() => !uploading && fileInputRef.current?.click()}
-      >
-        {uploading ? (
-          <>
-            <Loader2 className="h-10 w-10 text-primary mx-auto mb-3 animate-spin" />
-            <p className="font-medium">Enviando arquivo...</p>
-          </>
-        ) : (
-          <>
-            <Upload className="h-10 w-10 text-primary/50 mx-auto mb-3" />
-            <p className="font-medium">Clique para enviar arquivo global</p>
-            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX — máx 50MB • Será disponibilizado para todos os alunos</p>
-          </>
-        )}
-      </div>
-
-      {files.length > 0 && (
-        <div>
-          <h4 className="text-sm font-semibold mb-3">Arquivos globais ({files.length})</h4>
-          <div className="space-y-2">
-            {files.map((f) => {
-              const isProcessing = f.status === "processing";
-              const ejson = f.extracted_json as Record<string, any> | null;
-              return (
-                <div key={f.id} className="glass-card p-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      {statusIcon(f.status)}
-                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{f.filename}</div>
                       <div className="text-xs text-muted-foreground">
