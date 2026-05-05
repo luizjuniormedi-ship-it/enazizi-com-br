@@ -212,18 +212,29 @@ const ProfessorDashboard = () => {
       />
 
       <Tabs defaultValue="simulados" className="w-full">
-        <div className="rounded-2xl border border-border bg-card/40 p-2">
+        <div className="rounded-2xl border border-white/5 bg-card/20 backdrop-blur-md p-2">
           <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
-            <TabsTrigger value="simulados" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📝 Simulados</TabsTrigger>
-            <TabsTrigger value="plantao" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🏥 Casos Plantão</TabsTrigger>
-            <TabsTrigger value="video" className="h-10 min-w-[48%] flex-1 justify-start gap-1 rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm"><Video className="h-3.5 w-3.5" /> Sala de Aula</TabsTrigger>
-            <TabsTrigger value="temas" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📖 Temas</TabsTrigger>
-            <TabsTrigger value="alunos" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">👤 Aluno</TabsTrigger>
-            <TabsTrigger value="analytics" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📊 Turma</TabsTrigger>
-            <TabsTrigger value="bi" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📈 BI</TabsTrigger>
-            <TabsTrigger value="mentoria" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">📋 Mentoria</TabsTrigger>
-            <TabsTrigger value="osce" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🩺 OSCE</TabsTrigger>
-            <TabsTrigger value="proficiencia" className="h-10 min-w-[48%] flex-1 justify-start rounded-xl border border-border/60 px-3 text-xs sm:min-w-fit sm:flex-none sm:text-sm">🎯 Proficiência</TabsTrigger>
+            {[
+              { value: "simulados", label: "📝 Simulados" },
+              { value: "plantao", label: "🏥 Casos Plantão" },
+              { value: "video", label: "Video", icon: <Video className="h-3.5 w-3.5" /> },
+              { value: "temas", label: "📖 Temas" },
+              { value: "alunos", label: "👤 Aluno" },
+              { value: "analytics", label: "📊 Turma" },
+              { value: "bi", label: "📈 BI" },
+              { value: "mentoria", label: "📋 Mentoria" },
+              { value: "osce", label: "🩺 OSCE" },
+              { value: "proficiencia", label: "🎯 Proficiência" }
+            ].map((tab) => (
+              <TabsTrigger 
+                key={tab.value}
+                value={tab.value} 
+                className="h-10 min-w-[48%] flex-1 justify-center rounded-xl border border-white/5 px-4 text-[11px] font-black uppercase tracking-wider transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-sm sm:min-w-fit sm:flex-none"
+              >
+                {tab.icon && <span className="mr-1.5">{tab.icon}</span>}
+                {tab.label.toUpperCase()}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
 
