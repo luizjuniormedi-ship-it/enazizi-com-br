@@ -798,7 +798,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
               <div className="flex gap-2 flex-wrap">
                 {DIFFICULTY_OPTIONS.map(d => (
-              <Button key={d.value} variant={difficulty === d.value ? "default" : "outline"} size="sm" onClick={() => setDifficulty(d.value)}>
+              <Button 
+                key={d.value} 
+                variant={difficulty === d.value ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setDifficulty(d.value)}
+                className="h-9 px-4 rounded-xl font-black uppercase tracking-wider text-[10px]"
+              >
                     {d.label}
                   </Button>
                 ))}
@@ -815,7 +821,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
               <div className="flex gap-2 flex-wrap">
                 {(mode === "extremo" ? [50, 80, 100] : [5, 10, 15, 20, 30]).map(n => (
-                  <Button key={n} variant={questionCount === n && !customCount ? "default" : "outline"} size="sm" onClick={() => { setQuestionCount(n); setCustomCount(""); }}>
+                  <Button 
+                    key={n} 
+                    variant={questionCount === n && !customCount ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => { setQuestionCount(n); setCustomCount(""); }}
+                    className="h-9 w-12 rounded-xl font-black text-[10px]"
+                  >
                     {n}
                   </Button>
                 ))}
@@ -840,6 +852,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                     variant={imagePercent === pct ? "default" : "outline"}
                     size="sm"
                     onClick={() => setImagePercent(pct)}
+                    className="h-9 px-4 rounded-xl font-black uppercase tracking-wider text-[10px]"
                   >
                     {pct === 0 ? "Nenhuma" : `${pct}%`}
                   </Button>
@@ -876,12 +889,17 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
           <Button
             size="lg"
-            className={`w-full ${mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}`}
+            className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest text-[13px] shadow-glow-sm ${
+              mode === "extremo" ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground" : 
+              mode === "prova_real" ? "bg-amber-600 hover:bg-amber-700 text-white" : 
+              mode === "tri" ? "bg-violet-600 hover:bg-violet-700 text-white" : 
+              mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
+            }`}
             onClick={handleStart}
             disabled={mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && selectedTopics.length === 0}
           >
             {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
-            {mode === "adaptativo" ? `Iniciar Simulado Adaptativo (${customCount || questionCount} questões)` : mode === "estudo" ? "Iniciar Modo Estudo" : mode === "extremo" ? "Iniciar Prova Extrema" : mode === "prova_real" ? `Iniciar Prova Real ${selectedProfile.name}` : mode === "tri" ? `Iniciar TRI ${selectedProfile.name}` : "Iniciar Simulado"} {mode !== "adaptativo" ? `(${mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} questões)` : ""}
+            {mode === "adaptativo" ? `INICIAR SIMULADO ADAPTATIVO (${customCount || questionCount} QUESTÕES)` : mode === "estudo" ? "INICIAR MODO ESTUDO" : mode === "extremo" ? "INICIAR PROVA EXTREMA" : mode === "prova_real" ? `INICIAR PROVA REAL ${selectedProfile.name}` : mode === "tri" ? `INICIAR TRI ${selectedProfile.name}` : "INICIAR SIMULADO"} {mode !== "adaptativo" ? `(${mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} QUESTÕES)` : ""}
           </Button>
         </div>
       )}
