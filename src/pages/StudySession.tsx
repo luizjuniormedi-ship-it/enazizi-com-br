@@ -540,13 +540,31 @@ const StudySession = () => {
       });
 
       if (!resp.ok) {
-        const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
-        if (resp.status === 429) {
-          toast({ title: "Limite atingido", description: "Aguarde alguns segundos e tente novamente.", variant: "destructive" });
-        } else if (resp.status === 402) {
-          toast({ title: "Créditos esgotados", description: "Adicione créditos ao workspace.", variant: "destructive" });
+        const contentType = resp.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+          
+          // Se for um erro que a Edge Function já tratou com fallback via JSON (caso não consiga abrir stream)
+          if (err.isFallbackActive) {
+            console.info("[StudySession] Fallback active via JSON response");
+            return; // O conteúdo já foi tratado ou será enviado por outra via
+          }
+
+          if (resp.status === 429) {
+            toast({ title: "Limite atingido", description: "Aguarde alguns segundos e tente novamente.", variant: "destructive" });
+          } else if (resp.status === 402) {
+            toast({ title: "Créditos esgotados", description: "Adicione créditos ao workspace.", variant: "destructive" });
+          } else {
+            // Silencia erro se for apenas timeout da IA mas tiver fallback (tratado abaixo no catch ou via status especial)
+            if (err.error === "Erro no serviço de IA" && currentPhase === "questions") {
+              console.warn("[StudySession] IA timeout, expected fallback stream or retry");
+              // Não mostra toast destrutivo aqui, deixa o catch ou a stream lidar
+            } else {
+              toast({ title: "Erro", description: err.error, variant: "destructive" });
+            }
+          }
         } else {
-          toast({ title: "Erro", description: err.error, variant: "destructive" });
+          toast({ title: "Erro de Conexão", description: `Falha na comunicação com o servidor (${resp.status})`, variant: "destructive" });
         }
         setIsLoading(false);
         return;
