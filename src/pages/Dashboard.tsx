@@ -8,7 +8,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
 import { ENAFLIX_MODULES } from "@/data/enaflix/enaflixModules";
-import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen } from "lucide-react";
+import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
@@ -43,7 +43,7 @@ const Dashboard = () => {
       .slice(0, 4);
   }, [recentIds]);
 
-  const [showFallback, setShowFallback] = useState(false);
+  const [cockpitTimedOut, setCockpitTimedOut] = useState(false);
   const autostartConsumedRef = useRef(false);
 
   const activeRec = studyNext?.recommendation;
@@ -51,10 +51,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowFallback(true);
-    }, 5000); // 5s budget for critical data
+      setCockpitTimedOut(true);
+      // Log diagnostics for slow queries
+      if (missionLoading) console.warn("[Dashboard] study-next query slow (>5s)");
+      if (snapLoading) console.warn("[Dashboard] analytics-snapshot query slow (>5s)");
+      if (dashLoading) console.warn("[Dashboard] dashboard-data query slow (>5s)");
+    }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [missionLoading, snapLoading, dashLoading]);
 
   useEffect(() => {
     if (autostartConsumedRef.current) return;
@@ -67,16 +71,43 @@ const Dashboard = () => {
   }, [missionLoading, studyNext, searchParams, navigate]);
 
   const isDataMissing = !studyNext || !snapshot || !dashData;
-  const initialLoading = isDataMissing && !showFallback && (missionLoading || snapLoading || dashLoading);
+  // Solo bloqueamos el render si falta data crítica Y no hemos llegado al timeout
+  const initialLoading = isDataMissing && !cockpitTimedOut && (missionLoading || snapLoading || dashLoading);
 
   if (initialLoading) return <MissionControlSkeleton />;
 
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
 
   return (
-    <div className="pb-32 pt-6 space-y-12 relative min-h-screen overflow-x-hidden">
+    <div className="pb-32 pt-6 space-y-8 relative min-h-screen overflow-x-hidden">
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
+
+      {/* Sync Warning Banner */}
+      {cockpitTimedOut && isDataMissing && (
+        <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <RefreshCw className="h-4 w-4 text-amber-500 animate-spin-slow" />
+            <p className="text-sm font-medium text-amber-200/80">
+              Algumas métricas ainda estão sincronizando. Você já pode estudar.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button 
+              onClick={() => refresh?.()}
+              className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
+            >
+              Tentar atualizar
+            </button>
+            <button 
+              onClick={() => navigate("/dashboard/sessao-estudo")}
+              className="text-xs font-bold uppercase tracking-wider text-white/50 hover:text-white transition-colors"
+            >
+              Iniciar sessão mesmo assim
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Hero Cinematic Style - Netflix Medical */}
       <div className="px-4 sm:px-8 lg:px-14">
@@ -111,7 +142,7 @@ const Dashboard = () => {
                 Sua missão de hoje, <span className="gradient-text">{firstName}</span>
               </h1>
               <p className="text-lg sm:text-xl text-white/80 font-medium max-w-xl leading-tight">
-                {activeRec?.title || "Carregando próxima missão..."} — {activeRec?.description || "O motor ACE está calibrando sua jornada."}
+                {activeRec?.title || "Começar revisão inteligente"} — {activeRec?.description || "O motor ACE está preparando sua jornada personalizada."}
               </p>
             </div>
 
@@ -244,11 +275,15 @@ const Dashboard = () => {
         <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 lg:grid-cols-2 gap-12 pt-12">
           <div className="space-y-6">
             <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
-            <Suspense fallback={null}><ProgressOverview /></Suspense>
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              {(dashLoading && !dashData && !cockpitTimedOut) ? <LocalSectionSkeleton /> : <ProgressOverview />}
+            </Suspense>
           </div>
           <div className="space-y-6">
             <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
-            <Suspense fallback={null}><MedicalMasteryDashboard /></Suspense>
+            <Suspense fallback={<LocalSectionSkeleton />}>
+              {(dashLoading && !dashData && !cockpitTimedOut) ? <LocalSectionSkeleton /> : <MedicalMasteryDashboard />}
+            </Suspense>
           </div>
         </div>
       </div>
@@ -256,5 +291,15 @@ const Dashboard = () => {
     </div>
   );
 };
+
+const LocalSectionSkeleton = () => (
+  <div className="p-6 rounded-[32px] bg-white/5 border border-white/10 space-y-4 animate-pulse">
+    <div className="h-4 w-1/3 bg-white/10 rounded-full" />
+    <div className="grid grid-cols-2 gap-4">
+      <div className="h-32 bg-white/5 rounded-2xl" />
+      <div className="h-32 bg-white/5 rounded-2xl" />
+    </div>
+  </div>
+);
 
 export default Dashboard;
