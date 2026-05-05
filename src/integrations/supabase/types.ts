@@ -1773,30 +1773,68 @@ export type Database = {
       }
       audit_simulados_bancas: {
         Row: {
+          alias_used: boolean | null
+          applied_profile: string | null
           banca_key: string
+          batch_number: number | null
+          batch_size: number | null
+          blueprint_found: boolean | null
           created_at: string | null
           distribution_analysis: Json
+          elapsed_ms: number | null
+          failed_count: number | null
+          generated_count: number | null
           id: string
+          job_id: string | null
           questions_data: Json
           total_requested: number
+          user_id: string | null
         }
         Insert: {
+          alias_used?: boolean | null
+          applied_profile?: string | null
           banca_key: string
+          batch_number?: number | null
+          batch_size?: number | null
+          blueprint_found?: boolean | null
           created_at?: string | null
           distribution_analysis: Json
+          elapsed_ms?: number | null
+          failed_count?: number | null
+          generated_count?: number | null
           id?: string
+          job_id?: string | null
           questions_data: Json
           total_requested: number
+          user_id?: string | null
         }
         Update: {
+          alias_used?: boolean | null
+          applied_profile?: string | null
           banca_key?: string
+          batch_number?: number | null
+          batch_size?: number | null
+          blueprint_found?: boolean | null
           created_at?: string | null
           distribution_analysis?: Json
+          elapsed_ms?: number | null
+          failed_count?: number | null
+          generated_count?: number | null
           id?: string
+          job_id?: string | null
           questions_data?: Json
           total_requested?: number
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_simulados_bancas_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "simulation_generation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auto_mitigation_logs: {
         Row: {
