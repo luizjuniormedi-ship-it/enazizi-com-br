@@ -17,12 +17,6 @@ const TeacherStudyAssignments = lazy(() => import("@/components/professor/Teache
 const MentorThemePlans = lazy(() => import("@/components/professor/MentorThemePlans"));
 const ProfessorPracticalExams = lazy(() => import("@/components/professor/ProfessorPracticalExams"));
 const ProfessorProficiencyPlans = lazy(() => import("@/components/professor/ProfessorProficiencyPlans"));
-
-import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
-import SimuladoListItem from "@/components/professor/SimuladoListItem";
-import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
-
-// Code-split: dialogs e BI só carregam quando necessários
 const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
 const CreateSimuladoDialog = lazyWithRetry(() => import("@/components/professor/CreateSimuladoDialog"), "CreateSimuladoDialog");
 const SimuladoResultsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoResultsDialog"), "SimuladoResultsDialog");
