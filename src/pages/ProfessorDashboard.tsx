@@ -9,14 +9,14 @@ import { useToast } from "@/hooks/use-toast";
 import { CinematicHero } from "@/components/cinematic";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 
-import ClassAnalytics from "@/components/professor/ClassAnalytics";
-import ProfessorPlantao from "@/components/professor/ProfessorPlantao";
-import StudentTracker from "@/components/professor/StudentTracker";
-import VideoRoom from "@/components/professor/VideoRoom";
-import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignments";
-import MentorThemePlans from "@/components/professor/MentorThemePlans";
-import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalExams";
-import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficiencyPlans";
+const ClassAnalytics = lazy(() => import("@/components/professor/ClassAnalytics"));
+const ProfessorPlantao = lazy(() => import("@/components/professor/ProfessorPlantao"));
+const StudentTracker = lazy(() => import("@/components/professor/StudentTracker"));
+const VideoRoom = lazy(() => import("@/components/professor/VideoRoom"));
+const TeacherStudyAssignments = lazy(() => import("@/components/professor/TeacherStudyAssignments"));
+const MentorThemePlans = lazy(() => import("@/components/professor/MentorThemePlans"));
+const ProfessorPracticalExams = lazy(() => import("@/components/professor/ProfessorPracticalExams"));
+const ProfessorProficiencyPlans = lazy(() => import("@/components/professor/ProfessorProficiencyPlans"));
 
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
