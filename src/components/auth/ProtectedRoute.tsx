@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
-import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User, Stethoscope } from "lucide-react";
+import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User, Stethoscope, Target } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +14,7 @@ import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
 import WelcomeBackScreen from "@/components/onboarding/WelcomeBackScreen";
 import OnboardingV2Flow from "@/components/onboarding/OnboardingV2Flow";
+import { EXAM_PROFILES } from "@/lib/examProfiles";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, signOut } = useAuth();
