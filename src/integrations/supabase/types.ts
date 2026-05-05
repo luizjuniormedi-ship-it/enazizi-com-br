@@ -1771,6 +1771,33 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_simulados_bancas: {
+        Row: {
+          banca_key: string
+          created_at: string | null
+          distribution_analysis: Json
+          id: string
+          questions_data: Json
+          total_requested: number
+        }
+        Insert: {
+          banca_key: string
+          created_at?: string | null
+          distribution_analysis: Json
+          id?: string
+          questions_data: Json
+          total_requested: number
+        }
+        Update: {
+          banca_key?: string
+          created_at?: string | null
+          distribution_analysis?: Json
+          id?: string
+          questions_data?: Json
+          total_requested?: number
+        }
+        Relationships: []
+      }
       auto_mitigation_logs: {
         Row: {
           action_taken: string

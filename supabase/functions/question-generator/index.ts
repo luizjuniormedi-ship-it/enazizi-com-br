@@ -409,14 +409,13 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         let slotQuestions = [...fromCache];
         let remaining = target - slotQuestions.length;
 
-        // AI generation for remaining
+        // AI generation for remaining — run batches in PARALLEL with tight timeouts
         if (remaining > 0) {
-          const MAX_ATTEMPTS = Math.ceil(remaining * 2.0 / SAFE_BATCH) + 2;
-          for (let attempt = 0; attempt < MAX_ATTEMPTS && slotQuestions.length < target; attempt++) {
-            const needed = Math.min(SAFE_BATCH, target - slotQuestions.length);
-            if (needed <= 0) break;
+          const batchCount = Math.ceil(remaining / SAFE_BATCH);
+          // Cap parallel batches to avoid overloading; max 4 concurrent batches
+          const PARALLEL_BATCHES = Math.min(batchCount, 4);
 
-            const slotPrompt = `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+          const buildSlotPrompt = (needed: number, prevSnapshot: string[]) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
 
 IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
 
@@ -429,19 +428,21 @@ Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"topic":"tema","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
-${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
+${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
 
+          const runBatch = async (batchIdx: number) => {
+            const needed = Math.min(SAFE_BATCH, target - (batchIdx * SAFE_BATCH));
+            if (needed <= 0) return [] as any[];
             try {
               const resp = await aiFetch({
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: slotPrompt }],
-                maxTokens: 32768,
-                timeoutMs: 120000,
+                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
+                maxTokens: 16384,
+                timeoutMs: 55000,
+                maxRetries: 1,
               });
-
-              if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}] AI error:`, t.slice(0, 200)); continue; }
+              if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error:`, t.slice(0, 200)); return []; }
               const aiData = await resp.json();
 
-              // Extract questions from tool call or content
               let parsed: any[] = [];
               const toolCall = aiData.choices?.[0]?.message?.tool_calls?.[0];
               if (toolCall?.function?.arguments) {
@@ -461,37 +462,59 @@ ${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) 
                 }
               }
 
-              // Strict filter
-              const valid = parsed.filter((q: any) => {
+              return parsed.filter((q: any) => {
                 const stmt = String(q.statement || "");
                 if (stmt.length < 350) return false;
-                if (ENGLISH_PATTERN.test(stmt)) { console.warn(`[Slot ${level}] Rejeitada: inglês`); return false; }
-                if (IMAGE_REF_PATTERN.test(stmt)) { console.warn(`[Slot ${level}] Rejeitada: imagem`); return false; }
+                if (ENGLISH_PATTERN.test(stmt)) return false;
+                if (IMAGE_REF_PATTERN.test(stmt)) return false;
                 if (!Array.isArray(q.options) || q.options.length < 4) return false;
-                if (ENGLISH_PATTERN.test(q.options.join(" "))) { console.warn(`[Slot ${level}] Rejeitada: opções em inglês`); return false; }
+                if (ENGLISH_PATTERN.test(q.options.join(" "))) return false;
                 return true;
               }).map((q: any) => ({
                 ...q,
                 statement: cleanQuestionText(q.statement || ""),
                 options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
                 explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
-                difficulty_level: level, // Force slot level
+                difficulty_level: level,
               }));
-
-              // Dedup
-              const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
-              for (const q of valid) {
-                if (slotQuestions.length >= target) break;
-                const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
-                if (!prevKeys.has(key)) {
-                  globalPrev.push(String(q.statement || "").slice(0, 120));
-                  slotQuestions.push(q);
-                }
-              }
-              console.log(`[Slot ${level}] batch ${attempt + 1}: total ${slotQuestions.length}/${target}`);
             } catch (err) {
-              console.error(`[Slot ${level}] batch ${attempt + 1} exception:`, err);
+              console.error(`[Slot ${level}][batch ${batchIdx + 1}] exception:`, err);
+              return [];
             }
+          };
+
+          // Round 1: parallel batches
+          const round1 = await Promise.all(
+            Array.from({ length: PARALLEL_BATCHES }, (_, i) => runBatch(i))
+          );
+
+          const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+          for (const batch of round1) {
+            for (const q of batch) {
+              if (slotQuestions.length >= target) break;
+              const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+              if (!prevKeys.has(key)) {
+                prevKeys.add(key);
+                globalPrev.push(String(q.statement || "").slice(0, 120));
+                slotQuestions.push(q);
+              }
+            }
+          }
+          console.log(`[Slot ${level}] parallel round done: total ${slotQuestions.length}/${target}`);
+
+          // Round 2: single retry batch if still short
+          if (slotQuestions.length < target) {
+            const extra = await runBatch(PARALLEL_BATCHES);
+            for (const q of extra) {
+              if (slotQuestions.length >= target) break;
+              const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
+              if (!prevKeys.has(key)) {
+                prevKeys.add(key);
+                globalPrev.push(String(q.statement || "").slice(0, 120));
+                slotQuestions.push(q);
+              }
+            }
+            console.log(`[Slot ${level}] retry round done: total ${slotQuestions.length}/${target}`);
           }
         }
 
