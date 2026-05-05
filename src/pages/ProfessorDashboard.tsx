@@ -201,8 +201,12 @@ const ProfessorDashboard = () => {
         title="Painel do Professor"
         subtitle="Crie simulados, acompanhe alunos e oriente turmas com inteligência adaptativa."
         actions={
-          <Button onClick={handleOpenCreate} size="lg" className="gap-2 shadow-elegant">
-            <Plus className="h-4 w-4" /> Novo Simulado
+          <Button 
+            onClick={handleOpenCreate} 
+            size="lg" 
+            className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm gap-2"
+          >
+            <Plus className="h-4 w-4" /> NOVO SIMULADO
           </Button>
         }
       />
@@ -242,7 +246,12 @@ const ProfessorDashboard = () => {
                 <p className="text-sm text-muted-foreground mb-4">
                   Crie seu primeiro simulado e atribua aos alunos.
                 </p>
-                <Button onClick={handleOpenCreate}>Criar Simulado</Button>
+                <Button 
+                  onClick={handleOpenCreate}
+                  className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+                >
+                  CRIAR SIMULADO
+                </Button>
               </CardContent>
             </Card>
           ) : (
