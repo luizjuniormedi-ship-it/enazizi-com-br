@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   getLessonPrompt,
   getCompactLessonPrompt,
@@ -466,11 +467,47 @@ REGRA: NUNCA comece com questões. Sempre ensine primeiro. Nunca pule estados.`;
 }
 
 // ── Concurrency semaphore for SSE streaming ──
-const MAX_CONCURRENT_STREAMS = 15;
+const MAX_CONCURRENT_STREAMS = 25;
 let activeStreams = 0;
+
+async function fetchFallbackQuestion(supabase: any, topic: string) {
+  console.log(`[Fallback] Searching questions_bank for topic: ${topic}`);
+  const { data, error } = await supabase
+    .from("questions_bank")
+    .select("*")
+    .or(`topic.ilike.%${topic}%,subtopic.ilike.%${topic}%,statement.ilike.%${topic}%`)
+    .eq("review_status", "approved")
+    .limit(5);
+
+  if (error || !data || data.length === 0) return null;
+  // Return a random one from the matches
+  return data[Math.floor(Math.random() * data.length)];
+}
+
+function formatQuestionAsText(q: any): string {
+  const options = Array.isArray(q.options) 
+    ? q.options.map((opt: string, i: number) => `${String.fromCharCode(65 + i)}) ${opt}`).join("\n")
+    : "";
+  
+  return `### 📋 Questão do Banco (Fallback)
+  
+${q.statement}
+
+${options}
+
+**Qual sua resposta? (A, B, C, D ou E)**
+
+<!--SIGNAL-->
+{"wasCorrect":false,"correctLetter":"${String.fromCharCode(65 + (q.correct_index ?? 0))}","isFallback":true,"topic":"${q.topic || ""}"}
+<!--/SIGNAL-->`;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
   const userId = await extractUserId(req);
   if (!userId) {
@@ -479,9 +516,7 @@ serve(async (req) => {
     });
   }
 
-  // Check concurrency before processing
   if (activeStreams >= MAX_CONCURRENT_STREAMS) {
-    console.warn(`study-session: rejected — ${activeStreams}/${MAX_CONCURRENT_STREAMS} streams active`);
     return new Response(
       JSON.stringify({ error: "Servidor ocupado. Tente novamente em alguns segundos.", retry: true }),
       { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "3" } },
@@ -493,91 +528,116 @@ serve(async (req) => {
     const { messages, phase, topic, userContext, performanceData, session_memory, studyMode, targetExam } = await req.json();
 
     if (!Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório." }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     let systemPrompt = getPhasePrompt(phase, topic, performanceData, studyMode);
-
-    // Inject banca-specific adaptation
     const bancaProfile = getBancaProfile(targetExam);
     systemPrompt += buildBancaBlock(bancaProfile);
 
-    // Inject the structured-signal contract for any phase that may correct
-    // objective answers. The block is harmless in pure-teaching phases (the
-    // model just won't emit it).
     if (["questions", "discussion", "reinforcement", "active-recall", "lesson"].includes(phase)) {
       systemPrompt += "\n" + STRUCTURED_SIGNAL_BLOCK;
     }
 
     if (userContext) {
-      systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
+      // Truncate user context to reduce payload if it's too large
+      const truncatedContext = String(userContext).slice(0, 4000);
+      systemPrompt += `\n\n--- MATERIAL DE ESTUDO ---\n${truncatedContext}\n--- FIM ---`;
     }
 
-    if (session_memory) {
-      systemPrompt += `\n\n${getSessionMemoryBlock()}
---- DADOS DA SESSÃO ---
-Último tema: ${session_memory.ultimo_tema || "nenhum"}
-Erros consecutivos: ${session_memory.erros_consecutivos || 0}
-Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
-${session_memory.erros_consecutivos >= 3 ? "⚠️ TRAVAMENTO DETECTADO: Simplifique a explicação." : ""}
---- FIM ---`;
-    }
-
-    // Phase-based model tier and token limits
     const isLightPhase = ["performance", "recall", "recall_result", "active-recall", "reinforcement"].includes(phase);
-    const isMediumPhase = ["questions", "discussion", "discursive"].includes(phase);
+    const isQuestionPhase = phase === "questions";
     const modelTier = isLightPhase ? "standard" : "pro";
-    const maxTokens = isLightPhase ? 4096 : isMediumPhase ? 8192 : 16384;
-
-    // Trim message history: keep only last 10 messages to reduce token usage
-    const trimmedMessages = messages.slice(-10);
-    const startMs = Date.now();
     const usedModel = getModelForTier(modelTier);
+    
+    // Controlled timeout for question generation (8-12s) vs others (45s)
+    const timeoutMs = isQuestionPhase ? 12000 : 45000;
+    
+    // Trim history to reduce tokens
+    const trimmedMessages = messages.slice(-8);
+    const startMs = Date.now();
 
-    const response = await aiFetch({
-      model: usedModel,
-      messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
-      stream: true,
-      maxTokens,
-    });
-
-    const elapsed = Date.now() - startMs;
-
-    // Log AI usage (fire-and-forget)
-    logAiUsage({
-      userId,
-      functionName: "study-session",
-      modelUsed: usedModel,
-      success: response.ok,
-      responseTimeMs: elapsed,
-      modelTier,
-      errorMessage: response.ok ? undefined : `status ${response.status}`,
-    }).catch(() => {});
-
-    if (!response.ok) {
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
-        status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    try {
+      const response = await aiFetch({
+        model: usedModel,
+        messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
+        stream: true,
+        maxTokens: isLightPhase ? 2048 : 4096, // Reduced tokens for performance
+        timeoutMs,
       });
+
+      const elapsed = Date.now() - startMs;
+      logAiUsage({
+        userId,
+        functionName: "study-session",
+        modelUsed: usedModel,
+        success: response.ok,
+        responseTimeMs: elapsed,
+        modelTier,
+        errorMessage: response.ok ? undefined : `status ${response.status}`,
+      }).catch(() => {});
+
+      if (!response.ok) {
+        throw new Error(`AI_ERROR_${response.status}`);
+      }
+
+      const transform = new TransformStream({
+        flush() { activeStreams = Math.max(0, activeStreams - 1); },
+      });
+      response.body!.pipeTo(transform.writable).catch(() => { activeStreams = Math.max(0, activeStreams - 1); });
+
+      return new Response(transform.readable, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+
+    } catch (aiErr) {
+      console.error("[StudySession] AI Call failed:", aiErr);
+      
+      // Fallback OBRIGATÓRIO para fase de questões
+      if (isQuestionPhase) {
+        const fallback = await fetchFallbackQuestion(supabaseAdmin, topic);
+        if (fallback) {
+          activeStreams = Math.max(0, activeStreams - 1);
+          const content = formatQuestionAsText(fallback);
+          // Return as a single SSE message or plain JSON? 
+          // Frontend expects SSE stream usually, but can handle JSON error.
+          // Let's send a special SSE sequence that says "FALLBACK"
+          const encoder = new TextEncoder();
+          const stream = new ReadableStream({
+            start(controller) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "⚠️ *Utilizando questão do banco de dados (Fallback por instabilidade na IA)*\n\n" } }] })}\n\n`));
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: content } }] })}\n\n`));
+              controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              controller.close();
+            }
+          });
+          return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+        }
+      }
+
+      throw aiErr;
     }
-
-    // Wrap body to decrement counter when stream ends
-    const origBody = response.body!;
-    const transform = new TransformStream({
-      flush() { activeStreams = Math.max(0, activeStreams - 1); },
-    });
-    origBody.pipeTo(transform.writable).catch(() => { activeStreams = Math.max(0, activeStreams - 1); });
-
-    return new Response(transform.readable, {
-      headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
-    });
   } catch (e) {
     activeStreams = Math.max(0, activeStreams - 1);
-    console.error("study-session error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
+    const isTimeout = e instanceof Error && (e.name === "AbortError" || e.message.includes("timeout"));
+    
+    // Log final failure
+    logAiUsage({
+      userId,
+      functionName: "study-session-error",
+      modelUsed: "fallback",
+      success: false,
+      responseTimeMs: 0,
+      errorMessage: `Final error: ${e instanceof Error ? e.message : String(e)} (Timeout: ${isTimeout})`,
+    }).catch(() => {});
+
+    return new Response(JSON.stringify({ 
+      error: "Erro no serviço de IA", 
+      message: isTimeout ? "Tempo esgotado. Tente novamente." : "Falha na geração.",
+      isTimeout
+    }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

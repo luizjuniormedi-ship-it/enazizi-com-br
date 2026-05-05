@@ -172,38 +172,28 @@ async function buildDeficits(supabaseAdmin: any, specialties: string[]) {
 }
 
 async function generateBatch(specialty: string, topics: string[], userId: string, supabaseAdmin: any, questionCount = 10): Promise<{ questions: number; flashcards: number }> {
-  const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5);
-  const fcCount = Math.max(1, Math.min(5, Math.round(questionCount * 0.6)));
+  const selectedTopics = topics.sort(() => Math.random() - 0.5).slice(0, 4); // Reduzido de 5 para 4 temas para focar mais
+  const fcCount = Math.max(1, Math.min(3, Math.round(questionCount * 0.4))); // Reduzido count de flashcards
 
-  const prompt = `Gere EXATAMENTE ${questionCount} questões de múltipla escolha e ${fcCount} flashcards para Residência Médica.
-
+  const prompt = `Gere ${questionCount} questões MCQ e ${fcCount} flashcards.
 ESPECIALIDADE: ${specialty}
 TEMAS: ${selectedTopics.join(", ")}
 
-REGRAS PARA QUESTÕES:
-- Nível de prova de residência médica (ENARE, USP, UNICAMP, FMUSP)
-- Casos clínicos realistas com dados de anamnese, exame físico e exames complementares
-- EXATAMENTE 5 alternativas (A, B, C, D, E) sendo apenas 1 correta
-- Explicação detalhada com raciocínio clínico
-- Varie a dificuldade: 20% fácil (difficulty:2), 40% médio (difficulty:3), 40% difícil (difficulty:4-5)
-- Distribua entre os temas fornecidos
-- Cada questão DEVE ter um paciente COMPLETAMENTE DIFERENTE
-- NUNCA coloque dois itens do MESMO TEMA em posições CONSECUTIVAS
-
-REGRAS PARA FLASHCARDS:
-- Baseados em conceitos-chave dos mesmos temas
-- Pergunta objetiva e resposta completa mas concisa
-
-FORMATO JSON OBRIGATÓRIO:
-{"questions":[{"statement":"Caso clínico...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[{"question":"...","answer":"...","topic":"${specialty}"}]}`;
+REGRAS:
+- Nível residência médica (ENARE/USP)
+- Casos clínicos realistas (anamnese+EF+exames)
+- 5 alternativas (A-E), 1 correta
+- Explicação detalhada
+- difficulty: 2-5
+- JSON OBRIGATÓRIO: {"questions":[{"statement":"...","options":["A) ...","B) ...","C) ...","D) ...","E) ..."],"correct_index":0,"explanation":"...","topic":"${specialty}","difficulty":3}],"flashcards":[{"question":"...","answer":"...","topic":"${specialty}"}]}`;
 
   try {
     const response = await aiFetch({
       model: "openai/gpt-5-mini",
-      timeoutMs: 120000,
+      timeoutMs: 80000, // Reduzido de 120s para 80s para falhar mais rápido se travado
       maxRetries: 1,
       messages: [
-        { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).\n\n⛔ CONTEÚDO PROIBIDO: NUNCA gere questões sobre declarações financeiras, conflitos de interesse, relações com empresas farmacêuticas." },
+        { role: "system", content: "Professor de medicina. Responda APENAS JSON puro em PT-BR. Sem markdown." },
         { role: "user", content: prompt },
       ],
     });
