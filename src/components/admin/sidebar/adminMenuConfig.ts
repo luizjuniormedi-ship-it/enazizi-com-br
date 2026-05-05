@@ -22,7 +22,7 @@ import {
   Image as ImageIcon, MessageSquare, Bell, MessageCircleHeart, Bot,
   Settings2, Flag, KeyRound, Plug, Cpu,
   Workflow, Server, Activity, Wrench, Network, BrainCircuit,
-  ClipboardList, Sparkles, DollarSign, ShieldCheck
+  ClipboardList, Sparkles, DollarSign, ShieldCheck, Database
 } from "lucide-react";
 import type { AdminScope } from "@/hooks/useAdminScope";
 
