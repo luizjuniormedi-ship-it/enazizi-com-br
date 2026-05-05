@@ -475,11 +475,41 @@ const Simulados = () => {
           </div>
           <div className="text-center space-y-2">
             <h2 className="text-xl font-black text-white">{loadingProgress || "Gerando questões..."}</h2>
-            <p className="text-sm text-white/40 font-medium">IA organizadora preparando seu ambiente de prova.</p>
+            <p className="text-sm text-white/40 font-medium">
+              {partialCount > 0 
+                ? `${partialCount} questões já estão prontas para você.` 
+                : "IA organizadora preparando seu ambiente de prova."}
+            </p>
           </div>
-          <div className="w-64 space-y-2">
-            <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
-            <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
+          <div className="w-64 space-y-4">
+            <div className="space-y-2">
+              <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
+              <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              {partialCount > 0 && (
+                <Button 
+                  onClick={() => startExamWithQuestions(questions.slice(0, partialCount), configRef.current)} 
+                  variant="outline"
+                  className="w-full bg-white/5 border-white/10 hover:bg-white/10 text-white gap-2"
+                >
+                  <Play className="h-4 w-4" /> Iniciar com {partialCount} questões
+                </Button>
+              )}
+              
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  cancelGenerationRef.current = true;
+                  setPhase("setup");
+                }} 
+                className="text-white/40 hover:text-white"
+              >
+                Cancelar e Voltar
+              </Button>
+            </div>
           </div>
         </div>
       </div>
