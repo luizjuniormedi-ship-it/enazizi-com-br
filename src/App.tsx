@@ -247,12 +247,12 @@ const App = () => (
                   <Route path="diagnostico" element={<Diagnostic />} />
                   <Route path="predictor" element={<PerformancePredictor />} />
                   <Route path="mapa-dominio" element={<MedicalDomainMap />} />
-                  <Route path="proficiencia" element={<StudentSimulados />} />
-                  <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
-                  <Route path="minha-jornada" element={<MedicalAdaptiveJourney />} />
-                  <Route path="agentes" element={<AgentsHub />} />
-                  <Route path="uploads" element={<Uploads />} />
-                  <Route path="coach" element={<MotivationalCoach />} />
+                  <Route path="proficiencia" element={<ModuleErrorBoundary module="proficiencia"><StudentSimulados /></ModuleErrorBoundary>} />
+                  <Route path="radar-trajetoria" element={<ModuleErrorBoundary module="radar-trajetoria"><RadarTrajetoriaPage /></ModuleErrorBoundary>} />
+                  <Route path="minha-jornada" element={<ModuleErrorBoundary module="jornada"><MedicalAdaptiveJourney /></ModuleErrorBoundary>} />
+                  <Route path="agentes" element={<ModuleErrorBoundary module="agentes"><AgentsHub /></ModuleErrorBoundary>} />
+                  <Route path="uploads" element={<ModuleErrorBoundary module="uploads"><Uploads /></ModuleErrorBoundary>} />
+                  <Route path="coach" element={<ModuleErrorBoundary module="coach"><MotivationalCoach /></ModuleErrorBoundary>} />
                   <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
 
                   {/* Legado & Redirects Internos */}
