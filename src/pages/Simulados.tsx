@@ -124,6 +124,19 @@ async function generateBatch(topics: string[], count: number, difficulty: string
   const content = json.choices?.[0]?.message?.content || "";
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (jsonMatch) return mapQuestions(JSON.parse(jsonMatch[0]), topics);
+  
+  // Fallback: check tool_calls if JSON was returned in that format
+  const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
+  if (toolCall?.function?.arguments) {
+    try {
+      const tc = JSON.parse(toolCall.function.arguments);
+      const qs = Array.isArray(tc.questions) ? tc.questions : [];
+      if (qs.length > 0) return mapQuestions(qs, topics);
+    } catch (e) {
+      console.error("Error parsing tool_calls fallback:", e);
+    }
+  }
+  
   return [];
 }
 
@@ -132,9 +145,10 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
     .map((q: any) => ({
       statement: String(q.statement || ""),
       options: Array.isArray(q.options) ? q.options.map(String) : [],
-      correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
+      correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
       topic: String(q.topic || topics[0]),
       explanation: String(q.explanation || ""),
+      image_url: q.image_url,
     }))
     .filter(q => q.options.length >= 4 && q.statement.length > 10);
 }
@@ -291,10 +305,10 @@ const Simulados = () => {
       setLoadingPercent(100);
       startExamWithQuestions(batch, config);
     } catch (e) {
-      console.error("Simulado start error:", e);
+      console.error("Simulado start error details:", e);
       toast({ 
         title: "Erro ao iniciar simulado", 
-        description: e instanceof Error ? e.message : "Tente novamente em instantes.",
+        description: e instanceof Error ? `Erro: ${e.message}` : "Erro desconhecido ao conectar com o gerador de questões.",
         variant: "destructive" 
       });
       setPhase("setup");
