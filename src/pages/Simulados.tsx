@@ -173,6 +173,7 @@ const Simulados = () => {
   const { refresh } = useRefreshUserState();
   const studyCtx = useStudyContext();
   const autoStartedRef = useRef(false);
+  const cancelGenerationRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>("setup");
   const [questions, setQuestions] = useState<SimQuestion[]>([]);
@@ -185,6 +186,7 @@ const Simulados = () => {
   const [flaggedQuestions, setFlaggedQuestions] = useState<number[]>([]);
   const [partialCount, setPartialCount] = useState(0);
   const [targetCount, setTargetCount] = useState(0);
+  const [isRetrying, setIsRetrying] = useState(false);
   const startTimeRef = useRef<Date>();
   const elapsedSecondsRef = useRef<number>(0);
   const configRef = useRef<any>(null);
@@ -289,22 +291,79 @@ const Simulados = () => {
         }
       }
 
-      // Fluxo Normal
+      // Fluxo Normal com BATCHING (5 questões por vez para estabilidade)
       const { data: { session } } = await supabase.auth.getSession();
-      setLoadingPercent(30);
-      setLoadingProgress("Buscando questões...");
+      const requestedTotal = config.count || 10;
+      setTargetCount(requestedTotal);
+      cancelGenerationRef.current = false;
       
-      const batch = await generateBatch(
-        config.topics || ["Clínica Médica"], 
-        config.count || 10, 
-        config.difficulty || "misto", 
-        session?.access_token,
-        undefined,
-        config.realExamProfile ? config.realExamProfile.toLowerCase() : undefined
-      );
+      const BATCH_SIZE_AI = 5;
+      let allGenerated: SimQuestion[] = [];
+      let currentTry = 0;
+      
+      while (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
+        const remaining = requestedTotal - allGenerated.length;
+        const currentBatchSize = Math.min(BATCH_SIZE_AI, remaining);
+        const batchNum = Math.floor(allGenerated.length / BATCH_SIZE_AI) + 1;
+        const totalBatchesNum = Math.ceil(requestedTotal / BATCH_SIZE_AI);
+        
+        setLoadingProgress(`Gerando lote ${batchNum} de ${totalBatchesNum}...`);
+        setLoadingPercent(Math.round((allGenerated.length / requestedTotal) * 100));
+        
+        try {
+          const avoid = allGenerated.map(q => q.statement);
+          const batchQs = await generateBatch(
+            config.topics || ["Clínica Médica"], 
+            currentBatchSize, 
+            config.difficulty || "misto", 
+            session?.access_token,
+            undefined,
+            config.realExamProfile ? config.realExamProfile.toLowerCase() : undefined,
+            avoid
+          );
+          
+          if (batchQs.length === 0) {
+            // Se falhou mas temos questões, perguntamos se quer continuar
+            if (allGenerated.length > 0) {
+              setLoadingProgress(`Lote ${batchNum} falhou. Preparando com o que temos...`);
+              break;
+            }
+            throw new Error("Não foi possível gerar questões. Tente reduzir a quantidade ou mudar o tema.");
+          }
+          
+          allGenerated = [...allGenerated, ...batchQs];
+          setPartialCount(allGenerated.length);
+          currentTry = 0; // Reset retry counter on success
+        } catch (batchError) {
+          console.error(`Error in batch ${batchNum}:`, batchError);
+          if (currentTry < 1) { // 1 Retry per batch
+            currentTry++;
+            setLoadingProgress(`Re-tentando lote ${batchNum}...`);
+            await new Promise(r => setTimeout(r, 2000));
+            continue;
+          }
+          
+          if (allGenerated.length > 0) {
+            toast({
+              title: "Algumas questões falharam",
+              description: `Geramos ${allGenerated.length} de ${requestedTotal} questões. Iniciando simulado parcial.`,
+            });
+            break;
+          }
+          throw batchError;
+        }
+      }
+      
+      if (cancelGenerationRef.current && allGenerated.length === 0) {
+        setPhase("setup");
+        return;
+      }
       
       setLoadingPercent(100);
-      startExamWithQuestions(batch, config);
+      setLoadingProgress("Finalizando simulado...");
+      setTimeout(() => {
+        startExamWithQuestions(allGenerated, config);
+      }, 500);
     } catch (e) {
       console.error("Simulado start error details:", e);
       toast({ 
