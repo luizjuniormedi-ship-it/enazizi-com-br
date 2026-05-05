@@ -189,6 +189,21 @@ const AgentMessageItem = memo(
                 </div>
               )}
 
+              {msg.role === "assistant" && msg.bibliography && msg.bibliography.length > 0 && (
+                <div className="mt-4 p-4 rounded-2xl bg-primary/5 border border-primary/10 animate-fade-in">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
+                    <BookOpen className="h-3 w-3" /> Fontes Consultadas na Base de Conhecimento
+                  </h4>
+                  <div className="space-y-3">
+                    {msg.bibliography.map((ref, i) => (
+                      <div key={i} className="text-xs text-white/70 leading-relaxed pl-3 border-l-2 border-primary/20">
+                        <span className="font-bold text-white/90">[{ref.source}{ref.page ? ` p.${ref.page}` : ''}]:</span> {ref.content}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-border/30 empty:hidden">
                 {hasOnSaveMessage && index > 0 && !isLoading && (
                   <Button
