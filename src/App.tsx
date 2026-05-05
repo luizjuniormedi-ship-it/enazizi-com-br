@@ -215,13 +215,13 @@ const App = () => (
                   <Route path="mentor" element={<ModuleErrorBoundary module="mentor"><AIMentor /></ModuleErrorBoundary>} />
                   
                   {/* Conteúdo */}
-                  <Route path="videoaulas" element={<VideoLessonsLibrary />} />
-                  <Route path="videoaulas/explorar" element={<VideoLessonsExplore />} />
-                  <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
-                  <Route path="resumos" element={<ContentSummarizer />} />
-                  <Route path="apostilas" element={<StudyGuides />} />
-                  <Route path="mapas-mentais" element={<MindMaps />} />
-                  <Route path="mnemonic-studio" element={<MnemonicStudioPage />} />
+                  <Route path="videoaulas" element={<ModuleErrorBoundary module="videoaulas"><VideoLessonsLibrary /></ModuleErrorBoundary>} />
+                  <Route path="videoaulas/explorar" element={<ModuleErrorBoundary module="videoaulas-explorar"><VideoLessonsExplore /></ModuleErrorBoundary>} />
+                  <Route path="videoaulas/:id" element={<ModuleErrorBoundary module="video-player"><VideoLessonPlayer /></ModuleErrorBoundary>} />
+                  <Route path="resumos" element={<ModuleErrorBoundary module="resumos"><ContentSummarizer /></ModuleErrorBoundary>} />
+                  <Route path="apostilas" element={<ModuleErrorBoundary module="apostilas"><StudyGuides /></ModuleErrorBoundary>} />
+                  <Route path="mapas-mentais" element={<ModuleErrorBoundary module="mapas-mentais"><MindMaps /></ModuleErrorBoundary>} />
+                  <Route path="mnemonic-studio" element={<ModuleErrorBoundary module="mnemonicos"><MnemonicStudioPage /></ModuleErrorBoundary>} />
                   <Route path="mnemonic-generator" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
                   <Route path="mnemonicos" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
                   <Route path="mnemonico" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
