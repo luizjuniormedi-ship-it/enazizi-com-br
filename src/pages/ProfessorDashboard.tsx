@@ -268,19 +268,27 @@ const ProfessorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="temas" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><TeacherStudyAssignments callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <TeacherStudyAssignments callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="video" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><VideoRoom callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <VideoRoom callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="alunos" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><StudentTracker callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <StudentTracker callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><ClassAnalytics callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ClassAnalytics callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="bi" className="mt-4">
@@ -290,15 +298,21 @@ const ProfessorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="mentoria" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><MentorThemePlans callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <MentorThemePlans callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="osce" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><ProfessorPracticalExams callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ProfessorPracticalExams callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="proficiencia" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><ProfessorProficiencyPlans callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ProfessorProficiencyPlans callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
       </Tabs>
 
