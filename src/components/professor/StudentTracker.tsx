@@ -45,7 +45,7 @@ interface StudentDetail {
   quotas: { questions_used: number; questions_limit: number } | null;
 }
 
-const StudentTracker = () => {
+const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<string, unknown>) => Promise<any> }) => {
   const { session } = useAuth();
   const { toast } = useToast();
   const [students, setStudents] = useState<StudentProfile[]>([]);
@@ -60,6 +60,7 @@ const StudentTracker = () => {
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
+    if (externalCallAPI) return externalCallAPI(body);
     const resp = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
@@ -68,7 +69,7 @@ const StudentTracker = () => {
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || "Erro");
     return data;
-  }, [session, API_URL]);
+  }, [session, API_URL, externalCallAPI]);
 
   const loadStudents = useCallback(async () => {
     if (!session) return;

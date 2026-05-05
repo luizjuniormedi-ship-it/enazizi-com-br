@@ -44,7 +44,7 @@ interface ClassData {
   specialtyBreakdown: { specialty: string; avg_score: number; student_count: number }[];
 }
 
-const ClassAnalytics = () => {
+const ClassAnalytics = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<string, unknown>) => Promise<any> }) => {
   const { session } = useAuth();
   const { toast } = useToast();
   const [faculdade, setFaculdade] = useState("");
@@ -58,24 +58,33 @@ const ClassAnalytics = () => {
     if (!session) return;
     setLoading(true);
     try {
-      const resp = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({
+      let res;
+      if (externalCallAPI) {
+        res = await externalCallAPI({
           action: "class_analytics",
           faculdade: faculdade && faculdade !== "all" ? faculdade : undefined,
           periodo: periodo && periodo !== "all" ? parseInt(periodo) : undefined,
-        }),
-      });
-      const res = await resp.json();
-      if (!resp.ok) throw new Error(res.error);
+        });
+      } else {
+        const resp = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({
+            action: "class_analytics",
+            faculdade: faculdade && faculdade !== "all" ? faculdade : undefined,
+            periodo: periodo && periodo !== "all" ? parseInt(periodo) : undefined,
+          }),
+        });
+        res = await resp.json();
+        if (!resp.ok) throw new Error(res.error);
+      }
       setData(res);
     } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  }, [session, faculdade, periodo, toast, API_URL]);
+  }, [session, faculdade, periodo, toast, API_URL, externalCallAPI]);
 
   const exportPDF = async () => {
     if (!data) return;

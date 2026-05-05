@@ -22,7 +22,7 @@ interface StudentProfile {
   periodo: number | null;
 }
 
-const VideoRoom = () => {
+const VideoRoom = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<string, unknown>) => Promise<any> }) => {
   const { user, session } = useAuth();
   const { toast } = useToast();
   const [rooms, setRooms] = useState<any[]>([]);
@@ -47,6 +47,7 @@ const VideoRoom = () => {
   const TELEGRAM_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/telegram-classroom`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
+    if (externalCallAPI) return externalCallAPI(body);
     const resp = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
@@ -55,7 +56,7 @@ const VideoRoom = () => {
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || "Erro");
     return data;
-  }, [session, API_URL]);
+  }, [session, API_URL, externalCallAPI]);
 
   // Load global telegram config
   useEffect(() => {

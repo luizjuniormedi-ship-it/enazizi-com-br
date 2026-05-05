@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { GraduationCap, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export default function ProfessorPracticalExams() {
+export default function ProfessorPracticalExams({ callAPI }: { callAPI?: (body: Record<string, unknown>) => Promise<any> }) {
   const { data, isLoading } = useQuery({
     queryKey: ["professor-practical-results"],
     queryFn: async () => {
