@@ -57,7 +57,7 @@ export function EnaflixLayout({ children }: Props) {
 
       {/* Vignette Overlay for extra depth */}
       {!isImmersive && (
-        <div className="fixed inset-0 pointer-events-none z-[60] shadow-[inset_0_0_150px_rgba(0,0,0,0.4)]" />
+        <div className="fixed inset-0 pointer-events-none z-[40] shadow-[inset_0_0_150px_rgba(0,0,0,0.4)]" />
       )}
     </div>
   );
