@@ -244,6 +244,7 @@ const PedagogicalHeaderBridge = ({
 };
 
 const AIMentor = () => {
+  console.log("[AIMentor] Rendering...");
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
