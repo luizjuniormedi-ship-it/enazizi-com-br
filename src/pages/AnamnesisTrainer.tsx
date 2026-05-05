@@ -1314,6 +1314,10 @@ const AnamnesisTrainer = () => {
         </Card>
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE REVIEW ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado na Revisão da Anamnese. <Button onClick={() => setPhase("result")}>Voltar</Button></div>;
+    }
   }
 
   const progressPercent = (coveredCategories.size / CATEGORIES.length) * 100;
