@@ -83,7 +83,7 @@ async function computeRealPerformance(userId: string) {
 
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
-const BATCH_SIZE = 20;
+const BATCH_SIZE = 10;
 
 function buildPrompt(topics: string[], count: number, difficulty: string, specificTopic?: string, examBoard?: string): string {
   const topicsStr = topics.join(", ");
@@ -101,7 +101,7 @@ function buildPrompt(topics: string[], count: number, difficulty: string, specif
   return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica. IDIOMA: PT-BR. TEMAS: ${topicsStr}${topicFocus}${boardInstruction}. ${difficultyInstruction} FORMATO: Array JSON puro.`;
 }
 
-async function generateBatch(topics: string[], count: number, difficulty: string, accessToken: string | undefined, specificTopic?: string, examBoard?: string, avoidStatements?: string[], jobId?: string, batchNumber?: number): Promise<SimQuestion[]> {
+async function generateBatch(topics: string[], count: number, difficulty: string, accessToken: string | undefined, specificTopic?: string, examBoard?: string, avoidStatements?: string[], jobId?: string, batchNumber?: number, topicWeights?: any[]): Promise<SimQuestion[]> {
   console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard });
   const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
     method: "POST",
@@ -121,6 +121,7 @@ async function generateBatch(topics: string[], count: number, difficulty: string
       targetExam: examBoard,
       jobId,
       batchNumber,
+      topicWeights, // Pass weights to guide the batch distribution
     }),
   });
   if (!res.ok) throw new Error(`Erro ${res.status}`);
@@ -358,7 +359,7 @@ const Simulados = () => {
         else currentJobId = job.id;
       }
       
-      const BATCH_SIZE_AI = 5;
+      const BATCH_SIZE_AI = 10;
       let currentTry = 0;
       
       while (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
@@ -386,7 +387,8 @@ const Simulados = () => {
             config.realExamProfile ? config.realExamProfile.toLowerCase() : undefined,
             avoid,
             currentJobId,
-            batchNum
+            batchNum,
+            config.topicWeights // Pass profile distribution weights
           );
           
           if (batchQs.length === 0) {
