@@ -22,7 +22,7 @@ import {
   Image as ImageIcon, MessageSquare, Bell, MessageCircleHeart, Bot,
   Settings2, Flag, KeyRound, Plug, Cpu,
   Workflow, Server, Activity, Wrench, Network, BrainCircuit,
-  ClipboardList, Sparkles, DollarSign, ShieldCheck
+  ClipboardList, Sparkles, DollarSign, ShieldCheck, Database
 } from "lucide-react";
 import type { AdminScope } from "@/hooks/useAdminScope";
 
@@ -126,6 +126,14 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         scopes: ["super_admin", "admin_pedagogico"],
         badge: "Novo",
         keywords: ["avaliação", "rating", "star", "satisfação"],
+      },
+      {
+        to: "/admin?tab=knowledge-base",
+        label: "Base RAG",
+        description: "Repositório de materiais da instituição para o Tutor IA.",
+        icon: Database,
+        scopes: ["super_admin", "admin_pedagogico", "admin_operacional"],
+        keywords: ["rag", "base de conhecimento", "materiais", "pdf", "biblioteca"],
       },
       {
         to: "/admin/users?tab=ingestion",

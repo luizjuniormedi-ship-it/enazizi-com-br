@@ -5,7 +5,7 @@ import {
   BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, 
   Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, 
   Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play,
-  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal, Microscope, Video
+  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal, Microscope, Video, Database as DatabaseIcon
 } from "lucide-react";
 
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
@@ -71,6 +71,7 @@ const AdminLessonsMemory = lazy(() => import("@/pages/admin/AdminLessonsMemory")
 const AdminLessonRatingsPanel = lazy(() => import("@/components/admin/AdminLessonRatingsPanel").then(m => ({ default: m.AdminLessonRatingsPanel })));
 const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/TutorLessonStructureDashboard").then(m => ({ default: m.TutorLessonStructureDashboard })));
 const TutorVideoAuditPanel = lazy(() => import("@/components/admin/TutorVideoAuditPanel").then(m => ({ default: m.TutorVideoAuditPanel })));
+const KnowledgeBaseAdmin = lazy(() => import("@/components/admin/KnowledgeBaseAdmin").then(m => ({ default: m.KnowledgeBaseAdmin })));
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -102,6 +103,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: FileText,
       items: [
         { key: "uploads", label: "Upload Arquivos", icon: Upload },
+        { key: "knowledge-base", label: "Base RAG", icon: DatabaseIcon },
         { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
         { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
@@ -602,6 +604,7 @@ const Admin = () => {
                   {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
                   {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
                   {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
+                  {activeSection === "knowledge-base" && <KnowledgeBaseAdmin />}
                   {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
                   {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
                   {activeSection === "lesson-ratings" && <Suspense fallback={<PanelLoader />}><AdminLessonRatingsPanel /></Suspense>}

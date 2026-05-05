@@ -125,6 +125,10 @@ const AdminDialogs = ({
                   <div><span className="text-muted-foreground">Status:</span><br/>{getStatusBadge(userDetailDialog.user)}</div>
                   <div><span className="text-muted-foreground">Plano:</span><br/>{getUserPlan(userDetailDialog.user)}</div>
                   <div><span className="text-muted-foreground">Papel:</span><br/>{userDetailDialog.user.roles.includes("admin") ? "Administrador" : userDetailDialog.user.roles.includes("professor") ? "Professor" : "Usuário"}</div>
+                  <div>
+                    <span className="text-muted-foreground">ID Organização:</span><br/>
+                    <span className="font-mono text-[10px] break-all">{profileData?.organization_id || "Não vinculada"}</span>
+                  </div>
                   {userDetailDialog.user.approved_at && (
                     <div><span className="text-muted-foreground">Data da aprovação:</span><br/>{new Date(userDetailDialog.user.approved_at).toLocaleDateString("pt-BR")}</div>
                   )}
