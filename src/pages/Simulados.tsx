@@ -113,7 +113,7 @@ async function generateBatch(topics: string[], count: number, difficulty: string
       stream: false,
       outputFormat: "json",
       difficulty,
-      timeoutMs: 55000,
+      timeoutMs: 120000,
       messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
       ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
       generationContext: { specialty: topics[0], topic: topics.join(", "), subtopic: specificTopic, objective: "practice", source: "simulado" },

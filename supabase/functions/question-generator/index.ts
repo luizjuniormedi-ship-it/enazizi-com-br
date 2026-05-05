@@ -27,7 +27,7 @@ serve(async (req) => {
     // Default to streaming unless client explicitly sets stream=false
     const useStream = clientStream !== false;
     const safeMaxRetries = typeof maxRetries === "number" ? Math.max(0, Math.min(2, maxRetries)) : undefined;
-    const safeTimeoutMs = typeof timeoutMs === "number" ? Math.max(8000, Math.min(55000, timeoutMs)) : undefined;
+    const safeTimeoutMs = typeof timeoutMs === "number" ? Math.max(8000, Math.min(120000, timeoutMs)) : undefined;
 
     const isJsonMode = outputFormat === "json";
 
@@ -425,7 +425,7 @@ ${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) 
               const resp = await aiFetch({
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: slotPrompt }],
                 maxTokens: 32768,
-                timeoutMs: 55000,
+                timeoutMs: 120000,
               });
 
               if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}] AI error:`, t.slice(0, 200)); continue; }
