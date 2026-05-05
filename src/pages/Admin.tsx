@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ALL_MODULES } from "@/hooks/useModuleAccess";
@@ -166,6 +167,7 @@ function PanelLoader() {
 const Admin = () => {
   const { session } = useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -250,10 +252,15 @@ const Admin = () => {
 
   const handleAction = useCallback(async (userId: string, fn: () => Promise<void>) => {
     setActionLoading(userId);
-    try { await fn(); loadData(); } catch (e) {
+    try { 
+      await fn(); 
+      // Invalida cache de roles para o usuário afetado
+      queryClient.invalidateQueries({ queryKey: ["user-roles", userId] });
+      await loadData(); 
+    } catch (e) {
       toast({ title: "Erro", description: e instanceof Error ? e.message : "Erro", variant: "destructive" });
     } finally { setActionLoading(null); }
-  }, [loadData, toast]);
+  }, [loadData, toast, queryClient]);
 
   const handleApproveUser = (u: AdminUser) => handleAction(u.user_id, async () => {
     await callAdmin({ action: "approve_user", target_user_id: u.user_id });
