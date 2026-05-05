@@ -207,7 +207,7 @@ const AdminUploadsPanel = () => {
     try {
       const { error } = await supabase
         .from("uploads")
-        .update({ is_published: !upload.is_published } as any)
+        .update({ is_published: !upload.is_published })
         .eq("id", upload.id);
 
       if (error) throw error;
