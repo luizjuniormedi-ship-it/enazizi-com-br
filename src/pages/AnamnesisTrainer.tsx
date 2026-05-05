@@ -233,6 +233,10 @@ const TypingDots = () => (
 );
 
 const AnamnesisTrainer = () => {
+  useEffect(() => {
+    console.log("Anamnesis Trainer mounted");
+  }, []);
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
