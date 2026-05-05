@@ -233,6 +233,10 @@ const TypingDots = () => (
 );
 
 const AnamnesisTrainer = () => {
+  useEffect(() => {
+    console.log("Anamnesis Trainer mounted");
+  }, []);
+
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -602,8 +606,9 @@ const AnamnesisTrainer = () => {
 
   // === LOBBY ===
   if (phase === "lobby") {
-    const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
-    return (
+    try {
+      const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
+      return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
         <StudyContextBanner />
         {checked && pendingSession && (
@@ -750,11 +755,16 @@ const AnamnesisTrainer = () => {
         </Card>
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE LOBBY ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado no Lobby da Anamnese. <Button onClick={() => window.location.reload()}>Recarregar</Button></div>;
+    }
   }
 
   // === DIAGNOSIS PHASE ===
   if (phase === "diagnosis" || phase === "finishing") {
-    return (
+    try {
+      return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
         <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5">
           <div className="flex items-center gap-3">
@@ -838,11 +848,16 @@ const AnamnesisTrainer = () => {
         </Card>
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE DIAGNOSIS ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado no Diagnóstico da Anamnese. <Button onClick={() => setPhase("active")}>Voltar</Button></div>;
+    }
   }
 
   // === RESULT ===
   if (phase === "result" && evalData) {
-    const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
+    try {
+      const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
 
     // Radar chart data
     const radarData = CATEGORIES.map(cat => {
@@ -1198,11 +1213,16 @@ const AnamnesisTrainer = () => {
         />
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE RESULT ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado no Resultado da Anamnese. <Button onClick={() => handleReset()}>Reiniciar</Button></div>;
+    }
   }
 
   // === REVIEW MODE ===
   if (phase === "review" && evalData) {
-    return (
+    try {
+      return (
       <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold flex items-center gap-2">
@@ -1294,6 +1314,10 @@ const AnamnesisTrainer = () => {
         </Card>
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE REVIEW ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado na Revisão da Anamnese. <Button onClick={() => setPhase("result")}>Voltar</Button></div>;
+    }
   }
 
   const progressPercent = (coveredCategories.size / CATEGORIES.length) * 100;
@@ -1302,7 +1326,8 @@ const AnamnesisTrainer = () => {
 
   const doctorQuestions = messages.filter(m => m.role === "doctor");
 
-  return (
+  try {
+    return (
     <div className="flex flex-col h-[calc(100vh-8rem)] animate-fade-in">
       {/* Compact header bar */}
       <div className="glass-card rounded-xl p-3 mb-2 space-y-2">
@@ -1528,7 +1553,11 @@ const AnamnesisTrainer = () => {
         </Button>
       </div>
     </div>
-  );
+    );
+  } catch (e) {
+    console.error("ANAMNESE ACTIVE ERROR:", e);
+    return <div className="p-8 text-center">Algo deu errado na Consulta da Anamnese. <Button onClick={() => setPhase("lobby")}>Voltar ao Início</Button></div>;
+  }
 };
 
 export default AnamnesisTrainer;

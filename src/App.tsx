@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { GlobalErrorBoundary } from "@/components/monitoring/GlobalErrorBoundary";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ModuleErrorBoundary } from "@/components/monitoring/ModuleErrorBoundary";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -229,7 +230,7 @@ const App = () => (
                   
                   {/* Clínica & Simulação */}
                   <Route path="plantao" element={<ClinicalSimulation />} />
-                  <Route path="anamnese" element={<AnamnesisTrainer />} />
+                  <Route path="anamnese" element={<ModuleErrorBoundary module="anamnese"><AnamnesisTrainer /></ModuleErrorBoundary>} />
                   <Route path="cronicas" element={<MedicalChronicles />} />
                   <Route path="discursivas" element={<DiscursiveQuestions />} />
                   <Route path="prova-pratica" element={<PracticalExam />} />
