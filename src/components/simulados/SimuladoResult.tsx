@@ -479,11 +479,21 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
                       : "Quase lá. Foque nas pegadinhas e casos clínicos complexos."}
                   </p>
                   <div className="flex gap-2 flex-wrap">
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => handleStudyWithTutor({ topic: area, statement: `Preciso revisar ${area} após resultado baixo na prova`, options: [], correct: 0 })}>
-                      <GraduationCap className="h-3 w-3" /> Tutor IA
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 px-3 rounded-lg border-white/10 bg-white/5 font-black uppercase tracking-widest text-[9px] gap-1" 
+                      onClick={() => handleStudyWithTutor({ topic: area, statement: `Preciso revisar ${area} após resultado baixo na prova`, options: [], correct: 0 })}
+                    >
+                      <GraduationCap className="h-3 w-3" /> TUTOR IA
                     </Button>
-                    <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/dashboard/simulados?sc_topic=${encodeURIComponent(area)}&sc_objective=reforço`)}>
-                      <BarChart3 className="h-3 w-3" /> Questões
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-8 px-3 rounded-lg border-white/10 bg-white/5 font-black uppercase tracking-widest text-[9px] gap-1" 
+                      onClick={() => navigate(`/dashboard/simulados?sc_topic=${encodeURIComponent(area)}&sc_objective=reforço`)}
+                    >
+                      <BarChart3 className="h-3 w-3" /> QUESTÕES
                     </Button>
                   </div>
                 </div>
@@ -509,8 +519,13 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
                   ) : <span className="text-yellow-600">Não respondida • </span>}
                   Correta: <span className="text-green-500 font-medium">{String.fromCharCode(65 + q.correct)}</span>
                 </p>
-                <Button variant="outline" size="sm" className="gap-1.5 mt-1 text-xs" onClick={() => handleStudyWithTutor(q)}>
-                  <GraduationCap className="h-3.5 w-3.5" /> Estudar com Tutor IA
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="h-8 px-3 rounded-lg border-white/10 bg-white/5 font-black uppercase tracking-widest text-[9px] gap-1.5 mt-1" 
+                  onClick={() => handleStudyWithTutor(q)}
+                >
+                  <GraduationCap className="h-3.5 w-3.5" /> ESTUDAR COM TUTOR IA
                 </Button>
               </div>
             ))}
@@ -525,8 +540,13 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
             <h3 className="font-semibold flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" /> Caderno de Erros ({errorQuestions.length})
             </h3>
-            <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={onRetryErrors}>
-              <RotateCcw className="h-3.5 w-3.5" /> Refazer só os erros
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 px-4 rounded-xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px] gap-1.5" 
+              onClick={onRetryErrors}
+            >
+              <RotateCcw className="h-3.5 w-3.5" /> REFAZER SÓ OS ERROS
             </Button>
           </div>
           <div className="space-y-4 max-h-[500px] overflow-y-auto">
