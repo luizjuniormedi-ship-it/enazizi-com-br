@@ -192,7 +192,7 @@ export function EnaflixSidebar() {
               ADMINISTRAÇÃO
             </h3>
             <div className="space-y-1">
-              {isProfessor && (
+              {(isProfessor || isAdmin) && (
                 <SidebarItem
                   to="/professor"
                   label="Professor"
