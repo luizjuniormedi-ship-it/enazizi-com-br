@@ -332,6 +332,7 @@ const Simulados = () => {
           }
           
           allGenerated = [...allGenerated, ...batchQs];
+          setQuestions(allGenerated);
           setPartialCount(allGenerated.length);
           currentTry = 0; // Reset retry counter on success
         } catch (batchError) {
