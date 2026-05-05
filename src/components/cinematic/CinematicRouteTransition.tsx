@@ -210,7 +210,9 @@ export const CinematicRouteTransition: React.FC<CinematicRouteTransitionProps> =
     ? { duration: 0.12, ease: "linear" }
     : { duration: recipe.exitDuration, ease: recipe.ease };
 
-  // chave por pathname para o AnimatePresence trocar
+  // Resiliência: se children for nulo, não quebra
+  if (!children) return null;
+
   return (
     <div className="relative z-[1]">
       <AnimatePresence mode="wait" initial={false}>
@@ -242,11 +244,13 @@ export const CinematicRouteTransition: React.FC<CinematicRouteTransitionProps> =
                 }
           }
           transition={enterTransition}
-          // exit usa transição própria via variants? motion suporta exit transition
-          // através de propriedade dedicada — usamos um único transition + duration
-          // já que o exit duration é menor.
           style={{ willChange: "transform, opacity, filter" }}
         >
+          {/* 
+            IMPORTANTE: Evitamos injetar refs diretamente nos children para evitar 
+            erros de "Function components cannot be given refs".
+            O motion.div acima já garante a transição visual no elemento wrapper.
+          */}
           {children}
         </motion.div>
       </AnimatePresence>

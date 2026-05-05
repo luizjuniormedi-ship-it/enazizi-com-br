@@ -59,8 +59,8 @@ export class ModuleErrorBoundary extends Component<Props, State> {
               Voltar ao Início
             </Button>
           </div>
-          {process.env.NODE_ENV === 'development' && (
-            <pre className="mt-4 p-4 rounded bg-black/50 text-[10px] text-left overflow-auto max-w-full text-red-400">
+          {(process.env.NODE_ENV === 'development' || window.location.hostname === 'localhost') && (
+            <pre className="mt-4 p-4 rounded bg-black/50 text-[10px] text-left overflow-auto max-w-full text-red-400 select-all">
               {this.state.error?.message}
               {"\n"}
               {this.state.error?.stack}

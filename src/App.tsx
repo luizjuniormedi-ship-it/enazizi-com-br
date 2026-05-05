@@ -199,29 +199,29 @@ const App = () => (
 
                 {/* --- DASHBOARD (PROTECTED) --- */}
                 <Route path="/study-hub" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                  <Route index element={<EnaflixPage />} />
+                  <Route index element={<ModuleErrorBoundary module="study-hub"><EnaflixPage /></ModuleErrorBoundary>} />
                 </Route>
                 <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                  <Route index element={<EnaflixPage />} />
+                  <Route index element={<ModuleErrorBoundary module="dashboard"><Dashboard /></ModuleErrorBoundary>} />
                   
                   {/* Estudar & Treinar */}
-                  <Route path="sessao-estudo" element={<StudySession />} />
-                  <Route path="flashcards" element={<Flashcards />} />
-                  <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
-                  <Route path="simulados" element={<Simulados />} />
-                  <Route path="banco-erros" element={<ErrorBank />} />
-                  <Route path="gerador-questoes" element={<QuestionGenerator />} />
-                  <Route path="chatgpt" element={<ChatGPT />} />
-                  <Route path="mentor" element={<AIMentor />} />
+                  <Route path="sessao-estudo" element={<ModuleErrorBoundary module="sessao-estudo"><StudySession /></ModuleErrorBoundary>} />
+                  <Route path="flashcards" element={<ModuleErrorBoundary module="flashcards"><Flashcards /></ModuleErrorBoundary>} />
+                  <Route path="gerar-flashcards" element={<ModuleErrorBoundary module="gerar-flashcards"><FlashcardGenerator /></ModuleErrorBoundary>} />
+                  <Route path="simulados" element={<ModuleErrorBoundary module="simulados"><Simulados /></ModuleErrorBoundary>} />
+                  <Route path="banco-erros" element={<ModuleErrorBoundary module="banco-erros"><ErrorBank /></ModuleErrorBoundary>} />
+                  <Route path="gerador-questoes" element={<ModuleErrorBoundary module="gerador-questoes"><QuestionGenerator /></ModuleErrorBoundary>} />
+                  <Route path="chatgpt" element={<ModuleErrorBoundary module="chatgpt"><ChatGPT /></ModuleErrorBoundary>} />
+                  <Route path="mentor" element={<ModuleErrorBoundary module="mentor"><AIMentor /></ModuleErrorBoundary>} />
                   
                   {/* Conteúdo */}
-                  <Route path="videoaulas" element={<VideoLessonsLibrary />} />
-                  <Route path="videoaulas/explorar" element={<VideoLessonsExplore />} />
-                  <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
-                  <Route path="resumos" element={<ContentSummarizer />} />
-                  <Route path="apostilas" element={<StudyGuides />} />
-                  <Route path="mapas-mentais" element={<MindMaps />} />
-                  <Route path="mnemonic-studio" element={<MnemonicStudioPage />} />
+                  <Route path="videoaulas" element={<ModuleErrorBoundary module="videoaulas"><VideoLessonsLibrary /></ModuleErrorBoundary>} />
+                  <Route path="videoaulas/explorar" element={<ModuleErrorBoundary module="videoaulas-explorar"><VideoLessonsExplore /></ModuleErrorBoundary>} />
+                  <Route path="videoaulas/:id" element={<ModuleErrorBoundary module="video-player"><VideoLessonPlayer /></ModuleErrorBoundary>} />
+                  <Route path="resumos" element={<ModuleErrorBoundary module="resumos"><ContentSummarizer /></ModuleErrorBoundary>} />
+                  <Route path="apostilas" element={<ModuleErrorBoundary module="apostilas"><StudyGuides /></ModuleErrorBoundary>} />
+                  <Route path="mapas-mentais" element={<ModuleErrorBoundary module="mapas-mentais"><MindMaps /></ModuleErrorBoundary>} />
+                  <Route path="mnemonic-studio" element={<ModuleErrorBoundary module="mnemonicos"><MnemonicStudioPage /></ModuleErrorBoundary>} />
                   <Route path="mnemonic-generator" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
                   <Route path="mnemonicos" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
                   <Route path="mnemonico" element={<PreserveQueryNavigate to="/dashboard/mnemonic-studio" />} />
@@ -229,30 +229,30 @@ const App = () => (
 
                   
                   {/* Clínica & Simulação */}
-                  <Route path="plantao" element={<ClinicalSimulation />} />
+                  <Route path="plantao" element={<ModuleErrorBoundary module="plantao"><ClinicalSimulation /></ModuleErrorBoundary>} />
                   <Route path="anamnese" element={<ModuleErrorBoundary module="anamnese"><AnamnesisTrainer /></ModuleErrorBoundary>} />
-                  <Route path="cronicas" element={<MedicalChronicles />} />
-                  <Route path="discursivas" element={<DiscursiveQuestions />} />
-                  <Route path="prova-pratica" element={<PracticalExam />} />
-                  <Route path="image-quiz" element={<MedicalImageQuiz />} />
-                  <Route path="revisor" element={<MedicalReviewer />} />
-                  <Route path="entrevista" element={<InterviewSimulator />} />
+                  <Route path="cronicas" element={<ModuleErrorBoundary module="cronicas"><MedicalChronicles /></ModuleErrorBoundary>} />
+                  <Route path="discursivas" element={<ModuleErrorBoundary module="discursivas"><DiscursiveQuestions /></ModuleErrorBoundary>} />
+                  <Route path="prova-pratica" element={<ModuleErrorBoundary module="prova-pratica"><PracticalExam /></ModuleErrorBoundary>} />
+                  <Route path="image-quiz" element={<ModuleErrorBoundary module="image-quiz"><MedicalImageQuiz /></ModuleErrorBoundary>} />
+                  <Route path="revisor" element={<ModuleErrorBoundary module="revisor"><MedicalReviewer /></ModuleErrorBoundary>} />
+                  <Route path="entrevista" element={<ModuleErrorBoundary module="entrevista"><InterviewSimulator /></ModuleErrorBoundary>} />
                   
                   {/* Estratégia & Progresso */}
-                  <Route path="planner" element={<SmartPlanner />} />
-                  <Route path="analytics" element={<Analytics />} />
-                  <Route path="perfil" element={<Profile />} />
-                  <Route path="conquistas" element={<Achievements />} />
+                  <Route path="planner" element={<ModuleErrorBoundary module="planner"><SmartPlanner /></ModuleErrorBoundary>} />
+                  <Route path="analytics" element={<ModuleErrorBoundary module="analytics"><Analytics /></ModuleErrorBoundary>} />
+                  <Route path="perfil" element={<ModuleErrorBoundary module="perfil"><Profile /></ModuleErrorBoundary>} />
+                  <Route path="conquistas" element={<ModuleErrorBoundary module="conquistas"><Achievements /></ModuleErrorBoundary>} />
                   <Route path="rankings" element={<Rankings />} />
                   <Route path="diagnostico" element={<Diagnostic />} />
                   <Route path="predictor" element={<PerformancePredictor />} />
                   <Route path="mapa-dominio" element={<MedicalDomainMap />} />
-                  <Route path="proficiencia" element={<StudentSimulados />} />
-                  <Route path="radar-trajetoria" element={<RadarTrajetoriaPage />} />
-                  <Route path="minha-jornada" element={<MedicalAdaptiveJourney />} />
-                  <Route path="agentes" element={<AgentsHub />} />
-                  <Route path="uploads" element={<Uploads />} />
-                  <Route path="coach" element={<MotivationalCoach />} />
+                  <Route path="proficiencia" element={<ModuleErrorBoundary module="proficiencia"><StudentSimulados /></ModuleErrorBoundary>} />
+                  <Route path="radar-trajetoria" element={<ModuleErrorBoundary module="radar-trajetoria"><RadarTrajetoriaPage /></ModuleErrorBoundary>} />
+                  <Route path="minha-jornada" element={<ModuleErrorBoundary module="jornada"><MedicalAdaptiveJourney /></ModuleErrorBoundary>} />
+                  <Route path="agentes" element={<ModuleErrorBoundary module="agentes"><AgentsHub /></ModuleErrorBoundary>} />
+                  <Route path="uploads" element={<ModuleErrorBoundary module="uploads"><Uploads /></ModuleErrorBoundary>} />
+                  <Route path="coach" element={<ModuleErrorBoundary module="coach"><MotivationalCoach /></ModuleErrorBoundary>} />
                   <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
 
                   {/* Legado & Redirects Internos */}
