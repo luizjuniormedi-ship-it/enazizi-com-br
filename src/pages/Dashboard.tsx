@@ -135,9 +135,42 @@ const Dashboard = () => {
   // Solo bloqueamos el render si falta data crítica Y no hemos llegado al timeout
   const initialLoading = isDataMissing && !cockpitTimedOut && (missionLoading || snapLoading || dashLoading);
 
-  if (initialLoading) return <MissionControlSkeleton />;
-
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
+
+  const debugPanel = isDebug && (
+    <div className="fixed top-20 right-4 z-[999] p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
+      <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-2">
+        <Activity className="h-3 w-3 text-primary" />
+        <span className="font-bold text-primary uppercase">Cockpit Diagnostic</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-white/50">StudyNext:</span>
+        <span className={studyNext ? "text-emerald-400" : "text-amber-500"}>{studyNext ? "OK" : missionLoading ? "Loading" : "Failed"}</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-white/50">Snapshot:</span>
+        <span className={snapshot ? "text-emerald-400" : "text-amber-500"}>{snapshot ? "OK" : snapLoading ? "Loading" : "Failed"}</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-white/50">Dashboard:</span>
+        <span className={dashData ? "text-emerald-400" : "text-amber-500"}>{dashData ? "OK" : dashLoading ? "Loading" : "Failed"}</span>
+      </div>
+      <div className="flex justify-between gap-4 pt-2 border-t border-white/10">
+        <span className="text-white/50">Load Time:</span>
+        <span className="text-primary font-bold">{(Date.now() - mountTimeRef.current)}ms</span>
+      </div>
+      {cockpitTimedOut && (
+        <div className="text-amber-500 font-bold uppercase animate-pulse">Partial Mode Active</div>
+      )}
+    </div>
+  );
+
+  if (initialLoading) return (
+    <>
+      {debugPanel}
+      <MissionControlSkeleton />
+    </>
+  );
 
   return (
     <div className="pb-32 pt-6 space-y-8 relative min-h-screen overflow-x-hidden">
@@ -145,33 +178,7 @@ const Dashboard = () => {
       <AchievementToast />
 
       {/* Debug Panel */}
-      {isDebug && (
-        <div className="fixed top-20 right-4 z-[999] p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
-          <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-2">
-            <Activity className="h-3 w-3 text-primary" />
-            <span className="font-bold text-primary uppercase">Cockpit Diagnostic</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-white/50">StudyNext:</span>
-            <span className={studyNext ? "text-emerald-400" : "text-amber-500"}>{studyNext ? "OK" : missionLoading ? "Loading" : "Failed"}</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-white/50">Snapshot:</span>
-            <span className={snapshot ? "text-emerald-400" : "text-amber-500"}>{snapshot ? "OK" : snapLoading ? "Loading" : "Failed"}</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-white/50">Dashboard:</span>
-            <span className={dashData ? "text-emerald-400" : "text-amber-500"}>{dashData ? "OK" : dashLoading ? "Loading" : "Failed"}</span>
-          </div>
-          <div className="flex justify-between gap-4 pt-2 border-t border-white/10">
-            <span className="text-white/50">Load Time:</span>
-            <span className="text-primary font-bold">{(Date.now() - mountTimeRef.current)}ms</span>
-          </div>
-          {cockpitTimedOut && (
-            <div className="text-amber-500 font-bold uppercase animate-pulse">Partial Mode Active</div>
-          )}
-        </div>
-      )}
+      {debugPanel}
 
       {/* Sync Warning Banner */}
       {cockpitTimedOut && isDataMissing && (
