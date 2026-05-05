@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "ai:guard": "node scripts/ai-guard.mjs",
     "preview": "vite preview",
+    "test:e2e": "playwright test",
+    "test:e2e:simulados": "playwright test tests/e2e/simulados.spec.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:tailwind": "node scripts/check-tailwind-ambiguous.mjs",
@@ -84,6 +86,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.9.1",
     "@types/node": "^22.16.5",
