@@ -755,11 +755,16 @@ const AnamnesisTrainer = () => {
         </Card>
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE LOBBY ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado no Lobby da Anamnese. <Button onClick={() => window.location.reload()}>Recarregar</Button></div>;
+    }
   }
 
   // === DIAGNOSIS PHASE ===
   if (phase === "diagnosis" || phase === "finishing") {
-    return (
+    try {
+      return (
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
         <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-4 sm:p-6 bg-gradient-to-br from-primary/5 via-card to-accent/5">
           <div className="flex items-center gap-3">
