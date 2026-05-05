@@ -102,6 +102,7 @@ function buildPrompt(topics: string[], count: number, difficulty: string, specif
 }
 
 async function generateBatch(topics: string[], count: number, difficulty: string, accessToken: string | undefined, specificTopic?: string, examBoard?: string, avoidStatements?: string[]): Promise<SimQuestion[]> {
+  console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard });
   const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
     method: "POST",
     headers: {
