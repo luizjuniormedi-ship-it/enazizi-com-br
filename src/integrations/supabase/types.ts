@@ -14833,6 +14833,180 @@ export type Database = {
           },
         ]
       }
+      rag_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string
+          document_id: string
+          id: string
+          metadata: Json | null
+          organization_id: string
+          page_number: number | null
+          section_title: string | null
+        }
+        Insert: {
+          chunk_index: number
+          content: string
+          created_at?: string
+          document_id: string
+          id?: string
+          metadata?: Json | null
+          organization_id: string
+          page_number?: number | null
+          section_title?: string | null
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string
+          document_id?: string
+          id?: string
+          metadata?: Json | null
+          organization_id?: string
+          page_number?: number | null
+          section_title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rag_chunks_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "rag_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rag_documents: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          file_name: string
+          file_path: string
+          file_size: number | null
+          file_type: string
+          id: string
+          is_published: boolean | null
+          organization_id: string
+          status: string
+          title: string
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          file_name: string
+          file_path: string
+          file_size?: number | null
+          file_type: string
+          id?: string
+          is_published?: boolean | null
+          organization_id: string
+          status?: string
+          title: string
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number | null
+          file_type?: string
+          id?: string
+          is_published?: boolean | null
+          organization_id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
+      rag_embeddings: {
+        Row: {
+          chunk_id: string
+          created_at: string
+          embedding: string | null
+          id: string
+          model: string
+          organization_id: string
+        }
+        Insert: {
+          chunk_id: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          model?: string
+          organization_id: string
+        }
+        Update: {
+          chunk_id?: string
+          created_at?: string
+          embedding?: string | null
+          id?: string
+          model?: string
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rag_embeddings_chunk_id_fkey"
+            columns: ["chunk_id"]
+            isOneToOne: false
+            referencedRelation: "rag_chunks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rag_processing_jobs: {
+        Row: {
+          created_at: string
+          created_by: string
+          document_id: string
+          error_message: string | null
+          finished_at: string | null
+          id: string
+          logs: Json | null
+          organization_id: string
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          document_id: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          logs?: Json | null
+          organization_id: string
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          document_id?: string
+          error_message?: string | null
+          finished_at?: string | null
+          id?: string
+          logs?: Json | null
+          organization_id?: string
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rag_processing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "rag_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ranking_snapshots: {
         Row: {
           consistency_rank: number | null
