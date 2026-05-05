@@ -239,10 +239,10 @@ const App = () => (
                   <Route path="entrevista" element={<ModuleErrorBoundary module="entrevista"><InterviewSimulator /></ModuleErrorBoundary>} />
                   
                   {/* Estratégia & Progresso */}
-                  <Route path="planner" element={<SmartPlanner />} />
-                  <Route path="analytics" element={<Analytics />} />
-                  <Route path="perfil" element={<Profile />} />
-                  <Route path="conquistas" element={<Achievements />} />
+                  <Route path="planner" element={<ModuleErrorBoundary module="planner"><SmartPlanner /></ModuleErrorBoundary>} />
+                  <Route path="analytics" element={<ModuleErrorBoundary module="analytics"><Analytics /></ModuleErrorBoundary>} />
+                  <Route path="perfil" element={<ModuleErrorBoundary module="perfil"><Profile /></ModuleErrorBoundary>} />
+                  <Route path="conquistas" element={<ModuleErrorBoundary module="conquistas"><Achievements /></ModuleErrorBoundary>} />
                   <Route path="rankings" element={<Rankings />} />
                   <Route path="diagnostico" element={<Diagnostic />} />
                   <Route path="predictor" element={<PerformancePredictor />} />
