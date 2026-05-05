@@ -1773,30 +1773,68 @@ export type Database = {
       }
       audit_simulados_bancas: {
         Row: {
+          alias_used: boolean | null
+          applied_profile: string | null
           banca_key: string
+          batch_number: number | null
+          batch_size: number | null
+          blueprint_found: boolean | null
           created_at: string | null
           distribution_analysis: Json
+          elapsed_ms: number | null
+          failed_count: number | null
+          generated_count: number | null
           id: string
+          job_id: string | null
           questions_data: Json
           total_requested: number
+          user_id: string | null
         }
         Insert: {
+          alias_used?: boolean | null
+          applied_profile?: string | null
           banca_key: string
+          batch_number?: number | null
+          batch_size?: number | null
+          blueprint_found?: boolean | null
           created_at?: string | null
           distribution_analysis: Json
+          elapsed_ms?: number | null
+          failed_count?: number | null
+          generated_count?: number | null
           id?: string
+          job_id?: string | null
           questions_data: Json
           total_requested: number
+          user_id?: string | null
         }
         Update: {
+          alias_used?: boolean | null
+          applied_profile?: string | null
           banca_key?: string
+          batch_number?: number | null
+          batch_size?: number | null
+          blueprint_found?: boolean | null
           created_at?: string | null
           distribution_analysis?: Json
+          elapsed_ms?: number | null
+          failed_count?: number | null
+          generated_count?: number | null
           id?: string
+          job_id?: string | null
           questions_data?: Json
           total_requested?: number
+          user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_simulados_bancas_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "simulation_generation_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       auto_mitigation_logs: {
         Row: {
@@ -15719,6 +15757,48 @@ export type Database = {
         }
         Relationships: []
       }
+      simulation_generation_jobs: {
+        Row: {
+          config: Json
+          created_at: string
+          error_message: string | null
+          failed_questions: number
+          generated_questions: number
+          id: string
+          results: Json
+          status: Database["public"]["Enums"]["simulation_job_status"]
+          total_questions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          error_message?: string | null
+          failed_questions?: number
+          generated_questions?: number
+          id?: string
+          results?: Json
+          status?: Database["public"]["Enums"]["simulation_job_status"]
+          total_questions: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          error_message?: string | null
+          failed_questions?: number
+          generated_questions?: number
+          id?: string
+          results?: Json
+          status?: Database["public"]["Enums"]["simulation_job_status"]
+          total_questions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       simulation_history: {
         Row: {
           correct_diagnosis: string | null
@@ -19879,6 +19959,14 @@ export type Database = {
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
       admin_telemetry_v2_ai_quality: { Args: { _days: number }; Returns: Json }
       admin_telemetry_v2_pedagogy: { Args: { _days: number }; Returns: Json }
+      append_questions_to_job: {
+        Args: {
+          p_job_id: string
+          p_new_questions: Json
+          p_status: Database["public"]["Enums"]["simulation_job_status"]
+        }
+        Returns: undefined
+      }
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
         Returns: number
@@ -20366,6 +20454,13 @@ export type Database = {
         | "falha_persistente"
         | "escalado"
       qa_severity: "critico" | "alto" | "medio" | "baixo"
+      simulation_job_status:
+        | "pending"
+        | "processing"
+        | "partial"
+        | "completed"
+        | "failed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -20625,6 +20720,14 @@ export const Constants = {
         "escalado",
       ],
       qa_severity: ["critico", "alto", "medio", "baixo"],
+      simulation_job_status: [
+        "pending",
+        "processing",
+        "partial",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
     },
   },
 } as const

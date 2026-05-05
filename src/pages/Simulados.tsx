@@ -101,7 +101,7 @@ function buildPrompt(topics: string[], count: number, difficulty: string, specif
   return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica. IDIOMA: PT-BR. TEMAS: ${topicsStr}${topicFocus}${boardInstruction}. ${difficultyInstruction} FORMATO: Array JSON puro.`;
 }
 
-async function generateBatch(topics: string[], count: number, difficulty: string, accessToken: string | undefined, specificTopic?: string, examBoard?: string, avoidStatements?: string[]): Promise<SimQuestion[]> {
+async function generateBatch(topics: string[], count: number, difficulty: string, accessToken: string | undefined, specificTopic?: string, examBoard?: string, avoidStatements?: string[], jobId?: string, batchNumber?: number): Promise<SimQuestion[]> {
   console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard });
   const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
     method: "POST",
@@ -118,6 +118,9 @@ async function generateBatch(topics: string[], count: number, difficulty: string
       messages: [{ role: "user", content: buildPrompt(topics, count, difficulty, specificTopic, examBoard) }],
       ...(avoidStatements && avoidStatements.length > 0 ? { avoidStatements } : {}),
       generationContext: { specialty: topics[0], topic: topics.join(", "), subtopic: specificTopic, objective: "practice", source: "simulado" },
+      targetExam: examBoard,
+      jobId,
+      batchNumber,
     }),
   });
   if (!res.ok) throw new Error(`Erro ${res.status}`);
@@ -196,8 +199,40 @@ const Simulados = () => {
   const adaptive = useAdaptiveSimulado();
   const [adaptivePreviewMeta, setAdaptivePreviewMeta] = useState<AdaptiveMeta | null>(null);
   const [adaptivePreviewLoading, setAdaptivePreviewLoading] = useState(false);
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
 
   const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
+
+  useEffect(() => {
+    if (user && phase === "setup") {
+      supabase
+        .from("simulation_generation_jobs")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("status", ["processing", "partial", "pending"])
+        .order("created_at", { ascending: false })
+        .limit(3)
+        .then(({ data }) => {
+          if (data) setActiveJobs(data);
+        });
+    }
+  }, [user, phase]);
+
+  const handleResumeJob = async (job: any) => {
+    setPhase("loading");
+    setLoadingProgress("Retomando geração...");
+    setQuestions(job.results || []);
+    setPartialCount(job.generated_questions || 0);
+    setTargetCount(job.total_questions);
+    
+    // Continue with the configuration from the job
+    handleStart({
+      ...job.config,
+      count: job.total_questions,
+      resumeJobId: job.id,
+      existingQuestions: job.results || []
+    });
+  };
 
   const examStateRef = useRef<any>(null);
 
@@ -291,14 +326,39 @@ const Simulados = () => {
         }
       }
 
-      // Fluxo Normal com BATCHING (5 questões por vez para estabilidade)
+      // Fluxo Normal com JOB e BATCHING
       const { data: { session } } = await supabase.auth.getSession();
       const requestedTotal = config.count || 10;
       setTargetCount(requestedTotal);
       cancelGenerationRef.current = false;
       
+      let currentJobId: string | undefined = config.resumeJobId;
+      let allGenerated: SimQuestion[] = config.existingQuestions || [];
+      
+      // Para simulados grandes (50 ou 100), criar um job no banco se não estiver retomando
+      if (requestedTotal >= 50 && user && !currentJobId) {
+        setLoadingProgress("Registrando tarefa de geração...");
+        const { data: job, error: jobError } = await supabase
+          .from("simulation_generation_jobs")
+          .insert({
+            user_id: user.id,
+            total_questions: requestedTotal,
+            status: 'pending',
+            config: {
+              topics: config.topics,
+              difficulty: config.difficulty,
+              mode: config.mode,
+              realExamProfile: config.realExamProfile
+            }
+          })
+          .select()
+          .single();
+        
+        if (jobError) console.error("Erro ao criar job:", jobError);
+        else currentJobId = job.id;
+      }
+      
       const BATCH_SIZE_AI = 5;
-      let allGenerated: SimQuestion[] = [];
       let currentTry = 0;
       
       while (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
@@ -310,6 +370,11 @@ const Simulados = () => {
         setLoadingProgress(`Gerando lote ${batchNum} de ${totalBatchesNum}...`);
         setLoadingPercent(Math.round((allGenerated.length / requestedTotal) * 100));
         
+        // Atualizar status do job para processing no primeiro lote
+        if (currentJobId && allGenerated.length === 0) {
+          await supabase.from("simulation_generation_jobs").update({ status: 'processing' }).eq("id", currentJobId);
+        }
+        
         try {
           const avoid = allGenerated.map(q => q.statement);
           const batchQs = await generateBatch(
@@ -319,13 +384,15 @@ const Simulados = () => {
             session?.access_token,
             undefined,
             config.realExamProfile ? config.realExamProfile.toLowerCase() : undefined,
-            avoid
+            avoid,
+            currentJobId,
+            batchNum
           );
           
           if (batchQs.length === 0) {
-            // Se falhou mas temos questões, perguntamos se quer continuar
             if (allGenerated.length > 0) {
               setLoadingProgress(`Lote ${batchNum} falhou. Preparando com o que temos...`);
+              if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'partial' }).eq("id", currentJobId);
               break;
             }
             throw new Error("Não foi possível gerar questões. Tente reduzir a quantidade ou mudar o tema.");
@@ -334,10 +401,10 @@ const Simulados = () => {
           allGenerated = [...allGenerated, ...batchQs];
           setQuestions(allGenerated);
           setPartialCount(allGenerated.length);
-          currentTry = 0; // Reset retry counter on success
+          currentTry = 0;
         } catch (batchError) {
           console.error(`Error in batch ${batchNum}:`, batchError);
-          if (currentTry < 1) { // 1 Retry per batch
+          if (currentTry < 1) {
             currentTry++;
             setLoadingProgress(`Re-tentando lote ${batchNum}...`);
             await new Promise(r => setTimeout(r, 2000));
@@ -349,19 +416,27 @@ const Simulados = () => {
               title: "Algumas questões falharam",
               description: `Geramos ${allGenerated.length} de ${requestedTotal} questões. Iniciando simulado parcial.`,
             });
+            if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'partial' }).eq("id", currentJobId);
             break;
           }
+          if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'failed', error_message: String(batchError) }).eq("id", currentJobId);
           throw batchError;
         }
       }
       
-      if (cancelGenerationRef.current && allGenerated.length === 0) {
-        setPhase("setup");
-        return;
+      if (cancelGenerationRef.current) {
+        if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'cancelled' }).eq("id", currentJobId);
+        if (allGenerated.length === 0) {
+          setPhase("setup");
+          return;
+        }
       }
       
       setLoadingPercent(100);
       setLoadingProgress("Finalizando simulado...");
+      if (currentJobId && allGenerated.length >= requestedTotal) {
+        await supabase.from("simulation_generation_jobs").update({ status: 'completed' }).eq("id", currentJobId);
+      }
       setTimeout(() => {
         startExamWithQuestions(allGenerated, config);
       }, 500);
@@ -405,6 +480,24 @@ const Simulados = () => {
             subtitle="IA de estudos gera desafios reais para testar seu domínio clínico."
           />
         </div>
+
+        {activeJobs.length > 0 && (
+          <EnaflixRow title="Gerações em Andamento">
+            {activeJobs.map((job) => (
+              <SimuladoProfileCard
+                key={job.id}
+                title={`Simulado em Lote (${job.total_questions} questões)`}
+                subtitle={`Progresso: ${job.generated_questions}/${job.total_questions}`}
+                count={job.total_questions}
+                timeMinutes={Math.round(job.total_questions * 3)}
+                difficulty={job.config?.difficulty || "misto"}
+                badge={job.status === "partial" ? "Parcial" : "Processando"}
+                image="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=400"
+                onClick={() => handleResumeJob(job)}
+              />
+            ))}
+          </EnaflixRow>
+        )}
 
         {pendingSession && checked && (
           <div className="px-4 sm:px-8 lg:px-14">
