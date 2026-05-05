@@ -37,6 +37,7 @@ export const useUserRoles = () => {
     if (!user) return;
 
     const channel = supabase
+      .channel(`user-roles-changes-${user.id}`)
       .on(
         "postgres_changes",
         {
@@ -56,7 +57,7 @@ export const useUserRoles = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      void supabase.removeChannel(channel);
     };
   }, [user, queryClient]);
 
