@@ -201,6 +201,8 @@ const Simulados = () => {
   const [adaptivePreviewLoading, setAdaptivePreviewLoading] = useState(false);
   const [activeJobs, setActiveJobs] = useState<any[]>([]);
 
+  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
+
   useEffect(() => {
     if (user && phase === "setup") {
       supabase
