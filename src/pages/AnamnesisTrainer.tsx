@@ -1213,11 +1213,16 @@ const AnamnesisTrainer = () => {
         />
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE RESULT ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado no Resultado da Anamnese. <Button onClick={() => handleReset()}>Reiniciar</Button></div>;
+    }
   }
 
   // === REVIEW MODE ===
   if (phase === "review" && evalData) {
-    return (
+    try {
+      return (
       <div className="space-y-4 animate-fade-in max-w-3xl mx-auto">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold flex items-center gap-2">
