@@ -605,8 +605,21 @@ const StudySession = () => {
           detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
         }
       }
-    } catch {
-      toast({ title: "Erro de conexão", description: "Não foi possível conectar ao servidor.", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Connection error in streamChat:", err);
+      if (currentPhase === "questions") {
+        toast({ 
+          title: "Instabilidade na IA", 
+          description: "Carregando questão alternativa do banco de dados...", 
+          variant: "default" 
+        });
+      } else {
+        toast({ 
+          title: "Erro de conexão", 
+          description: "Não foi possível conectar ao servidor. Tente novamente.", 
+          variant: "destructive" 
+        });
+      }
     }
     setIsLoading(false);
   };
