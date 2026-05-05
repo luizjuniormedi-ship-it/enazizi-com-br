@@ -57,7 +57,7 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           }}
           className="flex-1"
         />
-        <Button size="sm" onClick={onAddTopic} disabled={!newTopicInput.trim()}>
+        <Button type="button" size="sm" onClick={onAddTopic} disabled={!newTopicInput.trim()}>
           Adicionar
         </Button>
       </div>

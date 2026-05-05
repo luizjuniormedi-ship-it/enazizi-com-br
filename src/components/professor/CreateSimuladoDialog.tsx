@@ -44,17 +44,19 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Plus className="h-5 w-5 text-primary" /> Criar Simulado
-          </DialogTitle>
-          <DialogDescription>
-            Configure o simulado, gere questões e atribua aos alunos.
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl h-[95vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden gap-0">
+        <div className="p-6 pb-4 border-b">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Plus className="h-5 w-5 text-primary" /> Criar Simulado
+            </DialogTitle>
+            <DialogDescription>
+              Configure o simulado, gere questões e atribua aos alunos.
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-5">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <SimuladoBasicForm
             title={f.title}
             description={f.description}
@@ -103,6 +105,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 
             <div className="flex gap-2">
               <Button
+                type="button"
                 variant={f.questionMode === "ai" ? "default" : "outline"}
                 size="sm"
                 onClick={() => f.setQuestionMode("ai")}
@@ -111,6 +114,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
                 <Sparkles className="h-3.5 w-3.5" /> Gerar com IA
               </Button>
               <Button
+                type="button"
                 variant={f.questionMode === "manual" ? "default" : "outline"}
                 size="sm"
                 onClick={() => f.setQuestionMode("manual")}
@@ -147,6 +151,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 
             {f.questionMode === "ai" && (
               <Button
+                type="button"
                 onClick={f.generateQuestionsAI}
                 disabled={f.generating || f.selectedTopics.length === 0}
                 className="gap-2 w-full"
@@ -188,35 +193,38 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
             onRemoveGenerated={f.removeGeneratedQuestion}
             onRemoveManual={f.removeManualQuestion}
           />
+
+          <SimuladoSchedule
+            scheduledAt={f.scheduledAt}
+            autoAssign={f.autoAssign}
+            onScheduledAtChange={f.setScheduledAt}
+            onAutoAssignChange={f.setAutoAssign}
+          />
         </div>
 
-        <SimuladoSchedule
-          scheduledAt={f.scheduledAt}
-          autoAssign={f.autoAssign}
-          onScheduledAtChange={f.setScheduledAt}
-          onAutoAssignChange={f.setAutoAssign}
-        />
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button
-            onClick={f.createSimulado}
-            disabled={
-              f.creating ||
-              f.generating ||
-              (f.questionMode === "ai"
-                ? f.generatedQuestions.length === 0 ||
-                  f.generatedQuestions.length < parseInt(f.questionCount)
-                : f.manualQuestions.length === 0)
-            }
-            className="gap-2"
-          >
-            {f.creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            {f.creating ? "Criando..." : f.scheduledAt ? "Agendar e Atribuir" : "Criar e Atribuir"}
-          </Button>
-        </DialogFooter>
+        <div className="p-6 pt-4 border-t bg-background mt-auto">
+          <DialogFooter className="sm:justify-end gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={f.createSimulado}
+              disabled={
+                f.creating ||
+                f.generating ||
+                (f.questionMode === "ai"
+                  ? f.generatedQuestions.length === 0 ||
+                    f.generatedQuestions.length < parseInt(f.questionCount)
+                  : f.manualQuestions.length === 0)
+              }
+              className="gap-2"
+            >
+              {f.creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              {f.creating ? "Criando..." : f.scheduledAt ? "Agendar e Atribuir" : "Criar e Atribuir"}
+            </Button>
+          </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   );

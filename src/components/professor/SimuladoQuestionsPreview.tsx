@@ -53,6 +53,7 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
         </Label>
         {deficit > 0 && questionMode === "ai" && (
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={onRegenerateMissing}

@@ -85,6 +85,7 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
       </div>
 
       <Button
+        type="button"
         onClick={onAddManualQuestion}
         disabled={!manualStatement.trim() || manualOptions.filter((o) => o.trim()).length < 2}
         variant="secondary"

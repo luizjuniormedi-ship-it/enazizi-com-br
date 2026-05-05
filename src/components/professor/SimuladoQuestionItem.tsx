@@ -66,6 +66,7 @@ const SimuladoQuestionItem = memo(
             </div>
           </div>
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               onRemove(globalIdx);
