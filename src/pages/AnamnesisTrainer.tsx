@@ -1322,7 +1322,8 @@ const AnamnesisTrainer = () => {
 
   const doctorQuestions = messages.filter(m => m.role === "doctor");
 
-  return (
+  try {
+    return (
     <div className="flex flex-col h-[calc(100vh-8rem)] animate-fade-in">
       {/* Compact header bar */}
       <div className="glass-card rounded-xl p-3 mb-2 space-y-2">
