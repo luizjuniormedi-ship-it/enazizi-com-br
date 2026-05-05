@@ -161,7 +161,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
 
       if (isProfessor || isMedico) {
-        if (isProfessor) updateData.status = "active";
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
           { onConflict: "user_id,role" }
