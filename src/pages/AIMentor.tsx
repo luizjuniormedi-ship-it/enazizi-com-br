@@ -357,4 +357,6 @@ const AIMentor = forwardRef<HTMLDivElement>((props, ref) => {
   );
 };
 
+});
+
 export default AIMentor;
