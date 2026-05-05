@@ -6,8 +6,8 @@ import { emitShadowEvent } from "@/lib/shadowAdaptive";
 interface StreamOptions {
   url: string;
   body: Record<string, unknown>;
-  onChunk: (fullText: string) => void;
-  onComplete: (fullText: string) => void;
+  onChunk: (fullText: string, data?: any) => void;
+  onComplete: (fullText: string, data?: any) => void;
   onError: (error: string) => void;
 }
 
@@ -26,12 +26,15 @@ export function useStreamingResponse() {
     // === rAF-based flush throttle: at most 1 React render per frame (~60Hz) ===
     let pendingFlush = false;
     let lastFlushed = "";
+    let lastData: any = null;
+
     const flushNow = () => {
       pendingFlush = false;
       const current = accumulatorRef.current;
-      if (current === lastFlushed) return;
+      if (current === lastFlushed && lastData === null) return;
       lastFlushed = current;
-      onChunk(current);
+      onChunk(current, lastData);
+      lastData = null; // Limpa para o próximo flush
     };
     const scheduleFlush = () => {
       if (pendingFlush) return;
@@ -43,9 +46,10 @@ export function useStreamingResponse() {
       }
     };
 
-    const appendChunk = (content: string) => {
-      if (!content) return;
-      accumulatorRef.current += content;
+    const appendChunk = (content: string, data?: any) => {
+      if (!content && !data) return;
+      if (content) accumulatorRef.current += content;
+      if (data) lastData = data;
       scheduleFlush();
     };
 
@@ -59,7 +63,8 @@ export function useStreamingResponse() {
       try {
         const parsed = JSON.parse(jsonStr);
         const content = parsed.choices?.[0]?.delta?.content as string | undefined;
-        if (content) appendChunk(content);
+        // Capturar dados extras do SSE (como context/bibliography)
+        appendChunk(content || "", parsed);
         return "ok";
       } catch {
         return "incomplete";
@@ -118,13 +123,13 @@ export function useStreamingResponse() {
       }
 
       // Guarantee final state is delivered to UI before onComplete
-      if (accumulatorRef.current !== lastFlushed) {
+      if (accumulatorRef.current !== lastFlushed || lastData !== null) {
         lastFlushed = accumulatorRef.current;
-        onChunk(accumulatorRef.current);
+        onChunk(accumulatorRef.current, lastData);
       }
 
       const finalText = accumulatorRef.current;
-      onComplete(finalText);
+      onComplete(finalText, lastData);
       return finalText;
     } catch (e) {
       console.error(e);
