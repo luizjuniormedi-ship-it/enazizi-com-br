@@ -1787,6 +1787,7 @@ export type Database = {
           id: string
           job_id: string | null
           questions_data: Json
+          target_exam: string | null
           total_requested: number
           user_id: string | null
         }
@@ -1805,6 +1806,7 @@ export type Database = {
           id?: string
           job_id?: string | null
           questions_data: Json
+          target_exam?: string | null
           total_requested: number
           user_id?: string | null
         }
@@ -1823,6 +1825,7 @@ export type Database = {
           id?: string
           job_id?: string | null
           questions_data?: Json
+          target_exam?: string | null
           total_requested?: number
           user_id?: string | null
         }
