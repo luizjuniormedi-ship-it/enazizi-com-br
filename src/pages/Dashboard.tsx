@@ -27,13 +27,19 @@ const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverv
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 
 const Dashboard = () => {
+  const mountTimeRef = useRef(Date.now());
+  const telemetryFiredRef = useRef(false);
+  const retryFiredRef = useRef(false);
+  
   useRevisionNotifier();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isDebug = searchParams.get("debug") === "cockpit";
+  
   const { user } = useAuth();
-  const { data: dashData, isLoading: dashLoading } = useDashboardData();
-  const { data: studyNext, isLoading: missionLoading, refresh } = useStudyNext();
-  const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
+  const { data: dashData, isLoading: dashLoading, error: dashError } = useDashboardData();
+  const { data: studyNext, isLoading: missionLoading, error: missionError, refresh: refreshStudyNext } = useStudyNext();
+  const { data: snapshot, isLoading: snapLoading, error: snapError, refetch: refreshSnapshot } = useAnalyticsSnapshot();
   const { recentIds } = useEnaflixUsage();
 
   const continueModules = useMemo(() => {
