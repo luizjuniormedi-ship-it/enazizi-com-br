@@ -52,7 +52,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
+          .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type, target_exams")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -71,6 +71,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           periodo: data?.periodo,
           faculdade: data?.faculdade,
           user_type: userType,
+          target_exams: (data as any)?.target_exams,
         });
 
         setProfileIncomplete(incomplete);
@@ -80,6 +81,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           setFormPeriodo(data?.periodo ? String(data.periodo) : "");
           setFormFaculdade(data?.faculdade || "");
           setFormUserType(userType);
+          setFormTargetExams(((data as any)?.target_exams as string[]) || []);
         }
 
         const currentStatus = data?.status || "pending";
