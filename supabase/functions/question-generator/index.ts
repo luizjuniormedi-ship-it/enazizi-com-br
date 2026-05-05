@@ -576,7 +576,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       for (const q of allQuestions) finalDist[q.difficulty_level || "unknown"] = (finalDist[q.difficulty_level || "unknown"] || 0) + 1;
       
       const auditAnalysis = {
-        targetExam,
+        targetExam: safeTargetExam,
         normalizedKey,
         appliedProfile: profileKey,
         aliasUsed,
@@ -588,15 +588,15 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
 
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
       const elapsedMs = Date.now() - startTime;
-      console.log(`[AUDIT] generation_complete | targetExam: "${targetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
+      console.log(`[AUDIT] generation_complete | targetExam: "${safeTargetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
 
       // Async audit insertion
       const { data: { user: authUser } } = await sb.auth.getUser(req.headers.get("Authorization")?.split(" ")[1] || "");
       
       try {
         const { error: auditError } = await sb.from("audit_simulados_bancas").insert({
-          banca_key: targetExam || "unknown",
-          target_exam: targetExam || "unknown",
+          banca_key: safeTargetExam || "unknown",
+          target_exam: safeTargetExam || "unknown",
           total_requested: requestedCount,
           questions_data: allQuestions,
           distribution_analysis: { ...auditAnalysis, totalTimeSeconds: totalTime },
