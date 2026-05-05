@@ -292,11 +292,11 @@ Regras:
     }
 
     // Camada de Alias e Resolução de Banca
-    const normalizedKey = String(targetExam || "").toLowerCase().trim();
-    const resolution = resolveBanca(normalizedKey);
+    const normalizedKey = safeTargetExam.toLowerCase().trim();
+    const resolution = bancaInfo; // Already resolved above
     const { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
 
-    console.log(`[AUDIT] targetExam: "${targetExam}" | normalized: "${normalizedKey}" | appliedProfile: "${profileKey}" | aliasUsed: ${aliasUsed} | found: ${blueprintFound} | label: "${blueprint.label}"`);
+    console.log(`[AUDIT] targetExam: "${safeTargetExam}" | normalized: "${normalizedKey}" | appliedProfile: "${profileKey}" | aliasUsed: ${aliasUsed} | found: ${blueprintFound} | label: "${blueprint.label}"`);
     console.log(`[AUDIT] Weights: ${JSON.stringify(blueprint.specialtyWeights)}`);
 
     systemPrompt += buildBancaBlock(blueprint);
