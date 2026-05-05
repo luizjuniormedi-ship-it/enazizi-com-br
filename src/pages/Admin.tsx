@@ -5,7 +5,7 @@ import {
   BarChart3, Upload, Bug, ToggleLeft, ImageIcon, HardDrive, LayoutDashboard, FileText, Settings, 
   Activity, Users, Megaphone, ChevronLeft, ChevronRight, Layers, ExternalLink, GitBranch, Wrench, 
   Sparkles, TrendingDown, ShieldCheck, BrainCircuit, Beaker, Zap, Film, Wand2, BookOpen, Loader2, Play,
-  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal, Microscope, Video
+  Lock, AlertTriangle, MonitorPlay, Database, ActivitySquare, Terminal, Microscope, Video, Database as DatabaseIcon
 } from "lucide-react";
 
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
@@ -103,7 +103,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: FileText,
       items: [
         { key: "uploads", label: "Upload Arquivos", icon: Upload },
-        { key: "knowledge-base", label: "Base RAG", icon: Database },
+        { key: "knowledge-base", label: "Base RAG", icon: DatabaseIcon },
         { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
         { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
