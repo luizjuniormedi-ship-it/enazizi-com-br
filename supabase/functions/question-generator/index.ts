@@ -518,10 +518,32 @@ ${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) 
         }
       }
 
-      // Log metrics
+      // Log metrics & Audit
       const finalDist: Record<string, number> = {};
       for (const q of allQuestions) finalDist[q.difficulty_level || "unknown"] = (finalDist[q.difficulty_level || "unknown"] || 0) + 1;
-      console.log(`[question-generator] RESULTADO: ${allQuestions.length}/${requestedCount} | Dist: ${JSON.stringify(finalDist)}`);
+      
+      const auditAnalysis = {
+        targetExam,
+        normalizedKey,
+        appliedProfile: profileKey,
+        aliasUsed,
+        blueprintFound,
+        label: blueprint.label,
+        difficulty_distribution: finalDist,
+        specialty_weights: blueprint.specialtyWeights
+      };
+
+      console.log(`[question-generator] RESULTADO: ${allQuestions.length}/${requestedCount} | Audit: ${JSON.stringify(auditAnalysis)}`);
+
+      // Async audit insertion (fire and forget to not block response)
+      sb.from("audit_simulados_bancas").insert({
+        banca_key: targetExam || "unknown",
+        total_requested: requestedCount,
+        questions_data: allQuestions,
+        distribution_analysis: auditAnalysis
+      }).then(({ error }) => {
+        if (error) console.error("[AUDIT_ERROR] Failed to insert audit log:", error);
+      });
 
       // Return in tool_call format (same as before)
       const slotResponse = {
