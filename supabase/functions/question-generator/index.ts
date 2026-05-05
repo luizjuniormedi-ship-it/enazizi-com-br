@@ -265,9 +265,19 @@ Regras:
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
     }
 
-    // Inject banca-specific adaptation
-    const bancaProfile = getBancaProfile(targetExam);
-    systemPrompt += buildBancaBlock(bancaProfile);
+    // Auditoria e Adaptação à Banca - REFORÇADA
+    const normalizedKey = String(targetExam || "").toLowerCase().trim();
+    const blueprint = getBancaProfile(normalizedKey);
+    const blueprintFound = PROFILES[normalizedKey] !== undefined;
+
+    console.log(`[AUDIT] targetExam: "${targetExam}" | key: "${normalizedKey}" | found: ${blueprintFound} | label: "${blueprint.label}"`);
+    console.log(`[AUDIT] Weights: ${JSON.stringify(blueprint.specialtyWeights)}`);
+
+    systemPrompt += buildBancaBlock(blueprint);
+
+    if (blueprintFound) {
+      systemPrompt += `\n\n=== REGRAS RÍGIDAS DE ESTILO: ${blueprint.label} ===\n- DISTRIBUIÇÃO OBRIGATÓRIA: Utilize EXATAMENTE os pesos de temas definidos no blueprint.\n- ESTILO: ${blueprint.style}\n- PEDAGOGIA: ${blueprint.tutorGuidance}`;
+    }
 
     if (userContext) {
       systemPrompt += `\n\n--- MATERIAL/CONTEXTO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
