@@ -145,9 +145,10 @@ function mapQuestions(arr: any[], topics: string[]): SimQuestion[] {
     .map((q: any) => ({
       statement: String(q.statement || ""),
       options: Array.isArray(q.options) ? q.options.map(String) : [],
-      correct: Number.isInteger(q.correct_index) ? q.correct_index : 0,
+      correct: typeof q.correct === 'number' ? q.correct : (Number.isInteger(q.correct_index) ? q.correct_index : 0),
       topic: String(q.topic || topics[0]),
       explanation: String(q.explanation || ""),
+      image_url: q.image_url,
     }))
     .filter(q => q.options.length >= 4 && q.statement.length > 10);
 }
