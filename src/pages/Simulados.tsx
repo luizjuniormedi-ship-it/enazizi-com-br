@@ -300,7 +300,7 @@ const Simulados = () => {
         config.difficulty || "misto", 
         session?.access_token,
         undefined,
-        config.realExamProfile ? EXAM_PROFILES[config.realExamProfile]?.name : undefined
+        config.realExamProfile ? config.realExamProfile.toLowerCase() : undefined
       );
       
       setLoadingPercent(100);
@@ -370,7 +370,7 @@ const Simulados = () => {
         </EnaflixRow>
 
         <EnaflixRow title="Bancas Oficiais">
-          {Object.entries(EXAM_PROFILES).slice(0, 6).map(([id, profile]) => (
+          {Object.entries(EXAM_PROFILES).slice(0, 8).map(([id, profile]) => (
             <SimuladoProfileCard
               key={id} title={profile.name} subtitle="Padrão oficial da banca"
               count={profile.totalQuestions} timeMinutes={profile.timeMinutes}

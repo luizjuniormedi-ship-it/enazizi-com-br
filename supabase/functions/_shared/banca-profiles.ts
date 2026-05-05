@@ -13,7 +13,7 @@ export interface BancaProfile {
   specialtyWeights: Record<string, number>;
 }
 
-const PROFILES: Record<string, BancaProfile> = {
+export const PROFILES: Record<string, BancaProfile> = {
   enamed: {
     key: "enamed", label: "ENAMED", difficulty: 3, osceEmphasis: false,
     specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 12, "Medicina de Emergência": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
