@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
