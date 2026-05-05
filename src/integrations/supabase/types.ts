@@ -8927,6 +8927,39 @@ export type Database = {
         }
         Relationships: []
       }
+      error_log: {
+        Row: {
+          component_stack: string | null
+          context: Json | null
+          created_at: string
+          error_message: string | null
+          id: string
+          severity: string | null
+          stack_trace: string | null
+          user_id: string | null
+        }
+        Insert: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          severity?: string | null
+          stack_trace?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          component_stack?: string | null
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          severity?: string | null
+          stack_trace?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       exam_banks: {
         Row: {
           banca: string
