@@ -104,11 +104,39 @@ serve(async (req) => {
       mission: true,
       prep_index: true,
       orchestrator: true,
-      bibliography: false, // bibliography injetada por outro caminho
+      bibliography: true, // Habilitado para RAG
       ...(body.include ?? {}),
     };
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
+    
+    // Buscar Bibliografia RAG se solicitado
+    let bibliography: any[] = [];
+    if (include.bibliography) {
+      try {
+        const { data: profile } = await admin.from("profiles").select("organization_id").eq("user_id", userId).single();
+        const orgId = profile?.organization_id;
+        
+        const { data: chunks } = await admin
+          .from("rag_chunks")
+          .select(`
+            content, page_number,
+            rag_documents!inner(title, file_name)
+          `)
+          .eq("organization_id", orgId)
+          .eq("rag_documents.is_published", true)
+          .ilike("content", `%${body.topic || body.message || ""}%`)
+          .limit(3);
+          
+        bibliography = (chunks || []).map(c => ({
+          text: c.content,
+          file: (c.rag_documents as any)?.title || (c.rag_documents as any)?.file_name,
+          page: c.page_number
+        }));
+      } catch (e) {
+        console.warn("RAG Context fetch failed:", e);
+      }
+    }
 
     const ctx: AdaptiveContext = {
       weak_topics: [],
@@ -118,6 +146,7 @@ serve(async (req) => {
       target_banca: null,
       last_orchestrator_decision: null,
       session_context: { topic: body.topic ?? null, subtopic: body.subtopic ?? null },
+      bibliography, // Injetado aqui
       meta: {
         generated_at: new Date().toISOString(),
         source: "tutor-context-builder",
