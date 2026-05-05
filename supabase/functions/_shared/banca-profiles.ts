@@ -106,6 +106,10 @@ export const PROFILES: Record<string, BancaProfile> = {
   },
 };
 
+const ALIASES: Record<string, string> = {
+  amp: "amrigs",
+};
+
 const DEFAULT_PROFILE: BancaProfile = {
   key: "outra", label: "Residência Médica", difficulty: 3, osceEmphasis: false,
   specialtyWeights: { "Clínica Médica": 20, "Cirurgia": 15, "Pediatria": 12, "Ginecologia e Obstetrícia": 12, "Medicina Preventiva": 12, "Medicina de Emergência": 8, "Terapia Intensiva": 4, "Ortopedia": 4, "Oncologia": 4, "Angiologia": 3, "Urologia": 3, "Oftalmologia": 2, "Otorrinolaringologia": 1 },
@@ -113,9 +117,34 @@ const DEFAULT_PROFILE: BancaProfile = {
   tutorGuidance: "Explicações completas no padrão de residência médica brasileira.",
 };
 
+export interface BancaResolution {
+  profile: BancaProfile;
+  profileKey: string;
+  aliasUsed: boolean;
+  blueprintFound: boolean;
+}
+
+export function resolveBanca(key: string | null | undefined): BancaResolution {
+  if (!key) return { profile: DEFAULT_PROFILE, profileKey: "outra", aliasUsed: false, blueprintFound: false };
+  
+  const normalized = key.toLowerCase().trim();
+  const aliasKey = ALIASES[normalized];
+  const profileKey = aliasKey || normalized;
+  const aliasUsed = !!aliasKey;
+  
+  const profile = PROFILES[profileKey];
+  const blueprintFound = !!profile;
+
+  return {
+    profile: profile || DEFAULT_PROFILE,
+    profileKey: blueprintFound ? profileKey : "outra",
+    aliasUsed,
+    blueprintFound,
+  };
+}
+
 export function getBancaProfile(key: string | null | undefined): BancaProfile {
-  if (!key) return DEFAULT_PROFILE;
-  return PROFILES[key] || DEFAULT_PROFILE;
+  return resolveBanca(key).profile;
 }
 
 /** Build prompt block to inject into AI system prompts */

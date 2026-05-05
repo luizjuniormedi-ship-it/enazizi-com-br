@@ -3,7 +3,7 @@ import { aiFetch, cleanQuestionText } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection, IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
-import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,8 +146,6 @@ INSTRUÇÃO: Cite o livro relevante na explicação de cada questão.
 === PADRÃO DE EXCELÊNCIA EM CASOS CLÍNICOS (OBRIGATÓRIO) ===
 
     CADA CASO CLÍNICO DEVE OBRIGATORIAMENTE CONTER:
-    
-    CADA CASO CLÍNICO DEVE OBRIGATORIAMENTE CONTER:
 
 1. **APRESENTAÇÃO RICA E REALISTA**:
    - Nome fictício, idade EXATA, sexo, profissão/ocupação quando relevante
@@ -265,12 +263,12 @@ Regras:
       systemPrompt += `\n\n=== NÍVEL DE DIFICULDADE ===\n${diffMap[difficulty] || diffMap.intermediario}`;
     }
 
-    // Auditoria e Adaptação à Banca - REFORÇADA
+    // Camada de Alias e Resolução de Banca
     const normalizedKey = String(targetExam || "").toLowerCase().trim();
-    const blueprint = getBancaProfile(normalizedKey);
-    const blueprintFound = PROFILES[normalizedKey] !== undefined;
+    const resolution = resolveBanca(normalizedKey);
+    const { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
 
-    console.log(`[AUDIT] targetExam: "${targetExam}" | key: "${normalizedKey}" | found: ${blueprintFound} | label: "${blueprint.label}"`);
+    console.log(`[AUDIT] targetExam: "${targetExam}" | normalized: "${normalizedKey}" | appliedProfile: "${profileKey}" | aliasUsed: ${aliasUsed} | found: ${blueprintFound} | label: "${blueprint.label}"`);
     console.log(`[AUDIT] Weights: ${JSON.stringify(blueprint.specialtyWeights)}`);
 
     systemPrompt += buildBancaBlock(blueprint);
@@ -520,10 +518,32 @@ ${globalPrev.length > 0 ? `\nNÃO REPITA:\n${globalPrev.slice(0, 40).map((s, i) 
         }
       }
 
-      // Log metrics
+      // Log metrics & Audit
       const finalDist: Record<string, number> = {};
       for (const q of allQuestions) finalDist[q.difficulty_level || "unknown"] = (finalDist[q.difficulty_level || "unknown"] || 0) + 1;
-      console.log(`[question-generator] RESULTADO: ${allQuestions.length}/${requestedCount} | Dist: ${JSON.stringify(finalDist)}`);
+      
+      const auditAnalysis = {
+        targetExam,
+        normalizedKey,
+        appliedProfile: profileKey,
+        aliasUsed,
+        blueprintFound,
+        label: blueprint.label,
+        difficulty_distribution: finalDist,
+        specialty_weights: blueprint.specialtyWeights
+      };
+
+      console.log(`[question-generator] RESULTADO: ${allQuestions.length}/${requestedCount} | Audit: ${JSON.stringify(auditAnalysis)}`);
+
+      // Async audit insertion (fire and forget to not block response)
+      sb.from("audit_simulados_bancas").insert({
+        banca_key: targetExam || "unknown",
+        total_requested: requestedCount,
+        questions_data: allQuestions,
+        distribution_analysis: auditAnalysis
+      }).then(({ error }) => {
+        if (error) console.error("[AUDIT_ERROR] Failed to insert audit log:", error);
+      });
 
       // Return in tool_call format (same as before)
       const slotResponse = {
