@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { GlobalErrorBoundary } from "@/components/monitoring/GlobalErrorBoundary";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ModuleErrorBoundary } from "@/components/monitoring/ModuleErrorBoundary";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
