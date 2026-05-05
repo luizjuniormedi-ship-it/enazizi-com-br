@@ -15,7 +15,7 @@ serve(async (req) => {
 
   try {
     const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext, targetExam } = body;
+    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext, targetExam, jobId, batchNumber } = body;
 
     // Input validation: messages must be an array
     if (!Array.isArray(messages)) {
@@ -560,17 +560,40 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       };
 
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      const elapsedMs = Date.now() - startTime;
       console.log(`[AUDIT] generation_complete | targetExam: "${targetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
 
-      // Async audit insertion (fire and forget to not block response)
+      // Async audit insertion
+      const { data: { user: authUser } } = await sb.auth.getUser(req.headers.get("Authorization")?.split(" ")[1] || "");
+      
       sb.from("audit_simulados_bancas").insert({
         banca_key: targetExam || "unknown",
+        target_exam: targetExam || "unknown",
         total_requested: requestedCount,
         questions_data: allQuestions,
-        distribution_analysis: { ...auditAnalysis, totalTimeSeconds: totalTime }
+        distribution_analysis: { ...auditAnalysis, totalTimeSeconds: totalTime },
+        job_id: jobId,
+        batch_number: batchNumber || 1,
+        batch_size: requestedCount,
+        generated_count: allQuestions.length,
+        failed_count: requestedCount - allQuestions.length,
+        elapsed_ms: elapsedMs,
+        applied_profile: profileKey,
+        alias_used: aliasUsed,
+        blueprint_found: blueprintFound,
+        user_id: authUser?.id
       }).then(({ error }) => {
         if (error) console.error("[AUDIT_ERROR] Failed to insert audit log:", error);
       });
+
+      // If jobId is provided, update the simulation_generation_jobs table
+      if (jobId) {
+        sb.rpc('append_questions_to_job', { 
+          p_job_id: jobId, 
+          p_new_questions: allQuestions,
+          p_status: allQuestions.length > 0 ? (requestedCount === allQuestions.length ? 'processing' : 'partial') : 'failed'
+        }).catch(err => console.error("[JOB_ERROR] Failed to update job:", err));
+      }
 
       // Return in tool_call format (same as before)
       const slotResponse = {
