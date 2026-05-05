@@ -14,12 +14,40 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext, targetExam, jobId, batchNumber } = body;
+    const body = await req.json().catch(() => ({}));
+    const { 
+      messages: rawMessages, 
+      userContext, 
+      stream: clientStream, 
+      difficulty, 
+      maxRetries, 
+      timeoutMs, 
+      outputFormat, 
+      avoidStatements, 
+      generationContext, 
+      targetExam, 
+      jobId, 
+      batchNumber,
+      count
+    } = body;
 
-    // Input validation: messages must be an array
-    if (!Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+    // Safety: Protect messages
+    const messages = Array.isArray(rawMessages) ? rawMessages : [];
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    
+    // Safety: Protect generationContext
+    const gc = generationContext && typeof generationContext === "object" ? generationContext : {};
+    
+    // Safety: Protect targetExam
+    const safeTargetExam = String(targetExam || "default");
+    const bancaInfo = resolveBanca(safeTargetExam);
+
+    if (messages.length === 0 && !generationContext) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: "INVALID_PAYLOAD", 
+        message: "Campo 'messages' ou 'generationContext' é obrigatório." 
+      }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
