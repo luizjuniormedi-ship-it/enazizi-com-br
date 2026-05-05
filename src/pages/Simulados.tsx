@@ -300,7 +300,7 @@ const Simulados = () => {
         config.difficulty || "misto", 
         session?.access_token,
         undefined,
-        config.realExamProfile ? EXAM_PROFILES[config.realExamProfile]?.name : undefined
+        config.realExamProfile ? config.realExamProfile.toLowerCase() : undefined
       );
       
       setLoadingPercent(100);

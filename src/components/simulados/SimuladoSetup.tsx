@@ -820,7 +820,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             <div>
               <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
               <div className="flex gap-2 flex-wrap">
-                {(mode === "extremo" ? [50, 80, 100] : [5, 10, 15, 20, 30]).map(n => (
+                {(mode === "extremo" ? [50, 80, 100] : [5, 10, 15, 20, 30, 50, 100]).map(n => (
                   <Button 
                     key={n} 
                     variant={questionCount === n && !customCount ? "default" : "outline"} 
