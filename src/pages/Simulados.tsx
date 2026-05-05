@@ -332,10 +332,11 @@ const Simulados = () => {
       setTargetCount(requestedTotal);
       cancelGenerationRef.current = false;
       
-      let currentJobId: string | undefined;
+      let currentJobId: string | undefined = config.resumeJobId;
+      let allGenerated: SimQuestion[] = config.existingQuestions || [];
       
-      // Para simulados grandes (50 ou 100), criar um job no banco
-      if (requestedTotal >= 50 && user) {
+      // Para simulados grandes (50 ou 100), criar um job no banco se não estiver retomando
+      if (requestedTotal >= 50 && user && !currentJobId) {
         setLoadingProgress("Registrando tarefa de geração...");
         const { data: job, error: jobError } = await supabase
           .from("simulation_generation_jobs")
