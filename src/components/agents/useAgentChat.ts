@@ -323,10 +323,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             prev[prev.length - 2]?.role === "user"
           ) {
             return prev.map((m, i) =>
-              i === prev.length - 1 ? { ...m, content: fullText } : m
+              i === prev.length - 1 ? { ...m, content: fullText, bibliography: ragBibliography } : m
             );
           }
-          return [...prev, { role: "assistant", content: fullText }];
+          return [...prev, { role: "assistant", content: fullText, bibliography: ragBibliography }];
         });
       };
 
