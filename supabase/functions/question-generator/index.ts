@@ -420,7 +420,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       // Generate per slot
       const allQuestions: any[] = [];
       const globalPrev = Array.isArray(avoidStatements) ? [...avoidStatements] : [];
-      const SAFE_BATCH = 8;
+      const SAFE_BATCH = 5;
 
       for (const slot of slots) {
         const { level, target, desc } = slot;
@@ -468,7 +468,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
               const resp = await aiFetch({
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
                 maxTokens: 16384,
-                timeoutMs: 80000,
+                timeoutMs: 110000,
                 maxRetries: 1,
               });
               if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error:`, t.slice(0, 200)); return []; }
