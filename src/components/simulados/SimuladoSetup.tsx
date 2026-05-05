@@ -798,7 +798,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               <label className="text-sm font-semibold mb-3 block">Nível de dificuldade</label>
               <div className="flex gap-2 flex-wrap">
                 {DIFFICULTY_OPTIONS.map(d => (
-              <Button key={d.value} variant={difficulty === d.value ? "default" : "outline"} size="sm" onClick={() => setDifficulty(d.value)}>
+              <Button 
+                key={d.value} 
+                variant={difficulty === d.value ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setDifficulty(d.value)}
+                className="h-9 px-4 rounded-xl font-black uppercase tracking-wider text-[10px]"
+              >
                     {d.label}
                   </Button>
                 ))}
@@ -815,7 +821,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               <label className="text-sm font-semibold mb-3 block">Quantas questões?</label>
               <div className="flex gap-2 flex-wrap">
                 {(mode === "extremo" ? [50, 80, 100] : [5, 10, 15, 20, 30]).map(n => (
-                  <Button key={n} variant={questionCount === n && !customCount ? "default" : "outline"} size="sm" onClick={() => { setQuestionCount(n); setCustomCount(""); }}>
+                  <Button 
+                    key={n} 
+                    variant={questionCount === n && !customCount ? "default" : "outline"} 
+                    size="sm" 
+                    onClick={() => { setQuestionCount(n); setCustomCount(""); }}
+                    className="h-9 w-12 rounded-xl font-black text-[10px]"
+                  >
                     {n}
                   </Button>
                 ))}
@@ -840,6 +852,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                     variant={imagePercent === pct ? "default" : "outline"}
                     size="sm"
                     onClick={() => setImagePercent(pct)}
+                    className="h-9 px-4 rounded-xl font-black uppercase tracking-wider text-[10px]"
                   >
                     {pct === 0 ? "Nenhuma" : `${pct}%`}
                   </Button>
