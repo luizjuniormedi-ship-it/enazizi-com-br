@@ -14,12 +14,40 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json();
-    const { messages, userContext, stream: clientStream, difficulty, maxRetries, timeoutMs, outputFormat, avoidStatements, generationContext, targetExam, jobId, batchNumber } = body;
+    const body = await req.json().catch(() => ({}));
+    const { 
+      messages: rawMessages, 
+      userContext, 
+      stream: clientStream, 
+      difficulty, 
+      maxRetries, 
+      timeoutMs, 
+      outputFormat, 
+      avoidStatements, 
+      generationContext, 
+      targetExam, 
+      jobId, 
+      batchNumber,
+      count
+    } = body;
 
-    // Input validation: messages must be an array
-    if (!Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
+    // Safety: Protect messages
+    const messages = Array.isArray(rawMessages) ? rawMessages : [];
+    const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
+    
+    // Safety: Protect generationContext
+    const gc = generationContext && typeof generationContext === "object" ? generationContext : {};
+    
+    // Safety: Protect targetExam
+    const safeTargetExam = String(targetExam || "default");
+    const bancaInfo = resolveBanca(safeTargetExam);
+
+    if (messages.length === 0 && !generationContext) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: "INVALID_PAYLOAD", 
+        message: "Campo 'messages' ou 'generationContext' é obrigatório." 
+      }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -264,11 +292,11 @@ Regras:
     }
 
     // Camada de Alias e Resolução de Banca
-    const normalizedKey = String(targetExam || "").toLowerCase().trim();
-    const resolution = resolveBanca(normalizedKey);
+    const normalizedKey = safeTargetExam.toLowerCase().trim();
+    const resolution = bancaInfo; // Already resolved above
     const { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
 
-    console.log(`[AUDIT] targetExam: "${targetExam}" | normalized: "${normalizedKey}" | appliedProfile: "${profileKey}" | aliasUsed: ${aliasUsed} | found: ${blueprintFound} | label: "${blueprint.label}"`);
+    console.log(`[AUDIT] targetExam: "${safeTargetExam}" | normalized: "${normalizedKey}" | appliedProfile: "${profileKey}" | aliasUsed: ${aliasUsed} | found: ${blueprintFound} | label: "${blueprint.label}"`);
     console.log(`[AUDIT] Weights: ${JSON.stringify(blueprint.specialtyWeights)}`);
 
     systemPrompt += buildBancaBlock(blueprint);
@@ -282,8 +310,7 @@ Regras:
     }
 
     // Inject generation context enforcement
-    if (generationContext && typeof generationContext === "object") {
-      const gc = generationContext;
+    if (gc && Object.keys(gc).length > 0) {
       const scopeParts = [gc.specialty, gc.topic, gc.subtopic].filter(Boolean).join(" > ");
       systemPrompt += `\n\n=== ESCOPO OBRIGATÓRIO DE GERAÇÃO ===
 ESPECIALIDADE: ${gc.specialty || "Não especificada"}
@@ -318,11 +345,11 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-      // Parse requested count from user message
-      const userMsg = messages?.[messages.length - 1]?.content || "";
-      const countMatch = userMsg.match(/(?:gere|crie|faça|gerar)\s+(?:exatamente\s+)?(\d+)/i);
-      // Increased safety limit to 100 but recommended frontend batching
-      const requestedCount = countMatch ? Math.min(parseInt(countMatch[1]), 100) : 10;
+      // Parse requested count from user message or body
+      const countFromMsg = lastMessage?.content?.match(/(\d+)/)?.[0];
+      const requestedCount = countFromMsg ? Math.min(parseInt(countFromMsg), 100) : Math.min(Number(count ?? 10), 100);
+
+      // Compute per-difficulty slot targets
 
       // Compute per-difficulty slot targets
       type DiffSlot = { level: string; target: number; desc: string };
@@ -343,13 +370,13 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       }
 
       const startTime = Date.now();
-      console.log(`[AUDIT] generation_start | targetExam: "${targetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty}`);
+      console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty}`);
       console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
 
       // Extract topic info
       const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
-      const matchedTopics = HIGH_YIELD_KEYS.filter(k => userMsg.toLowerCase().includes(k.toLowerCase()));
-      const hasSubtopicFilter = generationContext?.subtopic && String(generationContext.subtopic).trim().length > 0;
+      const matchedTopics = HIGH_YIELD_KEYS.filter(k => (lastMessage?.content || "").toLowerCase().includes(k.toLowerCase()));
+      const hasSubtopicFilter = gc?.subtopic && String(gc.subtopic).trim().length > 0;
 
       // Try cache (with difficulty partitioning)
       let allCached: any[] = [];
@@ -425,7 +452,7 @@ IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em
 NÍVEL DE DIFICULDADE: ${desc}
 TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
 
-TEMAS: ${matchedTopics.length > 0 ? matchedTopics.join(", ") : (generationContext?.topic || "Clínica Médica")}
+TEMAS: ${matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica")}
 
 Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"topic":"tema","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
@@ -549,7 +576,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       for (const q of allQuestions) finalDist[q.difficulty_level || "unknown"] = (finalDist[q.difficulty_level || "unknown"] || 0) + 1;
       
       const auditAnalysis = {
-        targetExam,
+        targetExam: safeTargetExam,
         normalizedKey,
         appliedProfile: profileKey,
         aliasUsed,
@@ -561,15 +588,15 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
 
       const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
       const elapsedMs = Date.now() - startTime;
-      console.log(`[AUDIT] generation_complete | targetExam: "${targetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
+      console.log(`[AUDIT] generation_complete | targetExam: "${safeTargetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
 
       // Async audit insertion
       const { data: { user: authUser } } = await sb.auth.getUser(req.headers.get("Authorization")?.split(" ")[1] || "");
       
       try {
         const { error: auditError } = await sb.from("audit_simulados_bancas").insert({
-          banca_key: targetExam || "unknown",
-          target_exam: targetExam || "unknown",
+          banca_key: safeTargetExam || "unknown",
+          target_exam: safeTargetExam || "unknown",
           total_requested: requestedCount,
           questions_data: allQuestions,
           distribution_analysis: { ...auditAnalysis, totalTimeSeconds: totalTime },
@@ -613,7 +640,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         }],
         source: "slot-based",
         difficulty_distribution: finalDist,
-        audit: { targetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
+        audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
       };
       return new Response(JSON.stringify(slotResponse), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -671,10 +698,18 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-  } catch (e) {
-    console.error("question-generator error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  } catch (error) {
+    console.error("[question-generator] fatal runtime error", error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: "QUESTION_GENERATOR_RUNTIME_ERROR",
+      message: error instanceof Error ? error.message : String(error),
+    }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
     });
   }
 });
