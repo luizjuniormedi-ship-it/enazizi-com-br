@@ -265,16 +265,8 @@ serve(async (req) => {
         .eq("medical_image_assets.image_type", alloc.modality)
         .eq("medical_image_assets.is_active", true)
         .eq("medical_image_assets.review_status", "published")
-        .eq("medical_image_assets.integrity_status", "ok")
-        .gte("medical_image_assets.clinical_confidence", 0.90)
-        .in("medical_image_assets.validation_level", ["gold", "silver"])
-        .in("medical_image_assets.asset_origin", ["real_medical", "validated_medical"])
-        // Editorial quality gate: prefer excellent, allow good
-        .neq("editorial_grade", "weak")
-        .not("senior_audit_score", "is", null)
-        .in("editorial_grade", ["excellent", "good"])
-        .order("senior_audit_score", { ascending: false })
-        .limit(alloc.count * 2); // fetch extra to prioritize excellent
+        .order("senior_audit_score", { ascending: false }, { nullsFirst: false })
+        .limit(alloc.count * 2);
 
       if (existing && existing.length > 0) {
         // Prioritize excellent over good
@@ -325,10 +317,6 @@ serve(async (req) => {
           .select("id, asset_code, image_type, diagnosis, clinical_findings, distractors, difficulty, specialty, subtopic, image_url")
           .eq("is_active", true)
           .eq("review_status", "published")
-          .eq("integrity_status", "ok")
-          .gte("clinical_confidence", 0.90)
-          .in("validation_level", ["gold", "silver"])
-          .in("asset_origin", ["real_medical", "validated_medical"])
           .in("image_type", priorityModalities)
           .limit(Math.min(deficit, 5));
 
@@ -349,7 +337,7 @@ serve(async (req) => {
 
               const response = await aiFetch({
                 messages: [{ role: "user", content: prompt }],
-                model: "openai/gpt-5-mini",
+                model: "gpt-4o-mini",
                 maxTokens: 12000,
                 timeoutMs: 60000,
               });
