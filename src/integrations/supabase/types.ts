@@ -15719,6 +15719,48 @@ export type Database = {
         }
         Relationships: []
       }
+      simulation_generation_jobs: {
+        Row: {
+          config: Json
+          created_at: string
+          error_message: string | null
+          failed_questions: number
+          generated_questions: number
+          id: string
+          results: Json
+          status: Database["public"]["Enums"]["simulation_job_status"]
+          total_questions: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          error_message?: string | null
+          failed_questions?: number
+          generated_questions?: number
+          id?: string
+          results?: Json
+          status?: Database["public"]["Enums"]["simulation_job_status"]
+          total_questions: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          error_message?: string | null
+          failed_questions?: number
+          generated_questions?: number
+          id?: string
+          results?: Json
+          status?: Database["public"]["Enums"]["simulation_job_status"]
+          total_questions?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       simulation_history: {
         Row: {
           correct_diagnosis: string | null
@@ -20366,6 +20408,13 @@ export type Database = {
         | "falha_persistente"
         | "escalado"
       qa_severity: "critico" | "alto" | "medio" | "baixo"
+      simulation_job_status:
+        | "pending"
+        | "processing"
+        | "partial"
+        | "completed"
+        | "failed"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -20625,6 +20674,14 @@ export const Constants = {
         "escalado",
       ],
       qa_severity: ["critico", "alto", "medio", "baixo"],
+      simulation_job_status: [
+        "pending",
+        "processing",
+        "partial",
+        "completed",
+        "failed",
+        "cancelled",
+      ],
     },
   },
 } as const
