@@ -252,7 +252,7 @@ export default function EnaflixPage() {
     } catch {
       // ignore
     }
-    navigate("/study-hub");
+    navigate("/dashboard");
   };
 
   const handleSearchToggle = () => {
