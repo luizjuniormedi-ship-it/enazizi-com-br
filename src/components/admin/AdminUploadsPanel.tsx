@@ -62,7 +62,7 @@ const AdminUploadsPanel = () => {
     const { data, error } = await query;
     
     if (!error && data) {
-      setFiles(data);
+      setFiles(data as any);
       const processing = new Set<string>();
       for (const f of data) {
         const json = f.extracted_json as Record<string, any> | null;
