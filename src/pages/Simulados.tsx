@@ -124,6 +124,19 @@ async function generateBatch(topics: string[], count: number, difficulty: string
   const content = json.choices?.[0]?.message?.content || "";
   const jsonMatch = content.match(/\[[\s\S]*\]/);
   if (jsonMatch) return mapQuestions(JSON.parse(jsonMatch[0]), topics);
+  
+  // Fallback: check tool_calls if JSON was returned in that format
+  const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
+  if (toolCall?.function?.arguments) {
+    try {
+      const tc = JSON.parse(toolCall.function.arguments);
+      const qs = Array.isArray(tc.questions) ? tc.questions : [];
+      if (qs.length > 0) return mapQuestions(qs, topics);
+    } catch (e) {
+      console.error("Error parsing tool_calls fallback:", e);
+    }
+  }
+  
   return [];
 }
 
