@@ -135,7 +135,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
                 onClick={() => navigate(item.path)}
                 className={cn(
                   "text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-white hover:scale-105",
-                  location.pathname === item.path || (item.path === "/dashboard" && location.pathname === "/study-hub")
+                  location.pathname === item.path || (item.path === "/dashboard" && (location.pathname === "/study-hub" || location.pathname === "/dashboard"))
                     ? "text-white" 
                     : "text-white/40"
                 )}
