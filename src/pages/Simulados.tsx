@@ -481,6 +481,24 @@ const Simulados = () => {
           />
         </div>
 
+        {activeJobs.length > 0 && (
+          <EnaflixRow title="Gerações em Andamento">
+            {activeJobs.map((job) => (
+              <SimuladoProfileCard
+                key={job.id}
+                title={`Simulado em Lote (${job.total_questions} questões)`}
+                subtitle={`Progresso: ${job.generated_questions}/${job.total_questions}`}
+                count={job.total_questions}
+                timeMinutes={Math.round(job.total_questions * 3)}
+                difficulty={job.config?.difficulty || "misto"}
+                badge={job.status === "partial" ? "Parcial" : "Processando"}
+                image="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=400"
+                onClick={() => handleResumeJob(job)}
+              />
+            ))}
+          </EnaflixRow>
+        )}
+
         {pendingSession && checked && (
           <div className="px-4 sm:px-8 lg:px-14">
             <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleResumeSession} onDiscard={abandonSession} />
