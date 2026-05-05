@@ -205,14 +205,14 @@ const App = () => (
                   <Route index element={<ModuleErrorBoundary module="dashboard"><Dashboard /></ModuleErrorBoundary>} />
                   
                   {/* Estudar & Treinar */}
-                  <Route path="sessao-estudo" element={<StudySession />} />
-                  <Route path="flashcards" element={<Flashcards />} />
-                  <Route path="gerar-flashcards" element={<FlashcardGenerator />} />
-                  <Route path="simulados" element={<Simulados />} />
-                  <Route path="banco-erros" element={<ErrorBank />} />
-                  <Route path="gerador-questoes" element={<QuestionGenerator />} />
-                  <Route path="chatgpt" element={<ChatGPT />} />
-                  <Route path="mentor" element={<AIMentor />} />
+                  <Route path="sessao-estudo" element={<ModuleErrorBoundary module="sessao-estudo"><StudySession /></ModuleErrorBoundary>} />
+                  <Route path="flashcards" element={<ModuleErrorBoundary module="flashcards"><Flashcards /></ModuleErrorBoundary>} />
+                  <Route path="gerar-flashcards" element={<ModuleErrorBoundary module="gerar-flashcards"><FlashcardGenerator /></ModuleErrorBoundary>} />
+                  <Route path="simulados" element={<ModuleErrorBoundary module="simulados"><Simulados /></ModuleErrorBoundary>} />
+                  <Route path="banco-erros" element={<ModuleErrorBoundary module="banco-erros"><ErrorBank /></ModuleErrorBoundary>} />
+                  <Route path="gerador-questoes" element={<ModuleErrorBoundary module="gerador-questoes"><QuestionGenerator /></ModuleErrorBoundary>} />
+                  <Route path="chatgpt" element={<ModuleErrorBoundary module="chatgpt"><ChatGPT /></ModuleErrorBoundary>} />
+                  <Route path="mentor" element={<ModuleErrorBoundary module="mentor"><AIMentor /></ModuleErrorBoundary>} />
                   
                   {/* Conteúdo */}
                   <Route path="videoaulas" element={<VideoLessonsLibrary />} />
