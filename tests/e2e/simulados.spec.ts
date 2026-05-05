@@ -38,6 +38,13 @@ test.describe('Simulados Module E2E', () => {
       }
     });
 
+    // Listen for network errors (500)
+    page.on('response', response => {
+      if (response.status() >= 500) {
+        consoleErrors.push(`Server error 500 on ${response.url()}`);
+      }
+    });
+
     // 2. Abrir Simulados
     await page.goto('/dashboard/simulados');
     
