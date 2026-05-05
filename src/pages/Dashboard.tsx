@@ -8,7 +8,7 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
 import { ENAFLIX_MODULES } from "@/data/enaflix/enaflixModules";
-import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen } from "lucide-react";
+import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
 import { motion } from "framer-motion";
 
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
