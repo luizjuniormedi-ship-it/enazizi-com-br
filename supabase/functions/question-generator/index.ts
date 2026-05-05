@@ -452,7 +452,7 @@ IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em
 NÍVEL DE DIFICULDADE: ${desc}
 TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
 
-TEMAS: ${matchedTopics.length > 0 ? matchedTopics.join(", ") : (generationContext?.topic || "Clínica Médica")}
+TEMAS: ${matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica")}
 
 Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"topic":"tema","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
