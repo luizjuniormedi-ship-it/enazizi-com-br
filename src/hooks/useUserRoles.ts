@@ -53,8 +53,10 @@ export const useUserRoles = () => {
             description: "O sistema sincronizou seus novos privilégios."
           });
         }
-      )
-      .subscribe();
+      );
+
+    // Only subscribe AFTER defining all listeners
+    channel.subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
