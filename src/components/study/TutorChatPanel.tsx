@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, Send, Sparkles, ArrowUpRight, MessageSquare, 
   Lightbulb, Brain, FileQuestion, Wand2, Clapperboard, 
-  Play, Stethoscope, Activity
+  Play, Stethoscope, Activity, BookOpen
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
@@ -42,7 +42,7 @@ const ChatMsgRow = memo(({ role, content, bibliography }: MsgRowProps) => (
         <div className="flex flex-wrap gap-1.5">
           {bibliography.map((b, i) => (
             <Badge key={i} variant="outline" className="text-[9px] bg-primary/5 border-primary/20 text-primary/80">
-              {b.file} {b.page ? `(pág. ${b.page})` : ""}
+              {b.file || b.source} {b.page ? `(pág. ${b.page})` : ""}
             </Badge>
           ))}
         </div>
@@ -167,18 +167,18 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
             if (last?.role === "assistant") {
               return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: fullText } : m));
             }
-                return [...prev, { role: "assistant", content: fullText, bibliography: data?.adaptive_context?.bibliography }];
-              });
-            },
-            onComplete: (fullText, data) => {
-              setIsLoading(false);
-              // Atualiza bibliografia final se disponível
-              if (data?.adaptive_context?.bibliography) {
-                setMessages(prev => prev.map((m, i) => 
-                  i === prev.length - 1 ? { ...m, bibliography: data.adaptive_context.bibliography } : m
-                ));
-              }
-            },
+            return [...prev, { role: "assistant", content: fullText }];
+          });
+        },
+        onComplete: (fullText, data: any) => {
+          setIsLoading(false);
+          // Se o backend retornou bibliografia RAG
+          if (data?.adaptive_context?.bibliography) {
+             setMessages(prev => prev.map((m, i) => 
+               i === prev.length - 1 ? { ...m, bibliography: data.adaptive_context.bibliography } : m
+             ));
+          }
+        },
         onError: () => {
           setIsLoading(false);
           setMessages((prev) => {
