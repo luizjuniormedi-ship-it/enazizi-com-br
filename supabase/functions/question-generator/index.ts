@@ -698,10 +698,18 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-  } catch (e) {
-    console.error("question-generator error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
+  } catch (error) {
+    console.error("[question-generator] fatal runtime error", error);
+    return new Response(JSON.stringify({
+      success: false,
+      error: "QUESTION_GENERATOR_RUNTIME_ERROR",
+      message: error instanceof Error ? error.message : String(error),
+    }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        ...corsHeaders,
+      },
     });
   }
 });
