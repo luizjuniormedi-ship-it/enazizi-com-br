@@ -848,11 +848,16 @@ const AnamnesisTrainer = () => {
         </Card>
       </div>
     );
+    } catch (e) {
+      console.error("ANAMNESE DIAGNOSIS ERROR:", e);
+      return <div className="p-8 text-center">Algo deu errado no Diagnóstico da Anamnese. <Button onClick={() => setPhase("active")}>Voltar</Button></div>;
+    }
   }
 
   // === RESULT ===
   if (phase === "result" && evalData) {
-    const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
+    try {
+      const gradeColor: Record<string, string> = { A: "text-green-400", B: "text-blue-400", C: "text-yellow-400", D: "text-orange-400", F: "text-red-400" };
 
     // Radar chart data
     const radarData = CATEGORIES.map(cat => {
