@@ -9,7 +9,7 @@ import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
 import { ENAFLIX_MODULES } from "@/data/enaflix/enaflixModules";
 import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen, AlertCircle, RefreshCw, Activity, Timer } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
@@ -70,8 +70,9 @@ const Dashboard = () => {
         
         // Registrar telemetria
         import("@/integrations/supabase/client").then(({ supabase }) => {
-          supabase.from("telemetry_events").insert({
+          supabase.from("telemetry_events").insert([{
             user_id: user.id,
+            session_id: crypto.randomUUID(),
             event_name: "cockpit_partial_mode",
             properties: {
               route: window.location.pathname,
@@ -81,7 +82,7 @@ const Dashboard = () => {
               fallback_used: true,
               timestamp: new Date().toISOString()
             }
-          }).then();
+          }]).then();
         });
 
         // Persistência leve
@@ -143,6 +144,35 @@ const Dashboard = () => {
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
 
+      {/* Debug Panel */}
+      {isDebug && (
+        <div className="fixed top-20 right-4 z-[999] p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
+          <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-2">
+            <Activity className="h-3 w-3 text-primary" />
+            <span className="font-bold text-primary uppercase">Cockpit Diagnostic</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-white/50">StudyNext:</span>
+            <span className={studyNext ? "text-emerald-400" : "text-amber-500"}>{studyNext ? "OK" : missionLoading ? "Loading" : "Failed"}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-white/50">Snapshot:</span>
+            <span className={snapshot ? "text-emerald-400" : "text-amber-500"}>{snapshot ? "OK" : snapLoading ? "Loading" : "Failed"}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-white/50">Dashboard:</span>
+            <span className={dashData ? "text-emerald-400" : "text-amber-500"}>{dashData ? "OK" : dashLoading ? "Loading" : "Failed"}</span>
+          </div>
+          <div className="flex justify-between gap-4 pt-2 border-t border-white/10">
+            <span className="text-white/50">Load Time:</span>
+            <span className="text-primary font-bold">{(Date.now() - mountTimeRef.current)}ms</span>
+          </div>
+          {cockpitTimedOut && (
+            <div className="text-amber-500 font-bold uppercase animate-pulse">Partial Mode Active</div>
+          )}
+        </div>
+      )}
+
       {/* Sync Warning Banner */}
       {cockpitTimedOut && isDataMissing && (
         <div className="mx-4 sm:mx-8 lg:mx-14 px-6 py-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-wrap items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
@@ -154,7 +184,10 @@ const Dashboard = () => {
           </div>
           <div className="flex gap-3">
             <button 
-              onClick={() => refresh?.()}
+              onClick={() => {
+                refreshStudyNext();
+                refreshSnapshot();
+              }}
               className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
             >
               Tentar atualizar
@@ -322,7 +355,7 @@ const Dashboard = () => {
               <div className="space-y-4 flex-1">
                 <div>
                   <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
-                  <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
+                  <p className="text-white/60">Deep learning applied aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
                 <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/mentor")}>
                   Iniciar Conversa
