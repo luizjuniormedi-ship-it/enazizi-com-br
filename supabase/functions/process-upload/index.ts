@@ -330,13 +330,33 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Set status to processing and return immediately
+    // 1. Vincular organization_id do perfil do usuário
+    const { data: profile } = await supabaseAdmin
+      .from("profiles")
+      .select("organization_id")
+      .eq("user_id", userId)
+      .single();
+
+    // 2. Criar ou atualizar registro em rag_documents para rastreabilidade RAG
+    const { data: ragDoc, error: ragErr } = await supabaseAdmin.from("rag_documents").upsert({
+      organization_id: profile?.organization_id || "00000000-0000-0000-0000-000000000000", // Fallback seguro
+      uploaded_by: userId,
+      title: upload.filename,
+      file_name: upload.filename,
+      file_path: upload.storage_path,
+      file_type: upload.file_type || "unknown",
+      file_size: upload.file_size || 0,
+      status: "processing"
+    }).select().single();
+
+    // 3. Atualizar status na tabela legada uploads
     await supabaseAdmin.from("uploads").update({
       status: "processing",
-      extracted_json: { step: "starting", progress: 0 },
+      organization_id: profile?.organization_id,
+      extracted_json: { step: "starting", progress: 0, rag_doc_id: ragDoc?.id },
     }).eq("id", uploadId);
 
-    // Fire-and-forget: process in background
+    // 4. Fire-and-forget: process in background
     processInBackground(uploadId, upload, userId, supabaseAdmin, supabase).catch((e) => {
       console.error("Background task failed:", e);
     });

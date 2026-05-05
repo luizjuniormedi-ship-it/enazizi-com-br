@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, Send, Sparkles, ArrowUpRight, MessageSquare, 
   Lightbulb, Brain, FileQuestion, Wand2, Clapperboard, 
-  Play, Stethoscope, Activity
+  Play, Stethoscope, Activity, BookOpen
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
@@ -14,9 +14,9 @@ import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
-interface MsgRowProps { role: "user" | "assistant"; content: string }
-const ChatMsgRow = memo(({ role, content }: MsgRowProps) => (
-  <div className={`flex ${role === "user" ? "justify-end" : "justify-start"}`}>
+interface MsgRowProps { role: "user" | "assistant"; content: string; bibliography?: any[] }
+const ChatMsgRow = memo(({ role, content, bibliography }: MsgRowProps) => (
+  <div className={`flex flex-col ${role === "user" ? "items-end" : "items-start"} gap-2`}>
     <div
       className={cn(
         "max-w-[92%] rounded-2xl px-4 py-3 text-[13px] font-medium leading-relaxed",
@@ -33,8 +33,23 @@ const ChatMsgRow = memo(({ role, content }: MsgRowProps) => (
         content
       )}
     </div>
+    
+    {role === "assistant" && bibliography && bibliography.length > 0 && (
+      <div className="ml-2 mt-1 space-y-1">
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest flex items-center gap-1">
+          <BookOpen className="h-3 w-3" /> Fontes Consultadas
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {bibliography.map((b, i) => (
+            <Badge key={i} variant="outline" className="text-[9px] bg-primary/5 border-primary/20 text-primary/80">
+              {b.file || b.source} {b.page ? `(pág. ${b.page})` : ""}
+            </Badge>
+          ))}
+        </div>
+      </div>
+    )}
   </div>
-), (prev, next) => prev.role === next.role && prev.content === next.content);
+), (prev, next) => prev.role === next.role && prev.content === next.content && JSON.stringify(prev.bibliography) === JSON.stringify(next.bibliography));
 ChatMsgRow.displayName = "ChatMsgRow";
 
 
@@ -51,6 +66,7 @@ export interface TutorContext {
 interface Msg {
   role: "user" | "assistant";
   content: string;
+  bibliography?: any[];
 }
 
 interface QuickAction {
@@ -154,7 +170,15 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
             return [...prev, { role: "assistant", content: fullText }];
           });
         },
-        onComplete: () => setIsLoading(false),
+        onComplete: (fullText, data: any) => {
+          setIsLoading(false);
+          // Se o backend retornou bibliografia RAG
+          if (data?.adaptive_context?.bibliography) {
+             setMessages(prev => prev.map((m, i) => 
+               i === prev.length - 1 ? { ...m, bibliography: data.adaptive_context.bibliography } : m
+             ));
+          }
+        },
         onError: () => {
           setIsLoading(false);
           setMessages((prev) => {
@@ -254,7 +278,7 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
           </div>
         )}
         {messages.map((m, i) => (
-          <ChatMsgRow key={i} role={m.role} content={m.content} />
+          <ChatMsgRow key={i} role={m.role} content={m.content} bibliography={m.bibliography} />
         ))}
         {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
           <div className="flex justify-start">
