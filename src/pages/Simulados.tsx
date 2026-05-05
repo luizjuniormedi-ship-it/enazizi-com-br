@@ -43,6 +43,50 @@ import { SimuladoProfileCard } from "@/components/enaflix/SimuladoProfileCard";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
 
+async function computeRealPerformance(userId: string) {
+  const { data: rows } = await supabase
+    .from("simulado_question_analytics" as any)
+    .select("mode, image_type, is_correct, response_time_seconds, difficulty")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const analytics = (rows || []) as Array<{
+    mode: string;
+    image_type: string | null;
+    is_correct: boolean;
+    response_time_seconds: number | null;
+    difficulty: string | null;
+  }>;
+
+  const modalityStats: Record<string, { correct: number; total: number }> = {};
+  const diffStats: Record<string, { correct: number; total: number }> = {};
+
+  for (const row of analytics) {
+    const mod = row.image_type || "text";
+    if (!modalityStats[mod]) modalityStats[mod] = { correct: 0, total: 0 };
+    modalityStats[mod].total++;
+    if (row.is_correct) modalityStats[mod].correct++;
+
+    const diff = row.difficulty || "medium";
+    if (!diffStats[diff]) diffStats[diff] = { correct: 0, total: 0 };
+    diffStats[diff].total++;
+    if (row.is_correct) diffStats[diff].correct++;
+  }
+
+  const by_modality: Record<string, number> = {};
+  for (const [mod, stats] of Object.entries(modalityStats)) {
+    by_modality[mod] = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 50;
+  }
+
+  const by_difficulty: Record<string, number> = {};
+  for (const [diff, stats] of Object.entries(diffStats)) {
+    by_difficulty[diff] = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 50;
+  }
+
+  return { by_modality, by_difficulty, response_time: {}, error_patterns: [] };
+}
+
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 20;
