@@ -81,6 +81,7 @@ export function isProfileComplete(data: {
   periodo?: number | null;
   faculdade?: string | null;
   user_type?: string;
+  target_exams?: string[] | null;
 }): boolean {
   const userType = data.user_type || "estudante";
   const isStudent = userType === "estudante" || userType === "medico";
@@ -89,16 +90,21 @@ export function isProfileComplete(data: {
   const nameCheck = isValidName(data.display_name || "");
   if (!nameCheck.valid) return false;
 
-  // Phone check relaxed: allow missing phone for existing users (91 users currently blocked)
-  // New signups still required via form 'required' attribute, but validation here won't block access.
-  if (data.phone) {
-    const phoneCheck = isValidPhone(data.phone);
-    if (!phoneCheck.valid) return false;
-  }
+  // Telefone agora é obrigatório para todos
+  const phoneCheck = isValidPhone(data.phone || "");
+  if (!phoneCheck.valid) return false;
 
-  if (isStudent && (!data.periodo || !data.faculdade)) return false;
-  if (isProfessor && !data.faculdade) return false;
-  if (data.faculdade && !FACULDADES.includes(data.faculdade)) return false;
+  // Universidade obrigatória para todos os perfis
+  if (!data.faculdade) return false;
+  if (!FACULDADES.includes(data.faculdade)) return false;
+
+  if (isStudent && !data.periodo) return false;
+
+  // Banca de estudo obrigatória (estudante e médico). Professor opcional.
+  if (isStudent) {
+    const exams = data.target_exams ?? [];
+    if (!Array.isArray(exams) || exams.length === 0) return false;
+  }
 
   return true;
 }
