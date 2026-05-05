@@ -359,7 +359,6 @@ const Simulados = () => {
       }
       
       const BATCH_SIZE_AI = 5;
-      let allGenerated: SimQuestion[] = [];
       let currentTry = 0;
       
       while (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
