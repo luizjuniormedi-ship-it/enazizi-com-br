@@ -491,7 +491,10 @@ const Simulados = () => {
             <div className="flex flex-col gap-2">
               {partialCount > 0 && (
                 <Button 
-                  onClick={() => startExamWithQuestions(questions.slice(0, partialCount), configRef.current)} 
+                  onClick={() => {
+                    cancelGenerationRef.current = true;
+                    startExamWithQuestions(questions.slice(0, partialCount), configRef.current);
+                  }} 
                   variant="outline"
                   className="w-full bg-white/5 border-white/10 hover:bg-white/10 text-white gap-2"
                 >
