@@ -147,13 +147,7 @@ INSTRUÇÃO: Cite o livro relevante na explicação de cada questão.
 
     CADA CASO CLÍNICO DEVE OBRIGATORIAMENTE CONTER:
     
-    // Log para auditoria de motor especializado
-    const normalizedKey = String(targetExam || "").toLowerCase().trim();
-    const blueprint = getBancaProfile(normalizedKey);
-    const blueprintFound = PROFILES[normalizedKey] !== undefined;
-
-    console.log(`[AUDIT] targetExam: "${targetExam}" | key: "${normalizedKey}" | found: ${blueprintFound} | label: "${blueprint.label}"`);
-    console.log(`[AUDIT] Dist: ${JSON.stringify(blueprint.specialtyWeights)}`);
+    CADA CASO CLÍNICO DEVE OBRIGATORIAMENTE CONTER:
 
 1. **APRESENTAÇÃO RICA E REALISTA**:
    - Nome fictício, idade EXATA, sexo, profissão/ocupação quando relevante
