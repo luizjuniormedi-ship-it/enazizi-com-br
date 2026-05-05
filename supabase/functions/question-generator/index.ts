@@ -640,7 +640,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         }],
         source: "slot-based",
         difficulty_distribution: finalDist,
-        audit: { targetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
+        audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
       };
       return new Response(JSON.stringify(slotResponse), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
