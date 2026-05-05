@@ -199,7 +199,7 @@ const App = () => (
 
                 {/* --- DASHBOARD (PROTECTED) --- */}
                 <Route path="/study-hub" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                  <Route index element={<EnaflixPage />} />
+                  <Route index element={<ModuleErrorBoundary module="study-hub"><EnaflixPage /></ModuleErrorBoundary>} />
                 </Route>
                 <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                   <Route index element={<ModuleErrorBoundary module="dashboard"><Dashboard /></ModuleErrorBoundary>} />
