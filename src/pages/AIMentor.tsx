@@ -244,7 +244,7 @@ const PedagogicalHeaderBridge = ({
 };
 
 const AIMentor = () => {
-  const onSendRef = { current: null as any };
+  const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
 
@@ -254,7 +254,11 @@ const AIMentor = () => {
       setHasStarted(true);
       setIsCinematicLoading(false);
       setTimeout(() => {
-        onSendRef.current?.(prompt);
+        if (onSendRef.current) {
+          onSendRef.current(prompt);
+        } else {
+          console.warn("[AIMentor] onSendRef.current is null when trying to send prompt");
+        }
       }, 500);
     }, 1200);
   };
