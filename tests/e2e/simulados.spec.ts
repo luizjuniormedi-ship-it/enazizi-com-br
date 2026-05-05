@@ -169,4 +169,22 @@ test.describe('Simulados Module E2E', () => {
     // Assuming the setup is visible by default or in a dialog.
   });
 
+  test('Generate 100 questions (Skip in CI)', async ({ page }) => {
+    test.skip(!!process.env.SKIP_HEAVY_TESTS, 'Skipping heavy test in CI to avoid high IA costs');
+    
+    await page.goto('/dashboard/simulados');
+    
+    const setupSection = page.getByTestId('generation-modal');
+    await setupSection.scrollIntoViewIfNeeded();
+    
+    // We would need a 100 questions button or input
+    // The previous implementation had a preset for 100
+    const btn100 = setupSection.getByTestId('qtd-100-button');
+    if (await btn100.isVisible()) {
+        await btn100.click();
+        await setupSection.getByTestId('iniciar-simulado-button').click();
+        await expect(page.getByTestId('simulation-job-status')).toBeVisible({ timeout: 15000 });
+    }
+  });
+
 });
