@@ -364,7 +364,7 @@ const Simulados = () => {
         else currentJobId = job.id;
       }
       
-      const BATCH_SIZE_AI = 10;
+      const BATCH_SIZE_AI = 5;
       let currentTry = 0;
       
       while (allGenerated.length < requestedTotal && !cancelGenerationRef.current) {
