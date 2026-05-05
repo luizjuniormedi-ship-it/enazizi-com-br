@@ -321,7 +321,8 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       // Parse requested count from user message
       const userMsg = messages?.[messages.length - 1]?.content || "";
       const countMatch = userMsg.match(/(?:gere|crie|faça|gerar)\s+(?:exatamente\s+)?(\d+)/i);
-      const requestedCount = countMatch ? Math.min(parseInt(countMatch[1]), 50) : 10;
+      // Increased safety limit to 100 but recommended frontend batching
+      const requestedCount = countMatch ? Math.min(parseInt(countMatch[1]), 100) : 10;
 
       // Compute per-difficulty slot targets
       type DiffSlot = { level: string; target: number; desc: string };
@@ -341,6 +342,8 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         slots.push({ level, target: requestedCount, desc: levelDescs[level] || levelDescs.intermediario });
       }
 
+      const startTime = Date.now();
+      console.log(`[AUDIT] generation_start | targetExam: "${targetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty}`);
       console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
 
       // Extract topic info
