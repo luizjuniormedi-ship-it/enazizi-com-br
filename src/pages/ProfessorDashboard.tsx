@@ -262,7 +262,9 @@ const ProfessorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="plantao" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}><ProfessorPlantao callAPI={callAPI} /></Suspense>
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ProfessorPlantao callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="temas" className="mt-4">
