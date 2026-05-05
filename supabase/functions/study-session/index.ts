@@ -607,7 +607,10 @@ serve(async (req) => {
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             start(controller) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: "⚠️ *Utilizando questão do banco de dados (Fallback por instabilidade na IA)*\n\n" } }] })}\n\n`));
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+                choices: [{ delta: { content: "⚠️ *Instabilidade na IA — usando questão alternativa*\n\n" } }],
+                isFallback: true 
+              })}\n\n`));
               controller.enqueue(encoder.encode(`data: ${JSON.stringify({ choices: [{ delta: { content: content } }] })}\n\n`));
               controller.enqueue(encoder.encode("data: [DONE]\n\n"));
               controller.close();
@@ -636,7 +639,8 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       error: "Erro no serviço de IA", 
       message: isTimeout ? "Tempo esgotado. Tente novamente." : "Falha na geração.",
-      isTimeout
+      isTimeout,
+      isFallbackActive: isQuestionPhase // Indica ao frontend que tentamos/conseguimos fallback
     }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

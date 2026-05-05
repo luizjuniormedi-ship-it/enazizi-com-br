@@ -43,6 +43,44 @@ import { SimuladoProfileCard } from "@/components/enaflix/SimuladoProfileCard";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
 import { useNavigate } from "react-router-dom";
 
+async function computeRealPerformance(userId: string) {
+  const { data: rows } = await supabase
+    .from("simulado_question_analytics" as any)
+    .select("mode, image_type, is_correct, response_time_seconds, difficulty")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  const analytics = (rows || []) as any[];
+
+  const modalityStats: Record<string, { correct: number; total: number }> = {};
+  const diffStats: Record<string, { correct: number; total: number }> = {};
+
+  for (const row of analytics) {
+    const mod = row.image_type || "text";
+    if (!modalityStats[mod]) modalityStats[mod] = { correct: 0, total: 0 };
+    modalityStats[mod].total++;
+    if (row.is_correct) modalityStats[mod].correct++;
+
+    const diff = row.difficulty || "medium";
+    if (!diffStats[diff]) diffStats[diff] = { correct: 0, total: 0 };
+    diffStats[diff].total++;
+    if (row.is_correct) diffStats[diff].correct++;
+  }
+
+  const by_modality: Record<string, number> = {};
+  for (const [mod, stats] of Object.entries(modalityStats)) {
+    by_modality[mod] = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 50;
+  }
+
+  const by_difficulty: Record<string, number> = {};
+  for (const [diff, stats] of Object.entries(diffStats)) {
+    by_difficulty[diff] = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 50;
+  }
+
+  return { by_modality, by_difficulty, response_time: {}, error_patterns: [] };
+}
+
 type Phase = "setup" | "loading" | "exam" | "finished" | "partial";
 
 const BATCH_SIZE = 20;
@@ -175,16 +213,81 @@ const Simulados = () => {
   };
 
   const handleStart = async (config: any) => {
+    configRef.current = config;
+    setMode(config.mode || "estudo");
+    setSelectedTopics(config.topics || ["Clínica Médica"]);
+    
     setLoadingProgress("Iniciando geração...");
+    setLoadingPercent(5);
     setPhase("loading");
-    // ... logic would follow previous implementation (truncated for brevity but keeping core)
-    // For now, minimal mock logic to keep tool usage small but valid
+
     try {
+      if (config.mode === "adaptativo") {
+        setLoadingProgress("Analisando seu desempenho...");
+        setLoadingPercent(20);
+        
+        // Se já tivermos o hook, usamos ele, mas aqui no Simulado.tsx
+        // o usuário está clicando no card que chama handleStart diretamente.
+        // Vamos garantir que a lógica adaptativa seja disparada.
+        if (user) {
+          const perf = await computeRealPerformance(user.id);
+          setLoadingProgress("IA organizadora preparando blueprint...");
+          setLoadingPercent(40);
+          
+          const { data, error: fnError } = await supabase.functions.invoke(
+            "generate-adaptive-simulado",
+            {
+              body: {
+                target_question_count: config.count || 20,
+                performance: perf,
+              },
+            }
+          );
+
+          if (fnError) throw fnError;
+          if (!data?.success) throw new Error(data?.error || "Falha na geração adaptativa");
+
+          setLoadingPercent(100);
+          // O mapQuestions atual espera o formato SimQuestion do Simulados.tsx
+          // mas as questões do adaptive já vêm estruturadas.
+          // Vamos garantir compatibilidade.
+          const adaptiveQs = (data.questions || []).map((q: any) => ({
+            statement: q.statement,
+            options: q.options,
+            correct: q.correct,
+            topic: q.topic || config.topics?.[0] || "Geral",
+            explanation: q.explanation || "",
+            image_url: q.image_url
+          }));
+
+          startExamWithQuestions(adaptiveQs, config);
+          return;
+        }
+      }
+
+      // Fluxo Normal
       const { data: { session } } = await supabase.auth.getSession();
-      const batch = await generateBatch(config.topics || ["Clínica Médica"], config.count || 10, config.difficulty || "misto", session?.access_token);
+      setLoadingPercent(30);
+      setLoadingProgress("Buscando questões...");
+      
+      const batch = await generateBatch(
+        config.topics || ["Clínica Médica"], 
+        config.count || 10, 
+        config.difficulty || "misto", 
+        session?.access_token,
+        undefined,
+        config.realExamProfile ? EXAM_PROFILES[config.realExamProfile]?.name : undefined
+      );
+      
+      setLoadingPercent(100);
       startExamWithQuestions(batch, config);
     } catch (e) {
-      toast({ title: "Erro ao gerar", variant: "destructive" });
+      console.error("Simulado start error:", e);
+      toast({ 
+        title: "Erro ao iniciar simulado", 
+        description: e instanceof Error ? e.message : "Tente novamente em instantes.",
+        variant: "destructive" 
+      });
       setPhase("setup");
     }
   };
