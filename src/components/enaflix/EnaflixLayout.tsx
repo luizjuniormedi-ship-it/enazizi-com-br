@@ -27,7 +27,7 @@ export function EnaflixLayout({ children }: Props) {
 
   // For students (no sidebar), we show the OverlayNav consistently if not on the main Enaflix page
   // (Since EnaflixPage already has its own OverlayNav with search logic, we avoid double rendering)
-  const isEnaflixHome = location.pathname === "/enaflix" || location.pathname === "/dashboard";
+  const isEnaflixHome = location.pathname === "/enaflix" || location.pathname === "/dashboard" || location.pathname === "/study-hub";
   const showTopNav = !showSidebar && !isEnaflixHome && !isImmersive;
 
   return (

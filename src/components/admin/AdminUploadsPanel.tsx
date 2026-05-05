@@ -1,4 +1,5 @@
-import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen, ImageIcon, RefreshCw } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen, ImageIcon, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -16,6 +17,8 @@ interface UploadRecord {
   extracted_json: any;
   is_global?: boolean;
   organization_id?: string | null;
+  is_published?: boolean;
+  is_active?: boolean;
 }
 
 const STEP_LABELS: Record<string, string> = {
@@ -47,7 +50,7 @@ const AdminUploadsPanel = () => {
     
     let query = supabase
       .from("uploads")
-      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global, organization_id")
+      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global, organization_id, is_published, is_active")
       .order("created_at", { ascending: false });
 
     if (profile?.organization_id) {
@@ -59,9 +62,10 @@ const AdminUploadsPanel = () => {
     const { data, error } = await query;
     
     if (!error && data) {
-      setFiles(data);
+      const typedData = data as unknown as UploadRecord[];
+      setFiles(typedData);
       const processing = new Set<string>();
-      for (const f of data) {
+      for (const f of typedData) {
         const json = f.extracted_json as Record<string, any> | null;
         if (f.status === "processing" || (json?.step && json?.step !== "done" && json?.step !== "error")) {
           processing.add(f.id);
@@ -196,6 +200,26 @@ const AdminUploadsPanel = () => {
       fetchUploads();
     } catch (err: any) {
       toast({ title: "Erro ao popular questões", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleTogglePublish = async (upload: UploadRecord) => {
+    try {
+      const { error } = await supabase
+        .from("uploads")
+        .update({ is_published: !upload.is_published })
+        .eq("id", upload.id);
+
+      if (error) throw error;
+      
+      toast({ 
+        title: upload.is_published ? "Documento despublicado" : "Documento publicado",
+        description: upload.is_published ? "Alunos não verão mais este material." : "Material disponível para o Tutor IA."
+      });
+      
+      fetchUploads();
+    } catch (err: any) {
+      toast({ title: "Erro ao atualizar publicação", description: err.message, variant: "destructive" });
     }
   };
 
@@ -345,9 +369,25 @@ const AdminUploadsPanel = () => {
                           : isProcessing ? "⏳ Processando..." : f.status}
                         {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
                         {f.is_global && <span className="ml-2 text-primary font-bold">[GLOBAL]</span>}
+                        {f.is_published ? (
+                          <span className="ml-2 px-1.5 py-0.5 rounded-full bg-success/10 text-success text-[9px] font-bold uppercase tracking-wider">Publicado</span>
+                        ) : (
+                          <span className="ml-2 px-1.5 py-0.5 rounded-full bg-white/10 text-white/40 text-[9px] font-bold uppercase tracking-wider">Draft</span>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-1">
+                      {f.status === "processed" && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn("text-muted-foreground transition-colors", f.is_published ? "hover:text-destructive" : "hover:text-success")} 
+                          onClick={() => handleTogglePublish(f)}
+                          title={f.is_published ? "Despublicar" : "Publicar"}
+                        >
+                          {f.is_published ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                      )}
                       {f.status !== "processing" && (
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={() => handleReprocess(f)} title="Reprocessar com IA">
                           <RefreshCw className="h-4 w-4" />

@@ -14886,12 +14886,16 @@ export type Database = {
           file_size: number | null
           file_type: string
           id: string
+          is_active: boolean | null
           is_published: boolean | null
           organization_id: string
+          published_at: string | null
+          replaced_by: string | null
           status: string
           title: string
           updated_at: string
           uploaded_by: string
+          version: number | null
         }
         Insert: {
           created_at?: string
@@ -14901,12 +14905,16 @@ export type Database = {
           file_size?: number | null
           file_type: string
           id?: string
+          is_active?: boolean | null
           is_published?: boolean | null
           organization_id: string
+          published_at?: string | null
+          replaced_by?: string | null
           status?: string
           title: string
           updated_at?: string
           uploaded_by: string
+          version?: number | null
         }
         Update: {
           created_at?: string
@@ -14916,14 +14924,26 @@ export type Database = {
           file_size?: number | null
           file_type?: string
           id?: string
+          is_active?: boolean | null
           is_published?: boolean | null
           organization_id?: string
+          published_at?: string | null
+          replaced_by?: string | null
           status?: string
           title?: string
           updated_at?: string
           uploaded_by?: string
+          version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rag_documents_replaced_by_fkey"
+            columns: ["replaced_by"]
+            isOneToOne: false
+            referencedRelation: "rag_documents"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rag_embeddings: {
         Row: {
@@ -15000,6 +15020,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "rag_processing_jobs_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "rag_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rag_publication_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          document_id: string | null
+          id: string
+          metadata: Json | null
+          organization_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          document_id?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rag_publication_logs_document_id_fkey"
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "rag_documents"
@@ -18168,7 +18226,9 @@ export type Database = {
           file_type: string | null
           filename: string
           id: string
+          is_active: boolean | null
           is_global: boolean
+          is_published: boolean | null
           organization_id: string | null
           status: string | null
           storage_path: string | null
@@ -18182,7 +18242,9 @@ export type Database = {
           file_type?: string | null
           filename: string
           id?: string
+          is_active?: boolean | null
           is_global?: boolean
+          is_published?: boolean | null
           organization_id?: string | null
           status?: string | null
           storage_path?: string | null
@@ -18196,7 +18258,9 @@ export type Database = {
           file_type?: string | null
           filename?: string
           id?: string
+          is_active?: boolean | null
           is_global?: boolean
+          is_published?: boolean | null
           organization_id?: string | null
           status?: string | null
           storage_path?: string | null

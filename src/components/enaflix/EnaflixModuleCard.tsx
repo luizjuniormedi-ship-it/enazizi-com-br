@@ -98,7 +98,11 @@ export function EnaflixModuleCard({ module, comingSoon, onNavigate, size = "defa
   const handleClick = () => {
     if (disabled || !module.route) return;
     onNavigate?.(module);
-    navigate(module.route);
+    if (module.id === "dashboard") {
+      navigate("/dashboard");
+    } else {
+      navigate(module.route);
+    }
   };
 
   const isHero = size === "hero";
