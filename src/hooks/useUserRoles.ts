@@ -37,7 +37,6 @@ export const useUserRoles = () => {
     if (!user) return;
 
     const channel = supabase
-      .channel(`user-roles-changes-${user.id}`)
       .on(
         "postgres_changes",
         {
