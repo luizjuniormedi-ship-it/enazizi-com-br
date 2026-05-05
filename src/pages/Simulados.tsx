@@ -169,6 +169,11 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
 }
 
 const Simulados = () => {
+  useEffect(() => {
+    // Add data-testid to the main container for E2E testing
+    const container = document.querySelector('.pb-24');
+    if (container) container.setAttribute('data-testid', 'simulados-page');
+  }, []);
   const { user } = useAuth();
   const { toast } = useToast();
   const { addXp } = useGamification();

@@ -183,7 +183,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
       </div>
 
       {/* Question Card — Cockpit 2.0 */}
-      <div className="rounded-3xl border-0 bg-card/40 backdrop-blur-md p-6 sm:p-8 shadow-sm relative overflow-hidden group">
+      <div className="rounded-3xl border-0 bg-card/40 backdrop-blur-md p-6 sm:p-8 shadow-sm relative overflow-hidden group" data-testid="question-card">
         <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
         
         <div className="relative flex items-center justify-between mb-6">
@@ -252,6 +252,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
                   onClick={() => selectAnswer(current, i)}
                   disabled={isRevealed}
                   className={`relative w-full text-left p-4.5 rounded-2xl border transition-all duration-300 ${optionClass} ${isRevealed ? "cursor-default" : "active:scale-[0.99]"}`}
+                  data-testid="answer-option"
                 >
                   <div className="flex items-start gap-4">
                     <div className={`flex items-center justify-center h-7 w-7 rounded-lg shrink-0 text-xs transition-colors duration-300 ${labelClass}`}>
@@ -312,6 +313,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
           <Button 
             onClick={() => setCurrent(c => c + 1)} 
             className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+            data-testid="next-question-button"
           >
             Próxima <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
@@ -320,6 +322,7 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
             onClick={() => unansweredCount > 0 ? setShowConfirmFinish(true) : handleFinish()} 
             variant="default" 
             className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+            data-testid="finish-simulado-button"
           >
             <Flag className="h-4 w-4 mr-2" /> Finalizar
           </Button>

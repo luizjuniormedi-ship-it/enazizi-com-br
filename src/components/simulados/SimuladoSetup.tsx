@@ -414,13 +414,14 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       {tab === "historico" ? (
         <SimuladoHistory userId={userId} onRetryErrors={onRetryErrors} />
       ) : (
-        <div className="glass-card p-6 space-y-6">
+        <div className="glass-card p-6 space-y-6" data-testid="generation-modal">
           {/* Mode toggle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Modo do Simulado</label>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <button
                 onClick={() => setMode("estudo")}
+                data-testid="mode-estudo-button"
                 className={`group p-4 rounded-2xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
                   mode === "estudo"
                     ? "border-primary bg-primary/10 shadow-glow-sm"
@@ -612,7 +613,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(EXAM_PROFILES).map(([key, profile]) => (
-                      <SelectItem key={key} value={key}>{profile.name}</SelectItem>
+                      <SelectItem key={key} value={key} data-testid={`banca-${key.toLowerCase()}-button`}>{profile.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -828,6 +829,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                     size="sm" 
                     onClick={() => { setQuestionCount(n); setCustomCount(""); }}
                     className="h-9 w-12 rounded-xl font-black text-[10px]"
+                    data-testid={`qtd-${n}-button`}
                   >
                     {n}
                   </Button>
@@ -914,6 +916,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               mode === "adaptativo" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""
             }`}
             onClick={handleStart}
+            data-testid="iniciar-simulado-button"
             disabled={mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && selectedTopics.length === 0}
           >
             {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
