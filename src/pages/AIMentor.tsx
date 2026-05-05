@@ -243,7 +243,7 @@ const PedagogicalHeaderBridge = ({
   );
 };
 
-const AIMentor = forwardRef<HTMLDivElement>((props, ref) => {
+const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   console.log("[AIMentor] Rendering with ref:", !!ref);
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
