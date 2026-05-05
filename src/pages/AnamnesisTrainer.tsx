@@ -1553,7 +1553,11 @@ const AnamnesisTrainer = () => {
         </Button>
       </div>
     </div>
-  );
+    );
+  } catch (e) {
+    console.error("ANAMNESE ACTIVE ERROR:", e);
+    return <div className="p-8 text-center">Algo deu errado na Consulta da Anamnese. <Button onClick={() => setPhase("lobby")}>Voltar ao Início</Button></div>;
+  }
 };
 
 export default AnamnesisTrainer;
