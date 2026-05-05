@@ -291,10 +291,10 @@ const Simulados = () => {
       setLoadingPercent(100);
       startExamWithQuestions(batch, config);
     } catch (e) {
-      console.error("Simulado start error:", e);
+      console.error("Simulado start error details:", e);
       toast({ 
         title: "Erro ao iniciar simulado", 
-        description: e instanceof Error ? e.message : "Tente novamente em instantes.",
+        description: e instanceof Error ? `Erro: ${e.message}` : "Erro desconhecido ao conectar com o gerador de questões.",
         variant: "destructive" 
       });
       setPhase("setup");
