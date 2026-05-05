@@ -8,8 +8,8 @@ import { useDashboardData } from "@/hooks/useDashboardData";
 import { useRevisionNotifier } from "@/hooks/useRevisionNotifier";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
 import { ENAFLIX_MODULES } from "@/data/enaflix/enaflixModules";
-import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
-import { motion } from "framer-motion";
+import { Rocket, Sparkles, Brain, Info, Play, Clock, Zap, Target, BookOpen, AlertCircle, RefreshCw, Activity, Timer } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
@@ -27,13 +27,19 @@ const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverv
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 
 const Dashboard = () => {
+  const mountTimeRef = useRef(Date.now());
+  const telemetryFiredRef = useRef(false);
+  const retryFiredRef = useRef(false);
+  
   useRevisionNotifier();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const isDebug = searchParams.get("debug") === "cockpit";
+  
   const { user } = useAuth();
-  const { data: dashData, isLoading: dashLoading } = useDashboardData();
-  const { data: studyNext, isLoading: missionLoading, refresh } = useStudyNext();
-  const { data: snapshot, isLoading: snapLoading } = useAnalyticsSnapshot();
+  const { data: dashData, isLoading: dashLoading, error: dashError } = useDashboardData();
+  const { data: studyNext, isLoading: missionLoading, error: missionError, refresh: refreshStudyNext } = useStudyNext();
+  const { data: snapshot, isLoading: snapLoading, error: snapError, refetch: refreshSnapshot } = useAnalyticsSnapshot();
   const { recentIds } = useEnaflixUsage();
 
   const continueModules = useMemo(() => {
@@ -52,13 +58,68 @@ const Dashboard = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setCockpitTimedOut(true);
-      // Log diagnostics for slow queries
-      if (missionLoading) console.warn("[Dashboard] study-next query slow (>5s)");
-      if (snapLoading) console.warn("[Dashboard] analytics-snapshot query slow (>5s)");
-      if (dashLoading) console.warn("[Dashboard] dashboard-data query slow (>5s)");
+      
+      const failedBlocks = [];
+      if (missionLoading || !studyNext) failedBlocks.push("study_next");
+      if (snapLoading || !snapshot) failedBlocks.push("analytics_snapshot");
+      if (dashLoading || !dashData) failedBlocks.push("dashboard_data");
+
+      if (failedBlocks.length > 0 && !telemetryFiredRef.current && user) {
+        telemetryFiredRef.current = true;
+        const loadTime = Date.now() - mountTimeRef.current;
+        
+        // Registrar telemetria
+        import("@/integrations/supabase/client").then(({ supabase }) => {
+          supabase.from("telemetry_events").insert([{
+            user_id: user.id,
+            session_id: crypto.randomUUID(),
+            event_name: "cockpit_partial_mode",
+            properties: {
+              route: window.location.pathname,
+              load_time_ms: loadTime,
+              timed_out: true,
+              failed_blocks: failedBlocks,
+              fallback_used: true,
+              timestamp: new Date().toISOString()
+            }
+          }]).then();
+        });
+
+        // Persistência leve
+        sessionStorage.setItem("cockpit_partial_mode", "true");
+        sessionStorage.setItem("cockpit_partial_reason", failedBlocks.join(","));
+
+        if (import.meta.env.DEV) {
+          console.warn(`[Cockpit Diagnostic] Partial mode activated after ${loadTime}ms. Pending:`, failedBlocks);
+        }
+      }
     }, 5000);
     return () => clearTimeout(timer);
-  }, [missionLoading, snapLoading, dashLoading]);
+  }, [missionLoading, snapLoading, dashLoading, studyNext, snapshot, dashData, user]);
+
+  // Retry automático após 10s
+  useEffect(() => {
+    if (cockpitTimedOut && !retryFiredRef.current) {
+      const retryTimer = setTimeout(() => {
+        retryFiredRef.current = true;
+        if (import.meta.env.DEV) console.log("[Cockpit Diagnostic] Executing automatic secure retry...");
+        if (!studyNext) refreshStudyNext();
+        if (!snapshot) refreshSnapshot();
+      }, 10000);
+      return () => clearTimeout(retryTimer);
+    }
+  }, [cockpitTimedOut, studyNext, snapshot, refreshStudyNext, refreshSnapshot]);
+
+  // Limpar persistência quando tudo carregar
+  useEffect(() => {
+    if (studyNext && snapshot && dashData) {
+      sessionStorage.removeItem("cockpit_partial_mode");
+      sessionStorage.removeItem("cockpit_partial_reason");
+      if (telemetryFiredRef.current && import.meta.env.DEV) {
+        console.log(`[Cockpit Diagnostic] Full recovery complete at ${Date.now() - mountTimeRef.current}ms`);
+      }
+    }
+  }, [studyNext, snapshot, dashData]);
 
   useEffect(() => {
     if (autostartConsumedRef.current) return;
@@ -74,14 +135,50 @@ const Dashboard = () => {
   // Solo bloqueamos el render si falta data crítica Y no hemos llegado al timeout
   const initialLoading = isDataMissing && !cockpitTimedOut && (missionLoading || snapLoading || dashLoading);
 
-  if (initialLoading) return <MissionControlSkeleton />;
-
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
+
+  const debugPanel = isDebug && (
+    <div className="fixed top-20 right-4 z-[999] p-4 rounded-2xl bg-black/80 border border-primary/20 backdrop-blur-xl text-[10px] font-mono space-y-2 shadow-2xl">
+      <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-2">
+        <Activity className="h-3 w-3 text-primary" />
+        <span className="font-bold text-primary uppercase">Cockpit Diagnostic</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-white/50">StudyNext:</span>
+        <span className={studyNext ? "text-emerald-400" : "text-amber-500"}>{studyNext ? "OK" : missionLoading ? "Loading" : "Failed"}</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-white/50">Snapshot:</span>
+        <span className={snapshot ? "text-emerald-400" : "text-amber-500"}>{snapshot ? "OK" : snapLoading ? "Loading" : "Failed"}</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-white/50">Dashboard:</span>
+        <span className={dashData ? "text-emerald-400" : "text-amber-500"}>{dashData ? "OK" : dashLoading ? "Loading" : "Failed"}</span>
+      </div>
+      <div className="flex justify-between gap-4 pt-2 border-t border-white/10">
+        <span className="text-white/50">Load Time:</span>
+        <span className="text-primary font-bold">{(Date.now() - mountTimeRef.current)}ms</span>
+      </div>
+      {cockpitTimedOut && (
+        <div className="text-amber-500 font-bold uppercase animate-pulse">Partial Mode Active</div>
+      )}
+    </div>
+  );
+
+  if (initialLoading) return (
+    <>
+      {debugPanel}
+      <MissionControlSkeleton />
+    </>
+  );
 
   return (
     <div className="pb-32 pt-6 space-y-8 relative min-h-screen overflow-x-hidden">
       <EnaflixBackgroundFX intensity="intense" />
       <AchievementToast />
+
+      {/* Debug Panel */}
+      {debugPanel}
 
       {/* Sync Warning Banner */}
       {cockpitTimedOut && isDataMissing && (
@@ -94,7 +191,10 @@ const Dashboard = () => {
           </div>
           <div className="flex gap-3">
             <button 
-              onClick={() => refresh?.()}
+              onClick={() => {
+                refreshStudyNext();
+                refreshSnapshot();
+              }}
               className="text-xs font-bold uppercase tracking-wider text-amber-500 hover:text-amber-400 transition-colors"
             >
               Tentar atualizar
@@ -262,7 +362,7 @@ const Dashboard = () => {
               <div className="space-y-4 flex-1">
                 <div>
                   <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
-                  <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
+                  <p className="text-white/60">Deep learning applied aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
                 <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/mentor")}>
                   Iniciar Conversa
