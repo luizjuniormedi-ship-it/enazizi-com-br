@@ -247,7 +247,9 @@ const Simulados = () => {
           if (fnError) throw fnError;
           if (!data?.success) throw new Error(data?.error || "Falha na geração adaptativa");
 
-          setLoadingPercent(100);
+          setLoadingPercent(90);
+          setLoadingProgress("Finalizando ambiente...");
+
           // O mapQuestions atual espera o formato SimQuestion do Simulados.tsx
           // mas as questões do adaptive já vêm estruturadas.
           // Vamos garantir compatibilidade.
@@ -260,7 +262,14 @@ const Simulados = () => {
             image_url: q.image_url
           }));
 
-          startExamWithQuestions(adaptiveQs, config);
+          if (adaptiveQs.length === 0) {
+            throw new Error("Nenhuma questão foi gerada. Tente novamente.");
+          }
+
+          setLoadingPercent(100);
+          setTimeout(() => {
+            startExamWithQuestions(adaptiveQs, config);
+          }, 500);
           return;
         }
       }
