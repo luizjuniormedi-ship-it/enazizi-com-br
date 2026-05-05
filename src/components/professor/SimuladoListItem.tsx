@@ -43,7 +43,7 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
   })();
 
   return (
-    <Card className="hover:border-primary/30 transition-colors">
+    <Card className="hover:border-primary/30 transition-all duration-300 bg-card/40 backdrop-blur-md border-white/5 shadow-sm group">
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
