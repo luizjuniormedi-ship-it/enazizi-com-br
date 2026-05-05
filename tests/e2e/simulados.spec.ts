@@ -163,10 +163,10 @@ test.describe('Simulados Module E2E', () => {
     
     expect(boxBefore?.x).toBe(boxAfter?.x);
     expect(boxBefore?.y).toBe(boxAfter?.y);
-    
-    // Note: If this is an inline section, ESC won't "close" it, 
-    // but the test scenario asks for modal interaction.
-    // Assuming the setup is visible by default or in a dialog.
+
+    // Test ESC key
+    await page.keyboard.press('Escape');
+    // If it's a dialog/modal it should ideally react.
   });
 
   test('Generate 100 questions (Skip in CI)', async ({ page }) => {
