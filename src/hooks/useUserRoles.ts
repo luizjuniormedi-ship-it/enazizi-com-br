@@ -36,8 +36,10 @@ export const useUserRoles = () => {
   useEffect(() => {
     if (!user) return;
 
+    // Usamos um ID único para evitar conflito entre múltiplas instâncias do hook
+    const channelId = `user-roles-${user.id}-${Math.random().toString(36).slice(2, 9)}`;
     const channel = supabase
-      .channel(`user-roles-changes-${user.id}`)
+      .channel(channelId)
       .on(
         "postgres_changes",
         {
@@ -55,13 +57,16 @@ export const useUserRoles = () => {
         }
       );
 
-    // Only subscribe AFTER defining all listeners
-    channel.subscribe();
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.debug(`[useUserRoles] Subscribed to role changes for ${user.id}`);
+      }
+    });
 
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [user, queryClient]);
+  }, [user?.id, queryClient]);
 
   return {
     isAdmin: data?.isAdmin ?? false,
