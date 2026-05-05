@@ -188,7 +188,7 @@ const ProfessorDashboard = () => {
   }, [simulados]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in relative min-h-screen">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in relative z-10 min-h-screen">
       <EnaflixBackgroundFX intensity="medium" />
       <CinematicHero
         module="professor"
