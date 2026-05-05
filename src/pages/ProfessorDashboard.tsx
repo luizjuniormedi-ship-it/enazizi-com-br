@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,12 +17,10 @@ import TeacherStudyAssignments from "@/components/professor/TeacherStudyAssignme
 import MentorThemePlans from "@/components/professor/MentorThemePlans";
 import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalExams";
 import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficiencyPlans";
-
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
-// Code-split: dialogs e BI só carregam quando necessários
 const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
 const CreateSimuladoDialog = lazyWithRetry(() => import("@/components/professor/CreateSimuladoDialog"), "CreateSimuladoDialog");
 const SimuladoResultsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoResultsDialog"), "SimuladoResultsDialog");
@@ -261,23 +260,33 @@ const ProfessorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="plantao" className="mt-4">
-          <ProfessorPlantao callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ProfessorPlantao callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="temas" className="mt-4">
-          <TeacherStudyAssignments callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <TeacherStudyAssignments callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="video" className="mt-4">
-          <VideoRoom callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <VideoRoom callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="alunos" className="mt-4">
-          <StudentTracker callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <StudentTracker callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
-          <ClassAnalytics callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ClassAnalytics callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="bi" className="mt-4">
@@ -287,15 +296,21 @@ const ProfessorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="mentoria" className="mt-4">
-          <MentorThemePlans callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <MentorThemePlans callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="osce" className="mt-4">
-          <ProfessorPracticalExams callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ProfessorPracticalExams callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
 
         <TabsContent value="proficiencia" className="mt-4">
-          <ProfessorProficiencyPlans callAPI={callAPI} />
+          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+            <ProfessorProficiencyPlans callAPI={callAPI} />
+          </Suspense>
         </TabsContent>
       </Tabs>
 

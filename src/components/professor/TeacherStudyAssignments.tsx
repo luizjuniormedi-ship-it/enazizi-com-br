@@ -19,7 +19,7 @@ import { CheckSquare, Square } from "lucide-react";
 import { ALL_SPECIALTIES as SPECIALTIES } from "@/constants/specialties";
 import CycleFilter, { getFilteredSpecialties } from "@/components/CycleFilter";
 
-const TeacherStudyAssignments = () => {
+const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<string, unknown>) => Promise<any> }) => {
   const { session } = useAuth();
   const { toast } = useToast();
 
@@ -48,6 +48,7 @@ const TeacherStudyAssignments = () => {
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {
+    if (externalCallAPI) return externalCallAPI(body);
     const resp = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -59,7 +60,7 @@ const TeacherStudyAssignments = () => {
     const data = await resp.json();
     if (!resp.ok) throw new Error(data.error || "Erro na operação");
     return data;
-  }, [session, API_URL]);
+  }, [session, API_URL, externalCallAPI]);
 
   const loadAssignments = useCallback(async () => {
     if (!session) return;

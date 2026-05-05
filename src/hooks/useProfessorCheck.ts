@@ -1,6 +1,6 @@
 import { useUserRoles } from "./useUserRoles";
 
 export const useProfessorCheck = () => {
-  const { isProfessor, loading } = useUserRoles();
-  return { isProfessor, loading };
+  const { isProfessor, isAdmin, loading } = useUserRoles();
+  return { isProfessor: isProfessor || isAdmin, loading };
 };

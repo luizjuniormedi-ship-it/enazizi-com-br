@@ -57,7 +57,34 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
   const [generating, setGenerating] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // ... (keep state)
+  // Form
+  const [createMode, setCreateMode] = useState<"ia" | "manual">("ia");
+  const [specialty, setSpecialty] = useState("Clínica Médica");
+  const [difficulty, setDifficulty] = useState("intermediário");
+  const [title, setTitle] = useState("");
+  const [timeLimit, setTimeLimit] = useState("20");
+  const [faculdadeFilter, setFaculdadeFilter] = useState("");
+  const [periodoFilter, setPeriodoFilter] = useState("");
+  const [generatedCase, setGeneratedCase] = useState<any>(null);
+
+  // Manual form
+  const [manualPresentation, setManualPresentation] = useState("");
+  const [manualVitals, setManualVitals] = useState({ PA: "", FC: "", FR: "", Temp: "", SpO2: "" });
+  const [manualScenario, setManualScenario] = useState("Pronto-Socorro");
+  const [manualTriageColor, setManualTriageColor] = useState("amarelo");
+  const [manualDiagnosis, setManualDiagnosis] = useState("");
+  const [manualFindings, setManualFindings] = useState<string[]>([""]);
+  const [manualDifficultyScore, setManualDifficultyScore] = useState(3);
+
+  // Students
+  const [previewStudents, setPreviewStudents] = useState<any[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Results dialog
+  const [resultsDialog, setResultsDialog] = useState<{ open: boolean; caseData: any; results: any[]; loading: boolean }>({ open: false, caseData: null, results: [], loading: false });
+  const [selectedResult, setSelectedResult] = useState<any>(null);
+
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const callAPI = useCallback(async (body: Record<string, unknown>) => {

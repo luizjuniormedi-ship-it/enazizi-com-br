@@ -12,7 +12,7 @@ import { PlanIdsProvider } from "./proficiencia/PlanRiskBadges";
  * Lista, cria e gerencia status dos planos pedagógicos.
  * Estrutura preparada para Fase 2 (planner) e 3 (dashboard do aluno).
  */
-const ProfessorProficiencyPlans = () => {
+const ProfessorProficiencyPlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown>) => Promise<any> }) => {
   const [showCreate, setShowCreate] = useState(false);
   const { data: plans, isLoading } = useProfessorPlansList();
 

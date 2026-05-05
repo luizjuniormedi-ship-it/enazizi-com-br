@@ -32,7 +32,7 @@ interface SelectedStudent {
   periodo: number | null;
 }
 
-const MentorThemePlans = () => {
+const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown>) => Promise<any> }) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
