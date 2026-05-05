@@ -322,13 +322,46 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
               </div>
             )}
 
-            {formUserType === "professor" && (
+            {(formUserType === "professor" || formUserType === "medico") && (
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
                   <Building className="h-3.5 w-3.5 text-muted-foreground" />
                   Universidade
                 </Label>
                 <FaculdadeCombobox value={formFaculdade} onChange={setFormFaculdade} />
+              </div>
+            )}
+
+            {(formUserType === "estudante" || formUserType === "medico") && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                  Banca(s) de estudo
+                </Label>
+                <p className="text-xs text-muted-foreground">Selecione uma ou mais bancas que pretende prestar.</p>
+                <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                  {Object.values(EXAM_PROFILES).map((p) => {
+                    const active = formTargetExams.includes(p.key);
+                    return (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() =>
+                          setFormTargetExams((prev) =>
+                            prev.includes(p.key) ? prev.filter((k) => k !== p.key) : [...prev, p.key]
+                          )
+                        }
+                        className={`p-2 rounded-lg border text-xs font-medium text-left transition-colors ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-secondary text-muted-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
