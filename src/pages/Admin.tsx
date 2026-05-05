@@ -103,6 +103,7 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
       icon: FileText,
       items: [
         { key: "uploads", label: "Upload Arquivos", icon: Upload },
+        { key: "knowledge-base", label: "Base RAG", icon: Database },
         { key: "ingestion", label: "Gerar Questões", icon: Wand2 },
         { key: "question-review", label: "Aprovar Questões", icon: UserCheck },
         { key: "image-review", label: "Aprovar Imagens", icon: ImageIcon },
@@ -603,6 +604,7 @@ const Admin = () => {
                   {activeSection === "scraping" && <Suspense fallback={<PanelLoader />}><AdminWebScrapingPanel /></Suspense>}
                   {activeSection === "pipeline" && <Suspense fallback={<PanelLoader />}><AdminPipelineMonitor /></Suspense>}
                   {activeSection === "cinematic-engine" && <Suspense fallback={<PanelLoader />}><AdminCinematicEngine /></Suspense>}
+                  {activeSection === "knowledge-base" && <Suspense fallback={<PanelLoader />}><KnowledgeBaseAdmin /></Suspense>}
                   {activeSection === "ai-studio" && <Suspense fallback={<PanelLoader />}><AIStudio /></Suspense>}
                   {activeSection === "tutor-lessons" && <Suspense fallback={<PanelLoader />}><AdminLessonsMemory /></Suspense>}
                   {activeSection === "lesson-ratings" && <Suspense fallback={<PanelLoader />}><AdminLessonRatingsPanel /></Suspense>}

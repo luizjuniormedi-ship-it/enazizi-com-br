@@ -138,8 +138,8 @@ export function KnowledgeBaseAdmin() {
       toast({ title: "Upload realizado", description: "O processamento iniciou em background." });
       
       // Chamar Edge Function para processar
-      await supabase.functions.invoke("process-rag-document", {
-        body: { documentId: doc.id, action: "reprocess" }
+      const { data: invokeData, error: invokeErr } = await supabase.functions.invoke("process-rag-document", {
+        body: { documentId: (doc as any).id, action: "reprocess" }
       });
 
       fetchDocuments();
@@ -183,7 +183,7 @@ export function KnowledgeBaseAdmin() {
     try {
       const { error: dbErr } = await supabase.from("rag_documents" as any).delete().eq("id", doc.id);
       if (dbErr) throw dbErr;
-      await supabase.storage.from("user-uploads").remove([doc.file_path]);
+      await supabase.storage.from("user-uploads").remove([(doc as any).file_path]);
       toast({ title: "Documento excluído" });
       fetchDocuments();
     } catch (err: any) {
