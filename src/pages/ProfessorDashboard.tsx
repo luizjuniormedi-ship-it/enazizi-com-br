@@ -22,9 +22,9 @@ import SimuladoListItem from "@/components/professor/SimuladoListItem";
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
 // Code-split: dialogs e BI só carregam quando necessários
-const ProfessorBIPanel = lazy(() => import("@/components/professor/ProfessorBIPanel"));
-const CreateSimuladoDialog = lazy(() => import("@/components/professor/CreateSimuladoDialog"));
-const SimuladoResultsDialog = lazy(() => import("@/components/professor/SimuladoResultsDialog"));
+const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
+const CreateSimuladoDialog = lazyWithRetry(() => import("@/components/professor/CreateSimuladoDialog"), "CreateSimuladoDialog");
+const SimuladoResultsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoResultsDialog"), "SimuladoResultsDialog");
 
 /**
  * ProfessorDashboard — orquestrador de layout.
@@ -261,23 +261,23 @@ const ProfessorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="plantao" className="mt-4">
-          <ProfessorPlantao />
+          <ProfessorPlantao callAPI={callAPI} />
         </TabsContent>
 
         <TabsContent value="temas" className="mt-4">
-          <TeacherStudyAssignments />
+          <TeacherStudyAssignments callAPI={callAPI} />
         </TabsContent>
 
         <TabsContent value="video" className="mt-4">
-          <VideoRoom />
+          <VideoRoom callAPI={callAPI} />
         </TabsContent>
 
         <TabsContent value="alunos" className="mt-4">
-          <StudentTracker />
+          <StudentTracker callAPI={callAPI} />
         </TabsContent>
 
         <TabsContent value="analytics" className="mt-4">
-          <ClassAnalytics />
+          <ClassAnalytics callAPI={callAPI} />
         </TabsContent>
 
         <TabsContent value="bi" className="mt-4">
@@ -287,15 +287,15 @@ const ProfessorDashboard = () => {
         </TabsContent>
 
         <TabsContent value="mentoria" className="mt-4">
-          <MentorThemePlans />
+          <MentorThemePlans callAPI={callAPI} />
         </TabsContent>
 
         <TabsContent value="osce" className="mt-4">
-          <ProfessorPracticalExams />
+          <ProfessorPracticalExams callAPI={callAPI} />
         </TabsContent>
 
         <TabsContent value="proficiencia" className="mt-4">
-          <ProfessorProficiencyPlans />
+          <ProfessorProficiencyPlans callAPI={callAPI} />
         </TabsContent>
       </Tabs>
 
