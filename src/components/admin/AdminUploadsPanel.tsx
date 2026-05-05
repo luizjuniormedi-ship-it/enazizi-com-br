@@ -1,4 +1,4 @@
-import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen, ImageIcon } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen, ImageIcon, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -15,6 +15,7 @@ interface UploadRecord {
   created_at: string;
   extracted_json: any;
   is_global?: boolean;
+  organization_id?: string | null;
 }
 
 const STEP_LABELS: Record<string, string> = {
@@ -40,11 +41,23 @@ const AdminUploadsPanel = () => {
 
   const fetchUploads = useCallback(async () => {
     if (!user) return;
-    const { data, error } = await supabase
+    
+    // Aluno vê globais. Admin/Prof vê da org dele.
+    const { data: profile } = await supabase.from("profiles").select("organization_id").eq("user_id", user.id).single();
+    
+    let query = supabase
       .from("uploads")
-      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global")
-      .eq("is_global", true)
+      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global, organization_id")
       .order("created_at", { ascending: false });
+
+    if (profile?.organization_id) {
+      query = query.or(`is_global.eq.true,organization_id.eq.${profile.organization_id}`);
+    } else {
+      query = query.eq("is_global", true);
+    }
+
+    const { data, error } = await query;
+    
     if (!error && data) {
       setFiles(data);
       const processing = new Set<string>();
@@ -107,6 +120,7 @@ const AdminUploadsPanel = () => {
     }
     setUploading(true);
     try {
+      const { data: profile } = await supabase.from("profiles").select("organization_id").eq("user_id", user.id).single();
       const ext = file.name.split(".").pop();
       const storagePath = `${user.id}/${Date.now()}.${ext}`;
       const { error: storageError } = await supabase.storage.from("user-uploads").upload(storagePath, file);
@@ -114,7 +128,16 @@ const AdminUploadsPanel = () => {
 
       const { data: uploadRecord, error: dbError } = await supabase
         .from("uploads")
-        .insert({ user_id: user.id, filename: file.name, file_type: ext || "unknown", category: "material", storage_path: storagePath, status: "uploaded", is_global: true })
+        .insert({ 
+          user_id: user.id, 
+          filename: file.name, 
+          file_type: ext || "unknown", 
+          category: "material", 
+          storage_path: storagePath, 
+          status: "uploaded", 
+          is_global: true,
+          organization_id: profile?.organization_id 
+        })
         .select()
         .single();
       if (dbError) throw dbError;
@@ -143,6 +166,24 @@ const AdminUploadsPanel = () => {
     if (!error) {
       setFiles((prev) => prev.filter((f) => f.id !== upload.id));
       toast({ title: "Arquivo removido" });
+    }
+  };
+
+  const handleReprocess = async (upload: UploadRecord) => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
+        body: JSON.stringify({ uploadId: upload.id }),
+      });
+      if (!resp.ok) throw new Error("Falha ao iniciar reprocessamento");
+      
+      toast({ title: "Reprocessamento iniciado", description: "O arquivo será processado novamente pela IA." });
+      setPollingIds((prev) => new Set(prev).add(upload.id));
+      fetchUploads();
+    } catch (err: any) {
+      toast({ title: "Erro no reprocessamento", description: err.message, variant: "destructive" });
     }
   };
 
@@ -256,12 +297,92 @@ const AdminUploadsPanel = () => {
       <div>
         <h3 className="text-lg font-semibold flex items-center gap-2 mb-1">
           <Upload className="h-5 w-5 text-primary" />
-          Uploads Globais
+          Base de Conhecimento
         </h3>
         <p className="text-sm text-muted-foreground">
-          Envie PDFs de provas e materiais para alimentar o banco de questões e flashcards global.
+          Envie materiais para alimentar o Tutor IA e o banco de questões da sua organização.
         </p>
       </div>
+
+      <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileSelect} />
+
+      <div
+        className="glass-card p-6 border-dashed border-2 border-primary/30 text-center hover:border-primary/50 transition-colors cursor-pointer"
+        onClick={() => !uploading && fileInputRef.current?.click()}
+      >
+        {uploading ? (
+          <>
+            <Loader2 className="h-10 w-10 text-primary mx-auto mb-3 animate-spin" />
+            <p className="font-medium">Enviando arquivo...</p>
+          </>
+        ) : (
+          <>
+            <Upload className="h-10 w-10 text-primary/50 mx-auto mb-3" />
+            <p className="font-medium">Clique para enviar material</p>
+            <p className="text-sm text-muted-foreground">PDF, TXT, DOCX — máx 50MB</p>
+          </>
+        )}
+      </div>
+
+      {files.length > 0 && (
+        <div>
+          <h4 className="text-sm font-semibold mb-3">Seus Arquivos ({files.length})</h4>
+          <div className="space-y-2">
+            {files.map((f) => {
+              const isProcessing = f.status === "processing";
+              const ejson = f.extracted_json as Record<string, any> | null;
+              return (
+                <div key={f.id} className="glass-card p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      {statusIcon(f.status)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium truncate">{f.filename}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {f.file_type} • {f.status === "processed"
+                          ? `✅ ${ejson?.flashcards_count || 0} flashcards${ejson?.questions_count ? ` • ${ejson.questions_count} questões` : ""}`
+                          : isProcessing ? "⏳ Processando..." : f.status}
+                        {" • "}{new Date(f.created_at).toLocaleDateString("pt-BR")}
+                        {f.is_global && <span className="ml-2 text-primary font-bold">[GLOBAL]</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-1">
+                      {f.status !== "processing" && (
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary" onClick={() => handleReprocess(f)} title="Reprocessar com IA">
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {f.status === "processed" && (
+                        <>
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handleExtractExam(f)} disabled={extracting === f.id}>
+                            {extracting === f.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <BookOpen className="h-3 w-3" />}
+                            Extrair
+                          </Button>
+                          <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={() => handlePopulateQuestions(f)}>
+                            <Database className="h-3 w-3" /> Gerar Q.
+                          </Button>
+                        </>
+                      )}
+                      {!isProcessing && (
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => handleDelete(f)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  {renderProgress(f)}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AdminUploadsPanel;
 
       <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileSelect} />
 
