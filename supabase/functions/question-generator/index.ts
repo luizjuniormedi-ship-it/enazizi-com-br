@@ -346,11 +346,11 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-      // Parse requested count from user message
-      const userMsg = messages?.[messages.length - 1]?.content || "";
-      const countMatch = userMsg.match(/(?:gere|crie|faça|gerar)\s+(?:exatamente\s+)?(\d+)/i);
-      // Increased safety limit to 100 but recommended frontend batching
-      const requestedCount = countMatch ? Math.min(parseInt(countMatch[1]), 100) : 10;
+      // Parse requested count from user message or body
+      const countFromMsg = lastMessage?.content?.match(/(\d+)/)?.[0];
+      const requestedCount = countFromMsg ? Math.min(parseInt(countFromMsg), 100) : Math.min(Number(count ?? 10), 100);
+
+      // Compute per-difficulty slot targets
 
       // Compute per-difficulty slot targets
       type DiffSlot = { level: string; target: number; desc: string };
