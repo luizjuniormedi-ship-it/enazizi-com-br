@@ -1,4 +1,5 @@
 import { Upload, FileText, Trash2, Loader2, CheckCircle, AlertCircle, Database, BookOpen, ImageIcon, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -49,7 +50,7 @@ const AdminUploadsPanel = () => {
     
     let query = supabase
       .from("uploads")
-      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global, organization_id, is_published, is_active")
+      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global, organization_id, is_published, is_active");
       .order("created_at", { ascending: false });
 
     if (profile?.organization_id) {
@@ -205,7 +206,7 @@ const AdminUploadsPanel = () => {
     try {
       const { error } = await supabase
         .from("uploads")
-        .update({ is_published: !upload.is_published })
+        .update({ is_published: !upload.is_published } as any)
         .eq("id", upload.id);
 
       if (error) throw error;
