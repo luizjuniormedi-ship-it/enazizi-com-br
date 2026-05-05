@@ -133,13 +133,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    if (isStudent && (!formPeriodo || !formFaculdade)) {
-      toast({ title: "Selecione período e faculdade", variant: "destructive" });
+    if (isStudent && !formPeriodo) {
+      toast({ title: "Selecione o seu período", variant: "destructive" });
       return;
     }
 
-    if (isProfessor && !formFaculdade) {
+    if (!formFaculdade) {
       toast({ title: "Selecione sua universidade", variant: "destructive" });
+      return;
+    }
+
+    if (isStudent && formTargetExams.length === 0) {
+      toast({ title: "Escolha ao menos uma banca de estudo", variant: "destructive" });
       return;
     }
 
@@ -151,15 +156,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         display_name: trimmedName,
         phone: cleanPhone,
         user_type: formUserType,
+        faculdade: formFaculdade,
       };
 
       if (isStudent) {
         updateData.periodo = parseInt(formPeriodo);
-        updateData.faculdade = formFaculdade;
+        updateData.target_exams = formTargetExams;
+        updateData.target_exam = formTargetExams[0];
       }
 
       if (isProfessor || isMedico) {
-        updateData.faculdade = formFaculdade;
         if (isProfessor) updateData.status = "active";
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
