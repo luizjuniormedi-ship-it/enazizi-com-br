@@ -381,22 +381,32 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       />
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-border pb-0">
+      <div className="flex gap-2 border-b border-border/50 pb-0 mb-6">
         <button
           onClick={() => setTab("novo")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === "novo" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+          className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
+            tab === "novo" 
+              ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
+              : "border-transparent text-muted-foreground/60 hover:text-foreground"
           }`}
         >
-          <Play className="h-4 w-4 inline mr-1.5" />Novo Simulado
+          <div className="flex items-center gap-2">
+            <Play className={`h-4 w-4 transition-transform duration-300 ${tab === "novo" ? "scale-110" : ""}`} />
+            Novo Simulado
+          </div>
         </button>
         <button
           onClick={() => setTab("historico")}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            tab === "historico" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+          className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
+            tab === "historico" 
+              ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
+              : "border-transparent text-muted-foreground/60 hover:text-foreground"
           }`}
         >
-          <History className="h-4 w-4 inline mr-1.5" />Histórico
+          <div className="flex items-center gap-2">
+            <History className={`h-4 w-4 transition-transform duration-300 ${tab === "historico" ? "scale-110" : ""}`} />
+            Histórico
+          </div>
         </button>
       </div>
 
@@ -410,12 +420,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <button
                 onClick={() => setMode("estudo")}
-                className={`p-4 rounded-xl border-2 transition-all text-left ${
+                className={`group p-4 rounded-2xl border-2 transition-all duration-300 text-left relative overflow-hidden ${
                   mode === "estudo"
-                    ? "border-primary bg-primary/10"
-                    : "border-border bg-secondary/30 hover:border-primary/30"
+                    ? "border-primary bg-primary/10 shadow-glow-sm"
+                    : "border-white/5 bg-white/5 hover:border-primary/30 hover:bg-white/10"
                 }`}
               >
+                {mode === "estudo" && <div className="absolute top-0 right-0 p-2"><CheckCircle2 className="h-4 w-4 text-primary" /></div>}
                 <div className="flex items-center gap-2 mb-1">
                   <BookOpen className="h-5 w-5 text-primary" />
                   <span className="font-semibold text-sm">Modo Estudo</span>

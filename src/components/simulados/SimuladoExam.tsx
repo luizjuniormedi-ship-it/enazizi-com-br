@@ -299,17 +299,29 @@ const SimuladoExam = ({ questions, timeSeconds, onFinish, initialState, mode, on
       </div>
 
       {/* Navigation */}
-      <div className="flex gap-2">
-        <Button variant="outline" disabled={current === 0} onClick={() => setCurrent(c => c - 1)} className="flex-1">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Anterior
+      <div className="flex gap-3">
+        <Button 
+          variant="outline" 
+          disabled={current === 0} 
+          onClick={() => setCurrent(c => c - 1)} 
+          className="flex-1 h-12 rounded-2xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[11px]"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" /> Anterior
         </Button>
         {current < questions.length - 1 ? (
-          <Button onClick={() => setCurrent(c => c + 1)} className="flex-1">
-            Próxima <ArrowRight className="h-4 w-4 ml-1" />
+          <Button 
+            onClick={() => setCurrent(c => c + 1)} 
+            className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+          >
+            Próxima <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         ) : (
-          <Button onClick={() => unansweredCount > 0 ? setShowConfirmFinish(true) : handleFinish()} variant="default" className="flex-1">
-            <Flag className="h-4 w-4 mr-1" /> Finalizar
+          <Button 
+            onClick={() => unansweredCount > 0 ? setShowConfirmFinish(true) : handleFinish()} 
+            variant="default" 
+            className="flex-1 h-12 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+          >
+            <Flag className="h-4 w-4 mr-2" /> Finalizar
           </Button>
         )}
       </div>
