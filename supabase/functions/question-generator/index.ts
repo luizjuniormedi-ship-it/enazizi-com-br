@@ -559,14 +559,15 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         specialty_weights: blueprint.specialtyWeights
       };
 
-      console.log(`[question-generator] RESULTADO: ${allQuestions.length}/${requestedCount} | Audit: ${JSON.stringify(auditAnalysis)}`);
+      const totalTime = ((Date.now() - startTime) / 1000).toFixed(1);
+      console.log(`[AUDIT] generation_complete | targetExam: "${targetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
 
       // Async audit insertion (fire and forget to not block response)
       sb.from("audit_simulados_bancas").insert({
         banca_key: targetExam || "unknown",
         total_requested: requestedCount,
         questions_data: allQuestions,
-        distribution_analysis: auditAnalysis
+        distribution_analysis: { ...auditAnalysis, totalTimeSeconds: totalTime }
       }).then(({ error }) => {
         if (error) console.error("[AUDIT_ERROR] Failed to insert audit log:", error);
       });
@@ -585,6 +586,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         }],
         source: "slot-based",
         difficulty_distribution: finalDist,
+        audit: { targetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
       };
       return new Response(JSON.stringify(slotResponse), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
