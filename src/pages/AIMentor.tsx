@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, forwardRef } from "react";
 import { Sparkles, Brain, Mic, ArrowRight, Zap, GraduationCap, ChevronRight, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -243,8 +243,9 @@ const PedagogicalHeaderBridge = ({
   );
 };
 
-const AIMentor = () => {
-  const onSendRef = { current: null as any };
+const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
+  console.log("[AIMentor] Rendering with ref:", !!ref);
+  const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
 
@@ -254,13 +255,17 @@ const AIMentor = () => {
       setHasStarted(true);
       setIsCinematicLoading(false);
       setTimeout(() => {
-        onSendRef.current?.(prompt);
+        if (onSendRef.current) {
+          onSendRef.current(prompt);
+        } else {
+          console.warn("[AIMentor] onSendRef.current is null when trying to send prompt");
+        }
       }, 500);
     }, 1200);
   };
 
   return (
-    <div className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050508] text-white">
+    <div ref={ref} className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050508] text-white">
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 
@@ -350,6 +355,6 @@ const AIMentor = () => {
       )}
     </div>
   );
-};
+});
 
 export default AIMentor;
