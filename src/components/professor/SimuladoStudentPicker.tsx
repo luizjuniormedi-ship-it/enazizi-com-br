@@ -65,6 +65,7 @@ const SimuladoStudentPicker = memo(function SimuladoStudentPicker({
         </div>
       </div>
       <Button
+        type="button"
         variant="outline"
         size="sm"
         onClick={onPreviewMatchingStudents}
@@ -81,6 +82,7 @@ const SimuladoStudentPicker = memo(function SimuladoStudentPicker({
               {selectedStudentIds.length}/{previewStudents.length} aluno(s) selecionado(s)
             </p>
             <button
+              type="button"
               onClick={onToggleAllStudents}
               className="text-[11px] text-primary hover:underline font-medium"
             >
@@ -94,6 +96,7 @@ const SimuladoStudentPicker = memo(function SimuladoStudentPicker({
               const isSelected = selectedStudentIds.includes(s.user_id);
               return (
                 <button
+                  type="button"
                   key={s.user_id}
                   onClick={() => onToggleStudent(s.user_id)}
                   className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs transition-colors ${
@@ -131,6 +134,7 @@ const SimuladoStudentPicker = memo(function SimuladoStudentPicker({
             className="h-8 text-xs"
           />
           <Button
+            type="button"
             variant="outline"
             size="sm"
             onClick={onSearchStudentGlobal}
@@ -144,6 +148,7 @@ const SimuladoStudentPicker = memo(function SimuladoStudentPicker({
           <div className="max-h-32 overflow-y-auto space-y-1">
             {searchResults.map((s: any) => (
               <button
+                type="button"
                 key={s.user_id}
                 onClick={() => onAddSearchedStudent(s)}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-xs bg-background/50 border border-border hover:border-primary/30 transition-colors"
