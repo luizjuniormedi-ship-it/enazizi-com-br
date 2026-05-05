@@ -43,10 +43,18 @@ const Dashboard = () => {
       .slice(0, 4);
   }, [recentIds]);
 
+  const [showFallback, setShowFallback] = useState(false);
   const autostartConsumedRef = useRef(false);
 
   const activeRec = studyNext?.recommendation;
   const adaptiveState = studyNext?.adaptiveState;
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowFallback(true);
+    }, 5000); // 5s budget for critical data
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (autostartConsumedRef.current) return;
@@ -58,7 +66,9 @@ const Dashboard = () => {
     navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
   }, [missionLoading, studyNext, searchParams, navigate]);
 
-  const initialLoading = (missionLoading && !studyNext) || (snapLoading && !snapshot) || (dashLoading && !dashData);
+  const isDataMissing = !studyNext || !snapshot || !dashData;
+  const initialLoading = isDataMissing && !showFallback && (missionLoading || snapLoading || dashLoading);
+
   if (initialLoading) return <MissionControlSkeleton />;
 
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
