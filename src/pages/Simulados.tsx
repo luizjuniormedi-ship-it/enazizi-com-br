@@ -51,13 +51,7 @@ async function computeRealPerformance(userId: string) {
     .order("created_at", { ascending: false })
     .limit(500);
 
-  const analytics = (rows || []) as Array<{
-    mode: string;
-    image_type: string | null;
-    is_correct: boolean;
-    response_time_seconds: number | null;
-    difficulty: string | null;
-  }>;
+  const analytics = (rows || []) as any[];
 
   const modalityStats: Record<string, { correct: number; total: number }> = {};
   const diffStats: Record<string, { correct: number; total: number }> = {};
