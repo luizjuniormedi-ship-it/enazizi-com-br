@@ -15,6 +15,12 @@ export type Msg = {
   memoryQualityScore?: number;
   /** Scope of the memory entry at retrieval time (badge display). */
   memoryScope?: "global" | "user";
+  /** Bibliography references from RAG. */
+  bibliography?: Array<{
+    content: string;
+    source: string;
+    page?: number;
+  }>;
 };
 
 export interface Conversation {
