@@ -376,6 +376,10 @@ const Simulados = () => {
         setLoadingProgress(`Gerando lote ${batchNum} de ${totalBatchesNum}...`);
         setLoadingPercent(Math.round((allGenerated.length / requestedTotal) * 100));
         
+        // Add data-testid for E2E progress monitoring
+        const progressElement = document.querySelector('[role="progressbar"]');
+        if (progressElement) progressElement.setAttribute('data-testid', 'simulation-job-status');
+        
         // Atualizar status do job para processing no primeiro lote
         if (currentJobId && allGenerated.length === 0) {
           await supabase.from("simulation_generation_jobs").update({ status: 'processing' }).eq("id", currentJobId);
@@ -536,6 +540,7 @@ const Simulados = () => {
               count={profile.totalQuestions} timeMinutes={profile.timeMinutes}
               image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
               onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
+              data-testid={`banca-${id.toLowerCase()}-button`}
             />
           ))}
         </EnaflixRow>

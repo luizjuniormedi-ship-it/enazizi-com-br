@@ -123,7 +123,7 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
     .slice(0, 5);
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto" data-testid="result-screen">
       <div className="text-center py-6">
         {isProvaReal ? (
           <Trophy className="h-16 w-16 text-amber-500 mx-auto mb-4" />

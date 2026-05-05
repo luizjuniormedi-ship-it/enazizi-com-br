@@ -769,7 +769,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                   </SelectTrigger>
                   <SelectContent>
                     {EXAM_BOARDS.map(b => (
-                      <SelectItem key={b.value} value={b.value}>{b.label}</SelectItem>
+                      <SelectItem key={b.value} value={b.value} data-testid={`setup-banca-${b.value.toLowerCase()}-button`}>{b.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
