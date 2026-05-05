@@ -204,7 +204,12 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 
         <div className="p-6 pt-4 border-t bg-background mt-auto">
           <DialogFooter className="sm:justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => onOpenChange(false)}
+              className="h-11 px-6 rounded-2xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px]"
+            >
               Cancelar
             </Button>
             <Button
@@ -218,10 +223,10 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
                     f.generatedQuestions.length < parseInt(f.questionCount)
                   : f.manualQuestions.length === 0)
               }
-              className="gap-2"
+              className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-glow-sm gap-2"
             >
               {f.creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              {f.creating ? "Criando..." : f.scheduledAt ? "Agendar e Atribuir" : "Criar e Atribuir"}
+              {f.creating ? "CRIANDO..." : f.scheduledAt ? "AGENDAR E ATRIBUIR" : "CRIAR E ATRIBUIR"}
             </Button>
           </DialogFooter>
         </div>
