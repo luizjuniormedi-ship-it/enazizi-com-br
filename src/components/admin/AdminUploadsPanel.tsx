@@ -50,7 +50,7 @@ const AdminUploadsPanel = () => {
     
     let query = supabase
       .from("uploads")
-      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global, organization_id, is_published, is_active");
+      .select("id, filename, file_type, category, status, created_at, extracted_json, is_global, organization_id, is_published, is_active")
       .order("created_at", { ascending: false });
 
     if (profile?.organization_id) {
