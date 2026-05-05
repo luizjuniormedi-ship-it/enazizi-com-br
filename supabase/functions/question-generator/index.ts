@@ -310,8 +310,7 @@ Regras:
     }
 
     // Inject generation context enforcement
-    if (generationContext && typeof generationContext === "object") {
-      const gc = generationContext;
+    if (gc && Object.keys(gc).length > 0) {
       const scopeParts = [gc.specialty, gc.topic, gc.subtopic].filter(Boolean).join(" > ");
       systemPrompt += `\n\n=== ESCOPO OBRIGATÓRIO DE GERAÇÃO ===
 ESPECIALIDADE: ${gc.specialty || "Não especificada"}
