@@ -197,6 +197,9 @@ const App = () => (
                 <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
 
                 {/* --- DASHBOARD (PROTECTED) --- */}
+                <Route path="/study-hub" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
+                  <Route index element={<EnaflixPage />} />
+                </Route>
                 <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                   <Route index element={<EnaflixPage />} />
                   

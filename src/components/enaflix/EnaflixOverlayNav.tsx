@@ -124,7 +124,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
           <nav className="hidden md:flex items-center gap-8 ml-4">
             {[
-              { label: "Início", path: "/enaflix" },
+              { label: "Início", path: "/dashboard" },
               { label: "Planner", path: "/dashboard/planner" },
               { label: "Simulados", path: "/dashboard/simulados" },
               { label: "Flashcards", path: "/dashboard/flashcards" },
@@ -135,7 +135,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
                 onClick={() => navigate(item.path)}
                 className={cn(
                   "text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-white hover:scale-105",
-                  location.pathname === item.path || (item.path === "/enaflix" && location.pathname === "/dashboard")
+                  location.pathname === item.path || (item.path === "/dashboard" && location.pathname === "/study-hub")
                     ? "text-white" 
                     : "text-white/40"
                 )}
