@@ -19959,6 +19959,14 @@ export type Database = {
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
       admin_telemetry_v2_ai_quality: { Args: { _days: number }; Returns: Json }
       admin_telemetry_v2_pedagogy: { Args: { _days: number }; Returns: Json }
+      append_questions_to_job: {
+        Args: {
+          p_job_id: string
+          p_new_questions: Json
+          p_status: Database["public"]["Enums"]["simulation_job_status"]
+        }
+        Returns: undefined
+      }
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
         Returns: number
