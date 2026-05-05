@@ -202,7 +202,7 @@ const App = () => (
                   <Route index element={<EnaflixPage />} />
                 </Route>
                 <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                  <Route index element={<EnaflixPage />} />
+                  <Route index element={<ModuleErrorBoundary module="dashboard"><Dashboard /></ModuleErrorBoundary>} />
                   
                   {/* Estudar & Treinar */}
                   <Route path="sessao-estudo" element={<StudySession />} />
