@@ -199,8 +199,38 @@ const Simulados = () => {
   const adaptive = useAdaptiveSimulado();
   const [adaptivePreviewMeta, setAdaptivePreviewMeta] = useState<AdaptiveMeta | null>(null);
   const [adaptivePreviewLoading, setAdaptivePreviewLoading] = useState(false);
+  const [activeJobs, setActiveJobs] = useState<any[]>([]);
 
-  const { pendingSession, checked, saveSession, completeSession, abandonSession, registerAutoSave, clearPending } = useSessionPersistence({ moduleKey: "simulados" });
+  useEffect(() => {
+    if (user && phase === "setup") {
+      supabase
+        .from("simulation_generation_jobs")
+        .select("*")
+        .eq("user_id", user.id)
+        .in("status", ["processing", "partial", "pending"])
+        .order("created_at", { ascending: false })
+        .limit(3)
+        .then(({ data }) => {
+          if (data) setActiveJobs(data);
+        });
+    }
+  }, [user, phase]);
+
+  const handleResumeJob = async (job: any) => {
+    setPhase("loading");
+    setLoadingProgress("Retomando geração...");
+    setQuestions(job.results || []);
+    setPartialCount(job.generated_questions || 0);
+    setTargetCount(job.total_questions);
+    
+    // Continue with the configuration from the job
+    handleStart({
+      ...job.config,
+      count: job.total_questions,
+      resumeJobId: job.id,
+      existingQuestions: job.results || []
+    });
+  };
 
   const examStateRef = useRef<any>(null);
 
