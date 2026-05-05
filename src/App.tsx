@@ -229,7 +229,7 @@ const App = () => (
                   
                   {/* Clínica & Simulação */}
                   <Route path="plantao" element={<ClinicalSimulation />} />
-                  <Route path="anamnese" element={<AnamnesisTrainer />} />
+                  <Route path="anamnese" element={<ModuleErrorBoundary module="anamnese"><AnamnesisTrainer /></ModuleErrorBoundary>} />
                   <Route path="cronicas" element={<MedicalChronicles />} />
                   <Route path="discursivas" element={<DiscursiveQuestions />} />
                   <Route path="prova-pratica" element={<PracticalExam />} />
