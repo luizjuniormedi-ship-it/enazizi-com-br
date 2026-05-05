@@ -282,6 +282,25 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       // Não bloqueia o envio se desligado ou se a edge falhar.
       let adaptiveContext: unknown = undefined;
       let adaptiveStatus: "off" | "ok" | "failed" | "skipped" = "off";
+      let ragBibliography: any[] = [];
+
+      try {
+        setLoadingStage("🔍 Buscando na Base de Conhecimento...");
+        const { data: ragData } = await supabase.functions.invoke("search-rag-context", {
+          body: { query: text, topic: topic || undefined }
+        });
+        if (ragData?.success && Array.isArray(ragData.bibliography)) {
+          ragBibliography = ragData.bibliography;
+          // Se tiver contexto RAG, podemos injetar como contextOverride para a IA
+          if (ragBibliography.length > 0) {
+            const ragContext = ragBibliography.map(b => `[FONTE: ${b.source}${b.page ? ` p.${b.page}` : ''}]: ${b.content}`).join("\n\n");
+            contextOverride = (contextOverride || "") + "\n\n--- CONTEXTO RAG DA ORGANIZAÇÃO ---\n" + ragContext + "\n--- FIM DO CONTEXTO RAG ---";
+          }
+        }
+      } catch (err) {
+        console.error("RAG Context fetch failed:", err);
+      }
+
       if (isAdaptiveEnabled) {
         const adaptive = await fetchAdaptive({
           message: text,
@@ -304,10 +323,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             prev[prev.length - 2]?.role === "user"
           ) {
             return prev.map((m, i) =>
-              i === prev.length - 1 ? { ...m, content: fullText } : m
+              i === prev.length - 1 ? { ...m, content: fullText, bibliography: ragBibliography } : m
             );
           }
-          return [...prev, { role: "assistant", content: fullText }];
+          return [...prev, { role: "assistant", content: fullText, bibliography: ragBibliography }];
         });
       };
 

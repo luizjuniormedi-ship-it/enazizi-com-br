@@ -1,7 +1,7 @@
 import { memo, useMemo, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
-import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle, RefreshCw, BarChart3, LineChart } from "lucide-react";
+import { Copy, Volume2, VolumeX, Save, Check, Loader2, GraduationCap, User, Film, Play, Sparkles, AlertCircle, RefreshCw, BarChart3, LineChart, BookOpen } from "lucide-react";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 import { MemoryReuseBadge } from "@/components/tutor/MemoryReuseBadge";
 import { TutorBlockRenderer } from "@/components/tutor/blocks/TutorBlockRenderer";
@@ -186,6 +186,21 @@ const AgentMessageItem = memo(
                       adjustMemoryQuality(msg.memoryId, correct ? 3 : -5).catch(() => {});
                     }}
                   />
+                </div>
+              )}
+
+              {msg.role === "assistant" && msg.bibliography && msg.bibliography.length > 0 && (
+                <div className="mt-4 p-4 rounded-2xl bg-primary/5 border border-primary/10 animate-fade-in">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-primary mb-3 flex items-center gap-2">
+                    <BookOpen className="h-3 w-3" /> Fontes Consultadas na Base de Conhecimento
+                  </h4>
+                  <div className="space-y-3">
+                    {msg.bibliography.map((ref, i) => (
+                      <div key={i} className="text-xs text-white/70 leading-relaxed pl-3 border-l-2 border-primary/20">
+                        <span className="font-bold text-white/90">[{ref.source}{ref.page ? ` p.${ref.page}` : ''}]:</span> {ref.content}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
