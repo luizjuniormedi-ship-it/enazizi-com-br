@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import { Button } from "@/components/ui/button";
-import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User, Stethoscope } from "lucide-react";
+import { LogOut, Clock, Save, Loader2, GraduationCap, Building, Phone, User, Stethoscope, Target } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,6 +14,7 @@ import FaculdadeCombobox from "@/components/FaculdadeCombobox";
 import { isValidPhone, isValidName, isProfileComplete } from "@/lib/profileValidation";
 import WelcomeBackScreen from "@/components/onboarding/WelcomeBackScreen";
 import OnboardingV2Flow from "@/components/onboarding/OnboardingV2Flow";
+import { EXAM_PROFILES } from "@/lib/examProfiles";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, signOut } = useAuth();
@@ -30,6 +31,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [formPeriodo, setFormPeriodo] = useState("");
   const [formFaculdade, setFormFaculdade] = useState("");
   const [formUserType, setFormUserType] = useState("estudante");
+  const [formTargetExams, setFormTargetExams] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       try {
         const { data, error } = await supabase
           .from("profiles")
-          .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type")
+          .select("is_blocked, status, display_name, phone, periodo, faculdade, onboarding_version, user_type, target_exams")
           .eq("user_id", user.id)
           .maybeSingle();
 
@@ -69,6 +71,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           periodo: data?.periodo,
           faculdade: data?.faculdade,
           user_type: userType,
+          target_exams: (data as any)?.target_exams,
         });
 
         setProfileIncomplete(incomplete);
@@ -78,6 +81,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
           setFormPeriodo(data?.periodo ? String(data.periodo) : "");
           setFormFaculdade(data?.faculdade || "");
           setFormUserType(userType);
+          setFormTargetExams(((data as any)?.target_exams as string[]) || []);
         }
 
         const currentStatus = data?.status || "pending";
@@ -129,13 +133,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       return;
     }
 
-    if (isStudent && (!formPeriodo || !formFaculdade)) {
-      toast({ title: "Selecione período e faculdade", variant: "destructive" });
+    if (isStudent && !formPeriodo) {
+      toast({ title: "Selecione o seu período", variant: "destructive" });
       return;
     }
 
-    if (isProfessor && !formFaculdade) {
+    if (!formFaculdade) {
       toast({ title: "Selecione sua universidade", variant: "destructive" });
+      return;
+    }
+
+    if (isStudent && formTargetExams.length === 0) {
+      toast({ title: "Escolha ao menos uma banca de estudo", variant: "destructive" });
       return;
     }
 
@@ -147,15 +156,16 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
         display_name: trimmedName,
         phone: cleanPhone,
         user_type: formUserType,
+        faculdade: formFaculdade,
       };
 
       if (isStudent) {
         updateData.periodo = parseInt(formPeriodo);
-        updateData.faculdade = formFaculdade;
+        updateData.target_exams = formTargetExams;
+        updateData.target_exam = formTargetExams[0];
       }
 
       if (isProfessor || isMedico) {
-        updateData.faculdade = formFaculdade;
         if (isProfessor) updateData.status = "active";
         await supabase.from("user_roles").upsert(
           { user_id: user.id, role: "professor" as any },
@@ -312,13 +322,46 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
               </div>
             )}
 
-            {formUserType === "professor" && (
+            {(formUserType === "professor" || formUserType === "medico") && (
               <div className="space-y-2">
                 <Label className="flex items-center gap-1.5">
                   <Building className="h-3.5 w-3.5 text-muted-foreground" />
                   Universidade
                 </Label>
                 <FaculdadeCombobox value={formFaculdade} onChange={setFormFaculdade} />
+              </div>
+            )}
+
+            {(formUserType === "estudante" || formUserType === "medico") && (
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <Target className="h-3.5 w-3.5 text-muted-foreground" />
+                  Banca(s) de estudo
+                </Label>
+                <p className="text-xs text-muted-foreground">Selecione uma ou mais bancas que pretende prestar.</p>
+                <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                  {Object.values(EXAM_PROFILES).map((p) => {
+                    const active = formTargetExams.includes(p.key);
+                    return (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() =>
+                          setFormTargetExams((prev) =>
+                            prev.includes(p.key) ? prev.filter((k) => k !== p.key) : [...prev, p.key]
+                          )
+                        }
+                        className={`p-2 rounded-lg border text-xs font-medium text-left transition-colors ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-border bg-secondary text-muted-foreground hover:bg-accent"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
