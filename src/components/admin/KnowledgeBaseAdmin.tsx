@@ -91,7 +91,7 @@ export function KnowledgeBaseAdmin() {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setDocuments(data || []);
+      setDocuments((data as any) || []);
     } catch (err: any) {
       toast({ title: "Erro ao carregar documentos", description: err.message, variant: "destructive" });
     } finally {
@@ -117,7 +117,7 @@ export function KnowledgeBaseAdmin() {
       const orgId = profile?.organization_id || "00000000-0000-0000-0000-000000000000";
       
       const fileExt = file.name.split(".").pop();
-      const storagePath = `rag/${orgId}/${Date.now()}-${file.name}`;
+      const storagePath = `rag/${orgId}/${Date.now()}-${file.name.replace(/\s+/g, '_')}`;
       
       const { error: uploadErr } = await supabase.storage.from("user-uploads").upload(storagePath, file);
       if (uploadErr) throw uploadErr;
