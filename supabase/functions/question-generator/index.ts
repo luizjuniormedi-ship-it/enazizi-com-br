@@ -443,8 +443,8 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         // AI generation for remaining — run batches in PARALLEL with tight timeouts
         if (remaining > 0) {
           const batchCount = Math.ceil(remaining / SAFE_BATCH);
-          // Increase parallel batches for large requests (100 questions) to avoid total timeout
-          const PARALLEL_BATCHES = Math.min(batchCount, 8);
+          // Reduzindo concorrência para evitar 429 e picos de custo (fila assíncrona controlada)
+          const PARALLEL_BATCHES = Math.min(batchCount, 3);
 
           const buildSlotPrompt = (needed: number, prevSnapshot: string[]) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
 
