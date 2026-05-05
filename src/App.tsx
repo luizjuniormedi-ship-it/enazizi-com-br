@@ -229,14 +229,14 @@ const App = () => (
 
                   
                   {/* Clínica & Simulação */}
-                  <Route path="plantao" element={<ClinicalSimulation />} />
+                  <Route path="plantao" element={<ModuleErrorBoundary module="plantao"><ClinicalSimulation /></ModuleErrorBoundary>} />
                   <Route path="anamnese" element={<ModuleErrorBoundary module="anamnese"><AnamnesisTrainer /></ModuleErrorBoundary>} />
-                  <Route path="cronicas" element={<MedicalChronicles />} />
-                  <Route path="discursivas" element={<DiscursiveQuestions />} />
-                  <Route path="prova-pratica" element={<PracticalExam />} />
-                  <Route path="image-quiz" element={<MedicalImageQuiz />} />
-                  <Route path="revisor" element={<MedicalReviewer />} />
-                  <Route path="entrevista" element={<InterviewSimulator />} />
+                  <Route path="cronicas" element={<ModuleErrorBoundary module="cronicas"><MedicalChronicles /></ModuleErrorBoundary>} />
+                  <Route path="discursivas" element={<ModuleErrorBoundary module="discursivas"><DiscursiveQuestions /></ModuleErrorBoundary>} />
+                  <Route path="prova-pratica" element={<ModuleErrorBoundary module="prova-pratica"><PracticalExam /></ModuleErrorBoundary>} />
+                  <Route path="image-quiz" element={<ModuleErrorBoundary module="image-quiz"><MedicalImageQuiz /></ModuleErrorBoundary>} />
+                  <Route path="revisor" element={<ModuleErrorBoundary module="revisor"><MedicalReviewer /></ModuleErrorBoundary>} />
+                  <Route path="entrevista" element={<ModuleErrorBoundary module="entrevista"><InterviewSimulator /></ModuleErrorBoundary>} />
                   
                   {/* Estratégia & Progresso */}
                   <Route path="planner" element={<SmartPlanner />} />
