@@ -43,7 +43,7 @@ const Dashboard = () => {
       .slice(0, 4);
   }, [recentIds]);
 
-  const [showFallback, setShowFallback] = useState(false);
+  const [cockpitTimedOut, setCockpitTimedOut] = useState(false);
   const autostartConsumedRef = useRef(false);
 
   const activeRec = studyNext?.recommendation;
@@ -51,10 +51,14 @@ const Dashboard = () => {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShowFallback(true);
-    }, 5000); // 5s budget for critical data
+      setCockpitTimedOut(true);
+      // Log diagnostics for slow queries
+      if (missionLoading) console.warn("[Dashboard] study-next query slow (>5s)");
+      if (snapLoading) console.warn("[Dashboard] analytics-snapshot query slow (>5s)");
+      if (dashLoading) console.warn("[Dashboard] dashboard-data query slow (>5s)");
+    }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [missionLoading, snapLoading, dashLoading]);
 
   useEffect(() => {
     if (autostartConsumedRef.current) return;
@@ -67,7 +71,8 @@ const Dashboard = () => {
   }, [missionLoading, studyNext, searchParams, navigate]);
 
   const isDataMissing = !studyNext || !snapshot || !dashData;
-  const initialLoading = isDataMissing && !showFallback && (missionLoading || snapLoading || dashLoading);
+  // Solo bloqueamos el render si falta data crítica Y no hemos llegado al timeout
+  const initialLoading = isDataMissing && !cockpitTimedOut && (missionLoading || snapLoading || dashLoading);
 
   if (initialLoading) return <MissionControlSkeleton />;
 
