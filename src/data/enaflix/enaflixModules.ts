@@ -139,7 +139,7 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     icon: TrendingUp,
     badge: "ia",
     accent: "info",
-    keywords: ["predictor", "previsão", "probabilidade", "enare", "radar"],
+    keywords: ["predictor", "previsão", "probabilidade", "enare", "radar", "usp", "mais-cobrados"],
   },
 
   // ───────── TREINO & REVISÃO ─────────
