@@ -37,9 +37,10 @@ export function useEnaflixPersonalizedRows() {
   const { data: activePlan } = useStudentActivePlan();
 
   return useQuery({
-    queryKey: ["enaflix-personalized-rows-v2", user?.id],
+    queryKey: ["enaflix-personalized-rows-v3", user?.id],
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const results: {
         flashcards?: EnaflixFlashcardRowData;
@@ -162,7 +163,7 @@ export function useEnaflixPersonalizedRows() {
           userPerformance: Number(hy.taxa_acerto) || 0,
         }));
       } else {
-        // Hardcoded high yield defaults if no user data yet
+        // Hardcoded high yield defaults if no user data yet (Intelligent Fallback)
         results.highYieldTopics = [
           { topic: "Ginecologia & Obstetrícia", exam: "ENARE", frequencyScore: 98, userPerformance: 0 },
           { topic: "Pediatria", exam: "USP-SP", frequencyScore: 95, userPerformance: 0 },
