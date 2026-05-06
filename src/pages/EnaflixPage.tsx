@@ -159,7 +159,7 @@ export default function EnaflixPage() {
 
   const visibleModules = useMemo<EnaflixModule[]>(() => {
     if (adminLoading) return []; // Wait for admin check to finish
-    return ENAFLIX_MODULES.filter((m) => {
+    const items = ENAFLIX_MODULES.filter((m) => {
       if (m.enabled === false) return false;
       if (m.requires === "admin" && !isAdmin) return false;
       if (m.requires === "professor" && !isProfessor && !isAdmin) return false;
@@ -173,6 +173,12 @@ export default function EnaflixPage() {
 
       return true;
     });
+
+    if (items.length === 0 && !adminLoading) {
+       void emitShadowEvent({ module: "enaflix", event: "watch_abandoned", topic: "no_visible_modules" });
+    }
+
+    return items;
   }, [isAdmin, isProfessor, adminLoading]);
 
   const filteredModules = useMemo(() => {
