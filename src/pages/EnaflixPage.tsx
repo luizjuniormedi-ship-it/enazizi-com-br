@@ -541,7 +541,15 @@ export default function EnaflixPage() {
                         description="Crie associações visuais para temas difíceis."
                         ctaText="Explorar Studio"
                         accent="purple"
-                        onClick={() => navigate("/dashboard/mnemonic-studio")}
+                        onClick={() => {
+                          void emitShadowEvent({
+                            module: "enaflix",
+                            event: "watch_started",
+                            topic: "mnemonic_studio_upsell",
+                            extra: { action: "cta_click" }
+                          });
+                          navigate("/dashboard/mnemonic-studio");
+                        }}
                       />
                     </EnaflixRow>
                   );
