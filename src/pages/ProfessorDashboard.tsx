@@ -343,17 +343,13 @@ const ProfessorDashboard = () => {
         </Tabs>
       </main>
 
-      {/* Lazy: dialogs só carregam código quando ativados */}
-      {showCreate && (
-        <Suspense fallback={null}>
-          <CreateSimuladoDialog
-            open={showCreate}
-            onOpenChange={handleCloseCreate}
-            callAPI={callAPI}
-            onCreated={loadSimulados}
-          />
-        </Suspense>
-      )}
+      {/* Diálogos controlados pelo estado do pai */}
+      <CreateSimuladoDialog
+        open={showCreate}
+        onOpenChange={handleCloseCreate}
+        callAPI={callAPI}
+        onCreated={loadSimulados}
+      />
 
       {resultsDialog.open && (
         <Suspense fallback={null}>
