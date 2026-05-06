@@ -210,7 +210,7 @@ REGRAS:
         console.log(`[${specialty}] Retrying with simplified prompt...`);
         const retryResponse = await aiFetch({
           model: "openai/gpt-5-mini",
-          timeoutMs: 90000,
+          timeoutMs: 55000,
           maxRetries: 0,
           messages: [
             { role: "system", content: "Responda APENAS com JSON válido. Sem markdown, sem texto extra." },
