@@ -110,11 +110,7 @@ const Login = () => {
       const hasPrivilegedRole = roles?.some(r => r.role === 'admin' || r.role === 'professor');
       setLoading(false);
       
-      if (hasPrivilegedRole) {
-        navigate("/dashboard");
-      } else {
-        navigate("/enaflix");
-      }
+      navigate("/enaflix");
     }
   };
 
