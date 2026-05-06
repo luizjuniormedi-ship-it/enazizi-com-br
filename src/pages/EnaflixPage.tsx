@@ -685,8 +685,8 @@ export default function EnaflixPage() {
                   );
                 }
 
-                // 7. VIDEOAULAS IA (Conteúdo)
-                if (aiLessons && aiLessons.length > 0 && rows.length < 10) {
+                // 7. VIDEOAULAS IA (Conteúdo Principal)
+                if (aiLessons && aiLessons.length > 0) {
                   rows.push(
                     <EnaflixSectionRowVideo
                       key="ai-videoaulas"
