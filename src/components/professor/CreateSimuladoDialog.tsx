@@ -102,6 +102,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
         <div className="flex flex-col h-full max-h-inherit" data-testid="dialog-container">
           <header 
             onMouseDown={handleMouseDown}
+            data-testid="dialog-header"
             className={`
               shrink-0 border-b px-6 py-4 bg-background/95 backdrop-blur-md select-none
               ${!isMobile ? "cursor-move" : ""}
