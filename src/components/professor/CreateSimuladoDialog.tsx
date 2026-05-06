@@ -34,6 +34,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   const isMobile = useIsMobile();
   
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -88,6 +89,8 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
+        ref={dialogRef}
+        data-testid="create-simulado-dialog"
         className={`
           fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none
           ${isMobile ? "top-2 w-[calc(100vw-1rem)] max-h-[96vh]" : "top-6 w-[calc(100vw-2rem)] max-w-4xl max-h-[92vh]"}
@@ -96,9 +99,10 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
           transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
         } : undefined}
       >
-        <div className="flex flex-col h-full max-h-inherit">
+        <div className="flex flex-col h-full max-h-inherit" data-testid="dialog-container">
           <header 
             onMouseDown={handleMouseDown}
+            data-testid="dialog-header"
             className={`
               shrink-0 border-b px-6 py-4 bg-background/95 backdrop-blur-md select-none
               ${!isMobile ? "cursor-move" : ""}
@@ -114,7 +118,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
             </DialogHeader>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6" data-testid="dialog-body">
             <SimuladoBasicForm
               title={f.title}
               description={f.description}
@@ -259,7 +263,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
             />
           </div>
 
-          <footer className="shrink-0 border-t p-6 bg-background/95 backdrop-blur-md">
+          <footer className="shrink-0 border-t p-6 bg-background/95 backdrop-blur-md" data-testid="dialog-footer">
             <DialogFooter className="sm:justify-end gap-2">
               <Button 
                 type="button" 
