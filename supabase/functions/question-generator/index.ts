@@ -473,12 +473,14 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             if (needed <= 0) return [] as any[];
             try {
               const resp = await aiFetch({
+                model: "openai/gpt-4o-mini", // Forçar gpt-4o-mini para velocidade e estabilidade
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
-                maxTokens: 8192,
-                timeoutMs: 55000,
+                maxTokens: 16000,
+                timeoutMs: 60000,
                 maxRetries: 0,
+                userId: authUser?.id
               });
-              if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error:`, t.slice(0, 200)); return []; }
+              if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error status ${resp.status}:`, t.slice(0, 200)); return []; }
               const aiData = await resp.json();
 
               let parsed: any[] = [];
@@ -678,7 +680,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
     let response: Response;
     const startMs = Date.now();
     try {
-      response = await aiFetch(aiFetchOptions);
+      response = await aiFetch({ ...aiFetchOptions, model: "openai/gpt-4o-mini" });
     } catch (aiErr) {
       console.error("question-generator aiFetch error:", aiErr);
       const msg = aiErr instanceof Error ? aiErr.message : "Serviço de IA indisponível";
