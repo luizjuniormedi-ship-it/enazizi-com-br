@@ -564,11 +564,48 @@ REGRAS INVIOLÁVEIS:
 
         if (error) throw new Error(error.message);
 
-        // Use explicit student_ids if provided, otherwise fall back to filter query
+        // Handle assignments
         let studentList: { user_id: string }[] = [];
-        if (student_ids && Array.isArray(student_ids) && student_ids.length > 0) {
+        
+        if (assignment_mode === "manual" && student_ids?.length > 0) {
           studentList = student_ids.map((id: string) => ({ user_id: id }));
+          const assignments = student_ids.map((id: string) => ({
+            simulado_id: simulado.id,
+            target_type: 'student',
+            target_id: id
+          }));
+          await sb.from("teacher_simulado_assignments").insert(assignments);
+        } else if (assignment_mode === "classes" && class_ids?.length > 0) {
+          // Record class assignments
+          const assignments = class_ids.map((id: string) => ({
+            simulado_id: simulado.id,
+            target_type: 'class',
+            target_id: id
+          }));
+          await sb.from("teacher_simulado_assignments").insert(assignments);
+          
+          // Get students in these classes
+          const { data: classStudents } = await sb
+            .from("class_members")
+            .select("user_id")
+            .in("class_id", class_ids)
+            .eq("is_active", true);
+          studentList = classStudents || [];
+        } else if (assignment_mode === "all") {
+          await sb.from("teacher_simulado_assignments").insert({
+            simulado_id: simulado.id,
+            target_type: 'all'
+          });
+          const { data: allStudents } = await sb.from("profiles").select("user_id").eq("status", "active");
+          studentList = allStudents || [];
         } else {
+          // Default: filter (backward compatibility or explicit)
+          await sb.from("teacher_simulado_assignments").insert({
+            simulado_id: simulado.id,
+            target_type: 'filter',
+            metadata: { faculdade: faculdade_filter, periodo: periodo_filter }
+          });
+          
           let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
           if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
           if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
