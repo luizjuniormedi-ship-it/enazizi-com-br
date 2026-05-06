@@ -397,6 +397,13 @@ export default function EnaflixPage() {
                                          rec.type === 'mnemonic' ? '/dashboard/mnemonic-studio' :
                                          rec.type === 'error_review' ? '/dashboard/banco-erros' :
                                          rec.type === 'image_quiz' ? '/dashboard/image-quiz' : '/dashboard/sessao-estudo';
+                            
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: "mission_card",
+                              extra: { action: "cta_click", title: rec.title, destination: route }
+                            });
                             navigate(route);
                           }}
                           className="w-full mt-4 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_20px_-5px_rgba(var(--primary),0.4)]"
