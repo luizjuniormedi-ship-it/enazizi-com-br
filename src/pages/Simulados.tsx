@@ -367,7 +367,17 @@ const Simulados = () => {
       
       // Para simulados grandes (50 ou 100), criar um job no banco se não estiver retomando
       if (requestedTotal >= 50 && user && !currentJobId) {
-        setLoadingProgress("Registrando tarefa de geração...");
+        console.log("[Simulados] criando job", {
+          user_id: user.id,
+          total_questions: requestedTotal,
+          status: 'pending',
+          config: {
+            topics: config.topics,
+            difficulty: config.difficulty,
+            mode: config.mode,
+            realExamProfile: config.realExamProfile
+          }
+        });
         const { data: job, error: jobError } = await supabase
           .from("simulation_generation_jobs")
           .insert({
@@ -384,10 +394,17 @@ const Simulados = () => {
           .select()
           .single();
         
-        if (jobError) console.error("Erro ao criar job:", jobError);
+        if (jobError) {
+          console.error("Erro ao criar job:", jobError);
+          toast({
+            title: "Erro ao criar job",
+            description: "Não foi possível registrar a tarefa de geração em massa.",
+            variant: "destructive"
+          });
+        }
         else currentJobId = job.id;
       }
-      
+
       const BATCH_SIZE_AI = 5;
       let currentTry = 0;
       
