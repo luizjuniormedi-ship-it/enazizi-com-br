@@ -461,7 +461,7 @@ const Simulados = () => {
           if (currentJobId) {
             await supabase.from("simulation_generation_jobs").update({ 
               generated_questions: allGenerated.length,
-              results: allGenerated
+              results: allGenerated as any
             }).eq("id", currentJobId);
           }
         } catch (batchError) {
