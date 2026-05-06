@@ -242,9 +242,11 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                           {q.explanation}
                                         </p>
                                       )}
-                                    </div>
-                                  )}
-                                </div>
+                </TabsContent>
+              </div>
+            </Tabs>
+          )}
+        </div>
                               );
                             })}
                           </div>
