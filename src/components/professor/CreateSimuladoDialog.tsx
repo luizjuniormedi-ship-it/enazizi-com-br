@@ -192,7 +192,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
           />
         </div>
 
-        <footer className="shrink-0 border-t p-6 bg-background mt-auto">
+        <footer className="shrink-0 border-t p-6 bg-background/50 backdrop-blur-md">
           <DialogFooter className="sm:justify-end gap-2">
             <Button 
               type="button" 
