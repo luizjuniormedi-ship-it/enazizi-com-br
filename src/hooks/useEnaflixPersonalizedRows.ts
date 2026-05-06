@@ -37,7 +37,7 @@ export function useEnaflixPersonalizedRows() {
   const { data: activePlan } = useStudentActivePlan();
 
   return useQuery({
-    queryKey: ["enaflix-personalized-rows", user?.id],
+    queryKey: ["enaflix-personalized-rows-v2", user?.id],
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
@@ -51,7 +51,7 @@ export function useEnaflixPersonalizedRows() {
         highYieldTopics: [],
       };
 
-      // 1. Flashcards Pendentes
+      // 1. FLASHCARDS PENDENTES (FSRS)
       const nowIso = new Date().toISOString();
       const { data: dueCards } = await supabase
         .from("fsrs_cards")
@@ -64,17 +64,16 @@ export function useEnaflixPersonalizedRows() {
           .filter((c) => c.card_type === "flashcard")
           .map((c) => c.card_ref_id);
 
-        let mainTopic = "Diversos";
+        let mainTopic = "Clínica Médica";
         if (flashRefIds.length > 0) {
           const { data: flashRows } = await supabase
             .from("flashcards")
             .select("topic")
             .in("id", flashRefIds)
-            .limit(10);
+            .limit(5);
           
           if (flashRows && flashRows.length > 0) {
-            const topics = flashRows.map(f => f.topic).filter(Boolean);
-            if (topics.length > 0) mainTopic = topics[0] as string;
+            mainTopic = flashRows[0].topic || "Diversos";
           }
         }
 
@@ -85,57 +84,90 @@ export function useEnaflixPersonalizedRows() {
         };
       }
 
-      // 2. Plano de Hoje
-      if (activePlan) {
+      // 2. PLANO DE HOJE (Daily Plans)
+      const { data: todayPlan } = await supabase
+        .from("daily_plans")
+        .select("*")
+        .eq("user_id", user!.id)
+        .eq("plan_date", new Date().toISOString().split('T')[0])
+        .maybeSingle();
+
+      if (todayPlan) {
+        const { data: planTasks } = await supabase
+          .from("daily_plan_tasks")
+          .select("*")
+          .eq("daily_plan_id", todayPlan.id)
+          .order("ordem", { ascending: true });
+
+        const tasks = planTasks || [];
+        const pendingTask = tasks.find(t => !t.completed);
+
+        results.dailyPlan = {
+          tasks: tasks.map(t => t.title || t.topic || "Tarefa"),
+          estimatedMinutes: tasks.reduce((acc, t) => acc + (t.estimated_minutes || 0), 0),
+          progressPercent: todayPlan.total_blocks > 0 
+            ? Math.round((todayPlan.completed_count / todayPlan.total_blocks) * 100) 
+            : 0,
+          nextAction: pendingTask?.title || "Concluir Plano",
+        };
+      } else if (activePlan) {
+        // Fallback for professor assigned plan
         results.dailyPlan = {
           tasks: activePlan.subtopics.map(s => s.curriculum_subtopics?.nome || "Tarefa"),
           estimatedMinutes: activePlan.subtopics.length * 15,
           progressPercent: activePlan.progress?.progress_percent ?? 0,
           nextAction: activePlan.subtopics[0]?.curriculum_subtopics?.nome ?? "Retomar Estudo",
         };
-      } else if (studyNext?.recommendation) {
-        // Fallback for daily plan if no professor plan
-        results.dailyPlan = {
-          tasks: [studyNext.recommendation.title],
-          estimatedMinutes: studyNext.recommendation.estimatedMinutes,
-          progressPercent: 0,
-          nextAction: studyNext.recommendation.title,
-        };
       }
 
-      // 3. Missões do Tutor IA
-      if (studyNext) {
+      // 3. MISSÕES DO TUTOR IA (Decisions + Session Context)
+      const { data: decisions } = await supabase
+        .from("assistant_decisions")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(3);
+
+      if (decisions && decisions.length > 0) {
+        results.tutorMissions = decisions.map(d => ({
+          missionTitle: (d.decision_output as any)?.recommended_mission || "Missão de Reforço",
+          justification: d.justification || "Ajuste adaptativo baseado no seu ritmo.",
+          criticalTopic: d.source_module || "Geral",
+          missionId: d.id,
+        }));
+      } else if (studyNext?.recommendation) {
         results.tutorMissions = [
           {
             missionTitle: studyNext.recommendation.title,
             justification: studyNext.justification,
             criticalTopic: studyNext.adaptiveState.weakTopicsCount > 0 ? "Foco em fraquezas" : "Consolidação",
-            missionId: "mission-1",
-          },
-          ...studyNext.alternativeActions.map((alt, i) => ({
-            missionTitle: alt.title,
-            justification: "Alternativa sugerida pela IA",
-            criticalTopic: alt.type,
-            missionId: `alt-${i}`,
-          })),
+            missionId: "sn-mission",
+          }
         ];
       }
 
-      // 4. Questões que Mais Caem (High Yield)
-      const { data: highYield } = await supabase
+      // 4. QUESTÕES QUE MAIS CAEM (High Yield from unified performance)
+      const { data: hyData } = await supabase
         .from("performance_unified")
         .select("tema, taxa_acerto, questoes_feitas")
         .eq("user_id", user!.id)
         .order("questoes_feitas", { ascending: false })
         .limit(5);
 
-      if (highYield) {
-        results.highYieldTopics = highYield.map(hy => ({
+      if (hyData && hyData.length > 0) {
+        results.highYieldTopics = hyData.map(hy => ({
           topic: hy.tema || "Geral",
-          exam: "ENARE", // Default for now
-          frequencyScore: 85 + Math.random() * 10,
+          exam: "ENARE/USP-SP",
+          frequencyScore: 85 + (Math.random() * 15), // High yield simulated frequency
           userPerformance: Number(hy.taxa_acerto) || 0,
         }));
+      } else {
+        // Hardcoded high yield defaults if no user data yet
+        results.highYieldTopics = [
+          { topic: "Ginecologia & Obstetrícia", exam: "ENARE", frequencyScore: 98, userPerformance: 0 },
+          { topic: "Pediatria", exam: "USP-SP", frequencyScore: 95, userPerformance: 0 },
+          { topic: "Medicina Preventiva", exam: "ENARE", frequencyScore: 92, userPerformance: 0 }
+        ];
       }
 
       return results;
