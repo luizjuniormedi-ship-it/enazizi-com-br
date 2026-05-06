@@ -485,6 +485,14 @@ export default function EnaflixPage() {
               </div>
             ) : (
               (() => {
+                if (isLoadingPersonalized && personalizedRows === undefined) {
+                  return (
+                    <div className="space-y-12">
+                      <EnaflixRowSkeleton />
+                      <EnaflixRowSkeleton />
+                    </div>
+                  );
+                }
                 const rows: React.ReactNode[] = [];
 
                 // 1. PLANO DE HOJE (Alta Prioridade)
