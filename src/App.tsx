@@ -165,9 +165,7 @@ const PageLoader = () => {
 };
 
 const HomeRedirect = () => {
-  const { user, loading } = useAuth();
-  if (loading) return <PageLoader />;
-  if (user) return <Navigate to="/enaflix" replace />;
+  if (localStorage.getItem("supabase.auth.token")) return <Navigate to="/enaflix" replace />;
   return <Index />;
 };
 
