@@ -34,6 +34,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   const isMobile = useIsMobile();
   
+  const dialogRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
