@@ -392,8 +392,9 @@ const Simulados = () => {
         const batchNum = Math.floor(allGenerated.length / BATCH_SIZE_AI) + 1;
         const totalBatchesNum = Math.ceil(requestedTotal / BATCH_SIZE_AI);
         
+        console.log(`[Simulados] Gerando lote ${batchNum}/${totalBatchesNum} (total acumulado: ${allGenerated.length}/${requestedTotal})`);
         setLoadingProgress(`Gerando lote ${batchNum} de ${totalBatchesNum}...`);
-        setLoadingPercent(Math.round((allGenerated.length / requestedTotal) * 100));
+        setLoadingPercent(Math.max(5, Math.round((allGenerated.length / requestedTotal) * 100)));
         
         // Add data-testid for E2E progress monitoring
         const progressElement = document.querySelector('[role="progressbar"]');
