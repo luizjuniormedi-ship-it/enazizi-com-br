@@ -208,24 +208,25 @@ const VideoLessonsAdmin = () => {
   };
 
   return (
-    <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
+    <div className="pb-32 pt-4 sm:pt-12 relative min-h-screen">
       <EnaflixBackgroundFX intensity="intense" />
       
-      <div className="px-4 sm:px-8 lg:px-14 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-        <div className="space-y-2">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
-            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Gestão de Conteúdo</span>
-          </motion.div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
-            Biblioteca <span className="gradient-text">Studio</span>
-          </h1>
-          <p className="text-white/50 text-lg max-w-2xl font-medium mt-4">Governança e auditoria de conteúdos multimídia médicos.</p>
-        </div>
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div className="space-y-2">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3"
+            >
+              <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
+              <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Gestão de Conteúdo</span>
+            </motion.div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
+              Biblioteca <span className="gradient-text">Studio</span>
+            </h1>
+            <p className="text-white/50 text-lg max-w-2xl font-medium mt-4">Governança e auditoria de conteúdos multimídia médicos.</p>
+          </div>
 
         <div className="flex flex-wrap gap-3 relative z-10">
           <Button 
@@ -244,61 +245,61 @@ const VideoLessonsAdmin = () => {
         </div>
       </div>
 
-      <div className="px-4 sm:px-8 lg:px-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
-        <StatsCard title="Total de Aulas" value={stats.total} icon={<Video className="h-5 w-5" />} />
-        <StatsCard title="Aguardando Vídeo" value={stats.waitingVideo} icon={<Clock className="h-5 w-5 text-orange-500" />} />
-        <StatsCard title="Em Revisão" value={stats.waitingReview} icon={<ShieldCheck className="h-5 w-5 text-blue-500" />} />
-        <StatsCard title="Publicadas" value={stats.published} icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />} />
-      </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
+          <StatsCard title="Total de Aulas" value={stats.total} icon={<Video className="h-5 w-5" />} />
+          <StatsCard title="Aguardando Vídeo" value={stats.waitingVideo} icon={<Clock className="h-5 w-5 text-orange-500" />} />
+          <StatsCard title="Em Revisão" value={stats.waitingReview} icon={<ShieldCheck className="h-5 w-5 text-blue-500" />} />
+          <StatsCard title="Publicadas" value={stats.published} icon={<CheckCircle2 className="h-5 w-5 text-emerald-500" />} />
+        </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="relative w-full md:w-80">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por título ou especialidade..."
-                className="pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+        <Card className="w-full max-w-7xl mx-auto overflow-hidden">
+          <CardHeader>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="relative w-full md:w-80">
+                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por título ou especialidade..."
+                  className="pl-8"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Filter className="h-4 w-4 text-muted-foreground" />
+                <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Especialidade" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Especialidades</SelectItem>
+                    {specialties.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos os Status</SelectItem>
+                    <SelectItem value="draft">Rascunho</SelectItem>
+                    <SelectItem value="video_review">Em Revisão</SelectItem>
+                    <SelectItem value="published">Publicado</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={mediaFilter} onValueChange={setMediaFilter}>
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder="Mídia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas as Mídias</SelectItem>
+                    <SelectItem value="has_media">Com Mídia Real</SelectItem>
+                    <SelectItem value="no_media">Sem Mídia / Placeholder</SelectItem>
+                    <SelectItem value="failed">Falha na Renderização</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={specialtyFilter} onValueChange={setSpecialtyFilter}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Especialidade" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Especialidades</SelectItem>
-                  {specialties.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Status</SelectItem>
-                  <SelectItem value="draft">Rascunho</SelectItem>
-                  <SelectItem value="video_review">Em Revisão</SelectItem>
-                  <SelectItem value="published">Publicado</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={mediaFilter} onValueChange={setMediaFilter}>
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Mídia" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as Mídias</SelectItem>
-                  <SelectItem value="has_media">Com Mídia Real</SelectItem>
-                  <SelectItem value="no_media">Sem Mídia / Placeholder</SelectItem>
-                  <SelectItem value="failed">Falha na Renderização</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardHeader>
+          </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center p-8">Carregando videoaulas...</div>
@@ -502,6 +503,7 @@ const VideoLessonsAdmin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </main>
     </div>
   );
 };

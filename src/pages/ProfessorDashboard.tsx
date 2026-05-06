@@ -188,151 +188,154 @@ const ProfessorDashboard = () => {
   }, [simulados]);
 
   return (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in relative z-10 min-h-screen">
+    <div className="min-h-screen relative z-10 animate-fade-in">
       <EnaflixBackgroundFX intensity="medium" />
-      <CinematicHero
-        module="professor"
-        eyebrow={
-          <>
-            <GraduationCap className="h-3.5 w-3.5" />
-            Centro de mentoria
-          </>
-        }
-        title="Painel do Professor"
-        subtitle="Crie simulados, acompanhe alunos e oriente turmas com inteligência adaptativa."
-        actions={
-          <Button 
-            onClick={handleOpenCreate} 
-            size="lg" 
-            className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm gap-2"
-          >
-            <Plus className="h-4 w-4" /> NOVO SIMULADO
-          </Button>
-        }
-      />
+      
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        <CinematicHero
+          module="professor"
+          eyebrow={
+            <>
+              <GraduationCap className="h-3.5 w-3.5" />
+              Centro de mentoria
+            </>
+          }
+          title="Painel do Professor"
+          subtitle="Crie simulados, acompanhe alunos e oriente turmas com inteligência adaptativa."
+          actions={
+            <Button 
+              onClick={handleOpenCreate} 
+              size="lg" 
+              className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm gap-2"
+            >
+              <Plus className="h-4 w-4" /> NOVO SIMULADO
+            </Button>
+          }
+        />
 
-      <Tabs defaultValue="simulados" className="w-full">
-        <div className="rounded-2xl border border-white/5 bg-card/20 backdrop-blur-md p-2">
-          <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
-            {[
-              { value: "simulados", label: "📝 Simulados" },
-              { value: "plantao", label: "🏥 Casos Plantão" },
-              { value: "video", label: "Video", icon: <Video className="h-3.5 w-3.5" /> },
-              { value: "temas", label: "📖 Temas" },
-              { value: "alunos", label: "👤 Aluno" },
-              { value: "analytics", label: "📊 Turma" },
-              { value: "bi", label: "📈 BI" },
-              { value: "mentoria", label: "📋 Mentoria" },
-              { value: "osce", label: "🩺 OSCE" },
-              { value: "proficiencia", label: "🎯 Proficiência" }
-            ].map((tab) => (
-              <TabsTrigger 
-                key={tab.value}
-                value={tab.value} 
-                className="h-10 min-w-[48%] flex-1 justify-center rounded-xl border border-white/5 px-4 text-[11px] font-black uppercase tracking-wider transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-sm sm:min-w-fit sm:flex-none"
-              >
-                {tab.icon && <span className="mr-1.5">{tab.icon}</span>}
-                {tab.label.toUpperCase()}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </div>
-
-        <TabsContent value="simulados" className="space-y-4 mt-4">
-          <SimuladosKpiCards
-            totalSimulados={totals.totalSimulados}
-            totalStudentsAssigned={totals.totalStudentsAssigned}
-            totalCompleted={totals.totalCompleted}
-          />
-
-          {loading ? (
-            <div className="text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-            </div>
-          ) : simulados.length === 0 ? (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <GraduationCap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Nenhum simulado criado</h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Crie seu primeiro simulado e atribua aos alunos.
-                </p>
-                <Button 
-                  onClick={handleOpenCreate}
-                  className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+        <Tabs defaultValue="simulados" className="w-full">
+          <div className="rounded-2xl border border-white/5 bg-card/20 backdrop-blur-md p-2">
+            <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
+              {[
+                { value: "simulados", label: "📝 Simulados" },
+                { value: "plantao", label: "🏥 Casos Plantão" },
+                { value: "video", label: "Video", icon: <Video className="h-3.5 w-3.5" /> },
+                { value: "temas", label: "📖 Temas" },
+                { value: "alunos", label: "👤 Aluno" },
+                { value: "analytics", label: "📊 Turma" },
+                { value: "bi", label: "📈 BI" },
+                { value: "mentoria", label: "📋 Mentoria" },
+                { value: "osce", label: "🩺 OSCE" },
+                { value: "proficiencia", label: "🎯 Proficiência" }
+              ].map((tab) => (
+                <TabsTrigger 
+                  key={tab.value}
+                  value={tab.value} 
+                  className="h-10 min-w-[48%] flex-1 justify-center rounded-xl border border-white/5 px-4 text-[11px] font-black uppercase tracking-wider transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-sm sm:min-w-fit sm:flex-none"
                 >
-                  CRIAR SIMULADO
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="space-y-3">
-              {simulados.map((sim) => (
-                <SimuladoListItem
-                  key={sim.id}
-                  sim={sim}
-                  onView={handleViewResults}
-                  onDelete={handleDeleteSimulado}
-                />
+                  {tab.icon && <span className="mr-1.5">{tab.icon}</span>}
+                  {tab.label.toUpperCase()}
+                </TabsTrigger>
               ))}
-            </div>
-          )}
-        </TabsContent>
+            </TabsList>
+          </div>
 
-        <TabsContent value="plantao" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <ProfessorPlantao callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+          <TabsContent value="simulados" className="space-y-4 mt-4 w-full max-w-5xl mx-auto">
+            <SimuladosKpiCards
+              totalSimulados={totals.totalSimulados}
+              totalStudentsAssigned={totals.totalStudentsAssigned}
+              totalCompleted={totals.totalCompleted}
+            />
 
-        <TabsContent value="temas" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <TeacherStudyAssignments callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+            {loading ? (
+              <div className="text-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+              </div>
+            ) : simulados.length === 0 ? (
+              <Card>
+                <CardContent className="p-12 text-center">
+                  <GraduationCap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Nenhum simulado criado</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Crie seu primeiro simulado e atribua aos alunos.
+                  </p>
+                  <Button 
+                    onClick={handleOpenCreate}
+                    className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+                  >
+                    CRIAR SIMULADO
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {simulados.map((sim) => (
+                  <SimuladoListItem
+                    key={sim.id}
+                    sim={sim}
+                    onView={handleViewResults}
+                    onDelete={handleDeleteSimulado}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-        <TabsContent value="video" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <VideoRoom callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+          <TabsContent value="plantao" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <ProfessorPlantao callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
 
-        <TabsContent value="alunos" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <StudentTracker callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+          <TabsContent value="temas" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <TeacherStudyAssignments callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
 
-        <TabsContent value="analytics" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <ClassAnalytics callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+          <TabsContent value="video" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <VideoRoom callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
 
-        <TabsContent value="bi" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <ProfessorBIPanel callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+          <TabsContent value="alunos" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <StudentTracker callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
 
-        <TabsContent value="mentoria" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <MentorThemePlans callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+          <TabsContent value="analytics" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <ClassAnalytics callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
 
-        <TabsContent value="osce" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <ProfessorPracticalExams callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
+          <TabsContent value="bi" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <ProfessorBIPanel callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
 
-        <TabsContent value="proficiencia" className="mt-4">
-          <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-            <ProfessorProficiencyPlans callAPI={callAPI} />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="mentoria" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <MentorThemePlans callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="osce" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <ProfessorPracticalExams callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="proficiencia" className="mt-4 w-full max-w-5xl mx-auto">
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
+              <ProfessorProficiencyPlans callAPI={callAPI} />
+            </Suspense>
+          </TabsContent>
+        </Tabs>
+      </main>
 
       {/* Lazy: dialogs só carregam código quando ativados */}
       {showCreate && (

@@ -273,7 +273,7 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-5xl mx-auto">
       {/* Filters + Search */}
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">

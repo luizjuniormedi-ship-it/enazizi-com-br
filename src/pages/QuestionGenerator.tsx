@@ -196,7 +196,7 @@ const QuestionGenerator = () => {
 
   if (showSetup) {
     return (
-      <div className="flex flex-col animate-fade-in h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
+      <div className="flex flex-col animate-fade-in h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-4">
           <StudyContextBanner />
           <h1 className="text-lg sm:text-2xl font-bold flex items-center gap-2">
@@ -359,7 +359,7 @@ const QuestionGenerator = () => {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)]">
+    <div className="flex flex-col h-[calc(100vh-7rem)] sm:h-[calc(100vh-8rem)] w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Session stats bar */}
       {sessionStats.total > 0 && (
         <div className="mb-2 px-3 py-2 rounded-lg bg-card border border-border flex items-center gap-3 flex-wrap text-xs">

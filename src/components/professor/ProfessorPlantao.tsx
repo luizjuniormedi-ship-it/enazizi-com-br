@@ -223,7 +223,7 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
   const totalCompleted = cases.reduce((s, c) => s + (c.results_summary?.completed || 0), 0);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Crie casos de plantão médico interativos e atribua aos alunos.</p>
         <Button onClick={() => setShowCreate(true)} className="gap-2" size="sm">

@@ -173,7 +173,7 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-5xl mx-auto">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold flex items-center gap-2">
           <BookOpen className="h-5 w-5 text-primary" />

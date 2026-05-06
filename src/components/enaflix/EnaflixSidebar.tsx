@@ -194,10 +194,10 @@ export function EnaflixSidebar() {
             <div className="space-y-1">
               {(isProfessor || isAdmin) && (
                 <SidebarItem
-                  to="/professor"
+                  to="/dashboard/professor"
                   label="Professor"
                   icon={GraduationCap}
-                  active={location.pathname === "/professor"}
+                  active={location.pathname === "/dashboard/professor"}
                 />
               )}
               {isAdmin && (

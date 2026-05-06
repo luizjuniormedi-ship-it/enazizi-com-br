@@ -32,6 +32,8 @@ import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import SimuladoSetup from "@/components/simulados/SimuladoSetup";
 import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
 import SimuladoExam, { type SimQuestion } from "@/components/simulados/SimuladoExam";
@@ -473,113 +475,146 @@ const Simulados = () => {
 
   if (phase === "setup") {
     return (
-      <div className="pb-24 pt-8 space-y-12 relative min-h-screen">
+      <div className="min-h-screen relative z-10 animate-fade-in pb-24" data-testid="simulados-page">
         <EnaflixBackgroundFX intensity="medium" />
-        <div className="px-4 sm:px-8 lg:px-14">
-          <div className="flex items-center gap-2 mb-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 text-white/40 hover:text-white">
-              <ChevronLeft className="h-4 w-4" /> Voltar
-            </Button>
-          </div>
-          <EnaflixSectionTitle
-            kicker="IA ORGANIZADORA"
-            title={
-              <>
-                Simulados <span className="gradient-text">& Provas</span>
-              </>
-            }
-            subtitle="IA de estudos gera desafios reais para testar seu domínio clínico."
-          />
-        </div>
-
-        {activeJobs.length > 0 && (
-          <EnaflixRow title="Gerações em Andamento">
-            {activeJobs.map((job) => (
-              <SimuladoProfileCard
-                key={job.id}
-                title={`Simulado em Lote (${job.total_questions} questões)`}
-                subtitle={`Progresso: ${job.generated_questions}/${job.total_questions}`}
-                count={job.total_questions}
-                timeMinutes={Math.round(job.total_questions * 3)}
-                difficulty={job.config?.difficulty || "misto"}
-                badge={job.status === "partial" ? "Parcial" : "Processando"}
-                image="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?q=80&w=400"
-                onClick={() => handleResumeJob(job)}
-              />
-            ))}
-          </EnaflixRow>
-        )}
-
-        {pendingSession && checked && (
-          <div className="px-4 sm:px-8 lg:px-14">
-            <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleResumeSession} onDiscard={abandonSession} />
-          </div>
-        )}
-
-        <EnaflixRow title="Recomendados para você">
-          <SimuladoProfileCard
-            title="Simulado Adaptativo IA"
-            subtitle="Focado nos seus temas de menor desempenho"
-            count={20} timeMinutes={60} difficulty="misto" badge="IA Recomendou"
-            image="https://images.unsplash.com/photo-1633526543814-9718c8922b7a?q=80&w=400"
-            onClick={() => handleStart({ topics: ["Clínica Médica"], count: 20, difficulty: "misto", mode: "adaptativo" })}
-          />
-          <SimuladoProfileCard
-            title="Desafio de Diagnóstico Visual"
-            subtitle="100% questões com imagem"
-            count={10} timeMinutes={20} difficulty="intermediario"
-            image="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=400"
-            onClick={() => handleStart({ topics: ["Clínica Médica"], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
-          />
-        </EnaflixRow>
-
-        <EnaflixRow title="Bancas Oficiais">
-          {Object.entries(EXAM_PROFILES).slice(0, 8).map(([id, profile]) => (
-            <SimuladoProfileCard
-              key={id} title={profile.name} subtitle="Padrão oficial da banca"
-              count={profile.totalQuestions} timeMinutes={profile.timeMinutes}
-              image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
-              onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
-              data-testid={`banca-${id.toLowerCase()}-button`}
-            />
-          ))}
-        </EnaflixRow>
-
-        <div>
-          <div className="px-4 sm:px-8 lg:px-14 mb-8">
-            <EnaflixSectionTitle kicker="PERSONALIZAR" title="Configuração Avançada" subtitle="Monte sua prova personalizada." />
-          </div>
-          <div className="px-4 sm:px-8 lg:px-14">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden">
-              <SimuladoSetup
-                onStart={handleStart}
-                adaptiveLoading={adaptivePreviewLoading}
-                adaptiveMeta={adaptivePreviewMeta}
-                onFetchAdaptivePreview={() => {}}
-                onResumeSession={() => {}}
-                onDiscardSession={() => {}}
-                onRetryErrors={() => {}}
-                pendingSession={null}
-                checkedSession={true}
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 text-white/40 hover:text-white mb-4 pl-0">
+                <ChevronLeft className="h-4 w-4" /> Voltar
+              </Button>
+              <EnaflixSectionTitle 
+                kicker="IA ORGANIZADORA"
+                title={
+                  <>
+                    Simulados <span className="gradient-text">& Provas</span>
+                  </>
+                } 
+                subtitle="IA de estudos gera desafios reais para testar seu domínio clínico."
               />
             </div>
+            {pendingSession && checked && (
+              <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleResumeSession} onDiscard={abandonSession} />
+            )}
           </div>
-        </div>
+
+          {activeJobs.length > 0 && (
+            <EnaflixSection title="Gerações em Andamento">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {activeJobs.map(job => (
+                  <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                            {job.config?.mode === 'prova_real' ? job.config?.realExamProfile : 'Simulado Personalizado'}
+                          </p>
+                          <h4 className="font-semibold text-sm line-clamp-1">
+                            {job.config?.topics?.join(', ') || 'Temas variados'}
+                          </h4>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                          {job.status}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[10px] font-mono uppercase text-muted-foreground">
+                          <span>Progresso</span>
+                          <span>{job.generated_questions || 0} / {job.total_questions}</span>
+                        </div>
+                        <Progress value={((job.generated_questions || 0) / job.total_questions) * 100} className="h-1" />
+                      </div>
+
+                      <div className="flex items-center justify-between gap-2 pt-1">
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                          <Clock className="h-3 w-3" />
+                          {new Date(job.created_at).toLocaleTimeString()}
+                        </div>
+                        <Button 
+                          size="sm" 
+                          variant="secondary" 
+                          className="h-8 text-[10px] font-bold uppercase"
+                          onClick={() => handleResumeJob(job)}
+                        >
+                          Continuar
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </EnaflixSection>
+          )}
+
+          <div className="w-full max-w-5xl mx-auto space-y-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <SimuladoProfileCard
+                title="Simulado Adaptativo IA"
+                subtitle="Focado nos seus temas de menor desempenho"
+                count={20} timeMinutes={60} difficulty="misto" badge="IA Recomendou"
+                image="https://images.unsplash.com/photo-1633526543814-9718c8922b7a?q=80&w=400"
+                onClick={() => handleStart({ topics: ["Clínica Médica"], count: 20, difficulty: "misto", mode: "adaptativo" })}
+              />
+              <SimuladoProfileCard
+                title="Desafio de Diagnóstico Visual"
+                subtitle="100% questões com imagem"
+                count={10} timeMinutes={20} difficulty="intermediario"
+                image="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=400"
+                onClick={() => handleStart({ topics: ["Clínica Médica"], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
+              />
+            </div>
+
+            <EnaflixSection title="Bancas Oficiais" subtitle="Simule o ambiente real das maiores provas do país.">
+              <EnaflixRow title="">
+                {Object.entries(EXAM_PROFILES).slice(0, 8).map(([id, profile]) => (
+                  <div key={id} className="flex-none w-[280px] sm:w-[320px]">
+                    <SimuladoProfileCard
+                      title={profile.name}
+                      subtitle="Padrão oficial da banca"
+                      count={profile.totalQuestions}
+                      timeMinutes={profile.timeMinutes}
+                      image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
+                      onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
+                      data-testid={`banca-${id.toLowerCase()}-button`}
+                    />
+                  </div>
+                ))}
+              </EnaflixRow>
+            </EnaflixSection>
+
+            <div className="space-y-8 pt-8 border-t border-white/5">
+              <EnaflixSectionTitle kicker="PERSONALIZAR" title="Configuração Avançada" subtitle="Monte sua prova personalizada." />
+              <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden p-6 sm:p-8">
+                <SimuladoSetup
+                  onStart={handleStart}
+                  adaptiveLoading={adaptivePreviewLoading}
+                  adaptiveMeta={adaptivePreviewMeta}
+                  onFetchAdaptivePreview={() => {}}
+                  onResumeSession={() => {}}
+                  onDiscardSession={() => {}}
+                  onRetryErrors={() => {}}
+                  pendingSession={null}
+                  checkedSession={true}
+                />
+              </div>
+            </div>
+          </div>
+        </main>
       </div>
     );
   }
 
-
   if (phase === "loading") {
     return (
-      <div className="relative min-h-screen">
+      <div className="min-h-screen relative z-10 flex flex-col items-center justify-center animate-fade-in p-4">
         <EnaflixBackgroundFX intensity="medium" />
-        <div className="relative flex flex-col items-center justify-center py-40 gap-6 px-4">
+        <div className="relative flex flex-col items-center justify-center gap-6 text-center max-w-md w-full">
           <div className="relative">
             <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse" />
             <Loader2 className="h-16 w-16 text-primary animate-spin relative" />
           </div>
-          <div className="text-center space-y-2">
+          <div className="space-y-2">
             <h2 className="text-xl font-black text-white">{loadingProgress || "Gerando questões..."}</h2>
             <p className="text-sm text-white/40 font-medium">
               {partialCount > 0 
@@ -587,7 +622,7 @@ const Simulados = () => {
                 : "IA organizadora preparando seu ambiente de prova."}
             </p>
           </div>
-          <div className="w-64 space-y-4">
+          <div className="w-full space-y-4">
             <div className="space-y-2">
               <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
               <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
@@ -601,7 +636,7 @@ const Simulados = () => {
                     startExamWithQuestions(questions.slice(0, partialCount), configRef.current);
                   }} 
                   variant="outline"
-                  className="w-full bg-white/5 border-white/10 hover:bg-white/10 text-white gap-2"
+                  className="w-full h-11 bg-white/5 border-white/10 hover:bg-white/10 text-white gap-2 font-black uppercase tracking-widest text-[10px]"
                 >
                   <Play className="h-4 w-4" /> Iniciar com {partialCount} questões
                 </Button>
@@ -614,7 +649,7 @@ const Simulados = () => {
                   cancelGenerationRef.current = true;
                   setPhase("setup");
                 }} 
-                className="text-white/40 hover:text-white"
+                className="text-white/40 hover:text-white font-bold uppercase tracking-widest text-[10px]"
               >
                 Cancelar e Voltar
               </Button>
@@ -627,28 +662,30 @@ const Simulados = () => {
 
   if (phase === "finished") {
     return (
-      <div className="relative min-h-screen pb-24 pt-8">
+      <div className="min-h-screen relative z-10 animate-fade-in pb-24">
         <EnaflixBackgroundFX intensity="medium" />
-        <div className="relative px-4 sm:px-8 lg:px-14">
-          <div className="flex items-center gap-2 mb-4">
-            <Button variant="ghost" size="sm" onClick={handleNewSimulado} className="gap-2 text-white/40 hover:text-white">
+        <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={handleNewSimulado} className="gap-2 text-white/40 hover:text-white pl-0">
               <ChevronLeft className="h-4 w-4" /> Novo Simulado
             </Button>
           </div>
-          <SimuladoResult
-            questions={questions} selectedAnswers={finalAnswers} onNewSimulado={handleNewSimulado}
-            onRetryErrors={() => {}} flaggedQuestions={flaggedQuestions} mode={mode}
-            elapsedSeconds={elapsedSecondsRef.current}
-          />
-        </div>
+          <div className="w-full max-w-5xl mx-auto">
+            <SimuladoResult
+              questions={questions} selectedAnswers={finalAnswers} onNewSimulado={handleNewSimulado}
+              onRetryErrors={() => {}} flaggedQuestions={flaggedQuestions} mode={mode}
+              elapsedSeconds={elapsedSecondsRef.current}
+            />
+          </div>
+        </main>
       </div>
     );
   }
 
   return (
-    <div className="relative min-h-screen pb-24 pt-6">
+    <div className="min-h-screen relative z-10 animate-fade-in py-6">
       <EnaflixBackgroundFX intensity="subtle" />
-      <div className="relative px-4 sm:px-8 lg:px-14">
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <SimuladoExam
           questions={questions}
           timeSeconds={restoredState?.timeLeft ?? 0}
@@ -657,7 +694,7 @@ const Simulados = () => {
           onStateChange={() => {}}
           mode={mode}
         />
-      </div>
+      </main>
     </div>
   );
 };
