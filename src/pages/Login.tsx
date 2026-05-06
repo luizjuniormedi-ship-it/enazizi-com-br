@@ -100,23 +100,29 @@ const Login = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await signIn(email, password);
     
-    if (error) {
-      setLoading(false);
-      const msg = errorMessages[error.message] || error.message;
-      toast({ title: "Erro ao entrar", description: msg, variant: "destructive" });
-    } else {
-      // Check user roles for redirection
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
+    try {
+      const { error } = await signIn(email, password);
       
-      const hasPrivilegedRole = roles?.some(r => r.role === 'admin' || r.role === 'professor');
-      setLoading(false);
+      if (error) {
+        setLoading(false);
+        const msg = errorMessages[error.message] || error.message;
+        toast({ title: "Erro ao entrar", description: msg, variant: "destructive" });
+        return;
+      }
       
-      navigate("/enaflix");
+      // The session change will be detected by AuthProvider, 
+      // which will trigger the useEffect for navigation above.
+      // But we also do an explicit navigate here just in case.
+      navigate("/enaflix", { replace: true });
+    } catch (err: any) {
+      console.error("Login unexpected error:", err);
+      setLoading(false);
+      toast({ 
+        title: "Erro inesperado", 
+        description: "Ocorreu um erro ao processar seu login. Tente novamente.", 
+        variant: "destructive" 
+      });
     }
   };
 
