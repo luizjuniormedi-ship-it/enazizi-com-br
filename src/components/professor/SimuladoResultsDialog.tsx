@@ -50,7 +50,8 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
           <DialogDescription>Veja o desempenho dos alunos neste simulado.</DialogDescription>
         </DialogHeader>
 
-        {state.loading ? (
+        </div>
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <div className="py-8 text-center">
             <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
           </div>
