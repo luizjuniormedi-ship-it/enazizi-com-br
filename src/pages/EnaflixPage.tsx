@@ -25,9 +25,12 @@ import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
 import { useStudyNext } from "@/hooks/useStudyNext";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { Brain, Target, TrendingUp, Award, Sparkles, ChevronRight, Play } from "lucide-react";
+import { Brain, Target, TrendingUp, Award, Sparkles, ChevronRight, Play, Clock, AlertTriangle, ListChecks, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useEnaflixPersonalizedRows } from "@/hooks/useEnaflixPersonalizedRows";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { EnaflixDynamicCard } from "@/components/enaflix/EnaflixDynamicCard";
 
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
