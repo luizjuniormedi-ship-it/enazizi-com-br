@@ -33,6 +33,11 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 }: Props) {
   console.log("[CreateSimuladoDialog] render", { open });
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
+  
+  // Se o diálogo não estiver aberto, não renderizamos nada além do próprio wrapper do Dialog
+  // Isso garante que o estado interno do formulário não cause efeitos colaterais enquanto fechado
+  if (!open) return null;
+
   const isMobile = useIsMobile();
   
   const dialogRef = useRef<HTMLDivElement>(null);
