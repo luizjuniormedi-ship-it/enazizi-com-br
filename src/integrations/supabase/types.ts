@@ -17168,6 +17168,7 @@ export type Database = {
           exam_board: string | null
           faculdade_filter: string | null
           feedback_policy: string | null
+          feedback_released: boolean | null
           id: string
           max_attempts: number | null
           periodo_filter: number | null
@@ -17191,6 +17192,7 @@ export type Database = {
           exam_board?: string | null
           faculdade_filter?: string | null
           feedback_policy?: string | null
+          feedback_released?: boolean | null
           id?: string
           max_attempts?: number | null
           periodo_filter?: number | null
@@ -17214,6 +17216,7 @@ export type Database = {
           exam_board?: string | null
           faculdade_filter?: string | null
           feedback_policy?: string | null
+          feedback_released?: boolean | null
           id?: string
           max_attempts?: number | null
           periodo_filter?: number | null
