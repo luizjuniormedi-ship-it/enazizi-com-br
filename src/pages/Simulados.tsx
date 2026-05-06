@@ -392,8 +392,9 @@ const Simulados = () => {
         const batchNum = Math.floor(allGenerated.length / BATCH_SIZE_AI) + 1;
         const totalBatchesNum = Math.ceil(requestedTotal / BATCH_SIZE_AI);
         
+        console.log(`[Simulados] Gerando lote ${batchNum}/${totalBatchesNum} (total acumulado: ${allGenerated.length}/${requestedTotal})`);
         setLoadingProgress(`Gerando lote ${batchNum} de ${totalBatchesNum}...`);
-        setLoadingPercent(Math.round((allGenerated.length / requestedTotal) * 100));
+        setLoadingPercent(Math.max(5, Math.round((allGenerated.length / requestedTotal) * 100)));
         
         // Add data-testid for E2E progress monitoring
         const progressElement = document.querySelector('[role="progressbar"]');
@@ -406,34 +407,65 @@ const Simulados = () => {
         
         try {
           const avoid = allGenerated.map(q => q.statement);
-          const batchQs = await generateBatch(
-            config.topics || ["Clínica Médica"], 
-            currentBatchSize, 
-            config.difficulty || "misto", 
-            session?.access_token,
-            undefined,
-            config.realExamProfile ? config.realExamProfile.toLowerCase() : undefined,
-            avoid,
-            currentJobId,
-            batchNum,
-            config.topicWeights // Pass profile distribution weights
+          
+          console.log(`[Simulados] Chamando question-generator para lote ${batchNum}. Count: ${currentBatchSize}`);
+          
+          // Fallback manual para caso a lib local falhe
+          const { data, error: fnError } = await supabase.functions.invoke(
+            "question-generator",
+            {
+              body: {
+                topics: config.topics || ["Clínica Médica"],
+                count: currentBatchSize,
+                difficulty: config.difficulty || "misto",
+                imagePercent: config.imagePercent || 0,
+                examBoard: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
+                avoidStatements: avoid,
+                jobId: currentJobId,
+                batchNumber: batchNum
+              },
+            }
           );
+
+          if (fnError) {
+            console.error("[Simulados] Erro na Edge Function invoke:", fnError);
+            throw fnError;
+          }
+
+          if (!data?.success) {
+            console.error("[Simulados] Resposta da API sem sucesso:", data);
+            throw new Error(data?.error || "Falha na geração das questões pela IA.");
+          }
+
+          const batchQs = (data.questions || []).map((q: any) => ({
+            ...q,
+            topic: q.topic || config.topics?.[0] || "Geral"
+          }));
           
           if (batchQs.length === 0) {
+            console.warn("[Simulados] Lote retornado vazio.");
             if (allGenerated.length > 0) {
               setLoadingProgress(`Lote ${batchNum} falhou. Preparando com o que temos...`);
               if (currentJobId) await supabase.from("simulation_generation_jobs").update({ status: 'partial' }).eq("id", currentJobId);
               break;
             }
-            throw new Error("Não foi possível gerar questões. Tente reduzir a quantidade ou mudar o tema.");
+            throw new Error("Não foi possível gerar questões. A IA retornou um resultado vazio.");
           }
           
           allGenerated = [...allGenerated, ...batchQs];
           setQuestions(allGenerated);
           setPartialCount(allGenerated.length);
           currentTry = 0;
+
+          // Update job progress
+          if (currentJobId) {
+            await supabase.from("simulation_generation_jobs").update({ 
+              generated_questions: allGenerated.length,
+              results: allGenerated as any
+            }).eq("id", currentJobId);
+          }
         } catch (batchError) {
-          console.error(`Error in batch ${batchNum}:`, batchError);
+          console.error(`[Simulados] Erro no lote ${batchNum}:`, batchError);
           if (currentTry < 1) {
             currentTry++;
             setLoadingProgress(`Re-tentando lote ${batchNum}...`);
