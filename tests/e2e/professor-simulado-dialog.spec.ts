@@ -26,11 +26,11 @@ test.describe('Professor Simulado Creation Dialog E2E', () => {
     await page.goto('/professor');
     
     // 3. Click "NOVO SIMULADO"
-    const openBtn = page.getByText(/NOVO SIMULADO/i);
+    const openBtn = page.getByRole('button', { name: /NOVO SIMULADO/i });
     await openBtn.click();
     
     // 4. Validate Dialog is open and at the top
-    const dialog = page.locator('[role="dialog"]');
+    const dialog = page.getByTestId('create-simulado-dialog');
     await expect(dialog).toBeVisible();
     
     const boundingBox = await dialog.boundingBox();
