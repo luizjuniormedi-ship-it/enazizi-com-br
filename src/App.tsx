@@ -164,6 +164,13 @@ const PageLoader = () => {
   return <CinematicPageLoader module={module} />;
 };
 
+const HomeRedirect = () => {
+  const { user, loading } = useAuth();
+  if (loading) return <PageLoader />;
+  if (user) return <Navigate to="/enaflix" replace />;
+  return <Index />;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
