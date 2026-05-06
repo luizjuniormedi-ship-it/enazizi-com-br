@@ -167,8 +167,14 @@ const ProfessorDashboard = () => {
     });
   }, []);
 
-  const handleOpenCreate = useCallback(() => setShowCreate(true), []);
-  const handleCloseCreate = useCallback((open: boolean) => setShowCreate(open), []);
+  const handleOpenCreate = useCallback(() => {
+    console.log("[Professor] abrir criar simulado");
+    setShowCreate(true);
+  }, []);
+  const handleCloseCreate = useCallback((open: boolean) => {
+    console.log("[Professor] onOpenChange", open);
+    setShowCreate(open);
+  }, []);
 
   // Totais memoizados — só recalculam quando a lista muda
   const totals = useMemo(() => {
@@ -337,17 +343,13 @@ const ProfessorDashboard = () => {
         </Tabs>
       </main>
 
-      {/* Lazy: dialogs só carregam código quando ativados */}
-      {showCreate && (
-        <Suspense fallback={null}>
-          <CreateSimuladoDialog
-            open={showCreate}
-            onOpenChange={handleCloseCreate}
-            callAPI={callAPI}
-            onCreated={loadSimulados}
-          />
-        </Suspense>
-      )}
+      {/* Diálogos controlados pelo estado do pai */}
+      <CreateSimuladoDialog
+        open={showCreate}
+        onOpenChange={handleCloseCreate}
+        callAPI={callAPI}
+        onCreated={loadSimulados}
+      />
 
       {resultsDialog.open && (
         <Suspense fallback={null}>

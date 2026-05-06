@@ -31,7 +31,13 @@ interface Props {
 const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   open, onOpenChange, callAPI, onCreated,
 }: Props) {
+  console.log("[CreateSimuladoDialog] render", { open });
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
+  
+  // Se o diálogo não estiver aberto, não renderizamos nada além do próprio wrapper do Dialog
+  // Isso garante que o estado interno do formulário não cause efeitos colaterais enquanto fechado
+  if (!open) return null;
+
   const isMobile = useIsMobile();
   
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -92,7 +98,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
         ref={dialogRef}
         data-testid="create-simulado-dialog"
         className={`
-          fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none
+          fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none z-[110]
           ${isMobile ? "top-2 w-[calc(100vw-1rem)] max-h-[96vh]" : "top-6 w-[calc(100vw-2rem)] max-w-4xl max-h-[92vh]"}
         `}
         style={!isMobile ? {
