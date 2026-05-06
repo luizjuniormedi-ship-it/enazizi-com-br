@@ -32,7 +32,7 @@ import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import SimuladoSetup from "@/components/simulados/SimuladoSetup";
 import type { SimuladoMode } from "@/components/simulados/SimuladoSetup";
