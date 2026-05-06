@@ -351,7 +351,7 @@ export default function EnaflixPage() {
           ) : billboardSlides.length > 0 ? (
             <EnaflixBillboardRotator
               modules={billboardSlides}
-              onNavigate={handleNavigate}
+              onNavigate={(m) => handleNavigate(m, "billboard")}
             />
           ) : null}
 
