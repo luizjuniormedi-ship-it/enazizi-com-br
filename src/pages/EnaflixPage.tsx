@@ -524,7 +524,15 @@ export default function EnaflixPage() {
                         accent={fc.urgency === "alta" ? "destructive" : "warning"}
                         ctaText="Revisar Agora"
                         footerInfo="FSRS v5.0"
-                        onClick={() => navigate("/dashboard/flashcards")}
+                        onClick={() => {
+                          void emitShadowEvent({
+                            module: "enaflix",
+                            event: "watch_started",
+                            topic: "flashcards_due",
+                            extra: { action: "cta_click", count: fc.totalDue }
+                          });
+                          navigate("/dashboard/flashcards");
+                        }}
                       />
                       {/* Sugerir mnemônicos como alternativa de reforço */}
                       <EnaflixDynamicCard
