@@ -531,11 +531,22 @@ const StudentSimulados = () => {
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
                   Pendentes ({pending.length})
                 </h2>
-                {pending.map((item) => (
-                  <Card key={item.result.id} className="border-amber-500/30 hover:border-amber-500/60 transition-colors">
+                {pending.map((item) => {
+                  const isExpired = item.simulado.end_at && new Date(item.simulado.end_at) < new Date();
+                  return (
+                  <Card key={item.result.id} className={`border-amber-500/30 transition-colors ${isExpired ? 'opacity-60 grayscale' : 'hover:border-amber-500/60'}`}>
                     <CardContent className="p-4 flex items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold">{item.simulado.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{item.simulado.title}</h3>
+                          {isExpired && <Badge variant="destructive" className="text-[9px] uppercase">Expirado</Badge>}
+                        </div>
+                        {item.simulado.end_at && (
+                          <p className={`text-[10px] font-bold uppercase mt-1 ${isExpired ? 'text-destructive' : 'text-amber-600'}`}>
+                            {isExpired ? 'Prazo encerrado em: ' : 'Prazo até: '}
+                            {new Date(item.simulado.end_at).toLocaleString('pt-BR')}
+                          </p>
+                        )}
                         {item.simulado.description && (
                           <p className="text-sm text-muted-foreground line-clamp-1">{item.simulado.description}</p>
                         )}
