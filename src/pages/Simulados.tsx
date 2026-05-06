@@ -290,6 +290,11 @@ const Simulados = () => {
   };
 
   const handleStart = async (config: any) => {
+    console.log("[Simulados] iniciar clicado", config);
+    const questionCount = config.count || 10;
+    console.log("[Simulados] quantidade", questionCount);
+    console.log("[Simulados] modo", questionCount >= 50 ? "job" : "sync");
+
     configRef.current = config;
     setMode(config.mode || "estudo");
     setSelectedTopics(config.topics || ["Clínica Médica"]);
