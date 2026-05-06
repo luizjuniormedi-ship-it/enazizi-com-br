@@ -262,8 +262,18 @@ export default function EnaflixPage() {
   }, [continueModules, recommendedModules, visibleModules, studyNext]);
 
   const handleNavigate = useCallback(
-    (m: EnaflixModule) => {
+    (m: EnaflixModule, source: string = "category_row") => {
       recordVisit(m.id);
+      void emitShadowEvent({
+        module: "enaflix",
+        event: "watch_started",
+        topic: m.id,
+        extra: {
+          action: "card_click",
+          source,
+          destination: m.route
+        }
+      });
     },
     [recordVisit],
   );
