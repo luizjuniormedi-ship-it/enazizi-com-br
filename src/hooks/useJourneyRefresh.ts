@@ -33,7 +33,7 @@ export function useJourneyRefresh() {
 
   const invalidateAll = () => {
     JOURNEY_QUERY_KEYS.forEach((key) => {
-      queryClient.invalidateQueries({ queryKey: key });
+      queryClient.invalidateQueries({ queryKey: key, exact: false });
     });
   };
 

@@ -112,13 +112,13 @@ export const useDashboardData = () => {
         ]);
 
         // Use coreData for shared data
-        const practiceAttempts = cd.practiceAttempts;
+        const practiceAttempts = cd.practiceAttempts || [];
         const todayStr = new Date().toISOString().split("T")[0];
         const questionsToday = practiceAttempts.filter(a => a.created_at?.startsWith(todayStr)).length;
         const practiceCorrect = practiceAttempts.filter(a => a.correct).length;
         const practiceTotal = practiceAttempts.length;
 
-        const examData = cd.examSessions;
+        const examData = cd.examSessions || [];
         const examQuestionsTotal = examData.reduce((sum, e) => sum + (e.total_questions || 0), 0);
         const examCorrectTotal = examData.reduce((sum, e) => {
           const total = e.total_questions || 0;
@@ -137,7 +137,7 @@ export const useDashboardData = () => {
         const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
         const accuracy = questionsAnswered > 0 ? Math.min(Math.round((totalCorrect / questionsAnswered) * 100), 100) : 0;
 
-        const pendingRevisoes = cd.revisoes.filter(r => {
+        const pendingRevisoes = (cd.revisoes || []).filter(r => {
           if (r.status !== "pendente") return false;
           return r.data_revisao <= todayStr;
         }).length;
@@ -160,7 +160,7 @@ export const useDashboardData = () => {
           globalQuestions: globalQuestRes.count || 0,
           questionsCreated: questionsCreatedRes.count || 0,
           clinicalSimulations: totalClinical,
-          anamnesisCompleted: cd.anamnesisResults.length,
+          anamnesisCompleted: (cd.anamnesisResults || []).length,
           summariesCreated: summariesRes.count || 0,
           chroniclesCompleted: (chroniclesRes.data || []).filter((c: any) => c.agent_type === "medical-chronicle").length,
           imageQuizAttempts: imageQuizRes.count || 0,
@@ -213,8 +213,9 @@ export const useDashboardData = () => {
 
         // [planner-unification-final] daysUntilExam vem de profiles.exam_date (coreData).
         let daysUntilExam: number | null = null;
-        if (cd.profile.exam_date) {
-          const diff = new Date(cd.profile.exam_date).getTime() - Date.now();
+        const examDateVal = cd.profile?.exam_date;
+        if (examDateVal) {
+          const diff = new Date(examDateVal).getTime() - Date.now();
           if (diff > 0) daysUntilExam = Math.ceil(diff / (1000 * 60 * 60 * 24));
         }
 
@@ -254,9 +255,9 @@ export const useDashboardData = () => {
         const result = {
           stats,
           metrics,
-          displayName: cd.profile.display_name,
-          hasCompletedDiagnostic: cd.profile.has_completed_diagnostic,
-          targetExams: cd.profile.target_exams,
+          displayName: cd.profile?.display_name,
+          hasCompletedDiagnostic: cd.profile?.has_completed_diagnostic,
+          targetExams: cd.profile?.target_exams,
         };
 
         // Write-through: persist snapshot for next fast-path
@@ -283,8 +284,9 @@ export const useDashboardData = () => {
       }
     },
     enabled: !!user && !!coreData,
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 1,
   });
 };

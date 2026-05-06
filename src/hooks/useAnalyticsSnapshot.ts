@@ -67,8 +67,9 @@ export function useAnalyticsSnapshot() {
     queryKey: ["analytics-snapshot", user?.id],
     queryFn: () => fetchSnapshot(user!.id),
     enabled: !!user,
-    staleTime: 60_000,
-    gcTime: 5 * 60_000,
-    refetchOnWindowFocus: true,
+    staleTime: 5 * 60_000,
+    gcTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

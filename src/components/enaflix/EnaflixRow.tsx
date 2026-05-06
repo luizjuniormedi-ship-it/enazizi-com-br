@@ -1,4 +1,4 @@
-import { ReactNode, useRef } from "react";
+import { ReactNode, useRef, memo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -8,7 +8,7 @@ interface Props {
   className?: string;
 }
 
-export function EnaflixRow({ title, children, className }: Props) {
+function EnaflixRowBase({ title, children, className }: Props) {
   const rowRef = useRef<HTMLDivElement>(null);
 
   const scroll = (direction: "left" | "right") => {
@@ -50,3 +50,4 @@ export function EnaflixRow({ title, children, className }: Props) {
     </div>
   );
 }
+export const EnaflixRow = memo(EnaflixRowBase);

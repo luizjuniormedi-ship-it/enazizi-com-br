@@ -415,6 +415,11 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         <SimuladoHistory userId={userId} onRetryErrors={onRetryErrors} />
       ) : (
         <div className="glass-card p-6 space-y-6" data-testid="generation-modal">
+          <button 
+            data-testid="close-modal-btn" 
+            className="hidden"
+            onClick={() => setTab("novo")} 
+          />
           {/* Mode toggle */}
           <div>
             <label className="text-sm font-semibold mb-3 block">Modo do Simulado</label>

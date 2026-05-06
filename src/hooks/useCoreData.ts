@@ -34,6 +34,7 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
   const profileRes = await supabase.from("profiles")
     .select("display_name, has_completed_diagnostic, target_exams, target_exam, exam_date, last_study_plan_reset_at")
     .eq("user_id", userId).maybeSingle();
+  
   const ep = profileRes.data as any;
   const resetAt = ep?.last_study_plan_reset_at || null;
 
@@ -131,8 +132,9 @@ export function useCoreData() {
     queryKey: ["core-data", user?.id],
     queryFn: () => fetchCoreData(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 min cache
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

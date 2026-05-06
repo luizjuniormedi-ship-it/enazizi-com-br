@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, lazy, Suspense, useMemo, memo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,7 +40,8 @@ const Dashboard = () => {
   const { data: dashData, isLoading: dashLoading, error: dashError } = useDashboardData();
   const { data: studyNext, isLoading: missionLoading, error: missionError, refresh: refreshStudyNext } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading, error: snapError, refetch: refreshSnapshot } = useAnalyticsSnapshot();
-  const { recentIds } = useEnaflixUsage();
+  const enaflixUsage = useEnaflixUsage();
+  const recentIds = enaflixUsage.recentIds;
 
   const continueModules = useMemo(() => {
     return recentIds
@@ -402,4 +403,4 @@ const LocalSectionSkeleton = () => (
   </div>
 );
 
-export default Dashboard;
+export default memo(Dashboard);

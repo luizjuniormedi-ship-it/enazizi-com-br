@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRefreshUserState } from "@/hooks/useRefreshUserState";
 import { completeStudyAction } from "@/lib/completeStudyAction";
@@ -662,4 +662,4 @@ const Simulados = () => {
   );
 };
 
-export default Simulados;
+export default memo(Simulados);
