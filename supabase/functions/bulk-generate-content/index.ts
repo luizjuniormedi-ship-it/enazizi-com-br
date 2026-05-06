@@ -190,8 +190,8 @@ REGRAS:
   try {
     const response = await aiFetch({
       model: "openai/gpt-5-mini",
-      timeoutMs: 80000, // Reduzido de 120s para 80s para falhar mais rápido se travado
-      maxRetries: 1,
+      timeoutMs: 55000,
+      maxRetries: 0,
       messages: [
         { role: "system", content: "Professor de medicina. Responda APENAS JSON puro em PT-BR. Sem markdown." },
         { role: "user", content: prompt },
