@@ -93,7 +93,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
         ref={dialogRef}
         data-testid="create-simulado-dialog"
         className={`
-          fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none
+          fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none z-[110]
           ${isMobile ? "top-2 w-[calc(100vw-1rem)] max-h-[96vh]" : "top-6 w-[calc(100vw-2rem)] max-w-4xl max-h-[92vh]"}
         `}
         style={!isMobile ? {
