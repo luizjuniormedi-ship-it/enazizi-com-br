@@ -9,7 +9,9 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BarChart3, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { BarChart3, ChevronDown, ChevronUp, Loader2, Info } from "lucide-react";
+import SimuladoReportInsights from "./SimuladoReportInsights";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export interface ResultsDialogState {
   open: boolean;
