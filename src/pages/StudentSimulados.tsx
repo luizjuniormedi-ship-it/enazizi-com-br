@@ -41,6 +41,12 @@ interface Simulado {
   time_limit_minutes: number;
   questions_json: any[];
   professor_id: string;
+  start_at: string | null;
+  end_at: string | null;
+  max_attempts: number;
+  feedback_policy: string;
+  allow_retake: boolean;
+  feedback_released: boolean;
 }
 
 interface AssignedSimulado {
@@ -145,7 +151,8 @@ const StudentSimulados = () => {
         .from("teacher_simulados")
         .select("*")
         .in("id", simIds)
-        .in("status", ["published"]);
+        .in("status", ["published", "scheduled"])
+        .lte("start_at", new Date().toISOString());
 
 
       if (sErr) throw sErr;
@@ -530,11 +537,22 @@ const StudentSimulados = () => {
                   <AlertTriangle className="h-5 w-5 text-amber-500" />
                   Pendentes ({pending.length})
                 </h2>
-                {pending.map((item) => (
-                  <Card key={item.result.id} className="border-amber-500/30 hover:border-amber-500/60 transition-colors">
+                {pending.map((item) => {
+                  const isExpired = item.simulado.end_at && new Date(item.simulado.end_at) < new Date();
+                  return (
+                  <Card key={item.result.id} className={`border-amber-500/30 transition-colors ${isExpired ? 'opacity-60 grayscale' : 'hover:border-amber-500/60'}`}>
                     <CardContent className="p-4 flex items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold">{item.simulado.title}</h3>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{item.simulado.title}</h3>
+                          {isExpired && <Badge variant="destructive" className="text-[9px] uppercase">Expirado</Badge>}
+                        </div>
+                        {item.simulado.end_at && (
+                          <p className={`text-[10px] font-bold uppercase mt-1 ${isExpired ? 'text-destructive' : 'text-amber-600'}`}>
+                            {isExpired ? 'Prazo encerrado em: ' : 'Prazo até: '}
+                            {new Date(item.simulado.end_at).toLocaleString('pt-BR')}
+                          </p>
+                        )}
                         {item.simulado.description && (
                           <p className="text-sm text-muted-foreground line-clamp-1">{item.simulado.description}</p>
                         )}
@@ -548,13 +566,14 @@ const StudentSimulados = () => {
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.simulado.time_limit_minutes} min</span>
                         </div>
                       </div>
-                      <Button onClick={() => startQuiz(item)} className="gap-2 shrink-0">
+                      <Button onClick={() => startQuiz(item)} className="gap-2 shrink-0" disabled={isExpired && item.result.status !== "in_progress"}>
                         <Play className="h-4 w-4" />
                         {item.result.status === "in_progress" ? "Continuar" : "Iniciar"}
                       </Button>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -590,28 +609,41 @@ const StudentSimulados = () => {
                             {((item.result.answers_json || []) as any[]).filter((a: any) => a.is_correct).length}/{item.simulado.total_questions} acertos
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
-                          onClick={() => {
-                            const answersArr = (item.result.answers_json || []) as any[];
-                            const correctCount = answersArr.filter((a: any) => a.is_correct).length;
-                            const total = item.simulado.total_questions;
-                            const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-                            setResultData({
-                              score,
-                              total,
-                              correct: correctCount,
-                              details: answersArr,
-                            });
-                            setCurrent(item);
-                            setPhase("result");
-                          }}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Ver Gabarito
-                        </Button>
+                        {(() => {
+                          const canSeeFeedback = 
+                            item.simulado.feedback_policy === 'immediate' ||
+                            (item.simulado.feedback_policy === 'after_deadline' && item.simulado.end_at && new Date(item.simulado.end_at) < new Date()) ||
+                            (item.simulado.feedback_policy === 'manual' && item.simulado.feedback_released);
+                          
+                          if (!canSeeFeedback) {
+                            return <Badge variant="secondary" className="text-[9px] uppercase">Gabarito em breve</Badge>;
+                          }
+
+                          return (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => {
+                              const answersArr = (item.result.answers_json || []) as any[];
+                              const correctCount = answersArr.filter((a: any) => a.is_correct).length;
+                              const total = item.simulado.total_questions;
+                              const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+                              setResultData({
+                                score,
+                                total,
+                                correct: correctCount,
+                                details: answersArr,
+                              });
+                              setCurrent(item);
+                              setPhase("result");
+                            }}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Ver Gabarito
+                          </Button>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>

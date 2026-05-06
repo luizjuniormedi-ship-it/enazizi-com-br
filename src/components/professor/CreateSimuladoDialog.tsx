@@ -7,13 +7,13 @@ import {
 } from "@/components/ui/dialog";
 import { useCreateSimuladoForm } from "./useCreateSimuladoForm";
 import SimuladoBasicForm from "./SimuladoBasicForm";
-import SimuladoStudentPicker from "./SimuladoStudentPicker";
+import SimuladoAssignmentManager from "./SimuladoAssignmentManager";
 import SimuladoTopicsPicker from "./SimuladoTopicsPicker";
 import SimuladoDifficultyMix from "./SimuladoDifficultyMix";
 import SimuladoManualForm from "./SimuladoManualForm";
 import SimuladoManualQuantityFields from "./SimuladoManualQuantityFields";
 import SimuladoQuestionsPreview from "./SimuladoQuestionsPreview";
-import SimuladoSchedule from "./SimuladoSchedule";
+import SimuladoSchedulingSettings from "./SimuladoSchedulingSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type CallAPI = (body: Record<string, unknown>) => Promise<any>;
@@ -131,7 +131,9 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               onDescriptionChange={f.setDescription}
             />
 
-            <SimuladoStudentPicker
+            <SimuladoAssignmentManager
+              assignmentMode={f.assignmentMode}
+              onAssignmentModeChange={f.setAssignmentMode}
               faculdadeFilter={f.faculdadeFilter}
               periodoFilter={f.periodoFilter}
               onFaculdadeChange={f.setFaculdadeFilter}
@@ -139,6 +141,8 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               previewStudents={f.previewStudents}
               previewLoading={f.previewLoading}
               selectedStudentIds={f.selectedStudentIds}
+              selectedClassIds={f.selectedClassIds}
+              onSelectedClassIdsChange={f.setSelectedClassIds}
               studentSearch={f.studentSearch}
               searchResults={f.searchResults}
               searchingStudents={f.searchingStudents}
@@ -260,11 +264,19 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               onRemoveManual={f.removeManualQuestion}
             />
 
-            <SimuladoSchedule
+            <SimuladoSchedulingSettings
               scheduledAt={f.scheduledAt}
-              autoAssign={f.autoAssign}
               onScheduledAtChange={f.setScheduledAt}
-              onAutoAssignChange={f.setAutoAssign}
+              endAt={f.endAt}
+              onEndAtChange={f.setEndAt}
+              timeLimit={f.timeLimit}
+              onTimeLimitChange={f.setTimeLimit}
+              maxAttempts={f.maxAttempts}
+              onMaxAttemptsChange={f.setMaxAttempts}
+              feedbackPolicy={f.feedbackPolicy}
+              onFeedbackPolicyChange={f.setFeedbackPolicy}
+              allowRetake={f.allowRetake}
+              onAllowRetakeChange={f.setAllowRetake}
             />
           </div>
 

@@ -39,6 +39,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   const [difficulty, setDifficulty] = useState("misto");
   const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 40, dificil: 40 });
   const [scheduledAt, setScheduledAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+  const [maxAttempts, setMaxAttempts] = useState("1");
+  const [feedbackPolicy, setFeedbackPolicy] = useState<"immediate" | "after_deadline" | "manual">("immediate");
+  const [allowRetake, setAllowRetake] = useState(false);
   const [autoAssign, setAutoAssign] = useState(true);
   const [examBoard, setExamBoard] = useState("all");
 
@@ -61,6 +65,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   const [studentSearch, setStudentSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchingStudents, setSearchingStudents] = useState(false);
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+  const [assignmentMode, setAssignmentMode] = useState<"filter" | "classes" | "manual" | "all">("filter");
 
   // UI auxiliar
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
@@ -532,8 +538,14 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         total_questions: questions.length,
         time_limit_minutes: parseInt(timeLimit),
         questions_json: questions,
-        student_ids: selectedStudentIds.length > 0 ? selectedStudentIds : null,
+        student_ids: assignmentMode === "manual" ? selectedStudentIds : null,
+        class_ids: assignmentMode === "classes" ? selectedClassIds : null,
+        assignment_mode: assignmentMode,
         scheduled_at: scheduledAt || null,
+        end_at: endAt || null,
+        max_attempts: parseInt(maxAttempts),
+        feedback_policy: feedbackPolicy,
+        allow_retake: allowRetake,
         auto_assign: autoAssign,
         exam_board: examBoard !== "all" ? examBoard : null,
       });
@@ -583,6 +595,9 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     previewStudents, previewLoading, selectedStudentIds, studentSearch, setStudentSearch,
     searchResults, searchingStudents,
     expandedQuestion, setExpandedQuestion, topicDistribution, useDistribution,
+    selectedClassIds, setSelectedClassIds, assignmentMode, setAssignmentMode,
+    endAt, setEndAt, maxAttempts, setMaxAttempts, feedbackPolicy, setFeedbackPolicy,
+    allowRetake, setAllowRetake,
 
     // derived
     allQs, target, deficit, groupedBlocks,

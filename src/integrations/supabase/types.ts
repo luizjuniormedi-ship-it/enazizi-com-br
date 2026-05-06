@@ -12722,6 +12722,45 @@ export type Database = {
           },
         ]
       }
+      notification_queue: {
+        Row: {
+          created_at: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          priority: number | null
+          sent_at: string | null
+          status: string | null
+          title: string
+          type: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          priority?: number | null
+          sent_at?: string | null
+          status?: string | null
+          title: string
+          type: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          priority?: number | null
+          sent_at?: string | null
+          status?: string | null
+          title?: string
+          type?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       official_exam_files: {
         Row: {
           checksum_sha256: string | null
@@ -17034,6 +17073,44 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_simulado_assignments: {
+        Row: {
+          assigned_at: string | null
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          simulado_id: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          simulado_id?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          assigned_at?: string | null
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          simulado_id?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_simulado_assignments_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_simulados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_simulado_results: {
         Row: {
           answers_json: Json | null
@@ -17083,15 +17160,22 @@ export type Database = {
       }
       teacher_simulados: {
         Row: {
+          allow_retake: boolean | null
           auto_assign: boolean | null
           created_at: string
           description: string | null
+          end_at: string | null
+          exam_board: string | null
           faculdade_filter: string | null
+          feedback_policy: string | null
+          feedback_released: boolean | null
           id: string
+          max_attempts: number | null
           periodo_filter: number | null
           professor_id: string
           questions_json: Json
           scheduled_at: string | null
+          start_at: string | null
           status: string
           time_limit_minutes: number
           title: string
@@ -17100,15 +17184,22 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_retake?: boolean | null
           auto_assign?: boolean | null
           created_at?: string
           description?: string | null
+          end_at?: string | null
+          exam_board?: string | null
           faculdade_filter?: string | null
+          feedback_policy?: string | null
+          feedback_released?: boolean | null
           id?: string
+          max_attempts?: number | null
           periodo_filter?: number | null
           professor_id: string
           questions_json?: Json
           scheduled_at?: string | null
+          start_at?: string | null
           status?: string
           time_limit_minutes?: number
           title?: string
@@ -17117,15 +17208,22 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_retake?: boolean | null
           auto_assign?: boolean | null
           created_at?: string
           description?: string | null
+          end_at?: string | null
+          exam_board?: string | null
           faculdade_filter?: string | null
+          feedback_policy?: string | null
+          feedback_released?: boolean | null
           id?: string
+          max_attempts?: number | null
           periodo_filter?: number | null
           professor_id?: string
           questions_json?: Json
           scheduled_at?: string | null
+          start_at?: string | null
           status?: string
           time_limit_minutes?: number
           title?: string

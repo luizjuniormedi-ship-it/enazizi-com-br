@@ -1,0 +1,1 @@
+ALTER TABLE public.teacher_simulados ADD COLUMN IF NOT EXISTS feedback_released BOOLEAN DEFAULT false;
