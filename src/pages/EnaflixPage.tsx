@@ -340,8 +340,8 @@ export default function EnaflixPage() {
             />
           ) : null}
 
-          {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 5 */}
-          <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
+          {/* Fileiras emergindo do gradiente do billboard — DINÂMICAS & INTELIGENTES */}
+          <div className="relative z-10 -mt-20 sm:-mt-28 space-y-12 sm:space-y-16 pb-24">
             {/* Hub Inteligente (Missão + Maestria) */}
             <div className="px-4 sm:px-8 lg:px-14">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -489,7 +489,7 @@ export default function EnaflixPage() {
                   rows.push(
                     <EnaflixSectionRow
                       key="recuperar-erros"
-                      title="Erros Recentes"
+                      title="Laboratório de Erros"
                       subtitle={`Focar em ${weakTopics} temas com queda de performance detectada pela IA`}
                       modules={recoveryModules}
                       onNavigate={handleNavigate}
@@ -506,7 +506,7 @@ export default function EnaflixPage() {
                     <EnaflixSectionRow
                       key="enare-high-yield"
                       title="Mais cobrados no ENARE"
-                      subtitle="Estratégia pura: os temas que garantem sua aprovação"
+                      subtitle="Estratégia pura: os temas que garantem sua aprovação nas grandes bancas"
                       modules={enareModules}
                       onNavigate={handleNavigate}
                     />
