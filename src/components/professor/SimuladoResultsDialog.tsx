@@ -234,6 +234,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
             })}
           </div>
         )}
+      </div>
       </DialogContent>
     </Dialog>
   );
