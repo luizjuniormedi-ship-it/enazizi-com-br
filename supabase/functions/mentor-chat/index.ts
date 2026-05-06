@@ -78,6 +78,9 @@ Profundidade: ${session_memory.profundidade_resposta || "aprofundado"}
       model: "openai/gpt-5",
       messages: [{ role: "system", content: systemPrompt }, ...messages],
       stream: true,
+      maxTokens: 8192,
+      timeoutMs: 55000,
+      maxRetries: 0,
     });
     const elapsed = Date.now() - startMs;
 
