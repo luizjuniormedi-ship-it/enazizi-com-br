@@ -399,25 +399,26 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
 
       // Try cache (with difficulty partitioning)
       let allCached: any[] = [];
+      const hasSubtopicFilter = gc?.subtopic && String(gc.subtopic).trim().length > 0;
+      
+      // Resolve topics for cache filtering
+      const resolvedTopics = Array.isArray(gc?.topic) 
+        ? gc.topic 
+        : (typeof gc?.topic === "string" ? gc.topic.split(",").map((t: string) => t.trim()) : []);
+      
+      const matchedTopics = resolvedTopics.length > 0 ? resolvedTopics : HIGH_YIELD_KEYS.filter(k => (lastMessage?.content || "").toLowerCase().includes(k.toLowerCase()));
+
       if (!hasSubtopicFilter && matchedTopics.length > 0) {
         const topicFilters = matchedTopics.map(t => `topic.ilike.%${t}%`).join(",");
-        const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
-          sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(50),
-          sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(30),
-        ]);
-        allCached = [...(cachedBank || []), ...(cachedReal || [])];
-
-        // Dedup
-        if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
-          const prevKeys = new Set(avoidStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
-          allCached = allCached.filter((q: any) => !prevKeys.has(String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+        try {
+          const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
+            sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(50),
+            sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(30),
+          ]);
+          allCached = [...(cachedBank || []), ...(cachedReal || [])];
+        } catch (cacheErr) {
+          console.error("[CACHE_ERROR] Failed to fetch from cache tables:", cacheErr);
         }
-        // Filter English + image refs
-        allCached = allCached.filter((q: any) => {
-          const stmt = String(q.statement || "");
-          return !IMAGE_REF_PATTERN.test(stmt) && !ENGLISH_PATTERN.test(stmt);
-        });
-      }
 
       // Partition cache by difficulty
       const normDiff = (q: any): string => {
