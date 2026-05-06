@@ -597,7 +597,15 @@ export default function EnaflixPage() {
                           accent={hy.userPerformance < 60 ? "destructive" : "info"}
                           ctaText="Treinar Questões"
                           footerInfo="CME Performance"
-                          onClick={() => navigate("/dashboard/simulados")}
+                          onClick={() => {
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: "high_yield_topic",
+                              extra: { action: "cta_click", title: hy.topic }
+                            });
+                            navigate("/dashboard/simulados");
+                          }}
                         />
                       ))}
                     </EnaflixRow>
