@@ -1,0 +1,1 @@
+ALTER TABLE public.teacher_simulado_assignments ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'::jsonb;

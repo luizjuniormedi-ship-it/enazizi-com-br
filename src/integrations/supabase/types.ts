@@ -17078,6 +17078,7 @@ export type Database = {
           assigned_at: string | null
           created_at: string | null
           id: string
+          metadata: Json | null
           simulado_id: string | null
           target_id: string | null
           target_type: string
@@ -17086,6 +17087,7 @@ export type Database = {
           assigned_at?: string | null
           created_at?: string | null
           id?: string
+          metadata?: Json | null
           simulado_id?: string | null
           target_id?: string | null
           target_type: string
@@ -17094,6 +17096,7 @@ export type Database = {
           assigned_at?: string | null
           created_at?: string | null
           id?: string
+          metadata?: Json | null
           simulado_id?: string | null
           target_id?: string | null
           target_type?: string
