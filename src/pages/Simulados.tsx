@@ -242,6 +242,23 @@ const Simulados = () => {
     });
   };
 
+  const handleCancelJob = async (jobId: string) => {
+    try {
+      await supabase
+        .from("simulation_generation_jobs")
+        .update({ status: 'failed', error_message: 'cancelled_by_user' })
+        .eq("id", jobId);
+      
+      setActiveJobs(prev => prev.filter(j => j.id !== jobId));
+      toast({
+        title: "Geração cancelada",
+        description: "A geração do simulado foi interrompida com sucesso.",
+      });
+    } catch (e) {
+      console.error("Error cancelling job:", e);
+    }
+  };
+
   const examStateRef = useRef<any>(null);
 
   const getExamState = useCallback(() => {
@@ -531,14 +548,24 @@ const Simulados = () => {
                           <Clock className="h-3 w-3" />
                           {new Date(job.created_at).toLocaleTimeString()}
                         </div>
-                        <Button 
-                          size="sm" 
-                          variant="secondary" 
-                          className="h-8 text-[10px] font-bold uppercase"
-                          onClick={() => handleResumeJob(job)}
-                        >
-                          Continuar
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-destructive"
+                            onClick={() => handleCancelJob(job.id)}
+                          >
+                            Cancelar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="secondary" 
+                            className="h-8 text-[10px] font-bold uppercase"
+                            onClick={() => handleResumeJob(job)}
+                          >
+                            Retomar
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
