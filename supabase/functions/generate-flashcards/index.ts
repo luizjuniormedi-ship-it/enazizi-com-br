@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
-import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
+import { jsonResponse, errorResponse, getUserIdFromRequest } from "../_shared/assistant-helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,22 +11,14 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const userId = await extractUserId(req);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
+    const userId = await getUserIdFromRequest(req);
     const body = await req.json();
     const messages = body?.messages;
     const userContext = body?.userContext;
 
     if (!Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório e deve ser um array." }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Campo 'messages' é obrigatório e deve ser um array.", 400);
     }
 
     const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
