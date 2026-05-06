@@ -99,7 +99,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
           transform: `translate(calc(-50% + ${position.x}px), ${position.y}px)`,
         } : undefined}
       >
-        <div className="flex flex-col h-full max-h-inherit">
+        <div className="flex flex-col h-full max-h-inherit" data-testid="dialog-container">
           <header 
             onMouseDown={handleMouseDown}
             className={`
