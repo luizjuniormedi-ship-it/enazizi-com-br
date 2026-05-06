@@ -566,7 +566,8 @@ const StudentSimulados = () => {
                       </Button>
                     </CardContent>
                   </Card>
-                ))}
+                  );
+                })}
               </div>
             )}
 
