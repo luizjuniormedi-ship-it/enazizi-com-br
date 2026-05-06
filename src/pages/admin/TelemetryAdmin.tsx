@@ -69,10 +69,11 @@ const TelemetryAdmin = () => {
   const [baseline, setBaseline] = useState<any>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
+  const [optReport, setOptReport] = useState<any>(null);
 
   async function loadAll() {
     setRefreshing(true);
-    const [f, c, t, h, b, a, r] = await Promise.all([
+    const [f, c, t, h, b, a, r, o] = await Promise.all([
       supabase.rpc("admin_telemetry_funnel", { _days: days }),
       supabase.rpc("admin_telemetry_cohorts", { _days: days }),
       supabase.rpc("admin_telemetry_tutor_quality", { _days: days }),
@@ -81,6 +82,7 @@ const TelemetryAdmin = () => {
       supabase.rpc("admin_telemetry_alerts", { _days: days }),
       supabase.from("telemetry_events")
         .select("*").order("timestamp", { ascending: false }).limit(15),
+      supabase.rpc("admin_telemetry_optimization_report", { _days: days }),
     ]);
 
     const funnelRows = (f.data ?? []).map((row: any, i: number) => ({
@@ -96,6 +98,7 @@ const TelemetryAdmin = () => {
     setBaseline(b.data ?? {});
     setAlerts((a.data as unknown as Alert[]) ?? []);
     setRecent(r.data ?? []);
+    setOptReport(o.data ?? {});
     setLoading(false);
     setRefreshing(false);
   }
