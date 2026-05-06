@@ -34,8 +34,8 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-hidden p-0 gap-0 flex flex-col">
-        <header className="shrink-0 border-b px-6 py-4 bg-background">
+      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-hidden p-0 gap-0 flex flex-col items-stretch translate-y-[-50%]">
+        <header className="shrink-0 border-b px-6 py-4 bg-background/50 backdrop-blur-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" /> Criar Simulado
