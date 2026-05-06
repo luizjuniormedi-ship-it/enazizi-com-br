@@ -353,6 +353,17 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
     if (isJsonMode) {
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+      // Resolve authUser BEFORE slot generation (was in TDZ when used inside runBatch)
+      let authUser: any = null;
+      if (authHeader) {
+        try {
+          const { data } = await sb.auth.getUser(authHeader.split(" ")[1]);
+          authUser = data?.user;
+        } catch (e) {
+          console.warn("[AUDIT] Failed to get user from auth header:", e);
+        }
+      }
+
       // Parse requested count from user message or body
       const countFromMsg = lastMessage?.content?.match(/(\d+)/)?.[0];
       const requestedCount = countFromMsg ? Math.min(parseInt(countFromMsg), 20) : Math.min(Number(count ?? 10), 20);
@@ -474,11 +485,11 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             try {
               // USAR DIRETAMENTE OPENAI SE POSSÍVEL OU GARANTIR QUE AI_FETCH NÃO USE LOVABLE SE ESTIVER LENTO
               const resp = await aiFetch({
-                model: "gpt-4o-mini", // Forçar modelo OpenAI direto sem prefixo para garantir
+                model: "openai/gpt-5-mini",
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
                 maxTokens: 16000,
                 timeoutMs: 60000,
-                maxRetries: 1, // Permitir um retry interno
+                maxRetries: 1,
                 userId: authUser?.id
               });
               if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error status ${resp.status}:`, t.slice(0, 200)); return []; }
@@ -601,17 +612,8 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       const elapsedMs = Date.now() - startTime;
       console.log(`[AUDIT] generation_complete | targetExam: "${safeTargetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
 
-      // Async audit insertion
-      let authUser: any = null;
-      if (authHeader) {
-        try {
-          const { data } = await sb.auth.getUser(authHeader.split(" ")[1]);
-          authUser = data?.user;
-        } catch (e) {
-          console.warn("[AUDIT] Failed to get user from auth header:", e);
-        }
-      }
-      
+      // Async audit insertion (authUser already resolved above)
+
       try {
         const { error: auditError } = await sb.from("audit_simulados_bancas").insert({
           banca_key: safeTargetExam || "unknown",
