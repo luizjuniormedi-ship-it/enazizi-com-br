@@ -715,18 +715,17 @@ const Simulados = () => {
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-black text-white">{loadingProgress || "Gerando questões..."}</h2>
-            <p className="text-sm text-white/40 font-medium">
-              {partialCount > 0 
-                ? `${partialCount} questões já estão prontas para você.` 
-                : "IA organizadora preparando seu ambiente de prova."}
-            </p>
-          </div>
-          <div className="w-full space-y-4">
-            <div className="space-y-2">
-              <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
-              <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
+            <div className="text-sm text-white/40 font-medium">
+              {targetCount >= 50 && !cancelGenerationRef.current && (
+                <p className="mb-1 text-primary">Preparando simulado de grande porte...</p>
+              )}
+              <p>
+                {partialCount > 0 
+                  ? `${partialCount} questões já estão prontas para você.` 
+                  : "IA organizadora preparando seu ambiente de prova."}
+              </p>
             </div>
-            
+
             <div className="flex flex-col gap-2">
               {partialCount > 0 && (
                 <Button 
