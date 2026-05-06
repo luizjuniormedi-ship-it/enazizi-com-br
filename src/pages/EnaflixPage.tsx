@@ -25,9 +25,12 @@ import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { useEnaflixUsage } from "@/hooks/useEnaflixUsage";
 import { useStudyNext } from "@/hooks/useStudyNext";
 import { useDashboardData } from "@/hooks/useDashboardData";
-import { Brain, Target, TrendingUp, Award, Sparkles, ChevronRight, Play } from "lucide-react";
+import { Brain, Target, TrendingUp, Award, Sparkles, ChevronRight, Play, Clock, AlertTriangle, ListChecks, Zap } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useEnaflixPersonalizedRows } from "@/hooks/useEnaflixPersonalizedRows";
+import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
+import { EnaflixDynamicCard } from "@/components/enaflix/EnaflixDynamicCard";
 
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
@@ -49,6 +52,7 @@ export default function EnaflixPage() {
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
   const { data: studyNext, isLoading: missionLoading } = useStudyNext();
   const { data: dashData } = useDashboardData();
+  const { data: personalizedRows, isLoading: isLoadingPersonalized } = useEnaflixPersonalizedRows();
 
   const { data: aiLessons, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["enaflix-ai-lessons"],
@@ -442,7 +446,86 @@ export default function EnaflixPage() {
               (() => {
                 const rows: React.ReactNode[] = [];
 
-                // 1. CONTINUAR ESTUDANDO (Higiene de fluxo)
+                // 1. PLANO DE HOJE (Alta Prioridade)
+                if (personalizedRows?.dailyPlan) {
+                  const dp = personalizedRows.dailyPlan;
+                  rows.push(
+                    <EnaflixRow key="daily-plan-row" title="Seu Plano de Hoje">
+                      <EnaflixDynamicCard
+                        title="Plano Diário ACE"
+                        subtitle={dp.tasks.join(", ")}
+                        description={`Próximo passo: ${dp.nextAction}`}
+                        progress={dp.progressPercent}
+                        badge="META DO DIA"
+                        footerInfo={`${dp.estimatedMinutes} min estimados`}
+                        ctaText="Continuar Plano"
+                        accent="primary"
+                        onClick={() => navigate("/dashboard/sessao-estudo")}
+                      />
+                      {/* Sub-cards para o plano se houver muitos temas */}
+                      {dp.tasks.slice(0, 3).map((task, i) => (
+                        <EnaflixDynamicCard
+                          key={`task-${i}`}
+                          title={task}
+                          subtitle="Foco em subtema"
+                          ctaText="Iniciar"
+                          accent="info"
+                          onClick={() => navigate("/dashboard/sessao-estudo")}
+                        />
+                      ))}
+                    </EnaflixRow>
+                  );
+                }
+
+                // 2. FLASHCARDS PENDENTES (Vencidos FSRS)
+                if (personalizedRows?.flashcards) {
+                  const fc = personalizedRows.flashcards;
+                  rows.push(
+                    <EnaflixRow key="flashcards-due-row" title="Flashcards Pendentes">
+                      <EnaflixDynamicCard
+                        title={`${fc.totalDue} Cards para revisar`}
+                        subtitle={fc.mainTopic}
+                        description="Repetição espaçada: o algoritmo detectou risco de esquecimento."
+                        badge="URGENTE"
+                        accent={fc.urgency === "alta" ? "destructive" : "warning"}
+                        ctaText="Revisar Agora"
+                        footerInfo="FSRS v5.0"
+                        onClick={() => navigate("/dashboard/flashcards")}
+                      />
+                      {/* Sugerir mnemônicos como alternativa de reforço */}
+                      <EnaflixDynamicCard
+                        title="Reforço com Mnemônicos"
+                        subtitle="Memorização Visual"
+                        description="Crie associações visuais para temas difíceis."
+                        ctaText="Explorar Studio"
+                        accent="purple"
+                        onClick={() => navigate("/dashboard/mnemonic-studio")}
+                      />
+                    </EnaflixRow>
+                  );
+                }
+
+                // 3. MISSÕES DO TUTOR IA (Guias Pedagógicos)
+                if (personalizedRows?.tutorMissions && personalizedRows.tutorMissions.length > 0) {
+                  rows.push(
+                    <EnaflixRow key="tutor-missions-row" title="Missões do Tutor IA">
+                      {personalizedRows.tutorMissions.map((mission) => (
+                        <EnaflixDynamicCard
+                          key={mission.missionId}
+                          title={mission.missionTitle}
+                          subtitle={mission.criticalTopic}
+                          description={mission.justification}
+                          badge="IA RECOMENDOU"
+                          accent="purple"
+                          ctaText="Começar Missão"
+                          onClick={() => navigate("/dashboard/mentor")}
+                        />
+                      ))}
+                    </EnaflixRow>
+                  );
+                }
+
+                // 4. CONTINUAR ESTUDANDO (Higiene de fluxo)
                 if (continueModules.length > 0 || continueLessons.length > 0) {
                   rows.push(
                     <div key="continue-container" className="space-y-8">
@@ -467,37 +550,27 @@ export default function EnaflixPage() {
                   );
                 }
 
-                // 2. REVISAR HOJE (FSRS & Memória)
-                const pendingReviews = studyNext?.adaptiveState?.pendingReviews ?? 0;
-                if (pendingReviews > 0) {
-                  const reviewModules = visibleModules.filter(m => ["flashcards", "sessao-estudo", "mnemonico"].includes(m.id));
+                // 5. QUESTÕES QUE MAIS CAEM (High Yield)
+                if (personalizedRows?.highYieldTopics && personalizedRows.highYieldTopics.length > 0) {
                   rows.push(
-                    <EnaflixSectionRow
-                      key="revisar-hoje"
-                      title="Revisar Hoje"
-                      subtitle={`${pendingReviews} flashcards e mnemônicos pendentes por repetição espaçada`}
-                      modules={reviewModules}
-                      onNavigate={handleNavigate}
-                    />
+                    <EnaflixRow key="high-yield-row" title="Questões que Mais Caem">
+                      {personalizedRows.highYieldTopics.map((hy, i) => (
+                        <EnaflixDynamicCard
+                          key={`hy-${i}`}
+                          title={hy.topic}
+                          subtitle={`Frequência: ${Math.round(hy.frequencyScore)}% • ${hy.exam}`}
+                          description={`Seu desempenho: ${Math.round(hy.userPerformance)}%`}
+                          badge="HIGH YIELD"
+                          accent={hy.userPerformance < 60 ? "destructive" : "info"}
+                          ctaText="Treinar Questões"
+                          onClick={() => navigate("/dashboard/simulados")}
+                        />
+                      ))}
+                    </EnaflixRow>
                   );
                 }
 
-                // 3. ERROS RECENTES (Recuperação Crítica)
-                const weakTopics = studyNext?.adaptiveState?.weakTopicsCount ?? 0;
-                if (weakTopics > 0) {
-                  const recoveryModules = visibleModules.filter(m => ["banco-erros", "questoes", "mentor"].includes(m.id));
-                  rows.push(
-                    <EnaflixSectionRow
-                      key="recuperar-erros"
-                      title="Laboratório de Erros"
-                      subtitle={`Focar em ${weakTopics} temas com queda de performance detectada pela IA`}
-                      modules={recoveryModules}
-                      onNavigate={handleNavigate}
-                    />
-                  );
-                }
-
-                // 4. MAIS COBRADOS NO ENARE (Estratégico)
+                // 6. MAIS COBRADOS NO ENARE (Estratégico)
                 const enareModules = visibleModules.filter(m => 
                   m.keywords?.some(k => ["enare", "mais-cobrados", "usp"].includes(k)) || m.id === "simulados"
                 );
@@ -505,16 +578,16 @@ export default function EnaflixPage() {
                   rows.push(
                     <EnaflixSectionRow
                       key="enare-high-yield"
-                      title="Mais cobrados no ENARE"
-                      subtitle="Estratégia pura: os temas que garantem sua aprovação nas grandes bancas"
+                      title="Ranking Estratégico ENARE"
+                      subtitle="Os temas que garantem sua aprovação nas grandes bancas"
                       modules={enareModules}
                       onNavigate={handleNavigate}
                     />
                   );
                 }
 
-                // 5. VIDEOAULAS IA (Conteúdo)
-                if (aiLessons && aiLessons.length > 0 && rows.length < 7) {
+                // 7. VIDEOAULAS IA (Conteúdo)
+                if (aiLessons && aiLessons.length > 0 && rows.length < 10) {
                   rows.push(
                     <EnaflixSectionRowVideo
                       key="ai-videoaulas"
@@ -525,7 +598,7 @@ export default function EnaflixPage() {
                   );
                 }
 
-                // 6. SIMULADOS RECOMENDADOS
+                // 8. SIMULADOS RECOMENDADOS
                 const simuladoModules = visibleModules.filter(m => 
                   ["simulados", "diagnostico", "predictor", "prova-pratica"].includes(m.id)
                 );
@@ -541,8 +614,8 @@ export default function EnaflixPage() {
                   );
                 }
 
-                // 7. RECOMENDADOS PELA IA (Exploração)
-                if (recommendedModules.length > 0 && rows.length < 8) {
+                // 9. RECOMENDADOS PELA IA (Exploração)
+                if (recommendedModules.length > 0 && rows.length < 12) {
                   rows.push(
                     <EnaflixSectionRow
                       key="recommended"
@@ -554,7 +627,7 @@ export default function EnaflixPage() {
                   );
                 }
 
-                // 8. CATEGORIAS PADRÃO (Fallback)
+                // 10. CATEGORIAS PADRÃO (Fallback)
                 const rotatable = ENAFLIX_CATEGORIES.filter((c) => {
                   if (c.dynamic) return false;
                   if (c.requires === "admin" && !isAdmin) return false;
@@ -564,7 +637,7 @@ export default function EnaflixPage() {
 
                 rotatable.forEach((cat) => {
                   const items = visibleModules.filter((m) => m.category === cat.id);
-                  if (items.length > 0 && rows.length < 10) {
+                  if (items.length > 0 && rows.length < 15) {
                     rows.push(
                       <EnaflixSectionRow
                         key={cat.id}
