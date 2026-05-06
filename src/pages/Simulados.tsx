@@ -290,6 +290,11 @@ const Simulados = () => {
   };
 
   const handleStart = async (config: any) => {
+    console.log("[Simulados] iniciar clicado", config);
+    const questionCount = config.count || 10;
+    console.log("[Simulados] quantidade", questionCount);
+    console.log("[Simulados] modo", questionCount >= 50 ? "job" : "sync");
+
     configRef.current = config;
     setMode(config.mode || "estudo");
     setSelectedTopics(config.topics || ["Clínica Médica"]);
@@ -362,7 +367,17 @@ const Simulados = () => {
       
       // Para simulados grandes (50 ou 100), criar um job no banco se não estiver retomando
       if (requestedTotal >= 50 && user && !currentJobId) {
-        setLoadingProgress("Registrando tarefa de geração...");
+        console.log("[Simulados] criando job", {
+          user_id: user.id,
+          total_questions: requestedTotal,
+          status: 'pending',
+          config: {
+            topics: config.topics,
+            difficulty: config.difficulty,
+            mode: config.mode,
+            realExamProfile: config.realExamProfile
+          }
+        });
         const { data: job, error: jobError } = await supabase
           .from("simulation_generation_jobs")
           .insert({
@@ -379,10 +394,17 @@ const Simulados = () => {
           .select()
           .single();
         
-        if (jobError) console.error("Erro ao criar job:", jobError);
+        if (jobError) {
+          console.error("Erro ao criar job:", jobError);
+          toast({
+            title: "Erro ao criar job",
+            description: "Não foi possível registrar a tarefa de geração em massa.",
+            variant: "destructive"
+          });
+        }
         else currentJobId = job.id;
       }
-      
+
       const BATCH_SIZE_AI = 5;
       let currentTry = 0;
       
@@ -693,18 +715,23 @@ const Simulados = () => {
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-black text-white">{loadingProgress || "Gerando questões..."}</h2>
-            <p className="text-sm text-white/40 font-medium">
-              {partialCount > 0 
-                ? `${partialCount} questões já estão prontas para você.` 
-                : "IA organizadora preparando seu ambiente de prova."}
-            </p>
+            <div className="text-sm text-white/40 font-medium">
+              {targetCount >= 50 && !cancelGenerationRef.current && (
+                <p className="mb-1 text-primary">Preparando simulado de grande porte...</p>
+              )}
+              <p>
+                {partialCount > 0 
+                  ? `${partialCount} questões já estão prontas para você.` 
+                  : "IA organizadora preparando seu ambiente de prova."}
+              </p>
+            </div>
+
           </div>
           <div className="w-full space-y-4">
             <div className="space-y-2">
               <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
               <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
             </div>
-            
             <div className="flex flex-col gap-2">
               {partialCount > 0 && (
                 <Button 
