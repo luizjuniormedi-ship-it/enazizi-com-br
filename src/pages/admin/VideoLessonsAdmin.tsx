@@ -503,6 +503,7 @@ const VideoLessonsAdmin = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+        </main>
     </div>
   );
 };
