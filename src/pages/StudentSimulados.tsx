@@ -609,28 +609,41 @@ const StudentSimulados = () => {
                             {((item.result.answers_json || []) as any[]).filter((a: any) => a.is_correct).length}/{item.simulado.total_questions} acertos
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5"
-                          onClick={() => {
-                            const answersArr = (item.result.answers_json || []) as any[];
-                            const correctCount = answersArr.filter((a: any) => a.is_correct).length;
-                            const total = item.simulado.total_questions;
-                            const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
-                            setResultData({
-                              score,
-                              total,
-                              correct: correctCount,
-                              details: answersArr,
-                            });
-                            setCurrent(item);
-                            setPhase("result");
-                          }}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          Ver Gabarito
-                        </Button>
+                        {(() => {
+                          const canSeeFeedback = 
+                            item.simulado.feedback_policy === 'immediate' ||
+                            (item.simulado.feedback_policy === 'after_deadline' && item.simulado.end_at && new Date(item.simulado.end_at) < new Date()) ||
+                            (item.simulado.feedback_policy === 'manual' && item.simulado.feedback_released);
+                          
+                          if (!canSeeFeedback) {
+                            return <Badge variant="secondary" className="text-[9px] uppercase">Gabarito em breve</Badge>;
+                          }
+
+                          return (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5"
+                            onClick={() => {
+                              const answersArr = (item.result.answers_json || []) as any[];
+                              const correctCount = answersArr.filter((a: any) => a.is_correct).length;
+                              const total = item.simulado.total_questions;
+                              const score = total > 0 ? Math.round((correctCount / total) * 100) : 0;
+                              setResultData({
+                                score,
+                                total,
+                                correct: correctCount,
+                                details: answersArr,
+                              });
+                              setCurrent(item);
+                              setPhase("result");
+                            }}
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                            Ver Gabarito
+                          </Button>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
