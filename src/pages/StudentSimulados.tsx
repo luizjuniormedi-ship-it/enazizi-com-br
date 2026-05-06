@@ -145,7 +145,8 @@ const StudentSimulados = () => {
         .from("teacher_simulados")
         .select("*")
         .in("id", simIds)
-        .in("status", ["published"]);
+        .in("status", ["published", "scheduled"])
+        .lte("start_at", new Date().toISOString());
 
 
       if (sErr) throw sErr;
