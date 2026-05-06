@@ -726,6 +726,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_cache: {
+        Row: {
+          cost_saved: number | null
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          model: string | null
+          prompt_hash: string
+          prompt_text: string | null
+          provider: string | null
+          response_text: string | null
+          tokens_used: number | null
+        }
+        Insert: {
+          cost_saved?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          model?: string | null
+          prompt_hash: string
+          prompt_text?: string | null
+          provider?: string | null
+          response_text?: string | null
+          tokens_used?: number | null
+        }
+        Update: {
+          cost_saved?: number | null
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          model?: string | null
+          prompt_hash?: string
+          prompt_text?: string | null
+          provider?: string | null
+          response_text?: string | null
+          tokens_used?: number | null
+        }
+        Relationships: []
+      }
       ai_content_audit_logs: {
         Row: {
           action: string
@@ -10029,6 +10071,76 @@ export type Database = {
         }
         Relationships: []
       }
+      incident_acknowledgements: {
+        Row: {
+          alert_id: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          user_id: string | null
+        }
+        Insert: {
+          alert_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          alert_id?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_acknowledgements_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "incident_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incident_alerts: {
+        Row: {
+          alert_channel: string | null
+          assigned_to: string | null
+          event_id: string | null
+          id: string
+          notified_at: string | null
+          resolved_at: string | null
+          status: string | null
+        }
+        Insert: {
+          alert_channel?: string | null
+          assigned_to?: string | null
+          event_id?: string | null
+          id?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          alert_channel?: string | null
+          assigned_to?: string | null
+          event_id?: string | null
+          id?: string
+          notified_at?: string | null
+          resolved_at?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_alerts_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "incident_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_correlations: {
         Row: {
           confidence_score: number | null
@@ -10073,6 +10185,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      incident_events: {
+        Row: {
+          created_at: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          payload: string | null
+          severity: string
+          source: string
+        }
+        Insert: {
+          created_at?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          payload?: string | null
+          severity: string
+          source: string
+        }
+        Update: {
+          created_at?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          payload?: string | null
+          severity?: string
+          source?: string
+        }
+        Relationships: []
       }
       ingestion_log: {
         Row: {
@@ -12898,6 +13040,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pedagogical_insights: {
+        Row: {
+          error_rate: number | null
+          evolution_trend: string | null
+          id: string
+          last_updated_at: string | null
+          predicted_approval_rate: number | null
+          retention_score: number | null
+          topic_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          error_rate?: number | null
+          evolution_trend?: string | null
+          id?: string
+          last_updated_at?: string | null
+          predicted_approval_rate?: number | null
+          retention_score?: number | null
+          topic_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          error_rate?: number | null
+          evolution_trend?: string | null
+          id?: string
+          last_updated_at?: string | null
+          predicted_approval_rate?: number | null
+          retention_score?: number | null
+          topic_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       pedagogical_reviews: {
         Row: {
           adherence_to_guidelines_score: number | null
@@ -15602,6 +15777,39 @@ export type Database = {
           started_at?: string
           status?: string
           urls_tested?: number
+        }
+        Relationships: []
+      }
+      security_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          id: string
+          ip_address: unknown
+          is_anomaly: boolean | null
+          resource: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_anomaly?: boolean | null
+          resource?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          id?: string
+          ip_address?: unknown
+          is_anomaly?: boolean | null
+          resource?: string | null
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -19982,6 +20190,7 @@ export type Database = {
         Args: { f_name: string; u_id: string }
         Returns: boolean
       }
+      check_system_health: { Args: never; Returns: undefined }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
       cleanup_tutor_cache: { Args: never; Returns: undefined }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
