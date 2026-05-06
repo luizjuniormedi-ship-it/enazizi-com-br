@@ -565,7 +565,7 @@ const StudentSimulados = () => {
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{item.simulado.time_limit_minutes} min</span>
                         </div>
                       </div>
-                      <Button onClick={() => startQuiz(item)} className="gap-2 shrink-0">
+                      <Button onClick={() => startQuiz(item)} className="gap-2 shrink-0" disabled={isExpired && item.result.status !== "in_progress"}>
                         <Play className="h-4 w-4" />
                         {item.result.status === "in_progress" ? "Continuar" : "Iniciar"}
                       </Button>
