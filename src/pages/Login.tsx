@@ -57,8 +57,14 @@ const Login = () => {
     flashcards: "—",
   });
   const navigate = useNavigate();
-  const { signIn, resetPassword } = useAuth();
+  const { user, session, loading: authLoading, signIn, resetPassword } = useAuth();
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (session && !authLoading) {
+      navigate("/enaflix", { replace: true });
+    }
+  }, [session, authLoading, navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
