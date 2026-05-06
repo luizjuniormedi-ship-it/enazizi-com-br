@@ -31,7 +31,6 @@ interface Props {
 const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   open, onOpenChange, callAPI, onCreated,
 }: Props) {
-  console.log("[CreateSimuladoDialog] render", { open });
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   
   // Se o diálogo não estiver aberto, não renderizamos nada além do próprio wrapper do Dialog
