@@ -16,7 +16,19 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = await req.json().catch(() => ({}));
+    // Consume and log headers for debug
+    const authHeader = req.headers.get("Authorization");
+    const clientPlatform = req.headers.get("x-client-info");
+    
+    const rawBody = await req.text();
+    let body: any = {};
+    try {
+      body = JSON.parse(rawBody);
+    } catch (e) {
+      console.warn("[question-generator] Failed to parse JSON body:", e);
+      body = {};
+    }
+
     const { 
       messages: rawMessages, 
       userContext, 
@@ -587,7 +599,15 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       console.log(`[AUDIT] generation_complete | targetExam: "${safeTargetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
 
       // Async audit insertion
-      const { data: { user: authUser } } = await sb.auth.getUser(req.headers.get("Authorization")?.split(" ")[1] || "");
+      let authUser: any = null;
+      if (authHeader) {
+        try {
+          const { data } = await sb.auth.getUser(authHeader.split(" ")[1]);
+          authUser = data?.user;
+        } catch (e) {
+          console.warn("[AUDIT] Failed to get user from auth header:", e);
+        }
+      }
       
       try {
         const { error: auditError } = await sb.from("audit_simulados_bancas").insert({
@@ -638,7 +658,13 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         difficulty_distribution: finalDist,
         audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
       };
-      return new Response(JSON.stringify(slotResponse), {
+      return new Response(JSON.stringify({
+        success: true,
+        questions: allQuestions,
+        source: "slot-based",
+        difficulty_distribution: finalDist,
+        audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
