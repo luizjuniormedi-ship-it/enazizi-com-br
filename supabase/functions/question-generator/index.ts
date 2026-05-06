@@ -416,6 +416,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         } catch (cacheErr) {
           console.error("[CACHE_ERROR] Failed to fetch from cache tables:", cacheErr);
         }
+      }
 
       // Partition cache by difficulty
       const normDiff = (q: any): string => {
