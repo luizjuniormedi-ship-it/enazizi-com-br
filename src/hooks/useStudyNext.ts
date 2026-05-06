@@ -62,6 +62,10 @@ async function fetchStudyNext(): Promise<StudyNextResponse> {
   });
 
   if (error) throw new Error(error.message || "Erro ao buscar recomendação");
+  
+  if (data?.data) {
+    return data.data as StudyNextResponse;
+  }
   return data as StudyNextResponse;
 }
 
