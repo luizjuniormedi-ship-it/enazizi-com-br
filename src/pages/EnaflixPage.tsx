@@ -52,6 +52,7 @@ export default function EnaflixPage() {
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
   const { data: studyNext, isLoading: missionLoading } = useStudyNext();
   const { data: dashData } = useDashboardData();
+  const { data: personalizedRows, isLoading: isLoadingPersonalized } = useEnaflixPersonalizedRows();
 
   const { data: aiLessons, isLoading: isLoadingLessons } = useQuery({
     queryKey: ["enaflix-ai-lessons"],
