@@ -265,7 +265,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   };
 
   return (
-    <div ref={ref} className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050508] text-white">
+    <div ref={ref} data-testid="tutor-page" className="relative min-h-screen w-full max-w-full overflow-x-hidden bg-[#050508] text-white">
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 

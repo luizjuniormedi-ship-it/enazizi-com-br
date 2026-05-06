@@ -44,6 +44,7 @@ export function PedagogicalMissionHero({
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
+      data-testid="pedagogical-hero"
       className="relative mx-3 sm:mx-6 mt-3 mb-2 rounded-3xl border border-white/10 bg-gradient-to-br from-primary/10 via-violet-500/5 to-transparent backdrop-blur-2xl shadow-[0_8px_40px_-12px_rgba(99,102,241,0.4)] overflow-hidden"
     >
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/15 via-transparent to-transparent pointer-events-none" />
