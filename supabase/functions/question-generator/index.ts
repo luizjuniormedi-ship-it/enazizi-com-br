@@ -4,6 +4,7 @@ import { logAiUsage } from "../_shared/ai-cache.ts";
 import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection, IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,13 +45,7 @@ serve(async (req) => {
     const bancaInfo = resolveBanca(safeTargetExam);
 
     if (messages.length === 0 && !generationContext) {
-      return new Response(JSON.stringify({ 
-        success: false,
-        error: "INVALID_PAYLOAD", 
-        message: "Campo 'messages' ou 'generationContext' é obrigatório." 
-      }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return errorResponse("Campo 'messages' ou 'generationContext' é obrigatório.", 400);
     }
 
     // Default to streaming unless client explicitly sets stream=false
