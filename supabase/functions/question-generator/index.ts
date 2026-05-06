@@ -612,17 +612,8 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       const elapsedMs = Date.now() - startTime;
       console.log(`[AUDIT] generation_complete | targetExam: "${safeTargetExam}" | totalGenerated: ${allQuestions.length} | totalTime: ${totalTime}s | Audit: ${JSON.stringify(auditAnalysis)}`);
 
-      // Async audit insertion
-      let authUser: any = null;
-      if (authHeader) {
-        try {
-          const { data } = await sb.auth.getUser(authHeader.split(" ")[1]);
-          authUser = data?.user;
-        } catch (e) {
-          console.warn("[AUDIT] Failed to get user from auth header:", e);
-        }
-      }
-      
+      // Async audit insertion (authUser already resolved above)
+
       try {
         const { error: auditError } = await sb.from("audit_simulados_bancas").insert({
           banca_key: safeTargetExam || "unknown",
