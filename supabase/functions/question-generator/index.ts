@@ -472,12 +472,13 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             const needed = Math.min(SAFE_BATCH, target - (batchIdx * SAFE_BATCH));
             if (needed <= 0) return [] as any[];
             try {
+              // USAR DIRETAMENTE OPENAI SE POSSÍVEL OU GARANTIR QUE AI_FETCH NÃO USE LOVABLE SE ESTIVER LENTO
               const resp = await aiFetch({
-                model: "openai/gpt-4o-mini", // Forçar gpt-4o-mini para velocidade e estabilidade
+                model: "gpt-4o-mini", // Forçar modelo OpenAI direto sem prefixo para garantir
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
                 maxTokens: 16000,
                 timeoutMs: 60000,
-                maxRetries: 0,
+                maxRetries: 1, // Permitir um retry interno
                 userId: authUser?.id
               });
               if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error status ${resp.status}:`, t.slice(0, 200)); return []; }
@@ -680,7 +681,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
     let response: Response;
     const startMs = Date.now();
     try {
-      response = await aiFetch({ ...aiFetchOptions, model: "openai/gpt-4o-mini" });
+      response = await aiFetch({ ...aiFetchOptions, model: "gpt-4o-mini" });
     } catch (aiErr) {
       console.error("question-generator aiFetch error:", aiErr);
       const msg = aiErr instanceof Error ? aiErr.message : "Serviço de IA indisponível";
