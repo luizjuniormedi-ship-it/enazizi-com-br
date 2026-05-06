@@ -124,10 +124,13 @@ export default function EnaflixPage() {
   useEffect(() => {
     // Safety valve: don't let the page stay stuck in skeleton mode for more than 5s
     const timer = setTimeout(() => {
-      setForceReady(true);
+      if (isLoading && !forceReady) {
+        setForceReady(true);
+        void emitShadowEvent({ module: "enaflix", event: "watch_abandoned", topic: "loading_timeout_recovery" });
+      }
     }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLoading, forceReady]);
 
   const continueLessons = useMemo(() => {
     if (!aiLessons || !usageLogs) return [];
