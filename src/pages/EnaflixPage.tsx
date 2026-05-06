@@ -342,7 +342,7 @@ export default function EnaflixPage() {
 
           {/* Fileiras emergindo do gradiente do billboard — MÁXIMO 5 */}
           <div className="relative z-10 -mt-20 sm:-mt-28 space-y-10 sm:space-y-12 pb-24">
-            {/* NOVO: Hub Inteligente (Missão + Maestria) */}
+            {/* Hub Inteligente (Missão + Maestria) */}
             <div className="px-4 sm:px-8 lg:px-14">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Card Missão do Dia */}
@@ -357,7 +357,7 @@ export default function EnaflixPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Target className="h-5 w-5 text-primary" />
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">Missão do Dia</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white/90">Sua Missão</h3>
                       </div>
                       {studyNext?.recommendation && (
                         <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/20 border border-primary/30 text-[9px] font-black text-primary">
@@ -442,6 +442,7 @@ export default function EnaflixPage() {
               (() => {
                 const rows: React.ReactNode[] = [];
 
+                // 1. CONTINUAR ESTUDANDO (Higiene de fluxo)
                 if (continueModules.length > 0 || continueLessons.length > 0) {
                   rows.push(
                     <div key="continue-container" className="space-y-8">
@@ -449,7 +450,7 @@ export default function EnaflixPage() {
                         <EnaflixSectionRow
                           key="continue"
                           title="Continuar de onde parou"
-                          subtitle="Módulos e ferramentas que você estava usando"
+                          subtitle="Módulos e ferramentas que você estava usando recentemente"
                           modules={continueModules}
                           onNavigate={handleNavigate}
                         />
@@ -466,64 +467,115 @@ export default function EnaflixPage() {
                   );
                 }
 
-                if (aiLessons && aiLessons.length > 0 && rows.length < 5) {
+                // 2. REVISAR HOJE (FSRS & Memória)
+                const pendingReviews = studyNext?.adaptiveState?.pendingReviews ?? 0;
+                if (pendingReviews > 0) {
+                  const reviewModules = visibleModules.filter(m => ["flashcards", "sessao-estudo", "mnemonico"].includes(m.id));
+                  rows.push(
+                    <EnaflixSectionRow
+                      key="revisar-hoje"
+                      title="Revisar Hoje"
+                      subtitle={`${pendingReviews} flashcards e mnemônicos pendentes por repetição espaçada`}
+                      modules={reviewModules}
+                      onNavigate={handleNavigate}
+                    />
+                  );
+                }
+
+                // 3. ERROS RECENTES (Recuperação Crítica)
+                const weakTopics = studyNext?.adaptiveState?.weakTopicsCount ?? 0;
+                if (weakTopics > 0) {
+                  const recoveryModules = visibleModules.filter(m => ["banco-erros", "questoes", "mentor"].includes(m.id));
+                  rows.push(
+                    <EnaflixSectionRow
+                      key="recuperar-erros"
+                      title="Erros Recentes"
+                      subtitle={`Focar em ${weakTopics} temas com queda de performance detectada pela IA`}
+                      modules={recoveryModules}
+                      onNavigate={handleNavigate}
+                    />
+                  );
+                }
+
+                // 4. MAIS COBRADOS NO ENARE (Estratégico)
+                const enareModules = visibleModules.filter(m => 
+                  m.keywords?.some(k => ["enare", "mais-cobrados", "usp"].includes(k)) || m.id === "simulados"
+                );
+                if (enareModules.length > 0) {
+                  rows.push(
+                    <EnaflixSectionRow
+                      key="enare-high-yield"
+                      title="Mais cobrados no ENARE"
+                      subtitle="Estratégia pura: os temas que garantem sua aprovação"
+                      modules={enareModules}
+                      onNavigate={handleNavigate}
+                    />
+                  );
+                }
+
+                // 5. VIDEOAULAS IA (Conteúdo)
+                if (aiLessons && aiLessons.length > 0 && rows.length < 7) {
                   rows.push(
                     <EnaflixSectionRowVideo
                       key="ai-videoaulas"
                       title="Videoaulas IA (CME)"
-                      subtitle="Conteúdo médico cinematográfico personalizado"
+                      subtitle="Conteúdo médico cinematográfico personalizado para o seu nível"
                       lessons={aiLessons}
                     />
                   );
                 }
 
-                if (recommendedModules.length > 0 && rows.length < 5) {
+                // 6. SIMULADOS RECOMENDADOS
+                const simuladoModules = visibleModules.filter(m => 
+                  ["simulados", "diagnostico", "predictor", "prova-pratica"].includes(m.id)
+                );
+                if (simuladoModules.length > 0) {
+                  rows.push(
+                    <EnaflixSectionRow
+                      key="simulados-rec"
+                      title="Simulados Recomendados"
+                      subtitle="Avalie seu desempenho em ambiente real de prova"
+                      modules={simuladoModules}
+                      onNavigate={handleNavigate}
+                    />
+                  );
+                }
+
+                // 7. RECOMENDADOS PELA IA (Exploração)
+                if (recommendedModules.length > 0 && rows.length < 8) {
                   rows.push(
                     <EnaflixSectionRow
                       key="recommended"
-                      title="Recomendados pela IA"
-                      subtitle="Sugestões inteligentes do ENAZIZI"
+                      title="Recomendados para você"
+                      subtitle="Sugestões inteligentes baseadas no seu perfil de estudo"
                       modules={recommendedModules}
                       onNavigate={handleNavigate}
                     />,
                   );
                 }
 
-                if (popularModules.length > 1 && rows.length < 5) {
-                  rows.push(
-                    <EnaflixSectionRow
-                      key="popular"
-                      title="Mais usados"
-                      subtitle="Os queridinhos do seu dia a dia"
-                      modules={popularModules}
-                      onNavigate={handleNavigate}
-                    />,
-                  );
-                }
+                // 8. CATEGORIAS PADRÃO (Fallback)
+                const rotatable = ENAFLIX_CATEGORIES.filter((c) => {
+                  if (c.dynamic) return false;
+                  if (c.requires === "admin" && !isAdmin) return false;
+                  if (c.requires === "professor" && !isProfessor && !isAdmin) return false;
+                  return true;
+                });
 
-                if (rows.length < 5) {
-                  const rotatable = ENAFLIX_CATEGORIES.filter((c) => {
-                    if (c.dynamic) return false;
-                    if (c.requires === "admin" && !isAdmin) return false;
-                    if (c.requires === "professor" && !isProfessor && !isAdmin) return false;
-                    return true;
-                  });
-
-                  rotatable.forEach((cat) => {
-                    const items = visibleModules.filter((m) => m.category === cat.id);
-                    if (items.length > 0) {
-                      rows.push(
-                        <EnaflixSectionRow
-                          key={cat.id}
-                          title={cat.title}
-                          subtitle={cat.subtitle}
-                          modules={items}
-                          onNavigate={handleNavigate}
-                        />,
-                      );
-                    }
-                  });
-                }
+                rotatable.forEach((cat) => {
+                  const items = visibleModules.filter((m) => m.category === cat.id);
+                  if (items.length > 0 && rows.length < 10) {
+                    rows.push(
+                      <EnaflixSectionRow
+                        key={cat.id}
+                        title={cat.title}
+                        subtitle={cat.subtitle}
+                        modules={items}
+                        onNavigate={handleNavigate}
+                      />,
+                    );
+                  }
+                });
 
                 return rows;
               })()
