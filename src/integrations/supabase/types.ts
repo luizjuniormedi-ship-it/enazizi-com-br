@@ -19958,6 +19958,10 @@ export type Database = {
           sessions: number
         }[]
       }
+      admin_telemetry_optimization_report: {
+        Args: { _days?: number }
+        Returns: Json
+      }
       admin_telemetry_rca: { Args: { alert_id: string }; Returns: Json }
       admin_telemetry_tutor_quality: { Args: { _days?: number }; Returns: Json }
       admin_telemetry_v2_ai_quality: { Args: { _days: number }; Returns: Json }

@@ -69,10 +69,11 @@ const TelemetryAdmin = () => {
   const [baseline, setBaseline] = useState<any>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [recent, setRecent] = useState<any[]>([]);
+  const [optReport, setOptReport] = useState<any>(null);
 
   async function loadAll() {
     setRefreshing(true);
-    const [f, c, t, h, b, a, r] = await Promise.all([
+    const [f, c, t, h, b, a, r, o] = await Promise.all([
       supabase.rpc("admin_telemetry_funnel", { _days: days }),
       supabase.rpc("admin_telemetry_cohorts", { _days: days }),
       supabase.rpc("admin_telemetry_tutor_quality", { _days: days }),
@@ -81,6 +82,7 @@ const TelemetryAdmin = () => {
       supabase.rpc("admin_telemetry_alerts", { _days: days }),
       supabase.from("telemetry_events")
         .select("*").order("timestamp", { ascending: false }).limit(15),
+      supabase.rpc("admin_telemetry_optimization_report", { _days: days }),
     ]);
 
     const funnelRows = (f.data ?? []).map((row: any, i: number) => ({
@@ -96,6 +98,7 @@ const TelemetryAdmin = () => {
     setBaseline(b.data ?? {});
     setAlerts((a.data as unknown as Alert[]) ?? []);
     setRecent(r.data ?? []);
+    setOptReport(o.data ?? {});
     setLoading(false);
     setRefreshing(false);
   }
@@ -231,8 +234,9 @@ const TelemetryAdmin = () => {
 
       {/* Tabs principais */}
       <Tabs defaultValue="funnel" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 md:grid-cols-6">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-7">
           <TabsTrigger value="health"><HeartPulse className="h-4 w-4 mr-1" /> Saúde</TabsTrigger>
+          <TabsTrigger value="optimization"><TrendingUp className="h-4 w-4 mr-1" /> Otimização</TabsTrigger>
           <TabsTrigger value="funnel"><Target className="h-4 w-4 mr-1" /> Funil</TabsTrigger>
           <TabsTrigger value="cohorts"><Users className="h-4 w-4 mr-1" /> Coortes</TabsTrigger>
           <TabsTrigger value="tutor"><Brain className="h-4 w-4 mr-1" /> Tutor IA</TabsTrigger>
@@ -242,6 +246,93 @@ const TelemetryAdmin = () => {
 
         <TabsContent value="health" className="mt-4">
           <TelemetryHealthCheck />
+        </TabsContent>
+
+        <TabsContent value="optimization" className="mt-4 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Erros 500 / Timeout</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600">
+                  {optReport?.error_rates?.total_500 ?? 0} / {optReport?.error_rates?.total_timeout ?? 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Total erros: {optReport?.error_rates?.total_errors ?? 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Runtime Errors (JS)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {optReport?.error_rates?.total_runtime ?? 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Reference/TypeErrors</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Custo IA Est.</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  ${optReport?.ai_metrics?.total_cost ?? 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Cache: {optReport?.ai_metrics?.cache_hit_rate ?? 0}%</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Tutor TTFT / Blocked</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {optReport?.tutor_ttft ?? 0}ms / {optReport?.blocked_duplicates ?? 0}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">Time to first token / Duplicates</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader><CardTitle className="text-base">Top 10 Rotas mais Lentas</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(optReport?.loading_times ?? []).map((r: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="font-mono text-xs truncate max-w-[250px]">{r.route}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-muted-foreground text-xs">{r.samples} samples</span>
+                        <span className={`font-bold ${r.avg_load_ms > 2000 ? 'text-red-500' : 'text-green-500'}`}>
+                          {r.avg_load_ms}ms
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader><CardTitle className="text-base">Edge Functions (Latency)</CardTitle></CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {(optReport?.edge_function_performance ?? []).map((f: any, i: number) => (
+                    <div key={i} className="flex items-center justify-between text-sm">
+                      <span className="font-mono text-xs">{f.function_name}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="text-muted-foreground text-xs">{f.calls} calls</span>
+                        <span className="font-bold">{f.avg_duration_ms}ms</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="funnel" className="mt-4">
