@@ -46,6 +46,7 @@ interface Simulado {
   max_attempts: number;
   feedback_policy: string;
   allow_retake: boolean;
+  feedback_released: boolean;
 }
 
 interface AssignedSimulado {
