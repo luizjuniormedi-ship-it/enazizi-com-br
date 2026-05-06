@@ -478,7 +478,15 @@ export default function EnaflixPage() {
                         footerInfo={`${dp.estimatedMinutes} min estimados`}
                         ctaText="Continuar Plano"
                         accent="primary"
-                        onClick={() => navigate("/dashboard/sessao-estudo")}
+                        onClick={() => {
+                          void emitShadowEvent({
+                            module: "enaflix",
+                            event: "watch_started",
+                            topic: "daily_plan",
+                            extra: { action: "cta_click", destination: "/dashboard/sessao-estudo" }
+                          });
+                          navigate("/dashboard/sessao-estudo");
+                        }}
                       />
                       {/* Sub-cards para o plano se houver muitos temas */}
                       {dp.tasks.slice(0, 3).map((task, i) => (
