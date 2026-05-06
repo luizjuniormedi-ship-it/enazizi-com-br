@@ -331,12 +331,12 @@ const Simulados = () => {
           // mas as questões do adaptive já vêm estruturadas.
           // Vamos garantir compatibilidade.
           const adaptiveQs = (data.questions || []).map((q: any) => ({
-            statement: q.statement,
-            options: q.options,
-            correct: q.correct,
-            topic: q.topic || config.topics?.[0] || "Geral",
-            explanation: q.explanation || "",
-            image_url: q.image_url
+            statement: q.statement || q.content || "",
+            options: q.options || [],
+            correct: typeof q.correct === 'number' ? q.correct : (typeof q.correct_index === 'number' ? q.correct_index : 0),
+            topic: q.topic || q.specialty || config.topics?.[0] || "Geral",
+            explanation: q.explanation || q.rationale || "",
+            image_url: q.image_url || q.imageUrl
           }));
 
           if (adaptiveQs.length === 0) {
