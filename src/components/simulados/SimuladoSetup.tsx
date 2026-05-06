@@ -329,9 +329,6 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         mode,
         examBoard: realExamBoard,
         realExamProfile: realExamBoard,
-        // Repassa a árvore dinâmica quando disponível — gerador prefere
-        // batches por `topic` para mais granularidade. Se vier fallback,
-        // o gerador mantém o comportamento atual baseado em EXAM_PROFILES.
         dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
           ? dynamicDistribution
           : undefined,
@@ -340,7 +337,21 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined, imagePercent });
+    
+    // Fallback: If no topics selected but it's not a profile mode, 
+    // we default to Clínica Médica to avoid blocking the user
+    const finalTopics = selectedTopics.length > 0 ? selectedTopics : ["Clínica Médica"];
+    
+    onStart({ 
+      topics: finalTopics, 
+      count, 
+      difficulty, 
+      timePerQuestion, 
+      mode, 
+      specificTopic: specificTopic.trim() || undefined, 
+      examBoard: examBoard !== "all" ? examBoard : undefined, 
+      imagePercent 
+    });
   };
 
   const totalTime = mode === "prova_real" || mode === "tri"
