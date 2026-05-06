@@ -42,7 +42,9 @@ serve(async (req) => {
         .eq("user_id", userId)
         .maybeSingle();
       resetAt = (rp as any)?.last_study_plan_reset_at ?? null;
-    } catch { /* non-fatal */ }
+    } catch (e) {
+      console.warn("[study-next] Reset fence check failed (continuing):", e);
+    }
 
     // ── Parallel data fetch ──
     const [
@@ -730,10 +732,12 @@ serve(async (req) => {
 
     return jsonResponse({
       success: true,
-      recommendation,
-      justification,
-      alternativeActions,
-      adaptiveState,
+      data: {
+        recommendation,
+        justification,
+        alternativeActions,
+        adaptiveState,
+      }
     });
   } catch (err: any) {
     console.error("[study-next]", err);
