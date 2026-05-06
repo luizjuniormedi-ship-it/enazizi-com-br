@@ -187,8 +187,14 @@ export default function EnaflixPage() {
   }, [visibleModules]);
 
   const continueModules = useMemo(
-    () => recentIds.map((id) => moduleById.get(id)).filter(Boolean) as EnaflixModule[],
-    [recentIds, moduleById],
+    () => {
+      const items = recentIds.map((id) => moduleById.get(id)).filter(Boolean) as EnaflixModule[];
+      if (items.length === 0 && !isLoading) {
+        void emitShadowEvent({ module: "enaflix", event: "watch_abandoned", topic: "continue_row_empty" });
+      }
+      return items;
+    },
+    [recentIds, moduleById, isLoading],
   );
 
   const popularModules = useMemo(
