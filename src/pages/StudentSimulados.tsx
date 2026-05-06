@@ -41,6 +41,11 @@ interface Simulado {
   time_limit_minutes: number;
   questions_json: any[];
   professor_id: string;
+  start_at: string | null;
+  end_at: string | null;
+  max_attempts: number;
+  feedback_policy: string;
+  allow_retake: boolean;
 }
 
 interface AssignedSimulado {
