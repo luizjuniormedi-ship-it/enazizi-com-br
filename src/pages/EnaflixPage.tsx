@@ -219,28 +219,38 @@ export default function EnaflixPage() {
       if (targetModule) {
         push(
           targetModule, 
-          "Missão Crítica do Dia", 
+          "Próximo Passo Recomendado", 
           rec.title, 
           `${rec.description} • ~${rec.estimatedMinutes} min`
         );
       }
     }
 
-    // 2. Continuar de onde parou
-    push(continueModules[0], "Continuar de onde parou");
-    
-    // 3. Recomendação IA (secundária ao billboard se não for a missão)
-    push(recommendedModules[0], "Recomendado para você");
+    // 2. Erros Críticos (Urgente)
+    if (studyNext?.adaptiveState?.weakTopicsCount && studyNext.adaptiveState.weakTopicsCount > 0) {
+      const errorBank = ENAFLIX_MODULES.find(m => m.id === "banco-erros");
+      if (errorBank) {
+        push(errorBank, "Ação Corretiva Urgente", "Recuperar Erros Recentes", `Você tem ${studyNext.adaptiveState.weakTopicsCount} temas com queda de performance.`);
+      }
+    }
 
+    // 3. Revisão Pendente (FSRS)
+    if (studyNext?.adaptiveState?.pendingReviews && studyNext.adaptiveState.pendingReviews > 5) {
+      const flashcards = ENAFLIX_MODULES.find(m => m.id === "flashcards");
+      if (flashcards) {
+        push(flashcards, "Manutenção de Memória", "Sessão de Revisão FSRS", `${studyNext.adaptiveState.pendingReviews} flashcards aguardam sua revisão hoje.`);
+      }
+    }
+    
     // 4. Tutor IA (Sempre um destaque)
     push(
       visibleModules.find((m) => m.id === "mentor"),
       "Inteligência Pedagógica",
     );
 
-    // Fallback
-    if (slides.length === 0 && visibleModules[0]) {
-      push(visibleModules[0], "Em destaque hoje");
+    // Fallback: Continuar de onde parou
+    if (slides.length < 4) {
+      push(continueModules[0], "Continuar de onde parou");
     }
 
     return slides.slice(0, 4);
