@@ -164,6 +164,11 @@ const PageLoader = () => {
   return <CinematicPageLoader module={module} />;
 };
 
+const HomeRedirect = () => {
+  if (localStorage.getItem("supabase.auth.token")) return <Navigate to="/enaflix" replace />;
+  return <Index />;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -189,7 +194,7 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* --- PUBLIC ROUTES --- */}
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<HomeRedirect />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/install" element={<Install />} />

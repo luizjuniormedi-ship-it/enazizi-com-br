@@ -18,7 +18,7 @@ const ProfessorRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (!isProfessor && !isAdmin) return <Navigate to="/dashboard" replace />;
+  if (!isProfessor && !isAdmin) return <Navigate to="/enaflix" replace />;
 
   return <ProtectedRoute>{children}</ProtectedRoute>;
 };
