@@ -329,9 +329,6 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
         mode,
         examBoard: realExamBoard,
         realExamProfile: realExamBoard,
-        // Repassa a árvore dinâmica quando disponível — gerador prefere
-        // batches por `topic` para mais granularidade. Se vier fallback,
-        // o gerador mantém o comportamento atual baseado em EXAM_PROFILES.
         dynamicDistribution: dynamicDistribution?.source === "curriculum_weights"
           ? dynamicDistribution
           : undefined,
@@ -340,7 +337,21 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
-    onStart({ topics: selectedTopics, count, difficulty, timePerQuestion, mode, specificTopic: specificTopic.trim() || undefined, examBoard: examBoard !== "all" ? examBoard : undefined, imagePercent });
+    
+    // Fallback: If no topics selected but it's not a profile mode, 
+    // we default to Clínica Médica to avoid blocking the user
+    const finalTopics = selectedTopics.length > 0 ? selectedTopics : ["Clínica Médica"];
+    
+    onStart({ 
+      topics: finalTopics, 
+      count, 
+      difficulty, 
+      timePerQuestion, 
+      mode, 
+      specificTopic: specificTopic.trim() || undefined, 
+      examBoard: examBoard !== "all" ? examBoard : undefined, 
+      imagePercent 
+    });
   };
 
   const totalTime = mode === "prova_real" || mode === "tri"
@@ -922,7 +933,11 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             }`}
             onClick={handleStart}
             data-testid="iniciar-simulado-button"
-            disabled={mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && selectedTopics.length === 0}
+            disabled={
+              (mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo") && 
+              selectedTopics.length === 0 && 
+              !specificTopic
+            }
           >
             {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
             {mode === "adaptativo" ? `INICIAR SIMULADO ADAPTATIVO (${customCount || questionCount} QUESTÕES)` : mode === "estudo" ? "INICIAR MODO ESTUDO" : mode === "extremo" ? "INICIAR PROVA EXTREMA" : mode === "prova_real" ? `INICIAR PROVA REAL ${selectedProfile.name}` : mode === "tri" ? `INICIAR TRI ${selectedProfile.name}` : "INICIAR SIMULADO"} {mode !== "adaptativo" ? `(${mode === "prova_real" || mode === "tri" ? selectedProfile.totalQuestions : (customCount || questionCount)} QUESTÕES)` : ""}
