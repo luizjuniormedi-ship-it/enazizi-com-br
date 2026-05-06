@@ -496,7 +496,15 @@ export default function EnaflixPage() {
                           subtitle="Foco em subtema"
                           ctaText="Iniciar"
                           accent="info"
-                          onClick={() => navigate("/dashboard/sessao-estudo")}
+                          onClick={() => {
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: `daily_task_${i}`,
+                              extra: { action: "task_click", title: task }
+                            });
+                            navigate("/dashboard/sessao-estudo");
+                          }}
                         />
                       ))}
                     </EnaflixRow>
