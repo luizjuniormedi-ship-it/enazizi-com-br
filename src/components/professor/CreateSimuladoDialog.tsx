@@ -31,6 +31,7 @@ interface Props {
 const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   open, onOpenChange, callAPI, onCreated,
 }: Props) {
+  console.log("[CreateSimuladoDialog] render", { open });
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   const isMobile = useIsMobile();
   
