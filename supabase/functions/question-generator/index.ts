@@ -388,14 +388,11 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         slots.push({ level, target: requestedCount, desc: levelDescs[level] || levelDescs.intermediario });
       }
 
+      // Extract topic info
+      const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
       const startTime = Date.now();
       console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty}`);
       console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
-
-      // Extract topic info
-      const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
-      const matchedTopics = HIGH_YIELD_KEYS.filter(k => (lastMessage?.content || "").toLowerCase().includes(k.toLowerCase()));
-      const hasSubtopicFilter = gc?.subtopic && String(gc.subtopic).trim().length > 0;
 
       // Try cache (with difficulty partitioning)
       let allCached: any[] = [];
