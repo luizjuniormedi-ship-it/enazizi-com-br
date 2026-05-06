@@ -485,11 +485,11 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             try {
               // USAR DIRETAMENTE OPENAI SE POSSÍVEL OU GARANTIR QUE AI_FETCH NÃO USE LOVABLE SE ESTIVER LENTO
               const resp = await aiFetch({
-                model: "gpt-4o-mini", // Forçar modelo OpenAI direto sem prefixo para garantir
+                model: "openai/gpt-5-mini",
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
                 maxTokens: 16000,
                 timeoutMs: 60000,
-                maxRetries: 1, // Permitir um retry interno
+                maxRetries: 1,
                 userId: authUser?.id
               });
               if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error status ${resp.status}:`, t.slice(0, 200)); return []; }
