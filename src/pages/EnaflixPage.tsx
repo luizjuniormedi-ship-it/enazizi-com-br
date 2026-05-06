@@ -246,13 +246,13 @@ export default function EnaflixPage() {
   );
 
   const handleClose = () => {
-    try {
-      sessionStorage.removeItem("enaflix:origin");
-      sessionStorage.removeItem("enaflix:lastModule");
-    } catch {
-      // ignore
+    // Para alunos, não faz sentido "voltar" para uma dashboard que eles não veem
+    // Vamos manter eles no Enaflix ou perfil se tentarem fechar
+    if (!isAdmin && !isProfessor) {
+      navigate("/dashboard/perfil");
+    } else {
+      navigate("/dashboard");
     }
-    navigate("/dashboard");
   };
 
   const handleSearchToggle = () => {
