@@ -7,11 +7,22 @@ export const useTelemetry = () => {
   const recentRoutesRef = useRef<Array<{ path: string; ts: number }>>([]);
 
   useEffect(() => {
+    // Track page view and performance
+    const now = Date.now();
+    const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+    const loadTime = navigationEntry ? Math.round(navigationEntry.duration) : 0;
+
+    telemetry.track('page_view' as any, { 
+      route: location.pathname, 
+      load_time_ms: loadTime,
+      is_initial_load: loadTime > 0 
+    });
+
     if (location.pathname === '/dashboard') {
       telemetry.track('dashboard_opened');
     }
+    
     // Detect repeated_navigation: same path visited 3+ times within 60s
-    const now = Date.now();
     const recent = recentRoutesRef.current.filter((r) => now - r.ts < 60000);
     recent.push({ path: location.pathname, ts: now });
     recentRoutesRef.current = recent;
