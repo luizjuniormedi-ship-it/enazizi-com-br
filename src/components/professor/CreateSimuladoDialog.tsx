@@ -25,17 +25,7 @@ interface Props {
 }
 
 /**
- * Orquestrador puro do diálogo de criação de simulado.
- *
- * Toda a lógica e estado vivem em `useCreateSimuladoForm`.
- * Cada bloco visual está isolado em um subcomponente memoizado, então:
- *  - digitar no título não rerenderiza alunos/temas/questões
- *  - mexer no slider de dificuldade não rerenderiza alunos/temas/questões
- *  - expandir uma questão só rerenderiza aquele item (comparator custom)
- *  - mudar agendamento não rerenderiza nada acima
- *
- * O Dialog só monta quando `open=true`. Ao fechar, todo o subsistema
- * é desmontado e o estado descartado naturalmente.
+ * Orquestrador puro do diálogo de criação de simulado com estrutura de scroll corrigida.
  */
 const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   open, onOpenChange, callAPI, onCreated,
@@ -44,8 +34,8 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl h-[95vh] sm:h-[90vh] flex flex-col p-0 overflow-hidden gap-0">
-        <div className="p-6 pb-4 border-b">
+      <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-hidden p-0 gap-0 flex flex-col">
+        <header className="shrink-0 border-b px-6 py-4 bg-background">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="h-5 w-5 text-primary" /> Criar Simulado
@@ -54,7 +44,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               Configure o simulado, gere questões e atribua aos alunos.
             </DialogDescription>
           </DialogHeader>
-        </div>
+        </header>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
           <SimuladoBasicForm
@@ -202,7 +192,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
           />
         </div>
 
-        <div className="p-6 pt-4 border-t bg-background mt-auto">
+        <footer className="shrink-0 border-t p-6 bg-background mt-auto">
           <DialogFooter className="sm:justify-end gap-2">
             <Button 
               type="button" 
@@ -229,7 +219,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               {f.creating ? "CRIANDO..." : f.scheduledAt ? "AGENDAR E ATRIBUIR" : "CRIAR E ATRIBUIR"}
             </Button>
           </DialogFooter>
-        </div>
+        </footer>
       </DialogContent>
     </Dialog>
   );
