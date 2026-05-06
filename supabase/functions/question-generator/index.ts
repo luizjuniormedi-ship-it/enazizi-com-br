@@ -505,27 +505,39 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
               }
               if (parsed.length === 0) {
                 const content = aiData.choices?.[0]?.message?.content || "";
+                console.log(`[Slot ${level}][batch ${batchIdx + 1}] Parsing raw content:`, content.slice(0, 100));
                 const jm = content.match(/\[[\s\S]*\]/);
                 if (jm) {
-                  try { parsed = JSON.parse(jm[0].replace(/,\s*([\]}])/g, "$1")); } catch {
+                  try { 
+                    parsed = JSON.parse(jm[0].replace(/,\s*([\]}])/g, "$1")); 
+                  } catch (e) {
+                    console.warn(`[Slot ${level}][batch ${batchIdx + 1}] JSON parse error:`, e.message);
                     const lb = jm[0].lastIndexOf("}");
                     if (lb > 0) try { parsed = JSON.parse(jm[0].slice(0, lb + 1) + "]"); } catch {}
                   }
+                } else {
+                  console.warn(`[Slot ${level}][batch ${batchIdx + 1}] No JSON array found in content`);
                 }
               }
 
-              return parsed.filter((q: any) => {
-                const stmt = String(q.statement || "");
-                if (stmt.length < 350) return false;
+              const filtered = parsed.filter((q: any) => {
+                const stmt = String(q.statement || q.question || "");
+                const options = q.options || q.alternatives || [];
+                if (stmt.length < 200) { // Relaxed for debug
+                  console.warn(`[Slot ${level}] Question rejected: too short (${stmt.length} chars)`);
+                  return false;
+                }
                 if (ENGLISH_PATTERN.test(stmt)) return false;
                 if (IMAGE_REF_PATTERN.test(stmt)) return false;
-                if (!Array.isArray(q.options) || q.options.length < 4) return false;
-                if (ENGLISH_PATTERN.test(q.options.join(" "))) return false;
+                if (!Array.isArray(options) || options.length < 4) return false;
                 return true;
-              }).map((q: any) => ({
+              });
+
+              console.log(`[Slot ${level}][batch ${batchIdx + 1}] Generated ${parsed.length} questions, ${filtered.length} passed filters`);
+              return filtered.map((q: any) => ({
                 ...q,
-                statement: cleanQuestionText(q.statement || ""),
-                options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+                statement: cleanQuestionText(q.statement || q.question || ""),
+                options: Array.isArray(q.options || q.alternatives) ? (q.options || q.alternatives).map((o: string) => cleanQuestionText(o)) : [],
                 explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
                 difficulty_level: level,
               }));
