@@ -351,10 +351,11 @@ const App = () => (
                 </Route>
 
                 {/* --- PROFESSOR (PROTECTED) --- */}
-                <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
+                <Route path="/dashboard/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                   <Route index element={<ProfessorDashboard />} />
                   <Route path="proficiencia/piloto" element={<ProficiencyPilotPage />} />
                 </Route>
+                <Route path="/professor" element={<Navigate to="/dashboard/professor" replace />} />
                 <Route path="/dashboard/proficiencia/piloto" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                   <Route index element={<ProficiencyPilotPage />} />
                 </Route>
