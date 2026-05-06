@@ -118,7 +118,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
             </DialogHeader>
           </header>
 
-          <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto p-6 space-y-6" data-testid="dialog-body">
             <SimuladoBasicForm
               title={f.title}
               description={f.description}
