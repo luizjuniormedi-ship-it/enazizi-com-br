@@ -54,15 +54,33 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
           </DialogHeader>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto">
           {state.loading ? (
-            <div className="py-8 text-center">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
+            <div className="py-20 text-center">
+              <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
+              <p className="text-xs text-muted-foreground mt-4 uppercase font-bold tracking-widest">Carregando inteligência pedagógica...</p>
             </div>
           ) : state.results.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">Nenhum resultado ainda.</p>
+            <p className="text-center text-muted-foreground py-20">Nenhum resultado ainda.</p>
           ) : (
-            <div className="space-y-3">
+            <Tabs defaultValue="list" className="w-full">
+              <div className="px-6 border-b bg-muted/20">
+                <TabsList className="bg-transparent h-12 w-full justify-start gap-4 p-0">
+                  <TabsTrigger value="list" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-4 text-xs font-bold uppercase tracking-wider transition-all">
+                    LISTA DE ALUNOS
+                  </TabsTrigger>
+                  <TabsTrigger value="insights" className="bg-transparent border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent rounded-none h-full px-4 text-xs font-bold uppercase tracking-wider transition-all">
+                    RELATÓRIO PEDAGÓGICO
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              <div className="p-6">
+                <TabsContent value="insights" className="mt-0 outline-none">
+                  <SimuladoReportInsights results={state.results} questions_json={state.questions_json} />
+                </TabsContent>
+
+                <TabsContent value="list" className="mt-0 outline-none space-y-3">
               <div className="grid grid-cols-3 gap-3 mb-4">
                 <Card>
                   <CardContent className="p-3 text-center">
