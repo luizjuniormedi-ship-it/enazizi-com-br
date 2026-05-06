@@ -423,8 +423,9 @@ REGRAS INVIOLÁVEIS:
                 const response = await aiFetch({
                   messages: [{ role: "user", content: prompt }],
                   model: "openai/gpt-5-mini",
-                  maxTokens: 32768,
-                  timeoutMs: 120000,
+                  maxTokens: 8192,
+                  timeoutMs: 55000,
+                  maxRetries: 0,
                 });
 
                 if (!response.ok) {
