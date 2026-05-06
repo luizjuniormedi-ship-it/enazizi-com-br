@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useEnaflixPersonalizedRows } from "@/hooks/useEnaflixPersonalizedRows";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixDynamicCard } from "@/components/enaflix/EnaflixDynamicCard";
+import { emitShadowEvent } from "@/lib/shadowAdaptive";
 
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
@@ -123,10 +124,13 @@ export default function EnaflixPage() {
   useEffect(() => {
     // Safety valve: don't let the page stay stuck in skeleton mode for more than 5s
     const timer = setTimeout(() => {
-      setForceReady(true);
+      if (isLoading && !forceReady) {
+        setForceReady(true);
+        void emitShadowEvent({ module: "enaflix", event: "watch_abandoned", topic: "loading_timeout_recovery" });
+      }
     }, 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [isLoading, forceReady]);
 
   const continueLessons = useMemo(() => {
     if (!aiLessons || !usageLogs) return [];
@@ -142,15 +146,23 @@ export default function EnaflixPage() {
     document.title = "ENAFLIX — streaming inteligente do ENAZIZI";
     // Body bg cinematográfico para garantir continuidade visual
     document.body.style.backgroundColor = "#050508";
+
+    void emitShadowEvent({
+      module: "enaflix",
+      event: "watch_started",
+      topic: "hub_opened",
+      extra: { user_id: user?.id }
+    });
+
     return () => {
       document.title = prev;
       document.body.style.backgroundColor = "";
     };
-  }, []);
+  }, [user?.id]);
 
   const visibleModules = useMemo<EnaflixModule[]>(() => {
     if (adminLoading) return []; // Wait for admin check to finish
-    return ENAFLIX_MODULES.filter((m) => {
+    const items = ENAFLIX_MODULES.filter((m) => {
       if (m.enabled === false) return false;
       if (m.requires === "admin" && !isAdmin) return false;
       if (m.requires === "professor" && !isProfessor && !isAdmin) return false;
@@ -164,6 +176,12 @@ export default function EnaflixPage() {
 
       return true;
     });
+
+    if (items.length === 0 && !adminLoading) {
+       void emitShadowEvent({ module: "enaflix", event: "watch_abandoned", topic: "no_visible_modules" });
+    }
+
+    return items;
   }, [isAdmin, isProfessor, adminLoading]);
 
   const filteredModules = useMemo(() => {
@@ -186,8 +204,14 @@ export default function EnaflixPage() {
   }, [visibleModules]);
 
   const continueModules = useMemo(
-    () => recentIds.map((id) => moduleById.get(id)).filter(Boolean) as EnaflixModule[],
-    [recentIds, moduleById],
+    () => {
+      const items = recentIds.map((id) => moduleById.get(id)).filter(Boolean) as EnaflixModule[];
+      if (items.length === 0 && !isLoading) {
+        void emitShadowEvent({ module: "enaflix", event: "watch_abandoned", topic: "continue_row_empty" });
+      }
+      return items;
+    },
+    [recentIds, moduleById, isLoading],
   );
 
   const popularModules = useMemo(
@@ -261,8 +285,18 @@ export default function EnaflixPage() {
   }, [continueModules, recommendedModules, visibleModules, studyNext]);
 
   const handleNavigate = useCallback(
-    (m: EnaflixModule) => {
+    (m: EnaflixModule, source: string = "category_row") => {
       recordVisit(m.id);
+      void emitShadowEvent({
+        module: "enaflix",
+        event: "watch_started",
+        topic: m.id,
+        extra: {
+          action: "card_click",
+          source,
+          destination: m.route
+        }
+      });
     },
     [recordVisit],
   );
@@ -330,7 +364,7 @@ export default function EnaflixPage() {
       {/* CONTEÚDO PRINCIPAL — começa no topo (y=0), passando por trás da topbar */}
       {isSearching ? (
         <main className="pt-24 pb-20">
-          <SearchResultsGrid modules={filteredModules} onNavigate={handleNavigate} />
+          <SearchResultsGrid modules={filteredModules} onNavigate={(m) => handleNavigate(m, "search_result")} />
         </main>
       ) : (
         <main>
@@ -340,7 +374,7 @@ export default function EnaflixPage() {
           ) : billboardSlides.length > 0 ? (
             <EnaflixBillboardRotator
               modules={billboardSlides}
-              onNavigate={handleNavigate}
+              onNavigate={(m) => handleNavigate(m, "billboard")}
             />
           ) : null}
 
@@ -386,6 +420,13 @@ export default function EnaflixPage() {
                                          rec.type === 'mnemonic' ? '/dashboard/mnemonic-studio' :
                                          rec.type === 'error_review' ? '/dashboard/banco-erros' :
                                          rec.type === 'image_quiz' ? '/dashboard/image-quiz' : '/dashboard/sessao-estudo';
+                            
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: "mission_card",
+                              extra: { action: "cta_click", title: rec.title, destination: route }
+                            });
                             navigate(route);
                           }}
                           className="w-full mt-4 flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary text-white font-black text-xs uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all shadow-[0_10px_20px_-5px_rgba(var(--primary),0.4)]"
@@ -444,6 +485,14 @@ export default function EnaflixPage() {
               </div>
             ) : (
               (() => {
+                if (isLoadingPersonalized && personalizedRows === undefined) {
+                  return (
+                    <div className="space-y-12">
+                      <EnaflixRowSkeleton />
+                      <EnaflixRowSkeleton />
+                    </div>
+                  );
+                }
                 const rows: React.ReactNode[] = [];
 
                 // 1. PLANO DE HOJE (Alta Prioridade)
@@ -460,7 +509,15 @@ export default function EnaflixPage() {
                         footerInfo={`${dp.estimatedMinutes} min estimados`}
                         ctaText="Continuar Plano"
                         accent="primary"
-                        onClick={() => navigate("/dashboard/sessao-estudo")}
+                        onClick={() => {
+                          void emitShadowEvent({
+                            module: "enaflix",
+                            event: "watch_started",
+                            topic: "daily_plan",
+                            extra: { action: "cta_click", destination: "/dashboard/sessao-estudo" }
+                          });
+                          navigate("/dashboard/sessao-estudo");
+                        }}
                       />
                       {/* Sub-cards para o plano se houver muitos temas */}
                       {dp.tasks.slice(0, 3).map((task, i) => (
@@ -470,7 +527,15 @@ export default function EnaflixPage() {
                           subtitle="Foco em subtema"
                           ctaText="Iniciar"
                           accent="info"
-                          onClick={() => navigate("/dashboard/sessao-estudo")}
+                          onClick={() => {
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: `daily_task_${i}`,
+                              extra: { action: "task_click", title: task }
+                            });
+                            navigate("/dashboard/sessao-estudo");
+                          }}
                         />
                       ))}
                     </EnaflixRow>
@@ -490,7 +555,15 @@ export default function EnaflixPage() {
                         accent={fc.urgency === "alta" ? "destructive" : "warning"}
                         ctaText="Revisar Agora"
                         footerInfo="FSRS v5.0"
-                        onClick={() => navigate("/dashboard/flashcards")}
+                        onClick={() => {
+                          void emitShadowEvent({
+                            module: "enaflix",
+                            event: "watch_started",
+                            topic: "flashcards_due",
+                            extra: { action: "cta_click", count: fc.totalDue }
+                          });
+                          navigate("/dashboard/flashcards");
+                        }}
                       />
                       {/* Sugerir mnemônicos como alternativa de reforço */}
                       <EnaflixDynamicCard
@@ -499,7 +572,15 @@ export default function EnaflixPage() {
                         description="Crie associações visuais para temas difíceis."
                         ctaText="Explorar Studio"
                         accent="purple"
-                        onClick={() => navigate("/dashboard/mnemonic-studio")}
+                        onClick={() => {
+                          void emitShadowEvent({
+                            module: "enaflix",
+                            event: "watch_started",
+                            topic: "mnemonic_studio_upsell",
+                            extra: { action: "cta_click" }
+                          });
+                          navigate("/dashboard/mnemonic-studio");
+                        }}
                       />
                     </EnaflixRow>
                   );
@@ -518,7 +599,15 @@ export default function EnaflixPage() {
                           badge="IA RECOMENDOU"
                           accent="purple"
                           ctaText="Começar Missão"
-                          onClick={() => navigate("/dashboard/mentor")}
+                          onClick={() => {
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: "tutor_mission",
+                              extra: { action: "cta_click", title: mission.missionTitle }
+                            });
+                            navigate("/dashboard/mentor");
+                          }}
                         />
                       ))}
                     </EnaflixRow>
@@ -539,7 +628,15 @@ export default function EnaflixPage() {
                           accent={hy.userPerformance < 60 ? "destructive" : "info"}
                           ctaText="Treinar Questões"
                           footerInfo="CME Performance"
-                          onClick={() => navigate("/dashboard/simulados")}
+                          onClick={() => {
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: "high_yield_topic",
+                              extra: { action: "cta_click", title: hy.topic }
+                            });
+                            navigate("/dashboard/simulados");
+                          }}
                         />
                       ))}
                     </EnaflixRow>
