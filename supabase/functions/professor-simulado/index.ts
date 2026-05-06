@@ -553,6 +553,12 @@ REGRAS INVIOLÁVEIS:
           questions_json: questions_json || [],
           status: simStatus,
           scheduled_at: scheduled_at || null,
+          start_at: scheduled_at || new Date().toISOString(),
+          end_at: end_at || null,
+          max_attempts: max_attempts || 1,
+          feedback_policy: feedback_policy || 'immediate',
+          allow_retake: allow_retake || false,
+          exam_board: exam_board || null,
           auto_assign: auto_assign !== false,
         }).select("id").single();
 
