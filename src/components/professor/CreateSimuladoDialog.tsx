@@ -264,11 +264,19 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               onRemoveManual={f.removeManualQuestion}
             />
 
-            <SimuladoSchedule
+            <SimuladoSchedulingSettings
               scheduledAt={f.scheduledAt}
-              autoAssign={f.autoAssign}
               onScheduledAtChange={f.setScheduledAt}
-              onAutoAssignChange={f.setAutoAssign}
+              endAt={f.endAt}
+              onEndAtChange={f.setEndAt}
+              timeLimit={f.timeLimit}
+              onTimeLimitChange={f.setTimeLimit}
+              maxAttempts={f.maxAttempts}
+              onMaxAttemptsChange={f.setMaxAttempts}
+              feedbackPolicy={f.feedbackPolicy}
+              onFeedbackPolicyChange={f.setFeedbackPolicy}
+              allowRetake={f.allowRetake}
+              onAllowRetakeChange={f.setAllowRetake}
             />
           </div>
 
