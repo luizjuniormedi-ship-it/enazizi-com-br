@@ -388,35 +388,34 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         slots.push({ level, target: requestedCount, desc: levelDescs[level] || levelDescs.intermediario });
       }
 
+      // Extract topic info
+      const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
       const startTime = Date.now();
       console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty}`);
       console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
 
-      // Extract topic info
-      const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
-      const matchedTopics = HIGH_YIELD_KEYS.filter(k => (lastMessage?.content || "").toLowerCase().includes(k.toLowerCase()));
-      const hasSubtopicFilter = gc?.subtopic && String(gc.subtopic).trim().length > 0;
-
       // Try cache (with difficulty partitioning)
       let allCached: any[] = [];
+      const hasSubtopicFilter = gc?.subtopic && String(gc.subtopic).trim().length > 0;
+      
+      // Resolve topics for cache filtering
+      const resolvedTopics = Array.isArray(gc?.topic) 
+        ? gc.topic 
+        : (typeof gc?.topic === "string" ? gc.topic.split(",").map((t: string) => t.trim()) : []);
+      
+      const matchedTopics = resolvedTopics.length > 0 ? resolvedTopics : HIGH_YIELD_KEYS.filter(k => (lastMessage?.content || "").toLowerCase().includes(k.toLowerCase()));
+
       if (!hasSubtopicFilter && matchedTopics.length > 0) {
         const topicFilters = matchedTopics.map(t => `topic.ilike.%${t}%`).join(",");
-        const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
-          sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(50),
-          sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(30),
-        ]);
-        allCached = [...(cachedBank || []), ...(cachedReal || [])];
-
-        // Dedup
-        if (Array.isArray(avoidStatements) && avoidStatements.length > 0) {
-          const prevKeys = new Set(avoidStatements.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
-          allCached = allCached.filter((q: any) => !prevKeys.has(String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
+        try {
+          const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
+            sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(50),
+            sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(30),
+          ]);
+          allCached = [...(cachedBank || []), ...(cachedReal || [])];
+        } catch (cacheErr) {
+          console.error("[CACHE_ERROR] Failed to fetch from cache tables:", cacheErr);
         }
-        // Filter English + image refs
-        allCached = allCached.filter((q: any) => {
-          const stmt = String(q.statement || "");
-          return !IMAGE_REF_PATTERN.test(stmt) && !ENGLISH_PATTERN.test(stmt);
-        });
       }
 
       // Partition cache by difficulty
@@ -505,27 +504,39 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
               }
               if (parsed.length === 0) {
                 const content = aiData.choices?.[0]?.message?.content || "";
+                console.log(`[Slot ${level}][batch ${batchIdx + 1}] Parsing raw content:`, content.slice(0, 100));
                 const jm = content.match(/\[[\s\S]*\]/);
                 if (jm) {
-                  try { parsed = JSON.parse(jm[0].replace(/,\s*([\]}])/g, "$1")); } catch {
+                  try { 
+                    parsed = JSON.parse(jm[0].replace(/,\s*([\]}])/g, "$1")); 
+                  } catch (e) {
+                    console.warn(`[Slot ${level}][batch ${batchIdx + 1}] JSON parse error:`, e.message);
                     const lb = jm[0].lastIndexOf("}");
                     if (lb > 0) try { parsed = JSON.parse(jm[0].slice(0, lb + 1) + "]"); } catch {}
                   }
+                } else {
+                  console.warn(`[Slot ${level}][batch ${batchIdx + 1}] No JSON array found in content`);
                 }
               }
 
-              return parsed.filter((q: any) => {
-                const stmt = String(q.statement || "");
-                if (stmt.length < 350) return false;
+              const filtered = parsed.filter((q: any) => {
+                const stmt = String(q.statement || q.question || "");
+                const options = q.options || q.alternatives || [];
+                if (stmt.length < 200) { // Relaxed for debug
+                  console.warn(`[Slot ${level}] Question rejected: too short (${stmt.length} chars)`);
+                  return false;
+                }
                 if (ENGLISH_PATTERN.test(stmt)) return false;
                 if (IMAGE_REF_PATTERN.test(stmt)) return false;
-                if (!Array.isArray(q.options) || q.options.length < 4) return false;
-                if (ENGLISH_PATTERN.test(q.options.join(" "))) return false;
+                if (!Array.isArray(options) || options.length < 4) return false;
                 return true;
-              }).map((q: any) => ({
+              });
+
+              console.log(`[Slot ${level}][batch ${batchIdx + 1}] Generated ${parsed.length} questions, ${filtered.length} passed filters`);
+              return filtered.map((q: any) => ({
                 ...q,
-                statement: cleanQuestionText(q.statement || ""),
-                options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+                statement: cleanQuestionText(q.statement || q.question || ""),
+                options: Array.isArray(q.options || q.alternatives) ? (q.options || q.alternatives).map((o: string) => cleanQuestionText(o)) : [],
                 explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
                 difficulty_level: level,
               }));
