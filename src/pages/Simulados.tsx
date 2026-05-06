@@ -732,7 +732,7 @@ const Simulados = () => {
               <Progress value={loadingPercent} className="h-1.5 bg-white/5" />
               <p className="text-[10px] text-center font-bold text-white/20 uppercase tracking-widest">{loadingPercent}% concluído</p>
             </div>
-
+            <div className="flex flex-col gap-2">
               {partialCount > 0 && (
                 <Button 
                   onClick={() => {
