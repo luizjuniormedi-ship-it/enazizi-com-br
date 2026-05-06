@@ -568,7 +568,15 @@ export default function EnaflixPage() {
                           badge="IA RECOMENDOU"
                           accent="purple"
                           ctaText="Começar Missão"
-                          onClick={() => navigate("/dashboard/mentor")}
+                          onClick={() => {
+                            void emitShadowEvent({
+                              module: "enaflix",
+                              event: "watch_started",
+                              topic: "tutor_mission",
+                              extra: { action: "cta_click", title: mission.missionTitle }
+                            });
+                            navigate("/dashboard/mentor");
+                          }}
                         />
                       ))}
                     </EnaflixRow>
