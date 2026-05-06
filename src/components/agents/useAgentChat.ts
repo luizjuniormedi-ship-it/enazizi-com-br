@@ -330,19 +330,25 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         });
       };
 
+      const controller = new AbortController();
+      const abortTimeout = setTimeout(() => controller.abort(), 60000);
+
       try {
         const result = await streamResponse({
           url: CHAT_URL,
           body: {
             messages: allMessages.map((m) => ({ role: m.role, content: m.content })),
             userContext: contextToSend || undefined,
-            // Campo opcional — backends antigos podem ignorar sem erro.
             adaptiveContext: adaptiveContext,
             adaptiveMeta: { status: adaptiveStatus },
           },
-          onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
+          onFirstChunk: () => {
+            clearTimeout(abortTimeout);
+            setLoadingStage("✍️ Gerando resposta...");
+          },
           onDelta: applyDelta,
           onError: ({ status, message }) => {
+            clearTimeout(abortTimeout);
             const errorMessages: Record<number, string> = {
               429: "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.",
               402: "Créditos de IA esgotados. Adicione créditos no seu workspace para continuar.",
@@ -354,11 +360,19 @@ export function useAgentChat(opts: UseAgentChatOptions) {
               message ||
               "Erro ao conectar com o agente IA";
             toast({ title: "Erro", description, variant: "destructive" });
+            
+            // Mark last message as error if possible
+            setMessages(prev => {
+              const last = prev[prev.length - 1];
+              if (last && last.role === "assistant") {
+                return prev.map((m, i) => i === prev.length - 1 ? { ...m, isError: true, content: description } : m);
+              }
+              return [...prev, { role: "assistant", content: description, isError: true }];
+            });
           },
         });
 
         if (result === null) {
-          // Error already surfaced via onError
           setIsLoading(false);
           setLoadingStage("");
           return;

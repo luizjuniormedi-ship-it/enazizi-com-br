@@ -163,7 +163,10 @@ const AgentMessageItem = memo(
             "rounded-3xl relative transition-all duration-500",
             msg.role === "user"
               ? "max-w-[85%] sm:max-w-[60%] px-6 py-4 bg-white/5 border border-white/10 text-white/90 backdrop-blur-xl shadow-xl hover:border-primary/30"
-              : "w-full px-0 py-2 text-white/90"
+              : cn(
+                  "w-full px-0 py-2 text-white/90",
+                  msg.isError && "bg-destructive/10 border border-destructive/20 rounded-2xl px-4 py-3"
+                )
           )}
         >
           {msg.role === "assistant" ? (
@@ -280,6 +283,17 @@ const AgentMessageItem = memo(
                       <BarChart3 className="h-3 w-3" /> Analytics
                     </Button>
                   </>
+                )}
+                
+                {msg.isError && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10"
+                    onClick={() => onRegenerateFromMemory?.(msg.sourceQuestion || "")}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" /> Tentar novamente
+                  </Button>
                 )}
               </div>
 

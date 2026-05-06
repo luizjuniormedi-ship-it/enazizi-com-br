@@ -5,6 +5,7 @@ import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerat
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -338,7 +339,6 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
 
     // --- SLOT-BASED GENERATION for JSON mode ---
     if (isJsonMode) {
-      const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2");
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
       // Parse requested count from user message or body

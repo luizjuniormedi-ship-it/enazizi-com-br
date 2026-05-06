@@ -21,6 +21,10 @@ export type Msg = {
     source: string;
     page?: number;
   }>;
+  /** Simulation/Generator specific: extracted questions for preview. */
+  questions?: any[];
+  /** Error status for the message. */
+  isError?: boolean;
 };
 
 export interface Conversation {
