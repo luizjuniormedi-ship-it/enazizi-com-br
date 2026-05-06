@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:e2e:simulados": "playwright test tests/e2e/simulados.spec.ts",
+    "test:e2e:tutor": "playwright test tests/e2e/tutor.spec.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "check:tailwind": "node scripts/check-tailwind-ambiguous.mjs",

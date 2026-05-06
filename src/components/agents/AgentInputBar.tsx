@@ -30,6 +30,7 @@ const AgentInputBar = memo(({
       <div className="relative flex items-center p-2 sm:p-3 pl-6">
         <Brain className="h-5 w-5 text-primary/40 mr-4 hidden sm:block" />
         <input
+          data-testid="agent-input"
           placeholder={isListening ? "Ouvindo sua pergunta..." : placeholder}
           className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-sm sm:text-base py-3 sm:py-4 selection:bg-primary/30"
           value={input}
@@ -53,6 +54,7 @@ const AgentInputBar = memo(({
           )}
           
           <Button
+            data-testid="agent-send-button"
             onClick={onSend}
             disabled={isLoading || sendCooldown || !input.trim()}
             className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
