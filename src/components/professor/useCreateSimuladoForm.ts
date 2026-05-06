@@ -595,6 +595,9 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     previewStudents, previewLoading, selectedStudentIds, studentSearch, setStudentSearch,
     searchResults, searchingStudents,
     expandedQuestion, setExpandedQuestion, topicDistribution, useDistribution,
+    selectedClassIds, setSelectedClassIds, assignmentMode, setAssignmentMode,
+    endAt, setEndAt, maxAttempts, setMaxAttempts, feedbackPolicy, setFeedbackPolicy,
+    allowRetake, setAllowRetake,
 
     // derived
     allQs, target, deficit, groupedBlocks,
