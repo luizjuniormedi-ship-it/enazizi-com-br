@@ -189,7 +189,7 @@ const App = () => (
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 {/* --- PUBLIC ROUTES --- */}
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={<ProtectedRoute><PreserveQueryNavigate to="/enaflix" /></ProtectedRoute>} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
                 <Route path="/install" element={<Install />} />
