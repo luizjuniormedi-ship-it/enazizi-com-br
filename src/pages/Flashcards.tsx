@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, memo } from "react";
 import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { useQueryClient } from "@tanstack/react-query";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
@@ -585,4 +585,4 @@ const Flashcards = () => {
   );
 };
 
-export default Flashcards;
+export default memo(Flashcards);

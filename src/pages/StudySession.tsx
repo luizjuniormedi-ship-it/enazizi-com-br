@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
@@ -1146,4 +1146,4 @@ const StudySession = () => {
   return content;
 };
 
-export default StudySession;
+export default memo(StudySession);
