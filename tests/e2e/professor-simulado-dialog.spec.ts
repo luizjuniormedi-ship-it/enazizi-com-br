@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 /**
  * E2E tests for the Professor Simulado Creation Dialog.
- * Tests positioning, dragging, and accessibility.
+ * Tests positioning, dragging, accessibility and full flow.
  */
 test.describe('Professor Simulado Creation Dialog E2E', () => {
   
@@ -32,6 +32,9 @@ test.describe('Professor Simulado Creation Dialog E2E', () => {
     // 4. Validate Dialog is open and at the top
     const dialog = page.getByTestId('create-simulado-dialog');
     await expect(dialog).toBeVisible();
+    
+    // Confirm it's always in DOM even if hidden (Radix standard)
+    // but the test specifically checks for visibility.
     
     const boundingBox = await dialog.boundingBox();
     expect(boundingBox).not.toBeNull();
@@ -64,28 +67,44 @@ test.describe('Professor Simulado Creation Dialog E2E', () => {
     await expect(dialog).not.toBeVisible();
   });
 
-  test('Create Simulado Dialog internal scrolling and footer visibility', async ({ page }) => {
+  test('Create Simulado full flow validation', async ({ page }) => {
     await page.goto('/professor');
     await page.getByRole('button', { name: /NOVO SIMULADO/i }).click();
     
     const dialog = page.getByTestId('create-simulado-dialog');
     await expect(dialog).toBeVisible();
     
-    // Fill title to ensure form is interactable
+    // 1. Fill basic info
     const titleInput = page.getByPlaceholder('Nome do simulado');
-    await titleInput.fill('Simulado E2E Test');
+    await titleInput.fill('Simulado E2E ' + Date.now());
     
-    // Scroll the body
-    const scrollableBody = page.getByTestId('dialog-body');
-    await scrollableBody.evaluate((el) => el.scrollTop = 500);
+    const descInput = page.getByPlaceholder(/Instruções/i);
+    await descInput.fill('Descrição do simulado E2E');
     
-    // Footer should still be visible and fixed
-    const footer = page.getByTestId('dialog-footer');
-    await expect(footer).toBeVisible();
+    // 2. Configure questions (Manual mode for stability)
+    await page.getByRole('button', { name: /Criar Manual/i }).click();
     
-    // Check if footer stayed at bottom (approx)
-    const dialogBox = await dialog.boundingBox();
-    const footerBox = await footer.boundingBox();
-    expect(footerBox!.y + footerBox!.height).toBeCloseTo(dialogBox!.y + dialogBox!.height, 1);
+    const statementInput = page.getByPlaceholder(/Enunciado/i);
+    await statementInput.fill('Qual a capital do Brasil?');
+    
+    const options = page.locator('input[placeholder^="Opção"]');
+    await options.nth(0).fill('Brasília');
+    await options.nth(1).fill('Rio de Janeiro');
+    
+    await page.getByRole('button', { name: /Adicionar Questão/i }).click();
+    
+    // 3. Confirm button "CRIAR E ATRIBUIR" is enabled
+    const submitBtn = page.getByRole('button', { name: /CRIAR E ATRIBUIR/i });
+    await expect(submitBtn).toBeEnabled();
+    
+    // 4. Click submit and check loading
+    await submitBtn.click();
+    await expect(page.getByText(/CRIANDO/i)).toBeVisible();
+    
+    // 5. Wait for success and dialog close
+    await expect(dialog).not.toBeVisible({ timeout: 15000 });
+    
+    // 6. Confirm success toast or listing update
+    await expect(page.getByText(/Simulado criado/i)).toBeVisible();
   });
 });
