@@ -535,7 +535,7 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "create_simulado": {
-        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json, student_ids, scheduled_at, auto_assign } = params;
+        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json, student_ids, class_ids, assignment_mode, scheduled_at, end_at, max_attempts, feedback_policy, allow_retake, exam_board, auto_assign } = params;
 
         // Determine status based on scheduling
         const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
