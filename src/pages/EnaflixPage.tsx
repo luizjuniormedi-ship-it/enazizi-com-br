@@ -525,7 +525,28 @@ export default function EnaflixPage() {
                   );
                 }
 
-                // 4. CONTINUAR ESTUDANDO (Higiene de fluxo)
+                // 4. QUESTÕES QUE MAIS CAEM (High Yield)
+                if (personalizedRows?.highYieldTopics && personalizedRows.highYieldTopics.length > 0) {
+                  rows.push(
+                    <EnaflixRow key="high-yield-row" title="Questões que Mais Caem">
+                      {personalizedRows.highYieldTopics.map((hy, i) => (
+                        <EnaflixDynamicCard
+                          key={`hy-${i}`}
+                          title={hy.topic}
+                          subtitle={`Frequência: ${Math.round(hy.frequencyScore)}% • ${hy.exam}`}
+                          description={`Seu desempenho: ${Math.round(hy.userPerformance)}%`}
+                          badge="HIGH YIELD"
+                          accent={hy.userPerformance < 60 ? "destructive" : "info"}
+                          ctaText="Treinar Questões"
+                          footerInfo="CME Performance"
+                          onClick={() => navigate("/dashboard/simulados")}
+                        />
+                      ))}
+                    </EnaflixRow>
+                  );
+                }
+
+                // 5. CONTINUAR ESTUDANDO (Higiene de fluxo)
                 if (continueModules.length > 0 || continueLessons.length > 0) {
                   rows.push(
                     <div key="continue-container" className="space-y-8">
@@ -547,26 +568,6 @@ export default function EnaflixPage() {
                         />
                       )}
                     </div>
-                  );
-                }
-
-                // 5. QUESTÕES QUE MAIS CAEM (High Yield)
-                if (personalizedRows?.highYieldTopics && personalizedRows.highYieldTopics.length > 0) {
-                  rows.push(
-                    <EnaflixRow key="high-yield-row" title="Questões que Mais Caem">
-                      {personalizedRows.highYieldTopics.map((hy, i) => (
-                        <EnaflixDynamicCard
-                          key={`hy-${i}`}
-                          title={hy.topic}
-                          subtitle={`Frequência: ${Math.round(hy.frequencyScore)}% • ${hy.exam}`}
-                          description={`Seu desempenho: ${Math.round(hy.userPerformance)}%`}
-                          badge="HIGH YIELD"
-                          accent={hy.userPerformance < 60 ? "destructive" : "info"}
-                          ctaText="Treinar Questões"
-                          onClick={() => navigate("/dashboard/simulados")}
-                        />
-                      ))}
-                    </EnaflixRow>
                   );
                 }
 
