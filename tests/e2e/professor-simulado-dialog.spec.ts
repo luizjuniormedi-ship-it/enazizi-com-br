@@ -59,28 +59,28 @@ test.describe('Professor Simulado Creation Dialog E2E', () => {
     // 7. Reopen and close with X button
     await openBtn.click();
     await expect(dialog).toBeVisible();
-    const closeBtn = dialog.locator('button:has-text("Close"), .sr-only:has-text("Close")').locator('..');
+    const closeBtn = page.getByRole('button', { name: /Close/i });
     await closeBtn.click();
     await expect(dialog).not.toBeVisible();
   });
 
   test('Create Simulado Dialog internal scrolling and footer visibility', async ({ page }) => {
     await page.goto('/professor');
-    await page.getByText(/NOVO SIMULADO/i).click();
+    await page.getByRole('button', { name: /NOVO SIMULADO/i }).click();
     
-    const dialog = page.locator('[role="dialog"]');
+    const dialog = page.getByTestId('create-simulado-dialog');
     await expect(dialog).toBeVisible();
     
     // Fill title to ensure form is interactable
-    const titleInput = dialog.locator('input[placeholder="Nome do simulado"]');
+    const titleInput = page.getByPlaceholder('Nome do simulado');
     await titleInput.fill('Simulado E2E Test');
     
     // Scroll the body
-    const scrollableBody = dialog.locator('.overflow-y-auto');
+    const scrollableBody = page.getByTestId('dialog-body');
     await scrollableBody.evaluate((el) => el.scrollTop = 500);
     
     // Footer should still be visible and fixed
-    const footer = dialog.locator('footer');
+    const footer = page.getByTestId('dialog-footer');
     await expect(footer).toBeVisible();
     
     // Check if footer stayed at bottom (approx)
