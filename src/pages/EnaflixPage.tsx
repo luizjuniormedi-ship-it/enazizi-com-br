@@ -341,7 +341,7 @@ export default function EnaflixPage() {
       {/* CONTEÚDO PRINCIPAL — começa no topo (y=0), passando por trás da topbar */}
       {isSearching ? (
         <main className="pt-24 pb-20">
-          <SearchResultsGrid modules={filteredModules} onNavigate={handleNavigate} />
+          <SearchResultsGrid modules={filteredModules} onNavigate={(m) => handleNavigate(m, "search_result")} />
         </main>
       ) : (
         <main>
