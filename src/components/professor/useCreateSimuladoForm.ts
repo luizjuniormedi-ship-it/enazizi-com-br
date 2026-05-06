@@ -39,6 +39,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   const [difficulty, setDifficulty] = useState("misto");
   const [difficultyMix, setDifficultyMix] = useState({ facil: 20, intermediario: 40, dificil: 40 });
   const [scheduledAt, setScheduledAt] = useState("");
+  const [endAt, setEndAt] = useState("");
+  const [maxAttempts, setMaxAttempts] = useState("1");
+  const [feedbackPolicy, setFeedbackPolicy] = useState<"immediate" | "after_deadline" | "manual">("immediate");
+  const [allowRetake, setAllowRetake] = useState(false);
   const [autoAssign, setAutoAssign] = useState(true);
   const [examBoard, setExamBoard] = useState("all");
 
