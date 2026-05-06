@@ -467,9 +467,9 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             try {
               const resp = await aiFetch({
                 messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
-                maxTokens: 16384,
-                timeoutMs: 110000,
-                maxRetries: 1,
+                maxTokens: 8192,
+                timeoutMs: 55000,
+                maxRetries: 0,
               });
               if (!resp.ok) { const t = await resp.text(); console.error(`[Slot ${level}][batch ${batchIdx + 1}] AI error:`, t.slice(0, 200)); return []; }
               const aiData = await resp.json();
