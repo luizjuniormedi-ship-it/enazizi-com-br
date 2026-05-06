@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/dialog";
 import { useCreateSimuladoForm } from "./useCreateSimuladoForm";
 import SimuladoBasicForm from "./SimuladoBasicForm";
-import SimuladoStudentPicker from "./SimuladoStudentPicker";
+import SimuladoAssignmentManager from "./SimuladoAssignmentManager";
 import SimuladoTopicsPicker from "./SimuladoTopicsPicker";
 import SimuladoDifficultyMix from "./SimuladoDifficultyMix";
 import SimuladoManualForm from "./SimuladoManualForm";
