@@ -343,7 +343,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
 
       // Parse requested count from user message or body
       const countFromMsg = lastMessage?.content?.match(/(\d+)/)?.[0];
-      const requestedCount = countFromMsg ? Math.min(parseInt(countFromMsg), 100) : Math.min(Number(count ?? 10), 100);
+      const requestedCount = countFromMsg ? Math.min(parseInt(countFromMsg), 20) : Math.min(Number(count ?? 10), 20);
 
       // Compute per-difficulty slot targets
 
@@ -415,7 +415,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       // Generate per slot
       const allQuestions: any[] = [];
       const globalPrev = Array.isArray(avoidStatements) ? [...avoidStatements] : [];
-      const SAFE_BATCH = 5;
+      const SAFE_BATCH = 4;
 
       for (const slot of slots) {
         const { level, target, desc } = slot;
@@ -439,7 +439,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         if (remaining > 0) {
           const batchCount = Math.ceil(remaining / SAFE_BATCH);
           // Reduzindo concorrência para evitar 429 e picos de custo (fila assíncrona controlada)
-          const PARALLEL_BATCHES = Math.min(batchCount, 3);
+          const PARALLEL_BATCHES = Math.min(batchCount, 2);
 
           const buildSlotPrompt = (needed: number, prevSnapshot: string[]) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
 
