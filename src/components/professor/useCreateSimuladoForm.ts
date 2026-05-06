@@ -65,6 +65,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   const [studentSearch, setStudentSearch] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchingStudents, setSearchingStudents] = useState(false);
+  const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
+  const [assignmentMode, setAssignmentMode] = useState<"filter" | "classes" | "manual" | "all">("filter");
 
   // UI auxiliar
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
