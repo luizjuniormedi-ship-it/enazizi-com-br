@@ -150,6 +150,14 @@ export default function EnaflixPage() {
       if (m.enabled === false) return false;
       if (m.requires === "admin" && !isAdmin) return false;
       if (m.requires === "professor" && !isProfessor && !isAdmin) return false;
+      
+      // Feature flags check: If it's an educational module, always show for students
+      // We explicitly exclude admin/telemetry/ingestion/governance from common users
+      if (!isAdmin && !isProfessor) {
+        const adminSpecific = ["admin", "telemetry", "incident-center", "ingestao", "governanca"];
+        if (adminSpecific.some(keyword => m.id.includes(keyword) || m.category === "admin")) return false;
+      }
+
       return true;
     });
   }, [isAdmin, isProfessor, adminLoading]);
