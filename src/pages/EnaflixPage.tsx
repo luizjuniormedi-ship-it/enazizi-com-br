@@ -143,11 +143,19 @@ export default function EnaflixPage() {
     document.title = "ENAFLIX — streaming inteligente do ENAZIZI";
     // Body bg cinematográfico para garantir continuidade visual
     document.body.style.backgroundColor = "#050508";
+
+    void emitShadowEvent({
+      module: "enaflix",
+      event: "watch_started",
+      topic: "hub_opened",
+      extra: { user_id: user?.id }
+    });
+
     return () => {
       document.title = prev;
       document.body.style.backgroundColor = "";
     };
-  }, []);
+  }, [user?.id]);
 
   const visibleModules = useMemo<EnaflixModule[]>(() => {
     if (adminLoading) return []; // Wait for admin check to finish
