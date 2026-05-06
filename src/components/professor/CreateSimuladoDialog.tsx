@@ -13,7 +13,7 @@ import SimuladoDifficultyMix from "./SimuladoDifficultyMix";
 import SimuladoManualForm from "./SimuladoManualForm";
 import SimuladoManualQuantityFields from "./SimuladoManualQuantityFields";
 import SimuladoQuestionsPreview from "./SimuladoQuestionsPreview";
-import SimuladoSchedule from "./SimuladoSchedule";
+import SimuladoSchedulingSettings from "./SimuladoSchedulingSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 type CallAPI = (body: Record<string, unknown>) => Promise<any>;
