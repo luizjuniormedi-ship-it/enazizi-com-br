@@ -95,12 +95,26 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     const { error } = await signIn(email, password);
-    setLoading(false);
+    
     if (error) {
+      setLoading(false);
       const msg = errorMessages[error.message] || error.message;
       toast({ title: "Erro ao entrar", description: msg, variant: "destructive" });
     } else {
-      navigate("/dashboard");
+      // Check user roles for redirection
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id);
+      
+      const hasPrivilegedRole = roles?.some(r => r.role === 'admin' || r.role === 'professor');
+      setLoading(false);
+      
+      if (hasPrivilegedRole) {
+        navigate("/dashboard");
+      } else {
+        navigate("/enaflix");
+      }
     }
   };
 
