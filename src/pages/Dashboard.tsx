@@ -40,7 +40,8 @@ const Dashboard = () => {
   const { data: dashData, isLoading: dashLoading, error: dashError } = useDashboardData();
   const { data: studyNext, isLoading: missionLoading, error: missionError, refresh: refreshStudyNext } = useStudyNext();
   const { data: snapshot, isLoading: snapLoading, error: snapError, refetch: refreshSnapshot } = useAnalyticsSnapshot();
-  const { recentIds } = useEnaflixUsage();
+  const enaflixUsage = useEnaflixUsage();
+  const recentIds = enaflixUsage.recentIds;
 
   const continueModules = useMemo(() => {
     return recentIds

@@ -34,7 +34,10 @@ async function fetchCoreData(userId: string): Promise<CoreDataResult> {
   const profileRes = await supabase.from("profiles")
     .select("display_name, has_completed_diagnostic, target_exams, target_exam, exam_date, last_study_plan_reset_at")
     .eq("user_id", userId).maybeSingle();
-  const ep = profileRes.data as any;
+  
+  if (profileRes.error) {
+    console.error("[CoreData] Profile fetch error:", profileRes.error);
+  }
   const resetAt = ep?.last_study_plan_reset_at || null;
 
   const [
