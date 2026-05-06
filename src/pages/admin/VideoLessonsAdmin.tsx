@@ -208,24 +208,25 @@ const VideoLessonsAdmin = () => {
   };
 
   return (
-    <div className="pb-32 pt-12 space-y-12 relative min-h-screen overflow-x-hidden">
+    <div className="pb-32 pt-4 sm:pt-12 relative min-h-screen">
       <EnaflixBackgroundFX intensity="intense" />
       
-      <div className="px-4 sm:px-8 lg:px-14 flex flex-col lg:flex-row lg:items-end justify-between gap-8">
-        <div className="space-y-2">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-3"
-          >
-            <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
-            <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Gestão de Conteúdo</span>
-          </motion.div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
-            Biblioteca <span className="gradient-text">Studio</span>
-          </h1>
-          <p className="text-white/50 text-lg max-w-2xl font-medium mt-4">Governança e auditoria de conteúdos multimídia médicos.</p>
-        </div>
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+          <div className="space-y-2">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-3"
+            >
+              <div className="h-2 w-10 bg-gradient-to-r from-primary to-accent rounded-full" />
+              <span className="text-[11px] font-black uppercase tracking-[0.4em] text-white/50">Gestão de Conteúdo</span>
+            </motion.div>
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
+              Biblioteca <span className="gradient-text">Studio</span>
+            </h1>
+            <p className="text-white/50 text-lg max-w-2xl font-medium mt-4">Governança e auditoria de conteúdos multimídia médicos.</p>
+          </div>
 
         <div className="flex flex-wrap gap-3 relative z-10">
           <Button 
