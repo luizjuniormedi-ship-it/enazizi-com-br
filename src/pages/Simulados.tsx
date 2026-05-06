@@ -476,7 +476,7 @@ const Simulados = () => {
   if (phase === "setup") {
     return (
       <div className="min-h-screen relative z-10 animate-fade-in pb-24" data-testid="simulados-page">
-        <EnaflixBackgroundFX intensity="low" />
+        <EnaflixBackgroundFX intensity="medium" />
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -499,7 +499,7 @@ const Simulados = () => {
           </div>
 
           {activeJobs.length > 0 && (
-            <EnaflixSection title="Gerações em Andamento" icon={<DatabaseZap className="h-5 w-5 text-primary" />}>
+            <EnaflixSection title="Gerações em Andamento">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeJobs.map(job => (
                   <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
@@ -566,7 +566,7 @@ const Simulados = () => {
             </div>
 
             <EnaflixSection title="Bancas Oficiais" subtitle="Simule o ambiente real das maiores provas do país.">
-              <EnaflixRow spacing="normal">
+              <EnaflixRow title="">
                 {Object.entries(EXAM_PROFILES).slice(0, 8).map(([id, profile]) => (
                   <div key={id} className="flex-none w-[280px] sm:w-[320px]">
                     <SimuladoProfileCard
@@ -608,7 +608,7 @@ const Simulados = () => {
   if (phase === "loading") {
     return (
       <div className="min-h-screen relative z-10 flex flex-col items-center justify-center animate-fade-in p-4">
-        <EnaflixBackgroundFX intensity="high" />
+        <EnaflixBackgroundFX intensity="medium" />
         <div className="relative flex flex-col items-center justify-center gap-6 text-center max-w-md w-full">
           <div className="relative">
             <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse" />
