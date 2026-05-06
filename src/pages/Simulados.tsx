@@ -415,14 +415,32 @@ const Simulados = () => {
             "question-generator",
             {
               body: {
-                topics: config.topics || ["Clínica Médica"],
-                count: currentBatchSize,
+                stream: false,
+                outputFormat: "json",
                 difficulty: config.difficulty || "misto",
+                timeoutMs: 120000,
+                messages: [{
+                  role: "user",
+                  content: buildPrompt(
+                    config.topics || ["Clínica Médica"],
+                    currentBatchSize,
+                    config.difficulty || "misto",
+                    undefined,
+                    config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined
+                  )
+                }],
+                generationContext: {
+                  specialty: (config.topics && config.topics[0]) || "Clínica Médica",
+                  topic: (config.topics || ["Clínica Médica"]).join(", "),
+                  objective: "practice",
+                  source: "simulado",
+                },
+                targetExam: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
+                count: currentBatchSize,
                 imagePercent: config.imagePercent || 0,
-                examBoard: config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined,
                 avoidStatements: avoid,
                 jobId: currentJobId,
-                batchNumber: batchNum
+                batchNumber: batchNum,
               },
             }
           );
