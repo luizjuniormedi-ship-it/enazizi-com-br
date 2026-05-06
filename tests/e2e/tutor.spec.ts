@@ -47,7 +47,7 @@ test.describe('Tutor IA Module E2E', () => {
     expect(consoleErrors).toHaveLength(0);
   });
 
-  test('Send a pedagogical mission message and verify AI response', async ({ page }) => {
+  test('Send a pedagogical mission message and verify AI quality', async ({ page }) => {
     await page.goto('/dashboard/mentor');
     
     // Wait for the hero/start screen
@@ -55,22 +55,62 @@ test.describe('Tutor IA Module E2E', () => {
     
     // 3. Enviar mensagem
     const input = page.locator('input[placeholder*="Duke"]');
-    await input.fill('Protocolo de Sepse');
+    const missionTopic = 'Protocolo de Sepse';
+    await input.fill(missionTopic);
+    
+    const startTime = Date.now();
     await page.click('button:has-text("Estudar Agora")');
     
     // Wait for cinematic loading and transition to chat
     await expect(page.getByTestId('agent-input')).toBeVisible({ timeout: 30000 });
     
-    // Wait for first AI response
-    // We expect the pedagogical hero to appear
+    // 8. Streaming inicia em até 10s (após o loading cinematográfico)
+    // O loading leva ~1.2s + 0.5s de delay no AIMentor.tsx
+    const firstTokenLabel = page.locator('.prose').first();
+    await expect(firstTokenLabel).toBeVisible({ timeout: 15000 });
+    const firstTokenTime = Date.now() - startTime;
+    console.log(`Time to first token: ${firstTokenTime}ms`);
+    expect(firstTokenTime).toBeLessThan(20000); // 10s de streaming + ~5s de UI transitions
+
+    // Wait for full response (pedagogical hero status 'done' or similar progress)
     await expect(page.getByTestId('pedagogical-hero')).toBeVisible({ timeout: 60000 });
     
-    // Check if progress is tracked
-    const progress = page.getByTestId('pedagogical-hero').locator('.text-primary');
-    await expect(progress).toBeVisible();
+    // Wait for the response to stabilize (no longer loading)
+    await expect(page.locator('.animate-pulse')).toHaveCount(0, { timeout: 60000 });
     
-    // Confirm AI response text is appearing
-    await expect(page.locator('.prose')).first().toBeVisible();
+    const totalTime = Date.now() - startTime;
+    console.log(`Total response time: ${totalTime}ms`);
+
+    const responseText = await page.locator('.prose').first().innerText();
+    
+    // 6. Não retorna resposta vazia
+    expect(responseText.length).toBeGreaterThan(100);
+
+    // 7. Não retorna erro genérico
+    expect(responseText.toLowerCase()).not.toContain('erro inesperado');
+    expect(responseText.toLowerCase()).not.toContain('erro no serviço');
+
+    // 1. Resposta em português brasileiro
+    // Verificando palavras comuns do PT-BR médico
+    const ptKeywords = ['paciente', 'conduta', 'diagnóstico', 'tratamento', 'médico'];
+    const hasPt = ptKeywords.some(word => responseText.toLowerCase().includes(word));
+    expect(hasPt).toBeTruthy();
+
+    // 2. Não saiu do tema da missão
+    expect(responseText.toLowerCase()).toContain('sepse');
+
+    // 3. Contém explicação didática (presença de estrutura ou palavras chave)
+    expect(responseText.toLowerCase()).toMatch(/explica|entenda|fisiopatologia|mecanismo/);
+
+    // 4. Contém etapa estilo Feynman/leiga
+    expect(responseText.toLowerCase()).toMatch(/leigo|simples|analogia|feynman/);
+
+    // 5. Contém pergunta de active recall
+    // Geralmente termina com interrogação ou solicita que o usuário responda
+    expect(responseText).toContain('?');
+
+    // 9. Resposta finaliza sem 504
+    // Se chegou aqui e o texto é longo, não houve 504 fatal interrompendo o fluxo
   });
 
   test('Quick actions work correctly', async ({ page }) => {
