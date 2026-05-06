@@ -131,7 +131,9 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               onDescriptionChange={f.setDescription}
             />
 
-            <SimuladoStudentPicker
+            <SimuladoAssignmentManager
+              assignmentMode={f.assignmentMode}
+              onAssignmentModeChange={f.setAssignmentMode}
               faculdadeFilter={f.faculdadeFilter}
               periodoFilter={f.periodoFilter}
               onFaculdadeChange={f.setFaculdadeFilter}
@@ -139,6 +141,8 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               previewStudents={f.previewStudents}
               previewLoading={f.previewLoading}
               selectedStudentIds={f.selectedStudentIds}
+              selectedClassIds={f.selectedClassIds}
+              onSelectedClassIdsChange={f.setSelectedClassIds}
               studentSearch={f.studentSearch}
               searchResults={f.searchResults}
               searchingStudents={f.searchingStudents}
