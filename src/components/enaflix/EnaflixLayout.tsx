@@ -35,13 +35,9 @@ export function EnaflixLayout({ children }: Props) {
       {/* Global Cinematic Background */}
       <EnaflixBackgroundFX intensity="medium" />
 
-      {/* Navigation Layer - Hidden for Students */}
-      {showSidebar && (
-        <>
-          <EnaflixSidebar />
-          <EnaflixMobileNav />
-        </>
-      )}
+      {/* Navigation Layer - Sidebar for Admin/Professor, Mobile Nav for everyone */}
+      {showSidebar && <EnaflixSidebar />}
+      <EnaflixMobileNav />
 
       {/* Consistente Top Navigation for Students in subpages */}
       {showTopNav && (
