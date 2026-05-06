@@ -191,8 +191,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
         { role: "system", content: "Você é um professor de medicina que cria questões de altíssima qualidade no estilo de provas reais de residência médica brasileira. Responda APENAS com JSON válido, sem markdown. Cada questão DEVE ter caso clínico completo.\n\nIDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA gere questões, alternativas ou explicações em inglês." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 90000,
-      maxRetries: 1,
+      timeoutMs: 55000,
+      maxRetries: 0,
     });
     const elapsed = Date.now() - startMs;
 
@@ -332,8 +332,8 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
         { role: "system", content: "Você é um professor de medicina especialista em criar questões de residência médica. Responda APENAS com JSON válido, sem markdown." },
         { role: "user", content: prompt },
       ],
-      timeoutMs: 90000,
-      maxRetries: 1,
+      timeoutMs: 55000,
+      maxRetries: 0,
     });
     const elapsed = Date.now() - startMs;
 
