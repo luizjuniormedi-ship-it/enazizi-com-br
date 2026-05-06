@@ -39,7 +39,7 @@ test.describe('Professor Simulado Creation Dialog E2E', () => {
     expect(boundingBox!.y).toBeLessThan(100);
     
     // 5. Drag the dialog by the header
-    const header = dialog.locator('header');
+    const header = page.getByTestId('dialog-header');
     const startX = boundingBox!.x + boundingBox!.width / 2;
     const startY = boundingBox!.y + 20; // Click near the top of the header
     
