@@ -122,13 +122,14 @@ export default function EnaflixPage() {
   const isLoading = (isLoadingLessons || (isLoadingUsage && !!user) || adminLoading) && !forceReady;
 
   useEffect(() => {
-    // Safety valve: don't let the page stay stuck in skeleton mode for more than 5s
+    // Aumentamos o timeout de segurança para 8s e forçamos o log se falhar
     const timer = setTimeout(() => {
       if (isLoading && !forceReady) {
+        console.warn("[EnaflixPage] Loading timeout - forcing ready state for resilience.");
         setForceReady(true);
         void emitShadowEvent({ module: "enaflix", event: "watch_abandoned", topic: "loading_timeout_recovery" });
       }
-    }, 5000);
+    }, 8000);
     return () => clearTimeout(timer);
   }, [isLoading, forceReady]);
 
