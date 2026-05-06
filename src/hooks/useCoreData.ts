@@ -132,8 +132,9 @@ export function useCoreData() {
     queryKey: ["core-data", user?.id],
     queryFn: () => fetchCoreData(user!.id),
     enabled: !!user,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: 10 * 60 * 1000, // 10 min cache
+    gcTime: 15 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: 1,
   });
 }

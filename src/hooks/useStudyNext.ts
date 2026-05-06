@@ -73,10 +73,10 @@ export function useStudyNext() {
     queryKey: ["study-next", user?.id],
     queryFn: fetchStudyNext,
     enabled: !!user,
-    staleTime: 2 * 60_000,
+    staleTime: 5 * 60_000,
     gcTime: 10 * 60_000,
-    refetchOnWindowFocus: true,
-    retry: 2,
+    refetchOnWindowFocus: false,
+    retry: 1,
     placeholderData: (prev) => prev,
   });
 
