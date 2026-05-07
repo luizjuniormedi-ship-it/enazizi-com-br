@@ -41,7 +41,7 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
 
   return (
     <div className="space-y-3">
-      <Label className="text-base font-semibold">
+      <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">
         Temas ({selectedTopics.length} selecionados)
       </Label>
       <div className="flex gap-2">
