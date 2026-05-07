@@ -402,10 +402,10 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
                 <SimuladoAssignmentManager
                   assignmentMode={form.assignmentMode}
                   onAssignmentModeChange={form.setAssignmentMode}
-                  faculdadeFilter={form.faculdadeFilter}
-                  periodoFilter={form.periodoFilter}
-                  onFaculdadeChange={form.setFaculdadeFilter}
-                  onPeriodoChange={form.setPeriodoFilter}
+                faculdadeFilters={form.faculdadeFilters}
+                periodoFilters={form.periodoFilters}
+                onFaculdadeChange={form.setFaculdadeFilters}
+                onPeriodoChange={form.setPeriodoFilters}
                   previewStudents={form.previewStudents}
                   previewLoading={form.previewLoading}
                   selectedStudentIds={form.selectedStudentIds}
