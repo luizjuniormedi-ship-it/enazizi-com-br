@@ -725,7 +725,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         setCreating(false);
       }
     });
-  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast, safeAction]);
+  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilters, periodoFilters, callAPI, toast, safeAction]);
 
 
   const allQs = useMemo(() => {
