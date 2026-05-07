@@ -705,6 +705,7 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
               )}
             </div>
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>
