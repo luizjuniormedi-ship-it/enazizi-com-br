@@ -59,8 +59,24 @@ const Register = () => {
       }
     }
 
-    if (userType === "professor" && !faculdade) {
-      toast({ title: "Selecione sua universidade", variant: "destructive" });
+    if (!phone) {
+      toast({ title: "Informe seu WhatsApp para contato", variant: "destructive" });
+      return;
+    }
+
+    const phoneCheck = isValidPhone(phone);
+    if (!phoneCheck.valid) {
+      toast({ title: phoneCheck.message, variant: "destructive" });
+      return;
+    }
+
+    if (!faculdade) {
+      toast({ title: userType === "estudante" ? "Selecione sua faculdade" : "Selecione sua universidade", variant: "destructive" });
+      return;
+    }
+
+    if (userType === "estudante" && !periodo) {
+      toast({ title: "Selecione seu período", variant: "destructive" });
       return;
     }
 
@@ -70,7 +86,7 @@ const Register = () => {
       displayName: name,
       userType,
       faculdade,
-      phone: userType === "estudante" ? phoneDigits : undefined,
+      phone: phoneDigits,
       periodo: userType === "estudante" ? parseInt(periodo) : undefined,
     });
     setLoading(false);
