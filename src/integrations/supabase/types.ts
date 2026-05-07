@@ -17158,9 +17158,66 @@ export type Database = {
           },
         ]
       }
+      teacher_simulado_submissions: {
+        Row: {
+          ai_recommendations: Json | null
+          answers: Json
+          correct_count: number | null
+          created_at: string | null
+          id: string
+          professor_comment: string | null
+          score: number | null
+          simulado_id: string | null
+          status: string | null
+          student_id: string | null
+          time_spent_seconds: number | null
+          updated_at: string | null
+          wrong_count: number | null
+        }
+        Insert: {
+          ai_recommendations?: Json | null
+          answers?: Json
+          correct_count?: number | null
+          created_at?: string | null
+          id?: string
+          professor_comment?: string | null
+          score?: number | null
+          simulado_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          time_spent_seconds?: number | null
+          updated_at?: string | null
+          wrong_count?: number | null
+        }
+        Update: {
+          ai_recommendations?: Json | null
+          answers?: Json
+          correct_count?: number | null
+          created_at?: string | null
+          id?: string
+          professor_comment?: string | null
+          score?: number | null
+          simulado_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          time_spent_seconds?: number | null
+          updated_at?: string | null
+          wrong_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_simulado_submissions_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_simulados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_simulados: {
         Row: {
           allow_retake: boolean | null
+          archived_at: string | null
           auto_assign: boolean | null
           created_at: string
           description: string | null
@@ -17173,6 +17230,7 @@ export type Database = {
           max_attempts: number | null
           periodo_filter: number | null
           professor_id: string
+          published_at: string | null
           questions_json: Json
           scheduled_at: string | null
           start_at: string | null
@@ -17185,6 +17243,7 @@ export type Database = {
         }
         Insert: {
           allow_retake?: boolean | null
+          archived_at?: string | null
           auto_assign?: boolean | null
           created_at?: string
           description?: string | null
@@ -17197,6 +17256,7 @@ export type Database = {
           max_attempts?: number | null
           periodo_filter?: number | null
           professor_id: string
+          published_at?: string | null
           questions_json?: Json
           scheduled_at?: string | null
           start_at?: string | null
@@ -17209,6 +17269,7 @@ export type Database = {
         }
         Update: {
           allow_retake?: boolean | null
+          archived_at?: string | null
           auto_assign?: boolean | null
           created_at?: string
           description?: string | null
@@ -17221,6 +17282,7 @@ export type Database = {
           max_attempts?: number | null
           periodo_filter?: number | null
           professor_id?: string
+          published_at?: string | null
           questions_json?: Json
           scheduled_at?: string | null
           start_at?: string | null
