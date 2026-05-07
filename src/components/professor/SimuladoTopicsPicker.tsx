@@ -80,8 +80,8 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           <p className="text-xs font-medium text-muted-foreground">
             Subtemas específicos (opcional) — ex: IAM, TEP, Pré-eclâmpsia
           </p>
-          {selectedTopics.map((topic) => (
-            <div key={topic} className="flex items-center gap-2">
+          {selectedTopics.map((topic, idx) => (
+            <div key={`${topic}-sub-${idx}`} className="flex items-center gap-2">
               <Badge variant="outline" className="shrink-0 text-[10px]">
                 {topic}
               </Badge>
