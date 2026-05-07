@@ -35,6 +35,7 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
           onChange={(e) => onStatementChange(e.target.value)}
           placeholder="Paciente de 55 anos, hipertenso, apresenta dor precordial..."
           rows={3}
+          className="bg-white/5 border-white/10 rounded-xl px-4 py-3 resize-none text-xs"
         />
       </div>
 
