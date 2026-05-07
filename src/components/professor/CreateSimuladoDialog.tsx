@@ -121,10 +121,10 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
           >
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Plus className="h-5 w-5 text-primary" /> Criar Simulado
+                <Plus className="h-5 w-5 text-primary" /> {f.showConfirm ? "Confirmar Publicação" : "Criar Simulado"}
               </DialogTitle>
               <DialogDescription>
-                Configure o simulado, gere questões e atribua aos alunos.
+                {f.showConfirm ? "Revise os detalhes abaixo antes de disponibilizar o simulado aos alunos." : "Configure o simulado, gere questões e atribua aos alunos."}
               </DialogDescription>
             </DialogHeader>
           </header>
