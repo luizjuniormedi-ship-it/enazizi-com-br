@@ -701,6 +701,9 @@ REGRAS INVIOLÁVEIS:
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
+            await logTraceStep(tid, "notifications_in_app", "success", { count: newInApp.length });
+          } else {
+            await logTraceStep(tid, "notifications_in_app", "success", { count: 0, reason: "already_notified" });
           }
 
           // WhatsApp notification for students with phone — dedup
