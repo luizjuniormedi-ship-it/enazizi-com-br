@@ -17111,6 +17111,44 @@ export type Database = {
           },
         ]
       }
+      teacher_simulado_interventions: {
+        Row: {
+          content: Json | null
+          created_at: string | null
+          id: string
+          review_id: string | null
+          status: string | null
+          student_id: string | null
+          type: string | null
+        }
+        Insert: {
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          review_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          type?: string | null
+        }
+        Update: {
+          content?: Json | null
+          created_at?: string | null
+          id?: string
+          review_id?: string | null
+          status?: string | null
+          student_id?: string | null
+          type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_simulado_interventions_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_simulado_student_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_simulado_results: {
         Row: {
           answers_json: Json | null
@@ -17151,6 +17189,103 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "teacher_simulado_results_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_simulados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_simulado_status_history: {
+        Row: {
+          changed_by: string | null
+          created_at: string | null
+          id: string
+          new_status: string | null
+          old_status: string | null
+          reason: string | null
+          simulado_id: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          reason?: string | null
+          simulado_id?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string | null
+          id?: string
+          new_status?: string | null
+          old_status?: string | null
+          reason?: string | null
+          simulado_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_simulado_status_history_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_simulados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_simulado_student_reviews: {
+        Row: {
+          accuracy: number | null
+          created_at: string | null
+          id: string
+          intervention_status: string | null
+          professor_comment: string | null
+          professor_id: string | null
+          score: number | null
+          simulado_id: string | null
+          student_id: string | null
+          time_spent_seconds: number | null
+          tutor_recommendation: string | null
+          updated_at: string | null
+          weak_topics: Json | null
+          wrong_questions: Json | null
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string | null
+          id?: string
+          intervention_status?: string | null
+          professor_comment?: string | null
+          professor_id?: string | null
+          score?: number | null
+          simulado_id?: string | null
+          student_id?: string | null
+          time_spent_seconds?: number | null
+          tutor_recommendation?: string | null
+          updated_at?: string | null
+          weak_topics?: Json | null
+          wrong_questions?: Json | null
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string | null
+          id?: string
+          intervention_status?: string | null
+          professor_comment?: string | null
+          professor_id?: string | null
+          score?: number | null
+          simulado_id?: string | null
+          student_id?: string | null
+          time_spent_seconds?: number | null
+          tutor_recommendation?: string | null
+          updated_at?: string | null
+          weak_topics?: Json | null
+          wrong_questions?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_simulado_student_reviews_simulado_id_fkey"
             columns: ["simulado_id"]
             isOneToOne: false
             referencedRelation: "teacher_simulados"
@@ -17217,6 +17352,7 @@ export type Database = {
       teacher_simulados: {
         Row: {
           allow_retake: boolean | null
+          answer_key_policy: string | null
           archived_at: string | null
           auto_assign: boolean | null
           created_at: string
@@ -17243,6 +17379,7 @@ export type Database = {
         }
         Insert: {
           allow_retake?: boolean | null
+          answer_key_policy?: string | null
           archived_at?: string | null
           auto_assign?: boolean | null
           created_at?: string
@@ -17269,6 +17406,7 @@ export type Database = {
         }
         Update: {
           allow_retake?: boolean | null
+          answer_key_policy?: string | null
           archived_at?: string | null
           auto_assign?: boolean | null
           created_at?: string
@@ -20801,6 +20939,7 @@ export type Database = {
         | "ophthalmology"
         | "endoscopy"
         | "obstetric_trace"
+      notification_channel: "in_app" | "email"
       qa_error_type:
         | "IA_QUALIDADE"
         | "IA_JSON_INVALIDO"
@@ -20830,6 +20969,15 @@ export type Database = {
         | "falha_persistente"
         | "escalado"
       qa_severity: "critico" | "alto" | "medio" | "baixo"
+      simulado_status:
+        | "draft"
+        | "scheduled"
+        | "published"
+        | "in_progress"
+        | "closed"
+        | "corrected"
+        | "archived"
+        | "paused"
       simulation_job_status:
         | "pending"
         | "processing"
@@ -21065,6 +21213,7 @@ export const Constants = {
         "endoscopy",
         "obstetric_trace",
       ],
+      notification_channel: ["in_app", "email"],
       qa_error_type: [
         "IA_QUALIDADE",
         "IA_JSON_INVALIDO",
@@ -21096,6 +21245,16 @@ export const Constants = {
         "escalado",
       ],
       qa_severity: ["critico", "alto", "medio", "baixo"],
+      simulado_status: [
+        "draft",
+        "scheduled",
+        "published",
+        "in_progress",
+        "closed",
+        "corrected",
+        "archived",
+        "paused",
+      ],
       simulation_job_status: [
         "pending",
         "processing",
