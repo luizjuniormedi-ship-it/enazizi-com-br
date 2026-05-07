@@ -118,6 +118,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
       }}
     >
       <TeacherDialogContent
+        className="z-[120]"
         maxWidth="max-w-5xl"
         header={
           <>

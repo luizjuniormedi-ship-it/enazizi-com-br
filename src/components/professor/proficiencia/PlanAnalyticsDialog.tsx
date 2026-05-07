@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogBody,
 } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -131,8 +129,10 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl teacher-modal-content">
-        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
+      <TeacherDialogContent
+        className="z-[120]"
+        maxWidth="sm:max-w-5xl"
+        header={
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <DialogTitle className="flex items-center gap-2">
@@ -154,10 +154,8 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
           </div>
-        </DialogHeader>
-
-        <DialogBody className="space-y-6">
-
+        }
+      >
         {isLoading || !data ? (
           <div className="py-16 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
@@ -349,8 +347,7 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
             )}
           </div>
         )}
-        </DialogBody>
-      </DialogContent>
+      </TeacherDialogContent>
 
       <StudentTasksDialog
         open={!!selectedStudent}
