@@ -2170,6 +2170,33 @@ REGRAS:
         if (!response.ok) throw new Error("Erro ao gerar sugestões");
 
         const aiData = await response.json();
+        const recommendations = JSON.parse(sanitizeAiContent(aiData.choices?.[0]?.message?.content || "[]"));
+
+        return ok({ recommendations });
+      }
+
+      case "get_trace_audit": {
+        const { trace_id } = params;
+        if (!trace_id) throw new Error("trace_id obrigatório");
+
+        const isAdminTrace = roleData.some((r: any) => r.role === "admin");
+
+        let query = sb.from("teacher_simulado_trace_logs")
+          .select("*")
+          .eq("trace_id", trace_id)
+          .order("created_at", { ascending: true });
+
+        if (!isAdminTrace) {
+          query = query.eq("teacher_id", user.id);
+        }
+
+        const { data: logs, error: logError } = await query;
+        if (logError) throw logError;
+
+        return ok({ logs: logs || [] });
+      }
+
+        const aiData = await response.json();
         const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
         const jsonMatch = content.match(/\[[\s\S]*\]/);
         const suggestions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
