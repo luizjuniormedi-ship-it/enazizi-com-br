@@ -56,8 +56,7 @@ const ClassAnalytics = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
 
   const loadAnalytics = useCallback(async () => {
     if (!session) return;
-    try {
-      setLoading(true);
+    setLoading(true);
     try {
       let res;
       if (externalCallAPI) {

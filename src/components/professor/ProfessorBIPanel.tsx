@@ -25,8 +25,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
   const loadBI = async (sid?: string) => {
-    try {
-      setLoading(true);
+    setLoading(true);
     try {
       const res = await callAPI({ action: "professor_bi", student_id: sid && sid !== "all" ? sid : undefined });
       setData(res);
