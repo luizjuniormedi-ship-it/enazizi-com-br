@@ -411,6 +411,8 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
                 selectedStudentIds={form.selectedStudentIds}
                 selectedClassIds={form.selectedClassIds}
                 onSelectedClassIdsChange={form.setSelectedClassIds}
+                      selectedProfessorTurmaIds={form.selectedProfessorTurmaIds}
+                      onSelectedProfessorTurmaIdsChange={form.setSelectedProfessorTurmaIds}
                 studentSearch={form.studentSearch}
                 searchResults={form.searchResults}
                 searchingStudents={form.searchingStudents}

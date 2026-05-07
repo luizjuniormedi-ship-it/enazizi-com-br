@@ -223,6 +223,108 @@ serve(async (req) => {
     };
 
     switch (action) {
+      case "list_turmas": {
+        const { data: profProfile } = await sb.from("profiles").select("id").eq("user_id", user.id).single();
+        if (!profProfile) throw new Error("Perfil não encontrado");
+        
+        const { data: turmas, error } = await sb
+          .from("professor_turmas")
+          .select("*, students:professor_turma_students(student_id)")
+          .eq("professor_id", profProfile.id)
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        
+        const turmasWithStudents = await Promise.all(turmas.map(async (t: any) => {
+          const studentIds = t.students.map((s: any) => s.student_id);
+          if (studentIds.length === 0) return { ...t, student_details: [] };
+          const { data: details } = await sb.from("profiles").select("*").in("id", studentIds);
+          return { ...t, student_details: details || [] };
+        }));
+        
+        return ok({ turmas: turmasWithStudents });
+      }
+
+      case "create_turma": {
+        const { name, description, student_ids } = params;
+        const { data: profProfile } = await sb.from("profiles").select("id").eq("user_id", user.id).single();
+        if (!profProfile) throw new Error("Perfil do professor não encontrado");
+
+        const { data: turma, error } = await sb
+          .from("professor_turmas")
+          .insert({ professor_id: profProfile.id, name, description })
+          .select()
+          .single();
+        if (error) throw error;
+
+        if (student_ids?.length > 0) {
+          const studentLinks = student_ids.map((sid: string) => ({
+            turma_id: turma.id,
+            student_id: sid
+          }));
+          await sb.from("professor_turma_students").insert(studentLinks);
+        }
+
+        return ok({ success: true, turma });
+      }
+
+      case "update_turma": {
+        const { id, name, description, student_ids } = params;
+        const { error } = await sb
+          .from("professor_turmas")
+          .update({ name, description, updated_at: new Date().toISOString() })
+          .eq("id", id);
+        if (error) throw error;
+
+        if (Array.isArray(student_ids)) {
+          await sb.from("professor_turma_students").delete().eq("turma_id", id);
+          if (student_ids.length > 0) {
+            const studentLinks = student_ids.map((sid: string) => ({
+              turma_id: id,
+              student_id: sid
+            }));
+            await sb.from("professor_turma_students").insert(studentLinks);
+          }
+        }
+
+        return ok({ success: true });
+      }
+
+      case "delete_turma": {
+        const { id } = params;
+        const { error } = await sb.from("professor_turmas").delete().eq("id", id);
+        if (error) throw error;
+        return ok({ success: true });
+      }
+
+      case "get_students": {
+        const { faculdades, periodos, query, limit = 25, offset = 0 } = params;
+        let q = sb.from("profiles").select("*", { count: "exact" }).eq("user_type", "student");
+        
+        if (faculdades?.length > 0) q = q.in("faculdade", faculdades);
+        if (periodos?.length > 0) q = q.in("periodo", periodos);
+        if (query) q = q.or(`display_name.ilike.%${query}%,email.ilike.%${query}%`);
+        
+        const { data: students, count, error } = await q.range(offset, offset + limit - 1).order("display_name");
+        if (error) throw error;
+        return ok({ students, total: count });
+      }
+
+      case "search_students": {
+        const { query, limit = 25, offset = 0 } = params;
+        if (!query || query.length < 3) return ok({ students: [], total: 0 });
+        
+        const { data: students, count, error } = await sb
+          .from("profiles")
+          .select("*", { count: "exact" })
+          .eq("user_type", "student")
+          .or(`display_name.ilike.%${query}%,email.ilike.%${query}%`)
+          .range(offset, offset + limit - 1)
+          .order("display_name");
+          
+        if (error) throw error;
+        return ok({ students, total: count });
+      }
+
       case "generate_questions": {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements, examBoard } = params;
         if (!topics || !topics.length) throw new Error("Selecione pelo menos um tema");
@@ -650,6 +752,17 @@ REGRAS INVIOLÁVEIS:
               .in("class_id", class_ids)
               .eq("is_active", true);
             studentList = classStudents || [];
+          } else if (assignment_mode === "professor_turmas" && params.professor_turma_ids?.length > 0) {
+            const { data: turmaStudents } = await sb
+              .from("professor_turma_students")
+              .select("student_id")
+              .in("turma_id", params.professor_turma_ids);
+            
+            if (turmaStudents && turmaStudents.length > 0) {
+              const studentIds = turmaStudents.map((s: any) => s.student_id);
+              const { data: profiles } = await sb.from("profiles").select("user_id").in("id", studentIds);
+              studentList = profiles || [];
+            }
           } else if (assignment_mode === "all") {
             const { data: allStudents } = await sb.from("profiles").select("user_id").eq("status", "active");
             studentList = allStudents || [];
@@ -1024,10 +1137,12 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "get_students_count": {
-        const { faculdade, periodo, faculdades, periodos, class_ids } = params;
+        const { faculdade, periodo, faculdades, periodos, class_ids, professor_turma_ids } = params;
         
         let query;
-        if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
+        if (professor_turma_ids && Array.isArray(professor_turma_ids) && professor_turma_ids.length > 0) {
+          query = sb.from("professor_turma_students").select("student_id", { count: "exact", head: true }).in("turma_id", professor_turma_ids);
+        } else if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
           query = sb.from("class_members").select("user_id", { count: 'exact', head: true }).in("class_id", class_ids).eq("is_active", true);
         } else {
           query = sb.from("profiles").select("user_id", { count: 'exact', head: true }).eq("status", "active");

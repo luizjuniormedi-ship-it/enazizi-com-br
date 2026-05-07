@@ -13845,6 +13845,74 @@ export type Database = {
         }
         Relationships: []
       }
+      professor_turma_students: {
+        Row: {
+          created_at: string | null
+          student_id: string
+          turma_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          student_id: string
+          turma_id: string
+        }
+        Update: {
+          created_at?: string | null
+          student_id?: string
+          turma_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_turma_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professor_turma_students_turma_id_fkey"
+            columns: ["turma_id"]
+            isOneToOne: false
+            referencedRelation: "professor_turmas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professor_turmas: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          professor_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          professor_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          professor_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professor_turmas_professor_id_fkey"
+            columns: ["professor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           approved_at: string | null

@@ -260,6 +260,8 @@ const NewProfessorSimuladoPage = () => {
                 selectedStudentIds={form.selectedStudentIds}
                 selectedClassIds={form.selectedClassIds}
                 onSelectedClassIdsChange={form.setSelectedClassIds}
+                selectedProfessorTurmaIds={form.selectedProfessorTurmaIds}
+                onSelectedProfessorTurmaIdsChange={form.setSelectedProfessorTurmaIds}
                 studentSearch={form.studentSearch}
                 searchResults={form.searchResults}
                 searchingStudents={form.searchingStudents}
@@ -300,7 +302,7 @@ const NewProfessorSimuladoPage = () => {
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
             <div className="hidden sm:block">
               <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
-                {form.allQs.length} questões • {form.selectedStudentIds.length} alunos
+                {form.allQs.length} questões • {form.selectedStudentIds.length + form.selectedClassIds.length + form.selectedProfessorTurmaIds.length} públicos
               </p>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
@@ -326,7 +328,7 @@ const NewProfessorSimuladoPage = () => {
                     toast({ title: "Adicione questões", description: "O simulado precisa de pelo menos uma questão para ser publicado.", variant: "destructive" });
                     return;
                   }
-                  if (form.selectedStudentIds.length === 0 && form.assignmentMode !== 'all') {
+                  if (form.selectedStudentIds.length === 0 && form.selectedClassIds.length === 0 && form.selectedProfessorTurmaIds.length === 0 && form.assignmentMode !== 'all') {
                     toast({ title: "Selecione o público", description: "Selecione pelo menos um aluno ou turma.", variant: "destructive" });
                     return;
                   }
