@@ -39,14 +39,15 @@ const DialogContent = React.forwardRef<
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-1/2 top-6 z-[120] w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] overflow-hidden rounded-2xl duration-300 pointer-events-auto",
+          "fixed left-1/2 -translate-x-1/2 z-[120] w-[calc(100vw-2rem)] max-w-lg overflow-hidden rounded-2xl duration-300 pointer-events-auto",
+          "top-4 sm:top-10 bottom-auto translate-y-0", 
           "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-left-1/2",
           "card-pixar-static bg-[#0a0a0e]/95 border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]",
-          "max-h-[90vh] flex flex-col",
+          "max-h-[92vh] flex flex-col",
           isTeacherModal && [
-            "sm:top-12",
-            "sm:max-h-[calc(100vh-6rem)]",
-            "sm:w-full sm:max-w-3xl",
+            "sm:top-8",
+            "sm:max-h-[calc(100vh-4rem)]",
+            "sm:w-full sm:max-w-4xl",
             "p-0 gap-0",
             "sm:rounded-3xl"
           ],
