@@ -535,7 +535,36 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "create_simulado": {
-        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json, student_ids, class_ids, assignment_mode, scheduled_at, end_at, max_attempts, feedback_policy, allow_retake, exam_board, auto_assign } = params;
+        const { 
+          title, description, topics, faculdade_filter, periodo_filter, 
+          total_questions, time_limit_minutes, questions_json, 
+          student_ids, class_ids, assignment_mode, scheduled_at, end_at, 
+          max_attempts, feedback_policy, allow_retake, exam_board, auto_assign,
+          trace_id, client_request_id 
+        } = params;
+
+        // Trace for debugging
+        const tid = trace_id || crypto.randomUUID();
+        console.log(`[create_simulado][Trace:${tid}] Início da criação. ReqID: ${client_request_id}`);
+
+        // Idempotency check
+        if (client_request_id) {
+          const { data: existing } = await sb
+            .from("teacher_simulados")
+            .select("id")
+            .eq("professor_id", user.id)
+            .eq("client_request_id", client_request_id)
+            .maybeSingle();
+            
+          if (existing) {
+            console.warn(`[create_simulado][Trace:${tid}] Requisição duplicada ignorada.`);
+            return ok({ 
+              success: true, 
+              simulado_id: existing.id, 
+              status: "duplicate_ignored" 
+            });
+          }
+        }
 
         // Determine status based on scheduling
         const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
@@ -560,9 +589,14 @@ REGRAS INVIOLÁVEIS:
           allow_retake: allow_retake || false,
           exam_board: exam_board || null,
           auto_assign: auto_assign !== false,
+          trace_id: tid,
+          client_request_id: client_request_id
         }).select("id").single();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+          console.error(`[create_simulado][Trace:${tid}] Erro no insert principal:`, error);
+          throw new Error(error.message);
+        }
 
         // Handle assignments
         let studentList: { user_id: string }[] = [];
