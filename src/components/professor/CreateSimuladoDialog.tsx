@@ -62,7 +62,8 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
     open,
     onOpenChange,
     onCreated,
-    callAPI
+    callAPI,
+    initialData: editingSimulado
   });
 
   const isManual = form.questionMode === "manual";
