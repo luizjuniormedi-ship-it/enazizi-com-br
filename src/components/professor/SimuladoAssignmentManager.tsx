@@ -224,7 +224,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
             </div>
           )}
 
-          {previewStudents.length > 0 && (
+          {previewStudents.length > 0 ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
@@ -249,17 +249,25 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                       onClick={() => onToggleStudent(s.user_id)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left text-xs transition-all ${
                         isSelected
-                          ? "bg-primary/10 border-primary/40"
+                          ? "bg-primary/10 border-primary/40 shadow-glow-sm"
                           : "bg-background/40 border-white/5 hover:border-white/10"
                       }`}
                     >
                       {isSelected ? <CheckSquare className="h-4 w-4 text-primary shrink-0" /> : <Square className="h-4 w-4 text-muted-foreground shrink-0" />}
-                      <span className="truncate font-bold uppercase tracking-tight">{s.display_name || s.email || "Aluno sem identificação"}</span>
-                      {s.periodo && <span className="text-muted-foreground ml-auto shrink-0">{s.periodo}º</span>}
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate font-bold uppercase tracking-tight">{s.display_name || s.email || "Aluno sem identificação"}</p>
+                        {s.faculdade && <p className="text-[9px] text-muted-foreground uppercase">{s.faculdade}</p>}
+                      </div>
+                      {s.periodo && <span className="text-muted-foreground text-[10px] font-bold shrink-0">{s.periodo}º</span>}
                     </button>
                   );
                 })}
               </div>
+            </div>
+          ) : !searchingStudents && (
+            <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-2xl opacity-40">
+              <Search className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-[10px] font-bold uppercase tracking-widest">Busque alunos para começar</p>
             </div>
           )}
         </div>
