@@ -89,11 +89,9 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
         type="button"
         onClick={onAddManualQuestion}
         disabled={!manualStatement.trim() || manualOptions.filter((o) => o.trim()).length < 2}
-        variant="secondary"
-        className="w-full gap-1.5"
-        size="sm"
+        className="w-full h-10 gap-2 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-glow-sm"
       >
-        <Plus className="h-3.5 w-3.5" /> Adicionar Questão
+        <Plus className="h-4 w-4" /> ADICIONAR QUESTÃO
       </Button>
     </div>
   );
