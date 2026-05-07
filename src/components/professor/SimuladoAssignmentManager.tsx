@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from "react";
-import { Loader2, Plus, Users, CheckSquare, Square, Building2, UserPlus, Globe } from "lucide-react";
+import { Loader2, Plus, Users, CheckSquare, Square, Building2, UserPlus, Globe, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
