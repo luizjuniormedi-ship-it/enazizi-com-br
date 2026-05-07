@@ -399,28 +399,32 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
               </TabsContent>
 
               <TabsContent value="alunos" className="space-y-6 animate-in fade-in slide-in-from-left-2 mt-0">
-                <SimuladoAssignmentManager
-                  assignmentMode={form.assignmentMode}
-                  onAssignmentModeChange={form.setAssignmentMode}
+              <SimuladoAssignmentManager
+                assignmentMode={form.assignmentMode}
+                onAssignmentModeChange={form.setAssignmentMode}
                 faculdadeFilters={form.faculdadeFilters}
                 periodoFilters={form.periodoFilters}
                 onFaculdadeChange={(v) => form.setFaculdadeFilters(v)}
                 onPeriodoChange={(v) => form.setPeriodoFilters(v)}
-                  previewStudents={form.previewStudents}
-                  previewLoading={form.previewLoading}
-                  selectedStudentIds={form.selectedStudentIds}
-                  selectedClassIds={form.selectedClassIds}
-                  onSelectedClassIdsChange={form.setSelectedClassIds}
-                  studentSearch={form.studentSearch}
-                  searchResults={form.searchResults}
-                  searchingStudents={form.searchingStudents}
-                  onStudentSearchChange={form.setStudentSearch}
-                  onPreviewMatchingStudents={form.previewMatchingStudents}
-                  onSearchStudentGlobal={form.searchStudentGlobal}
-                  onAddSearchedStudent={form.addSearchedStudent}
-                  onToggleStudent={form.toggleStudentSelection}
-                  onToggleAllStudents={form.toggleAllStudents}
-                />
+                previewStudents={form.previewStudents}
+                previewLoading={form.previewLoading}
+                selectedStudentIds={form.selectedStudentIds}
+                selectedClassIds={form.selectedClassIds}
+                onSelectedClassIdsChange={form.setSelectedClassIds}
+                studentSearch={form.studentSearch}
+                searchResults={form.searchResults}
+                searchingStudents={form.searchingStudents}
+                onStudentSearchChange={form.setStudentSearch}
+                onPreviewMatchingStudents={form.previewMatchingStudents}
+                onSearchStudentGlobal={form.searchStudentGlobal}
+                onAddSearchedStudent={form.addSearchedStudent}
+                onToggleStudent={form.toggleStudentSelection}
+                onToggleAllStudents={form.toggleAllStudents}
+                onClearStudentSelection={form.clearStudentSelection}
+                onRemoveSelectedStudent={form.removeSelectedStudent}
+                studentPagination={form.studentPagination}
+                selectedStudentsData={form.selectedStudentsData}
+              />
               </TabsContent>
 
               <TabsContent value="config" className="space-y-6 animate-in fade-in slide-in-from-left-2 mt-0">

@@ -975,8 +975,8 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "get_students": {
-        const { faculdade, periodo, faculdades, periodos, query: nameQuery } = params;
-        let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status").eq("status", "active");
+        const { faculdade, periodo, faculdades, periodos, query: nameQuery, limit = 25, offset = 0 } = params;
+        let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status", { count: "exact" }).eq("status", "active");
         
         if (faculdades && Array.isArray(faculdades) && faculdades.length > 0) {
           query = query.in("faculdade", faculdades);
@@ -995,8 +995,12 @@ REGRAS INVIOLÁVEIS:
           query = query.ilike("display_name", `%${nameQuery}%`);
         }
 
-        const { data: students } = await query.order("display_name").limit(500);
-        return ok({ students: students || [] });
+        const { data: students, count, error } = await query
+          .order("display_name")
+          .range(offset, offset + limit - 1);
+        
+        if (error) throw error;
+        return ok({ students: students || [], total: count || 0 });
       }
 
       case "get_students_count": {
@@ -1018,17 +1022,19 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "search_students": {
-        const { query } = params;
+        const { query, limit = 25, offset = 0 } = params;
         if (!query || query.length < 3) throw new Error("Digite pelo menos 3 caracteres para buscar");
         const searchTerm = `%${query}%`;
-        const { data: found } = await sb.from("profiles")
-          .select("user_id, display_name, email, faculdade, periodo")
+        const { data: found, count, error } = await sb.from("profiles")
+          .select("user_id, display_name, email, faculdade, periodo", { count: "exact" })
           .eq("status", "active")
           .in("user_type", ["estudante", "medico"])
           .or(`display_name.ilike.${searchTerm},email.ilike.${searchTerm}`)
           .order("display_name")
-          .limit(20);
-        return ok({ students: found || [] });
+          .range(offset, offset + limit - 1);
+        
+        if (error) throw error;
+        return ok({ students: found || [], total: count || 0 });
       }
 
       case "class_analytics": {

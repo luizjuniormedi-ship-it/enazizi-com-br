@@ -96,6 +96,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   const [searchingStudents, setSearchingStudents] = useState(false);
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
   const [assignmentMode, setAssignmentMode] = useState<"filter" | "classes" | "manual" | "all">("filter");
+  const [studentPagination, setStudentPagination] = useState({ offset: 0, total: 0, hasMore: false });
+  const [selectedStudentsData, setSelectedStudentsData] = useState<any[]>([]);
 
   // UI auxiliar
   const [expandedQuestion, setExpandedQuestion] = useState<number | null>(null);
@@ -140,63 +142,129 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   }, [open, initialData]);
 
   // ============ Handlers de Alunos ============
-  const previewMatchingStudents = useCallback(async () => {
+  const previewMatchingStudents = useCallback(async (isLoadMore = false) => {
     setPreviewLoading(true);
+    const limit = 25;
+    const offset = isLoadMore ? studentPagination.offset + limit : 0;
+    
     try {
       const res = await callAPI({
         action: "get_students",
         faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
         periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
-        query: studentSearch.length >= 3 ? studentSearch : undefined
+        query: studentSearch.length >= 3 ? studentSearch : undefined,
+        limit,
+        offset
       });
+      
       const students = res.students || [];
-      setPreviewStudents(students);
-      // Optional: auto-select all found? Maybe not if we want manual selection
-      // setSelectedStudentIds(students.map((s: any) => s.user_id));
-    } catch {
-      setPreviewStudents([]);
+      const total = res.total || 0;
+      
+      setPreviewStudents(prev => isLoadMore ? [...prev, ...students] : students);
+      setStudentPagination({
+        offset,
+        total,
+        hasMore: offset + limit < total
+      });
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      if (!isLoadMore) setPreviewStudents([]);
     } finally {
       setPreviewLoading(false);
     }
-  }, [callAPI, faculdadeFilters, periodoFilters, studentSearch]);
+  }, [callAPI, faculdadeFilters, periodoFilters, studentSearch, studentPagination.offset]);
 
-  const searchStudentGlobal = useCallback(async () => {
+  // Debounced search effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (studentSearch.length === 0 || studentSearch.length >= 3) {
+        previewMatchingStudents();
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [studentSearch, faculdadeFilters, periodoFilters]);
+
+  const searchStudentGlobal = useCallback(async (isLoadMore = false) => {
     if (studentSearch.length < 3) {
       toast({ title: "Digite pelo menos 3 caracteres", variant: "destructive" });
       return;
     }
     setSearchingStudents(true);
+    const limit = 25;
+    const offset = isLoadMore ? studentPagination.offset + limit : 0;
+
     try {
-      const res = await callAPI({ action: "search_students", query: studentSearch });
-      setSearchResults(
-        (res.students || []).filter((s: any) => !previewStudents.some((p: any) => p.user_id === s.user_id))
-      );
+      const res = await callAPI({ 
+        action: "search_students", 
+        query: studentSearch,
+        limit,
+        offset
+      });
+      
+      const students = (res.students || []).filter((s: any) => !previewStudents.some((p: any) => p.user_id === s.user_id));
+      const total = res.total || 0;
+      
+      setSearchResults(prev => isLoadMore ? [...prev, ...students] : students);
+      setStudentPagination({
+        offset,
+        total,
+        hasMore: offset + limit < total
+      });
     } catch {
-      setSearchResults([]);
+      if (!isLoadMore) setSearchResults([]);
     } finally {
       setSearchingStudents(false);
     }
-  }, [callAPI, studentSearch, previewStudents, toast]);
+  }, [callAPI, studentSearch, previewStudents, toast, studentPagination.offset]);
 
   const addSearchedStudent = useCallback((student: any) => {
     setPreviewStudents((prev) =>
       prev.some((s: any) => s.user_id === student.user_id) ? prev : [...prev, student]
     );
     setSelectedStudentIds((prev) => (prev.includes(student.user_id) ? prev : [...prev, student.user_id]));
+    setSelectedStudentsData(prev => 
+      prev.some(s => s.user_id === student.user_id) ? prev : [...prev, student]
+    );
     setSearchResults((prev) => prev.filter((s: any) => s.user_id !== student.user_id));
   }, []);
 
-  const toggleStudentSelection = useCallback((userId: string) => {
-    setSelectedStudentIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId]
-    );
+  const toggleStudentSelection = useCallback((student: any) => {
+    const userId = student.user_id;
+    setSelectedStudentIds((prev) => {
+      const isSelected = prev.includes(userId);
+      if (isSelected) {
+        setSelectedStudentsData(data => data.filter(s => s.user_id !== userId));
+        return prev.filter((id) => id !== userId);
+      } else {
+        setSelectedStudentsData(data => [...data, student]);
+        return [...prev, userId];
+      }
+    });
   }, []);
 
   const toggleAllStudents = useCallback(() => {
-    setSelectedStudentIds((prev) =>
-      prev.length === previewStudents.length ? [] : previewStudents.map((s: any) => s.user_id)
-    );
-  }, [previewStudents]);
+    if (selectedStudentIds.length === previewStudents.length) {
+      // Unselect only those in current preview
+      const previewIds = previewStudents.map(s => s.user_id);
+      setSelectedStudentIds(prev => prev.filter(id => !previewIds.includes(id)));
+      setSelectedStudentsData(prev => prev.filter(s => !previewIds.includes(s.user_id)));
+    } else {
+      // Select all in current preview
+      const newStudents = previewStudents.filter(s => !selectedStudentIds.includes(s.user_id));
+      setSelectedStudentIds(prev => [...prev, ...newStudents.map(s => s.user_id)]);
+      setSelectedStudentsData(prev => [...prev, ...newStudents]);
+    }
+  }, [previewStudents, selectedStudentIds]);
+
+  const clearStudentSelection = useCallback(() => {
+    setSelectedStudentIds([]);
+    setSelectedStudentsData([]);
+  }, []);
+
+  const removeSelectedStudent = useCallback((userId: string) => {
+    setSelectedStudentIds(prev => prev.filter(id => id !== userId));
+    setSelectedStudentsData(prev => prev.filter(s => s.user_id !== userId));
+  }, []);
 
   // ============ Handlers de Temas ============
   const addTopic = useCallback(() => {
@@ -698,29 +766,39 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         return;
       }
 
+      if (assignmentMode === "all") {
+        const confirmed = window.confirm("ATENÇÃO: Este simulado será visível para TODOS os alunos da plataforma. Confirmar?");
+        if (!confirmed) return;
+      }
+
       setCreating(true);
       try {
-      let count = 0;
-      if (assignmentMode === "manual") count = selectedStudentIds.length;
-      else if (assignmentMode === "all") {
-        const { data } = await callAPI({ action: "get_students_count" });
-        count = data?.count || 0;
-      } else if (assignmentMode === "classes") {
-        const { data } = await callAPI({ action: "get_students_count", class_ids: selectedClassIds });
-        count = data?.count || 0;
-      } else {
-        const { data } = await callAPI({ 
-          action: "get_students_count", 
-          faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
-          periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
-        });
-        count = data?.count || 0;
-      }
-      
-      setImpactedCount(count);
-      setShowConfirm(true);
-    } catch (err: any) {
-      toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
+        let count = 0;
+        if (assignmentMode === "manual") count = selectedStudentIds.length;
+        else if (assignmentMode === "all") {
+          const { data } = await callAPI({ action: "get_students_count" });
+          count = data?.count || 0;
+        } else if (assignmentMode === "classes") {
+          const { data } = await callAPI({ action: "get_students_count", class_ids: selectedClassIds });
+          count = data?.count || 0;
+        } else {
+          const { data } = await callAPI({ 
+            action: "get_students_count", 
+            faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
+            periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
+          });
+          count = data?.count || 0;
+        }
+        
+        if (count === 0) {
+          toast({ title: "Público vazio", description: "Nenhum aluno foi encontrado com os critérios selecionados.", variant: "destructive" });
+          return;
+        }
+
+        setImpactedCount(count);
+        setShowConfirm(true);
+      } catch (err: any) {
+        toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
       } finally {
         setCreating(false);
       }
@@ -765,6 +843,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     selectedClassIds, setSelectedClassIds, assignmentMode, setAssignmentMode,
     endAt, setEndAt, maxAttempts, setMaxAttempts, feedbackPolicy, setFeedbackPolicy,
     allowRetake, setAllowRetake,
+    studentPagination, selectedStudentsData,
 
     // derived
     allQs, target, deficit, groupedBlocks,
@@ -775,7 +854,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     handleExamBoardChange,
     updateDifficultyMix,
     previewMatchingStudents, searchStudentGlobal, addSearchedStudent,
-    toggleStudentSelection, toggleAllStudents,
+    toggleStudentSelection, toggleAllStudents, clearStudentSelection,
+    removeSelectedStudent,
     removeGeneratedQuestion, removeManualQuestion,
     generateQuestionsAI, regenerateMissing,
     addManualQuestion, updateManualOption,
