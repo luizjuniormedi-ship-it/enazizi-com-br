@@ -33,6 +33,13 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 }: Props) {
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   
+  // LOG PARA DEBUG
+  useEffect(() => {
+    if (open) {
+      console.log("[CreateSimuladoDialog] Dialog montado e aberto");
+    }
+  }, [open]);
+
   // Se o diálogo não estiver aberto, não renderizamos nada além do próprio wrapper do Dialog
   // Isso garante que o estado interno do formulário não cause efeitos colaterais enquanto fechado
   if (!open) return null;
