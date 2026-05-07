@@ -17152,6 +17152,56 @@ export type Database = {
           },
         ]
       }
+      teacher_simulado_questions: {
+        Row: {
+          correct_index: number
+          created_at: string
+          difficulty_level: string | null
+          explanation: string | null
+          id: string
+          options: string[]
+          order_index: number | null
+          simulado_id: string
+          statement: string
+          topic: string | null
+          updated_at: string
+        }
+        Insert: {
+          correct_index: number
+          created_at?: string
+          difficulty_level?: string | null
+          explanation?: string | null
+          id?: string
+          options: string[]
+          order_index?: number | null
+          simulado_id: string
+          statement: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Update: {
+          correct_index?: number
+          created_at?: string
+          difficulty_level?: string | null
+          explanation?: string | null
+          id?: string
+          options?: string[]
+          order_index?: number | null
+          simulado_id?: string
+          statement?: string
+          topic?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_simulado_questions_simulado_id_fkey"
+            columns: ["simulado_id"]
+            isOneToOne: false
+            referencedRelation: "teacher_simulados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_simulado_results: {
         Row: {
           answers_json: Json | null

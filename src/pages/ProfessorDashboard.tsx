@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
+import { GraduationCap, Plus, Loader2, Video, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +25,7 @@ import type { ResultsDialogState } from "@/components/professor/SimuladoResultsD
 const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
 const CreateSimuladoDialog = lazyWithRetry(() => import("@/components/professor/CreateSimuladoDialog"), "CreateSimuladoDialog");
 const SimuladoResultsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoResultsDialog"), "SimuladoResultsDialog");
+const SimuladoQuestionsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoQuestionsDialog").then(m => ({ default: m.SimuladoQuestionsDialog })), "SimuladoQuestionsDialog");
 
 /**
  * ProfessorDashboard — orquestrador de layout.
@@ -47,12 +48,17 @@ const ProfessorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("simulados");
   const [showCreate, setShowCreate] = useState(false);
+  const [editingSimulado, setEditingSimulado] = useState<any>(null);
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
     simulado: null,
     results: [],
     loading: false,
     questions_json: [],
+  });
+  const [questionsDialog, setQuestionsDialog] = useState<{ open: boolean; simulado: any }>({
+    open: false,
+    simulado: null,
   });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
@@ -179,9 +185,18 @@ const ProfessorDashboard = () => {
     });
   }, []);
 
-  const handleOpenCreate = useCallback(() => {
+  const handleOpenQuestions = useCallback((simulado: any) => {
+    setQuestionsDialog({ open: true, simulado });
+  }, []);
+
+  const handleCloseQuestions = useCallback(() => {
+    setQuestionsDialog({ open: false, simulado: null });
+  }, []);
+
+  const handleOpenCreate = useCallback((simulado?: any) => {
     safeAction("open_create_dialog", async () => {
-      console.log("[ProfessorDashboard] handleOpenCreate disparado");
+      console.log("[ProfessorDashboard] handleOpenCreate disparado", simulado?.id);
+      setEditingSimulado(simulado || null);
       setShowCreate(true);
     });
   }, [safeAction]);
@@ -190,6 +205,9 @@ const ProfessorDashboard = () => {
     safeAction("close_create_dialog", async () => {
       console.log("[ProfessorDashboard] handleCloseCreate:", open);
       setShowCreate(open);
+      if (!open) {
+        setEditingSimulado(null);
+      }
     });
   }, [safeAction]);
 
@@ -299,6 +317,8 @@ const ProfessorDashboard = () => {
                     key={sim?.id || Math.random().toString()}
                     sim={sim}
                     onView={handleViewResults}
+                    onEdit={handleOpenCreate}
+                    onQuestions={handleOpenQuestions}
                     onDelete={handleDeleteSimulado}
                   />
                 )) : null}
@@ -369,7 +389,8 @@ const ProfessorDashboard = () => {
       {/* Diálogos controlados pelo estado do pai */}
       <CreateSimuladoDialog
         open={showCreate}
-        onOpenChange={setShowCreate}
+        onOpenChange={handleCloseCreate}
+        editingSimulado={editingSimulado}
         onCreated={loadSimulados}
       />
 
@@ -379,6 +400,17 @@ const ProfessorDashboard = () => {
             state={resultsDialog} 
             onClose={handleCloseResults} 
             callAPI={callAPI}
+          />
+        </Suspense>
+      )}
+
+      {questionsDialog.open && (
+        <Suspense fallback={null}>
+          <SimuladoQuestionsDialog
+            open={questionsDialog.open}
+            onOpenChange={handleCloseQuestions}
+            simuladoId={questionsDialog.simulado?.id}
+            simuladoTitle={questionsDialog.simulado?.title}
           />
         </Suspense>
       )}

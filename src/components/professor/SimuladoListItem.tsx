@@ -3,11 +3,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { FileText, Clock, Users, CheckCircle, Eye, Trash2, Timer } from "lucide-react";
+import { FileText, Clock, Users, CheckCircle, Eye, Trash2, Timer, Pencil, ListTodo } from "lucide-react";
 
 interface Props {
   sim: any;
   onView: (sim: any) => void;
+  onEdit: (sim: any) => void;
+  onQuestions: (sim: any) => void;
   onDelete: (id: string, title: string) => void;
 }
 
@@ -16,7 +18,7 @@ interface Props {
  * Memoizado por referência de `sim` + handlers estáveis no pai.
  * Evita rerender da lista inteira ao expandir/fechar dialogs.
  */
-const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete }: Props) {
+const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, onQuestions, onDelete }: Props) {
   const scheduledLabel = (() => {
     if (!sim.scheduled_at || sim.status !== "scheduled") return null;
     const target = new Date(sim.scheduled_at);
@@ -128,6 +130,18 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
               >
                 <Eye className="h-3.5 w-3.5" /> RESULTADOS
               </Button>
+
+              {sim.status === "draft" && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => onEdit(sim)} 
+                  className="h-9 px-4 rounded-xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px] gap-1.5 text-primary"
+                >
+                  <Pencil className="h-3.5 w-3.5" /> EDITAR
+                </Button>
+              )}
+
               <Button
                 variant="ghost"
                 size="sm"
@@ -138,13 +152,23 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
               </Button>
             </div>
             {sim.status === "draft" && (
-               <Button 
-                 variant="default" 
-                 size="sm" 
-                 className="h-8 text-[9px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700"
-               >
-                 PUBLICAR AGORA
-               </Button>
+              <div className="flex gap-1.5 mt-1.5">
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="h-8 flex-1 text-[9px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-700 gap-1.5"
+                  onClick={() => onQuestions(sim)}
+                >
+                  <ListTodo className="h-3 w-3" /> QUESTÕES
+                </Button>
+                <Button 
+                  variant="default" 
+                  size="sm" 
+                  className="h-8 flex-1 text-[9px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700"
+                >
+                  PUBLICAR
+                </Button>
+              </div>
             )}
           </div>
         </div>
