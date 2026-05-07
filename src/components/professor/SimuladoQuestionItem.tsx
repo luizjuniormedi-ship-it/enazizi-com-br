@@ -33,7 +33,7 @@ const SimuladoQuestionItem = memo(
               Q{globalIdx + 1}: {q.statement}
             </p>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <Badge variant="outline" className="text-[9px]">
+              <Badge variant="outline" className="text-[9px] font-black uppercase border-white/10 bg-white/5">
                 {q.topic || block}
               </Badge>
               {q.difficulty_level && (
