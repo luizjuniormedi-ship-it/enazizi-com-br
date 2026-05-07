@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -9,9 +9,25 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { BarChart3, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { 
+  BarChart3, 
+  ChevronDown, 
+  ChevronUp, 
+  Loader2, 
+  MessageSquare, 
+  Brain, 
+  Send,
+  Save,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle
+} from "lucide-react";
 import SimuladoReportInsights from "./SimuladoReportInsights";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 
 export interface ResultsDialogState {
   open: boolean;
@@ -24,13 +40,14 @@ export interface ResultsDialogState {
 interface Props {
   state: ResultsDialogState;
   onClose: () => void;
+  callAPI?: (body: any) => Promise<any>;
 }
 
-/**
- * Dialog de resultados com suporte a relatórios pedagógicos e lista de alunos.
- */
-const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClose }: Props) {
+const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClose, callAPI }: Props) {
   const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
+  const [comments, setComments] = useState<Record<string, string>>({});
+  const [savingReview, setSavingReview] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const completedCount = state.results.filter((r) => r.status === "completed").length;
   const avgScore = (() => {
@@ -39,6 +56,45 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
       ? Math.round(completed.reduce((s, r) => s + (r.score || 0), 0) / completed.length)
       : 0;
   })();
+
+  const handleSaveReview = useCallback(async (student: any) => {
+    if (!callAPI) return;
+    setSavingReview(student.student_id);
+    try {
+      const studentAnswers = (student.answers_json || []) as any[];
+      const weakTopics = Array.from(new Set(studentAnswers.filter(a => !a.is_correct).map(a => a.topic || "Geral")));
+      const wrongQuestions = studentAnswers.filter(a => !a.is_correct).map(a => ({
+        index: a.question_index,
+        topic: a.topic
+      }));
+
+      await callAPI({
+        action: "save_review",
+        simulado_id: state.simulado.id,
+        student_id: student.student_id,
+        professor_comment: comments[student.student_id] || "",
+        score: student.score,
+        accuracy: student.score,
+        time_spent_seconds: student.time_spent_seconds || 0,
+        weak_topics: weakTopics,
+        wrong_questions: wrongQuestions,
+        intervention_status: "reviewed"
+      });
+
+      toast({
+        title: "Avaliação salva",
+        description: "O feedback foi enviado ao aluno com sucesso.",
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erro ao salvar",
+        description: e.message,
+        variant: "destructive",
+      });
+    } finally {
+      setSavingReview(null);
+    }
+  }, [callAPI, state.simulado?.id, comments, toast]);
 
   return (
     <Dialog
@@ -50,20 +106,20 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
         }
       }}
     >
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col p-0 overflow-hidden border-white/10 shadow-2xl">
-        <div className="p-6 border-b bg-background/95 backdrop-blur-md">
+      <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden border-white/10 shadow-2xl bg-[#0a0a0e]">
+        <div className="p-6 border-b bg-background/95 backdrop-blur-md sticky top-0 z-20">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <BarChart3 className="h-6 w-6 text-primary" />
               Gestão de Resultados: {state.simulado?.title}
             </DialogTitle>
             <DialogDescription>
-              Analise o desempenho da turma e identifique pontos de melhoria com auxílio da IA.
+              Acompanhamento detalhado, correção individual e intervenção pedagógica com IA.
             </DialogDescription>
           </DialogHeader>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           {state.loading ? (
             <div className="py-24 text-center">
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
@@ -80,7 +136,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
             </div>
           ) : (
             <Tabs defaultValue="list" className="w-full">
-              <div className="px-6 border-b bg-muted/20">
+              <div className="px-6 border-b bg-muted/20 sticky top-0 z-10 bg-[#0a0a0e]/95 backdrop-blur-sm">
                 <TabsList className="bg-transparent h-14 w-full justify-start gap-8 p-0">
                   <TabsTrigger 
                     value="list" 
@@ -103,7 +159,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                 </TabsContent>
 
                 <TabsContent value="list" className="mt-0 outline-none space-y-4">
-                  <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="grid grid-cols-4 gap-4 mb-6">
                     <Card className="bg-background/40 border-white/5">
                       <CardContent className="p-4 text-center">
                         <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Inscritos</p>
@@ -122,6 +178,14 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                         <p className="text-2xl font-black text-primary">{avgScore}%</p>
                       </CardContent>
                     </Card>
+                    <Card className="bg-background/40 border-white/5">
+                      <CardContent className="p-4 text-center">
+                        <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mb-1">Status</p>
+                        <Badge variant="outline" className="mt-1 uppercase text-[9px] border-primary/30 text-primary">
+                          {state.simulado?.status || 'Draft'}
+                        </Badge>
+                      </CardContent>
+                    </Card>
                   </div>
 
                   <div className="space-y-3">
@@ -129,8 +193,11 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                       const isExpanded = expandedStudent === r.id;
                       const studentAnswers = (r.answers_json || []) as any[];
                       const questionsData = state.questions_json || [];
+                      const correctCount = studentAnswers.filter(a => a.is_correct).length;
+                      const wrongCount = studentAnswers.length - correctCount;
+
                       return (
-                        <Card key={r.id} className="bg-background/20 border-white/5 hover:border-white/10 transition-all">
+                        <Card key={r.id} className={`bg-background/20 border-white/5 hover:border-white/10 transition-all ${isExpanded ? 'ring-1 ring-primary/30 border-primary/20 shadow-glow-sm' : ''}`}>
                           <CardContent className="p-4">
                             <div
                               className="flex items-center justify-between cursor-pointer group"
@@ -153,75 +220,154 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                   </p>
                                 </div>
                               </div>
-                              <div className="text-right">
-                                {r.status === "completed" ? (
-                                  <>
-                                    <p
-                                      className={`text-xl font-black ${
-                                        (r.score || 0) >= 70
-                                          ? "text-emerald-500"
-                                          : (r.score || 0) >= 50
-                                          ? "text-amber-500"
-                                          : "text-destructive"
-                                      }`}
-                                    >
-                                      {Math.round(r.score || 0)}%
-                                    </p>
-                                    <p className="text-[10px] text-muted-foreground font-bold">
-                                      {r.finished_at
-                                        ? new Date(r.finished_at).toLocaleDateString("pt-BR")
-                                        : ""}
-                                    </p>
-                                  </>
-                                ) : (
-                                  <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest bg-white/5 border-white/10">
-                                    {r.status === "in_progress" ? "Em andamento" : "Pendente"}
-                                  </Badge>
-                                )}
+                              <div className="flex items-center gap-6">
+                                <div className="hidden sm:flex items-center gap-4 text-[10px] font-bold uppercase text-muted-foreground">
+                                   <div className="flex items-center gap-1">
+                                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                                      {correctCount}
+                                   </div>
+                                   <div className="flex items-center gap-1">
+                                      <XCircle className="h-3 w-3 text-destructive" />
+                                      {wrongCount}
+                                   </div>
+                                   <div className="flex items-center gap-1">
+                                      <Clock className="h-3 w-3" />
+                                      {Math.round((r.time_spent_seconds || 0) / 60)}m
+                                   </div>
+                                </div>
+                                <div className="text-right">
+                                  {r.status === "completed" ? (
+                                    <>
+                                      <p
+                                        className={`text-xl font-black ${
+                                          (r.score || 0) >= 70
+                                            ? "text-emerald-500"
+                                            : (r.score || 0) >= 50
+                                            ? "text-amber-500"
+                                            : "text-destructive"
+                                        }`}
+                                      >
+                                        {Math.round(r.score || 0)}%
+                                      </p>
+                                    </>
+                                  ) : (
+                                    <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-widest bg-white/5 border-white/10">
+                                      {r.status === "in_progress" ? "Em andamento" : "Pendente"}
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                             </div>
 
-                            {isExpanded && r.status === "completed" && studentAnswers.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-white/5 space-y-6 animate-in fade-in slide-in-from-top-2">
-                                {/* Topic summary */}
-                                {(() => {
-                                  const topicMap: Record<string, { total: number; correct: number }> = {};
-                                  studentAnswers.forEach((a: any) => {
-                                    const t = a.topic || "Geral";
-                                    if (!topicMap[t]) topicMap[t] = { total: 0, correct: 0 };
-                                    topicMap[t].total++;
-                                    if (a.is_correct) topicMap[t].correct++;
-                                  });
-                                  return (
-                                    <div className="space-y-3">
-                                      <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">DESEMPENHO POR TEMA</p>
-                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {Object.entries(topicMap).map(([topic, data]) => {
-                                          const pct = Math.round((data.correct / data.total) * 100);
-                                          return (
-                                            <div key={topic} className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
-                                              <div className="flex items-center justify-between mb-2">
-                                                <span className="text-xs font-bold uppercase truncate pr-2">{topic}</span>
-                                                <span className={`text-xs font-black ${pct >= 70 ? "text-emerald-500" : pct >= 50 ? "text-amber-500" : "text-destructive"}`}>
-                                                  {pct}%
-                                                </span>
+                            {isExpanded && r.status === "completed" && (
+                              <div className="mt-6 pt-6 border-t border-white/5 space-y-8 animate-in fade-in slide-in-from-top-2">
+                                
+                                {/* Correction Header Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                  
+                                  {/* Performance Summary */}
+                                  <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Diagnóstico de Desempenho</p>
+                                    
+                                    {(() => {
+                                      const topicMap: Record<string, { total: number; correct: number }> = {};
+                                      studentAnswers.forEach((a: any) => {
+                                        const t = a.topic || "Geral";
+                                        if (!topicMap[t]) topicMap[t] = { total: 0, correct: 0 };
+                                        topicMap[t].total++;
+                                        if (a.is_correct) topicMap[t].correct++;
+                                      });
+                                      return (
+                                        <div className="grid grid-cols-1 gap-3">
+                                          {Object.entries(topicMap).map(([topic, data]) => {
+                                            const pct = Math.round((data.correct / data.total) * 100);
+                                            return (
+                                              <div key={topic} className="p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                                                <div className="flex items-center justify-between mb-2">
+                                                  <span className="text-xs font-bold uppercase truncate pr-2">{topic}</span>
+                                                  <span className={`text-xs font-black ${pct >= 70 ? "text-emerald-500" : pct >= 50 ? "text-amber-500" : "text-destructive"}`}>
+                                                    {pct}%
+                                                  </span>
+                                                </div>
+                                                <Progress value={pct} className="h-1 bg-white/5" />
+                                                <div className="flex justify-between mt-1.5">
+                                                  <p className="text-[9px] text-muted-foreground font-bold uppercase">
+                                                    {data.correct}/{data.total} ACERTOS
+                                                  </p>
+                                                  {pct < 50 && (
+                                                    <Badge variant="outline" className="h-4 text-[8px] border-destructive/30 text-destructive bg-destructive/5 font-black uppercase">Reforço necessário</Badge>
+                                                  )}
+                                                </div>
                                               </div>
-                                              <Progress value={pct} className="h-1.5" />
-                                              <p className="text-[9px] text-muted-foreground mt-1.5 font-bold uppercase">
-                                                {data.correct} ACERTOS DE {data.total} QUESTÕES
-                                              </p>
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
+                                            );
+                                          })}
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
 
-                                {/* Question-by-question */}
-                                <div className="space-y-3">
-                                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">DETALHAMENTO DE QUESTÕES</p>
-                                  <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                  {/* Teacher Intervention */}
+                                  <div className="space-y-4">
+                                    <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Intervenção do Professor</p>
+                                    
+                                    <Card className="bg-primary/5 border-primary/10 overflow-hidden">
+                                      <CardContent className="p-4 space-y-4">
+                                        <div className="flex items-center gap-2 text-primary">
+                                          <MessageSquare className="h-4 w-4" />
+                                          <span className="text-[10px] font-black uppercase tracking-widest">Feedback Individual</span>
+                                        </div>
+                                        <Textarea 
+                                          placeholder="Escreva seu comentário pedagógico para o aluno..."
+                                          className="min-h-[120px] bg-black/20 border-white/5 focus-visible:ring-primary/30 text-xs resize-none"
+                                          value={comments[r.student_id] || ""}
+                                          onChange={(e) => setComments(prev => ({ ...prev, [r.student_id]: e.target.value }))}
+                                        />
+                                        
+                                        <div className="pt-2 flex gap-2">
+                                          <Button 
+                                            size="sm" 
+                                            className="w-full text-[10px] font-black uppercase tracking-widest gap-2"
+                                            onClick={() => handleSaveReview(r)}
+                                            disabled={savingReview === r.student_id}
+                                          >
+                                            {savingReview === r.student_id ? (
+                                              <Loader2 className="h-3 w-3 animate-spin" />
+                                            ) : (
+                                              <Save className="h-3 w-3" />
+                                            )}
+                                            SALVAR E ENVIAR
+                                          </Button>
+                                          <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
+                                            <Brain className="h-3 w-3" /> TUTOR IA MISSION
+                                          </Button>
+                                        </div>
+                                      </CardContent>
+                                    </Card>
+
+                                    {/* Automatic AI Recommendation */}
+                                    <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/20 space-y-2">
+                                       <div className="flex items-center gap-2 text-amber-500">
+                                          <AlertTriangle className="h-4 w-4" />
+                                          <span className="text-[10px] font-black uppercase tracking-widest">Alerta Tutor IA</span>
+                                       </div>
+                                       <p className="text-xs text-white/80 leading-relaxed italic">
+                                          "O aluno demonstrou dificuldade crítica em temas de {Array.from(new Set(studentAnswers.filter(a => !a.is_correct).map(a => a.topic))).slice(0, 2).join(" e ")}. 
+                                          Sugerimos focar no banco de erros e revisão de condutas."
+                                       </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Detailed Question Table */}
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Detalhamento por Questão</p>
+                                    <Badge variant="outline" className="text-[9px] border-white/10 bg-white/5">
+                                      {studentAnswers.length} QUESTÕES RESPONDIDAS
+                                    </Badge>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-1 gap-3">
                                     {studentAnswers.map((a: any, idx: number) => {
                                       const q = questionsData[a.question_index ?? idx];
                                       return (
@@ -229,42 +375,46 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                           key={idx}
                                           className={`p-4 rounded-xl text-xs border transition-all ${
                                             a.is_correct
-                                              ? "border-emerald-500/20 bg-emerald-500/5"
-                                              : "border-destructive/20 bg-destructive/5"
+                                              ? "border-emerald-500/10 bg-emerald-500/[0.02]"
+                                              : "border-destructive/10 bg-destructive/[0.02]"
                                           }`}
                                         >
-                                          <div className="flex items-start gap-3">
-                                            <Badge
-                                              variant={a.is_correct ? "default" : "destructive"}
-                                              className="text-[10px] font-black shrink-0 h-6 w-14 flex justify-center"
-                                            >
-                                              {a.is_correct ? "CORRETA" : "ERRADA"}
-                                            </Badge>
-                                            <div className="space-y-2">
-                                              <p className="font-medium text-white/90 leading-relaxed">
-                                                <span className="text-primary font-bold mr-2">Q{(a.question_index ?? idx) + 1}</span>
+                                          <div className="flex items-start gap-4">
+                                            <div className={`h-8 w-8 rounded-lg flex items-center justify-center font-black shrink-0 ${
+                                              a.is_correct ? 'bg-emerald-500/10 text-emerald-500' : 'bg-destructive/10 text-destructive'
+                                            }`}>
+                                              {idx + 1}
+                                            </div>
+                                            <div className="flex-1 space-y-3">
+                                              <div className="flex items-center justify-between">
+                                                <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-tight bg-white/5">
+                                                  {a.topic || "Geral"}
+                                                </Badge>
+                                                {a.time_spent && (
+                                                   <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                                      <Clock className="h-3 w-3" /> {a.time_spent}s
+                                                   </span>
+                                                )}
+                                              </div>
+                                              
+                                              <p className="font-medium text-white/90 leading-relaxed line-clamp-2 italic">
                                                 {q?.statement || `Questão ${idx + 1}`}
                                               </p>
                                               
-                                              {!a.is_correct && q && (
-                                                <div className="mt-4 p-3 rounded-lg bg-black/20 space-y-2 border border-white/5">
-                                                  <div className="flex items-start gap-2">
-                                                    <span className="text-destructive font-black shrink-0">✗ SUA:</span>
-                                                    <span className="text-white/70">{q.options?.[a.selected] || "Não respondida"}</span>
-                                                  </div>
-                                                  <div className="flex items-start gap-2">
-                                                    <span className="text-emerald-500 font-black shrink-0">✓ CERTA:</span>
-                                                    <span className="text-white/90 font-bold">{q.options?.[a.correct_index ?? q.correct_index]}</span>
-                                                  </div>
-                                                  {q.explanation && (
-                                                    <div className="mt-3 pt-3 border-t border-white/5">
-                                                      <p className="text-muted-foreground text-[11px] leading-relaxed italic">
-                                                        {q.explanation}
-                                                      </p>
-                                                    </div>
-                                                  )}
+                                              <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                                                <div className="space-y-1">
+                                                   <p className="text-[9px] font-black uppercase text-white/40">Sua Resposta</p>
+                                                   <p className={`text-[11px] font-bold ${a.is_correct ? 'text-emerald-500' : 'text-destructive'}`}>
+                                                      {q?.options?.[a.selected] || "Não respondida"}
+                                                   </p>
                                                 </div>
-                                              )}
+                                                <div className="space-y-1 text-right">
+                                                   <p className="text-[9px] font-black uppercase text-white/40">Gabarito</p>
+                                                   <p className="text-[11px] font-bold text-emerald-500">
+                                                      {q?.options?.[q.correct_index] || "N/A"}
+                                                   </p>
+                                                </div>
+                                              </div>
                                             </div>
                                           </div>
                                         </div>
@@ -272,6 +422,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                     })}
                                   </div>
                                 </div>
+
                               </div>
                             )}
                           </CardContent>
