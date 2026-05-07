@@ -513,8 +513,12 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
 
   const createSimulado = useCallback(async () => {
     try {
+      if (creating) return; // Prevent double submit
       setCreating(true);
       
+      const traceId = crypto.randomUUID();
+      const clientRequestId = crypto.randomUUID();
+
       const questions =
         questionMode === "manual"
           ? manualQuestions
@@ -560,9 +564,11 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         allow_retake: !!allowRetake,
         auto_assign: !!autoAssign,
         exam_board: examBoard !== "all" ? examBoard : null,
+        trace_id: traceId,
+        client_request_id: clientRequestId
       };
 
-      console.log("[useCreateSimuladoForm] Enviando payload:", payload);
+      console.log(`[useCreateSimuladoForm][Trace:${traceId}] Enviando payload:`, payload);
 
       const res = await callAPI(payload);
       
@@ -584,7 +590,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       setCreating(false);
     }
   }, [
-    callAPI, toast, onOpenChange, onCreated, questionMode, manualQuestions, generatedQuestions,
+    creating, callAPI, toast, onOpenChange, onCreated, questionMode, manualQuestions, generatedQuestions,
     bankQuestions, selectedBankQuestions, title, description, selectedTopics, faculdadeFilter,
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
     scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
