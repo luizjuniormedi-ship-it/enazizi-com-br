@@ -1,5 +1,5 @@
 import { memo, useState, useEffect } from "react";
-import { Loader2, Plus, Users, CheckSquare, Square, Building2, UserPlus, Globe, Search, ChevronDown, X } from "lucide-react";
+import { Loader2, Plus, Users, CheckSquare, Square, Building2, UserPlus, Globe, Search, ChevronDown, X, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { FACULDADES } from "@/constants/faculdades";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Props {
   assignmentMode: "filter" | "classes" | "professor_turmas" | "manual" | "all";
@@ -121,22 +122,26 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
   faculdadeFilters, periodoFilters, onFaculdadeChange, onPeriodoChange,
   previewStudents, previewLoading, selectedStudentIds,
   selectedClassIds, onSelectedClassIdsChange,
+  selectedProfessorTurmaIds, onSelectedProfessorTurmaIdsChange,
   studentSearch, searchResults, searchingStudents, onStudentSearchChange,
   onPreviewMatchingStudents, onSearchStudentGlobal, onAddSearchedStudent,
   onToggleStudent, onToggleAllStudents, onClearStudentSelection, onRemoveSelectedStudent,
   studentPagination, selectedStudentsData,
 }: Props) {
   const [classes, setClasses] = useState<any[]>([]);
-  const [loadingClasses, setLoadingClasses] = useState(false);
+  const [professorTurmas, setProfessorTurmas] = useState<any[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
 
   useEffect(() => {
     if (assignmentMode === "classes" && classes.length === 0) {
       loadClasses();
+    } else if (assignmentMode === "professor_turmas" && professorTurmas.length === 0) {
+      loadProfessorTurmas();
     }
   }, [assignmentMode]);
 
   async function loadClasses() {
-    setLoadingClasses(true);
+    setLoadingItems(true);
     try {
       const { data, error } = await supabase
         .from("classes")
@@ -146,9 +151,31 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
       if (error) throw error;
       setClasses(data || []);
     } catch (e) {
-      console.error("Erro ao carregar turmas:", e);
+      console.error("Erro ao carregar turmas institucionais:", e);
     } finally {
-      setLoadingClasses(false);
+      setLoadingItems(false);
+    }
+  }
+
+  async function loadProfessorTurmas() {
+    setLoadingItems(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profProfile } = await supabase.from("profiles").select("id").eq("user_id", user.id).single();
+      if (!profProfile) return;
+
+      const { data, error } = await supabase
+        .from("professor_turmas")
+        .select("id, name, description")
+        .eq("professor_id", profProfile.id)
+        .order("name");
+      if (error) throw error;
+      setProfessorTurmas(data || []);
+    } catch (e) {
+      console.error("Erro ao carregar minhas turmas:", e);
+    } finally {
+      setLoadingItems(false);
     }
   }
 
@@ -160,16 +187,25 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
     );
   };
 
+  const toggleProfessorTurma = (id: string) => {
+    onSelectedProfessorTurmaIdsChange(
+      selectedProfessorTurmaIds.includes(id)
+        ? selectedProfessorTurmaIds.filter(tid => tid !== id)
+        : [...selectedProfessorTurmaIds, id]
+    );
+  };
+
   const periodOptions = Array.from({ length: 12 }, (_, i) => String(i + 1));
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
         <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Atribuição do Simulado</Label>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
           {[
             { id: "filter", label: "FILTROS", icon: Building2 },
-            { id: "classes", label: "TURMAS", icon: Users },
+            { id: "professor_turmas", label: "MINHAS", icon: Heart },
+            { id: "classes", label: "INSTITUC.", icon: Users },
             { id: "manual", label: "SELEÇÃO", icon: UserPlus },
             { id: "all", label: "TODOS", icon: Globe },
           ].map((mode) => {
@@ -183,12 +219,12 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                 size="sm"
                 onClick={() => onAssignmentModeChange(mode.id as any)}
                 className={cn(
-                  "text-[10px] font-black uppercase tracking-widest h-10 gap-2 border-white/5",
+                  "text-[9px] font-black uppercase tracking-widest h-10 gap-1.5 border-white/5",
                   active ? "bg-primary text-primary-foreground shadow-glow-sm" : "hover:bg-white/5 text-white/60 hover:text-white"
                 )}
               >
-                <Icon className="h-3.5 w-3.5" />
-                {mode.label}
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{mode.label}</span>
               </Button>
             );
           })}
@@ -324,7 +360,6 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
             </div>
           )}
 
-          {/* Selected Students Chips Section */}
           {selectedStudentIds.length > 0 && (
             <div className="space-y-3 pt-4 border-t border-white/5">
               <div className="flex items-center justify-between">
@@ -367,7 +402,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
 
       {assignmentMode === "classes" && (
         <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
-          {loadingClasses ? (
+          {loadingItems ? (
             <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : classes.length === 0 ? (
             <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30 flex flex-col items-center">
@@ -400,11 +435,49 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                       <p className="text-sm font-black uppercase tracking-tight truncate">{c.name}</p>
                       {c.period && <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{c.period}º PERÍODO</p>}
                     </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {assignmentMode === "professor_turmas" && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+          {loadingItems ? (
+            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
+          ) : professorTurmas.length === 0 ? (
+            <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30 flex flex-col items-center">
+              <Heart className="h-10 w-10 mb-4" />
+              <p className="text-sm font-black uppercase tracking-widest">Minhas turmas vazias</p>
+              <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-2">Crie suas turmas personalizadas no painel principal</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {professorTurmas.map((t) => {
+                const isSelected = selectedProfessorTurmaIds?.includes(t.id);
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => toggleProfessorTurma(t.id)}
+                    className={cn(
+                      "flex items-center gap-4 p-4 rounded-2xl border text-left transition-all group",
+                      isSelected 
+                        ? "bg-primary/10 border-primary/40 shadow-glow-sm" 
+                        : "bg-background/40 border-white/5 hover:border-white/10"
+                    )}
+                  >
                     <div className={cn(
-                      "h-6 w-6 rounded-full flex items-center justify-center border transition-all",
-                      isSelected ? "bg-primary border-primary scale-110" : "bg-white/5 border-white/10 opacity-0 group-hover:opacity-100"
+                      "p-2 rounded-xl transition-colors",
+                      isSelected ? "bg-primary text-primary-foreground" : "bg-white/5 text-white/40 group-hover:text-white"
                     )}>
-                      {isSelected ? <CheckSquare className="h-3.5 w-3.5" /> : <Plus className="h-3 w-3" />}
+                      <Heart className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black uppercase tracking-tight truncate">{t.name}</p>
+                      <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest truncate">{t.description || "Personalizada"}</p>
                     </div>
                   </button>
                 );
@@ -415,27 +488,14 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
       )}
 
       {assignmentMode === "all" && (
-        <div className="p-8 rounded-3xl border border-primary/20 bg-primary/5 flex flex-col items-center text-center space-y-4 animate-in fade-in slide-in-from-top-2">
-          <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
-            <Globe className="h-8 w-8 text-primary" />
-          </div>
-          <div className="space-y-1">
-            <h4 className="text-lg font-black uppercase tracking-tight">Público Global</h4>
-            <p className="text-xs text-white/50 max-w-sm">
-              Este simulado será visível para <strong>TODOS</strong> os alunos cadastrados na plataforma.
-            </p>
-          </div>
+        <div className="py-16 text-center border-2 border-dashed border-primary/20 bg-primary/5 rounded-3xl flex flex-col items-center animate-in fade-in slide-in-from-top-2">
+          <Globe className="h-10 w-10 text-primary mb-4" />
+          <p className="text-sm font-black uppercase tracking-widest">Visibilidade Global</p>
+          <p className="text-[11px] font-medium opacity-60 mt-1 max-w-[280px]">Este simulado ficará disponível para todos os alunos ativos da plataforma.</p>
         </div>
       )}
     </div>
   );
 });
-
-const Alert = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("p-4 rounded-2xl border flex gap-3 items-center", className)}>{children}</div>
-);
-const AlertDescription = ({ children, className }: { children: React.ReactNode; className?: string }) => (
-  <div className={cn("flex-1", className)}>{children}</div>
-);
 
 export default SimuladoAssignmentManager;
