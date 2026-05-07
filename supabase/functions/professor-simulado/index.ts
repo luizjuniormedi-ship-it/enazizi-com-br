@@ -179,7 +179,7 @@ serve(async (req) => {
     let professorFaculdade: string | null = null;
     let professorName: string = "seu professor";
     {
-      const { data: profProfile } = await sb.from("profiles").select("faculdade, display_name").eq("user_id", user.id).single();
+      const { data: profProfile } = await sb.from("profiles").select("faculdade, display_name").eq("user_id", user.id).maybeSingle();
       if (profProfile) {
         professorFaculdade = profProfile.faculdade || null;
         professorName = (profProfile.display_name || "").split(" ")[0] || "seu professor";
