@@ -59,8 +59,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [newTopicInput, setNewTopicInput] = useState("");
   const [subtopics, setSubtopics] = useState<Record<string, string>>({});
-  const [faculdadeFilter, setFaculdadeFilter] = useState("");
-  const [periodoFilter, setPeriodoFilter] = useState("");
+  const [faculdadeFilters, setFaculdadeFilters] = useState<string[]>([]);
+  const [periodoFilters, setPeriodoFilters] = useState<string[]>([]);
   const [questionCount, setQuestionCount] = useState("10");
   const [timeLimit, setTimeLimit] = useState("60");
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
@@ -145,19 +145,20 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     try {
       const res = await callAPI({
         action: "get_students",
-        faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
-        periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+        faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
+        periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
+        query: studentSearch.length >= 3 ? studentSearch : undefined
       });
       const students = res.students || [];
       setPreviewStudents(students);
-      setSelectedStudentIds(students.map((s: any) => s.user_id));
+      // Optional: auto-select all found? Maybe not if we want manual selection
+      // setSelectedStudentIds(students.map((s: any) => s.user_id));
     } catch {
       setPreviewStudents([]);
-      setSelectedStudentIds([]);
     } finally {
       setPreviewLoading(false);
     }
-  }, [callAPI, faculdadeFilter, periodoFilter]);
+  }, [callAPI, faculdadeFilters, periodoFilters, studentSearch]);
 
   const searchStudentGlobal = useCallback(async () => {
     if (studentSearch.length < 3) {
@@ -595,8 +596,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         title: title.trim(),
         description: description || null,
         topics: selectedTopics || [],
-        faculdade_filter: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : null,
-        periodo_filter: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : null,
+        faculdade_filter: faculdadeFilters.length === 1 ? faculdadeFilters[0] : null,
+        periodo_filter: periodoFilters.length === 1 ? parseInt(periodoFilters[0]) : null,
         total_questions: questions.length,
         time_limit_minutes: parseInt(timeLimit) || 60,
         questions_json: questions,
@@ -674,8 +675,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     });
   }, [
     creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
-    title, description, selectedTopics, faculdadeFilter, impactedCount,
-    periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
+    title, description, selectedTopics, faculdadeFilters, impactedCount,
+    periodoFilters, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
     scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard, safeAction
   ]);
 
@@ -710,8 +711,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       } else {
         const { data } = await callAPI({ 
           action: "get_students_count", 
-          faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
-          periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+          faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
+          periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
         });
         count = data?.count || 0;
       }
@@ -724,7 +725,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         setCreating(false);
       }
     });
-  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast, safeAction]);
+  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilters, periodoFilters, callAPI, toast, safeAction]);
 
 
   const allQs = useMemo(() => {
@@ -751,7 +752,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     creating, generating, showConfirm, setShowConfirm, impactedCount, traceId, successData, setSuccessData,
     title, setTitle, description, setDescription,
     selectedTopics, newTopicInput, setNewTopicInput, subtopics,
-    faculdadeFilter, setFaculdadeFilter, periodoFilter, setPeriodoFilter,
+    faculdadeFilters, setFaculdadeFilters, periodoFilters, setPeriodoFilters,
     questionCount, setQuestionCount, timeLimit, setTimeLimit,
     generatedQuestions, manualQuestions, questionMode, setQuestionMode,
     difficulty, setDifficulty, difficultyMix, scheduledAt, setScheduledAt,
