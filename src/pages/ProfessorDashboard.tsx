@@ -263,12 +263,6 @@ const ProfessorDashboard = () => {
         </Tabs>
       </main>
 
-      <CreateSimuladoDialog
-        open={showCreate}
-        onOpenChange={handleCloseCreate}
-        editingSimulado={editingSimulado}
-        onCreated={loadSimulados}
-      />
 
       {resultsDialog.open && (
         <Suspense fallback={null}>
