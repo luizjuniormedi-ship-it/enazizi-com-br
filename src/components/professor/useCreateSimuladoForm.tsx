@@ -265,15 +265,6 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     setSelectedStudentIds(prev => prev.filter(id => id !== userId));
     setSelectedStudentsData(prev => prev.filter(s => s.user_id !== userId));
   }, []);
-    setSelectedStudentIds(prev => prev.filter(id => id !== userId));
-    setSelectedStudentsData(prev => prev.filter(s => s.user_id !== userId));
-  }, []);
-
-  const toggleAllStudents = useCallback(() => {
-    setSelectedStudentIds((prev) =>
-      prev.length === previewStudents.length ? [] : previewStudents.map((s: any) => s.user_id)
-    );
-  }, [previewStudents]);
 
   // ============ Handlers de Temas ============
   const addTopic = useCallback(() => {
