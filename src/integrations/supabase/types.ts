@@ -17352,6 +17352,42 @@ export type Database = {
           },
         ]
       }
+      teacher_simulado_trace_logs: {
+        Row: {
+          created_at: string | null
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          payload: Json | null
+          status: string
+          step_name: string
+          teacher_id: string
+          trace_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          payload?: Json | null
+          status: string
+          step_name: string
+          teacher_id: string
+          trace_id: string
+        }
+        Update: {
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          payload?: Json | null
+          status?: string
+          step_name?: string
+          teacher_id?: string
+          trace_id?: string
+        }
+        Relationships: []
+      }
       teacher_simulados: {
         Row: {
           allow_retake: boolean | null
