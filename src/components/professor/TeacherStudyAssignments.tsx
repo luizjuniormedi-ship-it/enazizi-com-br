@@ -423,6 +423,7 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
               ))}
             </div>
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>
