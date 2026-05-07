@@ -206,6 +206,22 @@ serve(async (req) => {
       return (data || []).map((r: any) => r.recipient_id);
     };
 
+    const logTraceStep = async (traceId: string, stepName: string, status: string, payload: any = null, errorMessage: string | null = null, executionTime: number | null = null) => {
+      try {
+        await sb.from("teacher_simulado_trace_logs").insert({
+          trace_id: traceId,
+          teacher_id: user.id,
+          step_name: stepName,
+          status,
+          payload,
+          error_message: errorMessage,
+          execution_time_ms: executionTime
+        });
+      } catch (logErr) {
+        console.error(`[Trace:${traceId}] Erro ao gravar log de auditoria:`, logErr);
+      }
+    };
+
     switch (action) {
       case "generate_questions": {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements, examBoard } = params;
