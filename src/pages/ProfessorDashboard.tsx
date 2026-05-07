@@ -20,7 +20,7 @@ import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficien
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
 import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
-import CreateSimuladoDialog from "@/components/professor/CreateSimuladoDialog";
+
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
 const ProfessorBIPanel = lazy(() => import("@/components/professor/ProfessorBIPanel"));
