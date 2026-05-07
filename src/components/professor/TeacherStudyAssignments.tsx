@@ -377,7 +377,7 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
                 </div>
               )}
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
@@ -391,12 +391,14 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
 
       {/* Results Dialog */}
       <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, assignment: null, results: [] })}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-lg teacher-modal-content">
+          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
               Status: {resultsDialog.assignment?.title}
             </DialogTitle>
+          </DialogHeader>
+          <DialogBody>
           </DialogHeader>
           {resultsDialog.results.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Nenhum aluno atribuído.</p>
