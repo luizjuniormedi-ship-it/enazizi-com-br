@@ -250,46 +250,42 @@ const NewProfessorSimuladoPage = () => {
             <TabsContent value="alunos" className="space-y-6 animate-in fade-in slide-in-from-left-2 mt-0">
               <SimuladoAssignmentManager
                 assignmentMode={form.assignmentMode}
+                onAssignmentModeChange={form.setAssignmentMode}
                 faculdadeFilter={form.faculdadeFilter}
                 periodoFilter={form.periodoFilter}
+                onFaculdadeChange={form.setFaculdadeFilter}
+                onPeriodoChange={form.setPeriodoFilter}
                 previewStudents={form.previewStudents}
                 previewLoading={form.previewLoading}
                 selectedStudentIds={form.selectedStudentIds}
+                selectedClassIds={form.selectedClassIds}
+                onSelectedClassIdsChange={form.setSelectedClassIds}
                 studentSearch={form.studentSearch}
                 searchResults={form.searchResults}
                 searchingStudents={form.searchingStudents}
-                selectedClassIds={form.selectedClassIds}
-                onAssignmentModeChange={form.setAssignmentMode}
-                onFaculdadeChange={form.setFaculdadeFilter}
-                onPeriodoChange={form.setPeriodoFilter}
-                onPreviewStudents={form.previewMatchingStudents}
-                onSearchStudent={form.searchStudentGlobal}
                 onStudentSearchChange={form.setStudentSearch}
+                onPreviewMatchingStudents={form.previewMatchingStudents}
+                onSearchStudentGlobal={form.searchStudentGlobal}
                 onAddSearchedStudent={form.addSearchedStudent}
                 onToggleStudent={form.toggleStudentSelection}
                 onToggleAllStudents={form.toggleAllStudents}
-                onToggleClass={(id) => {
-                  form.setSelectedClassIds(prev => 
-                    prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-                  );
-                }}
               />
             </TabsContent>
 
             <TabsContent value="config" className="space-y-6 animate-in fade-in slide-in-from-left-2 mt-0">
               <SimuladoSchedulingSettings
                 scheduledAt={form.scheduledAt}
-                endAt={form.endAt}
-                maxAttempts={form.maxAttempts}
-                feedbackPolicy={form.feedbackPolicy}
-                allowRetake={form.allowRetake}
-                autoAssign={form.autoAssign}
                 onScheduledAtChange={form.setScheduledAt}
+                endAt={form.endAt}
                 onEndAtChange={form.setEndAt}
+                timeLimit={form.timeLimit}
+                onTimeLimitChange={form.setTimeLimit}
+                maxAttempts={form.maxAttempts}
                 onMaxAttemptsChange={form.setMaxAttempts}
+                feedbackPolicy={form.feedbackPolicy}
                 onFeedbackPolicyChange={form.setFeedbackPolicy}
-                onToggleRetake={form.setAllowRetake}
-                onToggleAutoAssign={form.setAutoAssign}
+                allowRetake={form.allowRetake}
+                onAllowRetakeChange={form.setAllowRetake}
               />
             </TabsContent>
           </div>
