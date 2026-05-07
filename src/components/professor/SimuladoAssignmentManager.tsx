@@ -240,7 +240,8 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               </div>
               <div className="max-h-48 overflow-y-auto space-y-1.5">
                 {previewStudents.map((s: any) => {
-                  const isSelected = selectedStudentIds.includes(s.user_id);
+                  if (!s?.user_id) return null;
+                  const isSelected = selectedStudentIds?.includes(s.user_id);
                   return (
                     <button
                       type="button"
@@ -253,7 +254,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                       }`}
                     >
                       {isSelected ? <CheckSquare className="h-4 w-4 text-primary shrink-0" /> : <Square className="h-4 w-4 text-muted-foreground shrink-0" />}
-                      <span className="truncate font-bold uppercase tracking-tight">{s.display_name || s.email}</span>
+                      <span className="truncate font-bold uppercase tracking-tight">{s.display_name || s.email || "Aluno sem identificação"}</span>
                       {s.periodo && <span className="text-muted-foreground ml-auto shrink-0">{s.periodo}º</span>}
                     </button>
                   );
