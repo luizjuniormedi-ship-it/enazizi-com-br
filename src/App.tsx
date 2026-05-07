@@ -361,6 +361,8 @@ const App = () => (
                 {/* --- PROFESSOR (PROTECTED) --- */}
                 <Route path="/dashboard/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                   <Route index element={<ProfessorDashboard />} />
+                  <Route path="simulados/novo" element={<NewProfessorSimuladoPage />} />
+                  <Route path="simulados/editar/:id" element={<NewProfessorSimuladoPage />} />
                   <Route path="proficiencia/piloto" element={<ProficiencyPilotPage />} />
                 </Route>
                 <Route path="/professor" element={<Navigate to="/dashboard/professor" replace />} />
