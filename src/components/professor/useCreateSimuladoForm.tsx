@@ -570,6 +570,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       console.log(`[Trace:${tid}] Criando simulado...`, payload);
       const res = await callAPI(payload);
       
+      if (res && res.success === false) {
+        throw new Error(res.message || "Erro retornado pelo servidor.");
+      }
+
       toast({ 
         title: isDraft ? "Rascunho salvo!" : "Simulado criado!", 
         description: (
