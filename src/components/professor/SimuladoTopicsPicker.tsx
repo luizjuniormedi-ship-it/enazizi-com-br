@@ -93,8 +93,8 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
               <Input
                 value={subtopics[topic] || ""}
                 onChange={(e) => onSubtopicChange(topic, e.target.value)}
-                placeholder={`Subtemas de ${topic} (separados por vírgula)`}
-                className="h-8 text-xs"
+                placeholder={`Especifique os subtemas de ${topic}...`}
+                className="h-9 bg-white/5 border-white/10 rounded-xl text-xs"
               />
             </div>
           ))}
