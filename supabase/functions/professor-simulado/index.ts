@@ -975,13 +975,27 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "get_students": {
-        const { faculdade, periodo } = params;
-        const effectiveFaculdade = faculdade || professorFaculdade;
+        const { faculdade, periodo, faculdades, periodos, query: nameQuery } = params;
         let query = sb.from("profiles").select("user_id, display_name, email, faculdade, periodo, status").eq("status", "active");
-        if (effectiveFaculdade) query = query.eq("faculdade", effectiveFaculdade);
-        if (periodo) query = query.eq("periodo", periodo);
+        
+        if (faculdades && Array.isArray(faculdades) && faculdades.length > 0) {
+          query = query.in("faculdade", faculdades);
+        } else if (faculdade && faculdade !== "all") {
+          query = query.eq("faculdade", faculdade);
+        }
 
-        const { data: students } = await query.order("display_name");
+        if (periodos && Array.isArray(periodos) && periodos.length > 0) {
+          const pInts = periodos.map((p: any) => parseInt(p)).filter((p: number) => !isNaN(p));
+          if (pInts.length > 0) query = query.in("periodo", pInts);
+        } else if (periodo && periodo !== "all") {
+          query = query.eq("periodo", parseInt(periodo));
+        }
+
+        if (nameQuery) {
+          query = query.ilike("display_name", `%${nameQuery}%`);
+        }
+
+        const { data: students } = await query.order("display_name").limit(500);
         return ok({ students: students || [] });
       }
 
