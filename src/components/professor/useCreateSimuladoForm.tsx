@@ -99,6 +99,14 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     if (!open || questionMode !== "ai" || examBoard !== "all") return;
     setSelectedTopics((prev) => (prev.length > 0 ? prev : allExamTopics));
   }, [allExamTopics, examBoard, questionMode, open]);
+100: 
+101:   // Reset sucessData on open
+102:   useEffect(() => {
+103:     if (open) {
+104:       setSuccessData(null);
+105:       setShowConfirm(false);
+106:     }
+107:   }, [open]);
 
   // ============ Handlers de Alunos ============
   const previewMatchingStudents = useCallback(async () => {
