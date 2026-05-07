@@ -20,21 +20,20 @@ const SimuladoQuestionItem = memo(
   function SimuladoQuestionItem({ q, globalIdx, block, isExpanded, onToggleExpand, onRemove }: Props) {
     return (
       <div
-        className={`bg-secondary/50 rounded-lg text-xs transition-all ${
-          isExpanded ? "ring-1 ring-primary/30" : ""
+        className={`bg-white/5 border border-white/5 rounded-2xl text-xs transition-all overflow-hidden ${
+          isExpanded ? "ring-1 ring-primary/30 border-primary/20" : ""
         }`}
       >
         <div
-          className="p-3 flex items-start justify-between gap-2 cursor-pointer hover:bg-secondary/80 rounded-lg"
+          className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-white/5 transition-colors"
           onClick={() => onToggleExpand(globalIdx)}
         >
           <div className="min-w-0 flex-1">
-            <p className="font-medium mb-1">
-              Q{globalIdx + 1}: {q.statement?.slice(0, 120)}
-              {q.statement?.length > 120 ? "..." : ""}
+            <p className="font-bold uppercase tracking-tight mb-2 line-clamp-2 opacity-90 group-hover:opacity-100 transition-opacity">
+              Q{globalIdx + 1}: {q.statement}
             </p>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <Badge variant="outline" className="text-[9px]">
+              <Badge variant="outline" className="text-[9px] font-black uppercase border-white/10 bg-white/5">
                 {q.topic || block}
               </Badge>
               {q.difficulty_level && (
@@ -78,17 +77,17 @@ const SimuladoQuestionItem = memo(
           </button>
         </div>
         {isExpanded && (
-          <div className="px-3 pb-3 space-y-2 border-t border-border/50 pt-2">
+          <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-4 bg-black/20">
             <p className="text-xs leading-relaxed whitespace-pre-wrap">{q.statement}</p>
             {Array.isArray(q.options) && q.options.length > 0 && (
               <div className="space-y-1">
                 {q.options.map((opt: string, oi: number) => (
                   <div
                     key={oi}
-                    className={`px-2 py-1.5 rounded text-xs ${
+                    className={`px-3 py-2 rounded-xl text-[11px] transition-all border ${
                       oi === q.correct_index
-                        ? "bg-emerald-500/15 text-emerald-800 font-semibold border border-emerald-300"
-                        : "bg-muted/50"
+                        ? "bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/30 shadow-glow-sm"
+                        : "bg-white/5 border-white/5 text-muted-foreground opacity-60"
                     }`}
                   >
                     {opt}
@@ -97,8 +96,8 @@ const SimuladoQuestionItem = memo(
               </div>
             )}
             {q.explanation && (
-              <div className="bg-primary/5 rounded p-2 text-[11px] text-muted-foreground">
-                <span className="font-semibold">Explicação:</span> {q.explanation}
+              <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-[11px] leading-relaxed text-muted-foreground">
+                <span className="font-black uppercase tracking-widest text-primary text-[9px] block mb-1">Explicação Técnica:</span> {q.explanation}
               </div>
             )}
           </div>

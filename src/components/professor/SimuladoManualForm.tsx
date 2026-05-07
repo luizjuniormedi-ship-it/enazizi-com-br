@@ -27,19 +27,20 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
   onStatementChange, onOptionChange, onCorrectChange, onTopicChange, onAddManualQuestion,
 }: Props) {
   return (
-    <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+    <div className="space-y-4 border border-white/5 rounded-2xl p-4 bg-white/5">
       <div className="space-y-2">
-        <Label className="text-xs">Enunciado / Caso Clínico</Label>
+        <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Enunciado / Caso Clínico</Label>
         <Textarea
           value={manualStatement}
           onChange={(e) => onStatementChange(e.target.value)}
           placeholder="Paciente de 55 anos, hipertenso, apresenta dor precordial..."
           rows={3}
+          className="bg-white/5 border-white/10 rounded-xl px-4 py-3 resize-none text-xs"
         />
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-xs">Alternativas</Label>
+      <div className="space-y-3">
+        <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Alternativas</Label>
         {["A", "B", "C", "D", "E"].map((letter, i) => (
           <div key={i} className="flex items-center gap-2">
             <span
@@ -55,7 +56,7 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
               value={manualOptions[i]}
               onChange={(e) => onOptionChange(i, e.target.value)}
               placeholder={`Alternativa ${letter}`}
-              className="flex-1 h-8 text-xs"
+              className="flex-1 h-9 bg-white/5 border-white/10 rounded-xl text-xs px-3"
             />
           </div>
         ))}
@@ -63,9 +64,9 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-xs">Gabarito (resposta correta)</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Gabarito</Label>
           <Select value={manualCorrect} onValueChange={onCorrectChange}>
-            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-xl"><SelectValue /></SelectTrigger>
             <SelectContent>
               {["A", "B", "C", "D", "E"].map((l, i) => (
                 <SelectItem key={i} value={String(i)}>Alternativa {l}</SelectItem>
@@ -74,12 +75,12 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label className="text-xs">Tema</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Tema</Label>
           <Input
             value={manualTopic}
             onChange={(e) => onTopicChange(e.target.value)}
-            placeholder="Digite o tema (ex: Cardiologia)"
-            className="h-8 text-xs"
+            placeholder="Ex: Cardiologia"
+            className="h-9 bg-white/5 border-white/10 rounded-xl text-xs px-3"
           />
         </div>
       </div>
@@ -88,11 +89,9 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
         type="button"
         onClick={onAddManualQuestion}
         disabled={!manualStatement.trim() || manualOptions.filter((o) => o.trim()).length < 2}
-        variant="secondary"
-        className="w-full gap-1.5"
-        size="sm"
+        className="w-full h-10 gap-2 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-glow-sm"
       >
-        <Plus className="h-3.5 w-3.5" /> Adicionar Questão
+        <Plus className="h-4 w-4" /> ADICIONAR QUESTÃO
       </Button>
     </div>
   );

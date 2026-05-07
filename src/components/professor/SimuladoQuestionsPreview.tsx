@@ -46,10 +46,9 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium text-primary">
-          ✅ {allQs.length}/{target} questão(ões){" "}
-          {questionMode === "ai" ? "geradas" : "criadas"}{" "}
-          {groupedBlocks.length > 1 ? `em ${groupedBlocks.length} blocos` : ""}
+        <Label className="text-[10px] font-black uppercase tracking-widest text-primary">
+          ✅ {allQs.length}/{target} QUESTÕES{" "}
+          {questionMode === "ai" ? "GERADAS" : "CRIADAS"}
         </Label>
         {deficit > 0 && questionMode === "ai" && (
           <Button
@@ -58,14 +57,14 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
             size="sm"
             onClick={onRegenerateMissing}
             disabled={generating}
-            className="gap-1.5 text-xs h-7 border-amber-300 text-amber-700 hover:bg-amber-50"
+            className="h-8 gap-2 rounded-xl border-amber-500/50 text-amber-500 hover:bg-amber-500/10 font-black uppercase tracking-widest text-[10px]"
           >
             {generating ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <Sparkles className="h-3 w-3" />
             )}
-            Regenerar {deficit} faltantes
+            REGENERAR {deficit} FALTANTES
           </Button>
         )}
       </div>
@@ -78,8 +77,8 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
         {groupedBlocks.map(([block, questions], blockIdx) => (
           <div key={`${block}-${blockIdx}`}>
             {groupedBlocks.length > 1 && (
-              <div className="flex items-center gap-2 py-1.5 px-2 bg-primary/10 rounded-md mb-1.5">
-                <span className="text-xs font-semibold text-primary">
+              <div className="flex items-center gap-2 py-2 px-3 bg-white/5 border border-white/5 rounded-xl mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
                   📋 Bloco: {block} — {questions?.length || 0} questão(ões)
                 </span>
               </div>

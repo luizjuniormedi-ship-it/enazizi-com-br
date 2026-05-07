@@ -64,9 +64,9 @@ const SimuladoDifficultyMix = memo(function SimuladoDifficultyMix({
     <>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-xs">Quantidade (IA)</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Quantidade</Label>
           <Select value={questionCount} onValueChange={onQuestionCountChange}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl font-bold"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[5, 10, 15, 20, 30, 40, 50, 60, 80, 100].map((n) => (
                 <SelectItem key={n} value={String(n)}>{n} questões</SelectItem>
@@ -75,9 +75,9 @@ const SimuladoDifficultyMix = memo(function SimuladoDifficultyMix({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label className="text-xs">Tempo limite</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Tempo Limite</Label>
           <Select value={timeLimit} onValueChange={onTimeLimitChange}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl font-bold"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[30, 60, 90, 120, 180].map((m) => (
                 <SelectItem key={m} value={String(m)}>{m} minutos</SelectItem>
@@ -88,13 +88,13 @@ const SimuladoDifficultyMix = memo(function SimuladoDifficultyMix({
       </div>
 
       {/* Difficulty */}
-      <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+      <div className="space-y-3 border border-white/5 rounded-2xl p-4 bg-white/5">
         <div className="flex items-center gap-2">
           <Gauge className="h-4 w-4 text-primary" />
-          <Label className="text-sm font-semibold">Nível de Dificuldade</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-80">Nível de Dificuldade</Label>
         </div>
         <Select value={difficulty} onValueChange={onDifficultyChange}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl font-bold"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="facil">🟢 Fácil</SelectItem>
             <SelectItem value="intermediario">🟡 Intermediário</SelectItem>
@@ -143,13 +143,13 @@ const SimuladoDifficultyMix = memo(function SimuladoDifficultyMix({
       </div>
 
       {/* Banca */}
-      <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
+      <div className="space-y-3 border border-white/5 rounded-2xl p-4 bg-white/5">
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" />
-          <Label className="text-sm font-semibold">Estilo de Banca</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-80">Estilo de Banca</Label>
         </div>
         <Select value={examBoard} onValueChange={onExamBoardChange}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl font-bold"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as bancas</SelectItem>
             <SelectItem value="ENARE">ENARE</SelectItem>

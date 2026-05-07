@@ -43,12 +43,12 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
   })();
 
   return (
-    <Card className="hover:border-primary/30 transition-all duration-300 bg-card/40 backdrop-blur-md border-white/5 shadow-sm group">
-      <CardContent className="p-4">
+    <Card className="hover:border-primary/40 transition-all duration-300 bg-white/5 backdrop-blur-md border-white/10 shadow-glow-sm group rounded-2xl overflow-hidden">
+      <CardContent className="p-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold truncate">{sim.title}</h3>
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-base font-black uppercase tracking-tight text-white group-hover:text-primary transition-colors">{sim.title}</h3>
               <Badge
                 variant={
                   sim.status === "published"
@@ -79,12 +79,12 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
             )}
             <div className="flex flex-wrap gap-1.5 mb-2">
               {(sim.topics || []).slice(0, 3).map((t: string) => (
-                <Badge key={t} variant="outline" className="text-[10px]">
+                <Badge key={t} variant="outline" className="text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2">
                   {t}
                 </Badge>
               ))}
               {(sim.topics || []).length > 3 && (
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2">
                   +{sim.topics.length - 3}
                 </Badge>
               )}

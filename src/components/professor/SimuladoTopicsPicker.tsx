@@ -41,7 +41,7 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
 
   return (
     <div className="space-y-3">
-      <Label className="text-base font-semibold">
+      <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">
         Temas ({selectedTopics.length} selecionados)
       </Label>
       <div className="flex gap-2">
@@ -55,10 +55,15 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
               onAddTopic();
             }
           }}
-          className="flex-1"
+          className="h-11 bg-white/5 border-white/10 rounded-xl px-4"
         />
-        <Button type="button" size="sm" onClick={onAddTopic} disabled={!newTopicInput.trim()}>
-          Adicionar
+        <Button 
+          type="button" 
+          onClick={onAddTopic} 
+          disabled={!newTopicInput.trim()}
+          className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]"
+        >
+          ADICIONAR
         </Button>
       </div>
       <div className="flex flex-wrap gap-1.5">
@@ -66,30 +71,30 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           <Badge
             key={`${topic}-${idx}`}
             variant="secondary"
-            className="gap-1 cursor-pointer"
+            className="gap-2 h-7 px-3 rounded-lg bg-white/10 hover:bg-red-500/20 hover:text-red-400 border-white/5 transition-colors cursor-pointer text-[10px] font-bold uppercase tracking-tight"
             onClick={() => onRemoveTopic(topic)}
           >
-            {topic} ✕
+            {topic} <span className="opacity-50">✕</span>
           </Badge>
         ))}
       </div>
 
       {/* Subtopics */}
       {selectedTopics.length > 0 && (
-        <div className="space-y-2 bg-secondary/30 rounded-lg p-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            Subtemas específicos (opcional) — ex: IAM, TEP, Pré-eclâmpsia
+        <div className="space-y-3 bg-white/5 border border-white/5 rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
+            Subtemas específicos (opcional)
           </p>
           {selectedTopics.map((topic, idx) => (
             <div key={`${topic}-sub-${idx}`} className="flex items-center gap-2">
-              <Badge variant="outline" className="shrink-0 text-[10px]">
+              <Badge variant="outline" className="shrink-0 text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2 min-w-[100px] justify-center">
                 {topic}
               </Badge>
               <Input
                 value={subtopics[topic] || ""}
                 onChange={(e) => onSubtopicChange(topic, e.target.value)}
-                placeholder={`Subtemas de ${topic} (separados por vírgula)`}
-                className="h-8 text-xs"
+                placeholder={`Especifique os subtemas de ${topic}...`}
+                className="h-9 bg-white/5 border-white/10 rounded-xl text-xs"
               />
             </div>
           ))}
@@ -98,32 +103,34 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
 
       {/* Topic distribution */}
       {selectedTopics.length > 1 && questionMode === "ai" && (
-        <div className="space-y-2 bg-primary/5 rounded-lg p-3 border border-primary/20">
+        <div className="space-y-4 bg-primary/5 rounded-2xl p-4 border border-primary/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
-              <Label className="text-xs font-semibold">Distribuição por tema</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-80">Distribuição por tema</Label>
             </div>
             <Switch checked={useDistribution} onCheckedChange={onToggleDistribution} />
           </div>
           {useDistribution && (
             <div className="space-y-1.5">
               {selectedTopics.map((topic, idx) => (
-                <div key={`${topic}-dist-${idx}`} className="flex items-center gap-2">
-                  <Badge variant="outline" className="shrink-0 text-[10px] min-w-[100px]">
+                <div key={`${topic}-dist-${idx}`} className="flex items-center gap-3">
+                  <Badge variant="outline" className="shrink-0 text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2 min-w-[110px] justify-center">
                     {topic}
                   </Badge>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={targetCount}
-                    value={topicDistribution[topic] || 0}
-                    onChange={(e) =>
-                      onUpdateTopicDistribution(topic, parseInt(e.target.value) || 0)
-                    }
-                    className="h-7 w-20 text-xs text-center"
-                  />
-                  <span className="text-[10px] text-muted-foreground">questões</span>
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={targetCount}
+                      value={topicDistribution[topic] || 0}
+                      onChange={(e) =>
+                        onUpdateTopicDistribution(topic, parseInt(e.target.value) || 0)
+                      }
+                      className="h-8 w-20 text-xs text-center bg-white/5 border-white/10 rounded-lg mx-auto"
+                    />
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-w-[60px]">questões</span>
                 </div>
               ))}
               {distributionSum !== targetCount ? (
