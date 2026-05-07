@@ -789,7 +789,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
           });
           count = data?.count || 0;
         }
-        
+
         if (count === 0) {
           if (assignmentMode === "filter") {
             const confirmed = window.confirm("AVISO: Nenhum aluno atende a estes filtros no momento. O simulado será criado mas ficará visível apenas quando novos alunos entrarem nestes critérios. Continuar?");
