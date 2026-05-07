@@ -77,7 +77,7 @@ const SimuladoQuestionItem = memo(
           </button>
         </div>
         {isExpanded && (
-          <div className="px-3 pb-3 space-y-2 border-t border-border/50 pt-2">
+          <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-4 bg-black/20">
             <p className="text-xs leading-relaxed whitespace-pre-wrap">{q.statement}</p>
             {Array.isArray(q.options) && q.options.length > 0 && (
               <div className="space-y-1">
