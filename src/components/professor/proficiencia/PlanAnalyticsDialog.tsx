@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogBody,
 } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -155,9 +153,9 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
             >
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
+          </div>
         }
       >
-
         {isLoading || !data ? (
           <div className="py-16 text-center">
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" />
@@ -350,17 +348,17 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
           </div>
         )}
       </TeacherDialogContent>
- 
-       <StudentTasksDialog
-         open={!!selectedStudent}
-         onOpenChange={(v) => !v && setSelectedStudent(null)}
-         planId={plan?.id ?? null}
-         planName={plan?.name}
-         userId={selectedStudent?.user_id ?? null}
-         studentName={selectedStudent?.display_name ?? selectedStudent?.email ?? null}
-       />
-     </Dialog>
-   );
- };
- 
- export default PlanAnalyticsDialog;
+
+      <StudentTasksDialog
+        open={!!selectedStudent}
+        onOpenChange={(v) => !v && setSelectedStudent(null)}
+        planId={plan?.id ?? null}
+        planName={plan?.name}
+        userId={selectedStudent?.user_id ?? null}
+        studentName={selectedStudent?.display_name ?? selectedStudent?.email ?? null}
+      />
+    </Dialog>
+  );
+};
+
+export default PlanAnalyticsDialog;
