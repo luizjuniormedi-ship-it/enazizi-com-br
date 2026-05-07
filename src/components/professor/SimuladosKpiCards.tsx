@@ -46,14 +46,14 @@ const SimuladosKpiCards = memo(function SimuladosKpiCards({
           </div>
         </CardContent>
       </Card>
-      <Card>
-        <CardContent className="p-4 flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-            <CheckCircle className="h-5 w-5 text-amber-500" />
+      <Card className="bg-white/5 border-white/5 rounded-2xl shadow-glow-sm transition-transform hover:scale-[1.02]">
+        <CardContent className="p-5 flex items-center gap-4">
+          <div className="h-11 w-11 rounded-xl bg-amber-500/20 flex items-center justify-center shadow-inner">
+            <CheckCircle className="h-5 w-5 text-amber-400" />
           </div>
           <div>
-            <p className="text-xs text-muted-foreground">Concluídos</p>
-            <p className="text-lg font-bold">{totalCompleted}</p>
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60">Concluídos</p>
+            <p className="text-xl font-black text-white">{totalCompleted}</p>
           </div>
         </CardContent>
       </Card>
