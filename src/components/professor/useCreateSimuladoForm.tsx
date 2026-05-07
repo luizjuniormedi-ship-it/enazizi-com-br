@@ -675,8 +675,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     });
   }, [
     creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
-    title, description, selectedTopics, faculdadeFilter, impactedCount,
-    periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
+    title, description, selectedTopics, faculdadeFilters, impactedCount,
+    periodoFilters, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
     scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard, safeAction
   ]);
 
