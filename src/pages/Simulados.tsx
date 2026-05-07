@@ -705,15 +705,21 @@ const Simulados = () => {
               <EnaflixSectionTitle kicker="PERSONALIZAR" title="Configuração Avançada" subtitle="Monte sua prova personalizada." />
               <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden p-6 sm:p-8">
                 <SimuladoSetup
-                  onStart={handleStart}
+                  onStart={(config) => {
+                    console.log("[Simulados] Setup.onStart disparado:", config);
+                    handleStart(config);
+                  }}
                   adaptiveLoading={adaptivePreviewLoading}
                   adaptiveMeta={adaptivePreviewMeta}
-                  onFetchAdaptivePreview={() => {}}
-                  onResumeSession={() => {}}
-                  onDiscardSession={() => {}}
+                  onFetchAdaptivePreview={() => {
+                    console.log("[Simulados] Fetch adaptive preview");
+                  }}
+                  onResumeSession={handleResumeSession}
+                  onDiscardSession={abandonSession}
                   onRetryErrors={() => {}}
-                  pendingSession={null}
-                  checkedSession={true}
+                  pendingSession={pendingSession}
+                  checkedSession={checked}
+                  userId={user?.id}
                 />
               </div>
             </div>
