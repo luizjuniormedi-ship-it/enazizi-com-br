@@ -79,7 +79,7 @@ const SimuladoQuestionItem = memo(
         {isExpanded && (
           <div className="px-4 pb-4 space-y-4 border-t border-white/5 pt-4 bg-black/20">
             <p className="text-xs leading-relaxed whitespace-pre-wrap">{q.statement}</p>
-            {Array.isArray(q.options) && q.options.length > 0 && (
+            {Array.isArray(q?.options) && q.options.length > 0 && (
               <div className="space-y-1">
                 {q.options.map((opt: string, oi: number) => (
                   <div
