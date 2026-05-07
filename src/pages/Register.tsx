@@ -43,22 +43,6 @@ const Register = () => {
       return;
     }
 
-    if (userType === "estudante") {
-      const phoneCheck = isValidPhone(phone);
-      if (!phoneCheck.valid) {
-        toast({ title: phoneCheck.message, variant: "destructive" });
-        return;
-      }
-      if (!faculdade) {
-        toast({ title: "Selecione sua faculdade", variant: "destructive" });
-        return;
-      }
-      if (!periodo) {
-        toast({ title: "Selecione seu período", variant: "destructive" });
-        return;
-      }
-    }
-
     if (!phone) {
       toast({ title: "Informe seu WhatsApp para contato", variant: "destructive" });
       return;
@@ -176,50 +160,43 @@ const Register = () => {
                 </div>
               </div>
 
-              {userType === "estudante" && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">WhatsApp</Label>
-                      <Input
-                        placeholder="(11) 99999-9999"
-                        className="h-12"
-                        value={phone}
-                        onChange={(e) => setPhone(formatPhone(e.target.value))}
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Período Atual</Label>
-                      <Select value={periodo} onValueChange={setPeriodo}>
-                        <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-[#0a0a0e] border-white/10">
-                          {Array.from({ length: 12 }, (_, i) => (
-                            <SelectItem key={i + 1} value={String(i + 1)}>
-                              {i + 1}º período
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Instituição de Ensino</Label>
-                    <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
-                  </div>
-                </>
-              )}
-
-              {userType === "professor" && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-2">
-                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Universidade / Hospital</Label>
-                  <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">WhatsApp</Label>
+                  <Input
+                    placeholder="(11) 99999-9999"
+                    className="h-12"
+                    value={phone}
+                    onChange={(e) => setPhone(formatPhone(e.target.value))}
+                    required
+                  />
                 </div>
-              )}
+
+                {userType === "estudante" && (
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">Período Atual</Label>
+                    <Select value={periodo} onValueChange={setPeriodo}>
+                      <SelectTrigger className="h-12 bg-white/5 border-white/10 rounded-xl font-bold">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-[#0a0a0e] border-white/10">
+                        {Array.from({ length: 12 }, (_, i) => (
+                          <SelectItem key={i + 1} value={String(i + 1)}>
+                            {i + 1}º período
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {userType === "estudante" ? "Instituição de Ensino" : "Universidade / Hospital"}
+                </Label>
+                <FaculdadeCombobox value={faculdade} onChange={setFaculdade} />
+              </div>
             </div>
 
             <Button type="submit" className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] text-xs shadow-glow-sm mt-4" disabled={loading}>
