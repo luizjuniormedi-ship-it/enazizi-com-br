@@ -32,7 +32,6 @@ import SimuladoSchedulingSettings from "@/components/professor/SimuladoSchedulin
 import SimuladoAssignmentManager from "@/components/professor/SimuladoAssignmentManager";
 
 const NewProfessorSimuladoPage = () => {
-  console.log("[NewProfessorSimuladoPage] rendering...");
   const { session } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
