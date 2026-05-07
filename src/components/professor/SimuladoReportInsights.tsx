@@ -12,7 +12,8 @@ interface Props {
 }
 
 const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, questions_json, simuladoTitle }: Props) {
-  const completed = results.filter(r => r.status === "completed");
+  const safeResults = Array.isArray(results) ? results : [];
+  const completed = safeResults.filter(r => r?.status === "completed");
   if (completed.length === 0) return null;
 
   // 1. Desempenho por tema
@@ -53,8 +54,10 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
   const atRiskStudents = completed.filter(r => (r.score || 0) < 50);
 
   const exportCSV = useCallback(() => {
+    try {
+      console.log("[SimuladoInsights] Exporting CSV...");
     const headers = ["Aluno", "Email", "Nota", "Acertos", "Total", "Tempo (s)", "Status"];
-    const rows = results.map(r => [
+    const rows = safeResults.map(r => [
       r.student_name,
       r.student_email,
       r.score,
@@ -74,7 +77,11 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [results, simuladoTitle]);
+    } catch (error) {
+      console.error("[SimuladoInsights] CSV Export failed", error);
+      toast({ title: "Erro na exportação", description: "Falha ao gerar CSV.", variant: "destructive" });
+    }
+  }, [safeResults, simuladoTitle, toast]);
 
   const exportPDF = useCallback(() => {
     window.print();
