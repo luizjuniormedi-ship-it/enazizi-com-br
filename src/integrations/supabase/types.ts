@@ -17082,6 +17082,7 @@ export type Database = {
           simulado_id: string | null
           target_id: string | null
           target_type: string
+          trace_id: string | null
         }
         Insert: {
           assigned_at?: string | null
@@ -17091,6 +17092,7 @@ export type Database = {
           simulado_id?: string | null
           target_id?: string | null
           target_type: string
+          trace_id?: string | null
         }
         Update: {
           assigned_at?: string | null
@@ -17100,6 +17102,7 @@ export type Database = {
           simulado_id?: string | null
           target_id?: string | null
           target_type?: string
+          trace_id?: string | null
         }
         Relationships: [
           {
@@ -17355,6 +17358,7 @@ export type Database = {
           answer_key_policy: string | null
           archived_at: string | null
           auto_assign: boolean | null
+          client_request_id: string | null
           created_at: string
           description: string | null
           end_at: string | null
@@ -17375,6 +17379,7 @@ export type Database = {
           title: string
           topics: string[]
           total_questions: number
+          trace_id: string | null
           updated_at: string
         }
         Insert: {
@@ -17382,6 +17387,7 @@ export type Database = {
           answer_key_policy?: string | null
           archived_at?: string | null
           auto_assign?: boolean | null
+          client_request_id?: string | null
           created_at?: string
           description?: string | null
           end_at?: string | null
@@ -17402,6 +17408,7 @@ export type Database = {
           title?: string
           topics?: string[]
           total_questions?: number
+          trace_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -17409,6 +17416,7 @@ export type Database = {
           answer_key_policy?: string | null
           archived_at?: string | null
           auto_assign?: boolean | null
+          client_request_id?: string | null
           created_at?: string
           description?: string | null
           end_at?: string | null
@@ -17429,6 +17437,7 @@ export type Database = {
           title?: string
           topics?: string[]
           total_questions?: number
+          trace_id?: string | null
           updated_at?: string
         }
         Relationships: []
