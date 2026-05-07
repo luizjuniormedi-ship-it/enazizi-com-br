@@ -2,7 +2,8 @@ import { memo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, TrendingDown, Target, Brain, Award, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, TrendingDown, Target, Brain, Award, Users, Download } from "lucide-react";
 
 interface Props {
   results: any[];
@@ -53,6 +54,20 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
 
   return (
     <div className="space-y-6 mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/40">Análise de Performance</h3>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
+            <Download className="h-3 w-3" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
+            <Download className="h-3 w-3" /> XLSX
+          </Button>
+          <Button variant="primary" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2 shadow-glow-sm">
+            <Download className="h-3 w-3" /> PDF
+          </Button>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Tema mais fraco */}
         <Card className="border-destructive/20 bg-destructive/5 overflow-hidden">
