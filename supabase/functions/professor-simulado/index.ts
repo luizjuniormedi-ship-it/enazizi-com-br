@@ -752,6 +752,17 @@ REGRAS INVIOLÁVEIS:
               .in("class_id", class_ids)
               .eq("is_active", true);
             studentList = classStudents || [];
+          } else if (assignment_mode === "professor_turmas" && params.professor_turma_ids?.length > 0) {
+            const { data: turmaStudents } = await sb
+              .from("professor_turma_students")
+              .select("student_id")
+              .in("turma_id", params.professor_turma_ids);
+            
+            if (turmaStudents && turmaStudents.length > 0) {
+              const studentIds = turmaStudents.map((s: any) => s.student_id);
+              const { data: profiles } = await sb.from("profiles").select("user_id").in("id", studentIds);
+              studentList = profiles || [];
+            }
           } else if (assignment_mode === "all") {
             const { data: allStudents } = await sb.from("profiles").select("user_id").eq("status", "active");
             studentList = allStudents || [];
