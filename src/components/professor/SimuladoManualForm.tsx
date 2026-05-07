@@ -66,7 +66,7 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
         <div className="space-y-2">
           <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Gabarito</Label>
           <Select value={manualCorrect} onValueChange={onCorrectChange}>
-            <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 bg-white/5 border-white/10 rounded-xl"><SelectValue /></SelectTrigger>
             <SelectContent>
               {["A", "B", "C", "D", "E"].map((l, i) => (
                 <SelectItem key={i} value={String(i)}>Alternativa {l}</SelectItem>
