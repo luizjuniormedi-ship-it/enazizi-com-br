@@ -77,9 +77,13 @@ const Register = () => {
 
       if (error) {
         console.error("Erro detalhado do cadastro:", error);
+        let description = error.message;
+        if (error.message.includes("already registered") || error.message.includes("already exists")) {
+          description = "Este e-mail já está cadastrado. Tente fazer login ou recuperar sua senha.";
+        }
         toast({ 
           title: "Erro ao criar conta", 
-          description: error.message || "Verifique os dados e tente novamente.", 
+          description: description || "Verifique os dados e tente novamente.", 
           variant: "destructive" 
         });
       } else if (data?.user && data?.session) {
