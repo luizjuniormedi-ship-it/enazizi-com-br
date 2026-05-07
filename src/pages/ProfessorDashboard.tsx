@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
+import { useNavigate } from "react-router-dom";
 import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
