@@ -242,12 +242,29 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     });
   }, []);
 
+  const toggleAllStudents = useCallback(() => {
+    if (selectedStudentIds.length === previewStudents.length) {
+      // Unselect only those in current preview
+      const previewIds = previewStudents.map(s => s.user_id);
+      setSelectedStudentIds(prev => prev.filter(id => !previewIds.includes(id)));
+      setSelectedStudentsData(prev => prev.filter(s => !previewIds.includes(s.user_id)));
+    } else {
+      // Select all in current preview
+      const newStudents = previewStudents.filter(s => !selectedStudentIds.includes(s.user_id));
+      setSelectedStudentIds(prev => [...prev, ...newStudents.map(s => s.user_id)]);
+      setSelectedStudentsData(prev => [...prev, ...newStudents]);
+    }
+  }, [previewStudents, selectedStudentIds]);
+
   const clearStudentSelection = useCallback(() => {
     setSelectedStudentIds([]);
     setSelectedStudentsData([]);
   }, []);
 
   const removeSelectedStudent = useCallback((userId: string) => {
+    setSelectedStudentIds(prev => prev.filter(id => id !== userId));
+    setSelectedStudentsData(prev => prev.filter(s => s.user_id !== userId));
+  }, []);
     setSelectedStudentIds(prev => prev.filter(id => id !== userId));
     setSelectedStudentsData(prev => prev.filter(s => s.user_id !== userId));
   }, []);
@@ -758,29 +775,39 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         return;
       }
 
+      if (assignmentMode === "all") {
+        const confirmed = window.confirm("ATENÇÃO: Este simulado será visível para TODOS os alunos da plataforma. Confirmar?");
+        if (!confirmed) return;
+      }
+
       setCreating(true);
       try {
-      let count = 0;
-      if (assignmentMode === "manual") count = selectedStudentIds.length;
-      else if (assignmentMode === "all") {
-        const { data } = await callAPI({ action: "get_students_count" });
-        count = data?.count || 0;
-      } else if (assignmentMode === "classes") {
-        const { data } = await callAPI({ action: "get_students_count", class_ids: selectedClassIds });
-        count = data?.count || 0;
-      } else {
-        const { data } = await callAPI({ 
-          action: "get_students_count", 
-          faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
-          periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
-        });
-        count = data?.count || 0;
-      }
-      
-      setImpactedCount(count);
-      setShowConfirm(true);
-    } catch (err: any) {
-      toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
+        let count = 0;
+        if (assignmentMode === "manual") count = selectedStudentIds.length;
+        else if (assignmentMode === "all") {
+          const { data } = await callAPI({ action: "get_students_count" });
+          count = data?.count || 0;
+        } else if (assignmentMode === "classes") {
+          const { data } = await callAPI({ action: "get_students_count", class_ids: selectedClassIds });
+          count = data?.count || 0;
+        } else {
+          const { data } = await callAPI({ 
+            action: "get_students_count", 
+            faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
+            periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
+          });
+          count = data?.count || 0;
+        }
+        
+        if (count === 0) {
+          toast({ title: "Público vazio", description: "Nenhum aluno foi encontrado com os critérios selecionados.", variant: "destructive" });
+          return;
+        }
+
+        setImpactedCount(count);
+        setShowConfirm(true);
+      } catch (err: any) {
+        toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
       } finally {
         setCreating(false);
       }
@@ -825,6 +852,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     selectedClassIds, setSelectedClassIds, assignmentMode, setAssignmentMode,
     endAt, setEndAt, maxAttempts, setMaxAttempts, feedbackPolicy, setFeedbackPolicy,
     allowRetake, setAllowRetake,
+    studentPagination, selectedStudentsData,
 
     // derived
     allQs, target, deficit, groupedBlocks,
@@ -835,7 +863,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     handleExamBoardChange,
     updateDifficultyMix,
     previewMatchingStudents, searchStudentGlobal, addSearchedStudent,
-    toggleStudentSelection, toggleAllStudents,
+    toggleStudentSelection, toggleAllStudents, clearStudentSelection,
+    removeSelectedStudent,
     removeGeneratedQuestion, removeManualQuestion,
     generateQuestionsAI, regenerateMissing,
     addManualQuestion, updateManualOption,
