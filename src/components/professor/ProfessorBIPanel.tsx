@@ -162,15 +162,15 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
       </div>
 
       {/* Executive Summary */}
-      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Sparkles className="h-5 w-5 text-primary" />
+      <Card className="border-primary/30 bg-white/5 backdrop-blur-md rounded-2xl overflow-hidden group">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-5">
+            <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30 shadow-glow-sm group-hover:scale-110 transition-transform">
+              <Sparkles className="h-6 w-6 text-primary" />
             </div>
-            <div>
-              <p className="text-sm font-semibold mb-1">Resumo Executivo</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">{execSummary}</p>
+            <div className="space-y-1">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Resumo Executivo</p>
+              <p className="text-sm text-white/90 leading-relaxed font-medium">{execSummary}</p>
             </div>
           </div>
         </CardContent>
