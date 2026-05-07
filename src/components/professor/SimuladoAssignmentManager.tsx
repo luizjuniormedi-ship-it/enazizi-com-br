@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 interface Props {
   assignmentMode: "filter" | "classes" | "manual" | "all";
   onAssignmentModeChange: (v: "filter" | "classes" | "manual" | "all") => void;
-  faculdadeFilter: string;
-  periodoFilter: string;
-  onFaculdadeChange: (v: string) => void;
-  onPeriodoChange: (v: string) => void;
+  faculdadeFilters: string[];
+  periodoFilters: string[];
+  onFaculdadeChange: (v: string[]) => void;
+  onPeriodoChange: (v: string[]) => void;
   previewStudents: any[];
   previewLoading: boolean;
   selectedStudentIds: string[];
