@@ -19,6 +19,7 @@ import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalEx
 import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficiencyPlans";
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
+import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
 const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
