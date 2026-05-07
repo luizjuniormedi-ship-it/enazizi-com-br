@@ -69,8 +69,8 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
         )}
       </div>
       {deficit > 0 && questionMode === "ai" && (
-        <p className="text-[11px] text-amber-600">
-          ⚠️ {deficit} questão(ões) excluída(s). Clique em "Regenerar" para completar.
+        <p className="text-[11px] text-amber-500 font-bold uppercase tracking-tight flex items-center gap-1.5 p-2 bg-amber-500/10 rounded-lg border border-amber-500/20">
+          <AlertCircle className="h-3.5 w-3.5" /> {deficit} QUESTÃO(ÕES) EXCLUÍDA(S). CLIQUE EM "REGENERAR" PARA COMPLETAR.
         </p>
       )}
       <div className="max-h-[400px] overflow-y-auto space-y-2">
