@@ -351,7 +351,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                           <span className="text-[10px] font-black uppercase tracking-widest">Alerta Tutor IA</span>
                                        </div>
                                        <p className="text-xs text-white/80 leading-relaxed italic">
-                                          "O aluno demonstrou dificuldade crítica em temas de {Array.from(new Set(studentAnswers.filter(a => !a.is_correct).map(a => a.topic))).slice(0, 2).join(" e ")}. 
+                                          "O aluno demonstrou dificuldade crítica em temas de {Array.from(new Set(studentAnswers.filter(a => !a.is_correct).map(a => a.topic || "Geral"))).slice(0, 2).join(" e ")}. 
                                           Sugerimos focar no banco de erros e revisão de condutas."
                                        </p>
                                     </div>
