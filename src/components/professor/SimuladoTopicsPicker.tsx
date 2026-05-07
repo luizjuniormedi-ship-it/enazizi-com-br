@@ -114,21 +114,23 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           {useDistribution && (
             <div className="space-y-1.5">
               {selectedTopics.map((topic, idx) => (
-                <div key={`${topic}-dist-${idx}`} className="flex items-center gap-2">
-                  <Badge variant="outline" className="shrink-0 text-[10px] min-w-[100px]">
+                <div key={`${topic}-dist-${idx}`} className="flex items-center gap-3">
+                  <Badge variant="outline" className="shrink-0 text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2 min-w-[110px] justify-center">
                     {topic}
                   </Badge>
-                  <Input
-                    type="number"
-                    min={0}
-                    max={targetCount}
-                    value={topicDistribution[topic] || 0}
-                    onChange={(e) =>
-                      onUpdateTopicDistribution(topic, parseInt(e.target.value) || 0)
-                    }
-                    className="h-7 w-20 text-xs text-center"
-                  />
-                  <span className="text-[10px] text-muted-foreground">questões</span>
+                  <div className="flex-1">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={targetCount}
+                      value={topicDistribution[topic] || 0}
+                      onChange={(e) =>
+                        onUpdateTopicDistribution(topic, parseInt(e.target.value) || 0)
+                      }
+                      className="h-8 w-20 text-xs text-center bg-white/5 border-white/10 rounded-lg mx-auto"
+                    />
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest min-w-[60px]">questões</span>
                 </div>
               ))}
               {distributionSum !== targetCount ? (
