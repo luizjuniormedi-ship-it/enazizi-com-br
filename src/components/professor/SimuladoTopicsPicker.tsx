@@ -103,11 +103,11 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
 
       {/* Topic distribution */}
       {selectedTopics.length > 1 && questionMode === "ai" && (
-        <div className="space-y-2 bg-primary/5 rounded-lg p-3 border border-primary/20">
+        <div className="space-y-4 bg-primary/5 rounded-2xl p-4 border border-primary/20">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
-              <Label className="text-xs font-semibold">Distribuição por tema</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest opacity-80">Distribuição por tema</Label>
             </div>
             <Switch checked={useDistribution} onCheckedChange={onToggleDistribution} />
           </div>
