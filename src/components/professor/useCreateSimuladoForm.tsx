@@ -688,7 +688,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
 
   return {
     // estados
-    creating, generating,
+    creating, generating, showConfirm, setShowConfirm, impactedCount, traceId,
     title, setTitle, description, setDescription,
     selectedTopics, newTopicInput, setNewTopicInput, subtopics,
     faculdadeFilter, setFaculdadeFilter, periodoFilter, setPeriodoFilter,
@@ -718,7 +718,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     removeGeneratedQuestion, removeManualQuestion,
     generateQuestionsAI, regenerateMissing,
     addManualQuestion, updateManualOption,
-    createSimulado,
+    initiateCreate, confirmCreate
   };
 }
 
