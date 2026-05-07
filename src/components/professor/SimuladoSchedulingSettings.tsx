@@ -33,10 +33,10 @@ const SimuladoSchedulingSettings = memo(function SimuladoSchedulingSettings({
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Agendamento */}
-        <div className="space-y-4 p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+        <div className="space-y-4 p-4 rounded-2xl border border-white/5 bg-white/5">
           <div className="flex items-center gap-2 mb-2">
             <Calendar className="h-4 w-4 text-primary" />
-            <Label className="text-sm font-bold uppercase tracking-widest">Prazos e Tempo</Label>
+            <Label className="text-[10px] font-black uppercase tracking-widest opacity-80">Prazos e Tempo</Label>
           </div>
           
           <div className="space-y-3">
