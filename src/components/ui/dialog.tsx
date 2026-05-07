@@ -35,19 +35,20 @@ const DialogContent = React.forwardRef<
   
   return (
     <DialogPortal>
-      <DialogOverlay className="backdrop-blur-md bg-black/60" />
+      <DialogOverlay className="backdrop-blur-sm bg-black/80" />
       <DialogPrimitive.Content
         ref={ref}
         className={cn(
-          "fixed left-[50%] top-[50%] z-[100] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-6 p-8 duration-300 pointer-events-auto",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]",
-          "card-pixar-static bg-[#0a0a0e]/95 border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)] sm:rounded-3xl",
+          "fixed left-1/2 top-6 z-[120] w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] overflow-hidden rounded-2xl duration-300 pointer-events-auto",
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-left-1/2",
+          "card-pixar-static bg-[#0a0a0e]/95 border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]",
+          "max-h-[90vh] flex flex-col",
           isTeacherModal && [
-            "top-0 sm:top-12 translate-y-0 bottom-0 sm:bottom-auto",
-            "max-h-screen sm:max-h-[calc(100vh-6rem)]",
-            "w-screen sm:w-full",
-            "flex flex-col p-0 gap-0 overflow-hidden",
-            "rounded-none sm:rounded-3xl"
+            "sm:top-12",
+            "sm:max-h-[calc(100vh-6rem)]",
+            "sm:w-full sm:max-w-3xl",
+            "p-0 gap-0",
+            "sm:rounded-3xl"
           ],
           className,
         )}
