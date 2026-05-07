@@ -62,9 +62,9 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
         </Button>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {selectedTopics.map((topic) => (
+        {selectedTopics.map((topic, idx) => (
           <Badge
-            key={topic}
+            key={`${topic}-${idx}`}
             variant="secondary"
             className="gap-1 cursor-pointer"
             onClick={() => onRemoveTopic(topic)}
