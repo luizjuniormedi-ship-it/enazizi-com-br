@@ -20,8 +20,8 @@ const SimuladoQuestionItem = memo(
   function SimuladoQuestionItem({ q, globalIdx, block, isExpanded, onToggleExpand, onRemove }: Props) {
     return (
       <div
-        className={`bg-secondary/50 rounded-lg text-xs transition-all ${
-          isExpanded ? "ring-1 ring-primary/30" : ""
+        className={`bg-white/5 border border-white/5 rounded-2xl text-xs transition-all overflow-hidden ${
+          isExpanded ? "ring-1 ring-primary/30 border-primary/20" : ""
         }`}
       >
         <div
