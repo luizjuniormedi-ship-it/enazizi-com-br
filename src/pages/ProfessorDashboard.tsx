@@ -233,7 +233,8 @@ const ProfessorDashboard = () => {
                 { value: "bi", label: "📈 BI" },
                 { value: "mentoria", label: "📋 Mentoria" },
                 { value: "osce", label: "🩺 OSCE" },
-                { value: "proficiencia", label: "🎯 Proficiência" }
+                { value: "proficiencia", label: "🎯 Proficiência" },
+                { value: "auditoria", label: "🔍 Auditoria" }
               ].map((tab) => (
                 <TabsTrigger 
                   key={tab.value}
