@@ -8,10 +8,6 @@ interface Props {
   totalCompleted: number;
 }
 
-/**
- * KPIs estáticos da aba Simulados.
- * Memoizado: só re-renderiza quando algum dos 3 números muda.
- */
 const SimuladosKpiCards = memo(function SimuladosKpiCards({
   totalSimulados,
   totalStudentsAssigned,
