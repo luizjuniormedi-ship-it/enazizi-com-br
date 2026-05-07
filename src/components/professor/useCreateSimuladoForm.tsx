@@ -22,6 +22,21 @@ interface Args {
 export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }: Args) {
   const { toast } = useToast();
 
+  const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
+    try {
+      console.log(`[useCreateSimuladoForm] action_start: ${name}`);
+      await fn();
+      console.log(`[useCreateSimuladoForm] action_success: ${name}`);
+    } catch (error) {
+      console.error(`[useCreateSimuladoForm] action_failed: ${name}`, error);
+      toast({
+        title: "Erro na operação",
+        description: error instanceof Error ? error.message : "Erro inesperado.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
   // Estado de criação/geração
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState(false);
