@@ -62,9 +62,9 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
         </Button>
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {selectedTopics.map((topic) => (
+        {selectedTopics.map((topic, idx) => (
           <Badge
-            key={topic}
+            key={`${topic}-${idx}`}
             variant="secondary"
             className="gap-1 cursor-pointer"
             onClick={() => onRemoveTopic(topic)}
@@ -80,8 +80,8 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           <p className="text-xs font-medium text-muted-foreground">
             Subtemas específicos (opcional) — ex: IAM, TEP, Pré-eclâmpsia
           </p>
-          {selectedTopics.map((topic) => (
-            <div key={topic} className="flex items-center gap-2">
+          {selectedTopics.map((topic, idx) => (
+            <div key={`${topic}-sub-${idx}`} className="flex items-center gap-2">
               <Badge variant="outline" className="shrink-0 text-[10px]">
                 {topic}
               </Badge>
@@ -108,8 +108,8 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           </div>
           {useDistribution && (
             <div className="space-y-1.5">
-              {selectedTopics.map((topic) => (
-                <div key={topic} className="flex items-center gap-2">
+              {selectedTopics.map((topic, idx) => (
+                <div key={`${topic}-dist-${idx}`} className="flex items-center gap-2">
                   <Badge variant="outline" className="shrink-0 text-[10px] min-w-[100px]">
                     {topic}
                   </Badge>

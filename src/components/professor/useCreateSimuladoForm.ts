@@ -512,50 +512,72 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, []);
 
   const createSimulado = useCallback(async () => {
-    const questions =
-      questionMode === "manual"
-        ? manualQuestions
-        : useAI
-        ? generatedQuestions
-        : bankQuestions.filter((q) => selectedBankQuestions.includes(q.id));
-    if (questions.length === 0) {
-      toast({
-        title: "Sem questões",
-        description: "Gere ou selecione questões primeiro.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setCreating(true);
     try {
-      const res = await callAPI({
+      setCreating(true);
+      
+      const questions =
+        questionMode === "manual"
+          ? manualQuestions
+          : useAI
+          ? generatedQuestions
+          : bankQuestions.filter((q) => selectedBankQuestions.includes(q.id));
+
+      if (!questions || questions.length === 0) {
+        toast({
+          title: "Sem questões",
+          description: "Gere ou selecione questões primeiro.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!title?.trim()) {
+        toast({
+          title: "Título obrigatório",
+          description: "Informe um título para o simulado.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const payload = {
         action: "create_simulado",
-        title,
-        description,
-        topics: selectedTopics,
+        title: title.trim(),
+        description: description || null,
+        topics: selectedTopics || [],
         faculdade_filter: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : null,
         periodo_filter: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : null,
         total_questions: questions.length,
-        time_limit_minutes: parseInt(timeLimit),
+        time_limit_minutes: parseInt(timeLimit) || 60,
         questions_json: questions,
-        student_ids: assignmentMode === "manual" ? selectedStudentIds : null,
-        class_ids: assignmentMode === "classes" ? selectedClassIds : null,
-        assignment_mode: assignmentMode,
+        student_ids: assignmentMode === "manual" ? (selectedStudentIds || []) : null,
+        class_ids: assignmentMode === "classes" ? (selectedClassIds || []) : null,
+        assignment_mode: assignmentMode || "all",
         scheduled_at: scheduledAt || null,
         end_at: endAt || null,
-        max_attempts: parseInt(maxAttempts),
-        feedback_policy: feedbackPolicy,
-        allow_retake: allowRetake,
-        auto_assign: autoAssign,
+        max_attempts: parseInt(maxAttempts) || 1,
+        feedback_policy: feedbackPolicy || "immediate",
+        allow_retake: !!allowRetake,
+        auto_assign: !!autoAssign,
         exam_board: examBoard !== "all" ? examBoard : null,
+      };
+
+      console.log("[useCreateSimuladoForm] Enviando payload:", payload);
+
+      const res = await callAPI(payload);
+      
+      toast({ 
+        title: "Simulado criado!", 
+        description: `Atribuído a ${res?.students_assigned || 0} aluno(s).` 
       });
-      toast({ title: "Simulado criado!", description: `Atribuído a ${res.students_assigned} aluno(s).` });
+      
       onOpenChange(false);
       onCreated();
-    } catch (e) {
+    } catch (e: any) {
+      console.error("[useCreateSimuladoForm] Erro ao criar simulado:", e);
       toast({
-        title: "Erro",
-        description: e instanceof Error ? e.message : "Erro",
+        title: "Erro ao criar simulado",
+        description: e instanceof Error ? e.message : "Ocorreu um erro inesperado ao salvar o simulado.",
         variant: "destructive",
       });
     } finally {
@@ -564,7 +586,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, [
     callAPI, toast, onOpenChange, onCreated, questionMode, manualQuestions, generatedQuestions,
     bankQuestions, selectedBankQuestions, title, description, selectedTopics, faculdadeFilter,
-    periodoFilter, timeLimit, selectedStudentIds, scheduledAt, autoAssign, examBoard,
+    periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
+    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
   ]);
 
   const allQs = questionMode === "ai" ? generatedQuestions : manualQuestions;
