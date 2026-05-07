@@ -6,6 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -108,8 +109,8 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] bg-[#0a0a0e] border-white/10 text-white overflow-hidden flex flex-col p-0">
-        <DialogHeader className="p-6 pb-2 border-b border-white/5">
+      <DialogContent className="sm:max-w-[800px] teacher-modal-content">
+        <DialogHeader className="p-6 border-b border-white/5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button 
@@ -138,7 +139,7 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
           </div>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+        <DialogBody className="space-y-8">
           {/* Adicionar Nova Questão */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
@@ -196,7 +197,7 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
               />
             )}
           </section>
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

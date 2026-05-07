@@ -451,7 +451,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
               </div>
             </Tabs>
           )}
-        </div>
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );
