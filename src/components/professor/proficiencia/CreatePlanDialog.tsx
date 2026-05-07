@@ -1,12 +1,9 @@
 import { useState } from "react";
 import {
   Dialog,
-  DialogContent,
-  DialogHeader,
   DialogTitle,
-  DialogBody,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2 } from "lucide-react";
+import { Loader2, Target } from "lucide-react";
 import {
   useCreateProfessorPlan,
   type PlanIntensity,
@@ -92,12 +89,41 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl teacher-modal-content">
-        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
-          <DialogTitle>Criar Plano de Proficiência Guiada</DialogTitle>
-        </DialogHeader>
-
-        <DialogBody className="space-y-5">
+      <TeacherDialogContent
+        className="z-[120]"
+        maxWidth="sm:max-w-3xl"
+        header={
+          <>
+            <DialogTitle className="flex items-center gap-2">
+              <Target className="h-5 w-5 text-primary" />
+              Criar Plano de Proficiência Guiada
+            </DialogTitle>
+          </>
+        }
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                reset();
+                onOpenChange(false);
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              disabled={!canSubmit || createMutation.isPending}
+              onClick={handleSubmit}
+            >
+              {createMutation.isPending && (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              )}
+              Criar plano
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-5">
           {/* Identificação */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
@@ -187,29 +213,8 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
               </TabsContent>
             </Tabs>
           </div>
-        </DialogBody>
-
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              reset();
-              onOpenChange(false);
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            disabled={!canSubmit || createMutation.isPending}
-            onClick={handleSubmit}
-          >
-            {createMutation.isPending && (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            )}
-            Criar plano
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+        </div>
+      </TeacherDialogContent>
     </Dialog>
   );
 };
