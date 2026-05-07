@@ -57,14 +57,14 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
             size="sm"
             onClick={onRegenerateMissing}
             disabled={generating}
-            className="gap-1.5 text-xs h-7 border-amber-300 text-amber-700 hover:bg-amber-50"
+            className="h-8 gap-2 rounded-xl border-amber-500/50 text-amber-500 hover:bg-amber-500/10 font-black uppercase tracking-widest text-[10px]"
           >
             {generating ? (
               <Loader2 className="h-3 w-3 animate-spin" />
             ) : (
               <Sparkles className="h-3 w-3" />
             )}
-            Regenerar {deficit} faltantes
+            REGENERAR {deficit} FALTANTES
           </Button>
         )}
       </div>
