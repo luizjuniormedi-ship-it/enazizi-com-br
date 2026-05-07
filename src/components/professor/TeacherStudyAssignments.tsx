@@ -399,7 +399,6 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
             </DialogTitle>
           </DialogHeader>
           <DialogBody>
-          </DialogHeader>
           {resultsDialog.results.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Nenhum aluno atribuído.</p>
           ) : (
