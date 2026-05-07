@@ -49,7 +49,6 @@ const AddSubtopicsDialog = ({ open, onOpenChange, planId }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <TeacherDialogContent
-        className="z-[130]"
         maxWidth="sm:max-w-2xl"
         header={
           <DialogTitle>Adicionar subtemas ao plano ativo</DialogTitle>
