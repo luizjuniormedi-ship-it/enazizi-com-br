@@ -1,4 +1,5 @@
 import { memo, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ interface Props {
 }
 
 const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, questions_json, simuladoTitle }: Props) {
+  const { toast } = useToast();
   const safeResults = Array.isArray(results) ? results : [];
   const completed = safeResults.filter(r => r?.status === "completed");
   if (completed.length === 0) return null;
