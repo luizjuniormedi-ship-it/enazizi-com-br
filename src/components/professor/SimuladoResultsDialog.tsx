@@ -106,8 +106,11 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
         }
       }}
     >
-      <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden border-white/10 shadow-2xl bg-[#0a0a0e]">
-        <div className="p-6 border-b bg-background/95 backdrop-blur-md sticky top-0 z-20">
+      <DialogContent 
+        className={`fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none z-[110] bg-[#0a0a0e] top-6 w-[calc(100vw-2rem)] max-w-5xl max-h-[92vh] flex flex-col`}
+        style={{ transform: `translateX(-50%)` }}
+      >
+        <header className="shrink-0 border-b px-6 py-4 bg-background/95 backdrop-blur-md select-none">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <BarChart3 className="h-6 w-6 text-primary" />
