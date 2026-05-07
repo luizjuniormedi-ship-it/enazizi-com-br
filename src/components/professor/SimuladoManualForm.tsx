@@ -27,9 +27,9 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
   onStatementChange, onOptionChange, onCorrectChange, onTopicChange, onAddManualQuestion,
 }: Props) {
   return (
-    <div className="space-y-3 border border-border rounded-lg p-3 bg-muted/20">
+    <div className="space-y-4 border border-white/5 rounded-2xl p-4 bg-white/5">
       <div className="space-y-2">
-        <Label className="text-xs">Enunciado / Caso Clínico</Label>
+        <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Enunciado / Caso Clínico</Label>
         <Textarea
           value={manualStatement}
           onChange={(e) => onStatementChange(e.target.value)}
