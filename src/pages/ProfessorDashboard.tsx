@@ -23,7 +23,7 @@ import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
 const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
-const CreateSimuladoDialog = lazyWithRetry(() => import("@/components/professor/CreateSimuladoDialog"), "CreateSimuladoDialog");
+import CreateSimuladoDialog from "@/components/professor/CreateSimuladoDialog";
 const SimuladoResultsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoResultsDialog"), "SimuladoResultsDialog");
 const SimuladoQuestionsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoQuestionsDialog").then(m => ({ default: m.SimuladoQuestionsDialog })), "SimuladoQuestionsDialog");
 
@@ -194,22 +194,18 @@ const ProfessorDashboard = () => {
   }, []);
 
   const handleOpenCreate = useCallback((simulado?: any) => {
-    safeAction("open_create_dialog", async () => {
-      console.log("[ProfessorDashboard] handleOpenCreate disparado", simulado?.id);
-      setEditingSimulado(simulado || null);
-      setShowCreate(true);
-    });
-  }, [safeAction]);
+    console.log("[ProfessorDashboard] abrir modal criar simulado", simulado?.id);
+    setEditingSimulado(simulado || null);
+    setShowCreate(true);
+  }, []);
 
   const handleCloseCreate = useCallback((open: boolean) => {
-    safeAction("close_create_dialog", async () => {
-      console.log("[ProfessorDashboard] handleCloseCreate:", open);
-      setShowCreate(open);
-      if (!open) {
-        setEditingSimulado(null);
-      }
-    });
-  }, [safeAction]);
+    console.log("[ProfessorDashboard] fechar modal criar simulado:", open);
+    setShowCreate(open);
+    if (!open) {
+      setEditingSimulado(null);
+    }
+  }, []);
 
   // Totais memoizados — só recalculam quando a lista muda
   const totals = useMemo(() => {

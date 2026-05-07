@@ -116,6 +116,7 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <TeacherDialogContent
+        className="z-[120]"
         maxWidth="sm:max-w-[425px]"
         header={
           <>
