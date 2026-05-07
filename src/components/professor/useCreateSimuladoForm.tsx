@@ -681,12 +681,18 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast]);
 
 
-  const allQs = questionMode === "ai" ? generatedQuestions : manualQuestions;
-  const target = parseInt(questionCount);
-  const deficit = questionMode === "ai" ? target - allQs.length : 0;
+  const allQs = useMemo(() => {
+    const questions = questionMode === "ai" ? generatedQuestions : manualQuestions;
+    return Array.isArray(questions) ? questions : [];
+  }, [questionMode, generatedQuestions, manualQuestions]);
+
+  const target = useMemo(() => parseInt(questionCount || "0") || 0, [questionCount]);
+  const deficit = useMemo(() => (questionMode === "ai" ? Math.max(0, target - allQs.length) : 0), [questionMode, target, allQs.length]);
+
   const groupedBlocks = useMemo(() => {
+    if (!Array.isArray(allQs)) return [];
     const grouped = allQs.reduce<Record<string, any[]>>((acc, q) => {
-      const block = q.block || q.topic || "Geral";
+      const block = q?.block || q?.topic || "Geral";
       if (!acc[block]) acc[block] = [];
       acc[block].push(q);
       return acc;
