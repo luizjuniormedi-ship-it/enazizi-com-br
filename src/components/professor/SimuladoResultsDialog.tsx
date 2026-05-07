@@ -120,7 +120,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
               Acompanhamento detalhado, correção individual e intervenção pedagógica com IA.
             </DialogDescription>
           </DialogHeader>
-        </div>
+        </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {state.loading ? (
