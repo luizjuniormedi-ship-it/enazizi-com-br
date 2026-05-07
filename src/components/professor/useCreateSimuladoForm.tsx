@@ -59,8 +59,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
   const [newTopicInput, setNewTopicInput] = useState("");
   const [subtopics, setSubtopics] = useState<Record<string, string>>({});
-  const [faculdadeFilter, setFaculdadeFilter] = useState("");
-  const [periodoFilter, setPeriodoFilter] = useState("");
+  const [faculdadeFilters, setFaculdadeFilters] = useState<string[]>([]);
+  const [periodoFilters, setPeriodoFilters] = useState<string[]>([]);
   const [questionCount, setQuestionCount] = useState("10");
   const [timeLimit, setTimeLimit] = useState("60");
   const [generatedQuestions, setGeneratedQuestions] = useState<any[]>([]);
