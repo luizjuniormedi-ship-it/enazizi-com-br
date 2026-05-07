@@ -584,9 +584,9 @@ REGRAS INVIOLÁVEIS:
           }
         }
 
-        // Determine status based on scheduling
+        // Determine status based on scheduling or explicit status
         const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
-        const simStatus = isScheduled ? "scheduled" : "published";
+        const simStatus = params.status || (isScheduled ? "scheduled" : "published");
 
         const { data: simulado, error } = await sb.from("teacher_simulados").insert({
           professor_id: user.id,
@@ -595,7 +595,7 @@ REGRAS INVIOLÁVEIS:
           topics: topics || [],
           faculdade_filter: faculdade_filter || professorFaculdade || null,
           periodo_filter: periodo_filter || null,
-          total_questions: total_questions || questions_json?.length || 10,
+          total_questions: questions_json?.length || total_questions || 0,
           time_limit_minutes: time_limit_minutes || 60,
           questions_json: questions_json || [],
           status: simStatus,
@@ -614,9 +614,14 @@ REGRAS INVIOLÁVEIS:
         if (error) {
           console.error(`[create_simulado][Trace:${tid}] Erro no insert principal:`, error);
           await logTraceStep(tid, "main_creation", "error", null, error.message, Date.now() - startTime);
-          throw new Error(error.message);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: "INSERT_ERROR", 
+            message: "Erro ao criar registro principal do simulado.", 
+            trace_id: tid 
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-        
+
         await logTraceStep(tid, "main_creation", "success", { simulado_id: simulado.id }, null, Date.now() - startTime);
 
         let studentList: any[] = [];
