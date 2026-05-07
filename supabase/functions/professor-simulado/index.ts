@@ -1137,10 +1137,12 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "get_students_count": {
-        const { faculdade, periodo, faculdades, periodos, class_ids } = params;
+        const { faculdade, periodo, faculdades, periodos, class_ids, professor_turma_ids } = params;
         
         let query;
-        if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
+        if (professor_turma_ids && Array.isArray(professor_turma_ids) && professor_turma_ids.length > 0) {
+          query = sb.from("professor_turma_students").select("student_id", { count: "exact", head: true }).in("turma_id", professor_turma_ids);
+        } else if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
           query = sb.from("class_members").select("user_id", { count: 'exact', head: true }).in("class_id", class_ids).eq("is_active", true);
         } else {
           query = sb.from("profiles").select("user_id", { count: 'exact', head: true }).eq("status", "active");
