@@ -11,8 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  assignmentMode: "filter" | "classes" | "manual" | "all";
-  onAssignmentModeChange: (v: "filter" | "classes" | "manual" | "all") => void;
+  assignmentMode: "filter" | "classes" | "professor_turmas" | "manual" | "all";
+  onAssignmentModeChange: (v: "filter" | "classes" | "professor_turmas" | "manual" | "all") => void;
   faculdadeFilters: string[];
   periodoFilters: string[];
   onFaculdadeChange: (v: string[]) => void;
@@ -22,6 +22,8 @@ interface Props {
   selectedStudentIds: string[];
   selectedClassIds: string[];
   onSelectedClassIdsChange: (ids: string[]) => void;
+  selectedProfessorTurmaIds: string[];
+  onSelectedProfessorTurmaIdsChange: (ids: string[]) => void;
   studentSearch: string;
   searchResults: any[];
   searchingStudents: boolean;
