@@ -63,7 +63,7 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
           <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
             <Download className="h-3 w-3" /> XLSX
           </Button>
-          <Button variant="primary" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2 shadow-glow-sm">
+          <Button variant="default" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2 shadow-glow-sm">
             <Download className="h-3 w-3" /> PDF
           </Button>
         </div>
