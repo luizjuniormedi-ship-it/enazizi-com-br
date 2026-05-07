@@ -116,13 +116,28 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     setSelectedTopics((prev) => (prev.length > 0 ? prev : allExamTopics));
   }, [allExamTopics, examBoard, questionMode, open]);
 
-  // Reset successData on open
+  // Reset successData or initialize on open
   useEffect(() => {
     if (open) {
       setSuccessData(null);
       setShowConfirm(false);
+      
+      if (initialData) {
+        setTitle(initialData.title || "Simulado");
+        setDescription(initialData.description || "");
+        if (initialData.total_questions) setQuestionCount(String(initialData.total_questions));
+        if (initialData.time_limit_minutes) setTimeLimit(String(initialData.time_limit_minutes));
+        // We could load more here if needed
+      } else {
+        setTitle("Simulado");
+        setDescription("");
+        setQuestionCount("10");
+        setTimeLimit("60");
+        setGeneratedQuestions([]);
+        setManualQuestions([]);
+      }
     }
-  }, [open]);
+  }, [open, initialData]);
 
   // ============ Handlers de Alunos ============
   const previewMatchingStudents = useCallback(async () => {
