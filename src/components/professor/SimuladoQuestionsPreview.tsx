@@ -46,10 +46,9 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium text-primary">
-          ✅ {allQs.length}/{target} questão(ões){" "}
-          {questionMode === "ai" ? "geradas" : "criadas"}{" "}
-          {groupedBlocks.length > 1 ? `em ${groupedBlocks.length} blocos` : ""}
+        <Label className="text-[10px] font-black uppercase tracking-widest text-primary">
+          ✅ {allQs.length}/{target} QUESTÕES{" "}
+          {questionMode === "ai" ? "GERADAS" : "CRIADAS"}
         </Label>
         {deficit > 0 && questionMode === "ai" && (
           <Button
