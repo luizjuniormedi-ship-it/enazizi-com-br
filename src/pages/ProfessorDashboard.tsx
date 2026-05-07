@@ -353,7 +353,11 @@ const ProfessorDashboard = () => {
 
       {resultsDialog.open && (
         <Suspense fallback={null}>
-          <SimuladoResultsDialog state={resultsDialog} onClose={handleCloseResults} />
+          <SimuladoResultsDialog 
+            state={resultsDialog} 
+            onClose={handleCloseResults} 
+            callAPI={callAPI}
+          />
         </Suspense>
       )}
     </div>
