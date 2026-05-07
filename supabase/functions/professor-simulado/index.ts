@@ -206,6 +206,22 @@ serve(async (req) => {
       return (data || []).map((r: any) => r.recipient_id);
     };
 
+    const logTraceStep = async (traceId: string, stepName: string, status: string, payload: any = null, errorMessage: string | null = null, executionTime: number | null = null) => {
+      try {
+        await sb.from("teacher_simulado_trace_logs").insert({
+          trace_id: traceId,
+          teacher_id: user.id,
+          step_name: stepName,
+          status,
+          payload,
+          error_message: errorMessage,
+          execution_time_ms: executionTime
+        });
+      } catch (logErr) {
+        console.error(`[Trace:${traceId}] Erro ao gravar log de auditoria:`, logErr);
+      }
+    };
+
     switch (action) {
       case "generate_questions": {
         const { topics, count = 10, difficulty = "intermediario", difficultyMix, previousStatements, examBoard } = params;
@@ -535,6 +551,7 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "create_simulado": {
+        const startTime = Date.now();
         const { 
           title, description, topics, faculdade_filter, periodo_filter, 
           total_questions, time_limit_minutes, questions_json, 
@@ -543,11 +560,11 @@ REGRAS INVIOLÁVEIS:
           trace_id, client_request_id 
         } = params;
 
-        // Trace for debugging
         const tid = trace_id || crypto.randomUUID();
         console.log(`[create_simulado][Trace:${tid}] Início da criação. ReqID: ${client_request_id}`);
+        
+        await logTraceStep(tid, "init", "success", { title, assignment_mode });
 
-        // Idempotency check
         if (client_request_id) {
           const { data: existing } = await sb
             .from("teacher_simulados")
@@ -558,6 +575,7 @@ REGRAS INVIOLÁVEIS:
             
           if (existing) {
             console.warn(`[create_simulado][Trace:${tid}] Requisição duplicada ignorada.`);
+            await logTraceStep(tid, "idempotency", "success", { existing_id: existing.id, status: "duplicate_ignored" });
             return ok({ 
               success: true, 
               simulado_id: existing.id, 
@@ -595,8 +613,13 @@ REGRAS INVIOLÁVEIS:
 
         if (error) {
           console.error(`[create_simulado][Trace:${tid}] Erro no insert principal:`, error);
+          await logTraceStep(tid, "main_creation", "error", null, error.message, Date.now() - startTime);
           throw new Error(error.message);
         }
+        
+        await logTraceStep(tid, "main_creation", "success", { simulado_id: simulado.id }, null, Date.now() - startTime);
+
+        let studentList: any[] = [];
 
         // Handle assignments (Isolated in try-catch to not break the flow)
         try {
@@ -642,8 +665,10 @@ REGRAS INVIOLÁVEIS:
               trace_id: tid
             });
           }
+          await logTraceStep(tid, "assignments", "success", { count: studentList.length });
         } catch (assignErr) {
           console.error(`[create_simulado][Trace:${tid}] Erro ao processar assignments (não bloqueante):`, assignErr);
+          await logTraceStep(tid, "assignments", "warning", null, assignErr instanceof Error ? assignErr.message : "Erro desconhecido");
         }
 
         if (studentList.length > 0) {
@@ -677,6 +702,9 @@ REGRAS INVIOLÁVEIS:
               priority: "important",
             }));
             await sb.from("admin_messages").insert(notifications);
+            await logTraceStep(tid, "notifications_in_app", "success", { count: newInApp.length });
+          } else {
+            await logTraceStep(tid, "notifications_in_app", "success", { count: 0, reason: "already_notified" });
           }
 
           // WhatsApp notification for students with phone — dedup
@@ -722,9 +750,13 @@ REGRAS INVIOLÁVEIS:
                   .in("target_user_id", newWA.map((p: any) => p.user_id));
               }
               console.log(`WhatsApp: ${newWA.length} mensagens enfileiradas para simulado ${simulado.id}`);
+              await logTraceStep(tid, "notifications_whatsapp", "success", { count: newWA.length });
+            } else {
+              await logTraceStep(tid, "notifications_whatsapp", "success", { count: 0, reason: "no_eligible_students" });
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp (não bloqueante):", whatsappErr);
+            await logTraceStep(tid, "notifications_whatsapp", "warning", null, whatsappErr instanceof Error ? whatsappErr.message : "Erro desconhecido");
           }
         }
 
@@ -2139,11 +2171,30 @@ REGRAS:
         if (!response.ok) throw new Error("Erro ao gerar sugestões");
 
         const aiData = await response.json();
-        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        const suggestions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+        const recommendations = JSON.parse(sanitizeAiContent(aiData.choices?.[0]?.message?.content || "[]"));
 
-        return ok({ suggestions });
+        return ok({ recommendations });
+      }
+
+      case "get_trace_audit": {
+        const { trace_id } = params;
+        if (!trace_id) throw new Error("trace_id obrigatório");
+
+        const isAdminTrace = roleData.some((r: any) => r.role === "admin");
+
+        let query = sb.from("teacher_simulado_trace_logs")
+          .select("*")
+          .eq("trace_id", trace_id)
+          .order("created_at", { ascending: true });
+
+        if (!isAdminTrace) {
+          query = query.eq("teacher_id", user.id);
+        }
+
+        const { data: logs, error: logError } = await query;
+        if (logError) throw logError;
+
+        return ok({ logs: logs || [] });
       }
 
       default:

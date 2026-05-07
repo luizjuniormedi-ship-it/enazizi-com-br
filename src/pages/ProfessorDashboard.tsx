@@ -19,6 +19,7 @@ import ProfessorPracticalExams from "@/components/professor/ProfessorPracticalEx
 import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficiencyPlans";
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
+import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
 const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
@@ -232,7 +233,8 @@ const ProfessorDashboard = () => {
                 { value: "bi", label: "📈 BI" },
                 { value: "mentoria", label: "📋 Mentoria" },
                 { value: "osce", label: "🩺 OSCE" },
-                { value: "proficiencia", label: "🎯 Proficiência" }
+                { value: "proficiencia", label: "🎯 Proficiência" },
+                { value: "auditoria", label: "🔍 Auditoria" }
               ].map((tab) => (
                 <TabsTrigger 
                   key={tab.value}
@@ -339,6 +341,10 @@ const ProfessorDashboard = () => {
             <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
               <ProfessorProficiencyPlans callAPI={callAPI} />
             </Suspense>
+          </TabsContent>
+
+          <TabsContent value="auditoria" className="mt-4 w-full max-w-5xl mx-auto">
+            <ProfessorTraceAudit callAPI={callAPI} />
           </TabsContent>
         </Tabs>
       </main>

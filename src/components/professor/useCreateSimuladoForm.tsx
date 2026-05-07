@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EXAM_PROFILES } from "@/lib/examProfiles";
 import { useToast } from "@/hooks/use-toast";
+import { Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type CallAPI = (body: Record<string, unknown>) => Promise<any>;
 
@@ -512,12 +514,12 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, []);
 
   const createSimulado = useCallback(async () => {
+    const traceId = crypto.randomUUID();
+    const clientRequestId = crypto.randomUUID();
+    
     try {
       if (creating) return; // Prevent double submit
       setCreating(true);
-      
-      const traceId = crypto.randomUUID();
-      const clientRequestId = crypto.randomUUID();
 
       const questions =
         questionMode === "manual"
@@ -580,10 +582,38 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       onOpenChange(false);
       onCreated();
     } catch (e: any) {
-      console.error("[useCreateSimuladoForm] Erro ao criar simulado:", e);
+      console.error(`[useCreateSimuladoForm][Trace:${traceId}] Erro ao criar simulado:`, e);
+      
+      const errorMsg = e instanceof Error ? e.message : "Ocorreu um erro inesperado ao salvar o simulado.";
+      
       toast({
         title: "Erro ao criar simulado",
-        description: e instanceof Error ? e.message : "Ocorreu um erro inesperado ao salvar o simulado.",
+        description: (
+          <div className="flex flex-col gap-3 mt-2">
+            <p className="text-sm opacity-90">{errorMsg}</p>
+            <div className="flex flex-col gap-1.5 p-3 bg-white/5 rounded-xl border border-white/10">
+              <span className="text-[10px] uppercase font-bold tracking-tighter opacity-50">Código de rastreio</span>
+              <div className="flex items-center justify-between gap-2">
+                <code className="text-[11px] font-mono font-bold text-primary truncate">TRACE-{traceId.split('-')[0].toUpperCase()}</code>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 px-2 hover:bg-white/10 rounded-lg"
+                  onClick={(ev) => {
+                    ev.preventDefault();
+                    ev.stopPropagation();
+                    navigator.clipboard.writeText(traceId);
+                    toast({ title: "Copiado!", description: "ID de rastreio copiado para a área de transferência." });
+                  }}
+                >
+                  <Copy className="h-3 w-3 mr-1.5" />
+                  <span className="text-[10px] font-bold">COPIAR</span>
+                </Button>
+              </div>
+            </div>
+            <p className="text-[10px] italic opacity-50">Informe este código ao suporte técnico se o erro persistir.</p>
+          </div>
+        ),
         variant: "destructive",
       });
     } finally {
