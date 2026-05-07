@@ -156,16 +156,12 @@ const ProfessorDashboard = () => {
   }, []);
 
   const handleOpenCreate = useCallback((simulado?: any) => {
-    console.log("[ProfessorDashboard] abrir modal criar simulado", simulado?.id || "novo");
-    setEditingSimulado(simulado || null);
-    setShowCreate(true);
-  }, []);
-
-  const handleCloseCreate = (open: boolean) => {
-    console.log("[ProfessorDashboard] setOpenCreateSimulado:", open);
-    setShowCreate(open);
-    if (!open) setEditingSimulado(null);
-  };
+    if (simulado?.id) {
+      navigate(`/dashboard/professor/simulados/editar/${simulado.id}`);
+    } else {
+      navigate("/dashboard/professor/simulados/novo");
+    }
+  }, [navigate]);
 
   const totals = useMemo(() => {
     const safeSimulados = Array.isArray(simulados) ? simulados : [];
