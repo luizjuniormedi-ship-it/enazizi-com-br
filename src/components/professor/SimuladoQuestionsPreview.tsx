@@ -1,5 +1,5 @@
 import { memo, useCallback } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import SimuladoQuestionItem from "./SimuladoQuestionItem";
