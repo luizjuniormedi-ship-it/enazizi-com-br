@@ -551,6 +551,7 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "create_simulado": {
+        const startTime = Date.now();
         const { 
           title, description, topics, faculdade_filter, periodo_filter, 
           total_questions, time_limit_minutes, questions_json, 
@@ -559,11 +560,11 @@ REGRAS INVIOLÁVEIS:
           trace_id, client_request_id 
         } = params;
 
-        // Trace for debugging
         const tid = trace_id || crypto.randomUUID();
         console.log(`[create_simulado][Trace:${tid}] Início da criação. ReqID: ${client_request_id}`);
+        
+        await logTraceStep(tid, "init", "success", { title, assignment_mode });
 
-        // Idempotency check
         if (client_request_id) {
           const { data: existing } = await sb
             .from("teacher_simulados")
@@ -574,6 +575,7 @@ REGRAS INVIOLÁVEIS:
             
           if (existing) {
             console.warn(`[create_simulado][Trace:${tid}] Requisição duplicada ignorada.`);
+            await logTraceStep(tid, "idempotency", "success", { existing_id: existing.id, status: "duplicate_ignored" });
             return ok({ 
               success: true, 
               simulado_id: existing.id, 
