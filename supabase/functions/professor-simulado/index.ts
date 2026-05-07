@@ -2196,14 +2196,6 @@ REGRAS:
         return ok({ logs: logs || [] });
       }
 
-        const aiData = await response.json();
-        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
-        const jsonMatch = content.match(/\[[\s\S]*\]/);
-        const suggestions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
-
-        return ok({ suggestions });
-      }
-
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
