@@ -108,8 +108,8 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           </div>
           {useDistribution && (
             <div className="space-y-1.5">
-              {selectedTopics.map((topic) => (
-                <div key={topic} className="flex items-center gap-2">
+              {selectedTopics.map((topic, idx) => (
+                <div key={`${topic}-dist-${idx}`} className="flex items-center gap-2">
                   <Badge variant="outline" className="shrink-0 text-[10px] min-w-[100px]">
                     {topic}
                   </Badge>
