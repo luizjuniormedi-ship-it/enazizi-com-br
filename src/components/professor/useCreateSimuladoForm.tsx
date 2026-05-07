@@ -602,7 +602,29 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       
       onCreated();
     } catch (e: any) {
-...
+      console.error(`[Trace:${tid}] Erro ao criar simulado:`, e);
+      const errorMsg = e instanceof Error ? e.message : "Erro inesperado ao salvar o simulado.";
+      toast({
+        title: "Erro ao criar simulado",
+        description: (
+          <div className="flex flex-col gap-3 mt-2">
+            <p className="text-sm opacity-90">{errorMsg}</p>
+            <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+              <code className="text-[11px] font-mono font-bold text-primary truncate">TRACE-{tid.split('-')[0].toUpperCase()}</code>
+              <Button 
+                variant="ghost" size="sm" className="h-7 px-2 hover:bg-white/10"
+                onClick={() => {
+                  navigator.clipboard.writeText(tid);
+                  toast({ title: "Copiado!" });
+                }}
+              >
+                <Copy className="h-3 w-3 mr-1.5" />
+                <span className="text-[10px] font-bold">COPIAR</span>
+              </Button>
+            </div>
+          </div>
+        ),
+        variant: "destructive",
       });
     } finally {
       setCreating(false);
