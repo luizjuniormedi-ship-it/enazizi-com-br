@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { CinematicHero } from "@/components/cinematic";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 
@@ -46,8 +47,6 @@ const ProfessorDashboard = () => {
     simulado: null,
   });
 
-  const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
-
   const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
     try {
       console.log(`[ProfessorDashboard] action_start: ${name}`);
@@ -65,23 +64,13 @@ const ProfessorDashboard = () => {
 
   const callAPI = useCallback(
     async (body: Record<string, unknown>) => {
-      try {
-        const resp = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify(body),
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || "Erro na operação");
-        return data;
-      } catch (e: any) {
-        throw e;
-      }
+      const { data, error } = await supabase.functions.invoke("professor-simulado", {
+        body,
+      });
+      if (error) throw error;
+      return data;
     },
-    [session, API_URL]
+    []
   );
 
   const loadSimulados = useCallback(async () => {

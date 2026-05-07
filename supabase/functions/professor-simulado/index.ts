@@ -179,7 +179,7 @@ serve(async (req) => {
     let professorFaculdade: string | null = null;
     let professorName: string = "seu professor";
     {
-      const { data: profProfile } = await sb.from("profiles").select("faculdade, display_name").eq("user_id", user.id).single();
+      const { data: profProfile } = await sb.from("profiles").select("faculdade, display_name").eq("user_id", user.id).maybeSingle();
       if (profProfile) {
         professorFaculdade = profProfile.faculdade || null;
         professorName = (profProfile.display_name || "").split(" ")[0] || "seu professor";
@@ -554,9 +554,10 @@ REGRAS INVIOLÁVEIS:
         const startTime = Date.now();
         const { 
           title, description, topics, faculdade_filter, periodo_filter, 
+          faculdade_filters, periodo_filters, // New array filters
           total_questions, time_limit_minutes, questions_json, 
           student_ids, class_ids, assignment_mode, scheduled_at, end_at, 
-          starts_at, deadline_at, // Aligned names from prompt
+          starts_at, deadline_at,
           max_attempts, feedback_policy, answer_release_policy, allow_retake, exam_board, auto_assign,
           trace_id, client_request_id, status
         } = params;
@@ -592,14 +593,20 @@ REGRAS INVIOLÁVEIS:
         const isScheduled = start && new Date(start) > new Date();
         const simStatus = status || (isScheduled ? "scheduled" : "published");
 
+        // Normalize filters to arrays
+        const facFilters = Array.isArray(faculdade_filters) ? faculdade_filters : (faculdade_filter ? [faculdade_filter] : []);
+        const perFilters = Array.isArray(periodo_filters) ? periodo_filters : (periodo_filter ? [parseInt(periodo_filter)] : []);
+
         // Insert principal (isolado)
         const { data: simulado, error } = await sb.from("teacher_simulados").insert({
           professor_id: user.id,
           title: title || "Simulado",
           description: description || null,
           topics: topics || [],
-          faculdade_filter: faculdade_filter || professorFaculdade || null,
-          periodo_filter: periodo_filter || null,
+          faculdade_filter: facFilters[0] || professorFaculdade || null,
+          periodo_filter: perFilters[0] || null,
+          faculdade_filters: facFilters,
+          periodo_filters: perFilters,
           total_questions: total_questions || questions_json?.length || 0,
           time_limit_minutes: time_limit_minutes || 60,
           questions_json: questions_json || [],
@@ -637,7 +644,6 @@ REGRAS INVIOLÁVEIS:
           if (assignment_mode === "manual" && student_ids?.length > 0) {
             studentList = student_ids.map((id: string) => ({ user_id: id }));
           } else if (assignment_mode === "classes" && class_ids?.length > 0) {
-            // Get students in these classes
             const { data: classStudents } = await sb
               .from("class_members")
               .select("user_id")
@@ -650,8 +656,14 @@ REGRAS INVIOLÁVEIS:
           } else {
             // Default: filter
             let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
-            if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
-            if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
+            
+            if (facFilters.length > 0) {
+              studentQuery = studentQuery.in("faculdade", facFilters);
+            }
+            if (perFilters.length > 0) {
+              studentQuery = studentQuery.in("periodo", perFilters);
+            }
+
             const { data: students } = await studentQuery;
             studentList = students || [];
           }
@@ -784,49 +796,57 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "list_simulados": {
-        // Check if user is admin
-        const isAdmin = roleData.some((r: any) => r.role === "admin");
-        
-        let simuladosQuery = sb
-          .from("teacher_simulados")
-          .select("*");
-        
-        // Admins see all, professors see only their own
-        if (!isAdmin) {
-          simuladosQuery = simuladosQuery.eq("professor_id", user.id);
-        }
-        
-        const { data: simulados } = await simuladosQuery.order("created_at", { ascending: false });
+        try {
+          const isAdmin = roleData.some((r: any) => r.role === "admin");
+          
+          let simuladosQuery = sb.from("teacher_simulados").select("*");
+          if (!isAdmin) {
+            simuladosQuery = simuladosQuery.eq("professor_id", user.id);
+          }
+          
+          const { data: simulados, error: simError } = await simuladosQuery.order("created_at", { ascending: false });
+          if (simError) throw simError;
 
-        // Get result counts
-        const simIds = (simulados || []).map((s: any) => s.id);
-        let resultsBySimulado: Record<string, { total: number; completed: number; avgScore: number }> = {};
+          const simIds = (simulados || []).map((s: any) => s.id);
+          let resultsBySimulado: Record<string, { total: number; completed: number; avgScore: number }> = {};
 
-        if (simIds.length > 0) {
-          const { data: results } = await sb
-            .from("teacher_simulado_results")
-            .select("simulado_id, status, score")
-            .in("simulado_id", simIds);
+          if (simIds.length > 0) {
+            const { data: results, error: resError } = await sb
+              .from("teacher_simulado_results")
+              .select("simulado_id, status, score")
+              .in("simulado_id", simIds);
+            
+            if (resError) {
+              console.error("[list_simulados] Erro ao buscar resultados:", resError);
+            } else {
+              for (const r of (results || [])) {
+                if (!resultsBySimulado[r.simulado_id]) {
+                  resultsBySimulado[r.simulado_id] = { total: 0, completed: 0, avgScore: 0 };
+                }
+                resultsBySimulado[r.simulado_id].total++;
+                if (r.status === "completed") {
+                  resultsBySimulado[r.simulado_id].completed++;
+                  resultsBySimulado[r.simulado_id].avgScore += (r.score || 0);
+                }
+              }
 
-          for (const r of (results || [])) {
-            if (!resultsBySimulado[r.simulado_id]) {
-              resultsBySimulado[r.simulado_id] = { total: 0, completed: 0, avgScore: 0 };
-            }
-            resultsBySimulado[r.simulado_id].total++;
-            if (r.status === "completed") {
-              resultsBySimulado[r.simulado_id].completed++;
-              resultsBySimulado[r.simulado_id].avgScore += (r.score || 0);
+              for (const key of Object.keys(resultsBySimulado)) {
+                const d = resultsBySimulado[key];
+                if (d.completed > 0) d.avgScore = Math.round(d.avgScore / d.completed);
+              }
             }
           }
 
-          // Calculate averages
-          for (const key of Object.keys(resultsBySimulado)) {
-            const d = resultsBySimulado[key];
-            if (d.completed > 0) d.avgScore = Math.round(d.avgScore / d.completed);
-          }
+          return ok({ 
+            simulados: (simulados || []).map((s: any) => ({ 
+              ...s, 
+              results_summary: resultsBySimulado[s.id] || { total: 0, completed: 0, avgScore: 0 } 
+            })) 
+          });
+        } catch (listErr: any) {
+          console.error("[list_simulados] Erro crítico:", listErr);
+          return new Response(JSON.stringify({ error: listErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-
-        return ok({ simulados: (simulados || []).map((s: any) => ({ ...s, results_summary: resultsBySimulado[s.id] || { total: 0, completed: 0, avgScore: 0 } })) });
       }
 
       case "delete_simulado": {

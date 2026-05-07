@@ -108,14 +108,19 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, o
                 <CheckCircle className="h-3 w-3" />
                 {sim.results_summary?.completed || 0} concluídos
               </span>
-              {sim.faculdade_filter && (
+              {(sim.faculdade_filter || (Array.isArray(sim.faculdade_filters) && sim.faculdade_filters.length > 0)) && (
                 <Badge variant="secondary" className="text-[10px]">
-                  {sim.faculdade_filter}
+                  {Array.isArray(sim.faculdade_filters) && sim.faculdade_filters.length > 0
+                    ? sim.faculdade_filters.join(", ")
+                    : sim.faculdade_filter}
                 </Badge>
               )}
-              {sim.periodo_filter && (
+              {(sim.periodo_filter || (Array.isArray(sim.periodo_filters) && sim.periodo_filters.length > 0)) && (
                 <Badge variant="secondary" className="text-[10px]">
-                  {sim.periodo_filter}º período
+                  {Array.isArray(sim.periodo_filters) && sim.periodo_filters.length > 0
+                    ? sim.periodo_filters.sort((a, b) => (a || 0) - (b || 0)).join("º, ") + "º"
+                    : sim.periodo_filter + "º"}{" "}
+                  período
                 </Badge>
               )}
             </div>
@@ -131,7 +136,7 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, o
                 <Eye className="h-3.5 w-3.5" /> RESULTADOS
               </Button>
 
-              {sim.status === "draft" && (
+              {(sim.status === "draft" || sim.status === "scheduled") && (
                 <Button 
                   variant="outline" 
                   size="sm" 
