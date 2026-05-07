@@ -458,16 +458,15 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       }
 
       toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas.` });
-    } catch (e) {
+    } catch (e: any) {
       toast({
-        title: "Erro",
-        description: e instanceof Error ? e.message : "Erro ao gerar",
+        title: "Erro na geração",
+        description: e instanceof Error ? e.message : "Erro ao gerar questões.",
         variant: "destructive",
       });
-      } finally {
-        setGenerating(false);
-      }
-    });
+    } finally {
+      setGenerating(false);
+    }
   }, [
     callAPI, toast, selectedTopics, questionCount, useDistribution, topicDistribution,
     subtopics, difficulty, difficultyMix, examBoard, safeAction
@@ -651,15 +650,14 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         ),
         variant: "destructive",
       });
-      } finally {
-        setCreating(false);
-      }
-    });
+    } finally {
+      setCreating(false);
+    }
   }, [
     creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
     title, description, selectedTopics, faculdadeFilter, impactedCount,
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
-    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard, safeAction
+    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
   ]);
 
   const initiateCreate = useCallback(async () => {
