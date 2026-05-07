@@ -342,6 +342,10 @@ const ProfessorDashboard = () => {
               <ProfessorProficiencyPlans callAPI={callAPI} />
             </Suspense>
           </TabsContent>
+
+          <TabsContent value="auditoria" className="mt-4 w-full max-w-5xl mx-auto">
+            <ProfessorTraceAudit callAPI={callAPI} />
+          </TabsContent>
         </Tabs>
       </main>
 
