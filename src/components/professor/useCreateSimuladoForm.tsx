@@ -145,19 +145,20 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     try {
       const res = await callAPI({
         action: "get_students",
-        faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
-        periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+        faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
+        periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
+        query: studentSearch.length >= 3 ? studentSearch : undefined
       });
       const students = res.students || [];
       setPreviewStudents(students);
-      setSelectedStudentIds(students.map((s: any) => s.user_id));
+      // Optional: auto-select all found? Maybe not if we want manual selection
+      // setSelectedStudentIds(students.map((s: any) => s.user_id));
     } catch {
       setPreviewStudents([]);
-      setSelectedStudentIds([]);
     } finally {
       setPreviewLoading(false);
     }
-  }, [callAPI, faculdadeFilter, periodoFilter]);
+  }, [callAPI, faculdadeFilters, periodoFilters, studentSearch]);
 
   const searchStudentGlobal = useCallback(async () => {
     if (studentSearch.length < 3) {
