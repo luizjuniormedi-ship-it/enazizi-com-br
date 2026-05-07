@@ -114,7 +114,8 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
 
   const exportStudentPDF = async () => {
     if (!detail) return;
-    const { default: jsPDF } = await import("jspdf");
+    try {
+      const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const M = 15;
     const W = doc.internal.pageSize.getWidth() - M * 2;
@@ -270,6 +271,9 @@ const StudentTracker = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
     }
 
     doc.save(`Relatorio_${(detail.profile.display_name || "Aluno").replace(/\s+/g, "_")}_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err: any) {
+      toast({ title: "Erro na exportação", description: err.message, variant: "destructive" });
+    }
   };
 
   return (

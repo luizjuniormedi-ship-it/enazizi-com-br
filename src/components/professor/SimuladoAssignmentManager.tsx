@@ -166,17 +166,20 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                     key={c.id}
                     type="button"
                     onClick={() => toggleClass(c.id)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all ${
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all group ${
                       isSelected 
                         ? "bg-primary/10 border-primary/40 shadow-glow-sm" 
                         : "bg-background/40 border-white/5 hover:border-white/10"
                     }`}
                   >
-                    {isSelected ? <CheckSquare className="h-4 w-4 text-primary shrink-0" /> : <Square className="h-4 w-4 text-muted-foreground shrink-0" />}
-                    <div className="min-w-0">
+                    <div className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-white/5 text-muted-foreground group-hover:text-white'}`}>
+                       {isSelected ? <CheckSquare className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-xs font-bold truncate uppercase tracking-tight">{c.name || "Turma sem nome"}</p>
                       {c.period && <p className="text-[10px] text-muted-foreground">{c.period}º período</p>}
                     </div>
+                    {!isSelected && <Plus className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
                   </button>
                 );
               })}

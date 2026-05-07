@@ -106,8 +106,11 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
         }
       }}
     >
-      <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 overflow-hidden border-white/10 shadow-2xl bg-[#0a0a0e]">
-        <div className="p-6 border-b bg-background/95 backdrop-blur-md sticky top-0 z-20">
+      <DialogContent 
+        className={`fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none z-[110] bg-[#0a0a0e] top-6 w-[calc(100vw-2rem)] max-w-5xl max-h-[92vh] flex flex-col`}
+        style={{ transform: `translateX(-50%)` }}
+      >
+        <header className="shrink-0 border-b px-6 py-4 bg-background/95 backdrop-blur-md select-none">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <BarChart3 className="h-6 w-6 text-primary" />
@@ -117,7 +120,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
               Acompanhamento detalhado, correção individual e intervenção pedagógica com IA.
             </DialogDescription>
           </DialogHeader>
-        </div>
+        </header>
 
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           {state.loading ? (
@@ -351,7 +354,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                           <span className="text-[10px] font-black uppercase tracking-widest">Alerta Tutor IA</span>
                                        </div>
                                        <p className="text-xs text-white/80 leading-relaxed italic">
-                                          "O aluno demonstrou dificuldade crítica em temas de {Array.from(new Set(studentAnswers.filter(a => !a.is_correct).map(a => a.topic))).slice(0, 2).join(" e ")}. 
+                                          "O aluno demonstrou dificuldade crítica em temas de {Array.from(new Set(studentAnswers.filter(a => !a.is_correct).map(a => a.topic || "Geral"))).slice(0, 2).join(" e ")}. 
                                           Sugerimos focar no banco de erros e revisão de condutas."
                                        </p>
                                     </div>

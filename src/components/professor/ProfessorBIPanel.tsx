@@ -66,34 +66,40 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!data) return;
-    const prof = data.proficiency || {};
-    const plat = data.platform || {};
-    const selectedStudent = studentFilter !== "all"
-      ? data.students?.find((s: any) => s.user_id === studentFilter)?.display_name
-      : null;
-    exportProfessorBIReport({
-      kpis: {
-        "Atividades Criadas": prof.kpis?.total_activities ?? 0,
-        "Taxa de Conclusão": `${prof.kpis?.completion_rate ?? 0}%`,
-        "Média Geral": `${prof.kpis?.avg_score ?? 0}%`,
-        "Pendentes": prof.kpis?.pending ?? 0,
-        ...(plat?.kpis ? {
-          "Questões Respondidas": plat.kpis.total_questions,
-          "Acurácia Média": `${plat.kpis.avg_accuracy}%`,
-          "Streak Médio": `${plat.kpis.avg_streak} dias`,
-          "Inativos (>7d)": plat.kpis.inactive_count,
-        } : {}),
-      },
-      topicBreakdown: prof.topic_breakdown,
-      deficientTopics: prof.deficient_topics,
-      masteredTopics: prof.mastered_topics,
-      atRiskStudents: data.at_risk_students,
-      studentEngagement: plat?.student_engagement,
-      studentPercentile: data.student_percentile,
-    }, selectedStudent ? `BI_Aluno_${selectedStudent}` : "BI_Turma_Professor");
-    toast({ title: "PDF exportado com sucesso!" });
+    try {
+      const prof = data.proficiency || {};
+      const plat = data.platform || {};
+      const selectedStudent = studentFilter !== "all"
+        ? data.students?.find((s: any) => s.user_id === studentFilter)?.display_name
+        : null;
+        
+      await exportProfessorBIReport({
+        kpis: {
+          "Atividades Criadas": prof.kpis?.total_activities ?? 0,
+          "Taxa de Conclusão": `${prof.kpis?.completion_rate ?? 0}%`,
+          "Média Geral": `${prof.kpis?.avg_score ?? 0}%`,
+          "Pendentes": prof.kpis?.pending ?? 0,
+          ...(plat?.kpis ? {
+            "Questões Respondidas": plat.kpis.total_questions,
+            "Acurácia Média": `${plat.kpis.avg_accuracy}%`,
+            "Streak Médio": `${plat.kpis.avg_streak} dias`,
+            "Inativos (>7d)": plat.kpis.inactive_count,
+          } : {}),
+        },
+        topicBreakdown: prof.topic_breakdown,
+        deficientTopics: prof.deficient_topics,
+        masteredTopics: prof.mastered_topics,
+        atRiskStudents: data.at_risk_students,
+        studentEngagement: plat?.student_engagement,
+        studentPercentile: data.student_percentile,
+      }, selectedStudent ? `BI_Aluno_${selectedStudent}` : "BI_Turma_Professor");
+      
+      toast({ title: "PDF exportado com sucesso!" });
+    } catch (err: any) {
+      toast({ title: "Erro na exportação", description: err.message, variant: "destructive" });
+    }
   };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -156,15 +162,15 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
       </div>
 
       {/* Executive Summary */}
-      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
-        <CardContent className="p-4">
-          <div className="flex items-start gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <Sparkles className="h-5 w-5 text-primary" />
+      <Card className="border-primary/30 bg-white/5 backdrop-blur-md rounded-2xl overflow-hidden group">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-5">
+            <div className="h-12 w-12 rounded-2xl bg-primary/20 flex items-center justify-center shrink-0 border border-primary/30 shadow-glow-sm group-hover:scale-110 transition-transform">
+              <Sparkles className="h-6 w-6 text-primary" />
             </div>
-            <div>
-              <p className="text-sm font-semibold mb-1">Resumo Executivo</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">{execSummary}</p>
+            <div className="space-y-1">
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Resumo Executivo</p>
+              <p className="text-sm text-white/90 leading-relaxed font-medium">{execSummary}</p>
             </div>
           </div>
         </CardContent>
@@ -708,12 +714,14 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
 };
 
 const KPICard = ({ icon, label, value, borderColor, bgColor }: { icon: React.ReactNode; label: string; value: React.ReactNode; borderColor?: string; bgColor?: string }) => (
-  <Card className={borderColor}>
-    <CardContent className={`p-4 flex items-center gap-3 ${bgColor || ""}`}>
-      <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">{icon}</div>
+  <Card className={`${borderColor} bg-white/5 border-white/5 overflow-hidden transition-all hover:scale-[1.02] shadow-glow-sm`}>
+    <CardContent className={`p-5 flex items-center gap-4 ${bgColor || ""}`}>
+      <div className="h-11 w-11 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+        {icon}
+      </div>
       <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold">{value}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-0.5">{label}</p>
+        <p className="text-xl font-black text-white">{value}</p>
       </div>
     </CardContent>
   </Card>

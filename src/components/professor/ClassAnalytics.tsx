@@ -88,7 +88,8 @@ const ClassAnalytics = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
 
   const exportPDF = async () => {
     if (!data) return;
-    const { default: jsPDF } = await import("jspdf");
+    try {
+      const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const M = 15;
     const W = doc.internal.pageSize.getWidth() - M * 2;
@@ -220,6 +221,9 @@ const ClassAnalytics = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
       });
 
     doc.save(`Relatorio_Turma_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err: any) {
+      toast({ title: "Erro na exportação", description: err.message, variant: "destructive" });
+    }
   };
 
   const avgClassScore = data && data.students.length > 0
