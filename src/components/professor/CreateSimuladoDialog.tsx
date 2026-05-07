@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
@@ -113,8 +114,8 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px] bg-[#0a0a0e] border-white/10 text-white">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[425px] teacher-modal-content">
+        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
           <DialogTitle className="flex items-center gap-2">
             {editingSimulado ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
             {editingSimulado ? "Editar Simulado" : "Novo Simulado"}
@@ -126,32 +127,34 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="title">Título do Simulado</Label>
-            <Input
-              id="title"
-              placeholder="Ex: Simulado de Cardiologia"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              disabled={creating}
-              className="bg-white/5 border-white/10 focus:border-primary/50 transition-colors"
-            />
+        <DialogBody>
+          <div className="grid gap-6">
+            <div className="grid gap-2">
+              <Label htmlFor="title">Título do Simulado</Label>
+              <Input
+                id="title"
+                placeholder="Ex: Simulado de Cardiologia"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={creating}
+                className="bg-white/5 border-white/10 focus:border-primary/50 transition-colors"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="description">Descrição (Opcional)</Label>
+              <Textarea
+                id="description"
+                placeholder="Breve descrição sobre o conteúdo ou objetivos..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                disabled={creating}
+                className="bg-white/5 border-white/10 min-h-[120px] focus:border-primary/50 transition-colors"
+              />
+            </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">Descrição (Opcional)</Label>
-            <Textarea
-              id="description"
-              placeholder="Breve descrição sobre o conteúdo ou objetivos..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              disabled={creating}
-              className="bg-white/5 border-white/10 min-h-[100px] focus:border-primary/50 transition-colors"
-            />
-          </div>
-        </div>
+        </DialogBody>
 
-        <DialogFooter className="gap-2 sm:gap-0">
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
