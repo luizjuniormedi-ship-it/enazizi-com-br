@@ -221,6 +221,9 @@ const ClassAnalytics = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
       });
 
     doc.save(`Relatorio_Turma_${new Date().toISOString().slice(0, 10)}.pdf`);
+    } catch (err: any) {
+      toast({ title: "Erro na exportação", description: err.message, variant: "destructive" });
+    }
   };
 
   const avgClassScore = data && data.students.length > 0
