@@ -11,6 +11,7 @@ interface Args {
   callAPI: CallAPI;
   onCreated: () => void;
   onOpenChange: (open: boolean) => void;
+  initialData?: any;
 }
 
 /**
@@ -19,7 +20,7 @@ interface Args {
  *
  * Estado é desmontado naturalmente quando o dialog fecha.
  */
-export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }: Args) {
+export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, initialData }: Args) {
   const { toast } = useToast();
 
   const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
