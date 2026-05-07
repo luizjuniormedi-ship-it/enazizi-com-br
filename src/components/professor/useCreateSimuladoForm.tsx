@@ -531,9 +531,10 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       if (!questions || questions.length === 0) {
         toast({
           title: "Sem questões",
-          description: "Gere ou selecione questões primeiro.",
+          description: "Gere ou selecione questões primeiro antes de criar o simulado.",
           variant: "destructive",
         });
+        setCreating(false);
         return;
       }
 
