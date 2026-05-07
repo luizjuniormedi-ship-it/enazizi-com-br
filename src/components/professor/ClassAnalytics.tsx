@@ -227,8 +227,8 @@ const ClassAnalytics = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
     }
   };
 
-  const avgClassScore = data && data.students.length > 0
-    ? Math.round(data.students.reduce((s, st) => s + st.avg_domain_score, 0) / data.students.length)
+  const avgClassScore = data && Array.isArray(data.students) && data.students.length > 0
+    ? Math.round(data.students.reduce((s, st) => s + (st.avg_domain_score || 0), 0) / data.students.length)
     : 0;
 
   return (

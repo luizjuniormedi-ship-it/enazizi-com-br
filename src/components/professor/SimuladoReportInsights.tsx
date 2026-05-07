@@ -48,7 +48,7 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
     .map(([idx, count]) => ({ idx: parseInt(idx), count }))
     .sort((a, b) => b.count - a.count)[0];
 
-  const mostMistakenQuestion = mostMistakenIdx ? questions_json[mostMistakenIdx.idx] : null;
+  const mostMistakenQuestion = mostMistakenIdx && Array.isArray(questions_json) ? questions_json[mostMistakenIdx.idx] : null;
 
   // 3. Alunos em risco (score < 50%)
   const atRiskStudents = completed.filter(r => (r.score || 0) < 50);

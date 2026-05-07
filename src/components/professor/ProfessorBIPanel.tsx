@@ -152,7 +152,7 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos os alunos</SelectItem>
-            {students.map((s: any) => (
+            {Array.isArray(students) && students.map((s: any) => (
               <SelectItem key={s.user_id} value={s.user_id}>{s.display_name}</SelectItem>
             ))}
           </SelectContent>
