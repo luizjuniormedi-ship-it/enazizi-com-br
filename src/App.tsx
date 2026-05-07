@@ -65,7 +65,7 @@ const Install = lazyWithRetry(() => import("./pages/Install"), "Install");
 const StudyGuides = lazyWithRetry(() => import("./pages/StudyGuides"), "StudyGuides");
 const MedicalChronicles = lazyWithRetry(() => import("./pages/MedicalChronicles"), "MedicalChronicles");
 const MedicalAdaptiveJourney = lazyWithRetry(() => import("./pages/MedicalAdaptiveJourney"), "MedicalAdaptiveJourney");
-const NewProfessorSimuladoPage = lazyWithRetry(() => import("./pages/NewProfessorSimuladoPage"), "NewProfessorSimuladoPage");
+import NewProfessorSimuladoPage from "./pages/NewProfessorSimuladoPage";
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
