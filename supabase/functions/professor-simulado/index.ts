@@ -598,7 +598,8 @@ REGRAS INVIOLÁVEIS:
           throw new Error(error.message);
         }
 
-        // Handle assignments
+        // Handle assignments (Isolated in try-catch to not break the flow)
+        try {
         let studentList: { user_id: string }[] = [];
         
         if (assignment_mode === "manual" && student_ids?.length > 0) {
@@ -645,6 +646,18 @@ REGRAS INVIOLÁVEIS:
           if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
           const { data: students } = await studentQuery;
           studentList = students || [];
+        }
+
+          // Record assignment source for audit
+          const assignmentLogs = (assignment_mode === "manual" ? student_ids : class_ids).map((id: string) => ({
+            simulado_id: simulado.id,
+            target_type: assignment_mode === "manual" ? 'student' : 'class',
+            target_id: id,
+            trace_id: tid
+          }));
+          await sb.from("teacher_simulado_assignments").insert(assignmentLogs);
+        } catch (assignErr) {
+          console.error(`[create_simulado][Trace:${tid}] Erro ao processar assignments (não bloqueante):`, assignErr);
         }
 
         if (studentList.length > 0) {
