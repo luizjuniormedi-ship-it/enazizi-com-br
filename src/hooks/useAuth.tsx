@@ -78,9 +78,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, options: SignUpOptions) => {
     try {
-      const metadata: Record<string, string | number> = { 
-        full_name: options.displayName,
-        display_name: options.displayName,
+      // Garantir que todos os valores sejam strings ou números simples para o Supabase
+      const metadata: Record<string, any> = { 
+        full_name: options.displayName || "",
+        display_name: options.displayName || "",
         role: options.userType === "professor" ? "professor" : "student",
         user_type: options.userType || "student"
       };
@@ -89,18 +90,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (options.phone) metadata.phone = options.phone;
       if (options.periodo) metadata.periodo = options.periodo;
 
+      console.log("[Auth] Iniciando signUp para:", email, metadata);
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: metadata,
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          // Simplificando o redirect para evitar erros de URL inválida no dashboard
+          emailRedirectTo: window.location.origin,
         },
       });
       
+      if (error) {
+        console.error("[Auth] Erro no supabase.auth.signUp:", error);
+      }
+      
       return { data, error: error as Error | null };
     } catch (err) {
-      console.error("Erro inesperado no signUp:", err);
+      console.error("[Auth] Erro catastrófico no signUp:", err);
       return { data: null, error: err as Error };
     }
   };
