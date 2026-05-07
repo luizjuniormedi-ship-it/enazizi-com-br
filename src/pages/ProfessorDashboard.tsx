@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
-import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import { GraduationCap, Plus, Loader2, Video, ListTodo } from "lucide-react";
+import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,26 +19,13 @@ import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficien
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
 import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
+import CreateSimuladoDialog from "@/components/professor/CreateSimuladoDialog";
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
-const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
-import CreateSimuladoDialog from "@/components/professor/CreateSimuladoDialog";
-const SimuladoResultsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoResultsDialog"), "SimuladoResultsDialog");
-const SimuladoQuestionsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoQuestionsDialog").then(m => ({ default: m.SimuladoQuestionsDialog })), "SimuladoQuestionsDialog");
+const ProfessorBIPanel = lazy(() => import("@/components/professor/ProfessorBIPanel"));
+const SimuladoResultsDialog = lazy(() => import("@/components/professor/SimuladoResultsDialog"));
+const SimuladoQuestionsDialog = lazy(() => import("@/components/professor/SimuladoQuestionsDialog").then(m => ({ default: m.SimuladoQuestionsDialog })));
 
-/**
- * ProfessorDashboard — orquestrador de layout.
- *
- * Estado mínimo:
- *   - lista de simulados (servidor)
- *   - flag de dialogs (open/close)
- *   - state do dialog de resultados
- *
- * Todo o estado pesado (form de criação, geração de IA, busca de alunos,
- * expansão de aluno na lista de resultados) vive dentro dos respectivos
- * dialogs lazy-loaded — eles só montam quando abertos e desmontam ao fechar,
- * isolando completamente o blast radius de re-render.
- */
 const ProfessorDashboard = () => {
   const { session } = useAuth();
   const { toast } = useToast();
@@ -65,14 +51,14 @@ const ProfessorDashboard = () => {
 
   const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
     try {
-      console.log(`[ProfessorPanel] action_start: ${name}`);
+      console.log(`[ProfessorDashboard] action_start: ${name}`);
       await fn();
-      console.log(`[ProfessorPanel] action_success: ${name}`);
+      console.log(`[ProfessorDashboard] action_success: ${name}`);
     } catch (error) {
-      console.error(`[ProfessorPanel] action_failed: ${name}`, error);
+      console.error(`[ProfessorDashboard] action_failed: ${name}`, error);
       toast({
         title: "Erro inesperado",
-        description: error instanceof Error ? error.message : "Erro ao executar ação. Tente novamente.",
+        description: error instanceof Error ? error.message : "Erro ao executar ação.",
         variant: "destructive"
       });
     }
@@ -80,9 +66,6 @@ const ProfessorDashboard = () => {
 
   const callAPI = useCallback(
     async (body: Record<string, unknown>) => {
-      const controller = new AbortController();
-      const timeoutMs = body.action === "generate_questions" ? 180000 : 60000;
-      const timer = setTimeout(() => controller.abort(), timeoutMs);
       try {
         const resp = await fetch(API_URL, {
           method: "POST",
@@ -91,16 +74,12 @@ const ProfessorDashboard = () => {
             Authorization: `Bearer ${session?.access_token}`,
           },
           body: JSON.stringify(body),
-          signal: controller.signal,
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error || "Erro na operação");
         return data;
       } catch (e: any) {
-        if (e.name === "AbortError") throw new Error("Tempo esgotado. Tente com menos questões.");
         throw e;
-      } finally {
-        clearTimeout(timer);
       }
     },
     [session, API_URL]
@@ -131,7 +110,6 @@ const ProfessorDashboard = () => {
   const handleViewResults = useCallback(
     async (simulado: any) => {
       await safeAction("view_results", async () => {
-        if (!simulado?.id) throw new Error("Simulado inválido para visualização.");
         setResultsDialog({
           open: true,
           simulado,
@@ -157,18 +135,9 @@ const ProfessorDashboard = () => {
   const handleDeleteSimulado = useCallback(
     async (simuladoId: string, simuladoTitle: string) => {
       await safeAction("delete_simulado", async () => {
-        if (!simuladoId) throw new Error("ID do simulado não informado.");
-        if (
-          !confirm(
-            `Tem certeza que deseja apagar o simulado "${simuladoTitle || "Sem título"}"? Esta ação não pode ser desfeita.`
-          )
-        )
-          return;
+        if (!confirm(`Tem certeza que deseja apagar o simulado "${simuladoTitle}"?`)) return;
         await callAPI({ action: "delete_simulado", simulado_id: simuladoId });
-        toast({
-          title: "Simulado apagado",
-          description: `"${simuladoTitle}" foi removido com sucesso.`,
-        });
+        toast({ title: "Simulado apagado" });
         loadSimulados();
       });
     },
@@ -176,13 +145,7 @@ const ProfessorDashboard = () => {
   );
 
   const handleCloseResults = useCallback(() => {
-    setResultsDialog({
-      open: false,
-      simulado: null,
-      results: [],
-      loading: false,
-      questions_json: [],
-    });
+    setResultsDialog({ open: false, simulado: null, results: [], loading: false, questions_json: [] });
   }, []);
 
   const handleOpenQuestions = useCallback((simulado: any) => {
@@ -194,55 +157,39 @@ const ProfessorDashboard = () => {
   }, []);
 
   const handleOpenCreate = useCallback((simulado?: any) => {
-    console.log("[ProfessorDashboard] abrir modal criar simulado", simulado?.id);
+    console.log("[ProfessorDashboard] abrir modal criar simulado", simulado?.id || "novo");
     setEditingSimulado(simulado || null);
     setShowCreate(true);
   }, []);
 
-  const handleCloseCreate = useCallback((open: boolean) => {
-    console.log("[ProfessorDashboard] fechar modal criar simulado:", open);
+  const handleCloseCreate = (open: boolean) => {
+    console.log("[ProfessorDashboard] setOpenCreateSimulado:", open);
     setShowCreate(open);
-    if (!open) {
-      setEditingSimulado(null);
-    }
-  }, []);
+    if (!open) setEditingSimulado(null);
+  };
 
-  // Totais memoizados — só recalculam quando a lista muda
   const totals = useMemo(() => {
     const safeSimulados = Array.isArray(simulados) ? simulados : [];
-    const totalStudentsAssigned = safeSimulados.reduce(
-      (s, sim) => s + (Number.isFinite(sim?.results_summary?.total) ? sim.results_summary.total : 0),
-      0
-    );
-    const totalCompleted = safeSimulados.reduce(
-      (s, sim) => s + (Number.isFinite(sim?.results_summary?.completed) ? sim.results_summary.completed : 0),
-      0
-    );
-    return {
-      totalSimulados: safeSimulados.length,
-      totalStudentsAssigned,
-      totalCompleted,
-    };
+    const totalStudentsAssigned = safeSimulados.reduce((s, sim) => s + (sim?.results_summary?.total || 0), 0);
+    const totalCompleted = safeSimulados.reduce((s, sim) => s + (sim?.results_summary?.completed || 0), 0);
+    return { totalSimulados: safeSimulados.length, totalStudentsAssigned, totalCompleted };
   }, [simulados]);
 
   return (
     <div className="min-h-screen relative z-10 animate-fade-in">
       <EnaflixBackgroundFX intensity="medium" />
       
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <CinematicHero
           module="professor"
-          eyebrow={
-            <>
-              <GraduationCap className="h-3.5 w-3.5" />
-              Centro de mentoria
-            </>
-          }
+          eyebrow={<><GraduationCap className="h-3.5 w-3.5" /> Centro de mentoria</>}
           title="Painel do Professor"
           subtitle="Crie simulados, acompanhe alunos e oriente turmas com inteligência adaptativa."
           actions={
             <Button 
-              onClick={handleOpenCreate} 
+              type="button"
+              data-testid="open-create-simulado-button"
+              onClick={() => handleOpenCreate()} 
               size="lg" 
               className="h-12 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm gap-2"
             >
@@ -280,109 +227,47 @@ const ProfessorDashboard = () => {
           </div>
 
           <TabsContent value="simulados" className="space-y-4 mt-4 w-full max-w-5xl mx-auto">
-            <SimuladosKpiCards
-              totalSimulados={totals.totalSimulados}
-              totalStudentsAssigned={totals.totalStudentsAssigned}
-              totalCompleted={totals.totalCompleted}
-            />
+            <SimuladosKpiCards {...totals} />
 
             {loading ? (
-              <div className="text-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              </div>
+              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
             ) : simulados.length === 0 ? (
               <Card>
                 <CardContent className="p-12 text-center">
                   <GraduationCap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">Nenhum simulado criado</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Crie seu primeiro simulado e atribua aos alunos.
-                  </p>
-                  <Button 
-                    onClick={handleOpenCreate}
-                    className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
-                  >
-                    CRIAR SIMULADO
-                  </Button>
+                  <Button onClick={() => handleOpenCreate()}>CRIAR SIMULADO</Button>
                 </CardContent>
               </Card>
             ) : (
               <div className="space-y-3">
-                {Array.isArray(simulados) ? simulados.map((sim) => (
+                {simulados.map((sim) => (
                   <SimuladoListItem
-                    key={sim?.id || Math.random().toString()}
+                    key={sim.id}
                     sim={sim}
                     onView={handleViewResults}
                     onEdit={handleOpenCreate}
                     onQuestions={handleOpenQuestions}
                     onDelete={handleDeleteSimulado}
                   />
-                )) : null}
+                ))}
               </div>
             )}
           </TabsContent>
 
-          <TabsContent value="plantao" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <ProfessorPlantao callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="temas" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <TeacherStudyAssignments callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="video" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <VideoRoom callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="alunos" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <StudentTracker callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <ClassAnalytics callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="bi" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <ProfessorBIPanel callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="mentoria" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <MentorThemePlans callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="osce" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <ProfessorPracticalExams callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="proficiencia" className="mt-4 w-full max-w-5xl mx-auto">
-            <Suspense fallback={<div className="h-96 animate-pulse rounded-md bg-muted/30" />}>
-              <ProfessorProficiencyPlans callAPI={callAPI} />
-            </Suspense>
-          </TabsContent>
-
-          <TabsContent value="auditoria" className="mt-4 w-full max-w-5xl mx-auto">
-            <ProfessorTraceAudit callAPI={callAPI} />
-          </TabsContent>
+          <TabsContent value="plantao" className="mt-4"><Suspense fallback={null}><ProfessorPlantao callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="temas" className="mt-4"><Suspense fallback={null}><TeacherStudyAssignments callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="video" className="mt-4"><Suspense fallback={null}><VideoRoom callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="alunos" className="mt-4"><Suspense fallback={null}><StudentTracker callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="analytics" className="mt-4"><Suspense fallback={null}><ClassAnalytics callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="bi" className="mt-4"><Suspense fallback={null}><ProfessorBIPanel callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="mentoria" className="mt-4"><Suspense fallback={null}><MentorThemePlans callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="osce" className="mt-4"><Suspense fallback={null}><ProfessorPracticalExams callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="proficiencia" className="mt-4"><Suspense fallback={null}><ProfessorProficiencyPlans callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="auditoria" className="mt-4"><ProfessorTraceAudit callAPI={callAPI} /></TabsContent>
         </Tabs>
       </main>
 
-      {/* Diálogos controlados pelo estado do pai */}
       <CreateSimuladoDialog
         open={showCreate}
         onOpenChange={handleCloseCreate}
@@ -392,11 +277,7 @@ const ProfessorDashboard = () => {
 
       {resultsDialog.open && (
         <Suspense fallback={null}>
-          <SimuladoResultsDialog 
-            state={resultsDialog} 
-            onClose={handleCloseResults} 
-            callAPI={callAPI}
-          />
+          <SimuladoResultsDialog state={resultsDialog} onClose={handleCloseResults} callAPI={callAPI} />
         </Suspense>
       )}
 
