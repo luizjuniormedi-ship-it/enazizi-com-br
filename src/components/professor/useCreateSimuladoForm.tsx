@@ -518,40 +518,70 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     });
   }, []);
 
-  const createSimulado = useCallback(async () => {
-    const traceId = crypto.randomUUID();
+  const initiateCreate = useCallback(async () => {
+    // 1. Validações Básicas
+    if (!title?.trim()) {
+      toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
+      return;
+    }
+
+    const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
+    if (!questions || questions.length === 0) {
+      toast({ title: "Sem questões", description: "Gere ou selecione questões primeiro.", variant: "destructive" });
+      return;
+    }
+
+    // 2. Validação de Público
+    if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
+      toast({ title: "Nenhum aluno selecionado", description: "Selecione pelo menos um aluno para atribuir.", variant: "destructive" });
+      return;
+    }
+
+    if (assignmentMode === "classes" && selectedClassIds.length === 0) {
+      toast({ title: "Nenhuma turma selecionada", description: "Selecione pelo menos uma turma para atribuir.", variant: "destructive" });
+      return;
+    }
+
+    // Calcular impacto estimado
+    setCreating(true);
+    try {
+      let count = 0;
+      if (assignmentMode === "manual") count = selectedStudentIds.length;
+      else if (assignmentMode === "all") {
+        const { data } = await callAPI({ action: "get_students_count" });
+        count = data?.count || 0;
+      } else if (assignmentMode === "classes") {
+        const { data } = await callAPI({ action: "get_students_count", class_ids: selectedClassIds });
+        count = data?.count || 0;
+      } else {
+        // filter
+        const { data } = await callAPI({ 
+          action: "get_students_count", 
+          faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
+          periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+        });
+        count = data?.count || 0;
+      }
+      
+      setImpactedCount(count);
+      setShowConfirm(true);
+    } catch (err: any) {
+      toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast]);
+
+  const confirmCreate = useCallback(async () => {
+    if (creating) return;
+    setCreating(true);
+    
+    const tid = crypto.randomUUID();
+    setTraceId(tid);
     const clientRequestId = crypto.randomUUID();
     
     try {
-      if (creating) return; // Prevent double submit
-      setCreating(true);
-
-      const questions =
-        questionMode === "manual"
-          ? manualQuestions
-          : useAI
-          ? generatedQuestions
-          : bankQuestions.filter((q) => selectedBankQuestions.includes(q.id));
-
-      if (!questions || questions.length === 0) {
-        toast({
-          title: "Sem questões",
-          description: "Gere ou selecione questões primeiro antes de criar o simulado.",
-          variant: "destructive",
-        });
-        setCreating(false);
-        return;
-      }
-
-      if (!title?.trim()) {
-        toast({
-          title: "Título obrigatório",
-          description: "Informe um título para o simulado.",
-          variant: "destructive",
-        });
-        setCreating(false);
-        return;
-      }
+      const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
 
       const payload = {
         action: "create_simulado",
@@ -573,26 +603,41 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         allow_retake: !!allowRetake,
         auto_assign: !!autoAssign,
         exam_board: examBoard !== "all" ? examBoard : null,
-        trace_id: traceId,
+        trace_id: tid,
         client_request_id: clientRequestId
       };
-
-      console.log(`[useCreateSimuladoForm][Trace:${traceId}] Enviando payload:`, payload);
 
       const res = await callAPI(payload);
       
       toast({ 
         title: "Simulado criado!", 
-        description: `Atribuído a ${res?.students_assigned || 0} aluno(s).` 
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>Atribuído a {res?.students_assigned || impactedCount || 0} aluno(s).</p>
+            <div className="flex items-center gap-2 mt-1">
+               <span className="text-[10px] font-mono opacity-50 uppercase">Rastreio: TRACE-{tid.split('-')[0].toUpperCase()}</span>
+               <Button 
+                 variant="ghost" 
+                 size="sm" 
+                 className="h-6 px-2 py-0"
+                 onClick={() => {
+                   navigator.clipboard.writeText(tid);
+                   toast({ title: "Copiado!" });
+                 }}
+               >
+                 <Copy className="h-3 w-3 mr-1" />
+                 <span className="text-[9px]">COPIAR</span>
+               </Button>
+            </div>
+          </div>
+        )
       });
       
       onOpenChange(false);
       onCreated();
     } catch (e: any) {
-      console.error(`[useCreateSimuladoForm][Trace:${traceId}] Erro ao criar simulado:`, e);
-      
+      console.error(`[useCreateSimuladoForm][Trace:${tid}] Erro ao criar simulado:`, e);
       const errorMsg = e instanceof Error ? e.message : "Ocorreu um erro inesperado ao salvar o simulado.";
-      
       toast({
         title: "Erro ao criar simulado",
         description: (
@@ -601,16 +646,12 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
             <div className="flex flex-col gap-1.5 p-3 bg-white/5 rounded-xl border border-white/10">
               <span className="text-[10px] uppercase font-bold tracking-tighter opacity-50">Código de rastreio</span>
               <div className="flex items-center justify-between gap-2">
-                <code className="text-[11px] font-mono font-bold text-primary truncate">TRACE-{traceId.split('-')[0].toUpperCase()}</code>
+                <code className="text-[11px] font-mono font-bold text-primary truncate">TRACE-{tid.split('-')[0].toUpperCase()}</code>
                 <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 px-2 hover:bg-white/10 rounded-lg"
-                  onClick={(ev) => {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    navigator.clipboard.writeText(traceId);
-                    toast({ title: "Copiado!", description: "ID de rastreio copiado para a área de transferência." });
+                  variant="ghost" size="sm" className="h-7 px-2 hover:bg-white/10 rounded-lg"
+                  onClick={() => {
+                    navigator.clipboard.writeText(tid);
+                    toast({ title: "Copiado!" });
                   }}
                 >
                   <Copy className="h-3 w-3 mr-1.5" />
@@ -618,7 +659,6 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
                 </Button>
               </div>
             </div>
-            <p className="text-[10px] italic opacity-50">Informe este código ao suporte técnico se o erro persistir.</p>
           </div>
         ),
         variant: "destructive",
@@ -628,7 +668,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     }
   }, [
     creating, callAPI, toast, onOpenChange, onCreated, questionMode, manualQuestions, generatedQuestions,
-    bankQuestions, selectedBankQuestions, title, description, selectedTopics, faculdadeFilter,
+    title, description, selectedTopics, faculdadeFilter, impactedCount,
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
     scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
   ]);
