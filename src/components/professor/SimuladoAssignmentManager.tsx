@@ -26,11 +26,15 @@ interface Props {
   searchResults: any[];
   searchingStudents: boolean;
   onStudentSearchChange: (v: string) => void;
-  onPreviewMatchingStudents: () => void;
-  onSearchStudentGlobal: () => void;
+  onPreviewMatchingStudents: (isLoadMore?: boolean) => void;
+  onSearchStudentGlobal: (isLoadMore?: boolean) => void;
   onAddSearchedStudent: (student: any) => void;
-  onToggleStudent: (id: string) => void;
+  onToggleStudent: (student: any) => void;
   onToggleAllStudents: () => void;
+  onClearStudentSelection: () => void;
+  onRemoveSelectedStudent: (userId: string) => void;
+  studentPagination: { offset: number; total: number; hasMore: boolean };
+  selectedStudentsData: any[];
 }
 
 const MultiSelectPopover = ({ 
@@ -117,7 +121,8 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
   selectedClassIds, onSelectedClassIdsChange,
   studentSearch, searchResults, searchingStudents, onStudentSearchChange,
   onPreviewMatchingStudents, onSearchStudentGlobal, onAddSearchedStudent,
-  onToggleStudent, onToggleAllStudents,
+  onToggleStudent, onToggleAllStudents, onClearStudentSelection, onRemoveSelectedStudent,
+  studentPagination, selectedStudentsData,
 }: Props) {
   const [classes, setClasses] = useState<any[]>([]);
   const [loadingClasses, setLoadingClasses] = useState(false);
@@ -240,30 +245,35 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
           )}
 
           {previewStudents.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center justify-between px-2">
-                <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40">
-                  {selectedStudentIds.length} de {previewStudents.length} ALUNOS SELECIONADOS
-                </h4>
+                <div className="space-y-0.5">
+                  <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                    Encontrados: {studentPagination.total} alunos
+                  </h4>
+                  <p className="text-[9px] font-bold text-primary/60 uppercase">
+                    {selectedStudentIds.length} SELECIONADOS MANUALMENTE
+                  </p>
+                </div>
                 <div className="flex gap-4">
                    <button
                     type="button"
                     onClick={() => onToggleAllStudents()}
                     className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors"
                   >
-                    {selectedStudentIds.length === previewStudents.length ? "DESELECIONAR TUDO" : "SELECIONAR TODOS"}
+                    {selectedStudentIds.length >= previewStudents.length && previewStudents.length > 0 ? "DESELECIONAR PÁGINA" : "SELECIONAR PÁGINA"}
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                 {previewStudents.map((s: any) => {
                   const isSelected = selectedStudentIds.includes(s.user_id);
                   return (
                     <button
                       key={s.user_id}
                       type="button"
-                      onClick={() => onToggleStudent(s.user_id)}
+                      onClick={() => onToggleStudent(s)}
                       className={cn(
                         "flex items-center gap-3 p-3 rounded-xl border text-left transition-all group",
                         isSelected 
@@ -288,12 +298,66 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
                   );
                 })}
               </div>
+
+              {studentPagination.hasMore && (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onPreviewMatchingStudents(true)}
+                    disabled={previewLoading}
+                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:bg-primary/10"
+                  >
+                    {previewLoading ? <Loader2 className="h-3 w-3 animate-spin mr-2" /> : <Plus className="h-3 w-3 mr-2" />}
+                    CARREGAR MAIS ({studentPagination.total - previewStudents.length} RESTANTES)
+                  </Button>
+                </div>
+              )}
             </div>
           ) : !previewLoading && (
             <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30 flex flex-col items-center">
               <Users className="h-10 w-10 mb-4" />
               <p className="text-sm font-black uppercase tracking-widest">Nenhum aluno encontrado</p>
-              <p className="text-[11px] font-medium opacity-60 mt-1">Ajuste os filtros e clique em BUSCAR ALUNOS</p>
+              <p className="text-[11px] font-medium opacity-60 mt-1">Ajuste os filtros ou digite um nome para buscar</p>
+            </div>
+          )}
+
+          {/* Selected Students Chips Section */}
+          {selectedStudentIds.length > 0 && (
+            <div className="space-y-3 pt-4 border-t border-white/5">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {selectedStudentIds.length} ALUNOS SELECIONADOS
+                </h4>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={onClearStudentSelection}
+                  className="h-6 text-[9px] font-black uppercase text-destructive hover:text-destructive/80 hover:bg-destructive/10"
+                >
+                  LIMPAR TUDO
+                </Button>
+              </div>
+              <div className="flex flex-wrap gap-2 max-h-[120px] overflow-y-auto p-1 custom-scrollbar">
+                {selectedStudentsData.map((s: any) => (
+                  <Badge 
+                    key={s.user_id} 
+                    variant="secondary" 
+                    className="pl-2 pr-1 py-1 gap-1 border-white/10 bg-white/5 text-[10px] font-bold uppercase"
+                  >
+                    <span className="truncate max-w-[150px]">{s.display_name || s.email}</span>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveSelectedStudent(s.user_id);
+                      }}
+                      className="p-0.5 hover:bg-white/10 rounded-full transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
             </div>
           )}
         </div>
