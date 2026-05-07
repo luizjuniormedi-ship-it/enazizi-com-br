@@ -1,4 +1,5 @@
 import { memo, useCallback } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -12,7 +13,9 @@ interface Props {
 }
 
 const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, questions_json, simuladoTitle }: Props) {
-  const completed = results.filter(r => r.status === "completed");
+  const { toast } = useToast();
+  const safeResults = Array.isArray(results) ? results : [];
+  const completed = safeResults.filter(r => r?.status === "completed");
   if (completed.length === 0) return null;
 
   // 1. Desempenho por tema
@@ -47,14 +50,16 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
     .map(([idx, count]) => ({ idx: parseInt(idx), count }))
     .sort((a, b) => b.count - a.count)[0];
 
-  const mostMistakenQuestion = mostMistakenIdx ? questions_json[mostMistakenIdx.idx] : null;
+  const mostMistakenQuestion = mostMistakenIdx && Array.isArray(questions_json) ? questions_json[mostMistakenIdx.idx] : null;
 
   // 3. Alunos em risco (score < 50%)
   const atRiskStudents = completed.filter(r => (r.score || 0) < 50);
 
   const exportCSV = useCallback(() => {
+    try {
+      console.log("[SimuladoInsights] Exporting CSV...");
     const headers = ["Aluno", "Email", "Nota", "Acertos", "Total", "Tempo (s)", "Status"];
-    const rows = results.map(r => [
+    const rows = safeResults.map(r => [
       r.student_name,
       r.student_email,
       r.score,
@@ -74,7 +79,11 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [results, simuladoTitle]);
+    } catch (error) {
+      console.error("[SimuladoInsights] CSV Export failed", error);
+      toast({ title: "Erro na exportação", description: "Falha ao gerar CSV.", variant: "destructive" });
+    }
+  }, [safeResults, simuladoTitle, toast]);
 
   const exportPDF = useCallback(() => {
     window.print();

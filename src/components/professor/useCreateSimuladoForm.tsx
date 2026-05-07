@@ -22,6 +22,21 @@ interface Args {
 export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }: Args) {
   const { toast } = useToast();
 
+  const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
+    try {
+      console.log(`[useCreateSimuladoForm] action_start: ${name}`);
+      await fn();
+      console.log(`[useCreateSimuladoForm] action_success: ${name}`);
+    } catch (error) {
+      console.error(`[useCreateSimuladoForm] action_failed: ${name}`, error);
+      toast({
+        title: "Erro na operação",
+        description: error instanceof Error ? error.message : "Erro inesperado.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
   // Estado de criação/geração
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -277,18 +292,19 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, []);
 
   const generateQuestionsAI = useCallback(async () => {
-    if (selectedTopics.length === 0) {
-      toast({
-        title: "Selecione temas",
-        description: "Escolha pelo menos um tema para gerar questões.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setGenerating(true);
-    setGeneratedQuestions([]);
-    setExpandedQuestion(null);
-    try {
+    await safeAction("generate_questions_ai", async () => {
+      if (selectedTopics.length === 0) {
+        toast({
+          title: "Selecione temas",
+          description: "Escolha pelo menos um tema para gerar questões.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setGenerating(true);
+      setGeneratedQuestions([]);
+      setExpandedQuestion(null);
+      try {
       const total = parseInt(questionCount);
       let allQuestions: any[] = [];
 
@@ -443,18 +459,19 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       }
 
       toast({ title: "Questões geradas!", description: `${allQuestions.length} questões criadas.` });
-    } catch (e) {
+    } catch (e: any) {
       toast({
-        title: "Erro",
-        description: e instanceof Error ? e.message : "Erro ao gerar",
+        title: "Erro na geração",
+        description: e instanceof Error ? e.message : "Erro ao gerar questões.",
         variant: "destructive",
       });
     } finally {
       setGenerating(false);
     }
+    });
   }, [
     callAPI, toast, selectedTopics, questionCount, useDistribution, topicDistribution,
-    subtopics, difficulty, difficultyMix, examBoard,
+    subtopics, difficulty, difficultyMix, examBoard, safeAction
   ]);
 
   const regenerateMissing = useCallback(async () => {
@@ -533,19 +550,20 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, []);
 
   const confirmCreate = useCallback(async (forcedStatus?: "draft" | "published") => {
-    if (creating) return;
-    
-    if (!title?.trim()) {
-      toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
-      return;
-    }
+    await safeAction("confirm_create", async () => {
+      if (creating) return;
+      
+      if (!title?.trim()) {
+        toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
+        return;
+      }
 
-    setCreating(true);
-    const tid = crypto.randomUUID();
-    setTraceId(tid);
-    const clientRequestId = crypto.randomUUID();
-    
-    try {
+      setCreating(true);
+      const tid = crypto.randomUUID();
+      setTraceId(tid);
+      const clientRequestId = crypto.randomUUID();
+      
+      try {
       const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
       const isDraft = forcedStatus === "draft";
       
@@ -637,32 +655,34 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     } finally {
       setCreating(false);
     }
+    });
   }, [
     creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
     title, description, selectedTopics, faculdadeFilter, impactedCount,
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
-    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
+    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard, safeAction
   ]);
 
   const initiateCreate = useCallback(async () => {
-    if (!title?.trim()) {
-      toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
-      return;
-    }
+    await safeAction("initiate_create", async () => {
+      if (!title?.trim()) {
+        toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
+        return;
+      }
 
-    const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
-    if (!questions || questions.length === 0) {
-      toast({ title: "Sem questões", description: "Gere questões primeiro ou salve como rascunho.", variant: "destructive" });
-      return;
-    }
+      const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
+      if (!questions || questions.length === 0) {
+        toast({ title: "Sem questões", description: "Gere questões primeiro ou salve como rascunho.", variant: "destructive" });
+        return;
+      }
 
-    if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
-      toast({ title: "Nenhum aluno selecionado", description: "Selecione alunos ou mude o modo de atribuição.", variant: "destructive" });
-      return;
-    }
+      if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
+        toast({ title: "Nenhum aluno selecionado", description: "Selecione alunos ou mude o modo de atribuição.", variant: "destructive" });
+        return;
+      }
 
-    setCreating(true);
-    try {
+      setCreating(true);
+      try {
       let count = 0;
       if (assignmentMode === "manual") count = selectedStudentIds.length;
       else if (assignmentMode === "all") {
@@ -684,10 +704,11 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       setShowConfirm(true);
     } catch (err: any) {
       toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
-    } finally {
-      setCreating(false);
-    }
-  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast]);
+      } finally {
+        setCreating(false);
+      }
+    });
+  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast, safeAction]);
 
 
   const allQs = useMemo(() => {

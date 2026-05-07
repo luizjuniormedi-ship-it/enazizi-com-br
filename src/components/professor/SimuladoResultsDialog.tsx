@@ -49,18 +49,34 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
   const [savingReview, setSavingReview] = useState<string | null>(null);
   const { toast } = useToast();
 
-  const completedCount = state.results.filter((r) => r.status === "completed").length;
+  const safeResults = Array.isArray(state?.results) ? state.results : [];
+  const completedCount = safeResults.filter((r) => r?.status === "completed").length;
   const avgScore = (() => {
-    const completed = state.results.filter((r) => r.status === "completed");
+    const completed = safeResults.filter((r) => r?.status === "completed");
     return completed.length > 0
-      ? Math.round(completed.reduce((s, r) => s + (r.score || 0), 0) / completed.length)
+      ? Math.round(completed.reduce((s, r) => s + (Number.isFinite(r?.score) ? r.score : 0), 0) / completed.length)
       : 0;
   })();
 
-  const handleSaveReview = useCallback(async (student: any) => {
-    if (!callAPI) return;
-    setSavingReview(student.student_id);
+  const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
     try {
+      console.log(`[SimuladoResults] action_start: ${name}`);
+      await fn();
+      console.log(`[SimuladoResults] action_success: ${name}`);
+    } catch (error) {
+      console.error(`[SimuladoResults] action_failed: ${name}`, error);
+      toast({
+        title: "Erro inesperado",
+        description: error instanceof Error ? error.message : "Erro ao executar ação.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
+  const handleSaveReview = useCallback(async (student: any) => {
+    if (!callAPI || !student?.student_id) return;
+    await safeAction("save_review", async () => {
+      setSavingReview(student.student_id);
       const studentAnswers = (student.answers_json || []) as any[];
       const weakTopics = Array.from(new Set(studentAnswers.filter(a => !a.is_correct).map(a => a.topic || "Geral")));
       const wrongQuestions = studentAnswers.filter(a => !a.is_correct).map(a => ({
@@ -70,7 +86,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
 
       await callAPI({
         action: "save_review",
-        simulado_id: state.simulado.id,
+        simulado_id: state.simulado?.id,
         student_id: student.student_id,
         professor_comment: comments[student.student_id] || "",
         score: student.score,
@@ -85,16 +101,9 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
         title: "Avaliação salva",
         description: "O feedback foi enviado ao aluno com sucesso.",
       });
-    } catch (e: any) {
-      toast({
-        title: "Erro ao salvar",
-        description: e.message,
-        variant: "destructive",
-      });
-    } finally {
       setSavingReview(null);
-    }
-  }, [callAPI, state.simulado?.id, comments, toast]);
+    });
+  }, [callAPI, state.simulado?.id, comments, toast, safeAction]);
 
   return (
     <Dialog
@@ -192,7 +201,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                   </div>
 
                   <div className="space-y-3">
-                    {state.results.map((r) => {
+                    {safeResults.map((r) => {
                       const isExpanded = expandedStudent === r.id;
                       const studentAnswers = (r.answers_json || []) as any[];
                       const questionsData = state.questions_json || [];
@@ -330,7 +339,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                           <Button 
                                             size="sm" 
                                             className="w-full text-[10px] font-black uppercase tracking-widest gap-2"
-                                            onClick={() => handleSaveReview(r)}
+                                            onClick={() => safeAction("save_review_click", () => handleSaveReview(r))}
                                             disabled={savingReview === r.student_id}
                                           >
                                             {savingReview === r.student_id ? (
@@ -340,7 +349,14 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                             )}
                                             SALVAR E ENVIAR
                                           </Button>
-                                          <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            className="w-full text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2"
+                                            onClick={() => safeAction("tutor_ia_mission_click", async () => {
+                                              toast({ title: "Tutor IA Mission", description: "Iniciando análise pedagógica..." });
+                                            })}
+                                          >
                                             <Brain className="h-3 w-3" /> TUTOR IA MISSION
                                           </Button>
                                         </div>

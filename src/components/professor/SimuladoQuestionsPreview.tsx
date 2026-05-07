@@ -74,7 +74,7 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
         </p>
       )}
       <div className="max-h-[400px] overflow-y-auto space-y-2">
-        {groupedBlocks.map(([block, questions], blockIdx) => (
+        {Array.isArray(groupedBlocks) && groupedBlocks.map(([block, questions], blockIdx) => (
           <div key={`${block}-${blockIdx}`}>
             {groupedBlocks.length > 1 && (
               <div className="flex items-center gap-2 py-2 px-3 bg-white/5 border border-white/5 rounded-xl mb-2">

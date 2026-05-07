@@ -78,12 +78,12 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
               <p className="text-sm text-muted-foreground line-clamp-1 mb-2">{sim.description}</p>
             )}
             <div className="flex flex-wrap gap-1.5 mb-2">
-              {(sim.topics || []).slice(0, 3).map((t: string) => (
+              {Array.isArray(sim?.topics) && sim.topics.slice(0, 3).map((t: string) => (
                 <Badge key={t} variant="outline" className="text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2">
                   {t}
                 </Badge>
               ))}
-              {(sim.topics || []).length > 3 && (
+              {Array.isArray(sim?.topics) && sim.topics.length > 3 && (
                 <Badge variant="outline" className="text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2">
                   +{sim.topics.length - 3}
                 </Badge>
@@ -148,17 +148,17 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
             )}
           </div>
         </div>
-        {sim.results_summary?.completed > 0 && (
+        {Number.isFinite(sim?.results_summary?.completed) && sim.results_summary.completed > 0 && (
           <div className="mt-3 pt-3 border-t border-border">
             <div className="flex items-center justify-between text-xs mb-1">
               <span className="text-muted-foreground">Progresso</span>
               <span className="font-medium">
-                {sim.results_summary.completed}/{sim.results_summary.total} • Média:{" "}
-                {sim.results_summary.avgScore}%
+                {sim.results_summary.completed}/{sim.results_summary.total || 0} • Média:{" "}
+                {Number.isFinite(sim.results_summary.avgScore) ? sim.results_summary.avgScore : 0}%
               </span>
             </div>
             <Progress
-              value={(sim.results_summary.completed / sim.results_summary.total) * 100}
+              value={sim.results_summary.total > 0 ? (sim.results_summary.completed / sim.results_summary.total) * 100 : 0}
               className="h-1.5"
             />
           </div>

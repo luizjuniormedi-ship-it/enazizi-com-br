@@ -57,6 +57,21 @@ const ProfessorDashboard = () => {
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
+  const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
+    try {
+      console.log(`[ProfessorPanel] action_start: ${name}`);
+      await fn();
+      console.log(`[ProfessorPanel] action_success: ${name}`);
+    } catch (error) {
+      console.error(`[ProfessorPanel] action_failed: ${name}`, error);
+      toast({
+        title: "Erro inesperado",
+        description: error instanceof Error ? error.message : "Erro ao executar ação. Tente novamente.",
+        variant: "destructive"
+      });
+    }
+  }, [toast]);
+
   const callAPI = useCallback(
     async (body: Record<string, unknown>) => {
       const controller = new AbortController();
@@ -90,13 +105,14 @@ const ProfessorDashboard = () => {
     setLoading(true);
     try {
       const res = await callAPI({ action: "list_simulados" });
-      setSimulados(res.simulados || []);
+      setSimulados(Array.isArray(res.simulados) ? res.simulados : []);
     } catch (e) {
       toast({
-        title: "Erro",
+        title: "Erro ao carregar simulados",
         description: e instanceof Error ? e.message : "Erro",
         variant: "destructive",
       });
+      setSimulados([]);
     } finally {
       setLoading(false);
     }
@@ -108,55 +124,49 @@ const ProfessorDashboard = () => {
 
   const handleViewResults = useCallback(
     async (simulado: any) => {
-      setResultsDialog({
-        open: true,
-        simulado,
-        results: [],
-        loading: true,
-        questions_json: [],
-      });
-      try {
+      await safeAction("view_results", async () => {
+        if (!simulado?.id) throw new Error("Simulado inválido para visualização.");
+        setResultsDialog({
+          open: true,
+          simulado,
+          results: [],
+          loading: true,
+          questions_json: [],
+        });
         const res = await callAPI({
           action: "get_simulado_results",
           simulado_id: simulado.id,
         });
         setResultsDialog((prev) => ({
           ...prev,
-          results: res.results || [],
-          questions_json: res.questions_json || [],
+          results: Array.isArray(res.results) ? res.results : [],
+          questions_json: Array.isArray(res.questions_json) ? res.questions_json : [],
           loading: false,
         }));
-      } catch {
-        setResultsDialog((prev) => ({ ...prev, loading: false }));
-      }
+      });
     },
-    [callAPI]
+    [callAPI, safeAction]
   );
 
   const handleDeleteSimulado = useCallback(
     async (simuladoId: string, simuladoTitle: string) => {
-      if (
-        !confirm(
-          `Tem certeza que deseja apagar o simulado "${simuladoTitle}"? Esta ação não pode ser desfeita.`
+      await safeAction("delete_simulado", async () => {
+        if (!simuladoId) throw new Error("ID do simulado não informado.");
+        if (
+          !confirm(
+            `Tem certeza que deseja apagar o simulado "${simuladoTitle || "Sem título"}"? Esta ação não pode ser desfeita.`
+          )
         )
-      )
-        return;
-      try {
+          return;
         await callAPI({ action: "delete_simulado", simulado_id: simuladoId });
         toast({
           title: "Simulado apagado",
           description: `"${simuladoTitle}" foi removido com sucesso.`,
         });
         loadSimulados();
-      } catch (e) {
-        toast({
-          title: "Erro ao apagar",
-          description: e instanceof Error ? e.message : "Erro",
-          variant: "destructive",
-        });
-      }
+      });
     },
-    [callAPI, toast, loadSimulados]
+    [callAPI, toast, loadSimulados, safeAction]
   );
 
   const handleCloseResults = useCallback(() => {
@@ -170,26 +180,32 @@ const ProfessorDashboard = () => {
   }, []);
 
   const handleOpenCreate = useCallback(() => {
-    console.log("[ProfessorDashboard] handleOpenCreate disparado");
-    setShowCreate(true);
-  }, []);
+    safeAction("open_create_dialog", async () => {
+      console.log("[ProfessorDashboard] handleOpenCreate disparado");
+      setShowCreate(true);
+    });
+  }, [safeAction]);
+
   const handleCloseCreate = useCallback((open: boolean) => {
-    console.log("[ProfessorDashboard] handleCloseCreate:", open);
-    setShowCreate(open);
-  }, []);
+    safeAction("close_create_dialog", async () => {
+      console.log("[ProfessorDashboard] handleCloseCreate:", open);
+      setShowCreate(open);
+    });
+  }, [safeAction]);
 
   // Totais memoizados — só recalculam quando a lista muda
   const totals = useMemo(() => {
-    const totalStudentsAssigned = simulados.reduce(
-      (s, sim) => s + (sim.results_summary?.total || 0),
+    const safeSimulados = Array.isArray(simulados) ? simulados : [];
+    const totalStudentsAssigned = safeSimulados.reduce(
+      (s, sim) => s + (Number.isFinite(sim?.results_summary?.total) ? sim.results_summary.total : 0),
       0
     );
-    const totalCompleted = simulados.reduce(
-      (s, sim) => s + (sim.results_summary?.completed || 0),
+    const totalCompleted = safeSimulados.reduce(
+      (s, sim) => s + (Number.isFinite(sim?.results_summary?.completed) ? sim.results_summary.completed : 0),
       0
     );
     return {
-      totalSimulados: simulados.length,
+      totalSimulados: safeSimulados.length,
       totalStudentsAssigned,
       totalCompleted,
     };
@@ -278,14 +294,14 @@ const ProfessorDashboard = () => {
               </Card>
             ) : (
               <div className="space-y-3">
-                {simulados.map((sim) => (
+                {Array.isArray(simulados) ? simulados.map((sim) => (
                   <SimuladoListItem
-                    key={sim.id}
+                    key={sim?.id || Math.random().toString()}
                     sim={sim}
                     onView={handleViewResults}
                     onDelete={handleDeleteSimulado}
                   />
-                ))}
+                )) : null}
               </div>
             )}
           </TabsContent>
