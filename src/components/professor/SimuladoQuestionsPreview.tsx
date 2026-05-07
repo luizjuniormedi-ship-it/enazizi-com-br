@@ -77,8 +77,8 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
         {groupedBlocks.map(([block, questions], blockIdx) => (
           <div key={`${block}-${blockIdx}`}>
             {groupedBlocks.length > 1 && (
-              <div className="flex items-center gap-2 py-1.5 px-2 bg-primary/10 rounded-md mb-1.5">
-                <span className="text-xs font-semibold text-primary">
+              <div className="flex items-center gap-2 py-2 px-3 bg-white/5 border border-white/5 rounded-xl mb-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
                   📋 Bloco: {block} — {questions?.length || 0} questão(ões)
                 </span>
               </div>
