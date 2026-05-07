@@ -1,16 +1,17 @@
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, TrendingDown, Target, Brain, Award, Users, Download } from "lucide-react";
+import { AlertCircle, TrendingDown, Target, Brain, Users, Download } from "lucide-react";
 
 interface Props {
   results: any[];
   questions_json: any[];
+  simuladoTitle?: string;
 }
 
-const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, questions_json }: Props) {
+const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, questions_json, simuladoTitle }: Props) {
   const completed = results.filter(r => r.status === "completed");
   if (completed.length === 0) return null;
 
@@ -30,7 +31,6 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
     .sort((a, b) => a.pct - b.pct);
 
   const weakestTopic = sortedTopics[0];
-  const strongestTopic = sortedTopics[sortedTopics.length - 1];
 
   // 2. Questões mais erradas
   const questionErrors: Record<number, number> = {};
@@ -52,22 +52,58 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
   // 3. Alunos em risco (score < 50%)
   const atRiskStudents = completed.filter(r => (r.score || 0) < 50);
 
+  const exportCSV = useCallback(() => {
+    const headers = ["Aluno", "Email", "Nota", "Acertos", "Total", "Tempo (s)", "Status"];
+    const rows = results.map(r => [
+      r.student_name,
+      r.student_email,
+      r.score,
+      (r.answers_json || []).filter((a: any) => a.is_correct).length,
+      (r.answers_json || []).length,
+      r.time_spent_seconds,
+      r.status
+    ]);
+    
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `relatorio_simulado_${simuladoTitle || 'professor'}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }, [results, simuladoTitle]);
+
+  const exportPDF = useCallback(() => {
+    window.print();
+  }, []);
+
   return (
-    <div className="space-y-6 mb-8">
-      <div className="flex items-center justify-between mb-4">
+    <div className="space-y-6 mb-8 print:p-0">
+      <div className="flex items-center justify-between mb-4 print:hidden">
         <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white/40">Análise de Performance</h3>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={exportCSV}
+            className="h-8 text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2"
+          >
             <Download className="h-3 w-3" /> CSV
           </Button>
-          <Button variant="outline" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
-            <Download className="h-3 w-3" /> XLSX
-          </Button>
-          <Button variant="default" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest gap-2 shadow-glow-sm">
-            <Download className="h-3 w-3" /> PDF
+          <Button 
+            variant="default" 
+            size="sm" 
+            onClick={exportPDF}
+            className="h-8 text-[10px] font-black uppercase tracking-widest gap-2 shadow-glow-sm"
+          >
+            <Download className="h-3 w-3" /> PDF / IMPRIMIR
           </Button>
         </div>
       </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Tema mais fraco */}
         <Card className="border-destructive/20 bg-destructive/5 overflow-hidden">
@@ -133,8 +169,8 @@ const SimuladoReportInsights = memo(function SimuladoReportInsights({ results, q
               A turma demonstrou fragilidade em <span className="text-primary font-bold">"{weakestTopic?.name}"</span>. 
               Recomendamos agendar uma aula de reforço focada em condutas diagnósticas e revisão de protocolos para este tema.
             </p>
-            <div className="flex gap-2 mt-2">
-              <Badge variant="outline" className="bg-white/5 border-white/10 text-[10px]">REFORÇAR {weakestTopic?.name.toUpperCase()}</Badge>
+            <div className="flex gap-2 mt-2 print:hidden">
+              <Badge variant="outline" className="bg-white/5 border-white/10 text-[10px]">REFORÇAR {weakestTopic?.name?.toUpperCase()}</Badge>
               <Badge variant="outline" className="bg-white/5 border-white/10 text-[10px]">VER RANKING COMPLETO</Badge>
             </div>
           </div>

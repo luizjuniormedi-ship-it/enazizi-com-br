@@ -118,23 +118,34 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
               )}
             </div>
           </div>
-          <div className="flex gap-1.5 shrink-0">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => onView(sim)} 
-              className="h-9 px-4 rounded-xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px] gap-1.5"
-            >
-              <Eye className="h-3.5 w-3.5" /> RESULTADOS
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onDelete(sim.id, sim.title)}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
+          <div className="flex flex-col gap-1.5 shrink-0">
+            <div className="flex gap-1.5">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => onView(sim)} 
+                className="h-9 px-4 rounded-xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px] gap-1.5"
+              >
+                <Eye className="h-3.5 w-3.5" /> RESULTADOS
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(sim.id, sim.title)}
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            {sim.status === "draft" && (
+               <Button 
+                 variant="default" 
+                 size="sm" 
+                 className="h-8 text-[9px] font-black uppercase tracking-widest bg-emerald-600 hover:bg-emerald-700"
+               >
+                 PUBLICAR AGORA
+               </Button>
+            )}
           </div>
         </div>
         {sim.results_summary?.completed > 0 && (
