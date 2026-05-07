@@ -71,10 +71,10 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
           <Badge
             key={`${topic}-${idx}`}
             variant="secondary"
-            className="gap-1 cursor-pointer"
+            className="gap-2 h-7 px-3 rounded-lg bg-white/10 hover:bg-red-500/20 hover:text-red-400 border-white/5 transition-colors cursor-pointer text-[10px] font-bold uppercase tracking-tight"
             onClick={() => onRemoveTopic(topic)}
           >
-            {topic} ✕
+            {topic} <span className="opacity-50">✕</span>
           </Badge>
         ))}
       </div>
