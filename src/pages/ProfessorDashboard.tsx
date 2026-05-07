@@ -45,6 +45,7 @@ const ProfessorDashboard = () => {
 
   const [simulados, setSimulados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("simulados");
   const [showCreate, setShowCreate] = useState(false);
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
@@ -220,7 +221,7 @@ const ProfessorDashboard = () => {
           }
         />
 
-        <Tabs defaultValue="simulados" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="rounded-2xl border border-white/5 bg-card/20 backdrop-blur-md p-2">
             <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
               {[
@@ -355,6 +356,7 @@ const ProfessorDashboard = () => {
         onOpenChange={handleCloseCreate}
         callAPI={callAPI}
         onCreated={loadSimulados}
+        onTabChange={setActiveTab}
       />
 
       {resultsDialog.open && (

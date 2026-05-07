@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Loader2, Sparkles, PenLine, Send, ArrowLeft, CheckCircle2, Users, FileText, Calendar, ShieldCheck, Target, AlertTriangle } from "lucide-react";
+import { Plus, Loader2, Sparkles, PenLine, Send, ArrowLeft, CheckCircle2, Users, FileText, Calendar, ShieldCheck, Target, AlertTriangle, ExternalLink, Copy, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -22,10 +22,11 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   callAPI: CallAPI;
   onCreated: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
 const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
-  open, onOpenChange, callAPI, onCreated,
+  open, onOpenChange, callAPI, onCreated, onTabChange
 }: Props) {
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   
@@ -112,7 +113,82 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
           </header>
 
           <div className="flex-1 overflow-y-auto p-6 space-y-6" data-testid="dialog-body">
-            {!f.showConfirm ? (
+            {f.successData ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center animate-in fade-in zoom-in-95 duration-500">
+                <div className="h-24 w-24 rounded-full bg-green-500/10 flex items-center justify-center mb-6 relative">
+                  <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping opacity-25" />
+                  <CheckCircle2 className="h-12 w-12 text-green-500" />
+                </div>
+                
+                <h3 className="text-2xl font-black uppercase tracking-tight mb-2">
+                  {f.successData.status === 'draft' ? "Rascunho Salvo!" : "Sucesso Total!"}
+                </h3>
+                
+                <p className="text-muted-foreground max-w-md mb-8">
+                  {f.successData.status === 'draft' 
+                    ? "Seu simulado foi salvo como rascunho e não está visível para alunos." 
+                    : `O simulado foi publicado e atribuído a ${f.successData.students_assigned} aluno(s).`}
+                </p>
+
+                {f.successData.warnings && f.successData.warnings.length > 0 && (
+                  <div className="w-full max-w-md p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-8 flex items-start gap-3 text-left">
+                    <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-amber-500 mb-1">Avisos de processamento</p>
+                      <ul className="space-y-1">
+                        {f.successData.warnings.map((w, i) => (
+                          <li key={i} className="text-xs text-amber-200/80">• {w}</li>
+                        ))}
+                      </ul>
+                      <p className="text-[10px] text-amber-500/60 mt-2 italic">O simulado foi criado, mas as etapas acima falharam ou foram suprimidas.</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="w-full max-w-md space-y-4">
+                  <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Trace ID de Rastreio</span>
+                      <code className="text-[10px] font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        TRACE-{f.traceId.split('-')[0].toUpperCase()}
+                      </code>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 h-12 rounded-2xl border-white/10 bg-white/5 gap-2 font-bold text-xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(f.traceId);
+                          // A toast here is fine but we already have visual feedback
+                        }}
+                      >
+                        <Copy className="h-4 w-4" /> Copiar ID
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="flex-1 h-12 rounded-2xl border-white/10 bg-white/5 gap-2 font-bold text-xs"
+                        onClick={() => {
+                          onTabChange?.("auditoria");
+                          onOpenChange(false);
+                        }}
+                      >
+                        <ExternalLink className="h-4 w-4" /> Ver Auditoria
+                      </Button>
+                    </div>
+                  </div>
+
+                  <Button 
+                    variant="default" 
+                    className="w-full h-14 rounded-2xl font-black uppercase tracking-widest text-xs"
+                    onClick={() => onOpenChange(false)}
+                  >
+                    Fechar e Voltar ao Painel
+                  </Button>
+                </div>
+              </div>
+            ) : !f.showConfirm ? (
               <>
                 <SimuladoBasicForm
                   title={f.title}
@@ -351,7 +427,8 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
             )}
           </div>
 
-          <footer className="shrink-0 border-t p-6 bg-background/95 backdrop-blur-md" data-testid="dialog-footer">
+          {!f.successData && (
+            <footer className="shrink-0 border-t p-6 bg-background/95 backdrop-blur-md" data-testid="dialog-footer">
             <div className="flex flex-col gap-3">
               {!f.showConfirm && (
                 <Button
@@ -394,7 +471,8 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
                 </Button>
               </DialogFooter>
             </div>
-          </footer>
+            </footer>
+          )}
         </div>
       </DialogContent>
     </Dialog>
