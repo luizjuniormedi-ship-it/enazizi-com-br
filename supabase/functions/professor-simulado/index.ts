@@ -664,6 +664,7 @@ REGRAS INVIOLÁVEIS:
               metadata: assignment_mode === 'filter' ? { faculdade: faculdade_filter, periodo: periodo_filter } : null,
               trace_id: tid
             });
+          }
           await logTraceStep(tid, "assignments", "success", { count: studentList.length });
         } catch (assignErr) {
           console.error(`[create_simulado][Trace:${tid}] Erro ao processar assignments (não bloqueante):`, assignErr);
