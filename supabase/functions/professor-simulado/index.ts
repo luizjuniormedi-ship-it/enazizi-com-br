@@ -535,7 +535,36 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "create_simulado": {
-        const { title, description, topics, faculdade_filter, periodo_filter, total_questions, time_limit_minutes, questions_json, student_ids, class_ids, assignment_mode, scheduled_at, end_at, max_attempts, feedback_policy, allow_retake, exam_board, auto_assign } = params;
+        const { 
+          title, description, topics, faculdade_filter, periodo_filter, 
+          total_questions, time_limit_minutes, questions_json, 
+          student_ids, class_ids, assignment_mode, scheduled_at, end_at, 
+          max_attempts, feedback_policy, allow_retake, exam_board, auto_assign,
+          trace_id, client_request_id 
+        } = params;
+
+        // Trace for debugging
+        const tid = trace_id || crypto.randomUUID();
+        console.log(`[create_simulado][Trace:${tid}] Início da criação. ReqID: ${client_request_id}`);
+
+        // Idempotency check
+        if (client_request_id) {
+          const { data: existing } = await sb
+            .from("teacher_simulados")
+            .select("id")
+            .eq("professor_id", user.id)
+            .eq("client_request_id", client_request_id)
+            .maybeSingle();
+            
+          if (existing) {
+            console.warn(`[create_simulado][Trace:${tid}] Requisição duplicada ignorada.`);
+            return ok({ 
+              success: true, 
+              simulado_id: existing.id, 
+              status: "duplicate_ignored" 
+            });
+          }
+        }
 
         // Determine status based on scheduling
         const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
@@ -560,57 +589,61 @@ REGRAS INVIOLÁVEIS:
           allow_retake: allow_retake || false,
           exam_board: exam_board || null,
           auto_assign: auto_assign !== false,
+          trace_id: tid,
+          client_request_id: client_request_id
         }).select("id").single();
 
-        if (error) throw new Error(error.message);
+        if (error) {
+          console.error(`[create_simulado][Trace:${tid}] Erro no insert principal:`, error);
+          throw new Error(error.message);
+        }
 
-        // Handle assignments
-        let studentList: { user_id: string }[] = [];
-        
-        if (assignment_mode === "manual" && student_ids?.length > 0) {
-          studentList = student_ids.map((id: string) => ({ user_id: id }));
-          const assignments = student_ids.map((id: string) => ({
-            simulado_id: simulado.id,
-            target_type: 'student',
-            target_id: id
-          }));
-          await sb.from("teacher_simulado_assignments").insert(assignments);
-        } else if (assignment_mode === "classes" && class_ids?.length > 0) {
-          // Record class assignments
-          const assignments = class_ids.map((id: string) => ({
-            simulado_id: simulado.id,
-            target_type: 'class',
-            target_id: id
-          }));
-          await sb.from("teacher_simulado_assignments").insert(assignments);
-          
-          // Get students in these classes
-          const { data: classStudents } = await sb
-            .from("class_members")
-            .select("user_id")
-            .in("class_id", class_ids)
-            .eq("is_active", true);
-          studentList = classStudents || [];
-        } else if (assignment_mode === "all") {
-          await sb.from("teacher_simulado_assignments").insert({
-            simulado_id: simulado.id,
-            target_type: 'all'
-          });
-          const { data: allStudents } = await sb.from("profiles").select("user_id").eq("status", "active");
-          studentList = allStudents || [];
-        } else {
-          // Default: filter (backward compatibility or explicit)
-          await sb.from("teacher_simulado_assignments").insert({
-            simulado_id: simulado.id,
-            target_type: 'filter',
-            metadata: { faculdade: faculdade_filter, periodo: periodo_filter }
-          });
-          
-          let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
-          if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
-          if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
-          const { data: students } = await studentQuery;
-          studentList = students || [];
+        // Handle assignments (Isolated in try-catch to not break the flow)
+        try {
+          if (assignment_mode === "manual" && student_ids?.length > 0) {
+            studentList = student_ids.map((id: string) => ({ user_id: id }));
+          } else if (assignment_mode === "classes" && class_ids?.length > 0) {
+            // Get students in these classes
+            const { data: classStudents } = await sb
+              .from("class_members")
+              .select("user_id")
+              .in("class_id", class_ids)
+              .eq("is_active", true);
+            studentList = classStudents || [];
+          } else if (assignment_mode === "all") {
+            const { data: allStudents } = await sb.from("profiles").select("user_id").eq("status", "active");
+            studentList = allStudents || [];
+          } else {
+            // Default: filter
+            let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
+            if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
+            if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
+            const { data: students } = await studentQuery;
+            studentList = students || [];
+          }
+
+          // Record assignment source for audit
+          if (assignment_mode === "manual" || assignment_mode === "classes") {
+            const targets = (assignment_mode === "manual" ? student_ids : class_ids) || [];
+            if (targets.length > 0) {
+              const assignmentLogs = targets.map((id: string) => ({
+                simulado_id: simulado.id,
+                target_type: assignment_mode === "manual" ? 'student' : 'class',
+                target_id: id,
+                trace_id: tid
+              }));
+              await sb.from("teacher_simulado_assignments").insert(assignmentLogs);
+            }
+          } else {
+            await sb.from("teacher_simulado_assignments").insert({
+              simulado_id: simulado.id,
+              target_type: assignment_mode === 'all' ? 'all' : 'filter',
+              metadata: assignment_mode === 'filter' ? { faculdade: faculdade_filter, periodo: periodo_filter } : null,
+              trace_id: tid
+            });
+          }
+        } catch (assignErr) {
+          console.error(`[create_simulado][Trace:${tid}] Erro ao processar assignments (não bloqueante):`, assignErr);
         }
 
         if (studentList.length > 0) {
