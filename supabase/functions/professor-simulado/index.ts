@@ -749,9 +749,13 @@ REGRAS INVIOLÁVEIS:
                   .in("target_user_id", newWA.map((p: any) => p.user_id));
               }
               console.log(`WhatsApp: ${newWA.length} mensagens enfileiradas para simulado ${simulado.id}`);
+              await logTraceStep(tid, "notifications_whatsapp", "success", { count: newWA.length });
+            } else {
+              await logTraceStep(tid, "notifications_whatsapp", "success", { count: 0, reason: "no_eligible_students" });
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp (não bloqueante):", whatsappErr);
+            await logTraceStep(tid, "notifications_whatsapp", "warning", null, whatsappErr instanceof Error ? whatsappErr.message : "Erro desconhecido");
           }
         }
 
