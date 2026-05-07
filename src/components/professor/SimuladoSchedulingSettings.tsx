@@ -84,10 +84,10 @@ const SimuladoSchedulingSettings = memo(function SimuladoSchedulingSettings({
         </div>
 
         {/* Políticas */}
-        <div className="space-y-4 p-4 rounded-2xl border border-white/5 bg-white/[0.02]">
+        <div className="space-y-4 p-4 rounded-2xl border border-white/5 bg-white/5">
           <div className="flex items-center gap-2 mb-2">
             <ShieldAlert className="h-4 w-4 text-primary" />
-            <Label className="text-sm font-bold uppercase tracking-widest">Políticas e Acesso</Label>
+            <Label className="text-[10px] font-black uppercase tracking-widest opacity-80">Políticas e Acesso</Label>
           </div>
 
           <div className="space-y-3">
