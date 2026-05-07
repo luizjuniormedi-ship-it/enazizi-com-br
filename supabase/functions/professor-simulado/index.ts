@@ -679,6 +679,7 @@ REGRAS INVIOLÁVEIS:
           await logTraceStep(tid, "assignments", "success", { count: studentList.length });
         } catch (assignErr) {
           console.error(`[create_simulado][Trace:${tid}] Erro ao processar assignments (não bloqueante):`, assignErr);
+          warnings.push("Erro ao processar atribuições de alunos.");
           await logTraceStep(tid, "assignments", "warning", null, assignErr instanceof Error ? assignErr.message : "Erro desconhecido");
         }
 
@@ -767,11 +768,19 @@ REGRAS INVIOLÁVEIS:
             }
           } catch (whatsappErr) {
             console.error("Erro ao enfileirar WhatsApp (não bloqueante):", whatsappErr);
+            warnings.push("Erro ao processar fila de notificações.");
             await logTraceStep(tid, "notifications_whatsapp", "warning", null, whatsappErr instanceof Error ? whatsappErr.message : "Erro desconhecido");
           }
         }
 
-        return ok({ success: true, simulado_id: simulado.id, students_assigned: studentList.length, status: simStatus });
+        return ok({ 
+          success: true, 
+          simulado_id: simulado.id, 
+          students_assigned: studentList.length, 
+          status: simStatus,
+          trace_id: tid,
+          warnings: warnings.length > 0 ? warnings : undefined
+        });
       }
 
       case "list_simulados": {
