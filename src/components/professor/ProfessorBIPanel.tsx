@@ -714,12 +714,14 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
 };
 
 const KPICard = ({ icon, label, value, borderColor, bgColor }: { icon: React.ReactNode; label: string; value: React.ReactNode; borderColor?: string; bgColor?: string }) => (
-  <Card className={borderColor}>
-    <CardContent className={`p-4 flex items-center gap-3 ${bgColor || ""}`}>
-      <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center shrink-0">{icon}</div>
+  <Card className={`${borderColor} bg-white/5 border-white/5 overflow-hidden transition-all hover:scale-[1.02] shadow-glow-sm`}>
+    <CardContent className={`p-5 flex items-center gap-4 ${bgColor || ""}`}>
+      <div className="h-11 w-11 rounded-xl bg-white/5 flex items-center justify-center shrink-0 border border-white/5">
+        {icon}
+      </div>
       <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="text-lg font-bold">{value}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground opacity-60 mb-0.5">{label}</p>
+        <p className="text-xl font-black text-white">{value}</p>
       </div>
     </CardContent>
   </Card>
