@@ -64,9 +64,9 @@ const SimuladoDifficultyMix = memo(function SimuladoDifficultyMix({
     <>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-xs">Quantidade (IA)</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Quantidade</Label>
           <Select value={questionCount} onValueChange={onQuestionCountChange}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl font-bold"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[5, 10, 15, 20, 30, 40, 50, 60, 80, 100].map((n) => (
                 <SelectItem key={n} value={String(n)}>{n} questões</SelectItem>
@@ -75,9 +75,9 @@ const SimuladoDifficultyMix = memo(function SimuladoDifficultyMix({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label className="text-xs">Tempo limite</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Tempo Limite</Label>
           <Select value={timeLimit} onValueChange={onTimeLimitChange}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl font-bold"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[30, 60, 90, 120, 180].map((m) => (
                 <SelectItem key={m} value={String(m)}>{m} minutos</SelectItem>
