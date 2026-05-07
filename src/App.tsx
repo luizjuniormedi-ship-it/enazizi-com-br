@@ -65,6 +65,7 @@ const Install = lazyWithRetry(() => import("./pages/Install"), "Install");
 const StudyGuides = lazyWithRetry(() => import("./pages/StudyGuides"), "StudyGuides");
 const MedicalChronicles = lazyWithRetry(() => import("./pages/MedicalChronicles"), "MedicalChronicles");
 const MedicalAdaptiveJourney = lazyWithRetry(() => import("./pages/MedicalAdaptiveJourney"), "MedicalAdaptiveJourney");
+const NewProfessorSimuladoPage = lazyWithRetry(() => import("./pages/NewProfessorSimuladoPage"), "NewProfessorSimuladoPage");
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
@@ -360,6 +361,8 @@ const App = () => (
                 {/* --- PROFESSOR (PROTECTED) --- */}
                 <Route path="/dashboard/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                   <Route index element={<ProfessorDashboard />} />
+                  <Route path="simulados/novo" element={<NewProfessorSimuladoPage />} />
+                  <Route path="simulados/editar/:id" element={<NewProfessorSimuladoPage />} />
                   <Route path="proficiencia/piloto" element={<ProficiencyPilotPage />} />
                 </Route>
                 <Route path="/professor" element={<Navigate to="/dashboard/professor" replace />} />

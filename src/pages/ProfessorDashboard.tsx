@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
+import { useNavigate } from "react-router-dom";
 import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,7 +20,7 @@ import ProfessorProficiencyPlans from "@/components/professor/ProfessorProficien
 import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
 import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
-import CreateSimuladoDialog from "@/components/professor/CreateSimuladoDialog";
+
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
 const ProfessorBIPanel = lazy(() => import("@/components/professor/ProfessorBIPanel"));
@@ -29,12 +30,10 @@ const SimuladoQuestionsDialog = lazy(() => import("@/components/professor/Simula
 const ProfessorDashboard = () => {
   const { session } = useAuth();
   const { toast } = useToast();
-
+  const navigate = useNavigate();
   const [simulados, setSimulados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("simulados");
-  const [showCreate, setShowCreate] = useState(false);
-  const [editingSimulado, setEditingSimulado] = useState<any>(null);
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
     simulado: null,
@@ -157,16 +156,12 @@ const ProfessorDashboard = () => {
   }, []);
 
   const handleOpenCreate = useCallback((simulado?: any) => {
-    console.log("[ProfessorDashboard] abrir modal criar simulado", simulado?.id || "novo");
-    setEditingSimulado(simulado || null);
-    setShowCreate(true);
-  }, []);
-
-  const handleCloseCreate = (open: boolean) => {
-    console.log("[ProfessorDashboard] setOpenCreateSimulado:", open);
-    setShowCreate(open);
-    if (!open) setEditingSimulado(null);
-  };
+    if (simulado?.id) {
+      navigate(`/dashboard/professor/simulados/editar/${simulado.id}`);
+    } else {
+      navigate("/dashboard/professor/simulados/novo");
+    }
+  }, [navigate]);
 
   const totals = useMemo(() => {
     const safeSimulados = Array.isArray(simulados) ? simulados : [];
@@ -268,12 +263,6 @@ const ProfessorDashboard = () => {
         </Tabs>
       </main>
 
-      <CreateSimuladoDialog
-        open={showCreate}
-        onOpenChange={handleCloseCreate}
-        editingSimulado={editingSimulado}
-        onCreated={loadSimulados}
-      />
 
       {resultsDialog.open && (
         <Suspense fallback={null}>
