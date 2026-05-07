@@ -518,70 +518,29 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     });
   }, []);
 
-  const initiateCreate = useCallback(async () => {
-    // 1. Validações Básicas
+  const confirmCreate = useCallback(async (forcedStatus?: "draft" | "published") => {
+    if (creating) return;
+    
     if (!title?.trim()) {
       toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
       return;
     }
 
-    const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
-    if (!questions || questions.length === 0) {
-      toast({ title: "Sem questões", description: "Gere ou selecione questões primeiro.", variant: "destructive" });
-      return;
-    }
-
-    // 2. Validação de Público
-    if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
-      toast({ title: "Nenhum aluno selecionado", description: "Selecione pelo menos um aluno para atribuir.", variant: "destructive" });
-      return;
-    }
-
-    if (assignmentMode === "classes" && selectedClassIds.length === 0) {
-      toast({ title: "Nenhuma turma selecionada", description: "Selecione pelo menos uma turma para atribuir.", variant: "destructive" });
-      return;
-    }
-
-    // Calcular impacto estimado
     setCreating(true);
-    try {
-      let count = 0;
-      if (assignmentMode === "manual") count = selectedStudentIds.length;
-      else if (assignmentMode === "all") {
-        const { data } = await callAPI({ action: "get_students_count" });
-        count = data?.count || 0;
-      } else if (assignmentMode === "classes") {
-        const { data } = await callAPI({ action: "get_students_count", class_ids: selectedClassIds });
-        count = data?.count || 0;
-      } else {
-        // filter
-        const { data } = await callAPI({ 
-          action: "get_students_count", 
-          faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
-          periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
-        });
-        count = data?.count || 0;
-      }
-      
-      setImpactedCount(count);
-      setShowConfirm(true);
-    } catch (err: any) {
-      toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
-    } finally {
-      setCreating(false);
-    }
-  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast]);
-
-  const confirmCreate = useCallback(async () => {
-    if (creating) return;
-    setCreating(true);
-    
     const tid = crypto.randomUUID();
     setTraceId(tid);
     const clientRequestId = crypto.randomUUID();
     
     try {
       const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
+      const isDraft = forcedStatus === "draft";
+      
+      // Bloquear publicação sem questões, mas permitir rascunho
+      if (!isDraft && questions.length === 0) {
+        toast({ title: "Sem questões", description: "Adicione questões antes de publicar ou salve como rascunho.", variant: "destructive" });
+        setCreating(false);
+        return;
+      }
 
       const payload = {
         action: "create_simulado",
@@ -604,16 +563,18 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         auto_assign: !!autoAssign,
         exam_board: examBoard !== "all" ? examBoard : null,
         trace_id: tid,
-        client_request_id: clientRequestId
+        client_request_id: clientRequestId,
+        status: forcedStatus || (scheduledAt ? "scheduled" : "published")
       };
 
+      console.log(`[Trace:${tid}] Criando simulado...`, payload);
       const res = await callAPI(payload);
       
       toast({ 
-        title: "Simulado criado!", 
+        title: isDraft ? "Rascunho salvo!" : "Simulado criado!", 
         description: (
           <div className="flex flex-col gap-2">
-            <p>Atribuído a {res?.students_assigned || impactedCount || 0} aluno(s).</p>
+            <p>{isDraft ? "Simulado salvo como rascunho." : `Atribuído a ${res?.students_assigned || impactedCount || 0} aluno(s).`}</p>
             <div className="flex items-center gap-2 mt-1">
                <span className="text-[10px] font-mono opacity-50 uppercase">Rastreio: TRACE-{tid.split('-')[0].toUpperCase()}</span>
                <Button 
@@ -636,28 +597,25 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       onOpenChange(false);
       onCreated();
     } catch (e: any) {
-      console.error(`[useCreateSimuladoForm][Trace:${tid}] Erro ao criar simulado:`, e);
-      const errorMsg = e instanceof Error ? e.message : "Ocorreu um erro inesperado ao salvar o simulado.";
+      console.error(`[Trace:${tid}] Erro ao criar simulado:`, e);
+      const errorMsg = e instanceof Error ? e.message : "Erro inesperado ao salvar o simulado.";
       toast({
         title: "Erro ao criar simulado",
         description: (
           <div className="flex flex-col gap-3 mt-2">
             <p className="text-sm opacity-90">{errorMsg}</p>
-            <div className="flex flex-col gap-1.5 p-3 bg-white/5 rounded-xl border border-white/10">
-              <span className="text-[10px] uppercase font-bold tracking-tighter opacity-50">Código de rastreio</span>
-              <div className="flex items-center justify-between gap-2">
-                <code className="text-[11px] font-mono font-bold text-primary truncate">TRACE-{tid.split('-')[0].toUpperCase()}</code>
-                <Button 
-                  variant="ghost" size="sm" className="h-7 px-2 hover:bg-white/10 rounded-lg"
-                  onClick={() => {
-                    navigator.clipboard.writeText(tid);
-                    toast({ title: "Copiado!" });
-                  }}
-                >
-                  <Copy className="h-3 w-3 mr-1.5" />
-                  <span className="text-[10px] font-bold">COPIAR</span>
-                </Button>
-              </div>
+            <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+              <code className="text-[11px] font-mono font-bold text-primary truncate">TRACE-{tid.split('-')[0].toUpperCase()}</code>
+              <Button 
+                variant="ghost" size="sm" className="h-7 px-2 hover:bg-white/10"
+                onClick={() => {
+                  navigator.clipboard.writeText(tid);
+                  toast({ title: "Copiado!" });
+                }}
+              >
+                <Copy className="h-3 w-3 mr-1.5" />
+                <span className="text-[10px] font-bold">COPIAR</span>
+              </Button>
             </div>
           </div>
         ),
@@ -672,6 +630,52 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
     scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
   ]);
+
+  const initiateCreate = useCallback(async () => {
+    if (!title?.trim()) {
+      toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
+      return;
+    }
+
+    const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
+    if (!questions || questions.length === 0) {
+      toast({ title: "Sem questões", description: "Gere questões primeiro ou salve como rascunho.", variant: "destructive" });
+      return;
+    }
+
+    if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
+      toast({ title: "Nenhum aluno selecionado", description: "Selecione alunos ou mude o modo de atribuição.", variant: "destructive" });
+      return;
+    }
+
+    setCreating(true);
+    try {
+      let count = 0;
+      if (assignmentMode === "manual") count = selectedStudentIds.length;
+      else if (assignmentMode === "all") {
+        const { data } = await callAPI({ action: "get_students_count" });
+        count = data?.count || 0;
+      } else if (assignmentMode === "classes") {
+        const { data } = await callAPI({ action: "get_students_count", class_ids: selectedClassIds });
+        count = data?.count || 0;
+      } else {
+        const { data } = await callAPI({ 
+          action: "get_students_count", 
+          faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
+          periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+        });
+        count = data?.count || 0;
+      }
+      
+      setImpactedCount(count);
+      setShowConfirm(true);
+    } catch (err: any) {
+      toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
+    } finally {
+      setCreating(false);
+    }
+  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast]);
+
 
   const allQs = questionMode === "ai" ? generatedQuestions : manualQuestions;
   const target = parseInt(questionCount);
