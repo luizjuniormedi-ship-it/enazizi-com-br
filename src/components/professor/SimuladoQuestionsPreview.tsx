@@ -75,20 +75,20 @@ const SimuladoQuestionsPreview = memo(function SimuladoQuestionsPreview({
         </p>
       )}
       <div className="max-h-[400px] overflow-y-auto space-y-2">
-        {groupedBlocks.map(([block, questions]) => (
-          <div key={block}>
+        {groupedBlocks.map(([block, questions], blockIdx) => (
+          <div key={`${block}-${blockIdx}`}>
             {groupedBlocks.length > 1 && (
               <div className="flex items-center gap-2 py-1.5 px-2 bg-primary/10 rounded-md mb-1.5">
                 <span className="text-xs font-semibold text-primary">
-                  📋 Bloco: {block} — {questions.length} questão(ões)
+                  📋 Bloco: {block} — {questions?.length || 0} questão(ões)
                 </span>
               </div>
             )}
-            {questions.map((q) => {
+            {Array.isArray(questions) && questions.map((q, qIdx) => {
               const globalIdx = allQs.indexOf(q);
               return (
                 <SimuladoQuestionItem
-                  key={globalIdx}
+                  key={`q-${globalIdx}-${qIdx}`}
                   q={q}
                   globalIdx={globalIdx}
                   block={block}
