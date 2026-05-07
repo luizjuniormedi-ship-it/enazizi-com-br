@@ -115,7 +115,7 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
             </div>
 
             {form.successData.warnings && form.successData.warnings.length > 0 && (
-              <Alert variant="warning" className="bg-amber-500/10 border-amber-500/20 text-amber-500">
+              <Alert variant="default" className="bg-amber-500/10 border-amber-500/20 text-amber-500">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle className="text-xs font-bold uppercase tracking-widest">Avisos</AlertTitle>
                 <AlertDescription className="text-[11px] font-medium">
