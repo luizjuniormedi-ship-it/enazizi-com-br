@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -116,22 +117,19 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
       }}
     >
       <DialogContent 
-        className={`fixed left-1/2 -translate-x-1/2 p-0 overflow-hidden rounded-2xl border-white/10 shadow-2xl transition-none z-[110] bg-[#0a0a0e] top-6 w-[calc(100vw-2rem)] max-w-5xl max-h-[92vh] flex flex-col`}
-        style={{ transform: `translateX(-50%)` }}
+        className="max-w-5xl teacher-modal-content"
       >
-        <header className="shrink-0 border-b px-6 py-4 bg-background/95 backdrop-blur-md select-none">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <BarChart3 className="h-6 w-6 text-primary" />
-              Gestão de Resultados: {state.simulado?.title}
-            </DialogTitle>
-            <DialogDescription>
-              Acompanhamento detalhado, correção individual e intervenção pedagógica com IA.
-            </DialogDescription>
-          </DialogHeader>
-        </header>
+        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <BarChart3 className="h-6 w-6 text-primary" />
+            Gestão de Resultados: {state.simulado?.title}
+          </DialogTitle>
+          <DialogDescription>
+            Acompanhamento detalhado, correção individual e intervenção pedagógica com IA.
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <DialogBody>
           {state.loading ? (
             <div className="py-24 text-center">
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />

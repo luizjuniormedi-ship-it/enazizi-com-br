@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -130,8 +131,8 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl teacher-modal-content">
+        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <DialogTitle className="flex items-center gap-2">
@@ -154,6 +155,8 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
             </Button>
           </div>
         </DialogHeader>
+
+        <DialogBody className="space-y-6">
 
         {isLoading || !data ? (
           <div className="py-16 text-center">
@@ -346,6 +349,7 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
             )}
           </div>
         )}
+        </DialogBody>
       </DialogContent>
 
       <StudentTasksDialog
