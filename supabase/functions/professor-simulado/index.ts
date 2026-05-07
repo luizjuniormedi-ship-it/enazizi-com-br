@@ -965,6 +965,24 @@ REGRAS INVIOLÁVEIS:
         return ok({ students: students || [] });
       }
 
+      case "get_students_count": {
+        const { faculdade, periodo, class_ids } = params;
+        const effectiveFaculdade = faculdade || professorFaculdade;
+        
+        let query;
+        if (class_ids && Array.isArray(class_ids) && class_ids.length > 0) {
+          query = sb.from("class_members").select("user_id", { count: 'exact', head: true }).in("class_id", class_ids).eq("is_active", true);
+        } else {
+          query = sb.from("profiles").select("user_id", { count: 'exact', head: true }).eq("status", "active");
+          if (effectiveFaculdade) query = query.eq("faculdade", effectiveFaculdade);
+          if (periodo) query = query.eq("periodo", periodo);
+        }
+
+        const { count, error } = await query;
+        if (error) throw error;
+        return ok({ data: { count: count || 0 } });
+      }
+
       case "search_students": {
         const { query } = params;
         if (!query || query.length < 3) throw new Error("Digite pelo menos 3 caracteres para buscar");
