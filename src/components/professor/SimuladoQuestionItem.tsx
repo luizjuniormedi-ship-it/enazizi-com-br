@@ -84,10 +84,10 @@ const SimuladoQuestionItem = memo(
                 {q.options.map((opt: string, oi: number) => (
                   <div
                     key={oi}
-                    className={`px-2 py-1.5 rounded text-xs ${
+                    className={`px-3 py-2 rounded-xl text-[11px] transition-all border ${
                       oi === q.correct_index
-                        ? "bg-emerald-500/15 text-emerald-800 font-semibold border border-emerald-300"
-                        : "bg-muted/50"
+                        ? "bg-emerald-500/10 text-emerald-400 font-bold border-emerald-500/30 shadow-glow-sm"
+                        : "bg-white/5 border-white/5 text-muted-foreground opacity-60"
                     }`}
                   >
                     {opt}
