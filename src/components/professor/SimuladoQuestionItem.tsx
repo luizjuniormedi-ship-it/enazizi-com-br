@@ -96,8 +96,8 @@ const SimuladoQuestionItem = memo(
               </div>
             )}
             {q.explanation && (
-              <div className="bg-primary/5 rounded p-2 text-[11px] text-muted-foreground">
-                <span className="font-semibold">Explicação:</span> {q.explanation}
+              <div className="bg-white/5 border border-white/5 rounded-xl p-3 text-[11px] leading-relaxed text-muted-foreground">
+                <span className="font-black uppercase tracking-widest text-primary text-[9px] block mb-1">Explicação Técnica:</span> {q.explanation}
               </div>
             )}
           </div>
