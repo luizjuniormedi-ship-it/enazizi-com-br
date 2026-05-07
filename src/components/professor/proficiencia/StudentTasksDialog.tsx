@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogBody,
 } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,8 +76,8 @@ const StudentTasksDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-4xl teacher-modal-content">
+        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
           <DialogTitle className="flex items-center gap-2">
             <ListChecks className="h-5 w-5 text-primary" />
             Tarefas — {studentName ?? "Aluno"}
@@ -85,6 +86,8 @@ const StudentTasksDialog = ({
             {planName ? `Plano: ${planName}` : "Drill-down das tarefas atribuídas neste plano."}
           </DialogDescription>
         </DialogHeader>
+
+        <DialogBody className="space-y-6">
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <Select value={status} onValueChange={setStatus}>
@@ -198,6 +201,7 @@ const StudentTasksDialog = ({
             </Table>
           </Card>
         )}
+        </DialogBody>
       </DialogContent>
     </Dialog>
   );

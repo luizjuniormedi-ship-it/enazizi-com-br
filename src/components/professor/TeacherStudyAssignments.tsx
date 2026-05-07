@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -273,13 +273,13 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-lg teacher-modal-content">
+          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
             <DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> Atribuir Tema de Estudo</DialogTitle>
             <DialogDescription>O aluno receberá este tema na Proficiência e poderá estudar diretamente no Tutor IA.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <DialogBody className="space-y-4">
             <div className="space-y-2">
               <Label>Título do Tema *</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Insuficiência Cardíaca Descompensada" />
@@ -377,7 +377,7 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
                 </div>
               )}
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
@@ -391,13 +391,14 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
 
       {/* Results Dialog */}
       <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, assignment: null, results: [] })}>
-        <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-lg teacher-modal-content">
+          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
               Status: {resultsDialog.assignment?.title}
             </DialogTitle>
           </DialogHeader>
+          <DialogBody>
           {resultsDialog.results.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Nenhum aluno atribuído.</p>
           ) : (
@@ -421,6 +422,7 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
               ))}
             </div>
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

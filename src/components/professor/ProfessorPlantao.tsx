@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -346,13 +346,13 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
 
       {/* Create Case Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl teacher-modal-content">
+          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
             <DialogTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-destructive" /> Criar Caso de Plantão</DialogTitle>
             <DialogDescription>Crie um caso clínico via IA ou manualmente.</DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-5">
+          <DialogBody className="space-y-6">
             {/* Common Config */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2 col-span-2">
@@ -583,7 +583,7 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
                 )}
               </div>
             )}
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
@@ -602,8 +602,8 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
 
       {/* Results Dialog */}
       <Dialog open={resultsDialog.open} onOpenChange={(open) => { if (!open) { setResultsDialog({ open: false, caseData: null, results: [], loading: false }); setSelectedResult(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl teacher-modal-content">
+          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
             <DialogTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
               Resultados — {resultsDialog.caseData?.title}
@@ -612,6 +612,7 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
               {resultsDialog.caseData?.specialty} • {resultsDialog.caseData?.difficulty}
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
 
           {resultsDialog.loading ? (
             <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></div>
@@ -703,6 +704,7 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
               )}
             </div>
           )}
+          </DialogBody>
         </DialogContent>
       </Dialog>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -47,10 +47,11 @@ const AddSubtopicsDialog = ({ open, onOpenChange, planId }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl teacher-modal-content">
+        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
           <DialogTitle>Adicionar subtemas ao plano ativo</DialogTitle>
         </DialogHeader>
+        <DialogBody className="space-y-6">
 
         <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
           <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -141,6 +142,7 @@ const AddSubtopicsDialog = ({ open, onOpenChange, planId }: Props) => {
             </div>
           )}
         </ScrollArea>
+        </DialogBody>
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>

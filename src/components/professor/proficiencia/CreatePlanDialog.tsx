@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogBody,
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -91,12 +92,12 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-3xl teacher-modal-content">
+        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
           <DialogTitle>Criar Plano de Proficiência Guiada</DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-5 pr-2">
+        <DialogBody className="space-y-5">
           {/* Identificação */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 sm:col-span-2">
@@ -186,7 +187,7 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
               </TabsContent>
             </Tabs>
           </div>
-        </div>
+        </DialogBody>
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
