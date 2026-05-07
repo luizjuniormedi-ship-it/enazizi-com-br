@@ -664,24 +664,25 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   ]);
 
   const initiateCreate = useCallback(async () => {
-    if (!title?.trim()) {
-      toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
-      return;
-    }
+    await safeAction("initiate_create", async () => {
+      if (!title?.trim()) {
+        toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
+        return;
+      }
 
-    const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
-    if (!questions || questions.length === 0) {
-      toast({ title: "Sem questões", description: "Gere questões primeiro ou salve como rascunho.", variant: "destructive" });
-      return;
-    }
+      const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
+      if (!questions || questions.length === 0) {
+        toast({ title: "Sem questões", description: "Gere questões primeiro ou salve como rascunho.", variant: "destructive" });
+        return;
+      }
 
-    if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
-      toast({ title: "Nenhum aluno selecionado", description: "Selecione alunos ou mude o modo de atribuição.", variant: "destructive" });
-      return;
-    }
+      if (assignmentMode === "manual" && selectedStudentIds.length === 0) {
+        toast({ title: "Nenhum aluno selecionado", description: "Selecione alunos ou mude o modo de atribuição.", variant: "destructive" });
+        return;
+      }
 
-    setCreating(true);
-    try {
+      setCreating(true);
+      try {
       let count = 0;
       if (assignmentMode === "manual") count = selectedStudentIds.length;
       else if (assignmentMode === "all") {
@@ -703,10 +704,11 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
       setShowConfirm(true);
     } catch (err: any) {
       toast({ title: "Erro ao validar público", description: err.message, variant: "destructive" });
-    } finally {
-      setCreating(false);
-    }
-  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast]);
+      } finally {
+        setCreating(false);
+      }
+    });
+  }, [title, questionMode, manualQuestions, generatedQuestions, assignmentMode, selectedStudentIds, selectedClassIds, faculdadeFilter, periodoFilter, callAPI, toast, safeAction]);
 
 
   const allQs = useMemo(() => {
