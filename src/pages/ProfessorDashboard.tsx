@@ -192,7 +192,8 @@ const ProfessorDashboard = () => {
                 { value: "video", label: "Video", icon: <Video className="h-3.5 w-3.5" /> },
                 { value: "temas", label: "📖 Temas" },
                 { value: "alunos", label: "👤 Aluno" },
-                { value: "analytics", label: "📊 Turma" },
+                { value: "turmas", label: "👥 Minhas Turmas" },
+                { value: "analytics", label: "📊 Turma BI" },
                 { value: "bi", label: "📈 BI" },
                 { value: "mentoria", label: "📋 Mentoria" },
                 { value: "osce", label: "🩺 OSCE" },
@@ -245,6 +246,7 @@ const ProfessorDashboard = () => {
           <TabsContent value="video" className="mt-4"><Suspense fallback={null}><VideoRoom callAPI={callAPI} /></Suspense></TabsContent>
           <TabsContent value="alunos" className="mt-4"><Suspense fallback={null}><StudentTracker callAPI={callAPI} /></Suspense></TabsContent>
           <TabsContent value="analytics" className="mt-4"><Suspense fallback={null}><ClassAnalytics callAPI={callAPI} /></Suspense></TabsContent>
+          <TabsContent value="turmas" className="mt-4"><ProfessorTurmaManager callAPI={callAPI} /></TabsContent>
           <TabsContent value="bi" className="mt-4"><Suspense fallback={null}><ProfessorBIPanel callAPI={callAPI} /></Suspense></TabsContent>
           <TabsContent value="mentoria" className="mt-4"><Suspense fallback={null}><MentorThemePlans callAPI={callAPI} /></Suspense></TabsContent>
           <TabsContent value="osce" className="mt-4"><Suspense fallback={null}><ProfessorPracticalExams callAPI={callAPI} /></Suspense></TabsContent>
