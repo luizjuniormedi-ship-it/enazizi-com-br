@@ -29,9 +29,8 @@ const SimuladoQuestionItem = memo(
           onClick={() => onToggleExpand(globalIdx)}
         >
           <div className="min-w-0 flex-1">
-            <p className="font-medium mb-1">
-              Q{globalIdx + 1}: {q.statement?.slice(0, 120)}
-              {q.statement?.length > 120 ? "..." : ""}
+            <p className="font-bold uppercase tracking-tight mb-2 line-clamp-2 opacity-90 group-hover:opacity-100 transition-opacity">
+              Q{globalIdx + 1}: {q.statement}
             </p>
             <div className="flex items-center gap-1.5 flex-wrap">
               <Badge variant="outline" className="text-[9px]">
