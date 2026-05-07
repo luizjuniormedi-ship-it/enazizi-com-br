@@ -26,6 +26,11 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   const [creating, setCreating] = useState(false);
   const [generating, setGenerating] = useState(false);
 
+  // UI Control
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [impactedCount, setImpactedCount] = useState<number | null>(null);
+  const [traceId, setTraceId] = useState("");
+
   // Form básico
   const [title, setTitle] = useState("Simulado");
   const [description, setDescription] = useState("");
