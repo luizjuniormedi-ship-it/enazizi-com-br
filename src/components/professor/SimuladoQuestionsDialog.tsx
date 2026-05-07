@@ -1,7 +1,6 @@
 import { memo, useState, useEffect, useCallback } from "react";
 import { ListTodo, ArrowLeft, Loader2, Save, Trash2, Plus, ListChecks } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -37,11 +36,12 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
     if (!simuladoId) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("teacher_simulado_questions")
+      // Usamos .from(table as any) para evitar erros de tipagem profundos
+      const { data, error } = await (supabase
+        .from("teacher_simulado_questions" as any)
         .select("*")
         .eq("simulado_id", simuladoId)
-        .order("order_index", { ascending: true });
+        .order("order_index", { ascending: true }) as any);
 
       if (error) throw error;
       setQuestions(data || []);
@@ -63,8 +63,8 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
     if (saving) return;
     try {
       setSaving(true);
-      const { error } = await supabase
-        .from("teacher_simulado_questions")
+      const { error } = await (supabase
+        .from("teacher_simulado_questions" as any)
         .insert([{
           simulado_id: simuladoId,
           statement: manualStatement,
@@ -72,7 +72,7 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
           correct_index: parseInt(manualCorrect),
           topic: manualTopic || "Geral",
           order_index: questions.length
-        }]);
+        }]) as any);
 
       if (error) throw error;
       
@@ -93,10 +93,10 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
     if (!q?.id) return;
     
     try {
-      const { error } = await supabase
-        .from("teacher_simulado_questions")
+      const { error } = await (supabase
+        .from("teacher_simulado_questions" as any)
         .delete()
-        .eq("id", q.id);
+        .eq("id", q.id) as any);
 
       if (error) throw error;
       toast({ title: "Questão removida" });

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
-import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
+import { GraduationCap, Plus, Loader2, Video, ListTodo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +25,7 @@ import type { ResultsDialogState } from "@/components/professor/SimuladoResultsD
 const ProfessorBIPanel = lazyWithRetry(() => import("@/components/professor/ProfessorBIPanel"), "ProfessorBIPanel");
 const CreateSimuladoDialog = lazyWithRetry(() => import("@/components/professor/CreateSimuladoDialog"), "CreateSimuladoDialog");
 const SimuladoResultsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoResultsDialog"), "SimuladoResultsDialog");
+const SimuladoQuestionsDialog = lazyWithRetry(() => import("@/components/professor/SimuladoQuestionsDialog").then(m => ({ default: m.SimuladoQuestionsDialog })), "SimuladoQuestionsDialog");
 
 /**
  * ProfessorDashboard — orquestrador de layout.
@@ -54,6 +55,10 @@ const ProfessorDashboard = () => {
     results: [],
     loading: false,
     questions_json: [],
+  });
+  const [questionsDialog, setQuestionsDialog] = useState<{ open: boolean; simulado: any }>({
+    open: false,
+    simulado: null,
   });
 
   const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
@@ -178,6 +183,14 @@ const ProfessorDashboard = () => {
       loading: false,
       questions_json: [],
     });
+  }, []);
+
+  const handleOpenQuestions = useCallback((simulado: any) => {
+    setQuestionsDialog({ open: true, simulado });
+  }, []);
+
+  const handleCloseQuestions = useCallback(() => {
+    setQuestionsDialog({ open: false, simulado: null });
   }, []);
 
   const handleOpenCreate = useCallback((simulado?: any) => {
@@ -305,6 +318,7 @@ const ProfessorDashboard = () => {
                     sim={sim}
                     onView={handleViewResults}
                     onEdit={handleOpenCreate}
+                    onQuestions={handleOpenQuestions}
                     onDelete={handleDeleteSimulado}
                   />
                 )) : null}
@@ -386,6 +400,17 @@ const ProfessorDashboard = () => {
             state={resultsDialog} 
             onClose={handleCloseResults} 
             callAPI={callAPI}
+          />
+        </Suspense>
+      )}
+
+      {questionsDialog.open && (
+        <Suspense fallback={null}>
+          <SimuladoQuestionsDialog
+            open={questionsDialog.open}
+            onOpenChange={handleCloseQuestions}
+            simuladoId={questionsDialog.simulado?.id}
+            simuladoTitle={questionsDialog.simulado?.title}
           />
         </Suspense>
       )}

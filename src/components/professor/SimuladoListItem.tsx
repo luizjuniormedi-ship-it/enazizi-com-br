@@ -9,6 +9,7 @@ interface Props {
   sim: any;
   onView: (sim: any) => void;
   onEdit: (sim: any) => void;
+  onQuestions: (sim: any) => void;
   onDelete: (id: string, title: string) => void;
 }
 
@@ -17,7 +18,7 @@ interface Props {
  * Memoizado por referência de `sim` + handlers estáveis no pai.
  * Evita rerender da lista inteira ao expandir/fechar dialogs.
  */
-const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, onDelete }: Props) {
+const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, onQuestions, onDelete }: Props) {
   const scheduledLabel = (() => {
     if (!sim.scheduled_at || sim.status !== "scheduled") return null;
     const target = new Date(sim.scheduled_at);
@@ -156,10 +157,7 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onEdit, o
                   variant="default" 
                   size="sm" 
                   className="h-8 flex-1 text-[9px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-700 gap-1.5"
-                  onClick={() => {
-                    // Por enquanto apenas log, pois a aba de questões será implementada
-                    console.log("Acessar questões do simulado:", sim.id);
-                  }}
+                  onClick={() => onQuestions(sim)}
                 >
                   <ListTodo className="h-3 w-3" /> QUESTÕES
                 </Button>
