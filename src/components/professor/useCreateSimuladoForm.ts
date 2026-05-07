@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { EXAM_PROFILES } from "@/lib/examProfiles";
 import { useToast } from "@/hooks/use-toast";
+import { Copy, Check } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type CallAPI = (body: Record<string, unknown>) => Promise<any>;
 
