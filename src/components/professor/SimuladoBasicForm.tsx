@@ -32,12 +32,13 @@ const SimuladoBasicForm = memo(function SimuladoBasicForm({
         />
       </div>
       <div className="space-y-2 col-span-2">
-        <Label>Descrição (opcional)</Label>
+        <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Descrição / Instruções (opcional)</Label>
         <Textarea
           value={description}
           onChange={(e) => onDescriptionChange(e.target.value)}
-          placeholder="Instruções para os alunos..."
+          placeholder="Instruções para os alunos, critérios de avaliação..."
           rows={2}
+          className="bg-white/5 border-white/10 rounded-xl px-4 py-3 resize-none"
         />
       </div>
     </div>
