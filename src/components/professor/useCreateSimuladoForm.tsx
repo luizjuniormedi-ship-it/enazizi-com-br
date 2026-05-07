@@ -544,6 +544,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
           description: "Informe um título para o simulado.",
           variant: "destructive",
         });
+        setCreating(false);
         return;
       }
 
