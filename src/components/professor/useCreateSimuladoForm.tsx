@@ -30,6 +30,12 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   const [showConfirm, setShowConfirm] = useState(false);
   const [impactedCount, setImpactedCount] = useState<number | null>(null);
   const [traceId, setTraceId] = useState("");
+  const [successData, setSuccessData] = useState<{
+    simulado_id: string;
+    students_assigned: number;
+    warnings?: string[];
+    status: string;
+  } | null>(null);
 
   // Form básico
   const [title, setTitle] = useState("Simulado");
@@ -574,62 +580,35 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         throw new Error(res.message || "Erro retornado pelo servidor.");
       }
 
-      toast({ 
-        title: isDraft ? "Rascunho salvo!" : "Simulado criado!", 
-        description: (
-          <div className="flex flex-col gap-2">
-            <p>{isDraft ? "Simulado salvo como rascunho." : `Atribuído a ${res?.students_assigned || impactedCount || 0} aluno(s).`}</p>
-            <div className="flex items-center gap-2 mt-1">
-               <span className="text-[10px] font-mono opacity-50 uppercase">Rastreio: TRACE-{tid.split('-')[0].toUpperCase()}</span>
-               <Button 
-                 variant="ghost" 
-                 size="sm" 
-                 className="h-6 px-2 py-0"
-                 onClick={() => {
-                   navigator.clipboard.writeText(tid);
-                   toast({ title: "Copiado!" });
-                 }}
-               >
-                 <Copy className="h-3 w-3 mr-1" />
-                 <span className="text-[9px]">COPIAR</span>
-               </Button>
-            </div>
-          </div>
-        )
+      setSuccessData({
+        simulado_id: res.simulado_id,
+        students_assigned: res.students_assigned || 0,
+        warnings: res.warnings,
+        status: res.status
       });
+
+      if (res.warnings && res.warnings.length > 0) {
+        toast({
+          title: "Simulado criado com avisos",
+          description: "O simulado foi criado, mas houve problemas em etapas secundárias.",
+          variant: "warning" as any
+        });
+      } else {
+        toast({ 
+          title: isDraft ? "Rascunho salvo!" : "Simulado criado!", 
+          variant: "default"
+        });
+      }
       
-      onOpenChange(false);
       onCreated();
     } catch (e: any) {
-      console.error(`[Trace:${tid}] Erro ao criar simulado:`, e);
-      const errorMsg = e instanceof Error ? e.message : "Erro inesperado ao salvar o simulado.";
-      toast({
-        title: "Erro ao criar simulado",
-        description: (
-          <div className="flex flex-col gap-3 mt-2">
-            <p className="text-sm opacity-90">{errorMsg}</p>
-            <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
-              <code className="text-[11px] font-mono font-bold text-primary truncate">TRACE-{tid.split('-')[0].toUpperCase()}</code>
-              <Button 
-                variant="ghost" size="sm" className="h-7 px-2 hover:bg-white/10"
-                onClick={() => {
-                  navigator.clipboard.writeText(tid);
-                  toast({ title: "Copiado!" });
-                }}
-              >
-                <Copy className="h-3 w-3 mr-1.5" />
-                <span className="text-[10px] font-bold">COPIAR</span>
-              </Button>
-            </div>
-          </div>
-        ),
-        variant: "destructive",
+...
       });
     } finally {
       setCreating(false);
     }
   }, [
-    creating, callAPI, toast, onOpenChange, onCreated, questionMode, manualQuestions, generatedQuestions,
+    creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
     title, description, selectedTopics, faculdadeFilter, impactedCount,
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
     scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
@@ -702,7 +681,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
 
   return {
     // estados
-    creating, generating, showConfirm, setShowConfirm, impactedCount, traceId,
+    creating, generating, showConfirm, setShowConfirm, impactedCount, traceId, successData, setSuccessData,
     title, setTitle, description, setDescription,
     selectedTopics, newTopicInput, setNewTopicInput, subtopics,
     faculdadeFilter, setFaculdadeFilter, periodoFilter, setPeriodoFilter,
