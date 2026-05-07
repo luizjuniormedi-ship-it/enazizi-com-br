@@ -796,49 +796,57 @@ REGRAS INVIOLÁVEIS:
       }
 
       case "list_simulados": {
-        // Check if user is admin
-        const isAdmin = roleData.some((r: any) => r.role === "admin");
-        
-        let simuladosQuery = sb
-          .from("teacher_simulados")
-          .select("*");
-        
-        // Admins see all, professors see only their own
-        if (!isAdmin) {
-          simuladosQuery = simuladosQuery.eq("professor_id", user.id);
-        }
-        
-        const { data: simulados } = await simuladosQuery.order("created_at", { ascending: false });
+        try {
+          const isAdmin = roleData.some((r: any) => r.role === "admin");
+          
+          let simuladosQuery = sb.from("teacher_simulados").select("*");
+          if (!isAdmin) {
+            simuladosQuery = simuladosQuery.eq("professor_id", user.id);
+          }
+          
+          const { data: simulados, error: simError } = await simuladosQuery.order("created_at", { ascending: false });
+          if (simError) throw simError;
 
-        // Get result counts
-        const simIds = (simulados || []).map((s: any) => s.id);
-        let resultsBySimulado: Record<string, { total: number; completed: number; avgScore: number }> = {};
+          const simIds = (simulados || []).map((s: any) => s.id);
+          let resultsBySimulado: Record<string, { total: number; completed: number; avgScore: number }> = {};
 
-        if (simIds.length > 0) {
-          const { data: results } = await sb
-            .from("teacher_simulado_results")
-            .select("simulado_id, status, score")
-            .in("simulado_id", simIds);
+          if (simIds.length > 0) {
+            const { data: results, error: resError } = await sb
+              .from("teacher_simulado_results")
+              .select("simulado_id, status, score")
+              .in("simulado_id", simIds);
+            
+            if (resError) {
+              console.error("[list_simulados] Erro ao buscar resultados:", resError);
+            } else {
+              for (const r of (results || [])) {
+                if (!resultsBySimulado[r.simulado_id]) {
+                  resultsBySimulado[r.simulado_id] = { total: 0, completed: 0, avgScore: 0 };
+                }
+                resultsBySimulado[r.simulado_id].total++;
+                if (r.status === "completed") {
+                  resultsBySimulado[r.simulado_id].completed++;
+                  resultsBySimulado[r.simulado_id].avgScore += (r.score || 0);
+                }
+              }
 
-          for (const r of (results || [])) {
-            if (!resultsBySimulado[r.simulado_id]) {
-              resultsBySimulado[r.simulado_id] = { total: 0, completed: 0, avgScore: 0 };
-            }
-            resultsBySimulado[r.simulado_id].total++;
-            if (r.status === "completed") {
-              resultsBySimulado[r.simulado_id].completed++;
-              resultsBySimulado[r.simulado_id].avgScore += (r.score || 0);
+              for (const key of Object.keys(resultsBySimulado)) {
+                const d = resultsBySimulado[key];
+                if (d.completed > 0) d.avgScore = Math.round(d.avgScore / d.completed);
+              }
             }
           }
 
-          // Calculate averages
-          for (const key of Object.keys(resultsBySimulado)) {
-            const d = resultsBySimulado[key];
-            if (d.completed > 0) d.avgScore = Math.round(d.avgScore / d.completed);
-          }
+          return ok({ 
+            simulados: (simulados || []).map((s: any) => ({ 
+              ...s, 
+              results_summary: resultsBySimulado[s.id] || { total: 0, completed: 0, avgScore: 0 } 
+            })) 
+          });
+        } catch (listErr: any) {
+          console.error("[list_simulados] Erro crítico:", listErr);
+          return new Response(JSON.stringify({ error: listErr.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
-
-        return ok({ simulados: (simulados || []).map((s: any) => ({ ...s, results_summary: resultsBySimulado[s.id] || { total: 0, completed: 0, avgScore: 0 } })) });
       }
 
       case "delete_simulado": {
