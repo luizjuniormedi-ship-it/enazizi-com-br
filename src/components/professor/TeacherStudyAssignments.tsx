@@ -275,7 +275,6 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
         <TeacherDialogContent
-          className="z-[120]"
           maxWidth="max-w-lg"
           header={
             <>

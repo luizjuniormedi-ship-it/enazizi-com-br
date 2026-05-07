@@ -90,7 +90,6 @@ const CreatePlanDialog = ({ open, onOpenChange }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <TeacherDialogContent
-        className="z-[120]"
         maxWidth="sm:max-w-3xl"
         header={
           <>

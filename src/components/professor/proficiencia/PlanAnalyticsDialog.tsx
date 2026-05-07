@@ -130,7 +130,6 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <TeacherDialogContent
-        className="z-[120]"
         maxWidth="sm:max-w-5xl"
         header={
           <div className="flex items-start justify-between gap-3">

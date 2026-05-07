@@ -111,7 +111,6 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <TeacherDialogContent
-        className="z-[120]"
         maxWidth="sm:max-w-[800px]"
         header={
           <div className="flex items-center justify-between w-full">
