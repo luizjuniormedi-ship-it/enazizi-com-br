@@ -554,9 +554,10 @@ REGRAS INVIOLÁVEIS:
         const startTime = Date.now();
         const { 
           title, description, topics, faculdade_filter, periodo_filter, 
+          faculdade_filters, periodo_filters, // New array filters
           total_questions, time_limit_minutes, questions_json, 
           student_ids, class_ids, assignment_mode, scheduled_at, end_at, 
-          starts_at, deadline_at, // Aligned names from prompt
+          starts_at, deadline_at,
           max_attempts, feedback_policy, answer_release_policy, allow_retake, exam_board, auto_assign,
           trace_id, client_request_id, status
         } = params;
@@ -592,14 +593,20 @@ REGRAS INVIOLÁVEIS:
         const isScheduled = start && new Date(start) > new Date();
         const simStatus = status || (isScheduled ? "scheduled" : "published");
 
+        // Normalize filters to arrays
+        const facFilters = Array.isArray(faculdade_filters) ? faculdade_filters : (faculdade_filter ? [faculdade_filter] : []);
+        const perFilters = Array.isArray(periodo_filters) ? periodo_filters : (periodo_filter ? [parseInt(periodo_filter)] : []);
+
         // Insert principal (isolado)
         const { data: simulado, error } = await sb.from("teacher_simulados").insert({
           professor_id: user.id,
           title: title || "Simulado",
           description: description || null,
           topics: topics || [],
-          faculdade_filter: faculdade_filter || professorFaculdade || null,
-          periodo_filter: periodo_filter || null,
+          faculdade_filter: facFilters[0] || professorFaculdade || null,
+          periodo_filter: perFilters[0] || null,
+          faculdade_filters: facFilters,
+          periodo_filters: perFilters,
           total_questions: total_questions || questions_json?.length || 0,
           time_limit_minutes: time_limit_minutes || 60,
           questions_json: questions_json || [],
