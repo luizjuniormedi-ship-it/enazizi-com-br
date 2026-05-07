@@ -30,12 +30,10 @@ const SimuladoQuestionsDialog = lazy(() => import("@/components/professor/Simula
 const ProfessorDashboard = () => {
   const { session } = useAuth();
   const { toast } = useToast();
-
+  const navigate = useNavigate();
   const [simulados, setSimulados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("simulados");
-  const [showCreate, setShowCreate] = useState(false);
-  const [editingSimulado, setEditingSimulado] = useState<any>(null);
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
     simulado: null,
