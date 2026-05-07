@@ -131,8 +131,10 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl teacher-modal-content">
-        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
+      <TeacherDialogContent
+        className="z-[120]"
+        maxWidth="sm:max-w-5xl"
+        header={
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <DialogTitle className="flex items-center gap-2">
@@ -154,7 +156,7 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
           </div>
-        </DialogHeader>
+        }
 
         <DialogBody className="space-y-6">
 
