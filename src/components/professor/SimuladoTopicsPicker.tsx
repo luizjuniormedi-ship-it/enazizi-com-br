@@ -81,9 +81,9 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
 
       {/* Subtopics */}
       {selectedTopics.length > 0 && (
-        <div className="space-y-2 bg-secondary/30 rounded-lg p-3">
-          <p className="text-xs font-medium text-muted-foreground">
-            Subtemas específicos (opcional) — ex: IAM, TEP, Pré-eclâmpsia
+        <div className="space-y-3 bg-white/5 border border-white/5 rounded-2xl p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest opacity-50">
+            Subtemas específicos (opcional)
           </p>
           {selectedTopics.map((topic, idx) => (
             <div key={`${topic}-sub-${idx}`} className="flex items-center gap-2">
