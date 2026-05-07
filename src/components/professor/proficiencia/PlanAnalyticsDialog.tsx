@@ -155,10 +155,8 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
             >
               <Download className="h-4 w-4" /> Exportar CSV
             </Button>
-          </div>
         }
-
-        <DialogBody className="space-y-6">
+      >
 
         {isLoading || !data ? (
           <div className="py-16 text-center">
@@ -351,19 +349,18 @@ const PlanAnalyticsDialog = ({ open, onOpenChange, plan }: Props) => {
             )}
           </div>
         )}
-        </DialogBody>
-      </DialogContent>
-
-      <StudentTasksDialog
-        open={!!selectedStudent}
-        onOpenChange={(v) => !v && setSelectedStudent(null)}
-        planId={plan?.id ?? null}
-        planName={plan?.name}
-        userId={selectedStudent?.user_id ?? null}
-        studentName={selectedStudent?.display_name ?? selectedStudent?.email ?? null}
-      />
-    </Dialog>
-  );
-};
-
-export default PlanAnalyticsDialog;
+      </TeacherDialogContent>
+ 
+       <StudentTasksDialog
+         open={!!selectedStudent}
+         onOpenChange={(v) => !v && setSelectedStudent(null)}
+         planId={plan?.id ?? null}
+         planName={plan?.name}
+         userId={selectedStudent?.user_id ?? null}
+         studentName={selectedStudent?.display_name ?? selectedStudent?.email ?? null}
+       />
+     </Dialog>
+   );
+ };
+ 
+ export default PlanAnalyticsDialog;

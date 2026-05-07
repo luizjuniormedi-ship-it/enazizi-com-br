@@ -53,7 +53,7 @@ const AddSubtopicsDialog = ({ open, onOpenChange, planId }: Props) => {
         header={
           <DialogTitle>Adicionar subtemas ao plano ativo</DialogTitle>
         }
-        <DialogBody className="space-y-6">
+      >
 
         <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-3 text-xs">
           <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
@@ -144,21 +144,7 @@ const AddSubtopicsDialog = ({ open, onOpenChange, planId }: Props) => {
             </div>
           )}
         </ScrollArea>
-        </DialogBody>
-
-        <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button
-            disabled={selected.size === 0 || addMutation.isPending}
-            onClick={submit}
-          >
-            {addMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Adicionar e replanejar
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+      </TeacherDialogContent>
     </Dialog>
   );
 };
