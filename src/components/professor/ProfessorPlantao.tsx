@@ -583,7 +583,7 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
                 )}
               </div>
             )}
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
@@ -602,12 +602,14 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
 
       {/* Results Dialog */}
       <Dialog open={resultsDialog.open} onOpenChange={(open) => { if (!open) { setResultsDialog({ open: false, caseData: null, results: [], loading: false }); setSelectedResult(null); } }}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl teacher-modal-content">
+          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
             <DialogTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5 text-primary" />
               Resultados — {resultsDialog.caseData?.title}
             </DialogTitle>
+          </DialogHeader>
+          <DialogBody>
             <DialogDescription>
               {resultsDialog.caseData?.specialty} • {resultsDialog.caseData?.difficulty}
             </DialogDescription>
