@@ -25,7 +25,7 @@ const SimuladoQuestionItem = memo(
         }`}
       >
         <div
-          className="p-3 flex items-start justify-between gap-2 cursor-pointer hover:bg-secondary/80 rounded-lg"
+          className="p-4 flex items-start justify-between gap-3 cursor-pointer hover:bg-white/5 transition-colors"
           onClick={() => onToggleExpand(globalIdx)}
         >
           <div className="min-w-0 flex-1">
