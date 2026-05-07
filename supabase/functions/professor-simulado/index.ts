@@ -797,6 +797,98 @@ REGRAS INVIOLÁVEIS:
         return ok({ results: enriched, questions_json: simData?.questions_json || [] });
       }
 
+      case "get_student_detail": {
+        const { simulado_id, student_id } = params;
+        if (!simulado_id || !student_id) throw new Error("simulado_id e student_id obrigatórios");
+
+        // 1. Get submission/result data
+        const { data: result } = await sb.from("teacher_simulado_results")
+          .select("*")
+          .eq("simulado_id", simulado_id)
+          .eq("student_id", student_id)
+          .single();
+
+        if (!result) throw new Error("Resultado não encontrado");
+
+        // 2. Get review data if exists
+        const { data: review } = await sb.from("teacher_simulado_student_reviews")
+          .select("*")
+          .eq("simulado_id", simulado_id)
+          .eq("student_id", student_id)
+          .maybeSingle();
+
+        // 3. Get profile
+        const { data: profile } = await sb.from("profiles")
+          .select("display_name, email, faculdade, periodo")
+          .eq("user_id", student_id)
+          .single();
+
+        return ok({
+          result,
+          review,
+          profile: {
+            name: profile?.display_name || "Sem nome",
+            email: profile?.email || "",
+            faculdade: profile?.faculdade,
+            periodo: profile?.periodo
+          }
+        });
+      }
+
+      case "save_review": {
+        const { simulado_id, student_id, professor_comment, tutor_recommendation, intervention_status, score, accuracy, time_spent_seconds, weak_topics, wrong_questions } = params;
+        
+        const reviewData = {
+          simulado_id,
+          student_id,
+          professor_id: user.id,
+          professor_comment,
+          tutor_recommendation,
+          intervention_status,
+          score,
+          accuracy,
+          time_spent_seconds,
+          weak_topics,
+          wrong_questions,
+          updated_at: new Date().toISOString()
+        };
+
+        const { data, error } = await sb.from("teacher_simulado_student_reviews")
+          .upsert(reviewData, { onConflict: 'simulado_id,student_id' })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Queue notification
+        await sb.from("notification_queue").insert({
+          user_id: student_id,
+          type: "review_available",
+          title: "Novo Comentário do Professor",
+          message: `O professor enviou um comentário sobre seu desempenho no simulado.`,
+          metadata: { simulado_id }
+        });
+
+        return ok({ success: true, review: data });
+      }
+
+      case "update_simulado_status": {
+        const { simulado_id, status, reason } = params;
+        
+        const { data, error } = await sb.from("teacher_simulados")
+          .update({ status })
+          .eq("id", simulado_id)
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Histórico é gerado via Trigger (handle_simulado_status_change)
+        // Notificações também são geradas via Trigger se status for 'published'
+
+        return ok({ success: true, simulado: data });
+      }
+
       case "get_students": {
         const { faculdade, periodo } = params;
         const effectiveFaculdade = faculdade || professorFaculdade;
