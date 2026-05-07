@@ -75,12 +75,12 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
           </Select>
         </div>
         <div className="space-y-2">
-          <Label className="text-xs">Tema</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Tema</Label>
           <Input
             value={manualTopic}
             onChange={(e) => onTopicChange(e.target.value)}
-            placeholder="Digite o tema (ex: Cardiologia)"
-            className="h-8 text-xs"
+            placeholder="Ex: Cardiologia"
+            className="h-9 bg-white/5 border-white/10 rounded-xl text-xs px-3"
           />
         </div>
       </div>
