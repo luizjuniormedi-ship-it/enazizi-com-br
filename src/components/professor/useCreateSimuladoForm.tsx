@@ -292,18 +292,19 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, []);
 
   const generateQuestionsAI = useCallback(async () => {
-    if (selectedTopics.length === 0) {
-      toast({
-        title: "Selecione temas",
-        description: "Escolha pelo menos um tema para gerar questões.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setGenerating(true);
-    setGeneratedQuestions([]);
-    setExpandedQuestion(null);
-    try {
+    await safeAction("generate_questions_ai", async () => {
+      if (selectedTopics.length === 0) {
+        toast({
+          title: "Selecione temas",
+          description: "Escolha pelo menos um tema para gerar questões.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setGenerating(true);
+      setGeneratedQuestions([]);
+      setExpandedQuestion(null);
+      try {
       const total = parseInt(questionCount);
       let allQuestions: any[] = [];
 
@@ -467,6 +468,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     } finally {
       setGenerating(false);
     }
+    });
   }, [
     callAPI, toast, selectedTopics, questionCount, useDistribution, topicDistribution,
     subtopics, difficulty, difficultyMix, examBoard, safeAction
@@ -653,11 +655,12 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
     } finally {
       setCreating(false);
     }
+    });
   }, [
     creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
     title, description, selectedTopics, faculdadeFilter, impactedCount,
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
-    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
+    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard, safeAction
   ]);
 
   const initiateCreate = useCallback(async () => {
