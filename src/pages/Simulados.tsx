@@ -172,6 +172,7 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
 
 const Simulados = () => {
   useEffect(() => {
+    console.log("[Simulados] Página montada com sucesso");
     // Add data-testid to the main container for E2E testing
     const container = document.querySelector('.pb-24');
     if (container) container.setAttribute('data-testid', 'simulados-page');
@@ -213,6 +214,7 @@ const Simulados = () => {
 
   useEffect(() => {
     if (user && phase === "setup") {
+      console.log("[Simulados] Buscando jobs ativos para o usuário:", user.id);
       supabase
         .from("simulation_generation_jobs")
         .select("*")
@@ -220,8 +222,15 @@ const Simulados = () => {
         .in("status", ["processing", "partial", "pending"])
         .order("created_at", { ascending: false })
         .limit(3)
-        .then(({ data }) => {
-          if (data) setActiveJobs(data);
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("[Simulados] Erro ao buscar jobs ativos:", error);
+            return;
+          }
+          if (data) {
+            console.log("[Simulados] Jobs ativos encontrados:", data.length);
+            setActiveJobs(data);
+          }
         });
     }
   }, [user, phase]);
