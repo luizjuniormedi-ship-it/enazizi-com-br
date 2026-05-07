@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -425,11 +426,19 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
 
       {/* Create dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-lg teacher-modal-content">
-          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
-            <DialogTitle>Nova Mentoria de Temas</DialogTitle>
-          </DialogHeader>
-          <DialogBody className="space-y-4">
+        <TeacherDialogContent
+          maxWidth="max-w-lg"
+          header={<DialogTitle>Nova Mentoria de Temas</DialogTitle>}
+          footer={
+            <>
+              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button onClick={handleCreate} disabled={creating} className="gap-1.5">
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                Criar e Publicar
+              </Button>
+            </>
+          }
+        >
             <div>
               <Label>Nome da mentoria</Label>
               <Input placeholder="Ex: Preparatório Clínica Médica" value={name} onChange={e => setName(e.target.value)} />
@@ -580,16 +589,7 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
                 </div>
               )}
             </div>
-          </DialogBody>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} disabled={creating} className="gap-1.5">
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Criar e Publicar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+        </TeacherDialogContent>
       </Dialog>
     </div>
   );

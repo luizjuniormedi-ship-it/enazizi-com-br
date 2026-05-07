@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
@@ -273,13 +274,24 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
 
       {/* Create Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
-        <DialogContent className="max-w-lg teacher-modal-content">
-          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
-            <DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> Atribuir Tema de Estudo</DialogTitle>
-            <DialogDescription>O aluno receberá este tema na Proficiência e poderá estudar diretamente no Tutor IA.</DialogDescription>
-          </DialogHeader>
-
-          <DialogBody className="space-y-4">
+        <TeacherDialogContent
+          maxWidth="max-w-lg"
+          header={
+            <>
+              <DialogTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> Atribuir Tema de Estudo</DialogTitle>
+              <DialogDescription>O aluno receberá este tema na Proficiência e poderá estudar diretamente no Tutor IA.</DialogDescription>
+            </>
+          }
+          footer={
+            <>
+              <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
+              <Button onClick={createAssignment} disabled={creating || !title.trim() || !specialty || !topicsToCover.trim()} className="gap-2">
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
+                {creating ? "Atribuindo..." : "Atribuir Tema"}
+              </Button>
+            </>
+          }
+        >
             <div className="space-y-2">
               <Label>Título do Tema *</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ex: Insuficiência Cardíaca Descompensada" />
@@ -377,28 +389,20 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
                 </div>
               )}
             </div>
-          </DialogBody>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
-            <Button onClick={createAssignment} disabled={creating || !title.trim() || !specialty || !topicsToCover.trim()} className="gap-2">
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <BookOpen className="h-4 w-4" />}
-              {creating ? "Atribuindo..." : "Atribuir Tema"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+        </TeacherDialogContent>
       </Dialog>
 
       {/* Results Dialog */}
       <Dialog open={resultsDialog.open} onOpenChange={(open) => !open && setResultsDialog({ open: false, assignment: null, results: [] })}>
-        <DialogContent className="max-w-lg teacher-modal-content">
-          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
+        <TeacherDialogContent
+          maxWidth="max-w-lg"
+          header={
             <DialogTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-primary" />
               Status: {resultsDialog.assignment?.title}
             </DialogTitle>
-          </DialogHeader>
-          <DialogBody>
+          }
+        >
           {resultsDialog.results.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Nenhum aluno atribuído.</p>
           ) : (
@@ -422,8 +426,7 @@ const TeacherStudyAssignments = ({ callAPI: externalCallAPI }: { callAPI?: (body
               ))}
             </div>
           )}
-          </DialogBody>
-        </DialogContent>
+        </TeacherDialogContent>
       </Dialog>
     </div>
   );
