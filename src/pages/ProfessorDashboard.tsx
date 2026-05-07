@@ -47,6 +47,7 @@ const ProfessorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("simulados");
   const [showCreate, setShowCreate] = useState(false);
+  const [editingSimulado, setEditingSimulado] = useState<any>(null);
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
     simulado: null,
@@ -179,9 +180,10 @@ const ProfessorDashboard = () => {
     });
   }, []);
 
-  const handleOpenCreate = useCallback(() => {
+  const handleOpenCreate = useCallback((simulado?: any) => {
     safeAction("open_create_dialog", async () => {
-      console.log("[ProfessorDashboard] handleOpenCreate disparado");
+      console.log("[ProfessorDashboard] handleOpenCreate disparado", simulado?.id);
+      setEditingSimulado(simulado || null);
       setShowCreate(true);
     });
   }, [safeAction]);
@@ -190,6 +192,9 @@ const ProfessorDashboard = () => {
     safeAction("close_create_dialog", async () => {
       console.log("[ProfessorDashboard] handleCloseCreate:", open);
       setShowCreate(open);
+      if (!open) {
+        setEditingSimulado(null);
+      }
     });
   }, [safeAction]);
 
@@ -299,6 +304,7 @@ const ProfessorDashboard = () => {
                     key={sim?.id || Math.random().toString()}
                     sim={sim}
                     onView={handleViewResults}
+                    onEdit={handleOpenCreate}
                     onDelete={handleDeleteSimulado}
                   />
                 )) : null}
@@ -369,7 +375,8 @@ const ProfessorDashboard = () => {
       {/* Diálogos controlados pelo estado do pai */}
       <CreateSimuladoDialog
         open={showCreate}
-        onOpenChange={setShowCreate}
+        onOpenChange={handleCloseCreate}
+        editingSimulado={editingSimulado}
         onCreated={loadSimulados}
       />
 
