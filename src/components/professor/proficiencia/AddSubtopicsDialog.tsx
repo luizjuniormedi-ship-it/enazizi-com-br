@@ -141,6 +141,7 @@ const AddSubtopicsDialog = ({ open, onOpenChange, planId }: Props) => {
               })}
             </div>
           )}
+        </ScrollArea>
         </DialogBody>
 
         <DialogFooter>
