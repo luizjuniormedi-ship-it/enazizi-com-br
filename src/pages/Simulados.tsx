@@ -171,12 +171,15 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
 }
 
 const Simulados = () => {
+  const { user, loading: authLoading } = useAuth();
+  
   useEffect(() => {
+    console.log("[Simulados] Página montada. User:", user?.id, "AuthLoading:", authLoading);
     // Add data-testid to the main container for E2E testing
     const container = document.querySelector('.pb-24');
     if (container) container.setAttribute('data-testid', 'simulados-page');
-  }, []);
-  const { user } = useAuth();
+  }, [user, authLoading]);
+
   const { toast } = useToast();
   const { addXp } = useGamification();
   const navigate = useNavigate();
@@ -213,6 +216,7 @@ const Simulados = () => {
 
   useEffect(() => {
     if (user && phase === "setup") {
+      console.log("[Simulados] Buscando jobs ativos para o usuário:", user.id);
       supabase
         .from("simulation_generation_jobs")
         .select("*")
@@ -220,8 +224,15 @@ const Simulados = () => {
         .in("status", ["processing", "partial", "pending"])
         .order("created_at", { ascending: false })
         .limit(3)
-        .then(({ data }) => {
-          if (data) setActiveJobs(data);
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("[Simulados] Erro ao buscar jobs ativos:", error);
+            return;
+          }
+          if (data) {
+            console.log("[Simulados] Jobs ativos encontrados:", data.length);
+            setActiveJobs(data);
+          }
         });
     }
   }, [user, phase]);
@@ -562,6 +573,14 @@ const Simulados = () => {
 
   const handleNewSimulado = () => setPhase("setup");
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+      </div>
+    );
+  }
+
   if (phase === "setup") {
     return (
       <div className="min-h-screen relative z-10 animate-fade-in pb-24" data-testid="simulados-page">
@@ -686,15 +705,21 @@ const Simulados = () => {
               <EnaflixSectionTitle kicker="PERSONALIZAR" title="Configuração Avançada" subtitle="Monte sua prova personalizada." />
               <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden p-6 sm:p-8">
                 <SimuladoSetup
-                  onStart={handleStart}
+                  onStart={(config) => {
+                    console.log("[Simulados] Setup.onStart disparado:", config);
+                    handleStart(config);
+                  }}
                   adaptiveLoading={adaptivePreviewLoading}
                   adaptiveMeta={adaptivePreviewMeta}
-                  onFetchAdaptivePreview={() => {}}
-                  onResumeSession={() => {}}
-                  onDiscardSession={() => {}}
+                  onFetchAdaptivePreview={() => {
+                    console.log("[Simulados] Fetch adaptive preview");
+                  }}
+                  onResumeSession={handleResumeSession}
+                  onDiscardSession={abandonSession}
                   onRetryErrors={() => {}}
-                  pendingSession={null}
-                  checkedSession={true}
+                  pendingSession={pendingSession}
+                  checkedSession={checked}
+                  userId={user?.id}
                 />
               </div>
             </div>
