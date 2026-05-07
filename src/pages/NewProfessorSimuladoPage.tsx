@@ -233,13 +233,17 @@ const NewProfessorSimuladoPage = () => {
               )}
 
               <SimuladoQuestionsPreview
-                questions={form.allQs}
+                allQs={form.allQs}
+                groupedBlocks={form.groupedBlocks}
+                target={form.target}
+                deficit={form.deficit}
+                questionMode={form.questionMode}
                 expandedQuestion={form.expandedQuestion}
-                onToggleExpand={form.setExpandedQuestion}
-                onRemoveQuestion={(idx) => {
-                  if (form.questionMode === 'ai') form.removeGeneratedQuestion(idx);
-                  else form.removeManualQuestion(idx);
-                }}
+                generating={form.generating}
+                onSetExpanded={form.setExpandedQuestion}
+                onRegenerateMissing={form.regenerateMissing}
+                onRemoveGenerated={form.removeGeneratedQuestion}
+                onRemoveManual={form.removeManualQuestion}
               />
             </TabsContent>
 
