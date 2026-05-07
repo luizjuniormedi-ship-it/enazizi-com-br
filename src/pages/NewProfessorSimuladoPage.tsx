@@ -269,6 +269,10 @@ const NewProfessorSimuladoPage = () => {
                 onAddSearchedStudent={form.addSearchedStudent}
                 onToggleStudent={form.toggleStudentSelection}
                 onToggleAllStudents={form.toggleAllStudents}
+                onClearStudentSelection={form.clearStudentSelection}
+                onRemoveSelectedStudent={form.removeSelectedStudent}
+                studentPagination={form.studentPagination}
+                selectedStudentsData={form.selectedStudentsData}
               />
             </TabsContent>
 

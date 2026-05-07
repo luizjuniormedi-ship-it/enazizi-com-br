@@ -225,7 +225,7 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
               </div>
               <Button
                 type="button"
-                onClick={onPreviewMatchingStudents}
+                onClick={() => onPreviewMatchingStudents(false)}
                 disabled={previewLoading}
                 className="h-11 px-8 bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
               >
