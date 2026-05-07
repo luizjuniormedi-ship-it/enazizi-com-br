@@ -11,7 +11,6 @@ import SimuladoAssignmentManager from "./SimuladoAssignmentManager";
 import SimuladoTopicsPicker from "./SimuladoTopicsPicker";
 import SimuladoDifficultyMix from "./SimuladoDifficultyMix";
 import SimuladoManualForm from "./SimuladoManualForm";
-import SimuladoManualQuantityFields from "./SimuladoManualQuantityFields";
 import SimuladoQuestionsPreview from "./SimuladoQuestionsPreview";
 import SimuladoSchedulingSettings from "./SimuladoSchedulingSettings";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -33,6 +32,13 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 }: Props) {
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   
+  // LOG PARA DEBUG
+  useEffect(() => {
+    if (open) {
+      console.log("[CreateSimuladoDialog] Dialog montado e aberto");
+    }
+  }, [open]);
+
   // Se o diálogo não estiver aberto, não renderizamos nada além do próprio wrapper do Dialog
   // Isso garante que o estado interno do formulário não cause efeitos colaterais enquanto fechado
   if (!open) return null;
@@ -211,12 +217,21 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               )}
 
               {f.questionMode === "manual" && (
-                <SimuladoManualQuantityFields
-                  questionCount={f.questionCount}
-                  timeLimit={f.timeLimit}
-                  onQuestionCountChange={f.setQuestionCount}
-                  onTimeLimitChange={f.setTimeLimit}
-                />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">Tempo Limite</Label>
+                    <div className="flex items-center gap-2 bg-background/50 border rounded-xl px-3 h-10 ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                      <Send className="h-3.5 w-3.5 text-muted-foreground" />
+                      <input 
+                        type="number"
+                        value={f.timeLimit}
+                        onChange={(e) => f.setTimeLimit(e.target.value)}
+                        className="bg-transparent border-none focus:ring-0 text-sm w-full outline-none"
+                      />
+                      <span className="text-[10px] font-bold text-muted-foreground">MIN</span>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {f.questionMode === "ai" && (

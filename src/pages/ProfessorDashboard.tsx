@@ -167,8 +167,14 @@ const ProfessorDashboard = () => {
     });
   }, []);
 
-  const handleOpenCreate = useCallback(() => setShowCreate(true), []);
-  const handleCloseCreate = useCallback((open: boolean) => setShowCreate(open), []);
+  const handleOpenCreate = useCallback(() => {
+    console.log("[ProfessorDashboard] handleOpenCreate disparado");
+    setShowCreate(true);
+  }, []);
+  const handleCloseCreate = useCallback((open: boolean) => {
+    console.log("[ProfessorDashboard] handleCloseCreate:", open);
+    setShowCreate(open);
+  }, []);
 
   // Totais memoizados — só recalculam quando a lista muda
   const totals = useMemo(() => {
