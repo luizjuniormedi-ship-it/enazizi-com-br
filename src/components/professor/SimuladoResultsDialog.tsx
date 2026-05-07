@@ -7,6 +7,7 @@ import {
   DialogDescription,
   DialogBody,
 } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -116,20 +117,20 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
         }
       }}
     >
-      <DialogContent 
-        className="max-w-5xl teacher-modal-content"
+      <TeacherDialogContent
+        maxWidth="max-w-5xl"
+        header={
+          <>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <BarChart3 className="h-6 w-6 text-primary" />
+              Gestão de Resultados: {state.simulado?.title}
+            </DialogTitle>
+            <DialogDescription>
+              Acompanhamento detalhado, correção individual e intervenção pedagógica com IA.
+            </DialogDescription>
+          </>
+        }
       >
-        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
-          <DialogTitle className="flex items-center gap-2 text-xl">
-            <BarChart3 className="h-6 w-6 text-primary" />
-            Gestão de Resultados: {state.simulado?.title}
-          </DialogTitle>
-          <DialogDescription>
-            Acompanhamento detalhado, correção individual e intervenção pedagógica com IA.
-          </DialogDescription>
-        </DialogHeader>
-
-        <DialogBody>
           {state.loading ? (
             <div className="py-24 text-center">
               <Loader2 className="h-12 w-12 animate-spin mx-auto text-primary" />
@@ -451,8 +452,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
               </div>
             </Tabs>
           )}
-        </DialogBody>
-      </DialogContent>
+        </TeacherDialogContent>
     </Dialog>
   );
 });

@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -346,13 +347,28 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
 
       {/* Create Case Dialog */}
       <Dialog open={showCreate} onOpenChange={(open) => { if (!open) { setShowCreate(false); resetForm(); } else setShowCreate(true); }}>
-        <DialogContent className="max-w-2xl teacher-modal-content">
-          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
-            <DialogTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-destructive" /> Criar Caso de Plantão</DialogTitle>
-            <DialogDescription>Crie um caso clínico via IA ou manualmente.</DialogDescription>
-          </DialogHeader>
-
-          <DialogBody className="space-y-6">
+        <TeacherDialogContent
+          maxWidth="max-w-2xl"
+          header={
+            <>
+              <DialogTitle className="flex items-center gap-2"><Activity className="h-5 w-5 text-destructive" /> Criar Caso de Plantão</DialogTitle>
+              <DialogDescription>Crie um caso clínico via IA ou manualmente.</DialogDescription>
+            </>
+          }
+          footer={
+            <>
+              <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
+              <Button
+                onClick={createCase}
+                disabled={(createMode === "ia" ? !generatedCase : !canSubmitManual) || creating}
+                className="gap-2"
+              >
+                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                {creating ? "Criando..." : "Criar e Atribuir"}
+              </Button>
+            </>
+          }
+        >
             {/* Common Config */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2 col-span-2">
@@ -583,36 +599,26 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
                 )}
               </div>
             )}
-          </DialogBody>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => { setShowCreate(false); resetForm(); }}>Cancelar</Button>
-            <Button
-              onClick={createCase}
-              disabled={(createMode === "ia" ? !generatedCase : !canSubmitManual) || creating}
-              className="gap-2"
-            >
-              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-              {creating ? "Criando..." : "Criar e Atribuir"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+        </TeacherDialogContent>
       </Dialog>
 
 
       {/* Results Dialog */}
       <Dialog open={resultsDialog.open} onOpenChange={(open) => { if (!open) { setResultsDialog({ open: false, caseData: null, results: [], loading: false }); setSelectedResult(null); } }}>
-        <DialogContent className="max-w-2xl teacher-modal-content">
-          <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
-            <DialogTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5 text-primary" />
-              Resultados — {resultsDialog.caseData?.title}
-            </DialogTitle>
-            <DialogDescription>
-              {resultsDialog.caseData?.specialty} • {resultsDialog.caseData?.difficulty}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogBody>
+        <TeacherDialogContent
+          maxWidth="max-w-2xl"
+          header={
+            <>
+              <DialogTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Resultados — {resultsDialog.caseData?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {resultsDialog.caseData?.specialty} • {resultsDialog.caseData?.difficulty}
+              </DialogDescription>
+            </>
+          }
+        >
 
           {resultsDialog.loading ? (
             <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></div>
@@ -704,8 +710,7 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
               )}
             </div>
           )}
-          </DialogBody>
-        </DialogContent>
+        </TeacherDialogContent>
       </Dialog>
     </div>
   );

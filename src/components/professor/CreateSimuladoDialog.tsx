@@ -13,6 +13,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -114,69 +115,71 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated, editingSim
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[425px] teacher-modal-content">
-        <DialogHeader className="p-6 sm:p-8 pb-0 sm:pb-0">
-          <DialogTitle className="flex items-center gap-2">
-            {editingSimulado ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
-            {editingSimulado ? "Editar Simulado" : "Novo Simulado"}
-          </DialogTitle>
-          <DialogDescription className="text-white/60">
-            {editingSimulado 
-              ? "Atualize as informações básicas do seu simulado." 
-              : "Crie um rascunho simples para seu simulado. Você poderá adicionar questões depois."}
-          </DialogDescription>
-        </DialogHeader>
-
-        <DialogBody>
-          <div className="grid gap-6">
-            <div className="grid gap-2">
-              <Label htmlFor="title">Título do Simulado</Label>
-              <Input
-                id="title"
-                placeholder="Ex: Simulado de Cardiologia"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                disabled={creating}
-                className="bg-white/5 border-white/10 focus:border-primary/50 transition-colors"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Descrição (Opcional)</Label>
-              <Textarea
-                id="description"
-                placeholder="Breve descrição sobre o conteúdo ou objetivos..."
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                disabled={creating}
-                className="bg-white/5 border-white/10 min-h-[120px] focus:border-primary/50 transition-colors"
-              />
-            </div>
+      <TeacherDialogContent
+        maxWidth="sm:max-w-[425px]"
+        header={
+          <>
+            <DialogTitle className="flex items-center gap-2">
+              {editingSimulado ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
+              {editingSimulado ? "Editar Simulado" : "Novo Simulado"}
+            </DialogTitle>
+            <DialogDescription className="text-white/60">
+              {editingSimulado 
+                ? "Atualize as informações básicas do seu simulado." 
+                : "Crie um rascunho simples para seu simulado. Você poderá adicionar questões depois."}
+            </DialogDescription>
+          </>
+        }
+        footer={
+          <>
+            <Button
+              variant="outline"
+              onClick={() => handleOpenChange(false)}
+              disabled={creating}
+              className="border-white/10 hover:bg-white/5 text-white/70"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={saveDraft}
+              disabled={creating || !title.trim()}
+              className="gap-2 bg-primary hover:bg-primary/90 shadow-glow-sm"
+            >
+              {creating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4" />
+              )}
+              {editingSimulado ? "SALVAR ALTERAÇÕES" : "SALVAR RASCUNHO"}
+            </Button>
+          </>
+        }
+      >
+        <div className="grid gap-6">
+          <div className="grid gap-2">
+            <Label htmlFor="title">Título do Simulado</Label>
+            <Input
+              id="title"
+              placeholder="Ex: Simulado de Cardiologia"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              disabled={creating}
+              className="bg-white/5 border-white/10 focus:border-primary/50 transition-colors"
+            />
           </div>
-        </DialogBody>
-
-        <DialogFooter className="gap-2 sm:gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleOpenChange(false)}
-            disabled={creating}
-            className="border-white/10 hover:bg-white/5 text-white/70"
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={saveDraft}
-            disabled={creating || !title.trim()}
-            className="gap-2 bg-primary hover:bg-primary/90 shadow-glow-sm"
-          >
-            {creating ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4" />
-            )}
-            {editingSimulado ? "SALVAR ALTERAÇÕES" : "SALVAR RASCUNHO"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          <div className="grid gap-2">
+            <Label htmlFor="description">Descrição (Opcional)</Label>
+            <Textarea
+              id="description"
+              placeholder="Breve descrição sobre o conteúdo ou objetivos..."
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={creating}
+              className="bg-white/5 border-white/10 min-h-[120px] focus:border-primary/50 transition-colors"
+            />
+          </div>
+        </div>
+      </TeacherDialogContent>
     </Dialog>
   );
 }

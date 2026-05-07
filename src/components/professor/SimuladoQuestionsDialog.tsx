@@ -8,6 +8,7 @@ import {
   DialogTitle,
   DialogBody,
 } from "@/components/ui/dialog";
+import { TeacherDialogContent } from "@/components/teacher/TeacherDialogContent";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import SimuladoManualForm from "./SimuladoManualForm";
@@ -109,9 +110,10 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] teacher-modal-content">
-        <DialogHeader className="p-6 border-b border-white/5">
-          <div className="flex items-center justify-between">
+      <TeacherDialogContent
+        maxWidth="sm:max-w-[800px]"
+        header={
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-3">
               <Button 
                 variant="ghost" 
@@ -137,9 +139,8 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
               </span>
             </div>
           </div>
-        </DialogHeader>
-
-        <DialogBody className="space-y-8">
+        }
+      >
           {/* Adicionar Nova Questão */}
           <section className="space-y-4">
             <div className="flex items-center gap-2 mb-2">
@@ -196,9 +197,8 @@ export function SimuladoQuestionsDialog({ open, onOpenChange, simuladoId, simula
                 onRemoveManual={removeQuestion}
               />
             )}
-          </section>
-        </DialogBody>
-      </DialogContent>
+        </section>
+      </TeacherDialogContent>
     </Dialog>
   );
 }
