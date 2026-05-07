@@ -95,7 +95,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchingStudents, setSearchingStudents] = useState(false);
   const [selectedClassIds, setSelectedClassIds] = useState<string[]>([]);
-  const [assignmentMode, setAssignmentMode] = useState<"filter" | "classes" | "manual" | "all">("filter");
+  const [selectedProfessorTurmaIds, setSelectedProfessorTurmaIds] = useState<string[]>([]);
+  const [assignmentMode, setAssignmentMode] = useState<"filter" | "classes" | "professor_turmas" | "manual" | "all">("filter");
   const [studentPagination, setStudentPagination] = useState({ offset: 0, total: 0, hasMore: false });
   const [selectedStudentsData, setSelectedStudentsData] = useState<any[]>([]);
 
@@ -744,7 +745,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
   }, [
     creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
     title, description, selectedTopics, faculdadeFilters, impactedCount,
-    periodoFilters, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
+    periodoFilters, timeLimit, selectedStudentIds, selectedClassIds, selectedProfessorTurmaIds, assignmentMode,
     scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard, safeAction
   ]);
 
@@ -845,7 +846,7 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
     previewStudents, previewLoading, selectedStudentIds, studentSearch, setStudentSearch,
     searchResults, searchingStudents,
     expandedQuestion, setExpandedQuestion, topicDistribution, useDistribution,
-    selectedClassIds, setSelectedClassIds, assignmentMode, setAssignmentMode,
+    selectedClassIds, setSelectedClassIds, selectedProfessorTurmaIds, setSelectedProfessorTurmaIds, assignmentMode, setAssignmentMode,
     endAt, setEndAt, maxAttempts, setMaxAttempts, feedbackPolicy, setFeedbackPolicy,
     allowRetake, setAllowRetake,
     studentPagination, selectedStudentsData,
