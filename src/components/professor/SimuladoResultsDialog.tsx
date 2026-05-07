@@ -339,7 +339,7 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                           <Button 
                                             size="sm" 
                                             className="w-full text-[10px] font-black uppercase tracking-widest gap-2"
-                                            onClick={() => handleSaveReview(r)}
+                                            onClick={() => safeAction("save_review_click", () => handleSaveReview(r))}
                                             disabled={savingReview === r.student_id}
                                           >
                                             {savingReview === r.student_id ? (
@@ -349,7 +349,14 @@ const SimuladoResultsDialog = memo(function SimuladoResultsDialog({ state, onClo
                                             )}
                                             SALVAR E ENVIAR
                                           </Button>
-                                          <Button variant="outline" size="sm" className="w-full text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2">
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm" 
+                                            className="w-full text-[10px] font-black uppercase tracking-widest border-white/10 bg-white/5 gap-2"
+                                            onClick={() => safeAction("tutor_ia_mission_click", async () => {
+                                              toast({ title: "Tutor IA Mission", description: "Iniciando análise pedagógica..." });
+                                            })}
+                                          >
                                             <Brain className="h-3 w-3" /> TUTOR IA MISSION
                                           </Button>
                                         </div>
