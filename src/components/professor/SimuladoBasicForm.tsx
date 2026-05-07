@@ -23,11 +23,12 @@ const SimuladoBasicForm = memo(function SimuladoBasicForm({
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="space-y-2 col-span-2">
-        <Label>Título</Label>
+        <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Título do Simulado</Label>
         <Input
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
-          placeholder="Nome do simulado"
+          placeholder="Ex: Simulado Mensal de Cardiologia"
+          className="h-11 bg-white/5 border-white/10 rounded-xl px-4 font-bold uppercase tracking-tight"
         />
       </div>
       <div className="space-y-2 col-span-2">
