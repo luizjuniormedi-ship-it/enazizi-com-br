@@ -613,8 +613,13 @@ REGRAS INVIOLÁVEIS:
 
         if (error) {
           console.error(`[create_simulado][Trace:${tid}] Erro no insert principal:`, error);
+          await logTraceStep(tid, "main_creation", "error", null, error.message, Date.now() - startTime);
           throw new Error(error.message);
         }
+        
+        await logTraceStep(tid, "main_creation", "success", { simulado_id: simulado.id }, null, Date.now() - startTime);
+
+        let studentList: any[] = [];
 
         // Handle assignments (Isolated in try-catch to not break the flow)
         try {
