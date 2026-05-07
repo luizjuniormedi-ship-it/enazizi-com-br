@@ -45,15 +45,16 @@ export function CreateSimuladoDialog({ open, onOpenChange, onCreated }: Props) {
 
       const { data, error } = await supabase
         .from("teacher_simulados")
-        .insert({
-          title: title.trim(),
-          description: description || null,
-          professor_id: session.user.id,
-          status: "draft",
-          total_questions: 10,
-          time_limit_minutes: 60,
-          difficulty: "intermediario",
-        })
+        .insert([
+          {
+            title: title.trim(),
+            description: description || null,
+            professor_id: session.user.id,
+            status: "draft",
+            total_questions: 10,
+            time_limit_minutes: 60,
+          },
+        ])
         .select()
         .single();
 
