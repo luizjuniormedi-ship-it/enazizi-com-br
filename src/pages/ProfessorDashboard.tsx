@@ -65,23 +65,13 @@ const ProfessorDashboard = () => {
 
   const callAPI = useCallback(
     async (body: Record<string, unknown>) => {
-      try {
-        const resp = await fetch(API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify(body),
-        });
-        const data = await resp.json();
-        if (!resp.ok) throw new Error(data.error || "Erro na operação");
-        return data;
-      } catch (e: any) {
-        throw e;
-      }
+      const { data, error } = await supabase.functions.invoke("professor-simulado", {
+        body,
+      });
+      if (error) throw error;
+      return data;
     },
-    [session, API_URL]
+    []
   );
 
   const loadSimulados = useCallback(async () => {
