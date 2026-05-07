@@ -1,5 +1,5 @@
 import { memo, useState, useEffect, useCallback, useRef } from "react";
-import { Plus, Loader2, Sparkles, PenLine, Send } from "lucide-react";
+import { Plus, Loader2, Sparkles, PenLine, Send, ArrowLeft, CheckCircle2, Users, FileText, Calendar, ShieldCheck, Target, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
