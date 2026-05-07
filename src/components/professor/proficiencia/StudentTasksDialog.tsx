@@ -199,8 +199,10 @@ const StudentTasksDialog = ({
                 })}
               </TableBody>
             </Table>
-          </DialogBody>
-        </DialogContent>
+          </Card>
+        )}
+        </DialogBody>
+      </DialogContent>
     </Dialog>
   );
 };
