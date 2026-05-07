@@ -1,9 +1,8 @@
 import { memo, useState, useEffect } from "react";
-import { Loader2, Plus, Users, CheckSquare, Square, Building2, UserPlus, Globe, Search } from "lucide-react";
+import { Loader2, Plus, Users, CheckSquare, Square, Building2, UserPlus, Globe, Search, ChevronDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FACULDADES } from "@/constants/faculdades";
@@ -34,9 +33,86 @@ interface Props {
   onToggleAllStudents: () => void;
 }
 
+const MultiSelectPopover = ({ 
+  label, 
+  options, 
+  selected, 
+  onSelectedChange,
+  placeholder = "Selecionar..."
+}: { 
+  label: string; 
+  options: string[]; 
+  selected: string[]; 
+  onSelectedChange: (v: string[]) => void;
+  placeholder?: string;
+}) => {
+  return (
+    <div className="space-y-2">
+      <Label className="text-xs uppercase tracking-widest font-black opacity-60">{label}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button 
+            variant="outline" 
+            role="combobox" 
+            className="w-full justify-between h-10 border-white/10 bg-white/5 hover:bg-white/10 text-xs text-left px-3 font-medium"
+          >
+            <div className="flex flex-wrap gap-1 max-w-[90%] overflow-hidden truncate">
+              {selected.length === 0 ? (
+                <span className="opacity-50">{placeholder}</span>
+              ) : selected.length === 1 ? (
+                <span>{selected[0]}</span>
+              ) : (
+                <span>{selected.length} selecionados</span>
+              )}
+            </div>
+            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0 bg-background/95 backdrop-blur-xl border-white/10" align="start">
+          <div className="max-h-[300px] overflow-y-auto p-2 space-y-1">
+            {options.map((option) => (
+              <div 
+                key={option} 
+                className="flex items-center space-x-2 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer"
+                onClick={() => {
+                  const next = selected.includes(option)
+                    ? selected.filter(s => s !== option)
+                    : [...selected, option];
+                  onSelectedChange(next);
+                }}
+              >
+                <Checkbox 
+                  id={`opt-${option}`} 
+                  checked={selected.includes(option)}
+                  onCheckedChange={() => {}} // handled by onClick on div
+                />
+                <label className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex-1 py-1">
+                  {option}
+                </label>
+              </div>
+            ))}
+          </div>
+          {selected.length > 0 && (
+            <div className="border-t border-white/10 p-2">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full text-[10px] font-black uppercase"
+                onClick={() => onSelectedChange([])}
+              >
+                LIMPAR SELEÇÃO
+              </Button>
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+};
+
 const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
   assignmentMode, onAssignmentModeChange,
-  faculdadeFilter, periodoFilter, onFaculdadeChange, onPeriodoChange,
+  faculdadeFilters, periodoFilters, onFaculdadeChange, onPeriodoChange,
   previewStudents, previewLoading, selectedStudentIds,
   selectedClassIds, onSelectedClassIdsChange,
   studentSearch, searchResults, searchingStudents, onStudentSearchChange,
@@ -77,112 +153,193 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
     );
   };
 
+  const periodOptions = Array.from({ length: 12 }, (_, i) => String(i + 1));
+
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <Label className="text-base font-semibold">Atribuição do Simulado</Label>
+    <div className="space-y-6">
+      <div className="space-y-3">
+        <Label className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">Atribuição do Simulado</Label>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <Button
-            type="button"
-            variant={assignmentMode === "filter" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onAssignmentModeChange("filter")}
-            className="text-[10px] font-bold uppercase tracking-wider h-9"
-          >
-            <Building2 className="mr-1.5 h-3.5 w-3.5" /> FILTROS
-          </Button>
-          <Button
-            type="button"
-            variant={assignmentMode === "classes" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onAssignmentModeChange("classes")}
-            className="text-[10px] font-bold uppercase tracking-wider h-9"
-          >
-            <Users className="mr-1.5 h-3.5 w-3.5" /> TURMAS
-          </Button>
-          <Button
-            type="button"
-            variant={assignmentMode === "manual" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onAssignmentModeChange("manual")}
-            className="text-[10px] font-bold uppercase tracking-wider h-9"
-          >
-            <UserPlus className="mr-1.5 h-3.5 w-3.5" /> SELEÇÃO
-          </Button>
-          <Button
-            type="button"
-            variant={assignmentMode === "all" ? "default" : "outline"}
-            size="sm"
-            onClick={() => onAssignmentModeChange("all")}
-            className="text-[10px] font-bold uppercase tracking-wider h-9"
-          >
-            <Globe className="mr-1.5 h-3.5 w-3.5" /> TODOS
-          </Button>
+          {[
+            { id: "filter", label: "FILTROS", icon: Building2 },
+            { id: "classes", label: "TURMAS", icon: Users },
+            { id: "manual", label: "SELEÇÃO", icon: UserPlus },
+            { id: "all", label: "TODOS", icon: Globe },
+          ].map((mode) => {
+            const Icon = mode.icon;
+            const active = assignmentMode === mode.id;
+            return (
+              <Button
+                key={mode.id}
+                type="button"
+                variant={active ? "default" : "outline"}
+                size="sm"
+                onClick={() => onAssignmentModeChange(mode.id as any)}
+                className={cn(
+                  "text-[10px] font-black uppercase tracking-widest h-10 gap-2 border-white/5",
+                  active ? "bg-primary text-primary-foreground shadow-glow-sm" : "hover:bg-white/5 text-white/60 hover:text-white"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {mode.label}
+              </Button>
+            );
+          })}
         </div>
       </div>
 
-      {assignmentMode === "filter" && (
-        <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs">Faculdade</Label>
-              <Select value={faculdadeFilter} onValueChange={onFaculdadeChange}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Todas" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas</SelectItem>
-                  {FACULDADES.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                </SelectContent>
-              </Select>
+      {(assignmentMode === "filter" || assignmentMode === "manual") && (
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+          <div className="p-5 rounded-2xl border border-white/5 bg-white/5 space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <MultiSelectPopover 
+                label="Universidades" 
+                options={FACULDADES} 
+                selected={faculdadeFilters} 
+                onSelectedChange={onFaculdadeChange}
+                placeholder="Todas as universidades"
+              />
+              <MultiSelectPopover 
+                label="Períodos" 
+                options={periodOptions.map(p => `${p}º período`)} 
+                selected={periodoFilters.map(p => `${p}º período`)} 
+                onSelectedChange={(v) => onPeriodoChange(v.map(p => p.replace("º período", "")))}
+                placeholder="Todos os períodos"
+              />
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs">Período</Label>
-              <Select value={periodoFilter} onValueChange={onPeriodoChange}>
-                <SelectTrigger className="h-9"><SelectValue placeholder="Todos" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  {Array.from({ length: 12 }, (_, i) => i + 1).map((p) => (
-                    <SelectItem key={p} value={String(p)}>{p}º período</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/30" />
+                <Input
+                  placeholder="Filtrar por nome ou e-mail..."
+                  value={studentSearch}
+                  onChange={(e) => onStudentSearchChange(e.target.value)}
+                  className="h-11 pl-10 border-white/10 bg-background/50 text-xs font-medium"
+                />
+              </div>
+              <Button
+                type="button"
+                onClick={onPreviewMatchingStudents}
+                disabled={previewLoading}
+                className="h-11 px-8 bg-primary hover:bg-primary/90 font-black uppercase tracking-widest text-[11px] shadow-glow-sm"
+              >
+                {previewLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Search className="h-4 w-4 mr-2" />}
+                BUSCAR ALUNOS
+              </Button>
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground italic">
-            O simulado será atribuído automaticamente a todos os alunos que atenderem a estes critérios.
-          </p>
+
+          {assignmentMode === "filter" && (
+            <Alert className="bg-primary/5 border-primary/20">
+              <Building2 className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-[11px] font-bold uppercase tracking-widest opacity-70">
+                Modo Automático: O simulado será atribuído a todos os alunos que atenderem aos critérios acima agora e no futuro.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {previewStudents.length > 0 ? (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between px-2">
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40">
+                  {selectedStudentIds.length} de {previewStudents.length} ALUNOS SELECIONADOS
+                </h4>
+                <div className="flex gap-4">
+                   <button
+                    type="button"
+                    onClick={() => onToggleAllStudents()}
+                    className="text-[10px] text-primary hover:text-primary/80 font-black uppercase tracking-widest transition-colors"
+                  >
+                    {selectedStudentIds.length === previewStudents.length ? "DESELECIONAR TUDO" : "SELECIONAR TODOS"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {previewStudents.map((s: any) => {
+                  const isSelected = selectedStudentIds.includes(s.user_id);
+                  return (
+                    <button
+                      key={s.user_id}
+                      type="button"
+                      onClick={() => onToggleStudent(s.user_id)}
+                      className={cn(
+                        "flex items-center gap-3 p-3 rounded-xl border text-left transition-all group",
+                        isSelected 
+                          ? "bg-primary/10 border-primary/40 shadow-glow-sm" 
+                          : "bg-background/40 border-white/5 hover:border-white/10"
+                      )}
+                    >
+                      <div className={cn(
+                        "h-5 w-5 rounded flex items-center justify-center border transition-colors",
+                        isSelected ? "bg-primary border-primary text-primary-foreground" : "bg-white/5 border-white/10 group-hover:border-primary/50"
+                      )}>
+                        {isSelected && <CheckSquare className="h-3.5 w-3.5" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-tight truncate">{s.display_name || s.email}</p>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge variant="outline" className="text-[8px] h-4 px-1 opacity-60 uppercase">{s.faculdade || "N/A"}</Badge>
+                          <span className="text-[10px] font-bold text-white/30">{s.periodo}º PERÍODO</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : !previewLoading && (
+            <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30 flex flex-col items-center">
+              <Users className="h-10 w-10 mb-4" />
+              <p className="text-sm font-black uppercase tracking-widest">Nenhum aluno encontrado</p>
+              <p className="text-[11px] font-medium opacity-60 mt-1">Ajuste os filtros e clique em BUSCAR ALUNOS</p>
+            </div>
+          )}
         </div>
       )}
 
       {assignmentMode === "classes" && (
-        <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
+        <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
           {loadingClasses ? (
-            <div className="flex justify-center py-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           ) : classes.length === 0 ? (
-            <p className="text-xs text-center py-4 text-muted-foreground">Nenhuma turma ativa encontrada.</p>
+            <div className="py-16 text-center border-2 border-dashed border-white/5 rounded-3xl opacity-30 flex flex-col items-center">
+              <Users className="h-10 w-10 mb-4" />
+              <p className="text-sm font-black uppercase tracking-widest">Nenhuma turma ativa</p>
+            </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
               {classes.map((c) => {
-                if (!c?.id) return null;
                 const isSelected = selectedClassIds?.includes(c.id);
                 return (
                   <button
                     key={c.id}
                     type="button"
                     onClick={() => toggleClass(c.id)}
-                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all group ${
+                    className={cn(
+                      "flex items-center gap-4 p-4 rounded-2xl border text-left transition-all group",
                       isSelected 
                         ? "bg-primary/10 border-primary/40 shadow-glow-sm" 
                         : "bg-background/40 border-white/5 hover:border-white/10"
-                    }`}
+                    )}
                   >
-                    <div className={`p-1.5 rounded-lg transition-colors ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-white/5 text-muted-foreground group-hover:text-white'}`}>
-                       {isSelected ? <CheckSquare className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                    <div className={cn(
+                      "p-2 rounded-xl transition-colors",
+                      isSelected ? "bg-primary text-primary-foreground" : "bg-white/5 text-white/40 group-hover:text-white"
+                    )}>
+                      <Users className="h-5 w-5" />
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-bold truncate uppercase tracking-tight">{c.name || "Turma sem nome"}</p>
-                      {c.period && <p className="text-[10px] text-muted-foreground">{c.period}º período</p>}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-black uppercase tracking-tight truncate">{c.name}</p>
+                      {c.period && <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">{c.period}º PERÍODO</p>}
                     </div>
-                    {!isSelected && <Plus className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />}
+                    <div className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center border transition-all",
+                      isSelected ? "bg-primary border-primary scale-110" : "bg-white/5 border-white/10 opacity-0 group-hover:opacity-100"
+                    )}>
+                      {isSelected ? <CheckSquare className="h-3.5 w-3.5" /> : <Plus className="h-3 w-3" />}
+                    </div>
                   </button>
                 );
               })}
@@ -191,103 +348,28 @@ const SimuladoAssignmentManager = memo(function SimuladoAssignmentManager({
         </div>
       )}
 
-      {assignmentMode === "manual" && (
-        <div className="space-y-3 animate-in fade-in slide-in-from-top-1">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Buscar aluno por nome ou e-mail..."
-              value={studentSearch}
-              onChange={(e) => onStudentSearchChange(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && onSearchStudentGlobal()}
-              className="h-9 text-xs"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onSearchStudentGlobal}
-              disabled={searchingStudents}
-              className="shrink-0 h-9 px-4"
-            >
-              {searchingStudents ? <Loader2 className="h-3 w-3 animate-spin" /> : "BUSCAR"}
-            </Button>
-          </div>
-
-          {searchResults.length > 0 && (
-            <div className="max-h-40 overflow-y-auto space-y-1 bg-secondary/20 rounded-xl p-2 border border-white/5">
-              {searchResults.map((s: any) => (
-                <button
-                  type="button"
-                  key={s.user_id}
-                  onClick={() => onAddSearchedStudent(s)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-xs bg-background/50 border border-border hover:border-primary/30 transition-all group"
-                >
-                  <Plus className="h-3.5 w-3.5 text-primary shrink-0 group-hover:scale-125 transition-transform" />
-                  <span className="truncate font-medium">{s.display_name || s.email}</span>
-                  {s.faculdade && <Badge variant="outline" className="text-[9px] ml-auto uppercase">{s.faculdade}</Badge>}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {previewStudents.length > 0 ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between px-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                  {selectedStudentIds.length}/{previewStudents.length} SELECIONADOS
-                </p>
-                <button
-                  type="button"
-                  onClick={onToggleAllStudents}
-                  className="text-[10px] text-primary hover:underline font-bold uppercase tracking-widest"
-                >
-                  {selectedStudentIds.length === previewStudents.length ? "LIMPAR" : "TODOS"}
-                </button>
-              </div>
-              <div className="max-h-48 overflow-y-auto space-y-1.5">
-                {previewStudents.map((s: any) => {
-                  if (!s?.user_id) return null;
-                  const isSelected = selectedStudentIds?.includes(s.user_id);
-                  return (
-                    <button
-                      type="button"
-                      key={s.user_id}
-                      onClick={() => onToggleStudent(s.user_id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left text-xs transition-all ${
-                        isSelected
-                          ? "bg-primary/10 border-primary/40 shadow-glow-sm"
-                          : "bg-background/40 border-white/5 hover:border-white/10"
-                      }`}
-                    >
-                      {isSelected ? <CheckSquare className="h-4 w-4 text-primary shrink-0" /> : <Square className="h-4 w-4 text-muted-foreground shrink-0" />}
-                      <div className="flex-1 min-w-0">
-                        <p className="truncate font-bold uppercase tracking-tight">{s.display_name || s.email || "Aluno sem identificação"}</p>
-                        {s.faculdade && <p className="text-[9px] text-muted-foreground uppercase">{s.faculdade}</p>}
-                      </div>
-                      {s.periodo && <span className="text-muted-foreground text-[10px] font-bold shrink-0">{s.periodo}º</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : !searchingStudents && (
-            <div className="py-8 text-center border-2 border-dashed border-white/5 rounded-2xl opacity-40">
-              <Search className="h-8 w-8 mx-auto mb-2" />
-              <p className="text-[10px] font-bold uppercase tracking-widest">Busque alunos para começar</p>
-            </div>
-          )}
-        </div>
-      )}
-
       {assignmentMode === "all" && (
-        <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 animate-in fade-in slide-in-from-top-1">
-          <p className="text-xs font-medium text-center">
-            🌍 Este simulado será visível para <strong>TODOS</strong> os alunos cadastrados na plataforma.
-          </p>
+        <div className="p-8 rounded-3xl border border-primary/20 bg-primary/5 flex flex-col items-center text-center space-y-4 animate-in fade-in slide-in-from-top-2">
+          <div className="h-16 w-16 bg-primary/10 rounded-full flex items-center justify-center">
+            <Globe className="h-8 w-8 text-primary" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="text-lg font-black uppercase tracking-tight">Público Global</h4>
+            <p className="text-xs text-white/50 max-w-sm">
+              Este simulado será visível para <strong>TODOS</strong> os alunos cadastrados na plataforma.
+            </p>
+          </div>
         </div>
       )}
     </div>
   );
 });
+
+const Alert = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("p-4 rounded-2xl border flex gap-3 items-center", className)}>{children}</div>
+);
+const AlertDescription = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("flex-1", className)}>{children}</div>
+);
 
 export default SimuladoAssignmentManager;
