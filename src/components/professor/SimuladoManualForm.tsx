@@ -64,7 +64,7 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
-          <Label className="text-xs">Gabarito (resposta correta)</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Gabarito</Label>
           <Select value={manualCorrect} onValueChange={onCorrectChange}>
             <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
             <SelectContent>
