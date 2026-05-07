@@ -76,7 +76,16 @@ const Register = () => {
       });
 
       if (error) {
-        toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
+        console.error("Erro detalhado do cadastro:", error);
+        let description = error.message;
+        if (error.message.includes("already registered") || error.message.includes("already exists")) {
+          description = "Este e-mail já está cadastrado. Tente fazer login ou recuperar sua senha.";
+        }
+        toast({ 
+          title: "Erro ao criar conta", 
+          description: description || "Verifique os dados e tente novamente.", 
+          variant: "destructive" 
+        });
       } else if (data?.user && data?.session) {
         // Se já está logado (confirmação desativada)
         toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
@@ -90,9 +99,13 @@ const Register = () => {
         });
         navigate("/login");
       }
-    } catch (err) {
-      console.error("Erro no cadastro:", err);
-      toast({ title: "Erro no sistema", description: "Ocorreu um erro inesperado. Tente novamente.", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Erro inesperado no fluxo de cadastro:", err);
+      toast({ 
+        title: "Erro no sistema", 
+        description: err?.message || "Ocorreu um erro inesperado. Tente novamente.", 
+        variant: "destructive" 
+      });
     } finally {
       setLoading(false);
     }
