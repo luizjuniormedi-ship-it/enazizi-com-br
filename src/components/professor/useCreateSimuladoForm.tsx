@@ -711,8 +711,8 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
       } else {
         const { data } = await callAPI({ 
           action: "get_students_count", 
-          faculdade: faculdadeFilter && faculdadeFilter !== "all" ? faculdadeFilter : undefined,
-          periodo: periodoFilter && periodoFilter !== "all" ? parseInt(periodoFilter) : undefined,
+          faculdades: faculdadeFilters.length > 0 ? faculdadeFilters : undefined,
+          periodos: periodoFilters.length > 0 ? periodoFilters : undefined,
         });
         count = data?.count || 0;
       }
