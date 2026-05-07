@@ -253,8 +253,8 @@ const NewProfessorSimuladoPage = () => {
                 onAssignmentModeChange={form.setAssignmentMode}
                 faculdadeFilters={form.faculdadeFilters}
                 periodoFilters={form.periodoFilters}
-                onFaculdadeChange={form.setFaculdadeFilters}
-                onPeriodoChange={form.setPeriodoFilters}
+                onFaculdadeChange={(v) => form.setFaculdadeFilters(v)}
+                onPeriodoChange={(v) => form.setPeriodoFilters(v)}
                 previewStudents={form.previewStudents}
                 previewLoading={form.previewLoading}
                 selectedStudentIds={form.selectedStudentIds}
