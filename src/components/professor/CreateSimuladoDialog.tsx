@@ -22,10 +22,11 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   callAPI: CallAPI;
   onCreated: () => void;
+  onTabChange?: (tab: string) => void;
 }
 
 const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
-  open, onOpenChange, callAPI, onCreated,
+  open, onOpenChange, callAPI, onCreated, onTabChange
 }: Props) {
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   
@@ -169,9 +170,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
                         variant="outline" 
                         className="flex-1 h-12 rounded-2xl border-white/10 bg-white/5 gap-2 font-bold text-xs"
                         onClick={() => {
-                          // Aqui redirecionamos para a aba de auditoria
-                          // O componente ProfessorDashboard já deve estar lidando com o estado da aba
-                          window.location.hash = "#auditoria";
+                          onTabChange?.("auditoria");
                           onOpenChange(false);
                         }}
                       >

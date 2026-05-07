@@ -356,6 +356,7 @@ const ProfessorDashboard = () => {
         onOpenChange={handleCloseCreate}
         callAPI={callAPI}
         onCreated={loadSimulados}
+        onTabChange={setActiveTab}
       />
 
       {resultsDialog.open && (
