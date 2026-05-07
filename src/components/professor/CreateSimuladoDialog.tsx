@@ -374,26 +374,27 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
               <Button 
                 type="button" 
                 variant="outline" 
-                onClick={() => onOpenChange(false)}
-                className="h-11 px-6 rounded-2xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px]"
+                onClick={() => f.showConfirm ? f.setShowConfirm(false) : onOpenChange(false)}
+                className="h-11 px-6 rounded-2xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px] gap-2"
               >
-                Cancelar
+                {f.showConfirm ? <ArrowLeft className="h-4 w-4" /> : null}
+                {f.showConfirm ? "VOLTAR E EDITAR" : "Cancelar"}
               </Button>
               <Button
                 type="button"
-                onClick={f.createSimulado}
+                onClick={f.showConfirm ? f.confirmCreate : f.initiateCreate}
                 disabled={
                   f.creating ||
                   f.generating ||
-                  (f.questionMode === "ai"
+                  (!f.showConfirm && (f.questionMode === "ai"
                     ? f.generatedQuestions.length === 0 ||
                       f.generatedQuestions.length < parseInt(f.questionCount)
-                    : f.manualQuestions.length === 0)
+                    : f.manualQuestions.length === 0))
                 }
                 className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-glow-sm gap-2"
               >
                 {f.creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {f.creating ? "CRIANDO..." : f.scheduledAt ? "AGENDAR E ATRIBUIR" : "CRIAR E ATRIBUIR"}
+                {f.creating ? "PROCESSANDO..." : f.showConfirm ? "CONFIRMAR E PUBLICAR" : f.scheduledAt ? "AGENDAR E ATRIBUIR" : "REVISAR E ATRIBUIR"}
               </Button>
             </DialogFooter>
           </footer>
