@@ -15,7 +15,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signUp: (email: string, password: string, options: SignUpOptions) => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, options: SignUpOptions) => Promise<{ data: any; error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
@@ -77,21 +77,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signUp = async (email: string, password: string, options: SignUpOptions) => {
-    const metadata: Record<string, string | number> = { display_name: options.displayName };
-    if (options.userType) metadata.user_type = options.userType;
-    if (options.faculdade) metadata.faculdade = options.faculdade;
-    if (options.phone) metadata.phone = options.phone;
-    if (options.periodo) metadata.periodo = options.periodo;
+    try {
+      const metadata: Record<string, string | number> = { 
+        full_name: options.displayName,
+        display_name: options.displayName,
+        role: options.userType === "professor" ? "professor" : "student",
+        user_type: options.userType || "student"
+      };
+      
+      if (options.faculdade) metadata.faculdade = options.faculdade;
+      if (options.phone) metadata.phone = options.phone;
+      if (options.periodo) metadata.periodo = options.periodo;
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: metadata,
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error: error as Error | null };
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: metadata,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      
+      return { data, error: error as Error | null };
+    } catch (err) {
+      console.error("Erro inesperado no signUp:", err);
+      return { data: null, error: err as Error };
+    }
   };
 
   const signIn = async (email: string, password: string) => {

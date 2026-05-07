@@ -65,20 +65,36 @@ const Register = () => {
     }
 
     setLoading(true);
-    const phoneDigits = phone.replace(/\D/g, "");
-    const { error } = await signUp(email, password, {
-      displayName: name,
-      userType,
-      faculdade,
-      phone: phoneDigits,
-      periodo: userType === "estudante" ? parseInt(periodo) : undefined,
-    });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Conta criada!", description: "Seu cadastro foi realizado com sucesso. Aguarde a aprovação do administrador para acessar a plataforma." });
-      navigate("/login");
+    try {
+      const phoneDigits = phone.replace(/\D/g, "");
+      const { data, error } = await signUp(email, password, {
+        displayName: name,
+        userType,
+        faculdade,
+        phone: phoneDigits,
+        periodo: userType === "estudante" ? parseInt(periodo) : undefined,
+      });
+
+      if (error) {
+        toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
+      } else if (data?.user && data?.session) {
+        // Se já está logado (confirmação desativada)
+        toast({ title: "Bem-vindo!", description: "Sua conta foi criada com sucesso." });
+        navigate("/enaflix");
+      } else {
+        // Se precisa confirmar e-mail ou aguardar aprovação
+        toast({ 
+          title: "Cadastro realizado!", 
+          description: "Verifique seu e-mail para confirmar a conta. Seu acesso será liberado após a aprovação do administrador.",
+          duration: 8000
+        });
+        navigate("/login");
+      }
+    } catch (err) {
+      console.error("Erro no cadastro:", err);
+      toast({ title: "Erro no sistema", description: "Ocorreu um erro inesperado. Tente novamente.", variant: "destructive" });
+    } finally {
+      setLoading(false);
     }
   };
 

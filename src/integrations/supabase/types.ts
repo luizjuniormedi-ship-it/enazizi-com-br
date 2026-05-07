@@ -13926,6 +13926,7 @@ export type Database = {
           exam_date: string | null
           experience_reset_at: string | null
           faculdade: string | null
+          full_name: string | null
           has_completed_diagnostic: boolean | null
           id: string
           is_blocked: boolean
@@ -13959,6 +13960,7 @@ export type Database = {
           exam_date?: string | null
           experience_reset_at?: string | null
           faculdade?: string | null
+          full_name?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
           is_blocked?: boolean
@@ -13992,6 +13994,7 @@ export type Database = {
           exam_date?: string | null
           experience_reset_at?: string | null
           faculdade?: string | null
+          full_name?: string | null
           has_completed_diagnostic?: boolean | null
           id?: string
           is_blocked?: boolean
