@@ -644,7 +644,6 @@ REGRAS INVIOLÁVEIS:
           if (assignment_mode === "manual" && student_ids?.length > 0) {
             studentList = student_ids.map((id: string) => ({ user_id: id }));
           } else if (assignment_mode === "classes" && class_ids?.length > 0) {
-            // Get students in these classes
             const { data: classStudents } = await sb
               .from("class_members")
               .select("user_id")
@@ -657,8 +656,14 @@ REGRAS INVIOLÁVEIS:
           } else {
             // Default: filter
             let studentQuery = sb.from("profiles").select("user_id").eq("status", "active");
-            if (faculdade_filter) studentQuery = studentQuery.eq("faculdade", faculdade_filter);
-            if (periodo_filter) studentQuery = studentQuery.eq("periodo", periodo_filter);
+            
+            if (facFilters.length > 0) {
+              studentQuery = studentQuery.in("faculdade", facFilters);
+            }
+            if (perFilters.length > 0) {
+              studentQuery = studentQuery.in("periodo", perFilters);
+            }
+
             const { data: students } = await studentQuery;
             studentList = students || [];
           }
