@@ -369,10 +369,8 @@ const ProfessorDashboard = () => {
       {/* Diálogos controlados pelo estado do pai */}
       <CreateSimuladoDialog
         open={showCreate}
-        onOpenChange={handleCloseCreate}
-        callAPI={callAPI}
+        onOpenChange={setShowCreate}
         onCreated={loadSimulados}
-        onTabChange={setActiveTab}
       />
 
       {resultsDialog.open && (
