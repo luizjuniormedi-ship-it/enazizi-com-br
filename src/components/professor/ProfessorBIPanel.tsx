@@ -66,34 +66,40 @@ const ProfessorBIPanel = ({ callAPI }: Props) => {
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     if (!data) return;
-    const prof = data.proficiency || {};
-    const plat = data.platform || {};
-    const selectedStudent = studentFilter !== "all"
-      ? data.students?.find((s: any) => s.user_id === studentFilter)?.display_name
-      : null;
-    exportProfessorBIReport({
-      kpis: {
-        "Atividades Criadas": prof.kpis?.total_activities ?? 0,
-        "Taxa de Conclusão": `${prof.kpis?.completion_rate ?? 0}%`,
-        "Média Geral": `${prof.kpis?.avg_score ?? 0}%`,
-        "Pendentes": prof.kpis?.pending ?? 0,
-        ...(plat?.kpis ? {
-          "Questões Respondidas": plat.kpis.total_questions,
-          "Acurácia Média": `${plat.kpis.avg_accuracy}%`,
-          "Streak Médio": `${plat.kpis.avg_streak} dias`,
-          "Inativos (>7d)": plat.kpis.inactive_count,
-        } : {}),
-      },
-      topicBreakdown: prof.topic_breakdown,
-      deficientTopics: prof.deficient_topics,
-      masteredTopics: prof.mastered_topics,
-      atRiskStudents: data.at_risk_students,
-      studentEngagement: plat?.student_engagement,
-      studentPercentile: data.student_percentile,
-    }, selectedStudent ? `BI_Aluno_${selectedStudent}` : "BI_Turma_Professor");
-    toast({ title: "PDF exportado com sucesso!" });
+    try {
+      const prof = data.proficiency || {};
+      const plat = data.platform || {};
+      const selectedStudent = studentFilter !== "all"
+        ? data.students?.find((s: any) => s.user_id === studentFilter)?.display_name
+        : null;
+        
+      await exportProfessorBIReport({
+        kpis: {
+          "Atividades Criadas": prof.kpis?.total_activities ?? 0,
+          "Taxa de Conclusão": `${prof.kpis?.completion_rate ?? 0}%`,
+          "Média Geral": `${prof.kpis?.avg_score ?? 0}%`,
+          "Pendentes": prof.kpis?.pending ?? 0,
+          ...(plat?.kpis ? {
+            "Questões Respondidas": plat.kpis.total_questions,
+            "Acurácia Média": `${plat.kpis.avg_accuracy}%`,
+            "Streak Médio": `${plat.kpis.avg_streak} dias`,
+            "Inativos (>7d)": plat.kpis.inactive_count,
+          } : {}),
+        },
+        topicBreakdown: prof.topic_breakdown,
+        deficientTopics: prof.deficient_topics,
+        masteredTopics: prof.mastered_topics,
+        atRiskStudents: data.at_risk_students,
+        studentEngagement: plat?.student_engagement,
+        studentPercentile: data.student_percentile,
+      }, selectedStudent ? `BI_Aluno_${selectedStudent}` : "BI_Turma_Professor");
+      
+      toast({ title: "PDF exportado com sucesso!" });
+    } catch (err: any) {
+      toast({ title: "Erro na exportação", description: err.message, variant: "destructive" });
+    }
   };
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
