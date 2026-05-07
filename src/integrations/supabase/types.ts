@@ -17450,11 +17450,13 @@ export type Database = {
           end_at: string | null
           exam_board: string | null
           faculdade_filter: string | null
+          faculdade_filters: string[] | null
           feedback_policy: string | null
           feedback_released: boolean | null
           id: string
           max_attempts: number | null
           periodo_filter: number | null
+          periodo_filters: number[] | null
           professor_id: string
           published_at: string | null
           questions_json: Json
@@ -17479,11 +17481,13 @@ export type Database = {
           end_at?: string | null
           exam_board?: string | null
           faculdade_filter?: string | null
+          faculdade_filters?: string[] | null
           feedback_policy?: string | null
           feedback_released?: boolean | null
           id?: string
           max_attempts?: number | null
           periodo_filter?: number | null
+          periodo_filters?: number[] | null
           professor_id: string
           published_at?: string | null
           questions_json?: Json
@@ -17508,11 +17512,13 @@ export type Database = {
           end_at?: string | null
           exam_board?: string | null
           faculdade_filter?: string | null
+          faculdade_filters?: string[] | null
           feedback_policy?: string | null
           feedback_released?: boolean | null
           id?: string
           max_attempts?: number | null
           periodo_filter?: number | null
+          periodo_filters?: number[] | null
           professor_id?: string
           published_at?: string | null
           questions_json?: Json
