@@ -580,7 +580,7 @@ const MentorThemePlans = ({ callAPI }: { callAPI?: (body: Record<string, unknown
                 </div>
               )}
             </div>
-          </div>
+          </DialogBody>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
