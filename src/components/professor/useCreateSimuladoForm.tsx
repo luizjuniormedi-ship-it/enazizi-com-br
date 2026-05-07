@@ -464,12 +464,13 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         description: e instanceof Error ? e.message : "Erro ao gerar",
         variant: "destructive",
       });
-    } finally {
-      setGenerating(false);
-    }
+      } finally {
+        setGenerating(false);
+      }
+    });
   }, [
     callAPI, toast, selectedTopics, questionCount, useDistribution, topicDistribution,
-    subtopics, difficulty, difficultyMix, examBoard,
+    subtopics, difficulty, difficultyMix, examBoard, safeAction
   ]);
 
   const regenerateMissing = useCallback(async () => {
@@ -548,19 +549,20 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, []);
 
   const confirmCreate = useCallback(async (forcedStatus?: "draft" | "published") => {
-    if (creating) return;
-    
-    if (!title?.trim()) {
-      toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
-      return;
-    }
+    await safeAction("confirm_create", async () => {
+      if (creating) return;
+      
+      if (!title?.trim()) {
+        toast({ title: "Título obrigatório", description: "Informe um título para o simulado.", variant: "destructive" });
+        return;
+      }
 
-    setCreating(true);
-    const tid = crypto.randomUUID();
-    setTraceId(tid);
-    const clientRequestId = crypto.randomUUID();
-    
-    try {
+      setCreating(true);
+      const tid = crypto.randomUUID();
+      setTraceId(tid);
+      const clientRequestId = crypto.randomUUID();
+      
+      try {
       const questions = questionMode === "manual" ? manualQuestions : generatedQuestions;
       const isDraft = forcedStatus === "draft";
       
@@ -649,14 +651,15 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
         ),
         variant: "destructive",
       });
-    } finally {
-      setCreating(false);
-    }
+      } finally {
+        setCreating(false);
+      }
+    });
   }, [
     creating, callAPI, toast, onCreated, questionMode, manualQuestions, generatedQuestions,
     title, description, selectedTopics, faculdadeFilter, impactedCount,
     periodoFilter, timeLimit, selectedStudentIds, selectedClassIds, assignmentMode,
-    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard,
+    scheduledAt, endAt, maxAttempts, feedbackPolicy, allowRetake, autoAssign, examBoard, safeAction
   ]);
 
   const initiateCreate = useCallback(async () => {
