@@ -56,7 +56,7 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
               value={manualOptions[i]}
               onChange={(e) => onOptionChange(i, e.target.value)}
               placeholder={`Alternativa ${letter}`}
-              className="flex-1 h-8 text-xs"
+              className="flex-1 h-9 bg-white/5 border-white/10 rounded-xl text-xs px-3"
             />
           </div>
         ))}
