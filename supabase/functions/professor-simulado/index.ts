@@ -982,6 +982,8 @@ REGRAS INVIOLÁVEIS:
         if (error) throw error;
         return ok({ data: { count: count || 0 } });
       }
+
+      case "search_students": {
         const { query } = params;
         if (!query || query.length < 3) throw new Error("Digite pelo menos 3 caracteres para buscar");
         const searchTerm = `%${query}%`;
