@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { CinematicHero } from "@/components/cinematic";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 
@@ -45,8 +46,6 @@ const ProfessorDashboard = () => {
     open: false,
     simulado: null,
   });
-
-  const API_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/professor-simulado`;
 
   const safeAction = useCallback(async (name: string, fn: () => Promise<void>) => {
     try {
