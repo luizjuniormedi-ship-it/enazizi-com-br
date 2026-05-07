@@ -31,7 +31,7 @@ export function TeacherDialogContent({
         className
       )}
     >
-      <div className="flex h-full max-h-[85vh] flex-col overflow-hidden">
+      <div className="flex h-auto max-h-[88vh] flex-col overflow-hidden">
         {header && (
           <div className={cn("px-6 py-4 border-b border-white/5 bg-muted/20 shrink-0", headerClassName)}>
             {header}

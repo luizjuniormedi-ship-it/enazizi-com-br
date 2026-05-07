@@ -36,33 +36,34 @@ const DialogContent = React.forwardRef<
   return (
     <DialogPortal>
       <DialogOverlay className="backdrop-blur-sm bg-black/80" />
-      <DialogPrimitive.Content
-        ref={ref}
-        className={cn(
-          "fixed left-1/2 top-6 z-[120] w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] overflow-hidden rounded-2xl duration-300 pointer-events-auto",
-          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=open]:slide-in-from-left-1/2",
-          "card-pixar-static bg-[#0a0a0e]/95 border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]",
-          "max-h-[90vh] flex flex-col",
-          isTeacherModal && [
-            "sm:top-12",
-            "sm:max-h-[calc(100vh-6rem)]",
-            "sm:w-full sm:max-w-3xl",
-            "p-0 gap-0",
-            "sm:rounded-3xl"
-          ],
-          className,
-        )}
-        {...props}
-      >
-        {children}
-        <DialogPrimitive.Close className={cn(
-          "absolute right-6 top-6 rounded-full p-2 opacity-40 ring-offset-background transition-all hover:opacity-100 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:pointer-events-none z-[110]",
-          isTeacherModal && "right-4 top-4"
-        )}>
-          <X className="h-5 w-5 text-white" />
-          <span className="sr-only">Close</span>
-        </DialogPrimitive.Close>
-      </DialogPrimitive.Content>
+      <div className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto p-4 sm:p-10 pointer-events-none">
+        <DialogPrimitive.Content
+          ref={ref}
+          className={cn(
+            "relative z-[120] w-full max-w-lg overflow-hidden rounded-2xl duration-300 pointer-events-auto",
+            "my-0 sm:my-4", // Espaçamento consistente no topo
+            "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+            "card-pixar-static bg-[#0a0a0e]/95 border-white/10 shadow-[0_32px_64px_-12px_rgba(0,0,0,0.8)]",
+            "max-h-full flex flex-col",
+            isTeacherModal && [
+              "sm:max-w-4xl",
+              "p-0 gap-0",
+              "sm:rounded-3xl"
+            ],
+            className,
+          )}
+          {...props}
+        >
+          {children}
+          <DialogPrimitive.Close className={cn(
+            "absolute right-6 top-6 rounded-full p-2 opacity-40 ring-offset-background transition-all hover:opacity-100 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:pointer-events-none z-[110]",
+            isTeacherModal && "right-4 top-4"
+          )}>
+            <X className="h-5 w-5 text-white" />
+            <span className="sr-only">Close</span>
+          </DialogPrimitive.Close>
+        </DialogPrimitive.Content>
+      </div>
     </DialogPortal>
   );
 });
