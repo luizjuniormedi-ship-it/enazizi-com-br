@@ -77,7 +77,7 @@ const Register = () => {
     if (error) {
       toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Conta criada!", description: "Seu cadastro foi realizado com sucesso. Você já pode entrar!" });
+      toast({ title: "Conta criada!", description: "Seu cadastro foi realizado com sucesso. Aguarde a aprovação do administrador para acessar a plataforma." });
       navigate("/login");
     }
   };
