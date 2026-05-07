@@ -608,12 +608,11 @@ const ProfessorPlantao = ({ callAPI: externalCallAPI }: { callAPI?: (body: Recor
               <BarChart3 className="h-5 w-5 text-primary" />
               Resultados — {resultsDialog.caseData?.title}
             </DialogTitle>
-          </DialogHeader>
-          <DialogBody>
             <DialogDescription>
               {resultsDialog.caseData?.specialty} • {resultsDialog.caseData?.difficulty}
             </DialogDescription>
           </DialogHeader>
+          <DialogBody>
 
           {resultsDialog.loading ? (
             <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary" /></div>
