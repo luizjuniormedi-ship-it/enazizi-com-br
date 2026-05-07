@@ -79,12 +79,12 @@ const SimuladoListItem = memo(function SimuladoListItem({ sim, onView, onDelete 
             )}
             <div className="flex flex-wrap gap-1.5 mb-2">
               {(sim.topics || []).slice(0, 3).map((t: string) => (
-                <Badge key={t} variant="outline" className="text-[10px]">
+                <Badge key={t} variant="outline" className="text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2">
                   {t}
                 </Badge>
               ))}
               {(sim.topics || []).length > 3 && (
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="text-[9px] font-black uppercase border-white/20 bg-white/5 py-1 px-2">
                   +{sim.topics.length - 3}
                 </Badge>
               )}
