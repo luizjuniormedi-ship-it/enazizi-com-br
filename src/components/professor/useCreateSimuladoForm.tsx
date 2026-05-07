@@ -791,8 +791,13 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange, 
         }
         
         if (count === 0) {
-          toast({ title: "Público vazio", description: "Nenhum aluno foi encontrado com os critérios selecionados.", variant: "destructive" });
-          return;
+          if (assignmentMode === "filter") {
+            const confirmed = window.confirm("AVISO: Nenhum aluno atende a estes filtros no momento. O simulado será criado mas ficará visível apenas quando novos alunos entrarem nestes critérios. Continuar?");
+            if (!confirmed) return;
+          } else {
+            toast({ title: "Público vazio", description: "Nenhum aluno foi encontrado com os critérios selecionados.", variant: "destructive" });
+            return;
+          }
         }
 
         setImpactedCount(count);
