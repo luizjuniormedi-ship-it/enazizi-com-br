@@ -55,10 +55,15 @@ const SimuladoTopicsPicker = memo(function SimuladoTopicsPicker({
               onAddTopic();
             }
           }}
-          className="flex-1"
+          className="h-11 bg-white/5 border-white/10 rounded-xl px-4"
         />
-        <Button type="button" size="sm" onClick={onAddTopic} disabled={!newTopicInput.trim()}>
-          Adicionar
+        <Button 
+          type="button" 
+          onClick={onAddTopic} 
+          disabled={!newTopicInput.trim()}
+          className="h-11 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]"
+        >
+          ADICIONAR
         </Button>
       </div>
       <div className="flex flex-wrap gap-1.5">
