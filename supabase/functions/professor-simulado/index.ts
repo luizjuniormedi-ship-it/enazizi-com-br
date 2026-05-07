@@ -556,15 +556,17 @@ REGRAS INVIOLÁVEIS:
           title, description, topics, faculdade_filter, periodo_filter, 
           total_questions, time_limit_minutes, questions_json, 
           student_ids, class_ids, assignment_mode, scheduled_at, end_at, 
-          max_attempts, feedback_policy, allow_retake, exam_board, auto_assign,
-          trace_id, client_request_id 
+          starts_at, deadline_at, // Aligned names from prompt
+          max_attempts, feedback_policy, answer_release_policy, allow_retake, exam_board, auto_assign,
+          trace_id, client_request_id, status
         } = params;
 
         const tid = trace_id || crypto.randomUUID();
         console.log(`[create_simulado][Trace:${tid}] Início da criação. ReqID: ${client_request_id}`);
         
-        await logTraceStep(tid, "init", "success", { title, assignment_mode });
+        await logTraceStep(tid, "init", "success", { title, assignment_mode: assignment_mode || params.assignments?.audience_type });
 
+        // Idempotência
         if (client_request_id) {
           const { data: existing } = await sb
             .from("teacher_simulados")
@@ -584,27 +586,30 @@ REGRAS INVIOLÁVEIS:
           }
         }
 
-        // Determine status based on scheduling
-        const isScheduled = scheduled_at && new Date(scheduled_at) > new Date();
-        const simStatus = isScheduled ? "scheduled" : "published";
+        // Determine status and dates
+        const start = starts_at || scheduled_at || new Date().toISOString();
+        const end = deadline_at || end_at || null;
+        const isScheduled = start && new Date(start) > new Date();
+        const simStatus = status || (isScheduled ? "scheduled" : "published");
 
+        // Insert principal (isolado)
         const { data: simulado, error } = await sb.from("teacher_simulados").insert({
           professor_id: user.id,
           title: title || "Simulado",
-          description,
+          description: description || null,
           topics: topics || [],
           faculdade_filter: faculdade_filter || professorFaculdade || null,
           periodo_filter: periodo_filter || null,
-          total_questions: total_questions || questions_json?.length || 10,
+          total_questions: total_questions || questions_json?.length || 0,
           time_limit_minutes: time_limit_minutes || 60,
           questions_json: questions_json || [],
           status: simStatus,
-          scheduled_at: scheduled_at || null,
-          start_at: scheduled_at || new Date().toISOString(),
-          end_at: end_at || null,
+          scheduled_at: scheduled_at || (isScheduled ? start : null),
+          start_at: start,
+          end_at: end,
           max_attempts: max_attempts || 1,
-          feedback_policy: feedback_policy || 'immediate',
-          allow_retake: allow_retake || false,
+          feedback_policy: feedback_policy || answer_release_policy || 'immediate',
+          allow_retake: !!allow_retake,
           exam_board: exam_board || null,
           auto_assign: auto_assign !== false,
           trace_id: tid,
@@ -614,11 +619,17 @@ REGRAS INVIOLÁVEIS:
         if (error) {
           console.error(`[create_simulado][Trace:${tid}] Erro no insert principal:`, error);
           await logTraceStep(tid, "main_creation", "error", null, error.message, Date.now() - startTime);
-          throw new Error(error.message);
+          return new Response(JSON.stringify({ 
+            success: false, 
+            error: "INSERT_ERROR", 
+            message: `Erro ao criar registro principal: ${error.message}`, 
+            trace_id: tid 
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         
         await logTraceStep(tid, "main_creation", "success", { simulado_id: simulado.id }, null, Date.now() - startTime);
 
+        const warnings: string[] = [];
         let studentList: any[] = [];
 
         // Handle assignments (Isolated in try-catch to not break the flow)

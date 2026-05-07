@@ -24,33 +24,19 @@ interface Props {
   onCreated: () => void;
 }
 
-/**
- * Orquestrador do diálogo de criação de simulado com posição no topo e arraste.
- */
 const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
   open, onOpenChange, callAPI, onCreated,
 }: Props) {
   const f = useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange });
   
-  // LOG PARA DEBUG
-  useEffect(() => {
-    if (open) {
-      console.log("[CreateSimuladoDialog] Dialog montado e aberto");
-    }
-  }, [open]);
-
-  // Se o diálogo não estiver aberto, não renderizamos nada além do próprio wrapper do Dialog
-  // Isso garante que o estado interno do formulário não cause efeitos colaterais enquanto fechado
   if (!open) return null;
 
   const isMobile = useIsMobile();
-  
   const dialogRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0 });
   
-  // Reset position when opening
   useEffect(() => {
     if (open) {
       setPosition({ x: 0, y: 0 });
@@ -59,10 +45,7 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (isMobile) return;
-    
-    // Only drag from the header area, not buttons or interactive elements
     if ((e.target as HTMLElement).closest('button')) return;
-    
     setIsDragging(true);
     dragStartPos.current = {
       x: e.clientX - position.x,
@@ -77,7 +60,6 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
       const newX = e.clientX - dragStartPos.current.x;
       const newY = e.clientY - dragStartPos.current.y;
       
-      // Basic bounds to keep it somewhat in view
       const boundedX = Math.min(Math.max(newX, -window.innerWidth / 2 + 100), window.innerWidth / 2 - 100);
       const boundedY = Math.min(Math.max(newY, -20), window.innerHeight - 100);
       
@@ -370,33 +352,48 @@ const CreateSimuladoDialog = memo(function CreateSimuladoDialog({
           </div>
 
           <footer className="shrink-0 border-t p-6 bg-background/95 backdrop-blur-md" data-testid="dialog-footer">
-            <DialogFooter className="sm:justify-end gap-2">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={() => f.showConfirm ? f.setShowConfirm(false) : onOpenChange(false)}
-                className="h-11 px-6 rounded-2xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px] gap-2"
-              >
-                {f.showConfirm ? <ArrowLeft className="h-4 w-4" /> : null}
-                {f.showConfirm ? "VOLTAR E EDITAR" : "Cancelar"}
-              </Button>
-              <Button
-                type="button"
-                onClick={f.showConfirm ? f.confirmCreate : f.initiateCreate}
-                disabled={
-                  f.creating ||
-                  f.generating ||
-                  (!f.showConfirm && (f.questionMode === "ai"
-                    ? f.generatedQuestions.length === 0 ||
-                      f.generatedQuestions.length < parseInt(f.questionCount)
-                    : f.manualQuestions.length === 0))
-                }
-                className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-glow-sm gap-2"
-              >
-                {f.creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {f.creating ? "PROCESSANDO..." : f.showConfirm ? "CONFIRMAR E PUBLICAR" : f.scheduledAt ? "AGENDAR E ATRIBUIR" : "REVISAR E ATRIBUIR"}
-              </Button>
-            </DialogFooter>
+            <div className="flex flex-col gap-3">
+              {!f.showConfirm && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => f.confirmCreate("draft")}
+                  disabled={f.creating || f.generating || !f.title.trim()}
+                  className="w-full h-10 rounded-xl border border-dashed border-white/10 hover:bg-white/5 font-bold uppercase tracking-widest text-[10px] gap-2 text-muted-foreground"
+                >
+                  <PenLine className="h-3.5 w-3.5" /> Salvar como Rascunho (sem publicar)
+                </Button>
+              )}
+              
+              <DialogFooter className="sm:justify-end gap-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => f.showConfirm ? f.setShowConfirm(false) : onOpenChange(false)}
+                  className="h-11 px-6 rounded-2xl border-white/10 bg-white/5 font-black uppercase tracking-widest text-[10px] gap-2"
+                >
+                  {f.showConfirm ? <ArrowLeft className="h-4 w-4" /> : null}
+                  {f.showConfirm ? "VOLTAR E EDITAR" : "Cancelar"}
+                </Button>
+                
+                <Button
+                  type="button"
+                  onClick={() => f.showConfirm ? f.confirmCreate() : f.initiateCreate()}
+                  disabled={
+                    f.creating ||
+                    f.generating ||
+                    (!f.showConfirm && (f.questionMode === "ai"
+                      ? f.generatedQuestions.length === 0 ||
+                        f.generatedQuestions.length < parseInt(f.questionCount)
+                      : f.manualQuestions.length === 0))
+                  }
+                  className="h-11 px-8 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-glow-sm gap-2"
+                >
+                  {f.creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {f.creating ? "PROCESSANDO..." : f.showConfirm ? "CONFIRMAR E PUBLICAR" : f.scheduledAt ? "AGENDAR E ATRIBUIR" : "REVISAR E ATRIBUIR"}
+                </Button>
+              </DialogFooter>
+            </div>
           </footer>
         </div>
       </DialogContent>
