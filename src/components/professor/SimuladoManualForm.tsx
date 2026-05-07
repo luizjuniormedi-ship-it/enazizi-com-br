@@ -39,8 +39,8 @@ const SimuladoManualForm = memo(function SimuladoManualForm({
         />
       </div>
 
-      <div className="space-y-2">
-        <Label className="text-xs">Alternativas</Label>
+      <div className="space-y-3">
+        <Label className="text-[10px] font-black uppercase tracking-widest opacity-50">Alternativas</Label>
         {["A", "B", "C", "D", "E"].map((letter, i) => (
           <div key={i} className="flex items-center gap-2">
             <span
