@@ -514,12 +514,12 @@ export function useCreateSimuladoForm({ open, callAPI, onCreated, onOpenChange }
   }, []);
 
   const createSimulado = useCallback(async () => {
+    const traceId = crypto.randomUUID();
+    const clientRequestId = crypto.randomUUID();
+    
     try {
       if (creating) return; // Prevent double submit
       setCreating(true);
-      
-      const traceId = crypto.randomUUID();
-      const clientRequestId = crypto.randomUUID();
 
       const questions =
         questionMode === "manual"
