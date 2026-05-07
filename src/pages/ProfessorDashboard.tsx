@@ -180,26 +180,32 @@ const ProfessorDashboard = () => {
   }, []);
 
   const handleOpenCreate = useCallback(() => {
-    console.log("[ProfessorDashboard] handleOpenCreate disparado");
-    setShowCreate(true);
-  }, []);
+    safeAction("open_create_dialog", async () => {
+      console.log("[ProfessorDashboard] handleOpenCreate disparado");
+      setShowCreate(true);
+    });
+  }, [safeAction]);
+
   const handleCloseCreate = useCallback((open: boolean) => {
-    console.log("[ProfessorDashboard] handleCloseCreate:", open);
-    setShowCreate(open);
-  }, []);
+    safeAction("close_create_dialog", async () => {
+      console.log("[ProfessorDashboard] handleCloseCreate:", open);
+      setShowCreate(open);
+    });
+  }, [safeAction]);
 
   // Totais memoizados — só recalculam quando a lista muda
   const totals = useMemo(() => {
-    const totalStudentsAssigned = simulados.reduce(
-      (s, sim) => s + (sim.results_summary?.total || 0),
+    const safeSimulados = Array.isArray(simulados) ? simulados : [];
+    const totalStudentsAssigned = safeSimulados.reduce(
+      (s, sim) => s + (Number.isFinite(sim?.results_summary?.total) ? sim.results_summary.total : 0),
       0
     );
-    const totalCompleted = simulados.reduce(
-      (s, sim) => s + (sim.results_summary?.completed || 0),
+    const totalCompleted = safeSimulados.reduce(
+      (s, sim) => s + (Number.isFinite(sim?.results_summary?.completed) ? sim.results_summary.completed : 0),
       0
     );
     return {
-      totalSimulados: simulados.length,
+      totalSimulados: safeSimulados.length,
       totalStudentsAssigned,
       totalCompleted,
     };
