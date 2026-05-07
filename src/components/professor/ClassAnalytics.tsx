@@ -88,7 +88,8 @@ const ClassAnalytics = ({ callAPI: externalCallAPI }: { callAPI?: (body: Record<
 
   const exportPDF = async () => {
     if (!data) return;
-    const { default: jsPDF } = await import("jspdf");
+    try {
+      const { default: jsPDF } = await import("jspdf");
     const doc = new jsPDF({ unit: "mm", format: "a4" });
     const M = 15;
     const W = doc.internal.pageSize.getWidth() - M * 2;
