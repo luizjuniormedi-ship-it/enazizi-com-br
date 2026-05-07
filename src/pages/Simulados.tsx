@@ -171,13 +171,15 @@ function deduplicateQuestions(questions: SimQuestion[]): SimQuestion[] {
 }
 
 const Simulados = () => {
+  const { user, loading: authLoading } = useAuth();
+  
   useEffect(() => {
-    console.log("[Simulados] Página montada com sucesso");
+    console.log("[Simulados] Página montada. User:", user?.id, "AuthLoading:", authLoading);
     // Add data-testid to the main container for E2E testing
     const container = document.querySelector('.pb-24');
     if (container) container.setAttribute('data-testid', 'simulados-page');
-  }, []);
-  const { user } = useAuth();
+  }, [user, authLoading]);
+
   const { toast } = useToast();
   const { addXp } = useGamification();
   const navigate = useNavigate();
@@ -570,6 +572,14 @@ const Simulados = () => {
   };
 
   const handleNewSimulado = () => setPhase("setup");
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-12 w-12 text-primary animate-spin" />
+      </div>
+    );
+  }
 
   if (phase === "setup") {
     return (
