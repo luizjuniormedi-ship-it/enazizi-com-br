@@ -143,13 +143,13 @@ const SimuladoDifficultyMix = memo(function SimuladoDifficultyMix({
       </div>
 
       {/* Banca */}
-      <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/20">
+      <div className="space-y-3 border border-white/5 rounded-2xl p-4 bg-white/5">
         <div className="flex items-center gap-2">
           <FileText className="h-4 w-4 text-primary" />
-          <Label className="text-sm font-semibold">Estilo de Banca</Label>
+          <Label className="text-[10px] font-black uppercase tracking-widest opacity-80">Estilo de Banca</Label>
         </div>
         <Select value={examBoard} onValueChange={onExamBoardChange}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-10 bg-white/5 border-white/10 rounded-xl font-bold"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as bancas</SelectItem>
             <SelectItem value="ENARE">ENARE</SelectItem>
