@@ -671,7 +671,16 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
               <div>
                 <label className="text-sm font-semibold mb-2 block">Selecione a Banca</label>
-                <Select value={realExamBoard} onValueChange={setRealExamBoard}>
+                <Select value={realExamBoard} onValueChange={(val) => {
+                  setRealExamBoard(val);
+                  // Auto-apply profile distribution when board changes
+                  const profile = EXAM_PROFILES[val] || EXAM_PROFILES.GERAL;
+                  const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
+                  setSelectedTopics(topicsFromProfile);
+                  const initialDist = calculateTopicDistribution(profile, profile.totalQuestions);
+                  setCustomDistribution(initialDist);
+                  setCustomTotalQuestions(profile.totalQuestions);
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Escolha a banca" />
                   </SelectTrigger>
@@ -713,7 +722,15 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
 
               <div>
                 <label className="text-sm font-semibold mb-2 block">Banca Alvo</label>
-                <Select value={realExamBoard} onValueChange={setRealExamBoard}>
+                <Select value={realExamBoard} onValueChange={(val) => {
+                  setRealExamBoard(val);
+                  const profile = EXAM_PROFILES[val] || EXAM_PROFILES.GERAL;
+                  const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
+                  setSelectedTopics(topicsFromProfile);
+                  const initialDist = calculateTopicDistribution(profile, profile.totalQuestions);
+                  setCustomDistribution(initialDist);
+                  setCustomTotalQuestions(profile.totalQuestions);
+                }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Escolha a banca" />
                   </SelectTrigger>

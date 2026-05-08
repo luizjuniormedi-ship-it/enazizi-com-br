@@ -337,21 +337,28 @@ const Simulados = () => {
     difficulty: string; 
     timePerQuestion?: number; 
     mode: SimuladoMode; 
-    specificTopic?: string; 
-    examBoard?: string; 
-    realExamProfile?: string; 
-    imagePercent?: number; 
-    dynamicDistribution?: ExamDistributionTree; 
-    topicWeights?: any[];
-    autoDistribution?: boolean;
-    customDistribution?: any[];
-    includeWeakThemes?: boolean;
-    includePreviousErrors?: boolean;
-    resumeJobId?: string;
-    existingQuestions?: SimQuestion[];
-    forceStart?: boolean; // New flag to bypass config step
-  }) => {
+      specificTopic?: string; 
+      examBoard?: string; 
+      realExamProfile?: string; 
+      imagePercent?: number; 
+      dynamicDistribution?: ExamDistributionTree; 
+      topicWeights?: any[];
+      autoDistribution?: boolean;
+      customDistribution?: any[];
+      includeWeakThemes?: boolean;
+      includePreviousErrors?: boolean;
+      resumeJobId?: string;
+      existingQuestions?: SimQuestion[];
+      forceStart?: boolean; // New flag to bypass config step
+    }) => {
     console.log("[Simulados] iniciar clicado", config);
+    
+    // Safety check: ensure topics are loaded from distribution if missing
+    if ((!config.topics || config.topics.length === 0) && config.topicWeights) {
+      config.topics = (config.topicWeights as any[]).map(tw => tw.topic);
+    } else if ((!config.topics || config.topics.length === 0) && config.customDistribution) {
+      config.topics = (config.customDistribution as any[]).map(tw => tw.topic);
+    }
     
     // Check if we need to show the configuration step
     const isBoardMode = config.mode === "prova_real" || config.mode === "tri";
