@@ -9223,6 +9223,54 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_clinical_audits: {
+        Row: {
+          audit_notes: string | null
+          audited_at: string | null
+          distractor_quality_score: number | null
+          exam_key: string
+          exam_style_score: number | null
+          explanation_quality_score: number | null
+          final_quality_score: number | null
+          id: string
+          is_approved: boolean | null
+          medical_accuracy_score: number | null
+          question_hash: string
+          specialty: string
+          topic: string
+        }
+        Insert: {
+          audit_notes?: string | null
+          audited_at?: string | null
+          distractor_quality_score?: number | null
+          exam_key: string
+          exam_style_score?: number | null
+          explanation_quality_score?: number | null
+          final_quality_score?: number | null
+          id?: string
+          is_approved?: boolean | null
+          medical_accuracy_score?: number | null
+          question_hash: string
+          specialty: string
+          topic: string
+        }
+        Update: {
+          audit_notes?: string | null
+          audited_at?: string | null
+          distractor_quality_score?: number | null
+          exam_key?: string
+          exam_style_score?: number | null
+          explanation_quality_score?: number | null
+          final_quality_score?: number | null
+          id?: string
+          is_approved?: boolean | null
+          medical_accuracy_score?: number | null
+          question_hash?: string
+          specialty?: string
+          topic?: string
+        }
+        Relationships: []
+      }
       exam_drift_logs: {
         Row: {
           delta: number | null
@@ -16380,6 +16428,8 @@ export type Database = {
       }
       simulation_history: {
         Row: {
+          audit_score: number | null
+          audit_status: string | null
           correct_diagnosis: string | null
           created_at: string
           differential_diagnosis: Json | null
@@ -16399,6 +16449,8 @@ export type Database = {
           xp_earned: number
         }
         Insert: {
+          audit_score?: number | null
+          audit_status?: string | null
           correct_diagnosis?: string | null
           created_at?: string
           differential_diagnosis?: Json | null
@@ -16418,6 +16470,8 @@ export type Database = {
           xp_earned?: number
         }
         Update: {
+          audit_score?: number | null
+          audit_status?: string | null
           correct_diagnosis?: string | null
           created_at?: string
           differential_diagnosis?: Json | null
@@ -21248,6 +21302,19 @@ export type Database = {
       reconcile_and_smooth_weights: {
         Args: { p_exam_key: string; p_smoothing_factor?: number }
         Returns: undefined
+      }
+      record_clinical_audit: {
+        Args: {
+          p_accuracy: number
+          p_distractor: number
+          p_exam_key: string
+          p_explanation: number
+          p_hash: string
+          p_specialty: string
+          p_style: number
+          p_topic: string
+        }
+        Returns: boolean
       }
       refresh_video_cognitive_heatmap: {
         Args: { p_video_lesson_id: string }
