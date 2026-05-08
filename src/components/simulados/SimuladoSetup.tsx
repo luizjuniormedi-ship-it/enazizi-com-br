@@ -40,7 +40,23 @@ const EXAM_BOARDS = [
 export type SimuladoMode = "prova" | "estudo" | "extremo" | "prova_real" | "tri" | "adaptativo";
 
 interface SimuladoSetupProps {
-  onStart: (config: { topics: string[]; count: number; difficulty: string; timePerQuestion: number; mode: SimuladoMode; specificTopic?: string; examBoard?: string; realExamProfile?: string; imagePercent?: number; dynamicDistribution?: ExamDistributionTree; topicWeights?: any[] }) => void;
+  onStart: (config: { 
+    topics: string[]; 
+    count: number; 
+    difficulty: string; 
+    timePerQuestion: number; 
+    mode: SimuladoMode; 
+    specificTopic?: string; 
+    examBoard?: string; 
+    realExamProfile?: string; 
+    imagePercent?: number; 
+    dynamicDistribution?: ExamDistributionTree; 
+    topicWeights?: any[];
+    autoDistribution?: boolean;
+    customDistribution?: TopicDistributionItem[];
+    includeWeakThemes?: boolean;
+    includePreviousErrors?: boolean;
+  }) => void;
   onResumeSession: () => void;
   onDiscardSession: () => void;
   onRetryErrors: (sessionId: string) => void;
@@ -50,6 +66,7 @@ interface SimuladoSetupProps {
   adaptiveMeta?: { focus: string; strategy: string; weakness_targeted: string; distribution: { modalities: Record<string, number>; difficulty: Record<string, number>; exam_style: Record<string, number> } } | null;
   adaptiveLoading?: boolean;
   onFetchAdaptivePreview?: () => void;
+  inlineMode?: boolean;
 }
 
 /**
@@ -276,7 +293,7 @@ const DynamicDistributionPreview = ({
   );
 };
 
-const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId, adaptiveMeta, adaptiveLoading, onFetchAdaptivePreview }: SimuladoSetupProps) => {
+const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErrors, pendingSession, checkedSession, userId, adaptiveMeta, adaptiveLoading, onFetchAdaptivePreview, inlineMode }: SimuladoSetupProps) => {
   const studyCtx = useStudyContext();
   const [tab, setTab] = useState<"novo" | "historico">("novo");
   const [selectedTopics, setSelectedTopics] = useState<string[]>(() => {
@@ -295,13 +312,37 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [realExamBoard, setRealExamBoard] = useState("GERAL");
   const [imagePercent, setImagePercent] = useState(20);
 
+  // New states for configuration flow
+  const [configStep, setConfigStep] = useState<"choosing" | "configuring">("choosing");
+  const [generationMethod, setGenerationMethod] = useState<"automatic" | "custom">("automatic");
+  const [customDistribution, setCustomDistribution] = useState<TopicDistributionItem[]>([]);
+  const [includeWeakThemes, setIncludeWeakThemes] = useState(false);
+  const [includePreviousErrors, setIncludePreviousErrors] = useState(false);
+  const [customTotalQuestions, setCustomTotalQuestions] = useState<number>(0);
+
   const toggleTopic = (topic: string) => {
     setSelectedTopics(prev =>
       prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
     );
   };
 
+  // Reset config step when mode changes
+  useEffect(() => {
+    setConfigStep("choosing");
+    setGenerationMethod("automatic");
+  }, [mode]);
+
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
+
+  // Initialize custom distribution when board or total questions changes
+  useEffect(() => {
+    if (mode === "prova_real" || mode === "tri") {
+      const profile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
+      const initialDist = calculateTopicDistribution(profile, profile.totalQuestions);
+      setCustomDistribution(initialDist);
+      setCustomTotalQuestions(profile.totalQuestions);
+    }
+  }, [realExamBoard, mode]);
 
   // Distribuição dinâmica baseada em curriculum_weights (com fallback automático)
   const showDynamicPreview = mode === "prova_real" || mode === "tri";
@@ -319,8 +360,9 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     if (mode === "prova_real" || mode === "tri") {
       const profile = selectedProfile;
       const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
-      const count = profile.totalQuestions;
+      const count = generationMethod === "custom" ? customTotalQuestions : profile.totalQuestions;
       const timePerQ = profile.timeMinutes / count;
+      
       onStart({
         topics: topicsFromProfile,
         count,
@@ -333,13 +375,15 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           ? dynamicDistribution
           : undefined,
         topicWeights: profile.topicWeights,
+        autoDistribution: generationMethod === "automatic",
+        customDistribution: generationMethod === "custom" ? customDistribution : undefined,
+        includeWeakThemes,
+        includePreviousErrors,
       });
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
     
-    // Fallback: If no topics selected but it's not a profile mode, 
-    // we default to Clínica Médica to avoid blocking the user
     const finalTopics = selectedTopics.length > 0 ? selectedTopics : ["Clínica Médica"];
     
     onStart({ 
@@ -359,68 +403,72 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     : (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
-      <StudyContextBanner />
-      {checkedSession && pendingSession && (
-        <ResumeSessionBanner
-          updatedAt={pendingSession.updated_at}
-          onResume={onResumeSession}
-          onDiscard={onDiscardSession}
-        />
+    <div className={`space-y-6 animate-fade-in max-w-3xl mx-auto ${inlineMode ? "pt-0" : ""}`}>
+      {!inlineMode && (
+        <>
+          <StudyContextBanner />
+          {checkedSession && pendingSession && (
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={onResumeSession}
+              onDiscard={onDiscardSession}
+            />
+          )}
+
+          <CinematicHero
+            module="simulado"
+            eyebrow={<><Swords className="h-3.5 w-3.5" /> Arena mental · Preparação de elite</>}
+            title="Simulados"
+            subtitle="Configure dificuldade, banca e cronômetro. Modo Estudo para feedback imediato, Modo Prova para tensão real, Prova Real e TRI para preparação cirúrgica."
+            actions={
+              <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
+                "Escolha entre Modo Estudo (feedback imediato) ou Modo Prova (cronômetro)",
+                "Selecione uma ou mais especialidades clicando nos chips de tema",
+                "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
+                "No Modo Estudo: veja explicação após cada resposta e aprenda em tempo real",
+                "No Modo Prova: cronômetro, sem feedback, resultado completo no final",
+                "No Modo Prova Real: simula uma prova de residência completa com distribuição real de temas",
+                "Marque questões com a flag para revisão posterior em ambos os modos",
+              ]} />
+            }
+            media={
+              <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
+                <FileText className="h-10 w-10 text-module" />
+              </div>
+            }
+          />
+
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-border/50 pb-0 mb-6">
+            <button
+              onClick={() => setTab("novo")}
+              className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
+                tab === "novo" 
+                  ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
+                  : "border-transparent text-muted-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Play className={`h-4 w-4 transition-transform duration-300 ${tab === "novo" ? "scale-110" : ""}`} />
+                Novo Simulado
+              </div>
+            </button>
+            <button
+              onClick={() => setTab("historico")}
+              className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
+                tab === "historico" 
+                  ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
+                  : "border-transparent text-muted-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <History className={`h-4 w-4 transition-transform duration-300 ${tab === "historico" ? "scale-110" : ""}`} />
+                Histórico
+              </div>
+            </button>
+          </div>
+        </>
       )}
-
-      <CinematicHero
-        module="simulado"
-        eyebrow={<><Swords className="h-3.5 w-3.5" /> Arena mental · Preparação de elite</>}
-        title="Simulados"
-        subtitle="Configure dificuldade, banca e cronômetro. Modo Estudo para feedback imediato, Modo Prova para tensão real, Prova Real e TRI para preparação cirúrgica."
-        actions={
-          <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
-            "Escolha entre Modo Estudo (feedback imediato) ou Modo Prova (cronômetro)",
-            "Selecione uma ou mais especialidades clicando nos chips de tema",
-            "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
-            "No Modo Estudo: veja explicação após cada resposta e aprenda em tempo real",
-            "No Modo Prova: cronômetro, sem feedback, resultado completo no final",
-            "No Modo Prova Real: simula uma prova de residência completa com distribuição real de temas",
-            "Marque questões com a flag para revisão posterior em ambos os modos",
-          ]} />
-        }
-        media={
-          <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
-            <FileText className="h-10 w-10 text-module" />
-          </div>
-        }
-      />
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-border/50 pb-0 mb-6">
-        <button
-          onClick={() => setTab("novo")}
-          className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
-            tab === "novo" 
-              ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
-              : "border-transparent text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Play className={`h-4 w-4 transition-transform duration-300 ${tab === "novo" ? "scale-110" : ""}`} />
-            Novo Simulado
-          </div>
-        </button>
-        <button
-          onClick={() => setTab("historico")}
-          className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
-            tab === "historico" 
-              ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
-              : "border-transparent text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <History className={`h-4 w-4 transition-transform duration-300 ${tab === "historico" ? "scale-110" : ""}`} />
-            Histórico
-          </div>
-        </button>
-      </div>
 
       {tab === "historico" ? (
         <SimuladoHistory userId={userId} onRetryErrors={onRetryErrors} />
@@ -606,7 +654,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* ── Prova Real Configuration ── */}
-          {mode === "prova_real" && (
+          {mode === "prova_real" && configStep === "choosing" && (
             <>
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-amber-600 flex items-center gap-2">
@@ -635,21 +683,19 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 </Select>
               </div>
 
-              {/* Topic distribution preview (dynamic from curriculum_weights, with static fallback) */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
-                <DynamicDistributionPreview
-                  data={dynamicDistribution}
-                  isLoading={dynamicLoading}
-                  total={selectedProfile.totalQuestions}
-                  barColorClass="bg-amber-500"
-                />
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <Button 
+                  className="flex-1 gap-2 bg-amber-500 hover:bg-amber-600 text-white" 
+                  onClick={() => setConfigStep("configuring")}
+                >
+                  Continuar para Configuração
+                </Button>
               </div>
             </>
           )}
 
           {/* ── TRI Mode Configuration ── */}
-          {mode === "tri" && (
+          {mode === "tri" && configStep === "choosing" && (
             <>
               <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-violet-600 flex items-center gap-2">
@@ -679,17 +725,223 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 </Select>
               </div>
 
-              {/* Topic distribution preview (dynamic from curriculum_weights, with static fallback) */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
-                <DynamicDistributionPreview
-                  data={dynamicDistribution}
-                  isLoading={dynamicLoading}
-                  total={selectedProfile.totalQuestions}
-                  barColorClass="bg-violet-500"
-                />
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <Button 
+                  className="flex-1 gap-2 bg-violet-500 hover:bg-violet-600 text-white" 
+                  onClick={() => setConfigStep("configuring")}
+                >
+                  Continuar para Configuração
+                </Button>
               </div>
             </>
+          )}
+
+          {/* ── Configuration Step (Advanced Mode) ── */}
+          {(mode === "prova_real" || mode === "tri") && configStep === "configuring" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between border-b border-border/50 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${mode === "tri" ? "bg-violet-500/10 text-violet-500" : "bg-amber-500/10 text-amber-500"}`}>
+                    <Trophy className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">{selectedProfile.name}</h3>
+                    <p className="text-sm text-muted-foreground">Configuração do Simulado</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setConfigStep("choosing")}>
+                  Alterar Banca
+                </Button>
+              </div>
+
+              {/* Mode Selection */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setGenerationMethod("automatic")}
+                  className={`p-4 rounded-xl border-2 transition-all text-left relative ${
+                    generationMethod === "automatic"
+                      ? "border-primary bg-primary/10 shadow-glow-sm"
+                      : "border-border bg-secondary/20 hover:border-primary/30"
+                  }`}
+                >
+                  {generationMethod === "automatic" && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
+                  <Zap className={`h-5 w-5 mb-2 ${generationMethod === "automatic" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="font-bold text-sm block">Modo Inteligente</span>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Distribuição automática sugerida pela banca.</p>
+                </button>
+                <button
+                  onClick={() => setGenerationMethod("custom")}
+                  className={`p-4 rounded-xl border-2 transition-all text-left relative ${
+                    generationMethod === "custom"
+                      ? "border-primary bg-primary/10 shadow-glow-sm"
+                      : "border-border bg-secondary/20 hover:border-primary/30"
+                  }`}
+                >
+                  {generationMethod === "custom" && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
+                  <Target className={`h-5 w-5 mb-2 ${generationMethod === "custom" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="font-bold text-sm block">Modo Avançado</span>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Personalize temas, pesos e configurações extras.</p>
+                </button>
+              </div>
+
+              {generationMethod === "automatic" ? (
+                <div className="space-y-4">
+                  <div className="bg-secondary/20 rounded-xl p-4 border border-border/50">
+                    <label className="text-sm font-semibold mb-3 block">Distribuição Sugerida</label>
+                    <DynamicDistributionPreview
+                      data={dynamicDistribution}
+                      isLoading={dynamicLoading}
+                      total={selectedProfile.totalQuestions}
+                      barColorClass={mode === "tri" ? "bg-violet-500" : "bg-amber-500"}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="flex-1 h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
+                      onClick={handleStart}
+                    >
+                      Usar Sugestão e Iniciar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {/* Advanced Customization UI */}
+                  <div className="bg-secondary/20 rounded-xl p-5 border border-border/50 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold">Personalizar Temas</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-[10px] h-7"
+                        onClick={() => {
+                          const initialDist = calculateTopicDistribution(selectedProfile, selectedProfile.totalQuestions);
+                          setCustomDistribution(initialDist);
+                          setCustomTotalQuestions(selectedProfile.totalQuestions);
+                        }}
+                      >
+                        <History className="h-3 w-3 mr-1" /> Restaurar Padrão
+                      </Button>
+                    </div>
+
+                    <div className="max-h-[300px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                      {customDistribution.map((item, idx) => (
+                        <div key={item.topic} className="flex items-center gap-3 bg-background/50 p-2 rounded-lg border border-border/30">
+                          <span className="text-xs flex-1 truncate font-medium">{item.topic}</span>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={item.count}
+                              onChange={(e) => {
+                                const newVal = parseInt(e.target.value) || 0;
+                                const newDist = [...customDistribution];
+                                newDist[idx] = { ...item, count: newVal, percent: Math.round((newVal / customTotalQuestions) * 100) };
+                                setCustomDistribution(newDist);
+                              }}
+                              className="w-16 h-8 text-center text-xs"
+                            />
+                            <span className="text-[10px] text-muted-foreground w-8">q</span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => {
+                              const newDist = customDistribution.filter((_, i) => i !== idx);
+                              setCustomDistribution(newDist);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full text-[10px] h-8 border-dashed"
+                        onClick={() => {
+                          setCustomDistribution([...customDistribution, { topic: "Novo Tema", count: 0, percent: 0 }]);
+                        }}
+                      >
+                        + Adicionar Tema
+                      </Button>
+                    </div>
+
+                    <div className="pt-3 border-t border-border/50 flex items-center justify-between">
+                      <span className="text-xs font-semibold">Total de Questões</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-black ${customDistribution.reduce((acc, curr) => acc + curr.count, 0) !== selectedProfile.totalQuestions ? "text-amber-500" : "text-emerald-500"}`}>
+                          {customDistribution.reduce((acc, curr) => acc + curr.count, 0)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/ {selectedProfile.totalQuestions}</span>
+                      </div>
+                    </div>
+                    {customDistribution.reduce((acc, curr) => acc + curr.count, 0) !== selectedProfile.totalQuestions && (
+                      <p className="text-[10px] text-amber-500 text-right leading-tight">
+                        Aviso: O total de questões difere do padrão da banca ({selectedProfile.totalQuestions}).
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Extra Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setIncludeWeakThemes(!includeWeakThemes)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        includeWeakThemes ? "bg-primary/5 border-primary/50" : "bg-secondary/10 border-border/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <TrendingDown className={`h-4 w-4 ${includeWeakThemes ? "text-primary" : "text-muted-foreground"}`} />
+                        <div className="text-left">
+                          <span className="text-xs font-bold block">Incluir Temas Fracos</span>
+                          <p className="text-[9px] text-muted-foreground">Prioriza assuntos que você errou recentemente.</p>
+                        </div>
+                      </div>
+                      <div className={`w-8 h-4 rounded-full relative transition-colors ${includeWeakThemes ? "bg-primary" : "bg-muted"}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${includeWeakThemes ? "left-4.5" : "left-0.5"}`} />
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setIncludePreviousErrors(!includePreviousErrors)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        includePreviousErrors ? "bg-primary/5 border-primary/50" : "bg-secondary/10 border-border/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <History className={`h-4 w-4 ${includePreviousErrors ? "text-primary" : "text-muted-foreground"}`} />
+                        <div className="text-left">
+                          <span className="text-xs font-bold block">Erros Anteriores</span>
+                          <p className="text-[9px] text-muted-foreground">Incluir questões que você já errou antes.</p>
+                        </div>
+                      </div>
+                      <div className={`w-8 h-4 rounded-full relative transition-colors ${includePreviousErrors ? "bg-primary" : "bg-muted"}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${includePreviousErrors ? "left-4.5" : "left-0.5"}`} />
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      variant="outline"
+                      className="flex-1 h-12 text-sm font-bold"
+                      onClick={() => setConfigStep("choosing")}
+                    >
+                      Voltar
+                    </Button>
+                    <Button 
+                      className="flex-[2] h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
+                      onClick={handleStart}
+                    >
+                      Gerar Simulado Personalizado
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* ── Standard modes: Topic selection ── */}
