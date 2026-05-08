@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 
-export async function fetchDynamicBlueprint(supabase: any, examKey: string) {
+export async function fetchDynamicBlueprint(supabase: any, examKey: string, useEffectiveWeight = true) {
   console.log(`[Blueprint] Buscando blueprint dinâmico para: ${examKey}`);
   
   const { data, error } = await supabase
