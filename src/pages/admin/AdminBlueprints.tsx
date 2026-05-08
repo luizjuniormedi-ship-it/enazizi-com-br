@@ -426,7 +426,58 @@ const AdminBlueprints = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Effective Weight Heatmap */}
+      {/* Clinical Quality Map */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-xl font-black uppercase flex items-center gap-2">
+            <ShieldCheck className="text-emerald-500" /> Mapa de Qualidade Clínica
+          </CardTitle>
+          <CardDescription>Performance forense da IA por especialidade médica</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader className="bg-slate-950/50">
+              <TableRow className="border-slate-800">
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Especialidade</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Taxa de Aprovação</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Precisão Médica</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Score Final</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {qualityMap?.map((item: any, idx: number) => (
+                <TableRow key={idx} className="border-slate-800">
+                  <TableCell className="font-bold uppercase tracking-tight">{item.specialty}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${item.approval_rate >= 85 ? 'bg-emerald-500' : 'bg-red-500'}`}
+                          style={{ width: `${item.approval_rate}%` }}
+                        />
+                      </div>
+                      <span className={`text-xs font-bold ${item.approval_rate >= 85 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {item.approval_rate.toFixed(1)}%
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{(item.avg_accuracy * 100).toFixed(1)}%</TableCell>
+                  <TableCell className="font-black">{(item.avg_final * 100).toFixed(1)}%</TableCell>
+                  <TableCell>
+                    {item.avg_final < 0.85 ? (
+                      <Badge variant="destructive" className="animate-pulse">QUALITY_WARNING</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">ELITE</Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader>
           <CardTitle className="text-xl font-black uppercase flex items-center gap-2">
