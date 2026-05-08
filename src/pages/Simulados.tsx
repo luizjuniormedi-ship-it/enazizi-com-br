@@ -644,25 +644,57 @@ const Simulados = () => {
         <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/dashboard")} className="gap-2 text-white/40 hover:text-white mb-4 pl-0">
-                <ChevronLeft className="h-4 w-4" /> Voltar
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => {
+                  if (showConfigStep) {
+                    setShowConfigStep(false);
+                    setConfigToVerify(null);
+                  } else {
+                    navigate("/dashboard");
+                  }
+                }} 
+                className="gap-2 text-white/40 hover:text-white mb-4 pl-0"
+              >
+                <ChevronLeft className="h-4 w-4" /> {showConfigStep ? "Voltar para Seleção" : "Voltar"}
               </Button>
               <EnaflixSectionTitle 
-                kicker="IA ORGANIZADORA"
+                kicker={showConfigStep ? "PERSONALIZAR" : "IA ORGANIZADORA"}
                 title={
-                  <>
-                    Simulados <span className="gradient-text">& Provas</span>
-                  </>
+                  showConfigStep ? (
+                    <>Configuração do <span className="gradient-text">Simulado</span></>
+                  ) : (
+                    <>Simulados <span className="gradient-text">& Provas</span></>
+                  )
                 } 
-                subtitle="IA de estudos gera desafios reais para testar seu domínio clínico."
+                subtitle={showConfigStep ? "Ajuste os temas e pesos antes de iniciar seu desafio." : "IA de estudos gera desafios reais para testar seu domínio clínico."}
               />
             </div>
-            {pendingSession && checked && (
+            {pendingSession && checked && !showConfigStep && (
               <ResumeSessionBanner updatedAt={pendingSession.updated_at} onResume={handleResumeSession} onDiscard={abandonSession} />
             )}
           </div>
 
-          {activeJobs.length > 0 && (
+          {showConfigStep && configToVerify && (
+            <div className="w-full max-w-3xl mx-auto">
+              <div className="glass-card p-6 sm:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <SimuladoSetup
+                  onStart={(config) => handleStart({ ...config, forceStart: true })}
+                  adaptiveLoading={adaptivePreviewLoading}
+                  adaptiveMeta={adaptivePreviewMeta}
+                  onFetchAdaptivePreview={() => {}}
+                  pendingSession={null}
+                  checkedSession={true}
+                  userId={user?.id}
+                />
+              </div>
+            </div>
+          )}
+
+          {!showConfigStep && (
+            <>
+              {activeJobs.length > 0 && (
             <EnaflixSection title="Gerações em Andamento">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {activeJobs.map(job => (
