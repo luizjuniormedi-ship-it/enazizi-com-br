@@ -49,16 +49,78 @@ function normalizeTerms(termos: string[]): string[] {
   return unique;
 }
 
+class AuthError extends Error {
+  constructor(message: string) { super(message); this.name = "AuthError"; }
+}
+class RateLimitError extends Error {
+  constructor(message: string) { super(message); this.name = "RateLimitError"; }
+}
+
 async function getUserIdFromRequest(req: Request): Promise<string> {
   const auth = req.headers.get("Authorization");
-  if (!auth?.startsWith("Bearer ")) throw new Error("Token ausente.");
+  if (!auth?.startsWith("Bearer ")) throw new AuthError("Token ausente.");
   const sb = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_ANON_KEY"), {
     global: { headers: { Authorization: auth } }, auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data, error } = await sb.auth.getUser();
-  if (error || !data?.user?.id) throw new Error("Autenticação falhou.");
+  if (error || !data?.user?.id) throw new AuthError("Autenticação falhou.");
   return data.user.id;
 }
+
+const RATE_LIMITS: Record<string, number> = { free: 20, premium: 100 };
+
+async function checkRateLimit(db: SupabaseClient, userId: string): Promise<{ ok: boolean; used: number; limit: number; plan: string }> {
+  // Tier detection: try subscriptions table; default free
+  let plan = "free";
+  try {
+    const { data: sub } = await db
+      .from("subscriptions")
+      .select("plan_id, status")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .maybeSingle();
+    if (sub?.plan_id) {
+      const pid = String(sub.plan_id).toLowerCase();
+      if (pid.includes("premium") || pid.includes("pro") || pid.includes("plus")) plan = "premium";
+    }
+  } catch { /* default free */ }
+
+  const limit = RATE_LIMITS[plan] ?? RATE_LIMITS.free;
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count } = await db
+    .from("mnemonic_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("created_at", since);
+  const used = count ?? 0;
+  return { ok: used < limit, used, limit, plan };
+}
+
+// Deterministic fallback: builds an acronym mnemonic from items
+function buildDeterministicFallback(tema: string, termos: string[]) {
+  const items = termos.filter(Boolean).slice(0, 7);
+  const sigla = items.map(t => t.trim().charAt(0).toUpperCase()).join("");
+  const frase = items.length > 0
+    ? `Lembre-se de ${tema}: ${items.join(", ")}.`
+    : `Lembre-se do tema ${tema}.`;
+  return {
+    sigla,
+    frase_mnemonica: frase,
+    explicacao_didatica: `Mnemônico simples baseado nas iniciais: ${sigla}. Cada letra representa um item-chave do tema "${tema}".`,
+    explicacao_tecnica: `Itens: ${items.join("; ")}.`,
+    cena_visual: `Cena simples representando ${tema}.`,
+    prompt_imagem: "",
+    associacoes: items.map((t, i) => ({
+      letra: t.charAt(0).toUpperCase(),
+      termo_original: t,
+      representacao_no_mnemonico: t,
+      explicacao: `Posição ${i + 1}`,
+    })),
+    score_final: 50,
+    response_source: "fallback_deterministic" as const,
+  };
+}
+
 
 function getServiceClient(): SupabaseClient {
   return createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false, autoRefreshToken: false } });
@@ -280,6 +342,13 @@ serve(async (req: Request) => {
 
       const userId = await getUserIdFromRequest(req);
       db = getServiceClient();
+
+      // Rate limiting per user
+      const rl = await checkRateLimit(db, userId);
+      if (!rl.ok) {
+        throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}). Aguarde para gerar novos mnemônicos.`);
+      }
+
 
       // ══════════════════════════════════════
       // ETAPA 0 (NOVA): Extração automática de termos quando não fornecidos
@@ -686,12 +755,49 @@ serve(async (req: Request) => {
       }
 
       if (!mnemonic) {
+        // Fallback determinístico se temos termos suficientes
+        if (payload.termos.length >= 2) {
+          console.warn("[MNEMONIC] Usando fallback determinístico após 3 tentativas falhas");
+          const fb = buildDeterministicFallback(payload.tema, payload.termos);
+          if (requestId) { try { await updateRequestStatus(db, requestId, "completed"); } catch {} }
+          return jsonResponse({
+            success: true,
+            warning: "Mnemônico simples gerado sem IA.",
+            response_source: "fallback_deterministic",
+            data: {
+              request_id: requestId,
+              result_id: null,
+              tema: payload.tema,
+              sigla: fb.sigla,
+              frase_mnemonica: fb.frase_mnemonica,
+              explicacao_didatica: fb.explicacao_didatica,
+              explicacao_associacao: fb.explicacao_didatica,
+              explicacao_tecnica: fb.explicacao_tecnica,
+              cena_visual: fb.cena_visual,
+              prompt_imagem: "",
+              image_url: null,
+              image_failed: true,
+              score_medico: 50, score_pedagogico: 50, score_linguistico: 50, score_final: 50,
+              quality_flag: "low",
+              alertas: ["Mnemônico simples gerado sem IA — tente regenerar para melhor qualidade."],
+              associacoes: fb.associacoes,
+              associacoes_visuais: [],
+              items_map: fb.associacoes.map((a: any) => ({
+                letter: a.letra, word: a.representacao_no_mnemonico,
+                original_item: a.termo_original, symbol: null, symbol_reason: null,
+              })),
+              pontos_de_prova: [],
+              response_source: "fallback_deterministic",
+            },
+          }, 200);
+        }
         if (requestId) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
         return jsonResponse({
           success: false,
           error: "Não foi possível gerar um mnemônico válido após 3 tentativas. Tente novamente.",
           code: "GENERATION_FAILED",
           details: lastIssues.join(", "),
+          requestId: requestId || requestIdForError,
         }, 422);
       }
 
@@ -857,8 +963,27 @@ serve(async (req: Request) => {
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Erro interno.";
       console.error("[MNEMONIC] FAILED:", msg);
+
+      if (error instanceof AuthError) {
+        return jsonResponse({
+          success: false,
+          error: "Faça login para gerar mnemônicos.",
+          message: "Faça login para gerar mnemônicos.",
+          code: "UNAUTHORIZED",
+          requestId: requestIdForError,
+        }, 401);
+      }
+      if (error instanceof RateLimitError) {
+        return jsonResponse({
+          success: false,
+          error: msg,
+          message: msg,
+          code: "RATE_LIMIT",
+          requestId: requestIdForError,
+        }, 429);
+      }
+
       if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-      // NUNCA retornar fallback fake como sucesso
       return jsonResponse({
         success: false,
         error: "Não foi possível gerar o mnemônico agora. Tente novamente.",
