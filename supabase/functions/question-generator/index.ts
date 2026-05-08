@@ -519,17 +519,17 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           // Reduzindo concorrência para evitar 429 e picos de custo (fila assíncrona controlada)
           const PARALLEL_BATCHES = Math.min(batchCount, 2);
 
-          const buildSlotPrompt = (needed: number, prevSnapshot: string[]) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+          const buildSlotPrompt = (needed: number, prevSnapshot: string[], slotTarget?: any) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
 
 IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
 
 NÍVEL DE DIFICULDADE: ${desc}
 TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
 
-TEMAS E PESOS (DISTRIBUA PROPORCIONALMENTE): ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent || Math.round((tw.count/requestedCount)*100)}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}
+${slotTarget ? `FOCO TEMÁTICO OBRIGATÓRIO: Esta questão DEVE obrigatoriamente pertencer à especialidade "${slotTarget.specialty}" e abordar o tema "${slotTarget.topic}".` : `TEMAS E PESOS (DISTRIBUA PROPORCIONALMENTE): ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent || Math.round((tw.count/requestedCount)*100)}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}`}
 
 Retorne APENAS um array JSON puro:
-[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"topic":"tema","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
+[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
