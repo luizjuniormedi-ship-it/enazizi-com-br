@@ -811,7 +811,8 @@ const Simulados = () => {
                 />
               </div>
             </div>
-          </div>
+            </>
+          )}
         </main>
       </div>
     );
