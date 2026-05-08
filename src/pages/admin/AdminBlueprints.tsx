@@ -272,7 +272,7 @@ const AdminBlueprints = () => {
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-black text-emerald-500">
-              {clinicalAuditData?.length ? (clinicalAuditData.reduce((acc: number, cur: any) => acc + Number(cur.final_quality_score), 0) / clinicalAuditData.length * 100).toFixed(1) : "91.0"}%
+              {qualityMap?.length ? (qualityMap.reduce((acc: number, cur: any) => acc + Number(cur.avg_final), 0) / qualityMap.length * 100).toFixed(1) : "91.0"}%
             </div>
             <p className="text-xs text-slate-500 mt-1">Baseado nas últimas 100 questões</p>
           </CardContent>
