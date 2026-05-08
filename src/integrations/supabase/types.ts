@@ -9109,13 +9109,48 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_blueprint_versions: {
+        Row: {
+          blueprint_json: Json
+          confidence_avg: number | null
+          created_at: string | null
+          created_by: string | null
+          exam_key: string
+          id: string
+          is_active: boolean | null
+          version_label: string
+        }
+        Insert: {
+          blueprint_json: Json
+          confidence_avg?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          exam_key: string
+          id?: string
+          is_active?: boolean | null
+          version_label: string
+        }
+        Update: {
+          blueprint_json?: Json
+          confidence_avg?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          exam_key?: string
+          id?: string
+          is_active?: boolean | null
+          version_label?: string
+        }
+        Relationships: []
+      }
       exam_blueprints: {
         Row: {
+          confidence_score: number | null
           created_at: string | null
           exam_key: string
           id: string
           is_active: boolean | null
           last_recalculated_at: string | null
+          sample_size: number | null
           specialty: string
           topic: string
           updated_at: string | null
@@ -9123,11 +9158,13 @@ export type Database = {
           weight: number
         }
         Insert: {
+          confidence_score?: number | null
           created_at?: string | null
           exam_key: string
           id?: string
           is_active?: boolean | null
           last_recalculated_at?: string | null
+          sample_size?: number | null
           specialty: string
           topic: string
           updated_at?: string | null
@@ -9135,11 +9172,13 @@ export type Database = {
           weight?: number
         }
         Update: {
+          confidence_score?: number | null
           created_at?: string | null
           exam_key?: string
           id?: string
           is_active?: boolean | null
           last_recalculated_at?: string | null
+          sample_size?: number | null
           specialty?: string
           topic?: string
           updated_at?: string | null
@@ -9221,6 +9260,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      exam_raw_data: {
+        Row: {
+          created_at: string | null
+          exam_key: string
+          exam_year: number
+          id: string
+          occurrence_count: number | null
+          specialty: string
+          topic: string
+        }
+        Insert: {
+          created_at?: string | null
+          exam_key: string
+          exam_year: number
+          id?: string
+          occurrence_count?: number | null
+          specialty: string
+          topic: string
+        }
+        Update: {
+          created_at?: string | null
+          exam_key?: string
+          exam_year?: number
+          id?: string
+          occurrence_count?: number | null
+          specialty?: string
+          topic?: string
+        }
+        Relationships: []
       }
       exam_sessions: {
         Row: {
@@ -21054,6 +21123,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      reconcile_and_smooth_weights: {
+        Args: { p_exam_key: string; p_smoothing_factor?: number }
+        Returns: undefined
       }
       refresh_video_cognitive_heatmap: {
         Args: { p_video_lesson_id: string }
