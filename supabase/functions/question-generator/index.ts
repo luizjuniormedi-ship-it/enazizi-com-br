@@ -304,9 +304,29 @@ Regras:
     // Camada de Alias e Resolução de Banca
     const normalizedKey = safeTargetExam.toLowerCase().trim();
     const resolution = resolveBanca(safeTargetExam);
-    const { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
+    let { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
 
-    // Se houver topicDistribution no generationContext ou no payload, usar como prioridade
+    // Supabase client for DB operations
+    const supabase = createClient(
+      Deno.env.get("VITE_SUPABASE_URL") ?? "",
+      Deno.env.get("VITE_SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // INTELLIGENCE ENGINE: Buscar blueprint dinâmico no banco
+    let dynamicBlueprint = null;
+    if (safeTargetExam && safeTargetExam !== "default") {
+      dynamicBlueprint = await fetchDynamicBlueprint(supabase, safeTargetExam);
+      if (dynamicBlueprint) {
+        console.log(`[question-generator] Aplicando blueprint DINÂMICO para ${safeTargetExam}`);
+        // Sobrescrever pesos estáticos com os dinâmicos
+        blueprint = {
+          ...blueprint,
+          specialtyWeights: dynamicBlueprint.specialtyWeights
+        };
+      }
+    }
+
+    // Se houver topicDistribution no generationContext ou no payload, usar como prioridade (override manual)
     const appliedTopicWeights = body.topicWeights || gc.topicDistribution || body.customDistribution;
     const isAutoFromExam = body.autoDistribution !== false;
 
