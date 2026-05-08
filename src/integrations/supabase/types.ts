@@ -9109,6 +9109,78 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_blueprints: {
+        Row: {
+          created_at: string | null
+          exam_key: string
+          id: string
+          is_active: boolean | null
+          last_recalculated_at: string | null
+          specialty: string
+          topic: string
+          updated_at: string | null
+          version: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string | null
+          exam_key: string
+          id?: string
+          is_active?: boolean | null
+          last_recalculated_at?: string | null
+          specialty: string
+          topic: string
+          updated_at?: string | null
+          version?: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string | null
+          exam_key?: string
+          id?: string
+          is_active?: boolean | null
+          last_recalculated_at?: string | null
+          specialty?: string
+          topic?: string
+          updated_at?: string | null
+          version?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      exam_drift_logs: {
+        Row: {
+          delta: number | null
+          detected_at: string | null
+          exam_key: string
+          id: string
+          new_weight: number | null
+          old_weight: number | null
+          reason: string | null
+          topic: string
+        }
+        Insert: {
+          delta?: number | null
+          detected_at?: string | null
+          exam_key: string
+          id?: string
+          new_weight?: number | null
+          old_weight?: number | null
+          reason?: string | null
+          topic: string
+        }
+        Update: {
+          delta?: number | null
+          detected_at?: string | null
+          exam_key?: string
+          id?: string
+          new_weight?: number | null
+          old_weight?: number | null
+          reason?: string | null
+          topic?: string
+        }
+        Relationships: []
+      }
       exam_question_usage: {
         Row: {
           answered_correctly: boolean | null
@@ -20685,6 +20757,14 @@ export type Database = {
       }
       execute_data_retention: { Args: never; Returns: undefined }
       generate_incident_rca: { Args: { incident_id: string }; Returns: Json }
+      get_active_blueprint: {
+        Args: { p_exam_key: string }
+        Returns: {
+          specialty: string
+          topic: string
+          weight: number
+        }[]
+      }
       get_banca_coverage_report: {
         Args: never
         Returns: {

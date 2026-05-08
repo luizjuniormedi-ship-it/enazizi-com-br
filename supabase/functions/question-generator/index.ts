@@ -6,6 +6,7 @@ import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { fetchDynamicBlueprint } from "../_shared/dynamic-blueprints.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -303,9 +304,29 @@ Regras:
     // Camada de Alias e Resolução de Banca
     const normalizedKey = safeTargetExam.toLowerCase().trim();
     const resolution = resolveBanca(safeTargetExam);
-    const { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
+    let { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
 
-    // Se houver topicDistribution no generationContext ou no payload, usar como prioridade
+    // Supabase client for DB operations
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // INTELLIGENCE ENGINE: Buscar blueprint dinâmico no banco
+    let dynamicBlueprint = null;
+    if (safeTargetExam && safeTargetExam !== "default") {
+      dynamicBlueprint = await fetchDynamicBlueprint(supabase, safeTargetExam);
+      if (dynamicBlueprint) {
+        console.log(`[question-generator] Aplicando blueprint DINÂMICO para ${safeTargetExam}`);
+        // Sobrescrever pesos estáticos com os dinâmicos
+        blueprint = {
+          ...blueprint,
+          specialtyWeights: dynamicBlueprint.specialtyWeights
+        };
+      }
+    }
+
+    // Se houver topicDistribution no generationContext ou no payload, usar como prioridade (override manual)
     const appliedTopicWeights = body.topicWeights || gc.topicDistribution || body.customDistribution;
     const isAutoFromExam = body.autoDistribution !== false;
 
@@ -323,6 +344,8 @@ Regras:
     if (messages.length === 0 && !hasSelectedTopics && !hasTopicDistribution && !gc.topic && !gc.subtopic) {
       return errorResponse("Nenhum critério de geração (tópicos, distribuição ou temas) foi fornecido.", 400);
     }
+
+    console.log(`[question-generator] Configuração final:`, {
       topicDistribution: !!appliedTopicWeights,
       autoTopicsFromExam: isAutoFromExam,
       label: blueprint.label
