@@ -725,6 +725,214 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             </>
           )}
 
+          {/* ── Configuration Step (Advanced Mode) ── */}
+          {(mode === "prova_real" || mode === "tri") && configStep === "configuring" && (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between border-b border-border/50 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${mode === "tri" ? "bg-violet-500/10 text-violet-500" : "bg-amber-500/10 text-amber-500"}`}>
+                    <Trophy className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">{selectedProfile.name}</h3>
+                    <p className="text-sm text-muted-foreground">Configuração do Simulado</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setConfigStep("choosing")}>
+                  Alterar Banca
+                </Button>
+              </div>
+
+              {/* Mode Selection */}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setGenerationMethod("automatic")}
+                  className={`p-4 rounded-xl border-2 transition-all text-left relative ${
+                    generationMethod === "automatic"
+                      ? "border-primary bg-primary/10 shadow-glow-sm"
+                      : "border-border bg-secondary/20 hover:border-primary/30"
+                  }`}
+                >
+                  {generationMethod === "automatic" && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
+                  <Zap className={`h-5 w-5 mb-2 ${generationMethod === "automatic" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="font-bold text-sm block">Modo Inteligente</span>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Distribuição automática sugerida pela banca.</p>
+                </button>
+                <button
+                  onClick={() => setGenerationMethod("custom")}
+                  className={`p-4 rounded-xl border-2 transition-all text-left relative ${
+                    generationMethod === "custom"
+                      ? "border-primary bg-primary/10 shadow-glow-sm"
+                      : "border-border bg-secondary/20 hover:border-primary/30"
+                  }`}
+                >
+                  {generationMethod === "custom" && <CheckCircle2 className="absolute top-2 right-2 h-4 w-4 text-primary" />}
+                  <Target className={`h-5 w-5 mb-2 ${generationMethod === "custom" ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className="font-bold text-sm block">Modo Avançado</span>
+                  <p className="text-[10px] text-muted-foreground leading-tight">Personalize temas, pesos e configurações extras.</p>
+                </button>
+              </div>
+
+              {generationMethod === "automatic" ? (
+                <div className="space-y-4">
+                  <div className="bg-secondary/20 rounded-xl p-4 border border-border/50">
+                    <label className="text-sm font-semibold mb-3 block">Distribuição Sugerida</label>
+                    <DynamicDistributionPreview
+                      data={dynamicDistribution}
+                      isLoading={dynamicLoading}
+                      total={selectedProfile.totalQuestions}
+                      barColorClass={mode === "tri" ? "bg-violet-500" : "bg-amber-500"}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      className="flex-1 h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
+                      onClick={handleStart}
+                    >
+                      Usar Sugestão e Iniciar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {/* Advanced Customization UI */}
+                  <div className="bg-secondary/20 rounded-xl p-5 border border-border/50 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-semibold">Personalizar Temas</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-[10px] h-7"
+                        onClick={() => {
+                          const initialDist = calculateTopicDistribution(selectedProfile, selectedProfile.totalQuestions);
+                          setCustomDistribution(initialDist);
+                          setCustomTotalQuestions(selectedProfile.totalQuestions);
+                        }}
+                      >
+                        <History className="h-3 w-3 mr-1" /> Restaurar Padrão
+                      </Button>
+                    </div>
+
+                    <div className="max-h-[300px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                      {customDistribution.map((item, idx) => (
+                        <div key={item.topic} className="flex items-center gap-3 bg-background/50 p-2 rounded-lg border border-border/30">
+                          <span className="text-xs flex-1 truncate font-medium">{item.topic}</span>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={item.count}
+                              onChange={(e) => {
+                                const newVal = parseInt(e.target.value) || 0;
+                                const newDist = [...customDistribution];
+                                newDist[idx] = { ...item, count: newVal, percent: Math.round((newVal / customTotalQuestions) * 100) };
+                                setCustomDistribution(newDist);
+                              }}
+                              className="w-16 h-8 text-center text-xs"
+                            />
+                            <span className="text-[10px] text-muted-foreground w-8">q</span>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => {
+                              const newDist = customDistribution.filter((_, i) => i !== idx);
+                              setCustomDistribution(newDist);
+                            }}
+                          >
+                            ×
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button 
+                        variant="outline" 
+                        className="w-full text-[10px] h-8 border-dashed"
+                        onClick={() => {
+                          setCustomDistribution([...customDistribution, { topic: "Novo Tema", count: 0, percent: 0 }]);
+                        }}
+                      >
+                        + Adicionar Tema
+                      </Button>
+                    </div>
+
+                    <div className="pt-3 border-t border-border/50 flex items-center justify-between">
+                      <span className="text-xs font-semibold">Total de Questões</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-black ${customDistribution.reduce((acc, curr) => acc + curr.count, 0) !== selectedProfile.totalQuestions ? "text-amber-500" : "text-emerald-500"}`}>
+                          {customDistribution.reduce((acc, curr) => acc + curr.count, 0)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">/ {selectedProfile.totalQuestions}</span>
+                      </div>
+                    </div>
+                    {customDistribution.reduce((acc, curr) => acc + curr.count, 0) !== selectedProfile.totalQuestions && (
+                      <p className="text-[10px] text-amber-500 text-right leading-tight">
+                        Aviso: O total de questões difere do padrão da banca ({selectedProfile.totalQuestions}).
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Extra Options */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => setIncludeWeakThemes(!includeWeakThemes)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        includeWeakThemes ? "bg-primary/5 border-primary/50" : "bg-secondary/10 border-border/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <TrendingDown className={`h-4 w-4 ${includeWeakThemes ? "text-primary" : "text-muted-foreground"}`} />
+                        <div className="text-left">
+                          <span className="text-xs font-bold block">Incluir Temas Fracos</span>
+                          <p className="text-[9px] text-muted-foreground">Prioriza assuntos que você errou recentemente.</p>
+                        </div>
+                      </div>
+                      <div className={`w-8 h-4 rounded-full relative transition-colors ${includeWeakThemes ? "bg-primary" : "bg-muted"}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${includeWeakThemes ? "left-4.5" : "left-0.5"}`} />
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => setIncludePreviousErrors(!includePreviousErrors)}
+                      className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                        includePreviousErrors ? "bg-primary/5 border-primary/50" : "bg-secondary/10 border-border/50"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <History className={`h-4 w-4 ${includePreviousErrors ? "text-primary" : "text-muted-foreground"}`} />
+                        <div className="text-left">
+                          <span className="text-xs font-bold block">Erros Anteriores</span>
+                          <p className="text-[9px] text-muted-foreground">Incluir questões que você já errou antes.</p>
+                        </div>
+                      </div>
+                      <div className={`w-8 h-4 rounded-full relative transition-colors ${includePreviousErrors ? "bg-primary" : "bg-muted"}`}>
+                        <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${includePreviousErrors ? "left-4.5" : "left-0.5"}`} />
+                      </div>
+                    </button>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button 
+                      variant="outline"
+                      className="flex-1 h-12 text-sm font-bold"
+                      onClick={() => setConfigStep("choosing")}
+                    >
+                      Voltar
+                    </Button>
+                    <Button 
+                      className="flex-[2] h-12 text-sm font-bold uppercase tracking-widest bg-primary hover:bg-primary/90"
+                      onClick={handleStart}
+                    >
+                      Gerar Simulado Personalizado
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── Standard modes: Topic selection ── */}
           {mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && (
             <>
