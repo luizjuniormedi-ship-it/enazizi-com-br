@@ -926,8 +926,27 @@ serve(async (req: Request) => {
     } catch (error) {
       const msg = error instanceof Error ? error.message : "Erro interno.";
       console.error("[MNEMONIC] FAILED:", msg);
+
+      if (error instanceof AuthError) {
+        return jsonResponse({
+          success: false,
+          error: "Faça login para gerar mnemônicos.",
+          message: "Faça login para gerar mnemônicos.",
+          code: "UNAUTHORIZED",
+          requestId: requestIdForError,
+        }, 401);
+      }
+      if (error instanceof RateLimitError) {
+        return jsonResponse({
+          success: false,
+          error: msg,
+          message: msg,
+          code: "RATE_LIMIT",
+          requestId: requestIdForError,
+        }, 429);
+      }
+
       if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-      // NUNCA retornar fallback fake como sucesso
       return jsonResponse({
         success: false,
         error: "Não foi possível gerar o mnemônico agora. Tente novamente.",
