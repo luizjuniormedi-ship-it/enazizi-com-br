@@ -66,6 +66,7 @@ interface SimuladoSetupProps {
   adaptiveMeta?: { focus: string; strategy: string; weakness_targeted: string; distribution: { modalities: Record<string, number>; difficulty: Record<string, number>; exam_style: Record<string, number> } } | null;
   adaptiveLoading?: boolean;
   onFetchAdaptivePreview?: () => void;
+  inlineMode?: boolean;
 }
 
 /**
