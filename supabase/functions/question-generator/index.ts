@@ -344,6 +344,8 @@ Regras:
     if (messages.length === 0 && !hasSelectedTopics && !hasTopicDistribution && !gc.topic && !gc.subtopic) {
       return errorResponse("Nenhum critério de geração (tópicos, distribuição ou temas) foi fornecido.", 400);
     }
+
+    console.log(`[question-generator] Configuração final:`, {
       topicDistribution: !!appliedTopicWeights,
       autoTopicsFromExam: isAutoFromExam,
       label: blueprint.label
