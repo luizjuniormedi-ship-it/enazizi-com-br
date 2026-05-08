@@ -755,12 +755,49 @@ serve(async (req: Request) => {
       }
 
       if (!mnemonic) {
+        // Fallback determinístico se temos termos suficientes
+        if (payload.termos.length >= 2) {
+          console.warn("[MNEMONIC] Usando fallback determinístico após 3 tentativas falhas");
+          const fb = buildDeterministicFallback(payload.tema, payload.termos);
+          if (requestId) { try { await updateRequestStatus(db, requestId, "completed"); } catch {} }
+          return jsonResponse({
+            success: true,
+            warning: "Mnemônico simples gerado sem IA.",
+            response_source: "fallback_deterministic",
+            data: {
+              request_id: requestId,
+              result_id: null,
+              tema: payload.tema,
+              sigla: fb.sigla,
+              frase_mnemonica: fb.frase_mnemonica,
+              explicacao_didatica: fb.explicacao_didatica,
+              explicacao_associacao: fb.explicacao_didatica,
+              explicacao_tecnica: fb.explicacao_tecnica,
+              cena_visual: fb.cena_visual,
+              prompt_imagem: "",
+              image_url: null,
+              image_failed: true,
+              score_medico: 50, score_pedagogico: 50, score_linguistico: 50, score_final: 50,
+              quality_flag: "low",
+              alertas: ["Mnemônico simples gerado sem IA — tente regenerar para melhor qualidade."],
+              associacoes: fb.associacoes,
+              associacoes_visuais: [],
+              items_map: fb.associacoes.map((a: any) => ({
+                letter: a.letra, word: a.representacao_no_mnemonico,
+                original_item: a.termo_original, symbol: null, symbol_reason: null,
+              })),
+              pontos_de_prova: [],
+              response_source: "fallback_deterministic",
+            },
+          }, 200);
+        }
         if (requestId) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
         return jsonResponse({
           success: false,
           error: "Não foi possível gerar um mnemônico válido após 3 tentativas. Tente novamente.",
           code: "GENERATION_FAILED",
           details: lastIssues.join(", "),
+          requestId: requestId || requestIdForError,
         }, 422);
       }
 
