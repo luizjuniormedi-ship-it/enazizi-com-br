@@ -1,13 +1,44 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+/**
+ * standard-handler — Sprint 1 hardening.
+ *
+ * Wraps an edge-function handler with:
+ *   • CORS
+ *   • Real JWT validation (uses getClaims, no longer trusts the header alone)
+ *   • Body parsing
+ *   • Standard error envelope
+ *
+ * BEFORE: any request with ANY non-empty Authorization header was accepted
+ *         and userId was a hardcoded "authenticated-user" string. This
+ *         meant functions deployed with verify_jwt=false had effectively
+ *         NO authentication at all.
+ *
+ * AFTER:  the JWT is verified server-side via supabase.auth.getClaims().
+ *         If invalid or missing, the request is rejected with 401.
+ *         The real user id is forwarded to the handler.
+ */
+import { serve as _serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+// Re-export so existing edge functions can keep importing { serve } from here
+// if they want, without adding new direct dependencies.
+export { _serve as serve };
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
 
 export async function handleStandardEdgeFunction(
   req: Request,
-  handler: (body: any, userId: string) => Promise<Response>
+  handler: (body: any, userId: string) => Promise<Response>,
 ) {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -15,46 +46,62 @@ export async function handleStandardEdgeFunction(
 
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ 
-        success: false, 
-        error: "UNAUTHORIZED", 
-        message: "Autenticação obrigatória." 
-      }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return jsonResponse(
+        { success: false, error: "UNAUTHORIZED", message: "Autenticação obrigatória." },
+        401,
+      );
     }
 
-    // Extraction of userId depends on your specific setup, 
-    // usually using supabase.auth.getUser() with the token.
-    // For now we assume the handler handles its own detailed auth if needed,
-    // or we pass a placeholder if we can't easily verify here without heavy dependencies.
-    const userId = "authenticated-user"; 
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      console.error("[standard-handler] Missing SUPABASE_URL / SUPABASE_ANON_KEY");
+      return jsonResponse(
+        { success: false, error: "SERVER_MISCONFIG", message: "Servidor mal configurado." },
+        500,
+      );
+    }
 
+    const token = authHeader.slice("Bearer ".length).trim();
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    // getClaims verifies the JWT signature locally using the project's
+    // signing keys and returns the payload. This is the canonical way
+    // to authenticate when verify_jwt = false.
+    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims?.sub) {
+      return jsonResponse(
+        { success: false, error: "UNAUTHORIZED", message: "Token inválido ou expirado." },
+        401,
+      );
+    }
+
+    const userId = claimsData.claims.sub as string;
     const body = await req.json().catch(() => ({}));
-    
+
     const response = await handler(body, userId);
-    
-    // Ensure CORS on success
+
+    // Ensure CORS on every handler response
     const newHeaders = new Headers(response.headers);
     Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
-    
+
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,
       headers: newHeaders,
     });
-
   } catch (e) {
-    console.error("[EdgeFunction Error]", e);
-    return new Response(JSON.stringify({
-      success: false,
-      error: "INTERNAL_ERROR",
-      message: e instanceof Error ? e.message : "Erro interno no servidor."
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("[standard-handler] error:", e);
+    return jsonResponse(
+      {
+        success: false,
+        error: "INTERNAL_ERROR",
+        message: e instanceof Error ? e.message : "Erro interno no servidor.",
+      },
+      500,
+    );
   }
 }

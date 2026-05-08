@@ -29,33 +29,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Sprint 1 hardening: forceLoginRefresh now fires ONLY on a real
+    // SIGNED_IN event. The bootstrap getSession() path no longer triggers
+    // a refresh — that was racing against the listener and contributing to
+    // "Invalid Refresh Token" errors during hard reload.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
       setLoading(false);
 
-      // Track login count for feedback survey (no reload - React state handles UI update)
       if (event === "SIGNED_IN") {
-        // Mark fresh login for MissionEntry redirect
         localStorage.setItem("enazizi_last_login_ts", String(Date.now()));
 
-        const uid = session?.user?.id;
+        const uid = nextSession?.user?.id;
         if (uid) {
           const key = `enazizi_login_count_${uid}`;
           const prev = parseInt(localStorage.getItem(key) || "0", 10);
-          const createdAt = session?.user?.created_at;
+          const createdAt = nextSession?.user?.created_at;
           const isLegacyUser =
             !!createdAt && Date.now() - new Date(createdAt).getTime() > 24 * 60 * 60 * 1000;
           const nextCount = isLegacyUser ? Math.max(prev + 1, 3) : prev + 1;
           localStorage.setItem(key, String(nextCount));
 
-          // Log login activity
-          import("@/lib/activityLogger").then(({ logActivity }) => {
-            logActivity(uid, "login");
-          });
+          // Defer activity log import to keep auth listener lightweight.
+          import("@/lib/activityLogger")
+            .then(({ logActivity }) => logActivity(uid, "login"))
+            .catch(() => {});
         }
 
-        void forceLoginRefresh(session);
+        // Single source of refresh — guarded internally by signature + in-flight flag.
+        void forceLoginRefresh(nextSession);
       }
 
       if (event === "SIGNED_OUT") {
@@ -63,14 +66,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    // Bootstrap: only hydrate state. Do NOT trigger forceLoginRefresh here.
+    supabase.auth.getSession().then(({ data: { session: bootstrapSession } }) => {
+      setSession(bootstrapSession);
+      setUser(bootstrapSession?.user ?? null);
       setLoading(false);
-
-      if (session) {
-        void forceLoginRefresh(session);
-      }
     });
 
     return () => subscription.unsubscribe();
@@ -78,37 +78,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signUp = async (email: string, password: string, options: SignUpOptions) => {
     try {
-      // Garantir que todos os valores sejam strings ou números simples para o Supabase
-      const metadata: Record<string, any> = { 
+      const metadata: Record<string, any> = {
         full_name: options.displayName || "",
         display_name: options.displayName || "",
         role: options.userType === "professor" ? "professor" : "student",
-        user_type: options.userType || "student"
+        user_type: options.userType || "student",
       };
-      
+
       if (options.faculdade) metadata.faculdade = options.faculdade;
       if (options.phone) metadata.phone = options.phone;
       if (options.periodo) metadata.periodo = options.periodo;
-
-      console.log("[Auth] Iniciando signUp para:", email, metadata);
 
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: metadata,
-          // Simplificando o redirect para evitar erros de URL inválida no dashboard
           emailRedirectTo: window.location.origin,
         },
       });
-      
-      if (error) {
-        console.error("[Auth] Erro no supabase.auth.signUp:", error);
-      }
-      
+
+      if (error) console.warn("[Auth] signUp error:", error.message);
       return { data, error: error as Error | null };
     } catch (err) {
-      console.error("[Auth] Erro catastrófico no signUp:", err);
+      console.warn("[Auth] signUp threw:", err);
       return { data: null, error: err as Error };
     }
   };
