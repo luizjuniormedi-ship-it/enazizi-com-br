@@ -684,6 +684,9 @@ const Simulados = () => {
                   adaptiveLoading={adaptivePreviewLoading}
                   adaptiveMeta={adaptivePreviewMeta}
                   onFetchAdaptivePreview={() => {}}
+                  onResumeSession={handleResumeSession}
+                  onDiscardSession={abandonSession}
+                  onRetryErrors={() => {}}
                   pendingSession={null}
                   checkedSession={true}
                   userId={user?.id}
