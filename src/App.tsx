@@ -332,6 +332,7 @@ const App = () => (
                   <Route path="alerts" element={<TelemetryAdmin />} />
                   <Route path="settings" element={<AdminSettings />} />
                   <Route path="audit" element={<AdminAudit />} />
+                  <Route path="blueprints" element={<AdminBlueprints />} />
                   <Route path="ai-audit-mode" element={<AIAuditMode />} />
                   <Route path="notebooklm" element={<NotebookLMDashboard />} />
                   <Route path="notebooklm-sync" element={<NotebookLMSync />} />
