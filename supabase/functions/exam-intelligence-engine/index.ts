@@ -40,6 +40,8 @@ serve(async (req) => {
     if (action === "reconcile" || action === "preview_reconcile") {
       const smoothingFactor = payload?.smoothing_factor || 0.3;
       
+      console.log(`[Intelligence] Iniciando ${action} para ${exam_key}`);
+
       // Se for apenas preview, calculamos mas não persistimos na exam_blueprints
       if (action === "preview_reconcile") {
         const { data: current } = await supabase
