@@ -302,15 +302,31 @@ Regras:
 
     // Camada de Alias e Resolução de Banca
     const normalizedKey = safeTargetExam.toLowerCase().trim();
-    const resolution = bancaInfo; // Already resolved above
+    const resolution = resolveBanca(safeTargetExam);
     const { profile: blueprint, profileKey, aliasUsed, blueprintFound } = resolution;
 
-    console.log(`[AUDIT] targetExam: "${safeTargetExam}" | normalized: "${normalizedKey}" | appliedProfile: "${profileKey}" | aliasUsed: ${aliasUsed} | found: ${blueprintFound} | label: "${blueprint.label}"`);
-    console.log(`[AUDIT] Weights: ${JSON.stringify(blueprint.specialtyWeights)}`);
+    // Se houver topicDistribution no generationContext ou no payload, usar como prioridade
+    const appliedTopicWeights = body.topicWeights || gc.topicDistribution || body.customDistribution;
+    const isAutoFromExam = body.autoDistribution !== false;
+
+    console.log(`[AUDIT] exam_blueprint_applied`, {
+      targetExam: safeTargetExam,
+      appliedProfile: profileKey,
+      blueprintFound,
+      topicDistribution: !!appliedTopicWeights,
+      autoTopicsFromExam: isAutoFromExam,
+      label: blueprint.label
+    });
+
+    if (appliedTopicWeights) {
+      console.log(`[AUDIT] Using provided topic distribution: ${JSON.stringify(appliedTopicWeights)}`);
+    } else {
+      console.log(`[AUDIT] Using blueprint specialty weights: ${JSON.stringify(blueprint.specialtyWeights)}`);
+    }
 
     systemPrompt += buildBancaBlock(blueprint);
 
-    if (blueprintFound) {
+    if (blueprintFound || appliedTopicWeights) {
       systemPrompt += `\n\n=== REGRAS RÍGIDAS DE ESTILO: ${blueprint.label} ===\n- DISTRIBUIÇÃO OBRIGATÓRIA: Utilize EXATAMENTE os pesos de temas definidos no blueprint.\n- ESTILO: ${blueprint.style}\n- PEDAGOGIA: ${blueprint.tutorGuidance}`;
     }
 
