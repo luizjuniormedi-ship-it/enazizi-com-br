@@ -346,6 +346,75 @@ const AdminBlueprints = () => {
         </TabsContent>
       </Tabs>
 
+      {/* Reconcile Preview Dialog */}
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase flex items-center gap-2">
+              <RefreshCcw className="text-emerald-500" /> Preview de Reconciliação
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Revise as mudanças propostas antes de aplicar o novo blueprint dinâmico.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+              <span className="text-xs font-bold uppercase text-slate-500 block mb-1">Confiança Esperada</span>
+              <span className="text-2xl font-black text-emerald-500">
+                {previewData?.confidence_expected ? (previewData.confidence_expected * 100).toFixed(1) : '0'}%
+              </span>
+            </div>
+            <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+              <span className="text-xs font-bold uppercase text-slate-500 block mb-1">Amostra Processada</span>
+              <span className="text-2xl font-black">{previewData?.sample_size || 0} Questões</span>
+            </div>
+          </div>
+
+          <ScrollArea className="h-[400px] rounded-xl border border-slate-800">
+            <Table>
+              <TableHeader className="bg-slate-950/50 sticky top-0 z-10">
+                <TableRow className="border-slate-800">
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Tema</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Atual</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Proposto</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Delta</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Risco</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previewData?.preview?.map((item: any, idx: number) => (
+                  <TableRow key={idx} className="border-slate-800 hover:bg-slate-800/30">
+                    <TableCell className="font-medium text-sm">
+                      <div className="text-slate-500 text-[10px] uppercase font-bold">{item.specialty}</div>
+                      {item.topic}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{item.old_weight.toFixed(1)}%</TableCell>
+                    <TableCell className="font-mono text-xs text-emerald-400 font-bold">{item.new_weight.toFixed(1)}%</TableCell>
+                    <TableCell className={`font-mono text-xs font-bold ${item.delta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {item.delta > 0 ? '+' : ''}{item.delta.toFixed(1)}%
+                    </TableCell>
+                    <TableCell>{getSeverityBadge(item.severity)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+
+          <DialogFooter className="mt-6">
+            <Button variant="ghost" onClick={() => setIsPreviewOpen(false)}>Cancelar</Button>
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-700" 
+              onClick={() => reconcileMutation.mutate({ examKey: previewData?.exam_key || '', previewOnly: false })}
+              disabled={reconcileMutation.isPending}
+            >
+              {reconcileMutation.isPending ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCcw className="w-4 h-4 mr-2" />}
+              Confirmar Reconciliação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Rollback Confirmation */}
       <Dialog open={isRollbackOpen} onOpenChange={setIsRollbackOpen}>
         <DialogContent className="bg-slate-900 border-slate-800 text-slate-100">
