@@ -24,14 +24,27 @@ export { getAdmin };
 
 // ── Auth helper ──
 export async function extractUserId(req: Request): Promise<string | null> {
-  const auth = req.headers.get("Authorization")?.replace("Bearer ", "");
-  if (!auth) return null;
-  const sb = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
-  );
-  const { data } = await sb.auth.getUser(auth);
-  return data?.user?.id || null;
+  const header = req.headers.get("Authorization");
+  if (!header || !header.startsWith("Bearer ")) return null;
+  const token = header.slice("Bearer ".length).trim();
+  if (!token) return null;
+  try {
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY")!,
+    );
+    // Prefer getClaims (works with both legacy HS256 and new asymmetric JWT
+    // signing keys, and avoids an extra network hop). Fallback to getUser
+    // only if claims aren't available.
+    const { data: claimsData, error: claimsError } = await sb.auth.getClaims(token);
+    const sub = claimsData?.claims?.sub;
+    if (!claimsError && typeof sub === "string" && sub.length > 0) return sub;
+    const { data } = await sb.auth.getUser(token);
+    return data?.user?.id || null;
+  } catch (err) {
+    console.warn("[extractUserId] failed:", err);
+    return null;
+  }
 }
 
 // ── Robust hash ──
