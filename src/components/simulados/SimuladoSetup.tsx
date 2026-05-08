@@ -325,6 +325,12 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     );
   };
 
+  // Reset config step when mode changes
+  useEffect(() => {
+    setConfigStep("choosing");
+    setGenerationMethod("automatic");
+  }, [mode]);
+
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
 
   // Initialize custom distribution when board or total questions changes
