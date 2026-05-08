@@ -46,6 +46,20 @@ const AdminBlueprints = () => {
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
   const [comparisonVersions, setComparisonVersions] = useState<any[]>([]);
   const [healthScores, setHealthScores] = useState<Record<string, number>>({});
+  const [auditStats, setAuditStats] = useState<any>(null);
+
+  // Fetch Audit Stats
+  const { data: clinicalAuditData } = useQuery({
+    queryKey: ["admin-clinical-audits"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exam_clinical_audits")
+        .select("medical_accuracy_score, final_quality_score, is_approved")
+        .limit(100);
+      if (error) throw error;
+      return data;
+    }
+  });
 
   // 0. Fetch Health Scores
   const { data: healthData } = useQuery({
