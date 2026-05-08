@@ -175,26 +175,28 @@ export async function generateMnemonic(input: MnemonicRequest): Promise<Mnemonic
         error: String(raw.message || raw.error || "Erro ao gerar mnemônico.") + requestId 
       };
     }
-    // ... rest of logic stays same
+    try {
+      const mapped = mapEdgeFunctionResponse(raw, input.termos);
 
-  try {
-    const mapped = mapEdgeFunctionResponse(raw, input.termos);
+      // Guardrail final: rejeita resultado vazio/incoerente vindo da edge
+      const fraseOk = (mapped.frase_mnemonica || "").trim().length >= 8;
+      const expOk = (mapped.explicacao_didatica || "").trim().length >= 20;
+      const scoreOk = Number(mapped.score_final) > 0;
+      if (!fraseOk || !expOk || !scoreOk) {
+        return {
+          success: false,
+          error: "Resultado inválido recebido do servidor.",
+        };
+      }
 
-    // Guardrail final: rejeita resultado vazio/incoerente vindo da edge
-    const fraseOk = (mapped.frase_mnemonica || "").trim().length >= 8;
-    const expOk = (mapped.explicacao_didatica || "").trim().length >= 20;
-    const scoreOk = Number(mapped.score_final) > 0;
-    if (!fraseOk || !expOk || !scoreOk) {
-      return {
-        success: false,
-        error: "Resultado inválido recebido do servidor.",
-      };
+      return { success: true, data: mapped };
+    } catch (e) {
+      console.error("[mnemonics] Failed to map response:", e);
+      return { success: false, error: "Erro ao processar resposta do servidor." };
     }
-
-    return { success: true, data: mapped };
-  } catch (e) {
-    console.error("[mnemonics] Failed to map response:", e);
-    return { success: false, error: "Erro ao processar resposta do servidor." };
+  } catch (err: any) {
+    console.error("[mnemonics] generateMnemonic catch-all:", err);
+    return { success: false, error: err?.message || "Erro inesperado ao gerar mnemônico." };
   }
 }
 
