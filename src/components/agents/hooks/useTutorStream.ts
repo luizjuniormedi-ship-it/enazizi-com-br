@@ -150,30 +150,52 @@ export function useTutorStream() {
 
       const lineProcessor = format === "blocks" ? processBlockLine : processSseLine;
 
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        const accessToken =
-          session?.access_token || import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-
-        const resp = await fetch(url, {
+      // Helper: fetch with current session token. Used twice so we can
+      // transparently refresh + retry on 401 (post-Sprint-1 hardening).
+      const doFetch = async (token: string) =>
+        fetch(url, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${token}`,
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify(body),
           signal: controller.signal,
         });
 
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        let accessToken = session?.access_token;
+
+        if (!accessToken) {
+          onError?.({ status: 401, message: "Sua sessão expirou. Faça login novamente." });
+          return null;
+        }
+
+        let resp = await doFetch(accessToken);
+
+        // 401 → try one silent refresh, then retry once.
+        if (resp.status === 401) {
+          const { data: refreshed } = await supabase.auth.refreshSession();
+          const refreshedToken = refreshed?.session?.access_token;
+          if (refreshedToken) {
+            accessToken = refreshedToken;
+            resp = await doFetch(refreshedToken);
+          }
+        }
+
         if (!resp.ok) {
           const errData = await resp.json().catch(() => ({}));
-          onError?.({
-            status: resp.status,
-            message: (errData as { error?: string }).error || "stream_http_error",
-          });
+          const friendly =
+            resp.status === 401
+              ? "Sua sessão expirou. Faça login novamente."
+              : (errData as { error?: string; message?: string }).message ||
+                (errData as { error?: string }).error ||
+                "stream_http_error";
+          onError?.({ status: resp.status, message: friendly });
           return null;
         }
 
