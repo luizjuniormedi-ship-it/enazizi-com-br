@@ -1209,7 +1209,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             onClick={handleStart}
             data-testid="iniciar-simulado-button"
             disabled={
-              (mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo") && 
+              // Só bloqueia se não for modo banca/adaptativo E não houver tópico selecionado
+              (mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && examBoard === "all") && 
               selectedTopics.length === 0 && 
               !specificTopic
             }

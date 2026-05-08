@@ -354,19 +354,42 @@ const Simulados = () => {
     console.log("[Simulados] iniciar clicado", config);
     
     // Safety check: ensure topics are loaded from distribution if missing
-    if ((!config.topics || config.topics.length === 0) && config.topicWeights) {
-      config.topics = (config.topicWeights as any[]).map(tw => tw.topic);
-      console.log("[Simulados] Tópicos recuperados de topicWeights:", config.topics);
-    } else if ((!config.topics || config.topics.length === 0) && config.customDistribution) {
-      config.topics = (config.customDistribution as any[]).map(tw => tw.topic);
-      console.log("[Simulados] Tópicos recuperados de customDistribution:", config.topics);
+    const hasManualTopics = Array.isArray(config.topics) && config.topics.length > 0;
+    const hasAutoDistribution = config.topicWeights && Array.isArray(config.topicWeights) && config.topicWeights.length > 0;
+    const hasCustomDistribution = config.customDistribution && Array.isArray(config.customDistribution) && config.customDistribution.length > 0;
+    const selectedExam = config.realExamProfile || config.examBoard;
+
+    if (!hasManualTopics && (hasAutoDistribution || hasCustomDistribution)) {
+      const weights = config.customDistribution || config.topicWeights;
+      config.topics = weights.map((tw: any) => tw.topic);
+      console.log("[Simulados] Tópicos recuperados da distribuição:", config.topics);
     }
     
+    // Se ainda estiver vazio e tivermos uma banca selecionada, tentamos carregar o blueprint
+    if ((!config.topics || config.topics.length === 0) && selectedExam && selectedExam !== "all") {
+      const profile = EXAM_PROFILES[selectedExam as keyof typeof EXAM_PROFILES];
+      if (profile) {
+        config.topics = profile.topicWeights.map(t => t.topic);
+        config.topicWeights = profile.topicWeights;
+        console.log("[Simulados] Tópicos carregados do blueprint da banca:", selectedExam, config.topics);
+      }
+    }
+
     // Ensure selectedTopics state is updated to reflect the reality of generation
     if (config.topics && config.topics.length > 0) {
       setSelectedTopics(config.topics);
     }
     
+    const canGenerate = (config.topics && config.topics.length > 0) || config.specificTopic || selectedExam;
+    if (!canGenerate) {
+      toast({
+        title: "Seleção necessária",
+        description: "Selecione uma banca ou pelo menos um assunto.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Check if we need to show the configuration step
     const isBoardMode = config.mode === "prova_real" || config.mode === "tri";
     if (isBoardMode && !config.forceStart && !showConfigStep) {

@@ -309,10 +309,20 @@ Regras:
     const appliedTopicWeights = body.topicWeights || gc.topicDistribution || body.customDistribution;
     const isAutoFromExam = body.autoDistribution !== false;
 
+    const hasSelectedTopics = Array.isArray(body.selectedTopics) && body.selectedTopics.length > 0;
+    const hasTopicDistribution = Array.isArray(appliedTopicWeights) && appliedTopicWeights.length > 0;
+
     console.log(`[AUDIT] exam_blueprint_applied`, {
       targetExam: safeTargetExam,
       appliedProfile: profileKey,
       blueprintFound,
+      hasSelectedTopics,
+      hasTopicDistribution
+    });
+
+    if (messages.length === 0 && !hasSelectedTopics && !hasTopicDistribution && !gc.topic && !gc.subtopic) {
+      return errorResponse("Nenhum critério de geração (tópicos, distribuição ou temas) foi fornecido.", 400);
+    }
       topicDistribution: !!appliedTopicWeights,
       autoTopicsFromExam: isAutoFromExam,
       label: blueprint.label
