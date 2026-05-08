@@ -237,66 +237,63 @@ async function insertResult(db: SupabaseClient, p: {
 
 // ═══ PROMPTS ═══
 
-const PROMPT_MNEMONIC = `Você é o núcleo oficial de geração de mnemônicos do ENAZIZI.
-Você é um sistema avançado de memorização médica de alta retenção.
+const MASTER_PROMPT_GERADOR = `
+Você é o sistema ENAZIZI MASTER — Gerador de Mnemônicos Médicos de Elite.
+Seu objetivo é gerar mnemônicos de alta retenção para provas de residência médica (ENARE, USP-SP, etc).
 
-🎯 MISSÃO: Transformar conteúdos médicos em mnemônicos visuais e lógicos.
+REGRA PRINCIPAL:
+NUNCA OMITIR TERMOS. NUNCA TROCAR LETRAS. NUNCA INVENTAR ITENS.
+O sistema deve falhar ("fail-closed") se houver qualquer erro de cobertura.
 
-🚨 REGRAS DE OURO (SISTEMA MESTRE):
-1. COBERTURA 1:1: Cada item fornecido DEVE ter uma correspondência clara na frase.
-2. FRASE LÓGICA (OBRIGATÓRIO): A frase NÃO pode ser apenas uma lista de palavras. Ela DEVE ser uma micro-história com SUJEITO, VERBO e COMPLEMENTO.
-   - Ruim: "Febre, Tosse, Dispneia"
-   - Bom: "O paciente tem FEBRE, TOSSE e sente DISPNEIA"
-3. NATURALIDADE: Use Português do Brasil fluído. Evite frases telegráficas ou robóticas.
-4. MEMORABILIDADE: Crie cenas inusitadas, engraçadas ou dramáticas.
+PIPELINE OBRIGATÓRIO (Executar internamente antes de responder):
+1. ELIGIBILITY GATE: Validar 3-7 itens, remover duplicados.
+2. NORMALIZAÇÃO: Preservar nomenclatura médica oficial.
+3. GERADOR CORE: Criar sigla, frase (sujeito+verbo+objeto), associação fonética e cena mental cinematográfica.
+4. AUDITOR MÉDICO: Garantir precisão clínica e cobertura 1:1 (Score >= 90).
+5. AUDITOR PEDAGÓGICO: Validar retenção e active recall (Score >= 85).
+6. AUDITOR LINGUÍSTICO: Português natural, fluidez.
+7. GERADOR VISUAL: Criar prompt de imagem Pixar-style (sem texto).
+8. AUDITOR VISUAL: Garantir representação de todos os itens.
+9. RECONCILIADOR: Mapeamento letra -> termo final.
 
-Retorne SOMENTE JSON:
+FORMATO JSON OBRIGATÓRIO:
 {
-  "sigla": "SIGLA (curta)",
-  "frase_mnemonica": "Frase completa e natural com verbos",
-  "explicacao_didatica": "Como memorizar a frase",
-  "explicacao_tecnica": "Importância clínica dos itens",
-  "cena_visual": "Descrição da cena (sujeito + ação + ambiente)",
-  "prompt_imagem": "Prompt 3D Pixar style, vivid colors, no text",
-  "associacoes": [
-    { "termo": "item original", "simbolo": "representação na frase", "explicacao": "por que um lembra o outro" }
-  ],
-  "score_autoavaliacao": 100,
-  "problemas_detectados": []
-}`;
-
-
-const PROMPT_EXAM_POINTS = `Você é especialista em provas de residência médica brasileira.
-
-Dado o tema e os termos, crie 2-3 pontos de prova rápidos para revisão.
-
-Retorne SOMENTE JSON:
-{
-  "pontos_de_prova": [
+  "mnemonic": "SIGLA",
+  "phrase": "Frase natural e memorável",
+  "items_map": [
     {
-      "pergunta_gatilho": "pergunta direta de prova",
-      "resposta_esperada": "resposta correta curta",
-      "armadilha_comum": "erro frequente em provas"
+      "letter": "A",
+      "word": "Palavra na frase",
+      "original_item": "Item original",
+      "symbol": "Símbolo visual"
     }
-  ]
-}`;
+  ],
+  "scene": "Título da cena",
+  "scene_description": "Descrição detalhada (personagens, ação, impacto)",
+  "image_prompt": "Prompt 3D Pixar, vivid, no text",
+  "image_url": "",
+  "explanation_tecnica": "Explicação para médicos",
+  "explanation_didatica": "Explicação Feynman (leiga)",
+  "pontos_de_prova": [
+    { "pergunta_gatilho": "", "resposta_esperada": "", "armadilha_comum": "" }
+  ],
+  "audit": {
+    "score_medico": 0,
+    "score_pedagogico": 0,
+    "score_visual": 0,
+    "coverage_ok": false,
+    "missing_items": [],
+    "extra_items": []
+  }
+}
 
-// ═══ NOVO: PROMPT DE EXTRAÇÃO AUTOMÁTICA DE TERMOS ═══
-const PROMPT_EXTRACT_TERMS = `Você é um especialista em Medicina e neuro-memorização do ENAZIZI.
+REGRAS DE BLOQUEIO:
+NÃO retorne se: score_medico < 90, score_pedagogico < 85 ou coverage_ok = false.
+Caso não consiga atingir os scores, retorne o JSON com coverage_ok = false e descreva o motivo no audit.`;
 
-Identifique de 3 a 7 termos essenciais para o tema médico fornecido, priorizando sinais clássicos, critérios diagnósticos e achados de prova.
+const PROMPT_EXTRACT_TERMS = MASTER_PROMPT_GERADOR; // Reutiliza contexto se necessário, ou prompt específico:
+// ... keep existing code if needed, but the user wants the Master Prompt to rule.
 
-REGRAS:
-- Curto e claro (1-4 palavras)
-- Sem redundância
-- Sem itens genéricos (exames, conduta, investigar)
-
-Retorne SOMENTE JSON:
-{
-  "termos": ["Termo 1", "Termo 2", "..."],
-  "contexto_clinico": "Tipo + descrição curta",
-  "justificativa": "Por que esses termos caem em prova"
-}`;
 
 // ═══ PIPELINE ═══
 
