@@ -353,8 +353,9 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     if (mode === "prova_real" || mode === "tri") {
       const profile = selectedProfile;
       const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
-      const count = profile.totalQuestions;
+      const count = generationMethod === "custom" ? customTotalQuestions : profile.totalQuestions;
       const timePerQ = profile.timeMinutes / count;
+      
       onStart({
         topics: topicsFromProfile,
         count,
@@ -367,13 +368,15 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           ? dynamicDistribution
           : undefined,
         topicWeights: profile.topicWeights,
+        autoDistribution: generationMethod === "automatic",
+        customDistribution: generationMethod === "custom" ? customDistribution : undefined,
+        includeWeakThemes,
+        includePreviousErrors,
       });
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
     
-    // Fallback: If no topics selected but it's not a profile mode, 
-    // we default to Clínica Médica to avoid blocking the user
     const finalTopics = selectedTopics.length > 0 ? selectedTopics : ["Clínica Médica"];
     
     onStart({ 
