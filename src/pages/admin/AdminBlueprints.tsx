@@ -252,8 +252,11 @@ const AdminBlueprints = () => {
                     </div>
                     
                     <div className="pt-4 flex gap-2">
-                      <Button size="sm" variant="secondary" className="flex-1 bg-slate-800 hover:bg-slate-700" onClick={() => setSelectedExam(examKey)}>
-                        <Search className="w-3.5 h-3.5 mr-2" /> Detalhes
+                      <Button size="sm" variant="secondary" className="flex-1 bg-slate-800 hover:bg-slate-700" onClick={() => {
+                        setSelectedExam(examKey);
+                        setIsVersionsOpen(true);
+                      }}>
+                        <History className="w-3.5 h-3.5 mr-2" /> Versões
                       </Button>
                       <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => reconcileMutation.mutate({ examKey, previewOnly: true })}>
                         <RefreshCcw className="w-3.5 h-3.5 mr-2" /> Reconciliar
