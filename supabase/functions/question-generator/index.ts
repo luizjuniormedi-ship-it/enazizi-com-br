@@ -391,7 +391,12 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       // Extract topic info
       const HIGH_YIELD_KEYS = Object.keys(HIGH_YIELD);
       const startTime = Date.now();
-      console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty}`);
+      
+      // Resolve distribution
+      const activeDistribution = topicWeights || gc?.topicDistribution;
+      const isBoardSpecific = blueprintFound || (activeDistribution && activeDistribution.length > 0);
+
+      console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty} | blueprintFound: ${blueprintFound} | hasDistribution: ${!!activeDistribution}`);
       console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
 
       // Try cache (with difficulty partitioning)
@@ -399,9 +404,11 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       const hasSubtopicFilter = gc?.subtopic && String(gc.subtopic).trim().length > 0;
       
       // Resolve topics for cache filtering
-      const resolvedTopics = Array.isArray(gc?.topic) 
-        ? gc.topic 
-        : (typeof gc?.topic === "string" ? gc.topic.split(",").map((t: string) => t.trim()) : []);
+      const resolvedTopics = activeDistribution 
+        ? activeDistribution.map((d: any) => d.topic)
+        : (Array.isArray(gc?.topic) 
+          ? gc.topic 
+          : (typeof gc?.topic === "string" ? gc.topic.split(",").map((t: string) => t.trim()) : []));
       
       const matchedTopics = resolvedTopics.length > 0 ? resolvedTopics : HIGH_YIELD_KEYS.filter(k => (lastMessage?.content || "").toLowerCase().includes(k.toLowerCase()));
 
@@ -470,7 +477,7 @@ IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em
 NÍVEL DE DIFICULDADE: ${desc}
 TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
 
-TEMAS: ${topicWeights && topicWeights.length > 0 ? topicWeights.map((tw: any) => `${tw.topic} (${tw.weight}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}
+TEMAS E PESOS (DISTRIBUA PROPORCIONALMENTE): ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent || Math.round((tw.count/requestedCount)*100)}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}
 
 Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"topic":"tema","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
