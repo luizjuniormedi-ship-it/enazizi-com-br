@@ -643,7 +643,7 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
           )}
 
           {/* ── Prova Real Configuration ── */}
-          {mode === "prova_real" && (
+          {mode === "prova_real" && configStep === "choosing" && (
             <>
               <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-amber-600 flex items-center gap-2">
@@ -672,15 +672,13 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
                 </Select>
               </div>
 
-              {/* Topic distribution preview (dynamic from curriculum_weights, with static fallback) */}
-              <div>
-                <label className="text-sm font-semibold mb-2 block">Distribuição de Temas</label>
-                <DynamicDistributionPreview
-                  data={dynamicDistribution}
-                  isLoading={dynamicLoading}
-                  total={selectedProfile.totalQuestions}
-                  barColorClass="bg-amber-500"
-                />
+              <div className="flex flex-col sm:flex-row gap-3 mt-4">
+                <Button 
+                  className="flex-1 gap-2 bg-amber-500 hover:bg-amber-600 text-white" 
+                  onClick={() => setConfigStep("configuring")}
+                >
+                  Continuar para Configuração
+                </Button>
               </div>
             </>
           )}
