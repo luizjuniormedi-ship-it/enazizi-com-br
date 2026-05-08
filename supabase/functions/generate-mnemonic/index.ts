@@ -476,233 +476,47 @@ serve(async (req: Request) => {
       }
 
       // ══════════════════════════════════════
-      // ETAPA 1: Gerar mnemônico (texto) — até 3 tentativas com validação
+      // ETAPA 1: Gerar mnemônico MASTER — até 3 tentativas
       // ══════════════════════════════════════
       interface MnemonicOutput {
-        sigla: string; frase_mnemonica: string;
-        explicacao_associacao?: string;
-        explicacao_clinica?: string;
-        explicacao_didatica: string; explicacao_tecnica: string;
-        cena_visual: string;
-        cena_visual_obj?: { descricao?: string; personagens?: string; acao?: string; emocao?: string };
-        prompt_imagem: string;
-        associacoes: Array<{ termo_original: string; representacao_no_mnemonico: string; explicacao?: string }>;
-        mapa_associacao?: Array<{ termo_original: string; representacao: string; explicacao?: string }>;
-        pontos_prova?: Array<{ pergunta: string; resposta: string; armadilha: string }>;
-        score_autoavaliacao: number; problemas_detectados: string[];
-      }
-
-      // Normaliza o novo schema (4 etapas) para o formato interno do pipeline
-      function normalizeMnemonic(raw: any): MnemonicOutput | null {
-        if (!raw || typeof raw !== "object") return null;
-        const m: any = { ...raw };
-
-        // cena_neuro_memoravel (novo schema) -> cena_visual
-        if (m.cena_neuro_memoravel && typeof m.cena_neuro_memoravel === "object" && !m.cena_visual) {
-          const cv = m.cena_neuro_memoravel;
-          const norm = {
-            descricao: cv.descricao,
-            personagens: cv.personagem ?? cv.personagens,
-            acao: cv.acao,
-            emocao: cv.emocao,
-          };
-          const parts = [norm.descricao, norm.personagens, norm.acao, norm.emocao]
-            .filter((v: any) => typeof v === "string" && v.trim());
-          m.cena_visual_obj = norm;
-          m.cena_visual = parts.join(" — ");
-        }
-
-        // cena_visual pode vir como objeto { descricao, personagens, acao, emocao }
-        if (m.cena_visual && typeof m.cena_visual === "object") {
-          const cv = m.cena_visual;
-          const parts = [cv.descricao, cv.personagens ?? cv.personagem, cv.acao, cv.emocao]
-            .filter((v: any) => typeof v === "string" && v.trim());
-          m.cena_visual_obj = cv;
-          m.cena_visual = parts.join(" — ");
-        }
-
-        // associacoes pode vir no novo formato { termo, simbolo, explicacao }
-        if (Array.isArray(m.associacoes) && m.associacoes.length > 0 && m.associacoes.some((a: any) => a?.termo || a?.simbolo)) {
-          m.associacoes = m.associacoes.map((a: any) => ({
-            termo_original: a?.termo_original ?? a?.termo ?? "",
-            representacao_no_mnemonico: a?.representacao_no_mnemonico ?? a?.simbolo ?? a?.representacao ?? "",
-            explicacao: a?.explicacao ?? "",
-          }));
-        }
-
-        // mapa_associacao -> associacoes (compat)
-        if (Array.isArray(m.mapa_associacao) && (!Array.isArray(m.associacoes) || m.associacoes.length === 0)) {
-          m.associacoes = m.mapa_associacao.map((a: any) => ({
-            termo_original: a?.termo_original ?? a?.termo ?? "",
-            representacao_no_mnemonico: a?.representacao ?? a?.representacao_no_mnemonico ?? a?.simbolo ?? "",
-            explicacao: a?.explicacao ?? "",
-          }));
-        }
-
-        // explicacao_associacao: derivar de explicacao / explicacao_clinica / associacoes
-        if (!m.explicacao_associacao || !String(m.explicacao_associacao).trim()) {
-          if (m.explicacao && String(m.explicacao).trim()) {
-            m.explicacao_associacao = String(m.explicacao).trim();
-          } else if (m.explicacao_clinica && String(m.explicacao_clinica).trim()) {
-            m.explicacao_associacao = String(m.explicacao_clinica).trim();
-          } else if (Array.isArray(m.associacoes) && m.associacoes.length) {
-            m.explicacao_associacao = m.associacoes
-              .map((a: any) => `${a.termo_original}: ${a.representacao_no_mnemonico}${a.explicacao ? ` — ${a.explicacao}` : ""}`)
-              .join("\n");
-          }
-        }
-
-        // explicacao_didatica fallback
-        if (!m.explicacao_didatica || !String(m.explicacao_didatica).trim()) {
-          m.explicacao_didatica = m.explicacao_clinica || m.explicacao || m.explicacao_associacao || "";
-        }
-
-        // explicacao_tecnica fallback (evita falhar validação no novo schema enxuto)
-        if (!m.explicacao_tecnica || !String(m.explicacao_tecnica).trim()) {
-          m.explicacao_tecnica = m.explicacao_clinica || m.explicacao || m.explicacao_didatica || "";
-        }
-
-        return m as MnemonicOutput;
-      }
-
-      function normalizeForAnalysis(text: string): string {
-        return text
-          .toLowerCase()
-          .normalize("NFD")
-          .replace(/[\u0300-\u036f]/g, "")
-          .trim();
-      }
-
-      const SENTENCE_GLUE_WORDS = new Set([
-        "o", "a", "os", "as", "um", "uma", "uns", "umas",
-        "de", "do", "da", "dos", "das", "no", "na", "nos", "nas",
-        "em", "com", "sem", "por", "para", "pra", "pro", "e", "que",
-        "se", "ao", "aos", "como", "quando", "porque", "mas", "so", "sob",
-      ]);
-
-      const COMMON_SUBJECT_HINTS = new Set([
-        "paciente", "medico", "medica", "residente", "plantonista", "enfermeira",
-        "hospital", "ambulancia", "pulmao", "coracao", "cerebro", "figado", "rim",
-        "pleura", "crianca", "idoso", "idosa", "bebe", "monstro", "orgão", "orgao",
-      ]);
-
-      const COMMON_PORTUGUESE_VERBS = [
-        /\b(e|eh|esta|estao|estava|estavam|foi|foram|fica|ficou|ficaram|tem|teve|tinham?)\b/,
-        /\b(chega|chegou|chegam|entra|entrou|entram|sai|saiu|saem|corre|correu|correm|cai|caiu|caem)\b/,
-        /\b(grita|gritou|gritam|berra|berrou|berram|chora|chorou|choram|ri|riu|riram|desmaia|desmaiou)\b/,
-        /\b(implode|implodiu|explode|explodiu|queima|queimou|sangra|sangrou|incha|inchou|trava|travou)\b/,
-        /\b(vira|virou|viram|mostra|mostrou|mostram|pede|pediu|pedem|leva|levou|levam|salva|salvou|salvam)\b/,
-        /\b(derrama|derramou|derramam|vomita|vomitou|vomitam|bate|bateu|batem|segura|segurou|seguram)\b/,
-        /\b(acende|acendeu|acendem|apaga|apagou|apagam|abre|abriu|abrem|fecha|fechou|fecham|parece|pareceu)\b/,
-        /\b(chama|chamou|chamam|empurra|empurrou|empurram|puxa|puxou|puxam|socorre|socorreu|socorrem)\b/,
-      ];
-
-      function analyzeMnemonicSentence(frase: string, termos: string[]) {
-        const normalizedPhrase = normalizeForAnalysis(frase);
-        const tokens = normalizedPhrase.match(/[a-z0-9]+/g) ?? [];
-        const termTokens = new Set(
-          termos
-            .map((termo) => normalizeForAnalysis(termo))
-            .flatMap((termo) => termo.split(/\s+/).filter(Boolean))
-        );
-        const glueCount = tokens.filter((token) => SENTENCE_GLUE_WORDS.has(token)).length;
-        const nonTermTokens = tokens.filter((token) => !termTokens.has(token));
-        const uniqueNonTermCount = new Set(nonTermTokens).size;
-        const hasVerb = COMMON_PORTUGUESE_VERBS.some((pattern) => pattern.test(normalizedPhrase))
-          || /\b[a-z]{3,}(ou|eu|iu|ava|avam|aram|eram|iram|ando|endo|indo)\b/.test(normalizedPhrase);
-        const hasSubjectHint = tokens.some((token) => COMMON_SUBJECT_HINTS.has(token));
-        const termTokenRatio = tokens.length === 0
-          ? 1
-          : tokens.filter((token) => termTokens.has(token)).length / tokens.length;
-        const looksTelegraphic = (glueCount === 0 && !hasVerb)
-          || (termTokenRatio >= 0.6 && !hasVerb)
-          || (/[,;:/\-]/.test(frase) && glueCount === 0);
-
-        return {
-          tokenCount: tokens.length,
-          glueCount,
-          hasVerb,
-          hasSubjectHint,
-          uniqueNonTermCount,
-          termTokenRatio,
-          looksTelegraphic,
+        mnemonic: string;
+        phrase: string;
+        items_map: Array<{ letter: string; word: string; original_item: string; symbol: string }>;
+        scene: string;
+        scene_description: string;
+        image_prompt: string;
+        image_url?: string;
+        explanation_tecnica: string;
+        explanation_didatica: string;
+        pontos_de_prova: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }>;
+        audit: {
+          score_medico: number;
+          score_pedagogico: number;
+          score_visual: number;
+          coverage_ok: boolean;
+          missing_items: string[];
+          extra_items: string[];
         };
       }
 
-      const ISSUE_MESSAGES: Record<string, string> = {
-        resposta_vazia: "a IA não retornou um mnemônico utilizável",
-        frase_vazia: "a frase veio vazia",
-        frase_curta_demais: "a frase ficou curta demais",
-        frase_sem_contexto: "a frase está curta demais para formar uma cena lógica",
-        frase_sem_verbo: "a frase não tem verbo ou ação explícita",
-        frase_sem_conexao_logica: "a frase não tem conectivos e parece palavras soltas",
-        frase_pouco_natural: "a frase continua artificial e sem naturalidade",
-        frase_parece_lista: "a frase parece lista ou frase telegráfica, sem lógica narrativa",
-        explicacao_associacao_ausente: "faltou explicação de associação",
-        explicacao_curta_demais: "a explicação ficou curta demais",
-        explicacao_tecnica_ausente: "faltou explicação técnica",
-        eco_literal_termos: "a frase ecoa literalmente os termos",
-        frase_so_repete_termos: "a frase só repete os termos",
-        placeholder_detectado: "a saída parece placeholder ou texto genérico",
-        score_zero: "a autoavaliação veio zerada",
-      };
-
-      function describeIssues(issues: string[]): string {
-        return issues.map((issue) => ISSUE_MESSAGES[issue] ?? issue).join("; ");
-      }
-
-      // Validação dura: frase sem sentido (regras do usuário)
-      function fraseSemSentido(frase: string): boolean {
-        if (!frase) return true;
-        const words = frase.trim().split(/\s+/);
-        if (words.length < 6) return true;
-        const hasVerb =
-          /\b(é|está|estão|estava|era|foi|foram|tem|tinha|sente|sentiu|aperta|apertou|dói|doe|escorre|corre|correu|irradia|irradiou|aponta|apontou|grita|gritou|dispara|disparou|sofre|sofreu|padece|padeceu|queima|queimou|desce|desceu|sobe|subiu|chega|chegou|cai|caiu|vira|virou|chora|chorou|berrou|berra|explode|explodiu|colapsa|colapsou|para|parou|salva|salvou|leva|levou|mostra|mostrou|abre|abriu|fecha|fechou|chama|chamou|avisa|avisou|toma|tomou|usa|usou|faz|fez|gera|gerou|causa|causou)\b/i.test(frase);
-        if (!hasVerb) return true;
-        if (/[,:;]{2,}/.test(frase)) return true;
-        return false;
-      }
-
-      // Validador interno de qualidade
-      function validateMnemonic(m: MnemonicOutput | null, termos: string[]): string[] {
+      function validateMnemonic(m: MnemonicOutput | null): string[] {
         const issues: string[] = [];
         if (!m) { issues.push("resposta_vazia"); return issues; }
-        const frase = (m.frase_mnemonica || "").trim();
-        const expAssoc = (m.explicacao_associacao || "").trim();
-        const expDid = (m.explicacao_didatica || "").trim();
-        if (!frase) issues.push("frase_vazia");
-        else if (frase.length < 8) issues.push("frase_curta_demais");
-        if (!expAssoc && !expDid) issues.push("explicacao_associacao_ausente");
-        else if ((expAssoc || expDid).length < 20) issues.push("explicacao_curta_demais");
-        if (!(m.explicacao_tecnica || "").trim()) issues.push("explicacao_tecnica_ausente");
-        // Eco literal: frase é apenas a junção dos termos
-        const fraseLow = frase.toLowerCase();
-        const termosLow = termos.map(t => t.toLowerCase().trim());
-        const joined = termosLow.join(" ").trim();
-        if (fraseLow === joined || fraseLow === termosLow.join(", ")) issues.push("eco_literal_termos");
-        // Eco token: todos os tokens da frase são termos de entrada (frase = só lista de termos)
-        const fraseTokens = fraseLow.split(/\s+/).filter(Boolean);
-        const termTokens = new Set(termosLow.flatMap(t => t.split(/\s+/).filter(Boolean)));
-        const nonEcho = fraseTokens.filter(tok => !termTokens.has(tok));
-        if (fraseTokens.length > 0 && nonEcho.length === 0) issues.push("frase_so_repete_termos");
-        const sentenceAnalysis = analyzeMnemonicSentence(frase, termos);
-        if (sentenceAnalysis.tokenCount < 5) issues.push("frase_sem_contexto");
-        if (!sentenceAnalysis.hasVerb) issues.push("frase_sem_verbo");
-        if (sentenceAnalysis.glueCount === 0) issues.push("frase_sem_conexao_logica");
-        if (sentenceAnalysis.uniqueNonTermCount < 3) issues.push("frase_pouco_natural");
-        if (sentenceAnalysis.looksTelegraphic || (!sentenceAnalysis.hasSubjectHint && sentenceAnalysis.glueCount === 0)) {
-          issues.push("frase_parece_lista");
-        }
-        if (fraseSemSentido(frase)) issues.push("frase_parece_lista");
-        // Placeholders óbvios
-        if (/lorem ipsum|placeholder|exemplo gen|tente novamente/i.test(frase + " " + expDid + " " + expAssoc)) issues.push("placeholder_detectado");
-        // Score
-        const score = Number(m.score_autoavaliacao || 0);
-        if (score <= 0) issues.push("score_zero");
+        if (!m.audit) { issues.push("audit_missing"); return issues; }
+        
+        // Regras de Bloqueio do Master Prompt
+        if (m.audit.score_medico < 90) issues.push(`score_medico_insuficiente (${m.audit.score_medico})`);
+        if (m.audit.score_pedagogico < 85) issues.push(`score_pedagogico_insuficiente (${m.audit.score_pedagogico})`);
+        if (!m.audit.coverage_ok) issues.push("coverage_failure");
+        if (m.audit.missing_items?.length > 0) issues.push(`missing_terms: ${m.audit.missing_items.join(", ")}`);
+        
+        if (!m.phrase || m.phrase.length < 10) issues.push("phrase_too_short");
+        if (!m.mnemonic) issues.push("mnemonic_missing");
+        
         return issues;
       }
 
-      console.log("[MNEMONIC] ETAPA 1: Gerando mnemônico (loop até 3 tentativas)...");
+      console.log("[MNEMONIC] ETAPA 1: Gerando mnemônico MASTER (loop até 3 tentativas)...");
       let mnemonic: MnemonicOutput | null = null;
       let lastIssues: string[] = [];
       let lastVersion: MnemonicOutput | null = null;
@@ -711,92 +525,75 @@ serve(async (req: Request) => {
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
         const startMs = Date.now();
         let attemptCtx = ctx;
-        if (attempt === 2 && lastVersion) {
-          attemptCtx = `${ctx}\n\n⚠️ TENTATIVA ${attempt}/${MAX_ATTEMPTS}. A versão anterior falhou na validação.\nProblemas: ${describeIssues(lastIssues)}\nVersão anterior: "${lastVersion.frase_mnemonica}"\n\nREFAÇA com estas exigências DURA: a frase precisa ser uma micro-história completa com sujeito + verbo + consequência. Ela deve soar natural quando lida isoladamente, como uma cena de plantão ou meme clínico. NÃO repita literalmente os termos. NÃO escreva frase telegráfica.`;
-        } else if (attempt === 3) {
-          attemptCtx = `${ctx}\n\n⚠️ ÚLTIMA TENTATIVA (${attempt}/${MAX_ATTEMPTS}). As tentativas anteriores falharam.\nProblemas detectados: ${describeIssues(lastIssues)}\n\nFOQUE NO ESSENCIAL:\n- Crie UMA FRASE CURTA E FORTE (6-12 palavras), sempre com sujeito + verbo + consequência\n- A sigla pode existir, mas NÃO substitui a frase lógica\n- Português brasileiro natural, falável, com ritmo\n- A frase deve funcionar sozinha como cena compreensível\n- Explicação didática clara e direta\n- Cena visual simples mas marcante`;
+        
+        if (attempt > 1 && lastVersion) {
+          attemptCtx = `${ctx}\n\n⚠️ TENTATIVA ${attempt}/${MAX_ATTEMPTS}. A anterior falhou.\nPROBLEMAS: ${lastIssues.join("; ")}\n\nPOR FAVOR, CORRIJA: Garanta que TODOS os itens originais estejam presentes na frase e no mapeamento. Melhore os scores médico (>=90) e pedagógico (>=85). Use o formato JSON estrito.`;
         }
 
         let candidate: MnemonicOutput | null = null;
         let errMsg: string | undefined;
         try {
-          const raw = await callAI<any>(aiKey, PROMPT_MNEMONIC, attemptCtx);
-          candidate = normalizeMnemonic(raw);
+          candidate = await callAI<MnemonicOutput>(aiKey, MASTER_PROMPT_GERADOR, attemptCtx);
         } catch (e) {
           errMsg = e instanceof Error ? e.message : String(e);
         }
 
-        const issues = validateMnemonic(candidate, payload.termos);
+        const issues = validateMnemonic(candidate);
         const isValid = issues.length === 0 && !errMsg;
 
         await insertAgentLog(db, {
           request_id: requestId, user_id: userId,
-          agent_name: attempt === 1 ? "gerador" : "retry_gerador",
+          agent_name: attempt === 1 ? "gerador_master" : `retry_master_${attempt}`,
           execution_order: ++order,
           status: isValid ? "completed" : "failed",
-          input_json: { attempt, prompt: attemptCtx.substring(0, 500) },
-          output_json: { ...candidate, _attempt: attempt, _issues: issues },
-          score: candidate?.score_autoavaliacao,
+          input_json: { attempt, payload_summary: { tema: payload.tema, terms_count: payload.termos.length } },
+          output_json: candidate,
+          score: candidate?.audit?.score_medico,
           duration_ms: Date.now() - startMs,
-          error_message: errMsg ?? (issues.length ? `Validação falhou: ${issues.join(", ")}` : undefined),
+          error_message: errMsg ?? (issues.length ? `Auditoria falhou: ${issues.join(", ")}` : undefined),
         });
-
-        console.log(`[MNEMONIC] Tentativa ${attempt}: ${isValid ? "✓ VÁLIDA" : "✗ INVÁLIDA"} — issues=[${issues.join(", ")}]${errMsg ? ` err=${errMsg}` : ""}`);
 
         if (isValid && candidate) {
           mnemonic = candidate;
           break;
         }
         lastIssues = issues;
-        if (candidate) lastVersion = candidate;
+        lastVersion = candidate;
       }
 
       if (!mnemonic) {
-        // Fallback determinístico se temos termos suficientes
-        if (payload.termos.length >= 2) {
-          console.warn("[MNEMONIC] Usando fallback determinístico após 3 tentativas falhas");
-          const fb = buildDeterministicFallback(payload.tema, payload.termos);
-          if (requestId) { try { await updateRequestStatus(db, requestId, "completed"); } catch {} }
-          return jsonResponse({
-            success: true,
-            warning: "Mnemônico simples gerado sem IA.",
-            response_source: "fallback_deterministic",
-            data: {
-              request_id: requestId,
-              result_id: null,
-              tema: payload.tema,
-              sigla: fb.sigla,
-              frase_mnemonica: fb.frase_mnemonica,
-              explicacao_didatica: fb.explicacao_didatica,
-              explicacao_associacao: fb.explicacao_didatica,
-              explicacao_tecnica: fb.explicacao_tecnica,
-              cena_visual: fb.cena_visual,
-              prompt_imagem: "",
-              image_url: null,
-              image_failed: true,
-              score_medico: 50, score_pedagogico: 50, score_linguistico: 50, score_final: 50,
-              quality_flag: "low",
-              alertas: ["Mnemônico simples gerado sem IA — tente regenerar para melhor qualidade."],
-              associacoes: fb.associacoes,
-              associacoes_visuais: [],
-              items_map: fb.associacoes.map((a: any) => ({
-                letter: a.letra, word: a.representacao_no_mnemonico,
-                original_item: a.termo_original, symbol: null, symbol_reason: null,
-              })),
-              pontos_de_prova: [],
-              response_source: "fallback_deterministic",
-            },
-          }, 200);
-        }
-        if (requestId) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
+        console.warn("[MNEMONIC] Pipeline Master falhou após 3 tentativas. Usando fallback.");
+        const fb = buildDeterministicFallback(payload.tema, payload.termos);
+        if (requestId) await updateRequestStatus(db, requestId, "completed");
+        
         return jsonResponse({
-          success: false,
-          error: "Não foi possível gerar um mnemônico válido após 3 tentativas. Tente novamente.",
-          code: "GENERATION_FAILED",
-          details: lastIssues.join(", "),
-          requestId: requestId || requestIdForError,
-        }, 422);
+          success: true,
+          warning: "Mnemônico simples gerado sem IA.",
+          response_source: "fallback_deterministic",
+          data: {
+            request_id: requestId,
+            result_id: null,
+            tema: payload.tema,
+            sigla: fb.sigla,
+            frase_mnemonica: fb.frase_mnemonica,
+            explicacao_didatica: fb.explicacao_didatica,
+            explicacao_tecnica: fb.explicacao_tecnica,
+            cena_visual: fb.cena_visual,
+            prompt_imagem: "",
+            image_url: null,
+            image_failed: true,
+            score_medico: 50, score_pedagogico: 50, score_final: 50,
+            associacoes: fb.associacoes,
+            items_map: fb.associacoes.map(a => ({
+              letter: a.letra, word: a.representacao_no_mnemonico,
+              original_item: a.termo_original, symbol: null
+            })),
+            pontos_de_prova: [],
+            response_source: "fallback_deterministic",
+          },
+        });
       }
+
 
       // ══════════════════════════════════════
       // Cena visual e prompt de imagem agora vêm do ETAPA 1
