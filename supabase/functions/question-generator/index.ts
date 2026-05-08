@@ -616,7 +616,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
               const filtered = parsed.filter((q: any) => {
                 const stmt = String(q.statement || q.question || "");
                 const options = q.options || q.alternatives || [];
-                if (stmt.length < 200) { // Relaxed for debug
+                if (stmt.length < 200) {
                   console.warn(`[Slot ${level}] Question rejected: too short (${stmt.length} chars)`);
                   return false;
                 }
@@ -629,15 +629,27 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
               console.log(`[Slot ${level}][batch ${batchIdx + 1}] Generated ${parsed.length} questions, ${filtered.length} passed filters`);
               const validatedBatch: any[] = [];
               for (const q of filtered) {
-                // Real Adversarial Audit Layer
+                // Real Adversarial Audit Layer + Adaptive Quality Check
+                const hasRef = /Harrison|Sabiston|Nelson|Protocolo MS|SUS/i.test(q.explanation || "");
+                const isDeep = (q.explanation?.length || 0) > 600;
+                
+                // Base metrics
                 const medical_accuracy = (q.correct_index === undefined || q.options?.length < 5 || q.explanation?.length < 100) ? 0.4 : 0.98;
                 const distractor_quality = (q.options?.some((o: string) => o.length < 5)) ? 0.5 : 0.92;
-                const explanation_quality = (q.explanation?.toLowerCase().includes(" Harrison") || q.explanation?.toLowerCase().includes(" Sabiston")) ? 0.95 : 0.70;
+                const explanation_quality = hasRef ? 0.95 : 0.70;
                 const exam_style = 0.90;
                 
-                const final_score = (medical_accuracy * 0.4 + distractor_quality * 0.2 + explanation_quality * 0.2 + exam_style * 0.2);
+                let final_score = (medical_accuracy * 0.4 + distractor_quality * 0.2 + explanation_quality * 0.2 + exam_style * 0.2);
                 
-                if (final_score >= 0.85) {
+                // Adaptive Thresholds from Clinical Quality Profile
+                const minScore = qualityProfile?.average_quality < 80 ? 0.88 : 0.85;
+                const depthRequired = qualityProfile?.explanation_depth === 'high';
+                const refRequired = qualityProfile?.requires_references === true;
+
+                if (depthRequired && !isDeep) final_score -= 0.1;
+                if (refRequired && !hasRef) final_score -= 0.15;
+
+                if (final_score >= minScore) {
                   validatedBatch.push({
                     ...q,
                     statement: cleanQuestionText(q.statement || q.question || ""),
@@ -649,12 +661,16 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                       distractor: distractor_quality,
                       explanation: explanation_quality,
                       style: exam_style,
-                      final_score 
+                      final_score,
+                      adaptive_routing: {
+                        specialty: currentSpecialty,
+                        model_used: qualityProfile?.preferred_model || 'gpt-4o-mini',
+                        depth_applied: qualityProfile?.explanation_depth || 'medium'
+                      }
                     }
                   });
                 } else {
-                  console.warn(`[Slot ${level}] Question REJECTED by adversarial audit: score ${final_score.toFixed(2)}. Re-queuing slot...`);
-                  // Mark for log and exclude from this batch return
+                  console.warn(`[Slot ${level}] Question REJECTED by adaptive clinical audit: score ${final_score.toFixed(2)} (min: ${minScore}). Re-queuing slot...`);
                 }
               }
               return validatedBatch;
