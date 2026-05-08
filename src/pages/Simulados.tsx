@@ -300,12 +300,28 @@ const Simulados = () => {
     setPhase("exam");
   };
 
-  const handleStart = async (config: any) => {
+  const handleStart = async (config: { 
+    topics: string[]; 
+    count: number; 
+    difficulty: string; 
+    timePerQuestion: number; 
+    mode: SimuladoMode; 
+    specificTopic?: string; 
+    examBoard?: string; 
+    realExamProfile?: string; 
+    imagePercent?: number; 
+    dynamicDistribution?: ExamDistributionTree; 
+    topicWeights?: any[];
+    autoDistribution?: boolean;
+    customDistribution?: any[];
+    includeWeakThemes?: boolean;
+    includePreviousErrors?: boolean;
+    resumeJobId?: string;
+    existingQuestions?: SimQuestion[];
+  }) => {
     console.log("[Simulados] iniciar clicado", config);
     const questionCount = config.count || 10;
-    console.log("[Simulados] quantidade", questionCount);
-    console.log("[Simulados] modo", questionCount >= 50 ? "job" : "sync");
-
+    
     configRef.current = config;
     setMode(config.mode || "estudo");
     setSelectedTopics(config.topics || ["Clínica Médica"]);
