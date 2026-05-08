@@ -344,6 +344,17 @@ serve(async (req: Request) => {
         const rl = await checkRateLimit(db, userId);
         if (!rl.ok) throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}).`);
 
+        // HANDLE: Regenerate image only
+        if (payload.regenerate_image_only && payload.original_result_id) {
+          const { data: origResult } = await db.from("mnemonic_results").select("*").eq("id", payload.original_result_id).single();
+          if (!origResult) throw new Error("Resultado original não encontrado.");
+          const prompt = origResult.prompt_imagem || `3D cartoon Pixar-style medical scene for ${payload.tema}, no text.`;
+          const imgResult = await generateImage(prompt);
+          if (imgResult.url) await db.from("mnemonic_results").update({ image_url: imgResult.url }).eq("id", payload.original_result_id);
+          return jsonResponse({ success: true, data: { ...origResult, image_url: imgResult.url || origResult.image_url, image_failed: imgResult.failed } });
+        }
+
+
         // Etapa 0: Extração Automática
         if (payload.auto_extract_terms && !payload.regenerate_image_only) {
           try {
