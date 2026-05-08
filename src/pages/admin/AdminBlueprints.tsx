@@ -346,7 +346,56 @@ const AdminBlueprints = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Reconcile Preview Dialog */}
+      {/* Versions Modal */}
+      <Dialog open={isVersionsOpen} onOpenChange={setIsVersionsOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase flex items-center gap-2">
+              <History className="text-emerald-500" /> Histórico de Versões: {selectedExam?.toUpperCase()}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[500px] mt-4">
+            <Table>
+              <TableHeader className="bg-slate-950/50">
+                <TableRow className="border-slate-800">
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Versão</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Data</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Confiança</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Status</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500 text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {versions?.filter(v => v.exam_key === selectedExam).map((v) => (
+                  <TableRow key={v.id} className="border-slate-800">
+                    <TableCell className="font-mono text-emerald-400 font-bold">{v.version_label}</TableCell>
+                    <TableCell className="text-sm text-slate-400">{new Date(v.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="font-bold">{(v.confidence_avg * 100).toFixed(1)}%</TableCell>
+                    <TableCell>
+                      {v.is_active ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ATIVO</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-slate-800">INATIVO</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!v.is_active && (
+                        <Button size="sm" variant="ghost" className="text-orange-500 hover:bg-orange-500/10" onClick={() => {
+                          setSelectedVersion(v);
+                          setIsRollbackOpen(true);
+                        }}>
+                          Rollback
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl max-h-[90vh]">
           <DialogHeader>
