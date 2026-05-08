@@ -383,18 +383,35 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
-    
-    const finalTopics = selectedTopics.length > 0 ? selectedTopics : ["Clínica Médica"];
-    
-    onStart({ 
-      topics: finalTopics, 
-      count, 
-      difficulty, 
-      timePerQuestion, 
-      mode, 
-      specificTopic: specificTopic.trim() || undefined, 
-      examBoard: examBoard !== "all" ? examBoard : undefined, 
-      imagePercent 
+
+    // Resolve fonte de tópicos: manual > banca específica > GERAL (Todas as bancas)
+    let finalTopics = selectedTopics;
+    let resolvedWeights: any[] | undefined;
+    let resolvedExamBoard: string | undefined = examBoard !== "all" ? examBoard : undefined;
+
+    if (finalTopics.length === 0) {
+      const profileKey = examBoard !== "all" ? examBoard : "GERAL";
+      const profile = EXAM_PROFILES[profileKey] || EXAM_PROFILES.GERAL;
+      if (profile?.topicWeights?.length) {
+        finalTopics = profile.topicWeights.map((tw: any) => tw.topic);
+        resolvedWeights = profile.topicWeights;
+        if (examBoard === "all") resolvedExamBoard = "GERAL";
+      } else {
+        finalTopics = ["Clínica Médica"];
+      }
+    }
+
+    onStart({
+      topics: finalTopics,
+      count,
+      difficulty,
+      timePerQuestion,
+      mode,
+      specificTopic: specificTopic.trim() || undefined,
+      examBoard: resolvedExamBoard,
+      imagePercent,
+      topicWeights: resolvedWeights,
+      autoDistribution: selectedTopics.length === 0 && !!resolvedWeights,
     });
   };
 
@@ -1209,10 +1226,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             onClick={handleStart}
             data-testid="iniciar-simulado-button"
             disabled={
-              // Só bloqueia se não for modo banca/adaptativo E não houver tópico selecionado
-              (mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && examBoard === "all") && 
-              selectedTopics.length === 0 && 
-              !specificTopic
+              // Sempre permite quando há banca (inclusive "all"=GERAL), modo banca/adaptativo, tópico ou specificTopic
+              mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard
             }
           >
             {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
