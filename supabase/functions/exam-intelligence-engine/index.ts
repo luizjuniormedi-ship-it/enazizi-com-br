@@ -76,6 +76,7 @@ serve(async (req) => {
         return new Response(JSON.stringify({ 
           success: true, 
           preview,
+          exam_key,
           confidence_expected: Math.min(1.0, 0.5 + (totalRaw / 1000.0)),
           sample_size: totalRaw
         }), {
