@@ -383,18 +383,35 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
       return;
     }
     const count = customCount ? parseInt(customCount) : questionCount;
-    
-    const finalTopics = selectedTopics.length > 0 ? selectedTopics : ["Clínica Médica"];
-    
-    onStart({ 
-      topics: finalTopics, 
-      count, 
-      difficulty, 
-      timePerQuestion, 
-      mode, 
-      specificTopic: specificTopic.trim() || undefined, 
-      examBoard: examBoard !== "all" ? examBoard : undefined, 
-      imagePercent 
+
+    // Resolve fonte de tópicos: manual > banca específica > GERAL (Todas as bancas)
+    let finalTopics = selectedTopics;
+    let resolvedWeights: any[] | undefined;
+    let resolvedExamBoard: string | undefined = examBoard !== "all" ? examBoard : undefined;
+
+    if (finalTopics.length === 0) {
+      const profileKey = examBoard !== "all" ? examBoard : "GERAL";
+      const profile = EXAM_PROFILES[profileKey] || EXAM_PROFILES.GERAL;
+      if (profile?.topicWeights?.length) {
+        finalTopics = profile.topicWeights.map((tw: any) => tw.topic);
+        resolvedWeights = profile.topicWeights;
+        if (examBoard === "all") resolvedExamBoard = "GERAL";
+      } else {
+        finalTopics = ["Clínica Médica"];
+      }
+    }
+
+    onStart({
+      topics: finalTopics,
+      count,
+      difficulty,
+      timePerQuestion,
+      mode,
+      specificTopic: specificTopic.trim() || undefined,
+      examBoard: resolvedExamBoard,
+      imagePercent,
+      topicWeights: resolvedWeights,
+      autoDistribution: selectedTopics.length === 0 && !!resolvedWeights,
     });
   };
 
