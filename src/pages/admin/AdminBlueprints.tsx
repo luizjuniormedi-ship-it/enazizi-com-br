@@ -393,7 +393,61 @@ const AdminBlueprints = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Versions Modal */}
+      {/* Effective Weight Heatmap */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-xl font-black uppercase flex items-center gap-2">
+            <BarChart3 className="text-emerald-500" /> Distribuição de Pesos Efetivos
+          </CardTitle>
+          <CardDescription>Visualização da influência real de cada tema após aplicação do Confidence Score</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader className="bg-slate-950/50">
+              <TableRow className="border-slate-800">
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Banca / Tema</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Peso Original</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Confiança</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Peso Efetivo</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {blueprints?.map((b) => (
+                <TableRow key={b.id} className="border-slate-800">
+                  <TableCell>
+                    <div className="font-black uppercase text-xs text-slate-400">{b.exam_key}</div>
+                    <div className="font-medium">{b.specialty} - {b.topic}</div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{b.weight.toFixed(1)}%</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-500" 
+                          style={{ width: `${b.confidence_score * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-bold">{(b.confidence_score * 100).toFixed(0)}%</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-black text-emerald-400">
+                    {b.effective_weight.toFixed(1)}%
+                  </TableCell>
+                  <TableCell>
+                    {b.confidence_score < 0.4 ? (
+                      <Badge variant="outline" className="text-orange-500 border-orange-500/30 bg-orange-500/5">ACHATADO</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-emerald-500 border-emerald-500/30 bg-emerald-500/5">ESTÁVEL</Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <Dialog open={isVersionsOpen} onOpenChange={setIsVersionsOpen}>
         <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl">
           <DialogHeader>
