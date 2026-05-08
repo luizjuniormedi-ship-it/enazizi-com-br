@@ -695,128 +695,129 @@ const Simulados = () => {
           {!showConfigStep && (
             <>
               {activeJobs.length > 0 && (
-            <EnaflixSection title="Gerações em Andamento">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {activeJobs.map(job => (
-                  <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
-                            {job.config?.mode === 'prova_real' ? job.config?.realExamProfile : 'Simulado Personalizado'}
-                          </p>
-                          <h4 className="font-semibold text-sm line-clamp-1">
-                            {job.config?.topics?.join(', ') || 'Temas variados'}
-                          </h4>
-                        </div>
-                        <Badge variant="outline" className="text-[10px] uppercase font-mono">
-                          {job.status}
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between text-[10px] font-mono uppercase text-muted-foreground">
-                          <span>Progresso</span>
-                          <span>{job.generated_questions || 0} / {job.total_questions}</span>
-                        </div>
-                        <Progress value={((job.generated_questions || 0) / job.total_questions) * 100} className="h-1" />
-                      </div>
+                <EnaflixSection title="Gerações em Andamento">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {activeJobs.map(job => (
+                      <Card key={job.id} className="bg-card/50 border-primary/20 backdrop-blur-sm overflow-hidden">
+                        <CardContent className="p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wider text-primary mb-1">
+                                {job.config?.mode === 'prova_real' ? job.config?.realExamProfile : 'Simulado Personalizado'}
+                              </p>
+                              <h4 className="font-semibold text-sm line-clamp-1">
+                                {job.config?.topics?.join(', ') || 'Temas variados'}
+                              </h4>
+                            </div>
+                            <Badge variant="outline" className="text-[10px] uppercase font-mono">
+                              {job.status}
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-1.5">
+                            <div className="flex justify-between text-[10px] font-mono uppercase text-muted-foreground">
+                              <span>Progresso</span>
+                              <span>{job.generated_questions || 0} / {job.total_questions}</span>
+                            </div>
+                            <Progress value={((job.generated_questions || 0) / job.total_questions) * 100} className="h-1" />
+                          </div>
 
-                      <div className="flex items-center justify-between gap-2 pt-1">
-                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
-                          <Clock className="h-3 w-3" />
-                          {new Date(job.created_at).toLocaleTimeString()}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            size="sm" 
-                            variant="ghost" 
-                            className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-destructive"
-                            onClick={() => handleCancelJob(job.id)}
-                          >
-                            Cancelar
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="secondary" 
-                            className="h-8 text-[10px] font-bold uppercase"
-                            onClick={() => handleResumeJob(job)}
-                          >
-                            Retomar
-                          </Button>
-                        </div>
+                          <div className="flex items-center justify-between gap-2 pt-1">
+                            <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground font-mono">
+                              <Clock className="h-3 w-3" />
+                              {new Date(job.created_at).toLocaleTimeString()}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button 
+                                size="sm" 
+                                variant="ghost" 
+                                className="h-8 text-[10px] font-bold uppercase text-white/40 hover:text-destructive"
+                                onClick={() => handleCancelJob(job.id)}
+                              >
+                                Cancelar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="secondary" 
+                                className="h-8 text-[10px] font-bold uppercase"
+                                onClick={() => handleResumeJob(job)}
+                              >
+                                Retomar
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </EnaflixSection>
+              )}
+
+              <div className="w-full max-w-5xl mx-auto space-y-12">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <SimuladoProfileCard
+                    title="Simulado Adaptativo IA"
+                    subtitle="Focado nos seus temas de menor desempenho"
+                    count={20} timeMinutes={60} difficulty="misto" badge="IA Recomendou"
+                    image="https://images.unsplash.com/photo-1633526543814-9718c8922b7a?q=80&w=400"
+                    onClick={() => handleStart({ topics: ["Clínica Médica"], count: 20, difficulty: "misto", mode: "adaptativo" })}
+                  />
+                  <SimuladoProfileCard
+                    title="Desafio de Diagnóstico Visual"
+                    subtitle="100% questões com imagem"
+                    count={10} timeMinutes={20} difficulty="intermediario"
+                    image="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=400"
+                    onClick={() => handleStart({ topics: ["Clínica Médica"], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
+                  />
+                </div>
+
+                <EnaflixSection title="Bancas Oficiais" subtitle="Simule o ambiente real das maiores provas do país.">
+                  <EnaflixRow title="">
+                    {Object.entries(EXAM_PROFILES).slice(0, 8).map(([id, profile]) => (
+                      <div key={id} className="flex-none w-[280px] sm:w-[320px]">
+                        <SimuladoProfileCard
+                          title={profile.name}
+                          subtitle="Padrão oficial da banca"
+                          count={profile.totalQuestions}
+                          timeMinutes={profile.timeMinutes}
+                          image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
+                          onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
+                          data-testid={`banca-${id.toLowerCase()}-button`}
+                        />
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </EnaflixSection>
-          )}
+                    ))}
+                  </EnaflixRow>
+                </EnaflixSection>
 
-          <div className="w-full max-w-5xl mx-auto space-y-12">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <SimuladoProfileCard
-                title="Simulado Adaptativo IA"
-                subtitle="Focado nos seus temas de menor desempenho"
-                count={20} timeMinutes={60} difficulty="misto" badge="IA Recomendou"
-                image="https://images.unsplash.com/photo-1633526543814-9718c8922b7a?q=80&w=400"
-                onClick={() => handleStart({ topics: ["Clínica Médica"], count: 20, difficulty: "misto", mode: "adaptativo" })}
-              />
-              <SimuladoProfileCard
-                title="Desafio de Diagnóstico Visual"
-                subtitle="100% questões com imagem"
-                count={10} timeMinutes={20} difficulty="intermediario"
-                image="https://images.unsplash.com/photo-1576086213369-97a306d36557?q=80&w=400"
-                onClick={() => handleStart({ topics: ["Clínica Médica"], count: 10, difficulty: "intermediario", mode: "estudo", imagePercent: 100 })}
-              />
-            </div>
-
-            <EnaflixSection title="Bancas Oficiais" subtitle="Simule o ambiente real das maiores provas do país.">
-              <EnaflixRow title="">
-                {Object.entries(EXAM_PROFILES).slice(0, 8).map(([id, profile]) => (
-                  <div key={id} className="flex-none w-[280px] sm:w-[320px]">
-                    <SimuladoProfileCard
-                      title={profile.name}
-                      subtitle="Padrão oficial da banca"
-                      count={profile.totalQuestions}
-                      timeMinutes={profile.timeMinutes}
-                      image="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?q=80&w=400"
-                      onClick={() => handleStart({ topics: profile.topicWeights.map(t => t.topic), count: profile.totalQuestions, difficulty: "misto", mode: "prova_real", realExamProfile: id })}
-                      data-testid={`banca-${id.toLowerCase()}-button`}
+                <div className="space-y-8 pt-8 border-t border-white/5">
+                  <EnaflixSectionTitle kicker="PERSONALIZAR" title="Configuração Avançada" subtitle="Monte sua prova personalizada." />
+                  <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden p-6 sm:p-8">
+                    <SimuladoSetup
+                      onStart={(config) => {
+                        console.log("[Simulados] Setup.onStart disparado:", config);
+                        handleStart(config);
+                      }}
+                      adaptiveLoading={adaptivePreviewLoading}
+                      adaptiveMeta={adaptivePreviewMeta}
+                      onFetchAdaptivePreview={() => {
+                        console.log("[Simulados] Fetch adaptive preview");
+                      }}
+                      onResumeSession={handleResumeSession}
+                      onDiscardSession={abandonSession}
+                      onRetryErrors={() => {}}
+                      pendingSession={pendingSession}
+                      checkedSession={checked}
+                      userId={user?.id}
                     />
                   </div>
-                ))}
-              </EnaflixRow>
-            </EnaflixSection>
-
-            <div className="space-y-8 pt-8 border-t border-white/5">
-              <EnaflixSectionTitle kicker="PERSONALIZAR" title="Configuração Avançada" subtitle="Monte sua prova personalizada." />
-              <div className="bg-white/5 backdrop-blur-xl border border-white/5 rounded-3xl overflow-hidden p-6 sm:p-8">
-                <SimuladoSetup
-                  onStart={(config) => {
-                    console.log("[Simulados] Setup.onStart disparado:", config);
-                    handleStart(config);
-                  }}
-                  adaptiveLoading={adaptivePreviewLoading}
-                  adaptiveMeta={adaptivePreviewMeta}
-                  onFetchAdaptivePreview={() => {
-                    console.log("[Simulados] Fetch adaptive preview");
-                  }}
-                  onResumeSession={handleResumeSession}
-                  onDiscardSession={abandonSession}
-                  onRetryErrors={() => {}}
-                  pendingSession={pendingSession}
-                  checkedSession={checked}
-                  userId={user?.id}
-                />
-            </div>
-          </div>
-        </>
-      )}
-    </main>
-  </div>
-);
-}
+                </div>
+              </div>
+            </>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   if (phase === "loading") {
     return (
