@@ -48,18 +48,35 @@ const AdminBlueprints = () => {
   const [healthScores, setHealthScores] = useState<Record<string, number>>({});
   const [auditStats, setAuditStats] = useState<any>(null);
 
-  // Fetch Audit Stats
-  const { data: clinicalAuditData } = useQuery({
-    queryKey: ["admin-clinical-audits"],
+  // Fetch Quality Map (Grouped by Specialty)
+  const { data: qualityMap } = useQuery({
+    queryKey: ["admin-clinical-quality-map"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exam_clinical_audits")
-        .select("medical_accuracy_score, final_quality_score, is_approved")
-        .limit(100);
+        .select("specialty, exam_key, medical_accuracy_score, final_quality_score, is_approved");
       if (error) throw error;
-      return data;
+      
+      const map: Record<string, any> = {};
+      data?.forEach(d => {
+        if (!map[d.specialty]) map[d.specialty] = { count: 0, approved: 0, accuracy: 0, final: 0 };
+        map[d.specialty].count++;
+        if (d.is_approved) map[d.specialty].approved++;
+        map[d.specialty].accuracy += Number(d.medical_accuracy_score);
+        map[d.specialty].final += Number(d.final_quality_score);
+      });
+
+      return Object.entries(map).map(([spec, stats]: [string, any]) => ({
+        specialty: spec,
+        approval_rate: (stats.approved / stats.count) * 100,
+        avg_accuracy: (stats.accuracy / stats.count),
+        avg_final: (stats.final / stats.count),
+        total: stats.count
+      }));
     }
   });
+
+  // Fetch Health Scores
 
   // 0. Fetch Health Scores
   const { data: healthData } = useQuery({
