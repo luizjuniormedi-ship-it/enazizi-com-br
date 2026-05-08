@@ -22,11 +22,11 @@ export async function fetchDynamicBlueprint(supabase: any, examKey: string, useE
 
   console.log(`[Blueprint] Blueprint dinâmico encontrado para ${examKey} (${data.length} registros). Usando peso efetivo: ${useEffectiveWeight}`);
   
-  // Transformar array de {specialty, topic, weight} em Record<string, number>
-  // Priorizando a soma por especialidade se houver múltiplos tópicos
+  // Transformar em Record<string, number>
   const specialtyWeights: Record<string, number> = {};
   data.forEach((item: any) => {
-    specialtyWeights[item.specialty] = (specialtyWeights[item.specialty] || 0) + Number(item.weight);
+    const finalWeight = useEffectiveWeight ? Number(item.effective_weight || item.weight) : Number(item.weight);
+    specialtyWeights[item.specialty] = (specialtyWeights[item.specialty] || 0) + finalWeight;
   });
 
   return {
