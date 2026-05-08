@@ -103,8 +103,23 @@ function buildPrompt(topics: string[], count: number, difficulty: string, specif
   return `Gere exatamente ${count} questões de múltipla escolha para simulado de residência médica. IDIOMA: PT-BR. TEMAS: ${topicsStr}${topicFocus}${boardInstruction}. ${difficultyInstruction} FORMATO: Array JSON puro.`;
 }
 
-async function generateBatch(topics: string[], count: number, difficulty: string, accessToken: string | undefined, specificTopic?: string, examBoard?: string, avoidStatements?: string[], jobId?: string, batchNumber?: number, topicWeights?: any[]): Promise<SimQuestion[]> {
-  console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard });
+async function generateBatch(
+  topics: string[], 
+  count: number, 
+  difficulty: string, 
+  accessToken: string | undefined, 
+  specificTopic?: string, 
+  examBoard?: string, 
+  avoidStatements?: string[], 
+  jobId?: string, 
+  batchNumber?: number, 
+  topicWeights?: any[],
+  autoDistribution?: boolean,
+  customDistribution?: any[],
+  includeWeakThemes?: boolean,
+  includePreviousErrors?: boolean
+): Promise<SimQuestion[]> {
+  console.log("[DEBUG] Generating batch with config:", { topics, count, difficulty, specificTopic, examBoard, autoDistribution });
   const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/question-generator`, {
     method: "POST",
     headers: {
@@ -123,7 +138,11 @@ async function generateBatch(topics: string[], count: number, difficulty: string
       targetExam: examBoard,
       jobId,
       batchNumber,
-      topicWeights, // Pass weights to guide the batch distribution
+      topicWeights,
+      autoDistribution,
+      customDistribution,
+      includeWeakThemes,
+      includePreviousErrors
     }),
   });
   if (!res.ok) throw new Error(`Erro ${res.status}`);
