@@ -321,6 +321,8 @@ serve(async (req: Request) => {
     });
 
     const mainPipeline = async (): Promise<Response> => {
+      let requestId: string | null = null;
+      let order = 0;
       try {
         const aiKey = requireEnv("LOVABLE_API_KEY");
         let rawBody;
@@ -331,535 +333,148 @@ serve(async (req: Request) => {
         }
         
         if (!rawBody) throw new Error("Body vazio.");
-      console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema ?? (rawBody as any)?.topic}, termos=${(rawBody as any)?.termos?.length ?? (rawBody as any)?.items?.length}`);
+        const payload = validatePayload(rawBody);
+        payload.termos = normalizeTerms(payload.termos);
+        payload.tema = payload.tema.trim();
 
-      const payload = validatePayload(rawBody);
-      payload.termos = normalizeTerms(payload.termos);
-      payload.tema = payload.tema.trim();
+        const userId = await getUserIdFromRequest(req);
+        db = getServiceClient();
 
-      const userId = await getUserIdFromRequest(req);
-      db = getServiceClient();
+        // Rate limiting
+        const rl = await checkRateLimit(db, userId);
+        if (!rl.ok) throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}).`);
 
-      // Rate limiting per user
-      const rl = await checkRateLimit(db, userId);
-      if (!rl.ok) {
-        throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}). Aguarde para gerar novos mnemônicos.`);
-      }
-
-
-      // ══════════════════════════════════════
-      // ETAPA 0 (NOVA): Extração automática de termos quando não fornecidos
-      // ══════════════════════════════════════
-      if (payload.auto_extract_terms && !payload.regenerate_image_only) {
-        console.log(`[MNEMONIC] ETAPA 0: Extraindo termos automaticamente para "${payload.tema}"`);
-        const extractStart = Date.now();
-        try {
-          const extracted = await callAI<{ termos?: unknown; contexto_clinico?: string; justificativa?: string }>(
-            aiKey,
-            PROMPT_EXTRACT_TERMS,
-            `Tema médico: ${payload.tema}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`
-          );
-          const rawTermos = Array.isArray(extracted?.termos) ? extracted.termos : [];
-          const cleanTermos = rawTermos
-            .filter((t): t is string => typeof t === "string" && !!t.trim())
-            .map((t) => t.trim())
-            .slice(0, 7);
-          if (cleanTermos.length < 3) {
-            return jsonResponse({
-              success: false,
-              error: "Tema muito vago ou não-médico. Forneça um tema mais específico (ex: 'Critérios de Light para derrame pleural').",
-              code: "EXTRACTION_FAILED",
-              details: extracted?.justificativa || "IA não conseguiu extrair termos suficientes.",
-            }, 422);
+        // Etapa 0: Extração Automática
+        if (payload.auto_extract_terms && !payload.regenerate_image_only) {
+          try {
+            const extracted = await callAI<{ termos?: unknown; contexto_clinico?: string }>(
+              aiKey,
+              MASTER_PROMPT_GERADOR,
+              `AJA COMO ETAPA 0 (EXTRATOR): Identifique 3-7 termos essenciais para o tema médico: ${payload.tema}. Retorne JSON { "termos": ["item1", ...] }`
+            );
+            const rawTermos = Array.isArray(extracted?.termos) ? extracted.termos : [];
+            payload.termos = normalizeTerms(rawTermos.filter((t): t is string => typeof t === "string")).slice(0, 7);
+          } catch (e) {
+            console.error("Erro na extração:", e);
           }
-          payload.termos = normalizeTerms(cleanTermos);
-          if (extracted?.contexto_clinico && typeof extracted.contexto_clinico === "string") {
-            (payload as any).contexto_clinico = extracted.contexto_clinico.trim();
-            console.log(`[MNEMONIC] ETAPA 0: contexto_clinico = ${(payload as any).contexto_clinico}`);
-          }
-          console.log(`[MNEMONIC] ETAPA 0 OK: ${payload.termos.length} termos extraídos: ${payload.termos.join(", ")}`);
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          console.error("[MNEMONIC] ETAPA 0 FAILED:", msg);
-          return jsonResponse({
-            success: false,
-            error: "Não foi possível extrair termos do tema. Tente reformular ou seja mais específico.",
-            code: "EXTRACTION_FAILED",
-            details: msg,
-          }, 422);
         }
-      }
 
-      // Validação final: precisamos ter termos para o pipeline (exceto regenerate_image_only)
-      if (!payload.regenerate_image_only && payload.termos.length === 0) {
-        return jsonResponse({
-          success: false,
-          error: "Nenhum termo disponível para gerar o mnemônico.",
-          code: "NO_TERMS",
-        }, 422);
-      }
+        if (!payload.regenerate_image_only && payload.termos.length === 0) {
+          return jsonResponse({ success: false, error: "Nenhum termo disponível.", code: "NO_TERMS" }, 422);
+        }
 
-      requestId = await insertRequest(db, userId, payload);
-      let order = 0;
+        requestId = await insertRequest(db, userId, payload);
 
-      // Log da extração (depois do insertRequest para ter o request_id)
-      if (payload.auto_extract_terms && requestId) {
-        try {
+        // ETAPA 1: Gerador Master
+        interface MnemonicOutput {
+          mnemonic: string; phrase: string;
+          items_map: Array<{ letter: string; word: string; original_item: string; symbol: string }>;
+          scene: string; scene_description: string; image_prompt: string;
+          explanation_tecnica: string; explanation_didatica: string;
+          pontos_de_prova: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }>;
+          audit: { score_medico: number; score_pedagogico: number; score_visual: number; coverage_ok: boolean; missing_items: string[]; extra_items: string[]; };
+        }
+
+        let mnemonic: MnemonicOutput | null = null;
+        let lastIssues: string[] = [];
+        const ctx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}`;
+
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          const startMs = Date.now();
+          let attemptCtx = ctx;
+          if (attempt > 1) attemptCtx += `\n\nREPROVADO NA AUDITORIA. Problemas: ${lastIssues.join(", ")}. REGENERE seguindo o Master Prompt rigorosamente.`;
+
+          let candidate: MnemonicOutput | null = null;
+          let error: string | undefined;
+          try {
+            candidate = await callAI<MnemonicOutput>(aiKey, MASTER_PROMPT_GERADOR, attemptCtx);
+          } catch (e) { error = e instanceof Error ? e.message : String(e); }
+
+          const issues: string[] = [];
+          if (!candidate) issues.push("IA retornou nulo");
+          else {
+            if (candidate.audit?.score_medico < 90) issues.push(`score_medico=${candidate.audit.score_medico}`);
+            if (candidate.audit?.score_pedagogico < 85) issues.push(`score_pedagogico=${candidate.audit.score_pedagogico}`);
+            if (!candidate.audit?.coverage_ok) issues.push("falha_cobertura");
+            if (!candidate.phrase) issues.push("frase_vazia");
+          }
+
           await insertAgentLog(db, {
-            request_id: requestId, user_id: userId,
-            agent_name: "gerador",
-            execution_order: ++order, status: "completed",
-            input_json: { tema: payload.tema, mode: "auto_extract_terms" },
-            output_json: { termos_extraidos: payload.termos },
-            duration_ms: 0,
+            request_id: requestId, user_id: userId, agent_name: `master_gen_v${attempt}`,
+            execution_order: ++order, status: issues.length === 0 ? "completed" : "failed",
+            input_json: { attempt }, output_json: candidate,
+            score: candidate?.audit?.score_medico, duration_ms: Date.now() - startMs,
+            error_message: error || (issues.length ? issues.join("; ") : undefined),
           });
-        } catch { /* non-critical */ }
-      }
 
-      const contextoClinico = (payload as any).contexto_clinico as string | undefined;
-      const ctx = `Tema: ${payload.tema}${contextoClinico ? `\nContexto clínico: ${contextoClinico}` : ""}\nTermos (TODOS devem estar no mnemônico):\n${payload.termos.map((t, i) => `${i + 1}. ${t}`).join("\n")}${payload.estilo ? `\nEstilo preferido: ${payload.estilo}` : ""}${payload.publico ? `\nPúblico: ${payload.publico}` : ""}`;
+          if (issues.length === 0 && candidate) { mnemonic = candidate; break; }
+          lastIssues = issues;
+        }
 
-      // ══════════════════════════════════════
-      // HANDLE: Regenerate image only
-      // ══════════════════════════════════════
-      if (payload.regenerate_image_only && payload.original_result_id) {
-        const { data: origResult } = await db.from("mnemonic_results")
-          .select("*").eq("id", payload.original_result_id).single();
-        
-        if (!origResult) throw new Error("Resultado original não encontrado.");
+        // Fallback
+        if (!mnemonic) {
+          const fb = buildDeterministicFallback(payload.tema, payload.termos);
+          if (requestId) await updateRequestStatus(db, requestId, "completed");
+          return jsonResponse({
+            success: true, warning: "Mnemônico determinístico gerado (IA falhou).",
+            response_source: "fallback_deterministic",
+            data: { ...fb, request_id: requestId, result_id: null, items_map: fb.associacoes.map(a => ({ letter: a.letra, word: a.representacao_no_mnemonico, original_item: a.termo_original, symbol: null })) }
+          });
+        }
 
-        const promptImagem = origResult.prompt_imagem || `3D cartoon Pixar-style medical memory scene for ${payload.tema}, vibrant colors, clean background, no text, no labels.`;
-        
-        console.log("[MNEMONIC] Regenerating image only");
+        // ETAPA 2: Imagem
         const imgStart = Date.now();
-        const imgResult = await generateImage(promptImagem);
+        const img = await generateImage(mnemonic.image_prompt);
         await insertAgentLog(db, {
-          request_id: requestId, user_id: userId, agent_name: "gerador_imagem",
-          execution_order: ++order, status: imgResult.url ? "completed" : "failed",
-          input_json: { prompt: promptImagem.substring(0, 500) },
-          output_json: { image_url: imgResult.url, error: imgResult.error },
-          duration_ms: Date.now() - imgStart, error_message: imgResult.error,
+          request_id: requestId, user_id: userId, agent_name: "master_image",
+          execution_order: ++order, status: img.url ? "completed" : "failed",
+          input_json: { prompt: mnemonic.image_prompt }, output_json: img,
+          duration_ms: Date.now() - imgStart, error_message: img.error,
         });
 
-        // Update original result with new image
-        if (imgResult.url) {
-          await db.from("mnemonic_results").update({ image_url: imgResult.url, updated_at: new Date().toISOString() }).eq("id", payload.original_result_id);
-        }
+        // ETAPA 3: Persistir
+        const scoreFinal = Math.round((mnemonic.audit.score_medico + mnemonic.audit.score_pedagogico) / 2);
+        const resultId = await insertResult(db, {
+          request_id: requestId, user_id: userId, tema: payload.tema, sigla: mnemonic.mnemonic,
+          frase_mnemonica: mnemonic.phrase, explicacao_tecnica: mnemonic.explanation_tecnica,
+          explicacao_didatica: mnemonic.explanation_didatica,
+          cena_visual: mnemonic.scene_description || mnemonic.scene, prompt_imagem: mnemonic.image_prompt,
+          score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
+          score_linguistico: 90, score_final: scoreFinal,
+          aprovado: true, aprovado_medico: true, aprovado_pedagogico: true,
+          image_url: img.url, associacoes_json: mnemonic.items_map as any,
+          associacoes_visuais_json: [], alertas_json: mnemonic.audit.missing_items || [],
+        });
 
         await updateRequestStatus(db, requestId, "completed");
 
         return jsonResponse({
           success: true,
           data: {
-            request_id: requestId,
-            result_id: payload.original_result_id,
-            tema: origResult.tema,
-            sigla: origResult.sigla,
-            frase_mnemonica: origResult.frase_mnemonica,
-            explicacao_tecnica: origResult.explicacao_tecnica,
-            explicacao_didatica: origResult.explicacao_didatica,
-            explicacao_associacao: origResult.explicacao_didatica,
-            cena_visual: origResult.cena_visual,
-            prompt_imagem: origResult.prompt_imagem,
-            image_url: imgResult.url ?? origResult.image_url,
-            image_failed: imgResult.failed,
-            score_medico: origResult.score_medico,
-            score_pedagogico: origResult.score_pedagogico,
-            score_linguistico: origResult.score_linguistico ?? 0,
-            score_final: origResult.score_final,
-            alertas: origResult.alertas_json ?? [],
-            items_map: [],
-            associacoes: origResult.associacoes_json ?? [],
-            associacoes_visuais: origResult.associacoes_visuais_json ?? [],
-          },
-        });
-      }
-
-      // ══════════════════════════════════════
-      // ETAPA 1: Gerar mnemônico MASTER — até 3 tentativas
-      // ══════════════════════════════════════
-      interface MnemonicOutput {
-        mnemonic: string;
-        phrase: string;
-        items_map: Array<{ letter: string; word: string; original_item: string; symbol: string }>;
-        scene: string;
-        scene_description: string;
-        image_prompt: string;
-        image_url?: string;
-        explanation_tecnica: string;
-        explanation_didatica: string;
-        pontos_de_prova: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }>;
-        audit: {
-          score_medico: number;
-          score_pedagogico: number;
-          score_visual: number;
-          coverage_ok: boolean;
-          missing_items: string[];
-          extra_items: string[];
-        };
-      }
-
-      function validateMnemonic(m: MnemonicOutput | null): string[] {
-        const issues: string[] = [];
-        if (!m) { issues.push("resposta_vazia"); return issues; }
-        if (!m.audit) { issues.push("audit_missing"); return issues; }
-        
-        // Regras de Bloqueio do Master Prompt
-        if (m.audit.score_medico < 90) issues.push(`score_medico_insuficiente (${m.audit.score_medico})`);
-        if (m.audit.score_pedagogico < 85) issues.push(`score_pedagogico_insuficiente (${m.audit.score_pedagogico})`);
-        if (!m.audit.coverage_ok) issues.push("coverage_failure");
-        if (m.audit.missing_items?.length > 0) issues.push(`missing_terms: ${m.audit.missing_items.join(", ")}`);
-        
-        if (!m.phrase || m.phrase.length < 10) issues.push("phrase_too_short");
-        if (!m.mnemonic) issues.push("mnemonic_missing");
-        
-        return issues;
-      }
-
-      console.log("[MNEMONIC] ETAPA 1: Gerando mnemônico MASTER (loop até 3 tentativas)...");
-      let mnemonic: MnemonicOutput | null = null;
-      let lastIssues: string[] = [];
-      let lastVersion: MnemonicOutput | null = null;
-      const MAX_ATTEMPTS = 3;
-
-      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const startMs = Date.now();
-        let attemptCtx = ctx;
-        
-        if (attempt > 1 && lastVersion) {
-          attemptCtx = `${ctx}\n\n⚠️ TENTATIVA ${attempt}/${MAX_ATTEMPTS}. A anterior falhou.\nPROBLEMAS: ${lastIssues.join("; ")}\n\nPOR FAVOR, CORRIJA: Garanta que TODOS os itens originais estejam presentes na frase e no mapeamento. Melhore os scores médico (>=90) e pedagógico (>=85). Use o formato JSON estrito.`;
-        }
-
-        let candidate: MnemonicOutput | null = null;
-        let errMsg: string | undefined;
-        try {
-          candidate = await callAI<MnemonicOutput>(aiKey, MASTER_PROMPT_GERADOR, attemptCtx);
-        } catch (e) {
-          errMsg = e instanceof Error ? e.message : String(e);
-        }
-
-        const issues = validateMnemonic(candidate);
-        const isValid = issues.length === 0 && !errMsg;
-
-        await insertAgentLog(db, {
-          request_id: requestId, user_id: userId,
-          agent_name: attempt === 1 ? "gerador_master" : `retry_master_${attempt}`,
-          execution_order: ++order,
-          status: isValid ? "completed" : "failed",
-          input_json: { attempt, payload_summary: { tema: payload.tema, terms_count: payload.termos.length } },
-          output_json: candidate,
-          score: candidate?.audit?.score_medico,
-          duration_ms: Date.now() - startMs,
-          error_message: errMsg ?? (issues.length ? `Auditoria falhou: ${issues.join(", ")}` : undefined),
+            request_id: requestId, result_id: resultId,
+            tema: payload.tema, sigla: mnemonic.mnemonic, phrase: mnemonic.phrase,
+            frase_mnemonica: mnemonic.phrase,
+            explanation_tecnica: mnemonic.explanation_tecnica,
+            explanation_didatica: mnemonic.explanation_didatica,
+            scene: mnemonic.scene, scene_description: mnemonic.scene_description,
+            image_url: img.url, image_failed: img.failed,
+            score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
+            score_final: scoreFinal, items_map: mnemonic.items_map,
+            pontos_de_prova: mnemonic.pontos_de_prova, audit: mnemonic.audit,
+            response_source: "master_pipeline"
+          }
         });
 
-        if (isValid && candidate) {
-          mnemonic = candidate;
-          break;
-        }
-        lastIssues = issues;
-        lastVersion = candidate;
-      }
-
-      if (!mnemonic) {
-        console.warn("[MNEMONIC] Pipeline Master falhou após 3 tentativas. Usando fallback.");
-        const fb = buildDeterministicFallback(payload.tema, payload.termos);
-        if (requestId) await updateRequestStatus(db, requestId, "completed");
-        
+      } catch (error) {
+        console.error("[MASTER_PIPELINE] Erro:", error);
+        if (requestId && db) await updateRequestStatus(db, requestId, "failed");
         return jsonResponse({
-          success: true,
-          warning: "Mnemônico simples gerado sem IA.",
-          response_source: "fallback_deterministic",
-          data: {
-            request_id: requestId,
-            result_id: null,
-            tema: payload.tema,
-            sigla: fb.sigla,
-            frase_mnemonica: fb.frase_mnemonica,
-            explicacao_didatica: fb.explicacao_didatica,
-            explicacao_tecnica: fb.explicacao_tecnica,
-            cena_visual: fb.cena_visual,
-            prompt_imagem: "",
-            image_url: null,
-            image_failed: true,
-            score_medico: 50, score_pedagogico: 50, score_final: 50,
-            associacoes: fb.associacoes,
-            items_map: fb.associacoes.map(a => ({
-              letter: a.letra, word: a.representacao_no_mnemonico,
-              original_item: a.termo_original, symbol: null
-            })),
-            pontos_de_prova: [],
-            response_source: "fallback_deterministic",
-          },
-        });
+          success: false, error: error instanceof Error ? error.message : "Erro desconhecido",
+          code: "PIPELINE_ERROR", requestId: requestId || requestIdForError
+        }, error instanceof AuthError ? 401 : error instanceof RateLimitError ? 429 : 500);
       }
+    };
 
-
-      // ══════════════════════════════════════
-      // Cena visual e prompt de imagem agora vêm do ETAPA 1
-      // ══════════════════════════════════════
-      const cenaVisual = mnemonic.cena_visual || `Cena visual para "${mnemonic.frase_mnemonica}" — imagine os elementos do mnemônico interagindo de forma memorável.`;
-      const promptImagem = mnemonic.prompt_imagem || `3D cartoon Pixar-style, vibrant colors, clean background, no text, no labels, no letters, no words. Medical memory scene representing "${mnemonic.sigla || mnemonic.frase_mnemonica}" with expressive characters in dynamic action.`;
-
-      // ══════════════════════════════════════
-      // ETAPA 3: Gerar imagem
-      // ══════════════════════════════════════
-      console.log("[MNEMONIC] ETAPA 2: Gerando imagem...");
-      const imgStartMs = Date.now();
-      let imageUrl: string | null = null;
-      let imageFailed = false;
-      try {
-        const imgResult = await generateImage(promptImagem);
-        imageUrl = imgResult.url;
-        imageFailed = imgResult.failed;
-        await insertAgentLog(db, {
-          request_id: requestId, user_id: userId, agent_name: "gerador_imagem",
-          execution_order: ++order, status: imageUrl ? "completed" : "failed",
-          input_json: { prompt: promptImagem.substring(0, 500) },
-          output_json: { image_url: imageUrl, error: imgResult.error },
-          duration_ms: Date.now() - imgStartMs, error_message: imgResult.error,
-        });
-      } catch (e) {
-        imageFailed = true;
-        await insertAgentLog(db, {
-          request_id: requestId, user_id: userId, agent_name: "gerador_imagem",
-          execution_order: ++order, status: "failed",
-          input_json: { prompt: promptImagem.substring(0, 500) },
-          output_json: null, duration_ms: Date.now() - imgStartMs,
-          error_message: e instanceof Error ? e.message : String(e),
-        });
-      }
-
-      // ══════════════════════════════════════
-      // ETAPA 3: Pontos de prova (preferir os já gerados na ETAPA 2)
-      // ══════════════════════════════════════
-      let pontosDeProva: Array<{ pergunta_gatilho: string; resposta_esperada: string; armadilha_comum: string }> = [];
-      if (Array.isArray(mnemonic.pontos_prova) && mnemonic.pontos_prova.length > 0) {
-        pontosDeProva = mnemonic.pontos_prova
-          .filter((p: any) => p && (p.pergunta || p.resposta))
-          .map((p: any) => ({
-            pergunta_gatilho: String(p.pergunta || "").trim(),
-            resposta_esperada: String(p.resposta || "").trim(),
-            armadilha_comum: String(p.armadilha || "").trim(),
-          }));
-      }
-      if (pontosDeProva.length === 0) {
-        try {
-          const examCtx = `Tema: ${payload.tema}\nTermos: ${payload.termos.join(", ")}`;
-          const examResult = await callAI<{ pontos_de_prova: typeof pontosDeProva }>(aiKey, PROMPT_EXAM_POINTS, examCtx);
-          pontosDeProva = examResult.pontos_de_prova ?? [];
-        } catch { /* non-critical */ }
-      }
-
-      // ══════════════════════════════════════
-      // SCORES (simplified)
-      // ══════════════════════════════════════
-      const scoreMnemonic = Math.min(100, Math.max(0, mnemonic.score_autoavaliacao || 75));
-      const scoreVisual = cenaVisual ? 80 : 50;
-      const scoreFinal = Math.round((scoreMnemonic * 0.6 + scoreVisual * 0.2 + (imageUrl ? 100 : 0) * 0.2));
-
-      // ══════════════════════════════════════
-      // PERSIST — só itens REAIS de associação (sem fake termo→termo)
-      // ══════════════════════════════════════
-      const associacoes = Array.isArray(mnemonic.associacoes)
-        ? mnemonic.associacoes.filter(a =>
-            a && typeof a === "object" &&
-            String(a.termo_original || "").trim() &&
-            String(a.representacao_no_mnemonico || "").trim() &&
-            String(a.representacao_no_mnemonico).trim().toLowerCase() !== String(a.termo_original).trim().toLowerCase()
-          )
-        : [];
-
-      // items_map só é construído a partir de associações REAIS (não inventado dos termos)
-      const itemsMap = associacoes.map((a: any) => ({
-        letter: String(a.representacao_no_mnemonico || "").trim().charAt(0).toUpperCase(),
-        word: String(a.representacao_no_mnemonico || "").trim(),
-        original_item: String(a.termo_original || "").trim(),
-        symbol: null, symbol_reason: null,
-      }));
-
-      const explicacaoAssoc = (mnemonic.explicacao_associacao || mnemonic.explicacao_didatica || "").trim();
-      const explicacaoDid = (mnemonic.explicacao_didatica || mnemonic.explicacao_associacao || "").trim();
-
-      // ══════════════════════════════════════
-      // VALIDAÇÃO FINAL antes de persistir (defesa em profundidade)
-      // ══════════════════════════════════════
-      const finalIssues: string[] = [];
-      if (!mnemonic.frase_mnemonica?.trim() || mnemonic.frase_mnemonica.trim().length < 8) finalIssues.push("frase_invalida");
-      const finalSentenceAnalysis = analyzeMnemonicSentence(mnemonic.frase_mnemonica || "", payload.termos);
-      if (!finalSentenceAnalysis.hasVerb) finalIssues.push("frase_sem_verbo");
-      if (finalSentenceAnalysis.glueCount === 0 || finalSentenceAnalysis.looksTelegraphic) finalIssues.push("frase_sem_logica");
-      if (!explicacaoAssoc || explicacaoAssoc.length < 20) finalIssues.push("explicacao_invalida");
-      if (!cenaVisual?.trim() || cenaVisual.trim().length < 12) finalIssues.push("cena_invalida");
-      if (finalIssues.length > 0) {
-        console.error("[MNEMONIC] FINAL VALIDATION FAILED:", finalIssues);
-        if (requestId) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-        return jsonResponse({
-          success: false,
-          error: "Resultado gerado não passou na validação final.",
-          code: "GENERATION_FAILED",
-          details: finalIssues.join(", "),
-        }, 422);
-      }
-
-      const resultId = await insertResult(db, {
-        request_id: requestId, user_id: userId, tema: payload.tema,
-        sigla: mnemonic.sigla || "",
-        frase_mnemonica: mnemonic.frase_mnemonica,
-        explicacao_tecnica: mnemonic.explicacao_tecnica,
-        explicacao_didatica: explicacaoDid,
-        cena_visual: cenaVisual, prompt_imagem: promptImagem,
-        score_medico: scoreMnemonic, score_pedagogico: scoreMnemonic,
-        score_linguistico: scoreMnemonic, score_final: scoreFinal,
-        aprovado: scoreMnemonic >= 70, aprovado_medico: true, aprovado_pedagogico: scoreMnemonic >= 70,
-        image_url: imageUrl, associacoes_json: associacoes, associacoes_visuais_json: [],
-        alertas_json: imageFailed ? ["Imagem não foi gerada — use 'Regenerar imagem'"] : [],
-      });
-
-      await updateRequestStatus(db, requestId, "completed");
-
-      return jsonResponse({
-        success: true,
-        data: {
-          request_id: requestId,
-          result_id: resultId,
-          tema: payload.tema,
-          sigla: mnemonic.sigla || "",
-          frase_mnemonica: mnemonic.frase_mnemonica,
-          explicacao_clinica: mnemonic.explicacao_clinica || explicacaoDid,
-          explicacao_associacao: explicacaoAssoc,
-          explicacao_tecnica: mnemonic.explicacao_tecnica,
-          explicacao_didatica: explicacaoDid,
-          cena_visual: cenaVisual,
-          cena_visual_obj: mnemonic.cena_visual_obj ?? null,
-          prompt_imagem: promptImagem,
-          image_url: imageUrl,
-          image_failed: imageFailed,
-          score_medico: scoreMnemonic,
-          score_pedagogico: scoreMnemonic,
-          score_linguistico: scoreMnemonic,
-          score_final: scoreFinal,
-          quality_flag: scoreFinal >= 80 ? "high" : scoreFinal >= 60 ? "medium" : "low",
-          alertas: imageFailed ? ["Imagem não foi gerada — use 'Regenerar imagem'"] : [],
-          items_map: itemsMap,
-          associacoes,
-          mapa_associacao: associacoes.map((a: any) => ({
-            termo_original: a.termo_original,
-            representacao: a.representacao_no_mnemonico,
-            explicacao: a.explicacao || "",
-          })),
-          associacoes_visuais: [],
-          pontos_de_prova: pontosDeProva,
-          pontos_prova: pontosDeProva,
-        },
-      });
-
-      }
-
-      // ══════════════════════════════════════
-      // ETAPA 2: Gerar Imagem
-      // ══════════════════════════════════════
-      console.log("[MNEMONIC] ETAPA 2: Gerando imagem...");
-      const imgStart = Date.now();
-      const imgResult = await generateImage(mnemonic.image_prompt);
-      
-      await insertAgentLog(db, {
-        request_id: requestId, user_id: userId,
-        agent_name: "gerador_imagem", execution_order: ++order,
-        status: imgResult.url ? "completed" : "failed",
-        input_json: { prompt: mnemonic.image_prompt },
-        output_json: { image_url: imgResult.url, error: imgResult.error },
-        duration_ms: Date.now() - imgStart,
-        error_message: imgResult.error,
-      });
-
-      // ══════════════════════════════════════
-      // ETAPA 3: Salvar Resultado
-      // ══════════════════════════════════════
-      const scoreFinal = Math.round((mnemonic.audit.score_medico + mnemonic.audit.score_pedagogico) / 2);
-      
-      const resultId = await insertResult(db, {
-        request_id: requestId,
-        user_id: userId,
-        tema: payload.tema,
-        sigla: mnemonic.mnemonic,
-        frase_mnemonica: mnemonic.phrase,
-        explicacao_tecnica: mnemonic.explanation_tecnica,
-        explicacao_didatica: mnemonic.explanation_didatica,
-        cena_visual: mnemonic.scene_description || mnemonic.scene,
-        prompt_imagem: mnemonic.image_prompt,
-        score_medico: mnemonic.audit.score_medico,
-        score_pedagogico: mnemonic.audit.score_pedagogico,
-        score_linguistico: 90, // Auditor linguístico interno
-        score_final: scoreFinal,
-        aprovado: mnemonic.audit.coverage_ok,
-        aprovado_medico: mnemonic.audit.score_medico >= 90,
-        aprovado_pedagogico: mnemonic.audit.score_pedagogico >= 85,
-        image_url: imgResult.url,
-        associacoes_json: mnemonic.items_map as any,
-        associacoes_visuais_json: [],
-        alertas_json: mnemonic.audit.missing_items || [],
-      });
-
-      await updateRequestStatus(db, requestId, "completed");
-
-      return jsonResponse({
-        success: true,
-        data: {
-          request_id: requestId,
-          result_id: resultId,
-          tema: payload.tema,
-          sigla: mnemonic.mnemonic,
-          frase_mnemonica: mnemonic.phrase,
-          explicacao_tecnica: mnemonic.explanation_tecnica,
-          explicacao_didatica: mnemonic.explanation_didatica,
-          cena_visual: mnemonic.scene_description || mnemonic.scene,
-          prompt_imagem: mnemonic.image_prompt,
-          image_url: imgResult.url,
-          image_failed: imgResult.failed,
-          score_medico: mnemonic.audit.score_medico,
-          score_pedagogico: mnemonic.audit.score_pedagogico,
-          score_final: scoreFinal,
-          items_map: mnemonic.items_map,
-          pontos_de_prova: mnemonic.pontos_de_prova,
-          audit: mnemonic.audit,
-          response_source: "ia_master_pipeline"
-        },
-      });
-
-      const msg = error instanceof Error ? error.message : "Erro interno.";
-      console.error("[MNEMONIC] FAILED:", msg);
-
-      if (error instanceof AuthError) {
-        return jsonResponse({
-          success: false,
-          error: "Faça login para gerar mnemônicos.",
-          message: "Faça login para gerar mnemônicos.",
-          code: "UNAUTHORIZED",
-          requestId: requestIdForError,
-        }, 401);
-      }
-      if (error instanceof RateLimitError) {
-        return jsonResponse({
-          success: false,
-          error: msg,
-          message: msg,
-          code: "RATE_LIMIT",
-          requestId: requestIdForError,
-        }, 429);
-      }
-
-      if (requestId && db) { try { await updateRequestStatus(db, requestId, "failed"); } catch {} }
-      return jsonResponse({
-        success: false,
-        error: "Não foi possível gerar o mnemônico agora. Tente novamente.",
-        code: "MNEMONIC_RUNTIME_ERROR",
-        message: "Não foi possível gerar o mnemônico agora. Tente novamente.",
-        requestId: requestId || requestIdForError,
-        details: msg,
-      }, 500);
-    }
-  };
 
   return Promise.race([mainPipeline(), globalTimeout]);
   } catch (fatalError) {
