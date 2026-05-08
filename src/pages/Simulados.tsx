@@ -493,13 +493,14 @@ const Simulados = () => {
                     config.topics || ["Clínica Médica"],
                     currentBatchSize,
                     config.difficulty || "misto",
-                    undefined,
+                    config.specificTopic,
                     config.realExamProfile ? config.realExamProfile.toUpperCase() : undefined
                   )
                 }],
                 generationContext: {
                   specialty: (config.topics && config.topics[0]) || "Clínica Médica",
                   topic: (config.topics || ["Clínica Médica"]).join(", "),
+                  subtopic: config.specificTopic,
                   objective: "practice",
                   source: "simulado",
                 },
@@ -509,6 +510,10 @@ const Simulados = () => {
                 avoidStatements: avoid,
                 jobId: currentJobId,
                 batchNumber: batchNum,
+                autoDistribution: config.autoDistribution,
+                customDistribution: config.customDistribution,
+                includeWeakThemes: config.includeWeakThemes,
+                includePreviousErrors: config.includePreviousErrors,
               },
             }
           );
