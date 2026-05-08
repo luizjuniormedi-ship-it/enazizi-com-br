@@ -680,6 +680,7 @@ const Simulados = () => {
             <div className="w-full max-w-3xl mx-auto">
               <div className="glass-card p-6 sm:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <SimuladoSetup
+                  inlineMode={true}
                   onStart={(config) => handleStart({ ...config, forceStart: true })}
                   adaptiveLoading={adaptivePreviewLoading}
                   adaptiveMeta={adaptivePreviewMeta}
