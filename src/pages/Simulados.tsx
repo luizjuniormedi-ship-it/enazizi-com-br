@@ -356,13 +356,21 @@ const Simulados = () => {
     // Safety check: ensure topics are loaded from distribution if missing
     if ((!config.topics || config.topics.length === 0) && config.topicWeights) {
       config.topics = (config.topicWeights as any[]).map(tw => tw.topic);
+      console.log("[Simulados] Tópicos recuperados de topicWeights:", config.topics);
     } else if ((!config.topics || config.topics.length === 0) && config.customDistribution) {
       config.topics = (config.customDistribution as any[]).map(tw => tw.topic);
+      console.log("[Simulados] Tópicos recuperados de customDistribution:", config.topics);
+    }
+    
+    // Ensure selectedTopics state is updated to reflect the reality of generation
+    if (config.topics && config.topics.length > 0) {
+      setSelectedTopics(config.topics);
     }
     
     // Check if we need to show the configuration step
     const isBoardMode = config.mode === "prova_real" || config.mode === "tri";
     if (isBoardMode && !config.forceStart && !showConfigStep) {
+      console.log("[Simulados] Exibindo tela de confirmação/configuração avançada.");
       setConfigToVerify(config);
       setShowConfigStep(true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -373,7 +381,6 @@ const Simulados = () => {
     
     configRef.current = config;
     setMode(config.mode || "estudo");
-    setSelectedTopics(config.topics || ["Clínica Médica"]);
     
     setLoadingProgress("Iniciando geração...");
     setLoadingPercent(5);

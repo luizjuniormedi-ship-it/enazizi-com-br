@@ -672,21 +672,24 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               <div>
                 <label className="text-sm font-semibold mb-2 block">Selecione a Banca</label>
                 <Select value={realExamBoard} onValueChange={(val) => {
+                  console.log("[Simulados] Banca Prova Real selecionada:", val);
                   setRealExamBoard(val);
                   // Auto-apply profile distribution when board changes
                   const profile = EXAM_PROFILES[val] || EXAM_PROFILES.GERAL;
                   const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
+                  console.log("[Simulados] Aplicando temas automáticos da banca:", topicsFromProfile);
                   setSelectedTopics(topicsFromProfile);
+                  
                   const initialDist = calculateTopicDistribution(profile, profile.totalQuestions);
                   setCustomDistribution(initialDist);
                   setCustomTotalQuestions(profile.totalQuestions);
                 }}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="banca-select-trigger">
                     <SelectValue placeholder="Escolha a banca" />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(EXAM_PROFILES).map(([key, profile]) => (
-                      <SelectItem key={key} value={key} data-testid={`banca-${key.toLowerCase()}-button`}>{profile.name}</SelectItem>
+                      <SelectItem key={key} value={key} data-testid={`banca-${key.toLowerCase()}-option`}>{profile.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -723,20 +726,23 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
               <div>
                 <label className="text-sm font-semibold mb-2 block">Banca Alvo</label>
                 <Select value={realExamBoard} onValueChange={(val) => {
+                  console.log("[Simulados] Banca TRI selecionada:", val);
                   setRealExamBoard(val);
                   const profile = EXAM_PROFILES[val] || EXAM_PROFILES.GERAL;
                   const topicsFromProfile = profile.topicWeights.map(tw => tw.topic);
+                  console.log("[Simulados] Aplicando temas automáticos da banca (TRI):", topicsFromProfile);
                   setSelectedTopics(topicsFromProfile);
+                  
                   const initialDist = calculateTopicDistribution(profile, profile.totalQuestions);
                   setCustomDistribution(initialDist);
                   setCustomTotalQuestions(profile.totalQuestions);
                 }}>
-                  <SelectTrigger>
+                  <SelectTrigger data-testid="banca-tri-select-trigger">
                     <SelectValue placeholder="Escolha a banca" />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(EXAM_PROFILES).map(([key, profile]) => (
-                      <SelectItem key={key} value={key}>{profile.name}</SelectItem>
+                      <SelectItem key={key} value={key} data-testid={`banca-tri-${key.toLowerCase()}-option`}>{profile.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
