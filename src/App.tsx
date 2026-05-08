@@ -157,6 +157,7 @@ const NOCDashboard = lazyWithRetry(() => import("./pages/admin/NOCDashboard"), "
 
 
 const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
+const AdminBlueprints = lazyWithRetry(() => import("./pages/admin/AdminBlueprints"), "AdminBlueprints");
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
 /** Loader sensível à rota: escolhe o módulo cinematográfico atual. */
