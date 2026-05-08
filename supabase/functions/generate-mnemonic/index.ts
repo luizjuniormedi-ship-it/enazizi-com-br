@@ -272,7 +272,7 @@ serve(async (req: Request) => {
         }
         
         if (!rawBody) throw new Error("Body vazio.");
-      console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema}, termos=${(rawBody as any)?.termos?.length}`);
+      console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema ?? (rawBody as any)?.topic}, termos=${(rawBody as any)?.termos?.length ?? (rawBody as any)?.items?.length}`);
 
       const payload = validatePayload(rawBody);
       payload.termos = normalizeTerms(payload.termos);
