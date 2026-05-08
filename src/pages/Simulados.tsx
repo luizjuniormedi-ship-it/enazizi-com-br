@@ -304,7 +304,7 @@ const Simulados = () => {
     topics: string[]; 
     count: number; 
     difficulty: string; 
-    timePerQuestion: number; 
+    timePerQuestion?: number; 
     mode: SimuladoMode; 
     specificTopic?: string; 
     examBoard?: string; 
