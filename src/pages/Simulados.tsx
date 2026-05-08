@@ -225,6 +225,10 @@ const Simulados = () => {
   const configRef = useRef<any>(null);
   const [triResults, setTriResults] = useState<TRIQuestionResult[]>([]);
   const triParamsRef = useRef<TRIParams[]>([]);
+  
+  // New state for Configuration Step
+  const [showConfigStep, setShowConfigStep] = useState(false);
+  const [configToVerify, setConfigToVerify] = useState<any>(null);
 
   const adaptive = useAdaptiveSimulado();
   const [adaptivePreviewMeta, setAdaptivePreviewMeta] = useState<AdaptiveMeta | null>(null);
