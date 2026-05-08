@@ -555,27 +555,50 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           const batchCount = Math.ceil(remaining / SAFE_BATCH);
           const PARALLEL_BATCHES = Math.min(batchCount, 2);
 
-          const buildSlotPrompt = (needed: number, prevSnapshot: string[], slotTarget?: any) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+          const buildSlotPrompt = (needed: number, prevSnapshot: string[], slotTarget?: any) => {
+            const depth = qualityProfile?.explanation_depth || 'medium';
+            const profile = qualityProfile?.prompt_profile || 'standard';
+            const needsRef = qualityProfile?.requires_references ? 'CITE OBRIGATORIAMENTE bibliografia específica (ex: Harrison cap X, Sabiston, Protocolo MS).' : '';
+            
+            let depthInstruction = '';
+            if (depth === 'high') {
+              depthInstruction = 'EXPLICAÇÃO DE ALTA DENSIDADE: A explicação deve ser extensa (> 600 caracteres), discutindo fisiopatologia e integração clínica completa.';
+            } else if (depth === 'low') {
+              depthInstruction = 'Explicação direta e concisa.';
+            }
 
-IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
+            let profileInstruction = '';
+            if (profile === 'guideline_focused') {
+              profileInstruction = 'FOCO EM DIRETRIZES: Baseie a conduta estritamente nos protocolos mais recentes do Ministério da Saúde e Sociedades Brasileiras.';
+            } else if (profile === 'deep_clinical') {
+              profileInstruction = 'PROFUNDIDADE CLÍNICA: Exija raciocínio de exclusão e diagnósticos sindrômicos complexos.';
+            }
+
+            return `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).
 
 NÍVEL DE DIFICULDADE: ${desc}
 TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
 
-${slotTarget ? `FOCO TEMÁTICO OBRIGATÓRIO: Esta questão DEVE obrigatoriamente pertencer à especialidade "${slotTarget.specialty}" e abordar o tema "${slotTarget.topic}".` : `TEMAS E PESOS (DISTRIBUA PROPORCIONALMENTE): ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent || Math.round((tw.count/requestedCount)*100)}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}`}
+${slotTarget ? `FOCO TEMÁTICO OBRIGATÓRIO: Esta questão DEVE obrigatoriamente pertencer à especialidade "${slotTarget.specialty}" e abordar o tema "${slotTarget.topic}".` : `TEMAS E PESOS: ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent}%)`).join(", ") : matchedTopics.join(", ")}`}
+
+${depthInstruction}
+${profileInstruction}
+${needsRef}
 
 Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
+          };
 
           const runBatch = async (batchIdx: number, slotTarget?: any) => {
             const needed = Math.min(SAFE_BATCH, target - (batchIdx * SAFE_BATCH));
             if (needed <= 0) return [] as any[];
             try {
               const resp = await aiFetch({
-                model: "openai/gpt-5-mini",
+                model: qualityProfile?.preferred_model || "openai/gpt-4o-mini",
                 messages: [
                   { role: "system", content: systemPrompt }, 
                   { role: "user", content: buildSlotPrompt(needed, [...globalPrev], slotTarget) }
