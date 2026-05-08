@@ -343,6 +343,13 @@ serve(async (req: Request) => {
       const userId = await getUserIdFromRequest(req);
       db = getServiceClient();
 
+      // Rate limiting per user
+      const rl = await checkRateLimit(db, userId);
+      if (!rl.ok) {
+        throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}). Aguarde para gerar novos mnemônicos.`);
+      }
+
+
       // ══════════════════════════════════════
       // ETAPA 0 (NOVA): Extração automática de termos quando não fornecidos
       // ══════════════════════════════════════
