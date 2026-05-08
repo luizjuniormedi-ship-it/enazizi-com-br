@@ -9070,6 +9070,39 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_auto_reconcile_policies: {
+        Row: {
+          auto_apply_low: boolean | null
+          block_critical: boolean | null
+          exam_key: string
+          id: string
+          min_confidence_threshold: number | null
+          require_approval_high: boolean | null
+          require_approval_medium: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          auto_apply_low?: boolean | null
+          block_critical?: boolean | null
+          exam_key: string
+          id?: string
+          min_confidence_threshold?: number | null
+          require_approval_high?: boolean | null
+          require_approval_medium?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          auto_apply_low?: boolean | null
+          block_critical?: boolean | null
+          exam_key?: string
+          id?: string
+          min_confidence_threshold?: number | null
+          require_approval_high?: boolean | null
+          require_approval_medium?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       exam_banks: {
         Row: {
           banca: string
@@ -9146,6 +9179,7 @@ export type Database = {
         Row: {
           confidence_score: number | null
           created_at: string | null
+          effective_weight: number | null
           exam_key: string
           id: string
           is_active: boolean | null
@@ -9160,6 +9194,7 @@ export type Database = {
         Insert: {
           confidence_score?: number | null
           created_at?: string | null
+          effective_weight?: number | null
           exam_key: string
           id?: string
           is_active?: boolean | null
@@ -9174,6 +9209,7 @@ export type Database = {
         Update: {
           confidence_score?: number | null
           created_at?: string | null
+          effective_weight?: number | null
           exam_key?: string
           id?: string
           is_active?: boolean | null
@@ -9223,6 +9259,42 @@ export type Database = {
           severity?: string | null
           source_version?: string | null
           topic?: string
+        }
+        Relationships: []
+      }
+      exam_health_history: {
+        Row: {
+          confidence_avg: number | null
+          exam_key: string
+          freshness_score: number | null
+          health_score: number | null
+          id: string
+          recorded_at: string | null
+          sample_adequacy_score: number | null
+          stability_score: number | null
+          status: string | null
+        }
+        Insert: {
+          confidence_avg?: number | null
+          exam_key: string
+          freshness_score?: number | null
+          health_score?: number | null
+          id?: string
+          recorded_at?: string | null
+          sample_adequacy_score?: number | null
+          stability_score?: number | null
+          status?: string | null
+        }
+        Update: {
+          confidence_avg?: number | null
+          exam_key?: string
+          freshness_score?: number | null
+          health_score?: number | null
+          id?: string
+          recorded_at?: string | null
+          sample_adequacy_score?: number | null
+          stability_score?: number | null
+          status?: string | null
         }
         Relationships: []
       }
@@ -20837,6 +20909,10 @@ export type Database = {
           p_status: Database["public"]["Enums"]["simulation_job_status"]
         }
         Returns: undefined
+      }
+      calculate_blueprint_health: {
+        Args: { p_exam_key: string }
+        Returns: number
       }
       calculate_cme_media_health_score: {
         Args: { lesson_id: string }
