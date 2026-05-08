@@ -37,10 +37,51 @@ serve(async (req) => {
       });
     }
 
-    if (action === "reconcile") {
-      // Reconciliação com Weight Smoothing
+    if (action === "reconcile" || action === "preview_reconcile") {
       const smoothingFactor = payload?.smoothing_factor || 0.3;
       
+      // Se for apenas preview, calculamos mas não persistimos na exam_blueprints
+      if (action === "preview_reconcile") {
+        const { data: current } = await supabase
+          .from('exam_blueprints')
+          .select('specialty, topic, weight, confidence_score, sample_size')
+          .eq('exam_key', exam_key)
+          .eq('is_active', true);
+
+        const { data: raw } = await supabase
+          .from('exam_raw_data')
+          .select('specialty, topic, occurrence_count')
+          .eq('exam_key', exam_key);
+
+        const totalRaw = raw?.reduce((acc: number, r: any) => acc + r.occurrence_count, 0) || 1;
+        
+        const preview = raw?.map((r: any) => {
+          const calculatedWeight = (r.occurrence_count / totalRaw) * 100;
+          const currentTopic = current?.find((c: any) => c.specialty === r.specialty && c.topic === r.topic);
+          const oldWeight = currentTopic?.weight || 0;
+          const newWeight = (calculatedWeight * smoothingFactor) + (oldWeight * (1 - smoothingFactor));
+          
+          return {
+            specialty: r.specialty,
+            topic: r.topic,
+            old_weight: oldWeight,
+            new_weight: newWeight,
+            delta: newWeight - oldWeight,
+            severity: Math.abs(newWeight - oldWeight) >= 5 ? 'high' : 'low'
+          };
+        });
+
+        return new Response(JSON.stringify({ 
+          success: true, 
+          preview,
+          confidence_expected: Math.min(1.0, 0.5 + (totalRaw / 1000.0)),
+          sample_size: totalRaw
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" }
+        });
+      }
+
+      // Fluxo real de reconciliação
       const { error } = await supabase.rpc('reconcile_and_smooth_weights', { 
         p_exam_key: exam_key,
         p_smoothing_factor: smoothingFactor
@@ -48,7 +89,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Criar Snapshot (Versionamento)
       const { data: fullBlueprint } = await supabase
         .from('exam_blueprints')
         .select('*')
@@ -61,7 +101,7 @@ serve(async (req) => {
         version_label: versionLabel,
         exam_key: exam_key,
         blueprint_json: fullBlueprint,
-        confidence_avg: fullBlueprint.reduce((acc: number, b: any) => acc + Number(b.confidence_score), 0) / fullBlueprint.length,
+        confidence_avg: fullBlueprint.reduce((acc: number, b: any) => acc + Number(b.confidence_score), 0) / (fullBlueprint.length || 1),
         is_active: true
       });
 
