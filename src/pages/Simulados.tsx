@@ -809,14 +809,14 @@ const Simulados = () => {
                   checkedSession={checked}
                   userId={user?.id}
                 />
-              </div>
             </div>
-            </>
-          )}
-        </main>
-      </div>
-    );
-  }
+          </div>
+        </>
+      )}
+    </main>
+  </div>
+);
+}
 
   if (phase === "loading") {
     return (
