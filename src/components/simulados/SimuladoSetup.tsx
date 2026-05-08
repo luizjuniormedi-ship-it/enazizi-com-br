@@ -311,6 +311,14 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   const [realExamBoard, setRealExamBoard] = useState("GERAL");
   const [imagePercent, setImagePercent] = useState(20);
 
+  // New states for configuration flow
+  const [configStep, setConfigStep] = useState<"choosing" | "configuring">("choosing");
+  const [generationMethod, setGenerationMethod] = useState<"automatic" | "custom">("automatic");
+  const [customDistribution, setCustomDistribution] = useState<TopicDistributionItem[]>([]);
+  const [includeWeakThemes, setIncludeWeakThemes] = useState(false);
+  const [includePreviousErrors, setIncludePreviousErrors] = useState(false);
+  const [customTotalQuestions, setCustomTotalQuestions] = useState<number>(0);
+
   const toggleTopic = (topic: string) => {
     setSelectedTopics(prev =>
       prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
@@ -318,6 +326,16 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
   };
 
   const selectedProfile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
+
+  // Initialize custom distribution when board or total questions changes
+  useEffect(() => {
+    if (mode === "prova_real" || mode === "tri") {
+      const profile = EXAM_PROFILES[realExamBoard] || EXAM_PROFILES.GERAL;
+      const initialDist = calculateTopicDistribution(profile, profile.totalQuestions);
+      setCustomDistribution(initialDist);
+      setCustomTotalQuestions(profile.totalQuestions);
+    }
+  }, [realExamBoard, mode]);
 
   // Distribuição dinâmica baseada em curriculum_weights (com fallback automático)
   const showDynamicPreview = mode === "prova_real" || mode === "tri";
