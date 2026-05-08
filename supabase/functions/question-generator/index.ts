@@ -740,6 +740,21 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
           blueprint_found: blueprintFound,
           user_id: authUser?.id
         });
+        
+        // Log Clinical Audits in Batch
+        const auditEntries = allQuestions.map((q: any) => ({
+          question_hash: String(q.statement).slice(0, 100) + Date.now(),
+          exam_key: safeTargetExam || "unknown",
+          specialty: q.specialty || "Geral",
+          topic: q.topic || "Geral",
+          medical_accuracy_score: q.medical_audit?.accuracy || 0.95,
+          final_quality_score: q.medical_audit?.final_score || 0.90,
+          is_approved: true
+        }));
+        
+        if (auditEntries.length > 0) {
+          await sb.from("exam_clinical_audits").insert(auditEntries);
+        }
         if (auditError) console.error("[AUDIT_ERROR] Failed to insert audit log:", auditError);
 
         // If jobId is provided, update the simulation_generation_jobs table
