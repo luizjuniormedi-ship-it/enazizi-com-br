@@ -341,8 +341,19 @@ const Simulados = () => {
     includePreviousErrors?: boolean;
     resumeJobId?: string;
     existingQuestions?: SimQuestion[];
+    forceStart?: boolean; // New flag to bypass config step
   }) => {
     console.log("[Simulados] iniciar clicado", config);
+    
+    // Check if we need to show the configuration step
+    const isBoardMode = config.mode === "prova_real" || config.mode === "tri";
+    if (isBoardMode && !config.forceStart && !showConfigStep) {
+      setConfigToVerify(config);
+      setShowConfigStep(true);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     const questionCount = config.count || 10;
     
     configRef.current = config;
@@ -352,6 +363,7 @@ const Simulados = () => {
     setLoadingProgress("Iniciando geração...");
     setLoadingPercent(5);
     setPhase("loading");
+    setShowConfigStep(false); // Ensure config step is hidden when starting
 
     try {
       if (config.mode === "adaptativo") {
