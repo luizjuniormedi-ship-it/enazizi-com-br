@@ -9196,6 +9196,8 @@ export type Database = {
           new_weight: number | null
           old_weight: number | null
           reason: string | null
+          severity: string | null
+          source_version: string | null
           topic: string
         }
         Insert: {
@@ -9206,6 +9208,8 @@ export type Database = {
           new_weight?: number | null
           old_weight?: number | null
           reason?: string | null
+          severity?: string | null
+          source_version?: string | null
           topic: string
         }
         Update: {
@@ -9216,6 +9220,8 @@ export type Database = {
           new_weight?: number | null
           old_weight?: number | null
           reason?: string | null
+          severity?: string | null
+          source_version?: string | null
           topic?: string
         }
         Relationships: []
@@ -9288,6 +9294,45 @@ export type Database = {
           occurrence_count?: number | null
           specialty?: string
           topic?: string
+        }
+        Relationships: []
+      }
+      exam_reconciliation_logs: {
+        Row: {
+          confidence_after: number | null
+          confidence_before: number | null
+          created_at: string | null
+          exam_key: string
+          id: string
+          new_version: string
+          old_version: string | null
+          sample_size: number
+          smoothing_factor: number
+          triggered_by: string | null
+        }
+        Insert: {
+          confidence_after?: number | null
+          confidence_before?: number | null
+          created_at?: string | null
+          exam_key: string
+          id?: string
+          new_version: string
+          old_version?: string | null
+          sample_size: number
+          smoothing_factor: number
+          triggered_by?: string | null
+        }
+        Update: {
+          confidence_after?: number | null
+          confidence_before?: number | null
+          created_at?: string | null
+          exam_key?: string
+          id?: string
+          new_version?: string
+          old_version?: string | null
+          sample_size?: number
+          smoothing_factor?: number
+          triggered_by?: string | null
         }
         Relationships: []
       }

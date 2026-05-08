@@ -157,6 +157,7 @@ const NOCDashboard = lazyWithRetry(() => import("./pages/admin/NOCDashboard"), "
 
 
 const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
+const AdminBlueprints = lazyWithRetry(() => import("./pages/admin/AdminBlueprints"), "AdminBlueprints");
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
 /** Loader sensível à rota: escolhe o módulo cinematográfico atual. */
@@ -331,6 +332,7 @@ const App = () => (
                   <Route path="alerts" element={<TelemetryAdmin />} />
                   <Route path="settings" element={<AdminSettings />} />
                   <Route path="audit" element={<AdminAudit />} />
+                  <Route path="blueprints" element={<AdminBlueprints />} />
                   <Route path="ai-audit-mode" element={<AIAuditMode />} />
                   <Route path="notebooklm" element={<NotebookLMDashboard />} />
                   <Route path="notebooklm-sync" element={<NotebookLMSync />} />
