@@ -16,7 +16,7 @@ serve(async (req: Request) => {
     if (!apiKey) throw new Error("LOVABLE_API_KEY missing");
 
     // Default to gpt-5-mini if no model provided
-    const targetModel = model || "google/gemini-2.0-flash";
+    const targetModel = model || "google/gemini-2.5-flash";
     
     // gpt-5-mini only supports temperature 1.0 (default) in current gateway config
     const targetTemperature = (targetModel.includes("gpt-5") || targetModel.includes("gemini")) ? (temperature ?? 1.0) : (temperature ?? 0.7);
