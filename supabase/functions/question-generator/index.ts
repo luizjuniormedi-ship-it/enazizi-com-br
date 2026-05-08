@@ -646,7 +646,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
 
           // Round 2: single retry batch if still short
           if (slotQuestions.length < target) {
-            const extra = await runBatch(PARALLEL_BATCHES);
+            const extra = await runBatch(PARALLEL_BATCHES, remainingTopics[PARALLEL_BATCHES * SAFE_BATCH]);
             for (const q of extra) {
               if (slotQuestions.length >= target) break;
               const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
