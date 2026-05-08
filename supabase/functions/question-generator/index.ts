@@ -6,6 +6,7 @@ import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
+import { fetchDynamicBlueprint } from "../_shared/dynamic-blueprints.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
