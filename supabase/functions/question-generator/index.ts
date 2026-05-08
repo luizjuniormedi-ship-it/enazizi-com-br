@@ -44,7 +44,8 @@ serve(async (req) => {
       jobId, 
       batchNumber,
       count,
-      topicWeights
+      topicWeights,
+      specialty // Add specialty to body destructuring
     } = body;
 
     // Safety: Protect messages
@@ -57,6 +58,20 @@ serve(async (req) => {
     // Safety: Protect targetExam
     const safeTargetExam = String(targetExam || "default");
     const bancaInfo = resolveBanca(safeTargetExam);
+
+    // Resolve current specialty for quality routing
+    const currentSpecialty = specialty || gc.specialty || "";
+    
+    // Fetch Clinical Quality Profile for Adaptive Routing
+    let qualityProfile: any = null;
+    if (currentSpecialty) {
+      const { data: profile } = await sb
+        .from("clinical_quality_profiles")
+        .select("*")
+        .eq("specialty", currentSpecialty)
+        .single();
+      qualityProfile = profile;
+    }
 
     if (messages.length === 0 && !generationContext) {
       return errorResponse("Campo 'messages' ou 'generationContext' é obrigatório.", 400);
