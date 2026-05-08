@@ -403,68 +403,72 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
     : (customCount ? parseInt(customCount) || questionCount : questionCount) * timePerQuestion;
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
-      <StudyContextBanner />
-      {checkedSession && pendingSession && (
-        <ResumeSessionBanner
-          updatedAt={pendingSession.updated_at}
-          onResume={onResumeSession}
-          onDiscard={onDiscardSession}
-        />
+    <div className={`space-y-6 animate-fade-in max-w-3xl mx-auto ${inlineMode ? "pt-0" : ""}`}>
+      {!inlineMode && (
+        <>
+          <StudyContextBanner />
+          {checkedSession && pendingSession && (
+            <ResumeSessionBanner
+              updatedAt={pendingSession.updated_at}
+              onResume={onResumeSession}
+              onDiscard={onDiscardSession}
+            />
+          )}
+
+          <CinematicHero
+            module="simulado"
+            eyebrow={<><Swords className="h-3.5 w-3.5" /> Arena mental · Preparação de elite</>}
+            title="Simulados"
+            subtitle="Configure dificuldade, banca e cronômetro. Modo Estudo para feedback imediato, Modo Prova para tensão real, Prova Real e TRI para preparação cirúrgica."
+            actions={
+              <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
+                "Escolha entre Modo Estudo (feedback imediato) ou Modo Prova (cronômetro)",
+                "Selecione uma ou mais especialidades clicando nos chips de tema",
+                "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
+                "No Modo Estudo: veja explicação após cada resposta e aprenda em tempo real",
+                "No Modo Prova: cronômetro, sem feedback, resultado completo no final",
+                "No Modo Prova Real: simula uma prova de residência completa com distribuição real de temas",
+                "Marque questões com a flag para revisão posterior em ambos os modos",
+              ]} />
+            }
+            media={
+              <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
+                <FileText className="h-10 w-10 text-module" />
+              </div>
+            }
+          />
+
+          {/* Tabs */}
+          <div className="flex gap-2 border-b border-border/50 pb-0 mb-6">
+            <button
+              onClick={() => setTab("novo")}
+              className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
+                tab === "novo" 
+                  ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
+                  : "border-transparent text-muted-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Play className={`h-4 w-4 transition-transform duration-300 ${tab === "novo" ? "scale-110" : ""}`} />
+                Novo Simulado
+              </div>
+            </button>
+            <button
+              onClick={() => setTab("historico")}
+              className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
+                tab === "historico" 
+                  ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
+                  : "border-transparent text-muted-foreground/60 hover:text-foreground"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <History className={`h-4 w-4 transition-transform duration-300 ${tab === "historico" ? "scale-110" : ""}`} />
+                Histórico
+              </div>
+            </button>
+          </div>
+        </>
       )}
-
-      <CinematicHero
-        module="simulado"
-        eyebrow={<><Swords className="h-3.5 w-3.5" /> Arena mental · Preparação de elite</>}
-        title="Simulados"
-        subtitle="Configure dificuldade, banca e cronômetro. Modo Estudo para feedback imediato, Modo Prova para tensão real, Prova Real e TRI para preparação cirúrgica."
-        actions={
-          <ModuleHelpButton moduleKey="simulados" moduleName="Simulados" steps={[
-            "Escolha entre Modo Estudo (feedback imediato) ou Modo Prova (cronômetro)",
-            "Selecione uma ou mais especialidades clicando nos chips de tema",
-            "Defina a quantidade de questões (5 a 100) e o nível de dificuldade",
-            "No Modo Estudo: veja explicação após cada resposta e aprenda em tempo real",
-            "No Modo Prova: cronômetro, sem feedback, resultado completo no final",
-            "No Modo Prova Real: simula uma prova de residência completa com distribuição real de temas",
-            "Marque questões com a flag para revisão posterior em ambos os modos",
-          ]} />
-        }
-        media={
-          <div className="hidden lg:flex h-24 w-24 items-center justify-center rounded-2xl glass-premium-strong glow-module">
-            <FileText className="h-10 w-10 text-module" />
-          </div>
-        }
-      />
-
-      {/* Tabs */}
-      <div className="flex gap-2 border-b border-border/50 pb-0 mb-6">
-        <button
-          onClick={() => setTab("novo")}
-          className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
-            tab === "novo" 
-              ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
-              : "border-transparent text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Play className={`h-4 w-4 transition-transform duration-300 ${tab === "novo" ? "scale-110" : ""}`} />
-            Novo Simulado
-          </div>
-        </button>
-        <button
-          onClick={() => setTab("historico")}
-          className={`px-6 py-3 text-[13px] font-black uppercase tracking-widest border-b-2 transition-all duration-300 ${
-            tab === "historico" 
-              ? "border-primary text-primary shadow-[0_4px_12px_-4px_rgba(var(--primary-rgb),0.3)]" 
-              : "border-transparent text-muted-foreground/60 hover:text-foreground"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <History className={`h-4 w-4 transition-transform duration-300 ${tab === "historico" ? "scale-110" : ""}`} />
-            Histórico
-          </div>
-        </button>
-      </div>
 
       {tab === "historico" ? (
         <SimuladoHistory userId={userId} onRetryErrors={onRetryErrors} />
