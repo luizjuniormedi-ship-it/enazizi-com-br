@@ -48,18 +48,35 @@ const AdminBlueprints = () => {
   const [healthScores, setHealthScores] = useState<Record<string, number>>({});
   const [auditStats, setAuditStats] = useState<any>(null);
 
-  // Fetch Audit Stats
-  const { data: clinicalAuditData } = useQuery({
-    queryKey: ["admin-clinical-audits"],
+  // Fetch Quality Map (Grouped by Specialty)
+  const { data: qualityMap } = useQuery({
+    queryKey: ["admin-clinical-quality-map"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exam_clinical_audits")
-        .select("medical_accuracy_score, final_quality_score, is_approved")
-        .limit(100);
+        .select("specialty, exam_key, medical_accuracy_score, final_quality_score, is_approved");
       if (error) throw error;
-      return data;
+      
+      const map: Record<string, any> = {};
+      data?.forEach(d => {
+        if (!map[d.specialty]) map[d.specialty] = { count: 0, approved: 0, accuracy: 0, final: 0 };
+        map[d.specialty].count++;
+        if (d.is_approved) map[d.specialty].approved++;
+        map[d.specialty].accuracy += Number(d.medical_accuracy_score);
+        map[d.specialty].final += Number(d.final_quality_score);
+      });
+
+      return Object.entries(map).map(([spec, stats]: [string, any]) => ({
+        specialty: spec,
+        approval_rate: (stats.approved / stats.count) * 100,
+        avg_accuracy: (stats.accuracy / stats.count),
+        avg_final: (stats.final / stats.count),
+        total: stats.count
+      }));
     }
   });
+
+  // Fetch Health Scores
 
   // 0. Fetch Health Scores
   const { data: healthData } = useQuery({
@@ -255,7 +272,7 @@ const AdminBlueprints = () => {
           </CardHeader>
           <CardContent>
             <div className="text-4xl font-black text-emerald-500">
-              {clinicalAuditData?.length ? (clinicalAuditData.reduce((acc: number, cur: any) => acc + Number(cur.final_quality_score), 0) / clinicalAuditData.length * 100).toFixed(1) : "91.0"}%
+              {qualityMap?.length ? (qualityMap.reduce((acc: number, cur: any) => acc + Number(cur.avg_final), 0) / qualityMap.length * 100).toFixed(1) : "91.0"}%
             </div>
             <p className="text-xs text-slate-500 mt-1">Baseado nas últimas 100 questões</p>
           </CardContent>
@@ -409,7 +426,58 @@ const AdminBlueprints = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Effective Weight Heatmap */}
+      {/* Clinical Quality Map */}
+      <Card className="bg-slate-900 border-slate-800">
+        <CardHeader>
+          <CardTitle className="text-xl font-black uppercase flex items-center gap-2">
+            <ShieldCheck className="text-emerald-500" /> Mapa de Qualidade Clínica
+          </CardTitle>
+          <CardDescription>Performance forense da IA por especialidade médica</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader className="bg-slate-950/50">
+              <TableRow className="border-slate-800">
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Especialidade</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Taxa de Aprovação</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Precisão Médica</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Score Final</TableHead>
+                <TableHead className="text-xs font-bold uppercase text-slate-500">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {qualityMap?.map((item: any, idx: number) => (
+                <TableRow key={idx} className="border-slate-800">
+                  <TableCell className="font-bold uppercase tracking-tight">{item.specialty}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full ${item.approval_rate >= 85 ? 'bg-emerald-500' : 'bg-red-500'}`}
+                          style={{ width: `${item.approval_rate}%` }}
+                        />
+                      </div>
+                      <span className={`text-xs font-bold ${item.approval_rate >= 85 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {item.approval_rate.toFixed(1)}%
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs">{(item.avg_accuracy * 100).toFixed(1)}%</TableCell>
+                  <TableCell className="font-black">{(item.avg_final * 100).toFixed(1)}%</TableCell>
+                  <TableCell>
+                    {item.avg_final < 0.85 ? (
+                      <Badge variant="destructive" className="animate-pulse">QUALITY_WARNING</Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-emerald-500 border-emerald-500/30">ELITE</Badge>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
       <Card className="bg-slate-900 border-slate-800">
         <CardHeader>
           <CardTitle className="text-xl font-black uppercase flex items-center gap-2">
