@@ -41,6 +41,37 @@ const AdminBlueprints = () => {
   const [selectedExam, setSelectedExam] = useState<string | null>(null);
   const [isRollbackOpen, setIsRollbackOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<any>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [isVersionsOpen, setIsVersionsOpen] = useState(false);
+  const [comparisonVersions, setComparisonVersions] = useState<any[]>([]);
+
+  const handleExportCSV = () => {
+    if (!blueprints) return;
+    
+    const headers = ["Banca", "Especialidade", "Tema", "Peso (%)", "Confiança", "Amostra"];
+    const rows = blueprints.map(b => [
+      b.exam_key.toUpperCase(),
+      b.specialty,
+      b.topic,
+      b.weight.toFixed(2),
+      (b.confidence_score * 100).toFixed(1) + "%",
+      b.sample_size
+    ]);
+
+    const csvContent = [headers, ...rows].map(e => e.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `audit_blueprints_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Auditoria exportada com sucesso (CSV)");
+  };
+
 
   // 1. Fetch Blueprints
   const { data: blueprints, isLoading: loadingBlueprints } = useQuery({
@@ -84,17 +115,27 @@ const AdminBlueprints = () => {
 
   // Actions
   const reconcileMutation = useMutation({
-    mutationFn: async (examKey: string) => {
+    mutationFn: async ({ examKey, previewOnly = false }: { examKey: string, previewOnly?: boolean }) => {
       const { data, error } = await supabase.functions.invoke("exam-intelligence-engine", {
-        body: { action: "reconcile", exam_key: examKey, payload: { smoothing_factor: 0.3 } }
+        body: { 
+          action: previewOnly ? "preview_reconcile" : "reconcile", 
+          exam_key: examKey, 
+          payload: { smoothing_factor: 0.3 } 
+        }
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Reconciliação concluída com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["admin-blueprints"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-blueprint-versions"] });
+    onSuccess: (data, variables) => {
+      if (variables.previewOnly) {
+        setPreviewData(data);
+        setIsPreviewOpen(true);
+      } else {
+        toast.success("Reconciliação concluída com sucesso!");
+        setIsPreviewOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["admin-blueprints"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-blueprint-versions"] });
+      }
     },
     onError: (err: any) => toast.error(`Erro: ${err.message}`)
   });
@@ -159,7 +200,7 @@ const AdminBlueprints = () => {
           <p className="text-slate-400 font-medium">Governança e auditoria de inteligência médica adaptativa</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="border-slate-800 bg-slate-900/50 hover:bg-slate-800">
+          <Button variant="outline" className="border-slate-800 bg-slate-900/50 hover:bg-slate-800" onClick={handleExportCSV}>
             <FileDown className="w-4 h-4 mr-2" /> Exportar Auditoria
           </Button>
           <Button className="bg-emerald-600 hover:bg-emerald-700">
@@ -238,10 +279,13 @@ const AdminBlueprints = () => {
                     </div>
                     
                     <div className="pt-4 flex gap-2">
-                      <Button size="sm" variant="secondary" className="flex-1 bg-slate-800 hover:bg-slate-700" onClick={() => setSelectedExam(examKey)}>
-                        <Search className="w-3.5 h-3.5 mr-2" /> Detalhes
+                      <Button size="sm" variant="secondary" className="flex-1 bg-slate-800 hover:bg-slate-700" onClick={() => {
+                        setSelectedExam(examKey);
+                        setIsVersionsOpen(true);
+                      }}>
+                        <History className="w-3.5 h-3.5 mr-2" /> Versões
                       </Button>
-                      <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => reconcileMutation.mutate(examKey)}>
+                      <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => reconcileMutation.mutate({ examKey, previewOnly: true })}>
                         <RefreshCcw className="w-3.5 h-3.5 mr-2" /> Reconciliar
                       </Button>
                     </div>
@@ -331,6 +375,124 @@ const AdminBlueprints = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Versions Modal */}
+      <Dialog open={isVersionsOpen} onOpenChange={setIsVersionsOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase flex items-center gap-2">
+              <History className="text-emerald-500" /> Histórico de Versões: {selectedExam?.toUpperCase()}
+            </DialogTitle>
+          </DialogHeader>
+          <ScrollArea className="h-[500px] mt-4">
+            <Table>
+              <TableHeader className="bg-slate-950/50">
+                <TableRow className="border-slate-800">
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Versão</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Data</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Confiança</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500">Status</TableHead>
+                  <TableHead className="text-xs font-bold uppercase text-slate-500 text-right">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {versions?.filter(v => v.exam_key === selectedExam).map((v) => (
+                  <TableRow key={v.id} className="border-slate-800">
+                    <TableCell className="font-mono text-emerald-400 font-bold">{v.version_label}</TableCell>
+                    <TableCell className="text-sm text-slate-400">{new Date(v.created_at).toLocaleString()}</TableCell>
+                    <TableCell className="font-bold">{(v.confidence_avg * 100).toFixed(1)}%</TableCell>
+                    <TableCell>
+                      {v.is_active ? (
+                        <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20">ATIVO</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="bg-slate-800">INATIVO</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {!v.is_active && (
+                        <Button size="sm" variant="ghost" className="text-orange-500 hover:bg-orange-500/10" onClick={() => {
+                          setSelectedVersion(v);
+                          setIsRollbackOpen(true);
+                        }}>
+                          Rollback
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black uppercase flex items-center gap-2">
+              <RefreshCcw className="text-emerald-500" /> Preview de Reconciliação
+            </DialogTitle>
+            <DialogDescription className="text-slate-400">
+              Revise as mudanças propostas antes de aplicar o novo blueprint dinâmico.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+              <span className="text-xs font-bold uppercase text-slate-500 block mb-1">Confiança Esperada</span>
+              <span className="text-2xl font-black text-emerald-500">
+                {previewData?.confidence_expected ? (previewData.confidence_expected * 100).toFixed(1) : '0'}%
+              </span>
+            </div>
+            <div className="p-4 bg-slate-950/50 rounded-xl border border-slate-800">
+              <span className="text-xs font-bold uppercase text-slate-500 block mb-1">Amostra Processada</span>
+              <span className="text-2xl font-black">{previewData?.sample_size || 0} Questões</span>
+            </div>
+          </div>
+
+          <ScrollArea className="h-[400px] rounded-xl border border-slate-800">
+            <Table>
+              <TableHeader className="bg-slate-950/50 sticky top-0 z-10">
+                <TableRow className="border-slate-800">
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Tema</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Atual</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Proposto</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Delta</TableHead>
+                  <TableHead className="text-xs uppercase font-bold text-slate-500">Risco</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {previewData?.preview?.map((item: any, idx: number) => (
+                  <TableRow key={idx} className="border-slate-800 hover:bg-slate-800/30">
+                    <TableCell className="font-medium text-sm">
+                      <div className="text-slate-500 text-[10px] uppercase font-bold">{item.specialty}</div>
+                      {item.topic}
+                    </TableCell>
+                    <TableCell className="font-mono text-xs">{item.old_weight.toFixed(1)}%</TableCell>
+                    <TableCell className="font-mono text-xs text-emerald-400 font-bold">{item.new_weight.toFixed(1)}%</TableCell>
+                    <TableCell className={`font-mono text-xs font-bold ${item.delta > 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {item.delta > 0 ? '+' : ''}{item.delta.toFixed(1)}%
+                    </TableCell>
+                    <TableCell>{getSeverityBadge(item.severity)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+
+          <DialogFooter className="mt-6">
+            <Button variant="ghost" onClick={() => setIsPreviewOpen(false)}>Cancelar</Button>
+            <Button 
+              className="bg-emerald-600 hover:bg-emerald-700" 
+              onClick={() => reconcileMutation.mutate({ examKey: previewData?.exam_key || '', previewOnly: false })}
+              disabled={reconcileMutation.isPending}
+            >
+              {reconcileMutation.isPending ? <RefreshCcw className="w-4 h-4 mr-2 animate-spin" /> : <RefreshCcw className="w-4 h-4 mr-2" />}
+              Confirmar Reconciliação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Rollback Confirmation */}
       <Dialog open={isRollbackOpen} onOpenChange={setIsRollbackOpen}>
