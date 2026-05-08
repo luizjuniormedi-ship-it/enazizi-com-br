@@ -534,14 +534,16 @@ Retorne APENAS um array JSON puro:
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
 
-          const runBatch = async (batchIdx: number) => {
+          const runBatch = async (batchIdx: number, slotTarget?: any) => {
             const needed = Math.min(SAFE_BATCH, target - (batchIdx * SAFE_BATCH));
             if (needed <= 0) return [] as any[];
             try {
-              // USAR DIRETAMENTE OPENAI SE POSSÍVEL OU GARANTIR QUE AI_FETCH NÃO USE LOVABLE SE ESTIVER LENTO
               const resp = await aiFetch({
                 model: "openai/gpt-5-mini",
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
+                messages: [
+                  { role: "system", content: systemPrompt }, 
+                  { role: "user", content: buildSlotPrompt(needed, [...globalPrev], slotTarget) }
+                ],
                 maxTokens: 16000,
                 timeoutMs: 60000,
                 maxRetries: 1,
