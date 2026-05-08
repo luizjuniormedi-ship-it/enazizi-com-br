@@ -499,12 +499,17 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         const { level, target, desc } = slot;
         console.log(`[question-generator][Slot ${level}] Target: ${target}`);
 
+        // Get actual topics to distribute within this slot
+        const slotDistribution = activeDistribution && activeDistribution.length > 0 ? activeDistribution : 
+          (matchedTopics.length > 0 ? matchedTopics.map(t => ({ topic: t, weight: 100/matchedTopics.length })) : [{ topic: "Clínica Médica", weight: 100 }]);
+
         // Cache for this slot
         const cached = (cacheByLevel[level] || []).sort(() => Math.random() - 0.5).slice(0, target);
         const fromCache = cached.map((q: any) => ({
           statement: cleanQuestionText(q.statement || ""),
           options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
           correct_index: q.correct_index ?? 0,
+          specialty: q.specialty || q.topic?.split(" - ")[0] || "Clínica Médica",
           topic: q.topic || matchedTopics[0] || "Clínica Médica",
           explanation: cleanQuestionText(q.explanation || ""),
           difficulty_level: level,
@@ -513,35 +518,53 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         let slotQuestions = [...fromCache];
         let remaining = target - slotQuestions.length;
 
-        // AI generation for remaining — run batches in PARALLEL with tight timeouts
         if (remaining > 0) {
+          // Determine specific topic targets for remaining questions
+          const remainingTopics: any[] = [];
+          for (let i = 0; i < remaining; i++) {
+            // Weighted random selection of topic for each question
+            const rand = Math.random() * 100;
+            let acc = 0;
+            let selected = slotDistribution[0];
+            for (const item of slotDistribution) {
+              acc += Number(item.weight || item.percent || (100/slotDistribution.length));
+              if (rand <= acc) {
+                selected = item;
+                break;
+              }
+            }
+            remainingTopics.push({ specialty: selected.specialty || "Geral", topic: selected.topic });
+          }
+
+          const SAFE_BATCH = 4;
           const batchCount = Math.ceil(remaining / SAFE_BATCH);
-          // Reduzindo concorrência para evitar 429 e picos de custo (fila assíncrona controlada)
           const PARALLEL_BATCHES = Math.min(batchCount, 2);
 
-          const buildSlotPrompt = (needed: number, prevSnapshot: string[]) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+          const buildSlotPrompt = (needed: number, prevSnapshot: string[], slotTarget?: any) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
 
 IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
 
 NÍVEL DE DIFICULDADE: ${desc}
 TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
 
-TEMAS E PESOS (DISTRIBUA PROPORCIONALMENTE): ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent || Math.round((tw.count/requestedCount)*100)}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}
+${slotTarget ? `FOCO TEMÁTICO OBRIGATÓRIO: Esta questão DEVE obrigatoriamente pertencer à especialidade "${slotTarget.specialty}" e abordar o tema "${slotTarget.topic}".` : `TEMAS E PESOS (DISTRIBUA PROPORCIONALMENTE): ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent || Math.round((tw.count/requestedCount)*100)}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}`}
 
 Retorne APENAS um array JSON puro:
-[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"topic":"tema","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
+[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
 
-          const runBatch = async (batchIdx: number) => {
+          const runBatch = async (batchIdx: number, slotTarget?: any) => {
             const needed = Math.min(SAFE_BATCH, target - (batchIdx * SAFE_BATCH));
             if (needed <= 0) return [] as any[];
             try {
-              // USAR DIRETAMENTE OPENAI SE POSSÍVEL OU GARANTIR QUE AI_FETCH NÃO USE LOVABLE SE ESTIVER LENTO
               const resp = await aiFetch({
                 model: "openai/gpt-5-mini",
-                messages: [{ role: "system", content: systemPrompt }, { role: "user", content: buildSlotPrompt(needed, [...globalPrev]) }],
+                messages: [
+                  { role: "system", content: systemPrompt }, 
+                  { role: "user", content: buildSlotPrompt(needed, [...globalPrev], slotTarget) }
+                ],
                 maxTokens: 16000,
                 timeoutMs: 60000,
                 maxRetries: 1,
@@ -604,7 +627,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
 
           // Round 1: parallel batches
           const round1 = await Promise.all(
-            Array.from({ length: PARALLEL_BATCHES }, (_, i) => runBatch(i))
+            Array.from({ length: PARALLEL_BATCHES }, (_, i) => runBatch(i, remainingTopics[i * SAFE_BATCH]))
           );
 
           const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
@@ -623,7 +646,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
 
           // Round 2: single retry batch if still short
           if (slotQuestions.length < target) {
-            const extra = await runBatch(PARALLEL_BATCHES);
+            const extra = await runBatch(PARALLEL_BATCHES, remainingTopics[PARALLEL_BATCHES * SAFE_BATCH]);
             for (const q of extra) {
               if (slotQuestions.length >= target) break;
               const key = String(q.statement || "").slice(0, 100).toLowerCase().replace(/\s+/g, " ");
