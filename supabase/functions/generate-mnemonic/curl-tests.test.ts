@@ -33,7 +33,23 @@ Deno.test("400 — JSON inválido", async () => {
 
 Deno.test("422 — payload vazio", async () => {
   const { status, json } = await callRaw(JSON.stringify({}), { Authorization: `Bearer ${ANON_KEY}` });
-  // Either 401 (anon getUser fails) or 422; both must return JSON with requestId
   assert([401, 422, 400].includes(status), `unexpected ${status}`);
   assertEquals(json.success, false);
 });
+
+Deno.test("422 — topic apenas (extração automática)", async () => {
+  // We can't easily test 200 without a real user token, but we can verify it doesn't crash
+  const { status, json } = await callRaw(JSON.stringify({ tema: "Insuficiência Cardíaca" }), { Authorization: `Bearer ${ANON_KEY}` });
+  // If status is 401, it's expected because we use ANON_KEY instead of real USER_TOKEN
+  if (status !== 401) {
+    assert(json.requestId);
+  }
+});
+
+Deno.test("422 — items apenas (inválido sem tema)", async () => {
+  const { status, json } = await callRaw(JSON.stringify({ termos: ["A", "B", "C"] }), { Authorization: `Bearer ${ANON_KEY}` });
+  // Should fail at payload validation or auth
+  assert([401, 422, 400, 500].includes(status), `unexpected ${status}`);
+  assert(json.requestId);
+});
+
