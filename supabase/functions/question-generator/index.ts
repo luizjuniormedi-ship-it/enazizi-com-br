@@ -499,12 +499,17 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         const { level, target, desc } = slot;
         console.log(`[question-generator][Slot ${level}] Target: ${target}`);
 
+        // Get actual topics to distribute within this slot
+        const slotDistribution = activeDistribution && activeDistribution.length > 0 ? activeDistribution : 
+          (matchedTopics.length > 0 ? matchedTopics.map(t => ({ topic: t, weight: 100/matchedTopics.length })) : [{ topic: "Clínica Médica", weight: 100 }]);
+
         // Cache for this slot
         const cached = (cacheByLevel[level] || []).sort(() => Math.random() - 0.5).slice(0, target);
         const fromCache = cached.map((q: any) => ({
           statement: cleanQuestionText(q.statement || ""),
           options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
           correct_index: q.correct_index ?? 0,
+          specialty: q.specialty || q.topic?.split(" - ")[0] || "Clínica Médica",
           topic: q.topic || matchedTopics[0] || "Clínica Médica",
           explanation: cleanQuestionText(q.explanation || ""),
           difficulty_level: level,
@@ -513,10 +518,26 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         let slotQuestions = [...fromCache];
         let remaining = target - slotQuestions.length;
 
-        // AI generation for remaining — run batches in PARALLEL with tight timeouts
         if (remaining > 0) {
+          // Determine specific topic targets for remaining questions
+          const remainingTopics: any[] = [];
+          for (let i = 0; i < remaining; i++) {
+            // Weighted random selection of topic for each question
+            const rand = Math.random() * 100;
+            let acc = 0;
+            let selected = slotDistribution[0];
+            for (const item of slotDistribution) {
+              acc += Number(item.weight || item.percent || (100/slotDistribution.length));
+              if (rand <= acc) {
+                selected = item;
+                break;
+              }
+            }
+            remainingTopics.push({ specialty: selected.specialty || "Geral", topic: selected.topic });
+          }
+
+          const SAFE_BATCH = 4;
           const batchCount = Math.ceil(remaining / SAFE_BATCH);
-          // Reduzindo concorrência para evitar 429 e picos de custo (fila assíncrona controlada)
           const PARALLEL_BATCHES = Math.min(batchCount, 2);
 
           const buildSlotPrompt = (needed: number, prevSnapshot: string[], slotTarget?: any) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
