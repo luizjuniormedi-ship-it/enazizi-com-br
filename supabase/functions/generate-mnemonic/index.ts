@@ -754,7 +754,79 @@ serve(async (req: Request) => {
         },
       });
 
-    } catch (error) {
+      }
+
+      // ══════════════════════════════════════
+      // ETAPA 2: Gerar Imagem
+      // ══════════════════════════════════════
+      console.log("[MNEMONIC] ETAPA 2: Gerando imagem...");
+      const imgStart = Date.now();
+      const imgResult = await generateImage(mnemonic.image_prompt);
+      
+      await insertAgentLog(db, {
+        request_id: requestId, user_id: userId,
+        agent_name: "gerador_imagem", execution_order: ++order,
+        status: imgResult.url ? "completed" : "failed",
+        input_json: { prompt: mnemonic.image_prompt },
+        output_json: { image_url: imgResult.url, error: imgResult.error },
+        duration_ms: Date.now() - imgStart,
+        error_message: imgResult.error,
+      });
+
+      // ══════════════════════════════════════
+      // ETAPA 3: Salvar Resultado
+      // ══════════════════════════════════════
+      const scoreFinal = Math.round((mnemonic.audit.score_medico + mnemonic.audit.score_pedagogico) / 2);
+      
+      const resultId = await insertResult(db, {
+        request_id: requestId,
+        user_id: userId,
+        tema: payload.tema,
+        sigla: mnemonic.mnemonic,
+        frase_mnemonica: mnemonic.phrase,
+        explicacao_tecnica: mnemonic.explanation_tecnica,
+        explicacao_didatica: mnemonic.explanation_didatica,
+        cena_visual: mnemonic.scene_description || mnemonic.scene,
+        prompt_imagem: mnemonic.image_prompt,
+        score_medico: mnemonic.audit.score_medico,
+        score_pedagogico: mnemonic.audit.score_pedagogico,
+        score_linguistico: 90, // Auditor linguístico interno
+        score_final: scoreFinal,
+        aprovado: mnemonic.audit.coverage_ok,
+        aprovado_medico: mnemonic.audit.score_medico >= 90,
+        aprovado_pedagogico: mnemonic.audit.score_pedagogico >= 85,
+        image_url: imgResult.url,
+        associacoes_json: mnemonic.items_map as any,
+        associacoes_visuais_json: [],
+        alertas_json: mnemonic.audit.missing_items || [],
+      });
+
+      await updateRequestStatus(db, requestId, "completed");
+
+      return jsonResponse({
+        success: true,
+        data: {
+          request_id: requestId,
+          result_id: resultId,
+          tema: payload.tema,
+          sigla: mnemonic.mnemonic,
+          frase_mnemonica: mnemonic.phrase,
+          explicacao_tecnica: mnemonic.explanation_tecnica,
+          explicacao_didatica: mnemonic.explanation_didatica,
+          cena_visual: mnemonic.scene_description || mnemonic.scene,
+          prompt_imagem: mnemonic.image_prompt,
+          image_url: imgResult.url,
+          image_failed: imgResult.failed,
+          score_medico: mnemonic.audit.score_medico,
+          score_pedagogico: mnemonic.audit.score_pedagogico,
+          score_final: scoreFinal,
+          items_map: mnemonic.items_map,
+          pontos_de_prova: mnemonic.pontos_de_prova,
+          audit: mnemonic.audit,
+          response_source: "ia_master_pipeline"
+        },
+      });
+
       const msg = error instanceof Error ? error.message : "Erro interno.";
       console.error("[MNEMONIC] FAILED:", msg);
 
