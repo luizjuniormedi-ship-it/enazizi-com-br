@@ -255,7 +255,7 @@ const AdminBlueprints = () => {
                       <Button size="sm" variant="secondary" className="flex-1 bg-slate-800 hover:bg-slate-700" onClick={() => setSelectedExam(examKey)}>
                         <Search className="w-3.5 h-3.5 mr-2" /> Detalhes
                       </Button>
-                      <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => reconcileMutation.mutate(examKey)}>
+                      <Button size="sm" className="flex-1 bg-emerald-600 hover:bg-emerald-700" onClick={() => reconcileMutation.mutate({ examKey, previewOnly: true })}>
                         <RefreshCcw className="w-3.5 h-3.5 mr-2" /> Reconciliar
                       </Button>
                     </div>
