@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // ═══ CONFIG ═══
-const AI_MODEL = "google/gemini-2.5-flash";
+const AI_MODEL = "openai/gpt-5-mini";
 const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;
@@ -239,28 +239,39 @@ Retorne SOMENTE JSON:
 // ═══ PIPELINE ═══
 
 serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
-  if (req.method !== "POST") return jsonResponse({ success: false, error: "Método não permitido." }, 405);
+  const startedAt = Date.now();
+  const requestIdForError = crypto.randomUUID();
 
-  let requestId: string | null = null;
-  let db: SupabaseClient | null = null;
+  try {
+    if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+    if (req.method !== "POST") return jsonResponse({ success: false, error: "Método não permitido.", requestId: requestIdForError }, 405);
 
-  const globalTimeout = new Promise<Response>((resolve) => {
-    setTimeout(() => {
-      console.warn("[MNEMONIC] GLOBAL TIMEOUT");
-      resolve(jsonResponse({
-        success: false,
-        error: "Tempo de geração excedido. Tente novamente.",
-        code: "TIMEOUT",
-      }, 504));
-    }, GLOBAL_TIMEOUT_MS);
-  });
+    let requestId: string | null = null;
+    let db: SupabaseClient | null = null;
 
-  const mainPipeline = async (): Promise<Response> => {
-    try {
-      const aiKey = requireEnv("LOVABLE_API_KEY");
-      const rawBody = await req.json().catch(() => null);
-      if (!rawBody) throw new Error("Body vazio ou JSON inválido.");
+    const globalTimeout = new Promise<Response>((resolve) => {
+      setTimeout(() => {
+        console.warn("[MNEMONIC] GLOBAL TIMEOUT");
+        resolve(jsonResponse({
+          success: false,
+          error: "Tempo de geração excedido. Tente novamente.",
+          code: "TIMEOUT",
+          requestId: requestIdForError
+        }, 504));
+      }, GLOBAL_TIMEOUT_MS);
+    });
+
+    const mainPipeline = async (): Promise<Response> => {
+      try {
+        const aiKey = requireEnv("LOVABLE_API_KEY");
+        let rawBody;
+        try {
+          rawBody = await req.json();
+        } catch {
+          return jsonResponse({ success: false, error: "JSON inválido.", code: "INVALID_JSON", requestId: requestIdForError }, 400);
+        }
+        
+        if (!rawBody) throw new Error("Body vazio.");
       console.log(`[MNEMONIC] Payload received: tema=${(rawBody as any)?.tema}, termos=${(rawBody as any)?.termos?.length}`);
 
       const payload = validatePayload(rawBody);
@@ -850,12 +861,23 @@ serve(async (req: Request) => {
       // NUNCA retornar fallback fake como sucesso
       return jsonResponse({
         success: false,
-        error: "Falha ao gerar mnemônico. Tente novamente.",
-        code: "GENERATION_FAILED",
+        error: "Não foi possível gerar o mnemônico agora. Tente novamente.",
+        code: "MNEMONIC_RUNTIME_ERROR",
+        message: "Não foi possível gerar o mnemônico agora. Tente novamente.",
+        requestId: requestId || requestIdForError,
         details: msg,
       }, 500);
     }
   };
 
   return Promise.race([mainPipeline(), globalTimeout]);
+  } catch (fatalError) {
+    console.error("[generate-mnemonic] FATAL_CAUGHT", fatalError);
+    return jsonResponse({
+      success: false,
+      error: "Erro crítico no servidor. Tente novamente.",
+      code: "FATAL_ERROR",
+      requestId: requestIdForError
+    }, 500);
+  }
 });
