@@ -21,7 +21,7 @@ import {
   itemInformation,
 } from "@/lib/triEngine";
 import { useAuth } from "@/hooks/useAuth";
-import { Loader2, FileText, ChevronLeft, Play, Info, Sparkles, DatabaseZap, Clock } from "lucide-react";
+import { Loader2, FileText, ChevronLeft, Play, Info, Sparkles, DatabaseZap, Clock, Trophy, Zap, Target, CheckCircle2, TrendingDown, History } from "lucide-react";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { supabase } from "@/integrations/supabase/client";
