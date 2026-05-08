@@ -45,6 +45,21 @@ const AdminBlueprints = () => {
   const [previewData, setPreviewData] = useState<any>(null);
   const [isVersionsOpen, setIsVersionsOpen] = useState(false);
   const [comparisonVersions, setComparisonVersions] = useState<any[]>([]);
+  const [healthScores, setHealthScores] = useState<Record<string, number>>({});
+
+  // 0. Fetch Health Scores
+  const { data: healthData } = useQuery({
+    queryKey: ["admin-blueprint-health"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("exam_health_history")
+        .select("*")
+        .order("recorded_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    }
+  });
+
 
   const handleExportCSV = () => {
     if (!blueprints) return;
