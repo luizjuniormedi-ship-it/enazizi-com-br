@@ -44,7 +44,8 @@ serve(async (req) => {
       jobId, 
       batchNumber,
       count,
-      topicWeights
+      topicWeights,
+      specialty // Add specialty to body destructuring
     } = body;
 
     // Safety: Protect messages
@@ -57,6 +58,20 @@ serve(async (req) => {
     // Safety: Protect targetExam
     const safeTargetExam = String(targetExam || "default");
     const bancaInfo = resolveBanca(safeTargetExam);
+
+    // Resolve current specialty for quality routing
+    const currentSpecialty = specialty || gc.specialty || "";
+    
+    // Fetch Clinical Quality Profile for Adaptive Routing
+    let qualityProfile: any = null;
+    if (currentSpecialty) {
+      const { data: profile } = await sb
+        .from("clinical_quality_profiles")
+        .select("*")
+        .eq("specialty", currentSpecialty)
+        .single();
+      qualityProfile = profile;
+    }
 
     if (messages.length === 0 && !generationContext) {
       return errorResponse("Campo 'messages' ou 'generationContext' é obrigatório.", 400);
@@ -540,27 +555,50 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           const batchCount = Math.ceil(remaining / SAFE_BATCH);
           const PARALLEL_BATCHES = Math.min(batchCount, 2);
 
-          const buildSlotPrompt = (needed: number, prevSnapshot: string[], slotTarget?: any) => `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+          const buildSlotPrompt = (needed: number, prevSnapshot: string[], slotTarget?: any) => {
+            const depth = qualityProfile?.explanation_depth || 'medium';
+            const profile = qualityProfile?.prompt_profile || 'standard';
+            const needsRef = qualityProfile?.requires_references ? 'CITE OBRIGATORIAMENTE bibliografia específica (ex: Harrison cap X, Sabiston, Protocolo MS).' : '';
+            
+            let depthInstruction = '';
+            if (depth === 'high') {
+              depthInstruction = 'EXPLICAÇÃO DE ALTA DENSIDADE: A explicação deve ser extensa (> 600 caracteres), discutindo fisiopatologia e integração clínica completa.';
+            } else if (depth === 'low') {
+              depthInstruction = 'Explicação direta e concisa.';
+            }
 
-IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR). NUNCA use inglês em nenhum campo.
+            let profileInstruction = '';
+            if (profile === 'guideline_focused') {
+              profileInstruction = 'FOCO EM DIRETRIZES: Baseie a conduta estritamente nos protocolos mais recentes do Ministério da Saúde e Sociedades Brasileiras.';
+            } else if (profile === 'deep_clinical') {
+              profileInstruction = 'PROFUNDIDADE CLÍNICA: Exija raciocínio de exclusão e diagnósticos sindrômicos complexos.';
+            }
+
+            return `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
+IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).
 
 NÍVEL DE DIFICULDADE: ${desc}
 TODAS as ${needed} questões DEVEM ser nível ${level.toUpperCase()}.
 
-${slotTarget ? `FOCO TEMÁTICO OBRIGATÓRIO: Esta questão DEVE obrigatoriamente pertencer à especialidade "${slotTarget.specialty}" e abordar o tema "${slotTarget.topic}".` : `TEMAS E PESOS (DISTRIBUA PROPORCIONALMENTE): ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent || Math.round((tw.count/requestedCount)*100)}%)`).join(", ") : (matchedTopics.length > 0 ? matchedTopics.join(", ") : (gc?.topic || "Clínica Médica"))}`}
+${slotTarget ? `FOCO TEMÁTICO OBRIGATÓRIO: Esta questão DEVE obrigatoriamente pertencer à especialidade "${slotTarget.specialty}" e abordar o tema "${slotTarget.topic}".` : `TEMAS E PESOS: ${activeDistribution && activeDistribution.length > 0 ? activeDistribution.map((tw: any) => `${tw.topic} (${tw.weight || tw.percent}%)`).join(", ") : matchedTopics.join(", ")}`}
+
+${depthInstruction}
+${profileInstruction}
+${needsRef}
 
 Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
+          };
 
           const runBatch = async (batchIdx: number, slotTarget?: any) => {
             const needed = Math.min(SAFE_BATCH, target - (batchIdx * SAFE_BATCH));
             if (needed <= 0) return [] as any[];
             try {
               const resp = await aiFetch({
-                model: "openai/gpt-5-mini",
+                model: qualityProfile?.preferred_model || "openai/gpt-4o-mini",
                 messages: [
                   { role: "system", content: systemPrompt }, 
                   { role: "user", content: buildSlotPrompt(needed, [...globalPrev], slotTarget) }
@@ -601,7 +639,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
               const filtered = parsed.filter((q: any) => {
                 const stmt = String(q.statement || q.question || "");
                 const options = q.options || q.alternatives || [];
-                if (stmt.length < 200) { // Relaxed for debug
+                if (stmt.length < 200) {
                   console.warn(`[Slot ${level}] Question rejected: too short (${stmt.length} chars)`);
                   return false;
                 }
@@ -614,15 +652,27 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
               console.log(`[Slot ${level}][batch ${batchIdx + 1}] Generated ${parsed.length} questions, ${filtered.length} passed filters`);
               const validatedBatch: any[] = [];
               for (const q of filtered) {
-                // Real Adversarial Audit Layer
+                // Real Adversarial Audit Layer + Adaptive Quality Check
+                const hasRef = /Harrison|Sabiston|Nelson|Protocolo MS|SUS/i.test(q.explanation || "");
+                const isDeep = (q.explanation?.length || 0) > 600;
+                
+                // Base metrics
                 const medical_accuracy = (q.correct_index === undefined || q.options?.length < 5 || q.explanation?.length < 100) ? 0.4 : 0.98;
                 const distractor_quality = (q.options?.some((o: string) => o.length < 5)) ? 0.5 : 0.92;
-                const explanation_quality = (q.explanation?.toLowerCase().includes(" Harrison") || q.explanation?.toLowerCase().includes(" Sabiston")) ? 0.95 : 0.70;
+                const explanation_quality = hasRef ? 0.95 : 0.70;
                 const exam_style = 0.90;
                 
-                const final_score = (medical_accuracy * 0.4 + distractor_quality * 0.2 + explanation_quality * 0.2 + exam_style * 0.2);
+                let final_score = (medical_accuracy * 0.4 + distractor_quality * 0.2 + explanation_quality * 0.2 + exam_style * 0.2);
                 
-                if (final_score >= 0.85) {
+                // Adaptive Thresholds from Clinical Quality Profile
+                const minScore = qualityProfile?.average_quality < 80 ? 0.88 : 0.85;
+                const depthRequired = qualityProfile?.explanation_depth === 'high';
+                const refRequired = qualityProfile?.requires_references === true;
+
+                if (depthRequired && !isDeep) final_score -= 0.1;
+                if (refRequired && !hasRef) final_score -= 0.15;
+
+                if (final_score >= minScore) {
                   validatedBatch.push({
                     ...q,
                     statement: cleanQuestionText(q.statement || q.question || ""),
@@ -634,12 +684,16 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                       distractor: distractor_quality,
                       explanation: explanation_quality,
                       style: exam_style,
-                      final_score 
+                      final_score,
+                      adaptive_routing: {
+                        specialty: currentSpecialty,
+                        model_used: qualityProfile?.preferred_model || 'gpt-4o-mini',
+                        depth_applied: qualityProfile?.explanation_depth || 'medium'
+                      }
                     }
                   });
                 } else {
-                  console.warn(`[Slot ${level}] Question REJECTED by adversarial audit: score ${final_score.toFixed(2)}. Re-queuing slot...`);
-                  // Mark for log and exclude from this batch return
+                  console.warn(`[Slot ${level}] Question REJECTED by adaptive clinical audit: score ${final_score.toFixed(2)} (min: ${minScore}). Re-queuing slot...`);
                 }
               }
               return validatedBatch;

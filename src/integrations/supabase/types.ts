@@ -2393,6 +2393,48 @@ export type Database = {
         }
         Relationships: []
       }
+      clinical_quality_profiles: {
+        Row: {
+          average_quality: number | null
+          explanation_depth: string | null
+          fallback_model: string | null
+          id: string
+          preferred_model: string | null
+          prompt_profile: string | null
+          regeneration_rate: number | null
+          requires_references: boolean | null
+          specialty: string
+          total_audited: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          average_quality?: number | null
+          explanation_depth?: string | null
+          fallback_model?: string | null
+          id?: string
+          preferred_model?: string | null
+          prompt_profile?: string | null
+          regeneration_rate?: number | null
+          requires_references?: boolean | null
+          specialty: string
+          total_audited?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          average_quality?: number | null
+          explanation_depth?: string | null
+          fallback_model?: string | null
+          id?: string
+          preferred_model?: string | null
+          prompt_profile?: string | null
+          regeneration_rate?: number | null
+          requires_references?: boolean | null
+          specialty?: string
+          total_audited?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       clinical_scenarios: {
         Row: {
           created_at: string
@@ -9227,6 +9269,7 @@ export type Database = {
         Row: {
           audit_notes: string | null
           audited_at: string | null
+          created_at: string | null
           distractor_quality_score: number | null
           exam_key: string
           exam_style_score: number | null
@@ -9242,6 +9285,7 @@ export type Database = {
         Insert: {
           audit_notes?: string | null
           audited_at?: string | null
+          created_at?: string | null
           distractor_quality_score?: number | null
           exam_key: string
           exam_style_score?: number | null
@@ -9257,6 +9301,7 @@ export type Database = {
         Update: {
           audit_notes?: string | null
           audited_at?: string | null
+          created_at?: string | null
           distractor_quality_score?: number | null
           exam_key?: string
           exam_style_score?: number | null
@@ -21299,6 +21344,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recalibrate_clinical_profiles: { Args: never; Returns: undefined }
       reconcile_and_smooth_weights: {
         Args: { p_exam_key: string; p_smoothing_factor?: number }
         Returns: undefined
