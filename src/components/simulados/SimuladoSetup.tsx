@@ -1226,10 +1226,8 @@ const SimuladoSetup = ({ onStart, onResumeSession, onDiscardSession, onRetryErro
             onClick={handleStart}
             data-testid="iniciar-simulado-button"
             disabled={
-              // Só bloqueia se não for modo banca/adaptativo E não houver tópico selecionado
-              (mode !== "prova_real" && mode !== "tri" && mode !== "adaptativo" && examBoard === "all") && 
-              selectedTopics.length === 0 && 
-              !specificTopic
+              // Sempre permite quando há banca (inclusive "all"=GERAL), modo banca/adaptativo, tópico ou specificTopic
+              mode === "estudo" && selectedTopics.length === 0 && !specificTopic && !examBoard
             }
           >
             {mode === "extremo" ? <Skull className="h-4 w-4 mr-2" /> : mode === "prova_real" ? <Trophy className="h-4 w-4 mr-2" /> : mode === "tri" ? <Brain className="h-4 w-4 mr-2" /> : mode === "adaptativo" ? <Zap className="h-4 w-4 mr-2" /> : <Play className="h-4 w-4 mr-2" />}
