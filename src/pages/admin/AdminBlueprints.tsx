@@ -88,17 +88,27 @@ const AdminBlueprints = () => {
 
   // Actions
   const reconcileMutation = useMutation({
-    mutationFn: async (examKey: string) => {
+    mutationFn: async ({ examKey, previewOnly = false }: { examKey: string, previewOnly?: boolean }) => {
       const { data, error } = await supabase.functions.invoke("exam-intelligence-engine", {
-        body: { action: "reconcile", exam_key: examKey, payload: { smoothing_factor: 0.3 } }
+        body: { 
+          action: previewOnly ? "preview_reconcile" : "reconcile", 
+          exam_key: examKey, 
+          payload: { smoothing_factor: 0.3 } 
+        }
       });
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Reconciliação concluída com sucesso!");
-      queryClient.invalidateQueries({ queryKey: ["admin-blueprints"] });
-      queryClient.invalidateQueries({ queryKey: ["admin-blueprint-versions"] });
+    onSuccess: (data, variables) => {
+      if (variables.previewOnly) {
+        setPreviewData(data);
+        setIsPreviewOpen(true);
+      } else {
+        toast.success("Reconciliação concluída com sucesso!");
+        setIsPreviewOpen(false);
+        queryClient.invalidateQueries({ queryKey: ["admin-blueprints"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-blueprint-versions"] });
+      }
     },
     onError: (err: any) => toast.error(`Erro: ${err.message}`)
   });
