@@ -627,7 +627,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
 
           // Round 1: parallel batches
           const round1 = await Promise.all(
-            Array.from({ length: PARALLEL_BATCHES }, (_, i) => runBatch(i))
+            Array.from({ length: PARALLEL_BATCHES }, (_, i) => runBatch(i, remainingTopics[i * SAFE_BATCH]))
           );
 
           const prevKeys = new Set(globalPrev.map((s: string) => String(s).slice(0, 100).toLowerCase().replace(/\s+/g, " ")));
