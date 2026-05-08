@@ -200,7 +200,7 @@ const AdminBlueprints = () => {
           <p className="text-slate-400 font-medium">Governança e auditoria de inteligência médica adaptativa</p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="border-slate-800 bg-slate-900/50 hover:bg-slate-800">
+          <Button variant="outline" className="border-slate-800 bg-slate-900/50 hover:bg-slate-800" onClick={handleExportCSV}>
             <FileDown className="w-4 h-4 mr-2" /> Exportar Auditoria
           </Button>
           <Button className="bg-emerald-600 hover:bg-emerald-700">
