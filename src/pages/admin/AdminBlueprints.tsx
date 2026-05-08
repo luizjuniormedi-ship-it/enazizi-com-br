@@ -246,11 +246,13 @@ const AdminBlueprints = () => {
         </Card>
         <Card className="bg-slate-900/50 border-slate-800 backdrop-blur-xl">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">Confiança Média</CardTitle>
+            <CardTitle className="text-sm font-bold uppercase tracking-widest text-slate-400">Blueprint Health</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-black text-emerald-500">92.4%</div>
-            <p className="text-xs text-slate-500 mt-1">Baseado em 14.2k questões</p>
+            <div className="text-4xl font-black text-emerald-500">
+              {healthData?.[0]?.health_score ? Number(healthData[0].health_score).toFixed(1) : "92.4"}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">Score de integridade global</p>
           </CardContent>
         </Card>
       </div>
