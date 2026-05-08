@@ -9269,6 +9269,7 @@ export type Database = {
         Row: {
           audit_notes: string | null
           audited_at: string | null
+          created_at: string | null
           distractor_quality_score: number | null
           exam_key: string
           exam_style_score: number | null
@@ -9284,6 +9285,7 @@ export type Database = {
         Insert: {
           audit_notes?: string | null
           audited_at?: string | null
+          created_at?: string | null
           distractor_quality_score?: number | null
           exam_key: string
           exam_style_score?: number | null
@@ -9299,6 +9301,7 @@ export type Database = {
         Update: {
           audit_notes?: string | null
           audited_at?: string | null
+          created_at?: string | null
           distractor_quality_score?: number | null
           exam_key?: string
           exam_style_score?: number | null
