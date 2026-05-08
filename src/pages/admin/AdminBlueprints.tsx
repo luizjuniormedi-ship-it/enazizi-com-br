@@ -41,6 +41,10 @@ const AdminBlueprints = () => {
   const [selectedExam, setSelectedExam] = useState<string | null>(null);
   const [isRollbackOpen, setIsRollbackOpen] = useState(false);
   const [selectedVersion, setSelectedVersion] = useState<any>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState<any>(null);
+  const [isVersionsOpen, setIsVersionsOpen] = useState(false);
+  const [comparisonVersions, setComparisonVersions] = useState<any[]>([]);
 
   // 1. Fetch Blueprints
   const { data: blueprints, isLoading: loadingBlueprints } = useQuery({
