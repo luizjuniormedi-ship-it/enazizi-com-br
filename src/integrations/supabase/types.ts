@@ -1837,6 +1837,7 @@ export type Database = {
           created_at: string
           decision_output: Json
           decision_type: string
+          event_hash: string | null
           id: string
           input_snapshot: Json
           justification: string
@@ -1849,6 +1850,7 @@ export type Database = {
           created_at?: string
           decision_output?: Json
           decision_type: string
+          event_hash?: string | null
           id?: string
           input_snapshot?: Json
           justification?: string
@@ -1861,6 +1863,7 @@ export type Database = {
           created_at?: string
           decision_output?: Json
           decision_type?: string
+          event_hash?: string | null
           id?: string
           input_snapshot?: Json
           justification?: string
@@ -9099,7 +9102,9 @@ export type Database = {
           id: string
           motivo_erro: string | null
           subtema: string | null
+          subtema_norm: string | null
           tema: string
+          tema_norm: string | null
           tipo_questao: string
           updated_at: string
           user_id: string
@@ -9115,7 +9120,9 @@ export type Database = {
           id?: string
           motivo_erro?: string | null
           subtema?: string | null
+          subtema_norm?: string | null
           tema: string
+          tema_norm?: string | null
           tipo_questao?: string
           updated_at?: string
           user_id: string
@@ -9131,7 +9138,9 @@ export type Database = {
           id?: string
           motivo_erro?: string | null
           subtema?: string | null
+          subtema_norm?: string | null
           tema?: string
+          tema_norm?: string | null
           tipo_questao?: string
           updated_at?: string
           user_id?: string
@@ -13934,6 +13943,7 @@ export type Database = {
         Row: {
           correct: boolean
           created_at: string
+          event_hash: string | null
           id: string
           question_id: string
           user_id: string
@@ -13941,6 +13951,7 @@ export type Database = {
         Insert: {
           correct: boolean
           created_at?: string
+          event_hash?: string | null
           id?: string
           question_id: string
           user_id: string
@@ -13948,6 +13959,7 @@ export type Database = {
         Update: {
           correct?: boolean
           created_at?: string
+          event_hash?: string | null
           id?: string
           question_id?: string
           user_id?: string
@@ -21465,6 +21477,19 @@ export type Database = {
         Returns: undefined
       }
       unaccent: { Args: { "": string }; Returns: string }
+      upsert_error_bank_entry: {
+        Args: {
+          p_categoria_erro?: string
+          p_conteudo?: string
+          p_dificuldade?: number
+          p_motivo_erro?: string
+          p_subtema?: string
+          p_tema: string
+          p_tipo_questao?: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       user_can_read_mentor_plan: {
         Args: { _plan_id: string; _user_id: string }
         Returns: boolean
