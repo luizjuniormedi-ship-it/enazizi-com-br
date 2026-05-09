@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 // ══════════════════════════════════════════════════
 // CORS
@@ -567,17 +568,19 @@ serve(async (req: Request) => {
     requireEnv("SUPABASE_ANON_KEY");
     requireEnv("SUPABASE_SERVICE_ROLE_KEY");
 
-    // 2. Parse & validate body
+    // 2. Authenticate user (BEFORE any AI call or body parse)
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+    const userId = auth.userId;
+
+    // 3. Parse & validate body
     const rawBody = await req.json().catch(() => null);
     const payload = validatePayload(rawBody);
 
-    // 3. Normalize
+    // 4. Normalize
     const normalized = normalizeTerms(payload.tema, payload.termos);
     payload.tema = normalized.tema;
     payload.termos = normalized.termos;
-
-    // 4. Authenticate user
-    const userId = await getUserIdFromRequest(req);
 
     // 5. Init DB client (service role)
     db = getServiceClient();

@@ -7,6 +7,7 @@ import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profil
 import { jsonResponse, errorResponse } from "../_shared/assistant-helpers.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.7";
 import { fetchDynamicBlueprint } from "../_shared/dynamic-blueprints.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth FIRST — block IA generation without valid user JWT
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+
     // Consume and log headers for debug
     const authHeader = req.headers.get("Authorization");
     const clientPlatform = req.headers.get("x-client-info");
@@ -417,16 +422,8 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
     if (isJsonMode) {
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-      // Resolve authUser BEFORE slot generation (was in TDZ when used inside runBatch)
-      let authUser: any = null;
-      if (authHeader) {
-        try {
-          const { data } = await sb.auth.getUser(authHeader.split(" ")[1]);
-          authUser = data?.user;
-        } catch (e) {
-          console.warn("[AUDIT] Failed to get user from auth header:", e);
-        }
-      }
+      // authUser already resolved by requireAuth at function entry
+      const authUser: { id: string } = { id: auth.userId };
 
       // Parse requested count from user message or body
       const countFromMsg = lastMessage?.content?.match(/(\d+)/)?.[0];
