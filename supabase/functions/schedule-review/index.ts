@@ -4,6 +4,7 @@
 // Decisão sobre deletar ou consolidar com FSRS será tomada pós-baseline (Fase 1+).
 // NÃO conectar essa função sem antes consolidar com o FSRS — criaria pipeline duplicado.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
