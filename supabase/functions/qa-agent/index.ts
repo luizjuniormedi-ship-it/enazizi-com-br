@@ -398,9 +398,47 @@ serve(async (req) => {
   const runStart = Date.now();
   const sb = getAdmin();
 
+  // ── Internal batch path: header x-internal-secret + INTERNAL_EDGE_SECRET.
+  // Still requires Authorization (admin user JWT) so downstream auth
+  // remains intact. Never skips downstream auth, never uses anon key.
+  const internalSecret = Deno.env.get("INTERNAL_EDGE_SECRET") || "";
+  const providedSecret = req.headers.get("x-internal-secret") || "";
+  const isInternalCall = !!internalSecret && providedSecret === internalSecret;
+
+  // 1) Require real user JWT via shared helper.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+
+  // 2) Require admin/professor role (qa-agent fans out to AI generators).
+  const { data: roles, error: rolesErr } = await sb
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", auth.userId);
+
+  if (rolesErr) {
+    console.error("[qa-agent] role lookup failed:", rolesErr);
+    return new Response(
+      JSON.stringify({ success: false, error: "FORBIDDEN", message: "Falha ao validar permissões.", requestId: auth.requestId }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+  const roleSet = new Set((roles || []).map((r: any) => r.role));
+  const allowed = roleSet.has("admin") || roleSet.has("professor") || roleSet.has("coordinator") || roleSet.has("institutional_admin");
+  if (!allowed) {
+    return new Response(
+      JSON.stringify({ success: false, error: "FORBIDDEN", message: "Apenas admin/professor pode executar o qa-agent.", requestId: auth.requestId }),
+      { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
+  }
+
+  // Bind caller context for downstream callFunction() calls.
+  CALLER_TOKEN = auth.token;
+  CALLER_ID = auth.userId;
+  CALLER_KIND = isInternalCall ? "internal" : "user";
+
   try {
     const body = await req.json().catch(() => ({}));
-    const runType = body.run_type || "manual";
+    const runType = body.run_type || (isInternalCall ? "internal" : "manual");
 
     // Create run record
     const { data: run, error: runErr } = await sb.from("qa_test_runs").insert({
