@@ -18,6 +18,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Auth FIRST — block IA generation without valid user JWT
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+
     // Consume and log headers for debug
     const authHeader = req.headers.get("Authorization");
     const clientPlatform = req.headers.get("x-client-info");
