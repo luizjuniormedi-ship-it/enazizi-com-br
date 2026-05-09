@@ -55,19 +55,13 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+    const userId = auth.userId;
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    // Auth — getClaims first (works with new asymmetric signing keys)
-    const authHeader = req.headers.get("Authorization") ?? "";
-    const userId = await resolveUserId(authHeader, supabaseUrl, anonKey);
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: corsHeaders,
-      });
-    }
 
     // ── Loop 2: idempotência por request_hash ───────────────────
     let body: Record<string, unknown> = {};
