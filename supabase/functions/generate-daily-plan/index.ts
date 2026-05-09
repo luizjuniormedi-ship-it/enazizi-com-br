@@ -372,11 +372,27 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Upsert into daily_plans
+    // Loop 2: shape canônico v2
+    const canonicalPlan = {
+      tasks: dailyTasks,
+      metadata: {
+        version: "v2",
+        generated_at: new Date().toISOString(),
+        source: "generate-daily-plan",
+        approval_score: approvalScore,
+        phase: weights.phase,
+        weights,
+        client_request_id: clientRequestId,
+        target_exam: targetExam || null,
+        study_minutes: studyMinutes || null,
+      },
+    };
+
     const planData = {
       user_id: userId,
       plan_date: today,
-      plan_json: dailyTasks,
+      plan_json: canonicalPlan,
+      request_hash: requestHash,
       total_blocks: dailyTasks.length,
       completed_count: 0,
       completed_blocks: [],
@@ -397,7 +413,11 @@ Deno.serve(async (req) => {
       if (existing) {
         await adminClient
           .from("daily_plans")
-          .update({ plan_json: dailyTasks, total_blocks: dailyTasks.length })
+          .update({
+            plan_json: canonicalPlan,
+            request_hash: requestHash,
+            total_blocks: dailyTasks.length,
+          })
           .eq("id", existing.id);
       } else {
         await adminClient.from("daily_plans").insert(planData);
@@ -408,11 +428,13 @@ Deno.serve(async (req) => {
       JSON.stringify({
         success: true,
         date: today,
+        request_hash: requestHash,
         approval_score: approvalScore,
         phase: weights.phase,
         weights,
         total_tasks: dailyTasks.length,
         tasks: dailyTasks,
+        plan_json: canonicalPlan,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
