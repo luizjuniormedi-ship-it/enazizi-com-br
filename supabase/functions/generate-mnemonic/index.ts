@@ -350,6 +350,44 @@ serve(async (req: Request) => {
         const rl = await checkRateLimit(db, userId);
         if (!rl.ok) throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}).`);
 
+        // ── Loop 4A: cache lookup (global scope — mnemonic is generic by tema+termos+estilo+publico+lang)
+        // Skip cache when regenerating image only (handled below) or auto-extracting terms (terms unknown until extraction)
+        const cacheCheckStart = Date.now();
+        let cacheSemanticHash = "";
+        let cacheEligible = false;
+        if (!payload.regenerate_image_only && !payload.auto_extract_terms && payload.termos.length > 0) {
+          cacheEligible = true;
+          cacheSemanticHash = await buildPromptHash({
+            v: 1,
+            tema: payload.tema.toLowerCase().trim(),
+            termos: [...payload.termos].map(t => t.toLowerCase().trim()).sort(),
+            estilo: (payload.estilo || "default").toLowerCase().trim(),
+            publico: (payload.publico || "default").toLowerCase().trim(),
+            lang: "pt-BR",
+          });
+          const lookup = await getCachedAIResponse({
+            module: "mnemonic",
+            scope: "global",
+            semanticHash: cacheSemanticHash,
+          });
+          if (lookup.hit && lookup.content) {
+            await logAIUsage({
+              userId, module: "mnemonic", functionName: "generate-mnemonic",
+              model: lookup.modelUsed || AI_MODEL, cacheStatus: "hit",
+              latencyMs: Date.now() - cacheCheckStart, requestId: requestIdForError, success: true,
+            });
+            return jsonResponse({
+              success: true,
+              data: { ...lookup.content, response_source: "cache_global", cache_hit: true },
+            });
+          }
+          await logAIUsage({
+            userId, module: "mnemonic", functionName: "generate-mnemonic",
+            model: AI_MODEL, cacheStatus: lookup.expired ? "miss_expired" : "miss",
+            latencyMs: Date.now() - cacheCheckStart, requestId: requestIdForError, success: true,
+          });
+        }
+
         // HANDLE: Regenerate image only
         if (payload.regenerate_image_only && payload.original_result_id) {
           const { data: origResult } = await db.from("mnemonic_results").select("*").eq("id", payload.original_result_id).single();
