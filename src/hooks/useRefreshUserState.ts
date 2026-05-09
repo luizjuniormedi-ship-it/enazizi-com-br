@@ -128,7 +128,7 @@ export function useRefreshUserState() {
             .eq("user_id", uid)
             .order("plan_date", { ascending: false })
             .limit(7)
-            .then(({ data: plans }) => {
+            .then(async ({ data: plans }) => {
               if (!plans?.length) return;
               // Loop 2: normaliza plan_json (v2 canônico, array legado, objeto com blocks)
               const { extractPlanTasks } = await import("@/lib/planner/normalizePlanJson");
