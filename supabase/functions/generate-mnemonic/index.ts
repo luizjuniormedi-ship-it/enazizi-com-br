@@ -503,22 +503,38 @@ serve(async (req: Request) => {
 
         await updateRequestStatus(db, requestId, "completed");
 
-        return jsonResponse({
-          success: true,
-          data: {
-            request_id: requestId, result_id: resultId,
-            tema: payload.tema, sigla: mnemonic.mnemonic, phrase: mnemonic.phrase,
-            frase_mnemonica: mnemonic.phrase,
-            explanation_tecnica: mnemonic.explanation_tecnica,
-            explanation_didatica: mnemonic.explanation_didatica,
-            scene: mnemonic.scene, scene_description: mnemonic.scene_description,
-            image_url: img.url, image_failed: img.failed,
-            score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
-            score_final: scoreFinal, items_map: mnemonic.items_map,
-            pontos_de_prova: mnemonic.pontos_de_prova, audit: mnemonic.audit,
-            response_source: "master_pipeline"
-          }
-        });
+        const successData = {
+          request_id: requestId, result_id: resultId,
+          tema: payload.tema, sigla: mnemonic.mnemonic, phrase: mnemonic.phrase,
+          frase_mnemonica: mnemonic.phrase,
+          explanation_tecnica: mnemonic.explanation_tecnica,
+          explanation_didatica: mnemonic.explanation_didatica,
+          scene: mnemonic.scene, scene_description: mnemonic.scene_description,
+          image_url: img.url, image_failed: img.failed,
+          score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
+          score_final: scoreFinal, items_map: mnemonic.items_map,
+          pontos_de_prova: mnemonic.pontos_de_prova, audit: mnemonic.audit,
+          response_source: "master_pipeline"
+        };
+
+        // ── Loop 4A: persist successful generic generation in global cache.
+        // Skipped automatically if not eligible (image-only / auto-extract / no terms).
+        // Skipped on audit failure (we wouldn't reach here — fallback path returns earlier).
+        if (cacheEligible && cacheSemanticHash) {
+          // Strip per-request identifiers before caching so global cache stays generic
+          const { request_id: _r, result_id: _i, image_url: _u, image_failed: _f, ...generic } = successData;
+          await saveAIResponseToCache({
+            module: "mnemonic",
+            scope: "global",
+            semanticHash: cacheSemanticHash,
+            response: generic,
+            modelUsed: AI_MODEL,
+            ttlDays: CACHE_TTL_DAYS.mnemonic,
+            specialty: payload.tema,
+          });
+        }
+
+        return jsonResponse({ success: true, data: successData });
 
       } catch (error) {
         console.error("[MASTER_PIPELINE] Erro:", error);
