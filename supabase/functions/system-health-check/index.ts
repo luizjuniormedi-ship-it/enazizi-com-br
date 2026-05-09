@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,6 +24,10 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Loop 3E: bloqueia chamadas anônimas (endpoint admin/health).
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
 
   try {
     const supabase = createClient(

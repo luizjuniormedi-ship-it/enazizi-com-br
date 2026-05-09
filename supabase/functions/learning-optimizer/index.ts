@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
@@ -12,6 +13,10 @@ const isMedicalContent = (text: string) => MEDICAL_CONTENT_REGEX.test(text) && !
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Loop 3E: bloqueia chamadas anônimas antes de qualquer consumo de IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
 
   try {
     const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors, scheduledTopics, activeTopics } = await req.json();

@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { validateAIOutput } from "../_shared/ai-validation.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,21 +13,16 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autorizado" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+  const userId = auth.userId;
 
+  try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const sb = createClient(supabaseUrl, serviceRoleKey);
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: authError } = await sb.auth.getUser(token);
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Token inválido" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+    const user = { id: userId };
 
     const { action, ...params } = await req.json();
     const ok = (data: unknown) => new Response(JSON.stringify(data), { headers: { ...corsHeaders, "Content-Type": "application/json" } });

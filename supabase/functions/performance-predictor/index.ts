@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { buildCacheKey, getCachedContent, setCachedContent, logAiUsage } from "../_shared/ai-cache.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +10,10 @@ const corsHeaders = {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
 
   try {
     const { totalQuestions, correctAnswers, areaBreakdown, studyHoursPerWeek, daysUntilExam, diagnosticScore, streakDays, flashcardsReviewed, simuladoScores } = await req.json();

@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -338,22 +339,20 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Não autenticado. Token de autorização ausente." }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+  const userId = auth.userId;
+  const authHeader = req.headers.get("Authorization")!;
 
+  try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authErr } = await supabase.auth.getUser();
-    if (authErr || !user) throw new Error("Não autenticado");
+    const user = { id: userId };
 
     const { action, specialty, subtopic, difficulty, message, conversation_history, specialist_area, teacher_case_id, triage_color: requestedTriageColor, pediatric_age_range, deterioration_level, patient_status: requestedPatientStatus, learner_mode, target_exams, recent_errors, exam_proximity_days } = await req.json();
 

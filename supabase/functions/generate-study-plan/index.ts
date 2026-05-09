@@ -15,6 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,25 +31,18 @@ const isNonMedicalContent = (text: string) => NON_MEDICAL_CONTENT_REGEX.test(tex
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+  const userId = auth.userId;
+  const authHeader = req.headers.get("Authorization")!;
 
-    // Use service role to bypass RLS for DB ops, and validate user via getUser with the token
+  try {
+    // Service role para bypass de RLS em escritas internas
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) {
-      console.error("Auth error:", userError?.message);
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-    const userId = user.id;
 
     // Client scoped to user for RLS queries
     const supabase = createClient(

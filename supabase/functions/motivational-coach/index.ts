@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
-import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,12 +11,10 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const userId = await extractUserId(req);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+  const userId = auth.userId;
 
   try {
     const body = await req.json();

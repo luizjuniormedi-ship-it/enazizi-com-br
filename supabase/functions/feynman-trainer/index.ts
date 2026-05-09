@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
-import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -74,12 +74,10 @@ Agora tente explicar novamente, mas desta vez inclua: [pontos específicos que f
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const userId = await extractUserId(req);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+  const userId = auth.userId;
 
   try {
     const { messages, userContext } = await req.json();
