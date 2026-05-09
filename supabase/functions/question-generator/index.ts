@@ -458,6 +458,66 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       const isBoardSpecific = blueprintFound || (activeDistribution && activeDistribution.length > 0);
 
       console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty} | blueprintFound: ${blueprintFound} | hasDistribution: ${!!activeDistribution}`);
+
+      // ── Loop 4A: cache lookup for GENERIC requests only.
+      // Bypass when: jobId (personalized batch), userContext, avoidStatements,
+      // or any personal payload that needs novelty per user.
+      const isGenericRequest =
+        !jobId &&
+        !userContext &&
+        (!Array.isArray(avoidStatements) || avoidStatements.length === 0);
+      let qgCacheHash = "";
+      let qgCacheEligible = false;
+      let qgCacheStartedAt = Date.now();
+      if (isGenericRequest) {
+        qgCacheEligible = true;
+        qgCacheHash = await buildPromptHash({
+          v: 1,
+          mod: "question_generator",
+          banca: safeTargetExam.toLowerCase(),
+          specialty: (currentSpecialty || "").toLowerCase().trim(),
+          difficulty: String(difficulty || "intermediario").toLowerCase(),
+          requestedCount,
+          slots: slots.map(s => ({ l: s.level, t: s.target })),
+          dist: Array.isArray(activeDistribution)
+            ? activeDistribution.map((tw: any) => ({ t: String(tw.topic || "").toLowerCase(), w: tw.weight ?? tw.percent })).sort((a: any, b: any) => a.t.localeCompare(b.t))
+            : null,
+          lang: "pt-BR",
+        });
+        const cacheModule = safeTargetExam && safeTargetExam !== "default" ? "question_banca" : "question_general";
+        const lookup = await getCachedAIResponse({
+          module: cacheModule,
+          scope: "global",
+          semanticHash: qgCacheHash,
+        });
+        if (lookup.hit && lookup.content?.questions?.length) {
+          await logAIUsage({
+            userId: auth.userId, module: cacheModule, functionName: "question-generator",
+            model: lookup.modelUsed || "openai/gpt-4o-mini", cacheStatus: "hit",
+            latencyMs: Date.now() - qgCacheStartedAt, success: true,
+          });
+          return new Response(JSON.stringify({
+            success: true,
+            questions: lookup.content.questions,
+            source: "cache_global",
+            difficulty_distribution: lookup.content.difficulty_distribution || null,
+            audit: { ...(lookup.content.audit || {}), cache_hit: true, cached_at: lookup.cachedAt },
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        await logAIUsage({
+          userId: auth.userId, module: cacheModule, functionName: "question-generator",
+          model: "openai/gpt-4o-mini",
+          cacheStatus: lookup.expired ? "miss_expired" : "miss",
+          latencyMs: Date.now() - qgCacheStartedAt, success: true,
+        });
+      } else {
+        await logAIUsage({
+          userId: auth.userId, module: "question_generator", functionName: "question-generator",
+          model: "openai/gpt-4o-mini", cacheStatus: "bypass",
+          latencyMs: 0, success: true,
+        });
+      }
+
       console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
 
       // Try cache (with difficulty partitioning)
