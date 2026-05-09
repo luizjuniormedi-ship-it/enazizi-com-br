@@ -104,39 +104,8 @@ serve(async (req) => {
         errors.push(`error_bank_feed: ${(e as Error).message}`);
       }
     }
-    // Bloco antigo de check-then-insert removido (Loop 4B-idempotência).
-    if (false) {
-      const tema = "";
-      const subtema: string | undefined = undefined;
-      const categoria = "";
-      const existing = { id: "", vezes_errado: 0 };
-      if (existing) {
-        await db.from("error_bank")
-          .update({
-            vezes_errado: (existing.vezes_errado ?? 0) + 1,
-              updated_at: now,
-              ...(subtema ? { subtema } : {}),
-              categoria_erro: categoria,
-            })
-            .eq("id", existing.id);
-        } else {
-          await db.from("error_bank").insert({
-            user_id: userId,
-            tema,
-            subtema: subtema ?? null,
-            categoria_erro: categoria,
-            tipo_questao: actionType === "image_quiz" ? "imagem" : "objetiva",
-            conteudo: (metadata?.questionText as string | undefined) ?? null,
-            motivo_erro: (metadata?.errorReason as string | undefined) ?? null,
-            dificuldade: (metadata?.difficulty as number | undefined) ?? 3,
-            vezes_errado: 1,
-          });
-        }
-        effects.errorBankFed = true;
-      } catch (e) {
-        errors.push(`error_bank_feed: ${(e as Error).message}`);
-      }
-    }
+
+
 
     // ── 4c. Feed FSRS card when there's a correct/wrong outcome (F2) ──
     if (typeof wasCorrect === "boolean" && (topicId || themeId)) {
