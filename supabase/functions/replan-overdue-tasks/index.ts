@@ -12,34 +12,12 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
 
   try {
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+    const userId = auth.userId;
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const authHeader = req.headers.get("Authorization") ?? "";
-    let userId: string | null = null;
-    if (authHeader.startsWith("Bearer ")) {
-      const token = authHeader.slice(7).trim();
-      try {
-        const sb = createClient(supabaseUrl, anonKey);
-        const { data: claims, error: cErr } = await sb.auth.getClaims(token);
-        const sub = claims?.claims?.sub;
-        if (!cErr && typeof sub === "string" && sub.length > 0) {
-          userId = sub;
-        } else {
-          const { data } = await sb.auth.getUser(token);
-          userId = data?.user?.id ?? null;
-        }
-      } catch (e) {
-        console.warn("[replan-overdue-tasks] auth failed:", e);
-      }
-    }
-    if (!userId) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: corsHeaders,
-      });
-    }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
     // BR timezone (America/Sao_Paulo) for "today"
