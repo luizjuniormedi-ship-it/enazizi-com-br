@@ -59,6 +59,12 @@ function adjustPlanByApprovalScore(score: number): PlanWeights {
   return { reviewWeight: 0.15, theoryWeight: 0.05, questionsWeight: 0.20, practicalWeight: 0.60, maxNewTopics: 2, phase: "pronto" };
 }
 
+/** SHA-256 hex (sub-resource Web Crypto). */
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS")
     return new Response(null, { headers: corsHeaders });
@@ -78,8 +84,43 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── Loop 2: idempotência por request_hash ───────────────────
+    let body: Record<string, unknown> = {};
+    try { body = await req.json(); } catch { /* body opcional */ }
+    const clientRequestId = typeof body.client_request_id === "string" ? body.client_request_id : null;
+    const targetExam = typeof body.target_exam === "string" ? body.target_exam : "";
+    const studyMinutes = Number.isFinite(body.study_minutes as number) ? Number(body.study_minutes) : 0;
+    const force = body.force === true;
+
     const adminClient = createClient(supabaseUrl, serviceKey);
     const today = todayBR();
+
+    const requestHash = await sha256Hex(
+      `${userId}|${today}|${targetExam}|${studyMinutes}|${clientRequestId ?? ""}`
+    );
+
+    if (!force) {
+      const { data: existing } = await adminClient
+        .from("daily_plans")
+        .select("id, plan_json, total_blocks, request_hash")
+        .eq("user_id", userId)
+        .eq("plan_date", today)
+        .eq("request_hash", requestHash)
+        .maybeSingle();
+      if (existing) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            cached: true,
+            date: today,
+            request_hash: requestHash,
+            total_tasks: existing.total_blocks ?? 0,
+            plan_json: existing.plan_json,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+    }
 
     // ── Reset fence: a "jornada atual" só considera dados criados/atualizados
     // após o último reset manual do plano. Histórico pedagógico permanece intacto
