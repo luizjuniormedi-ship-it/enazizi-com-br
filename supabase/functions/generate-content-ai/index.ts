@@ -32,15 +32,14 @@ serve(async (req) => {
   let tenantId: string | null = null;
 
   try {
+    // Auth check (before reading body or invoking IA)
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+    const user = { id: auth.userId };
+    userId = user.id;
+
     const { contentId: cid, isRetry = false } = await req.json()
     contentId = cid;
-
-    // Auth check
-    const authHeader = req.headers.get('Authorization')
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(authHeader?.replace('Bearer ', '') ?? '')
-    
-    if (authError || !user) throw new Error('Não autorizado')
-    userId = user.id;
 
     const { data: profile } = await supabaseClient
       .from('profiles')
