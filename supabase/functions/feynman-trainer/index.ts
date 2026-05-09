@@ -74,12 +74,10 @@ Agora tente explicar novamente, mas desta vez inclua: [pontos específicos que f
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const userId = await extractUserId(req);
-  if (!userId) {
-    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+  const userId = auth.userId;
 
   try {
     const { messages, userContext } = await req.json();
