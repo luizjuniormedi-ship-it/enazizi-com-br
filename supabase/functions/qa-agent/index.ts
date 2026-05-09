@@ -1,10 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { requireAuth, authCorsHeaders } from "../_shared/require-auth.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const corsHeaders = authCorsHeaders;
 
 // ─── Helpers ───────────────────────────────────────────────────────
 function getAdmin() {
@@ -15,7 +13,13 @@ function getAdmin() {
 }
 
 const FUNCTIONS_URL = Deno.env.get("SUPABASE_URL")! + "/functions/v1";
-const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") || Deno.env.get("SUPABASE_PUBLISHABLE_KEY") || "";
+
+// Forwarded caller JWT — set per-request inside the handler. Downstream
+// edge functions (post Loop 3F-B) require a real user JWT; we never use
+// anon key or service_role to impersonate a user here.
+let CALLER_TOKEN = "";
+let CALLER_ID = "";
+let CALLER_KIND: "user" | "internal" = "user";
 
 async function callFunction(name: string, body: any, timeoutMs = 30000): Promise<{ ok: boolean; status: number; data: any; ms: number }> {
   const start = Date.now();
@@ -26,8 +30,9 @@ async function callFunction(name: string, body: any, timeoutMs = 30000): Promise
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${ANON_KEY}`,
-        apikey: ANON_KEY,
+        Authorization: `Bearer ${CALLER_TOKEN}`,
+        "x-qa-agent-caller": CALLER_KIND,
+        "x-qa-agent-user": CALLER_ID,
       },
       body: JSON.stringify(body),
       signal: controller.signal,
