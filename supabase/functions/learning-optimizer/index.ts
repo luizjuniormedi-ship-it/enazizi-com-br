@@ -14,6 +14,10 @@ const isMedicalContent = (text: string) => MEDICAL_CONTENT_REGEX.test(text) && !
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Loop 3E: bloqueia chamadas anônimas antes de qualquer consumo de IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { performanceData, examDate, dailyHours, completedTopics, weakAreas, flashcardsDue, recentErrors, scheduledTopics, activeTopics } = await req.json();
 
