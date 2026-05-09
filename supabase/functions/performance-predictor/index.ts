@@ -11,6 +11,10 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  // Loop 3E: getClaims + getUser fallback antes de qualquer chamada IA.
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const { totalQuestions, correctAnswers, areaBreakdown, studyHoursPerWeek, daysUntilExam, diagnosticScore, streakDays, flashcardsReviewed, simuladoScores } = await req.json();
 
