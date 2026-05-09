@@ -19,23 +19,7 @@ function todayBR(): string {
   return fmt.format(new Date()); // en-CA -> YYYY-MM-DD
 }
 
-/** Resolves user via getClaims (asymmetric-key safe), with getUser fallback. */
-async function resolveUserId(authHeader: string, supabaseUrl: string, anonKey: string): Promise<string | null> {
-  if (!authHeader.startsWith("Bearer ")) return null;
-  const token = authHeader.slice(7).trim();
-  if (!token) return null;
-  try {
-    const sb = createClient(supabaseUrl, anonKey);
-    const { data: claims, error: cErr } = await sb.auth.getClaims(token);
-    const sub = claims?.claims?.sub;
-    if (!cErr && typeof sub === "string" && sub.length > 0) return sub;
-    const { data } = await sb.auth.getUser(token);
-    return data?.user?.id ?? null;
-  } catch (e) {
-    console.warn("[generate-daily-plan] resolveUserId failed:", e);
-    return null;
-  }
-}
+// Auth: requireAuth helper (getClaims + fallback getUser, canonical 401 JSON).
 
 // ── Approval-score weight logic (mirrored from client) ─────────
 interface PlanWeights {
