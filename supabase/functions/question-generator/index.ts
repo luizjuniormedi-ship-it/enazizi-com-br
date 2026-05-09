@@ -903,6 +903,27 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         difficulty_distribution: finalDist,
         audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
       };
+      // ── Loop 4A: persist successful GENERIC batch in global cache.
+      // Only when fully complete (count matches request) and no audit shortfall.
+      if (qgCacheEligible && qgCacheHash && allQuestions.length === requestedCount && allQuestions.length > 0) {
+        const cacheModule = safeTargetExam && safeTargetExam !== "default" ? "question_banca" : "question_general";
+        await saveAIResponseToCache({
+          module: cacheModule,
+          scope: "global",
+          semanticHash: qgCacheHash,
+          response: {
+            questions: allQuestions,
+            difficulty_distribution: finalDist,
+            audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length },
+          },
+          modelUsed: qualityProfile?.preferred_model || "openai/gpt-4o-mini",
+          ttlDays: cacheModule === "question_banca" ? CACHE_TTL_DAYS.question_banca : CACHE_TTL_DAYS.question_general,
+          specialty: currentSpecialty || undefined,
+          banca: safeTargetExam,
+          difficulty: typeof difficulty === "number" ? difficulty : undefined,
+        });
+      }
+
       return new Response(JSON.stringify({
         success: true,
         questions: allQuestions,
