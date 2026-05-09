@@ -391,9 +391,13 @@ serve(async (req) => {
       const CHUNK = 200;
       for (let i = 0; i < toInsert.length; i += CHUNK) {
         const slice = toInsert.slice(i, i + CHUNK);
-        const { error: insErr } = await admin.from("professor_plan_daily_tasks").insert(slice);
+        // Loop 2: dedup defensiva via task_hash UNIQUE (ignora duplicatas concorrentes)
+        const { error: insErr, data: inserted } = await admin
+          .from("professor_plan_daily_tasks")
+          .upsert(slice, { onConflict: "task_hash", ignoreDuplicates: true })
+          .select("id");
         if (insErr) throw insErr;
-        insertedCount += slice.length;
+        insertedCount += inserted?.length ?? 0;
       }
     }
 

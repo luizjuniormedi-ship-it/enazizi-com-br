@@ -128,12 +128,11 @@ export function useRefreshUserState() {
             .eq("user_id", uid)
             .order("plan_date", { ascending: false })
             .limit(7)
-            .then(({ data: plans }) => {
+            .then(async ({ data: plans }) => {
               if (!plans?.length) return;
-              const planned = plans.flatMap((p) => {
-                const j = p.plan_json as any;
-                return Array.isArray(j) ? j : [];
-              });
+              // Loop 2: normaliza plan_json (v2 canônico, array legado, objeto com blocks)
+              const { extractPlanTasks } = await import("@/lib/planner/normalizePlanJson");
+              const planned = plans.flatMap((p) => extractPlanTasks(p.plan_json));
               const completed = plans.flatMap((p) => {
                 const c = p.completed_blocks as any;
                 return Array.isArray(c) ? c : [];
