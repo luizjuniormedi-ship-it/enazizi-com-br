@@ -187,24 +187,33 @@ serve(async (req) => {
       }
     }
 
-    // FSRS due (cards vencidos do tema, se possível)
+    // FSRS due (cards vencidos do tema)
+    // Loop 4B-fix-2: lê fsrs_cards (tabela real); user_fsrs_cards não existe.
     if (include.fsrs_due) {
-      try {
-        const nowIso = new Date().toISOString();
-        let q = admin
-          .from("user_fsrs_cards")
-          .select("id, topic, due_at")
-          .eq("user_id", userId)
-          .lte("due_at", nowIso)
-          .order("due_at", { ascending: true })
-          .limit(5);
-        if (body.topic) q = q.ilike("topic", `%${body.topic}%`);
-        const { data } = await q;
-        ctx.fsrs_due =
-          (data as Array<{ id: string; topic: string | null; due_at: string | null }>) ?? [];
-      } catch (e) {
-        // user_fsrs_cards pode não existir em todos os ambientes
-        console.warn("fsrs_due lookup skipped:", e);
+      const nowIso = new Date().toISOString();
+      let q = admin
+        .from("fsrs_cards")
+        .select("id, card_type, card_ref_id, due, stability, difficulty, reps, lapses")
+        .eq("user_id", userId)
+        .lte("due", nowIso)
+        .order("due", { ascending: true })
+        .limit(5);
+      if (body.topic) q = q.ilike("card_ref_id", `%${body.topic}%`);
+      const { data, error } = await q;
+      if (error) {
+        console.warn("[tutor-context-builder] fsrs_cards lookup failed:", error.message);
+        ctx.fsrs_due = [];
+      } else {
+        ctx.fsrs_due = (data ?? []).map((row: any) => ({
+          id: row.id,
+          topic: row.card_ref_id ?? null,
+          card_type: row.card_type,
+          due_at: row.due,
+          stability: row.stability,
+          difficulty: row.difficulty,
+          reps: row.reps,
+          lapses: row.lapses,
+        }));
       }
     }
 

@@ -408,6 +408,55 @@ serve(async (req) => {
       });
     }
 
+    // ── 8. Loop 4B-fix-3: dispara calculate-approval-score ao finalizar simulado ──
+    // Fire-and-forget, não bloqueia finalização. Usa o JWT real do usuário.
+    const isSimuladoFinish =
+      actionType === "simulado_complete" ||
+      actionType === "simulation_complete" ||
+      metadata?.simuladoFinished === true ||
+      metadata?.recalculateApprovalScore === true ||
+      (typeof metadata?.originModule === "string" &&
+        /simulad|simulation/i.test(metadata.originModule as string));
+
+    if (isSimuladoFinish) {
+      const authHeader = req.headers.get("Authorization");
+      if (authHeader) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        if (supabaseUrl) {
+          // não usamos await — fire-and-forget
+          fetch(`${supabaseUrl}/functions/v1/calculate-approval-score`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: authHeader,
+            },
+            body: JSON.stringify({ source: "study-complete", actionType }),
+          })
+            .then(async (r) => {
+              if (!r.ok) {
+                const text = await r.text().catch(() => "");
+                console.warn("[study-complete] approval-score non-2xx", {
+                  userId,
+                  status: r.status,
+                  body: text.slice(0, 200),
+                });
+              } else {
+                console.info("[study-complete] approval-score dispatched", { userId });
+              }
+            })
+            .catch((e) => {
+              console.warn("[study-complete] approval-score dispatch failed", {
+                userId,
+                error: (e as Error).message,
+              });
+            });
+          effects.approvalScoreDispatched = true;
+        }
+      } else {
+        console.warn("[study-complete] simulado finish sem Authorization — approval-score não disparado", { userId });
+      }
+    }
+
     // ── Log decision ──
     await logDecision(db, {
       user_id: userId,
