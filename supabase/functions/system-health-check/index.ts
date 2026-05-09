@@ -25,6 +25,10 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Loop 3E: bloqueia chamadas anônimas (endpoint admin/health).
+  const auth = await requireAuth(req);
+  if (!auth.ok) return auth.response;
+
   try {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
