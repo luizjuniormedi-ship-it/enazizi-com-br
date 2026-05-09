@@ -16,22 +16,36 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const {
-      data: { user },
-      error: authErr,
-    } = await userClient.auth.getUser();
-    if (authErr || !user)
+    let userId: string | null = null;
+    if (authHeader.startsWith("Bearer ")) {
+      const token = authHeader.slice(7).trim();
+      try {
+        const sb = createClient(supabaseUrl, anonKey);
+        const { data: claims, error: cErr } = await sb.auth.getClaims(token);
+        const sub = claims?.claims?.sub;
+        if (!cErr && typeof sub === "string" && sub.length > 0) {
+          userId = sub;
+        } else {
+          const { data } = await sb.auth.getUser(token);
+          userId = data?.user?.id ?? null;
+        }
+      } catch (e) {
+        console.warn("[replan-overdue-tasks] auth failed:", e);
+      }
+    }
+    if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: corsHeaders,
       });
+    }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
-    const userId = user.id;
-    const today = new Date().toISOString().split("T")[0];
+    // BR timezone (America/Sao_Paulo) for "today"
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
 
     // 1. Find overdue reviews (past date, still pending)
     const { data: overdueReviews } = await adminClient
