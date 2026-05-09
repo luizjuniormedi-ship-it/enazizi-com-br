@@ -325,6 +325,11 @@ serve(async (req: Request) => {
       let requestId: string | null = null;
       let order = 0;
       try {
+        // Auth FIRST — before any IA call or body parse
+        const auth = await requireAuth(req);
+        if (!auth.ok) return auth.response;
+        const userId = auth.userId;
+
         const aiKey = requireEnv("LOVABLE_API_KEY");
         let rawBody;
         try {
@@ -338,7 +343,6 @@ serve(async (req: Request) => {
         payload.termos = normalizeTerms(payload.termos);
         payload.tema = payload.tema.trim();
 
-        const userId = await getUserIdFromRequest(req);
         db = getServiceClient();
 
         // Rate limiting
