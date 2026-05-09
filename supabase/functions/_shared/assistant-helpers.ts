@@ -85,6 +85,14 @@ export async function logDecision(
     .select("id")
     .single();
   if (error) {
+    // Loop 4B-idempotência: 23505 = unique violation no event_hash → decisão duplicada já existe; tratar como sucesso silencioso.
+    if ((error as { code?: string }).code === "23505") {
+      console.info("[Assistant] logDecision dedup (event_hash conflict)", {
+        decision_type: params.decision_type,
+        source_module: params.source_module,
+      });
+      return { id: null };
+    }
     console.error("[Assistant] logDecision failed:", error.message);
     return { id: null };
   }

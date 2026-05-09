@@ -82,45 +82,30 @@ serve(async (req) => {
     }
 
     // ── 4b. Feed error_bank when answer was wrong (F2: Sessão alimenta cérebro) ──
+    // Loop 4B-idempotência: usa RPC upsert_error_bank_entry (ON CONFLICT DO UPDATE atômico).
     if (wasCorrect === false && (topicId || themeId)) {
       const tema = (topicId || themeId) as string;
       const subtema = (subtopicId || metadata?.subtopic) as string | undefined;
       const categoria = (metadata?.errorCategory as string | undefined) || "conceitual";
       try {
-        // Upsert pattern: try to find existing then increment vezes_errado
-        const { data: existing } = await db.from("error_bank")
-          .select("id, vezes_errado")
-          .eq("user_id", userId).eq("tema", tema)
-          .eq("dominado", false)
-          .order("updated_at", { ascending: false })
-          .limit(1).maybeSingle();
-        if (existing) {
-          await db.from("error_bank")
-            .update({
-              vezes_errado: (existing.vezes_errado ?? 0) + 1,
-              updated_at: now,
-              ...(subtema ? { subtema } : {}),
-              categoria_erro: categoria,
-            })
-            .eq("id", existing.id);
-        } else {
-          await db.from("error_bank").insert({
-            user_id: userId,
-            tema,
-            subtema: subtema ?? null,
-            categoria_erro: categoria,
-            tipo_questao: actionType === "image_quiz" ? "imagem" : "objetiva",
-            conteudo: (metadata?.questionText as string | undefined) ?? null,
-            motivo_erro: (metadata?.errorReason as string | undefined) ?? null,
-            dificuldade: (metadata?.difficulty as number | undefined) ?? 3,
-            vezes_errado: 1,
-          });
-        }
-        effects.errorBankFed = true;
+        const { error: rpcErr } = await db.rpc("upsert_error_bank_entry", {
+          p_user_id: userId,
+          p_tema: tema,
+          p_subtema: subtema ?? null,
+          p_tipo_questao: "objetiva",
+          p_conteudo: null,
+          p_motivo_erro: null,
+          p_categoria_erro: categoria,
+          p_dificuldade: 3,
+        });
+        if (rpcErr) errors.push(`error_bank_feed: ${rpcErr.message}`);
+        else effects.errorBankFed = true;
       } catch (e) {
         errors.push(`error_bank_feed: ${(e as Error).message}`);
       }
     }
+
+
 
     // ── 4c. Feed FSRS card when there's a correct/wrong outcome (F2) ──
     if (typeof wasCorrect === "boolean" && (topicId || themeId)) {
