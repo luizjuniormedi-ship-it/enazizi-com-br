@@ -830,10 +830,13 @@ export type Database = {
           module: string | null
           normalized_prompt_hash: string | null
           quality_score: number | null
+          scope: string
+          semantic_hash: string | null
           specialty: string | null
           subtopic: string | null
           topic: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           banca?: string | null
@@ -849,10 +852,13 @@ export type Database = {
           module?: string | null
           normalized_prompt_hash?: string | null
           quality_score?: number | null
+          scope?: string
+          semantic_hash?: string | null
           specialty?: string | null
           subtopic?: string | null
           topic?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           banca?: string | null
@@ -868,10 +874,13 @@ export type Database = {
           module?: string | null
           normalized_prompt_hash?: string | null
           quality_score?: number | null
+          scope?: string
+          semantic_hash?: string | null
           specialty?: string | null
           subtopic?: string | null
           topic?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -1174,51 +1183,99 @@ export type Database = {
       }
       ai_usage_logs: {
         Row: {
+          actor_key: string | null
+          actor_type: string | null
+          cache_hit: boolean | null
+          cache_status: string | null
           content_id: string | null
+          cost_estimate: number | null
+          cost_saved: number
           created_at: string | null
           error_code: string | null
+          error_message: string | null
           estimated_cost: number | null
+          function_name: string | null
           id: string
           input_tokens: number | null
           json_validation_status: string | null
           latency_ms: number | null
           model: string
+          model_tier: string | null
+          model_used: string | null
+          module: string | null
           output_tokens: number | null
           prompt_type: string | null
+          request_id: string | null
+          response_time_ms: number | null
           reused_from_cache: boolean | null
+          success: boolean | null
           tenant_id: string | null
+          tokens_saved: number
+          tokens_used: number | null
           user_id: string | null
         }
         Insert: {
+          actor_key?: string | null
+          actor_type?: string | null
+          cache_hit?: boolean | null
+          cache_status?: string | null
           content_id?: string | null
+          cost_estimate?: number | null
+          cost_saved?: number
           created_at?: string | null
           error_code?: string | null
+          error_message?: string | null
           estimated_cost?: number | null
+          function_name?: string | null
           id?: string
           input_tokens?: number | null
           json_validation_status?: string | null
           latency_ms?: number | null
           model: string
+          model_tier?: string | null
+          model_used?: string | null
+          module?: string | null
           output_tokens?: number | null
           prompt_type?: string | null
+          request_id?: string | null
+          response_time_ms?: number | null
           reused_from_cache?: boolean | null
+          success?: boolean | null
           tenant_id?: string | null
+          tokens_saved?: number
+          tokens_used?: number | null
           user_id?: string | null
         }
         Update: {
+          actor_key?: string | null
+          actor_type?: string | null
+          cache_hit?: boolean | null
+          cache_status?: string | null
           content_id?: string | null
+          cost_estimate?: number | null
+          cost_saved?: number
           created_at?: string | null
           error_code?: string | null
+          error_message?: string | null
           estimated_cost?: number | null
+          function_name?: string | null
           id?: string
           input_tokens?: number | null
           json_validation_status?: string | null
           latency_ms?: number | null
           model?: string
+          model_tier?: string | null
+          model_used?: string | null
+          module?: string | null
           output_tokens?: number | null
           prompt_type?: string | null
+          request_id?: string | null
+          response_time_ms?: number | null
           reused_from_cache?: boolean | null
+          success?: boolean | null
           tenant_id?: string | null
+          tokens_saved?: number
+          tokens_used?: number | null
           user_id?: string | null
         }
         Relationships: [
@@ -20964,6 +21021,20 @@ export type Database = {
       }
     }
     Functions: {
+      admin_ai_cache_report: {
+        Args: { p_window_hours?: number }
+        Returns: {
+          cost_saved: number
+          global_leak_risk: number
+          hit_rate: number
+          hits: number
+          miss: number
+          miss_expired: number
+          module: string
+          tokens_saved: number
+          total_calls: number
+        }[]
+      }
       admin_telemetry_alerts: { Args: { _days?: number }; Returns: Json }
       admin_telemetry_audit: { Args: never; Returns: Json }
       admin_telemetry_baseline: { Args: never; Returns: Json }

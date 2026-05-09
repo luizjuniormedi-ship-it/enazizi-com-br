@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { buildPromptHash, getCachedAIResponse, saveAIResponseToCache, logAIUsage, CACHE_TTL_DAYS } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -349,6 +350,44 @@ serve(async (req: Request) => {
         const rl = await checkRateLimit(db, userId);
         if (!rl.ok) throw new RateLimitError(`Limite de ${rl.limit}/h atingido (plano ${rl.plan}).`);
 
+        // ── Loop 4A: cache lookup (global scope — mnemonic is generic by tema+termos+estilo+publico+lang)
+        // Skip cache when regenerating image only (handled below) or auto-extracting terms (terms unknown until extraction)
+        const cacheCheckStart = Date.now();
+        let cacheSemanticHash = "";
+        let cacheEligible = false;
+        if (!payload.regenerate_image_only && !payload.auto_extract_terms && payload.termos.length > 0) {
+          cacheEligible = true;
+          cacheSemanticHash = await buildPromptHash({
+            v: 1,
+            tema: payload.tema.toLowerCase().trim(),
+            termos: [...payload.termos].map(t => t.toLowerCase().trim()).sort(),
+            estilo: (payload.estilo || "default").toLowerCase().trim(),
+            publico: (payload.publico || "default").toLowerCase().trim(),
+            lang: "pt-BR",
+          });
+          const lookup = await getCachedAIResponse({
+            module: "mnemonic",
+            scope: "global",
+            semanticHash: cacheSemanticHash,
+          });
+          if (lookup.hit && lookup.content) {
+            await logAIUsage({
+              userId, module: "mnemonic", functionName: "generate-mnemonic",
+              model: lookup.modelUsed || AI_MODEL, cacheStatus: "hit",
+              latencyMs: Date.now() - cacheCheckStart, requestId: requestIdForError, success: true,
+            });
+            return jsonResponse({
+              success: true,
+              data: { ...lookup.content, response_source: "cache_global", cache_hit: true },
+            });
+          }
+          await logAIUsage({
+            userId, module: "mnemonic", functionName: "generate-mnemonic",
+            model: AI_MODEL, cacheStatus: lookup.expired ? "miss_expired" : "miss",
+            latencyMs: Date.now() - cacheCheckStart, requestId: requestIdForError, success: true,
+          });
+        }
+
         // HANDLE: Regenerate image only
         if (payload.regenerate_image_only && payload.original_result_id) {
           const { data: origResult } = await db.from("mnemonic_results").select("*").eq("id", payload.original_result_id).single();
@@ -464,22 +503,38 @@ serve(async (req: Request) => {
 
         await updateRequestStatus(db, requestId, "completed");
 
-        return jsonResponse({
-          success: true,
-          data: {
-            request_id: requestId, result_id: resultId,
-            tema: payload.tema, sigla: mnemonic.mnemonic, phrase: mnemonic.phrase,
-            frase_mnemonica: mnemonic.phrase,
-            explanation_tecnica: mnemonic.explanation_tecnica,
-            explanation_didatica: mnemonic.explanation_didatica,
-            scene: mnemonic.scene, scene_description: mnemonic.scene_description,
-            image_url: img.url, image_failed: img.failed,
-            score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
-            score_final: scoreFinal, items_map: mnemonic.items_map,
-            pontos_de_prova: mnemonic.pontos_de_prova, audit: mnemonic.audit,
-            response_source: "master_pipeline"
-          }
-        });
+        const successData = {
+          request_id: requestId, result_id: resultId,
+          tema: payload.tema, sigla: mnemonic.mnemonic, phrase: mnemonic.phrase,
+          frase_mnemonica: mnemonic.phrase,
+          explanation_tecnica: mnemonic.explanation_tecnica,
+          explanation_didatica: mnemonic.explanation_didatica,
+          scene: mnemonic.scene, scene_description: mnemonic.scene_description,
+          image_url: img.url, image_failed: img.failed,
+          score_medico: mnemonic.audit.score_medico, score_pedagogico: mnemonic.audit.score_pedagogico,
+          score_final: scoreFinal, items_map: mnemonic.items_map,
+          pontos_de_prova: mnemonic.pontos_de_prova, audit: mnemonic.audit,
+          response_source: "master_pipeline"
+        };
+
+        // ── Loop 4A: persist successful generic generation in global cache.
+        // Skipped automatically if not eligible (image-only / auto-extract / no terms).
+        // Skipped on audit failure (we wouldn't reach here — fallback path returns earlier).
+        if (cacheEligible && cacheSemanticHash) {
+          // Strip per-request identifiers before caching so global cache stays generic
+          const { request_id: _r, result_id: _i, image_url: _u, image_failed: _f, ...generic } = successData;
+          await saveAIResponseToCache({
+            module: "mnemonic",
+            scope: "global",
+            semanticHash: cacheSemanticHash,
+            response: generic,
+            modelUsed: AI_MODEL,
+            ttlDays: CACHE_TTL_DAYS.mnemonic,
+            specialty: payload.tema,
+          });
+        }
+
+        return jsonResponse({ success: true, data: successData });
 
       } catch (error) {
         console.error("[MASTER_PIPELINE] Erro:", error);

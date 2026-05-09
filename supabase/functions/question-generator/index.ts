@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch, cleanQuestionText } from "../_shared/ai-fetch.ts";
-import { logAiUsage } from "../_shared/ai-cache.ts";
+import { logAiUsage, buildPromptHash, getCachedAIResponse, saveAIResponseToCache, logAIUsage, CACHE_TTL_DAYS } from "../_shared/ai-cache.ts";
 import { isValidQuestion, hasMinimumContext, validateQuestionContext, logGenerationRejection, IMAGE_REF_PATTERN, ENGLISH_PATTERN } from "../_shared/question-filters.ts";
 import { validateQuestionBatch } from "../_shared/ai-validation.ts";
 import { PROFILES, resolveBanca, buildBancaBlock } from "../_shared/banca-profiles.ts";
@@ -458,6 +458,66 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       const isBoardSpecific = blueprintFound || (activeDistribution && activeDistribution.length > 0);
 
       console.log(`[AUDIT] generation_start | targetExam: "${safeTargetExam}" | requestedCount: ${requestedCount} | difficulty: ${difficulty} | blueprintFound: ${blueprintFound} | hasDistribution: ${!!activeDistribution}`);
+
+      // ── Loop 4A: cache lookup for GENERIC requests only.
+      // Bypass when: jobId (personalized batch), userContext, avoidStatements,
+      // or any personal payload that needs novelty per user.
+      const isGenericRequest =
+        !jobId &&
+        !userContext &&
+        (!Array.isArray(avoidStatements) || avoidStatements.length === 0);
+      let qgCacheHash = "";
+      let qgCacheEligible = false;
+      let qgCacheStartedAt = Date.now();
+      if (isGenericRequest) {
+        qgCacheEligible = true;
+        qgCacheHash = await buildPromptHash({
+          v: 1,
+          mod: "question_generator",
+          banca: safeTargetExam.toLowerCase(),
+          specialty: (currentSpecialty || "").toLowerCase().trim(),
+          difficulty: String(difficulty || "intermediario").toLowerCase(),
+          requestedCount,
+          slots: slots.map(s => ({ l: s.level, t: s.target })),
+          dist: Array.isArray(activeDistribution)
+            ? activeDistribution.map((tw: any) => ({ t: String(tw.topic || "").toLowerCase(), w: tw.weight ?? tw.percent })).sort((a: any, b: any) => a.t.localeCompare(b.t))
+            : null,
+          lang: "pt-BR",
+        });
+        const cacheModule = safeTargetExam && safeTargetExam !== "default" ? "question_banca" : "question_general";
+        const lookup = await getCachedAIResponse({
+          module: cacheModule,
+          scope: "global",
+          semanticHash: qgCacheHash,
+        });
+        if (lookup.hit && lookup.content?.questions?.length) {
+          await logAIUsage({
+            userId: auth.userId, module: cacheModule, functionName: "question-generator",
+            model: lookup.modelUsed || "openai/gpt-4o-mini", cacheStatus: "hit",
+            latencyMs: Date.now() - qgCacheStartedAt, success: true,
+          });
+          return new Response(JSON.stringify({
+            success: true,
+            questions: lookup.content.questions,
+            source: "cache_global",
+            difficulty_distribution: lookup.content.difficulty_distribution || null,
+            audit: { ...(lookup.content.audit || {}), cache_hit: true, cached_at: lookup.cachedAt },
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        await logAIUsage({
+          userId: auth.userId, module: cacheModule, functionName: "question-generator",
+          model: "openai/gpt-4o-mini",
+          cacheStatus: lookup.expired ? "miss_expired" : "miss",
+          latencyMs: Date.now() - qgCacheStartedAt, success: true,
+        });
+      } else {
+        await logAIUsage({
+          userId: auth.userId, module: "question_generator", functionName: "question-generator",
+          model: "openai/gpt-4o-mini", cacheStatus: "bypass",
+          latencyMs: 0, success: true,
+        });
+      }
+
       console.log(`[question-generator] Slot plan: ${slots.map(s => `${s.level}=${s.target}`).join(", ")} (total=${requestedCount})`);
 
       // Try cache (with difficulty partitioning)
@@ -843,6 +903,27 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
         difficulty_distribution: finalDist,
         audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length, totalTimeSeconds: totalTime }
       };
+      // ── Loop 4A: persist successful GENERIC batch in global cache.
+      // Only when fully complete (count matches request) and no audit shortfall.
+      if (qgCacheEligible && qgCacheHash && allQuestions.length === requestedCount && allQuestions.length > 0) {
+        const cacheModule = safeTargetExam && safeTargetExam !== "default" ? "question_banca" : "question_general";
+        await saveAIResponseToCache({
+          module: cacheModule,
+          scope: "global",
+          semanticHash: qgCacheHash,
+          response: {
+            questions: allQuestions,
+            difficulty_distribution: finalDist,
+            audit: { targetExam: safeTargetExam, requestedCount, totalGenerated: allQuestions.length },
+          },
+          modelUsed: qualityProfile?.preferred_model || "openai/gpt-4o-mini",
+          ttlDays: cacheModule === "question_banca" ? CACHE_TTL_DAYS.question_banca : CACHE_TTL_DAYS.question_general,
+          specialty: currentSpecialty || undefined,
+          banca: safeTargetExam,
+          difficulty: typeof difficulty === "number" ? difficulty : undefined,
+        });
+      }
+
       return new Response(JSON.stringify({
         success: true,
         questions: allQuestions,
