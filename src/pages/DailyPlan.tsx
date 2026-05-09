@@ -90,137 +90,163 @@ const DailyPlan = () => {
   // ── Load today's data from Planner tables ──
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
     const loadToday = async () => {
-      const today = new Date().toISOString().split("T")[0];
+      // BR timezone (America/Sao_Paulo) – fixes "today" para usuários após 21h BRT
+      const today = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "America/Sao_Paulo",
+        year: "numeric", month: "2-digit", day: "2-digit",
+      }).format(new Date());
 
-      const [reviewsRes, attemptsRes, todayTemasRes, profileRes] = await Promise.all([
-        supabase
-          .from("revisoes")
-          .select("id, tema_id, tipo_revisao, data_revisao, status, prioridade, risco_esquecimento")
-          .eq("user_id", user.id)
-          .eq("status", "pendente")
-          .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
-          .lte("data_revisao", today)
-          .order("prioridade", { ascending: false }),
-        // Unified view (read-only): exposes tema (text), not tema_id.
-        // We map tema → tema_id below using todayTemasRes for compatibility.
-        supabase
-          .from("performance_unified" as any)
-          .select("tema, questoes_feitas, taxa_acerto")
-          .eq("user_id", user.id)
-          .gt("data_registro", resetAt || "1900-01-01T00:00:00Z"),
-        supabase
-          .from("temas_estudados")
-          .select("id, tema, especialidade, subtopico")
-          .eq("user_id", user.id)
-          .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
-          .eq("status", "ativo"),
-        supabase
-          .from("profiles")
-          .select("daily_study_hours")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-      ]);
-
-      const userDailyMinutes = Math.round((profileRes.data?.daily_study_hours || 4) * 60);
-      setDailyMinutes(userDailyMinutes);
-
-      // Build mastery map (keyed by tema_id for downstream compatibility).
-      // performance_unified returns `tema` (text); resolve tema_id via temas_estudados.
-      const mMap = new Map<string, { correctRate: number; reviewsDone: number }>();
-      const temaTextToId = new Map<string, string>();
-      for (const t of (todayTemasRes.data || [])) {
-        if (t.tema) temaTextToId.set(t.tema.toLowerCase(), t.id);
-      }
-      if (attemptsRes.data) {
-        for (const d of attemptsRes.data as any[]) {
-          const tId = d.tema ? temaTextToId.get(String(d.tema).toLowerCase()) : null;
-          if (!tId) continue;
-          const existing = mMap.get(tId) || { correctRate: 0, reviewsDone: 0 };
-          existing.correctRate = Number(d.taxa_acerto) / 100;
-          mMap.set(tId, existing);
-        }
-      }
-
-      // Enrich reviews
-      let usedReviewMinutes = 0;
-      if (reviewsRes.data && reviewsRes.data.length > 0) {
-        const temaIds = [...new Set(reviewsRes.data.map(r => r.tema_id))];
-        const [temasRes, doneReviewsRes] = await Promise.all([
-          supabase.from("temas_estudados").select("id, tema, especialidade, subtopico").gt("created_at", resetAt || "1900-01-01T00:00:00Z").in("id", temaIds),
-          supabase.from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida").gt("created_at", resetAt || "1900-01-01T00:00:00Z").in("tema_id", temaIds),
+      try {
+        setLoading(true);
+        const [reviewsRes, attemptsRes, todayTemasRes, profileRes] = await Promise.all([
+          supabase
+            .from("revisoes")
+            .select("id, tema_id, tipo_revisao, data_revisao, status, prioridade, risco_esquecimento")
+            .eq("user_id", user.id)
+            .eq("status", "pendente")
+            .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
+            .lte("data_revisao", today)
+            .order("prioridade", { ascending: false }),
+          supabase
+            .from("performance_unified" as any)
+            .select("tema, questoes_feitas, taxa_acerto")
+            .eq("user_id", user.id)
+            .gt("data_registro", resetAt || "1900-01-01T00:00:00Z"),
+          supabase
+            .from("temas_estudados")
+            .select("id, tema, especialidade, subtopico")
+            .eq("user_id", user.id)
+            .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
+            .eq("status", "ativo"),
+          supabase
+            .from("profiles")
+            .select("daily_study_hours")
+            .eq("user_id", user.id)
+            .maybeSingle(),
         ]);
 
-        const reviewCounts = new Map<string, number>();
-        for (const r of (doneReviewsRes.data || [])) {
-          reviewCounts.set(r.tema_id, (reviewCounts.get(r.tema_id) || 0) + 1);
-        }
-        for (const tId of temaIds) {
-          const existing = mMap.get(tId) || { correctRate: 0, reviewsDone: 0 };
-          existing.reviewsDone = reviewCounts.get(tId) || 0;
-          mMap.set(tId, existing);
-        }
+        if (cancelled) return;
 
-        const temaMap = new Map((temasRes.data || []).map(t => [t.id, t]));
-        const enriched: ScheduledReview[] = reviewsRes.data
-          .map(r => {
-            const tema = temaMap.get(r.tema_id);
-            return {
-              ...r,
-              tema: tema?.tema || "Tema desconhecido",
-              especialidade: tema?.especialidade || "Geral",
-              subtopico: tema?.subtopico || null,
-              overdue: r.data_revisao < today,
-              estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15,
-            };
-          })
-          .sort((a, b) => {
-            if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
-            return (b.prioridade || 0) - (a.prioridade || 0);
-          });
+        const userDailyMinutes = Math.round((profileRes.data?.daily_study_hours || 4) * 60);
+        setDailyMinutes(userDailyMinutes);
 
-        const reviewBudget = Math.round(userDailyMinutes * 0.6);
-        const fittingReviews: ScheduledReview[] = [];
-        const extraReviews: ScheduledReview[] = [];
-        for (const r of enriched) {
-          if (usedReviewMinutes + (r.estimatedMinutes || 15) <= reviewBudget) {
-            fittingReviews.push(r);
-            usedReviewMinutes += r.estimatedMinutes || 15;
-          } else {
-            extraReviews.push(r);
+        const mMap = new Map<string, { correctRate: number; reviewsDone: number }>();
+        const temaTextToId = new Map<string, string>();
+        for (const t of (todayTemasRes.data || [])) {
+          if (t.tema) temaTextToId.set(t.tema.toLowerCase(), t.id);
+        }
+        if (attemptsRes.data) {
+          for (const d of attemptsRes.data as any[]) {
+            const tId = d.tema ? temaTextToId.get(String(d.tema).toLowerCase()) : null;
+            if (!tId) continue;
+            const existing = mMap.get(tId) || { correctRate: 0, reviewsDone: 0 };
+            existing.correctRate = Number(d.taxa_acerto) / 100;
+            mMap.set(tId, existing);
           }
         }
-        setScheduledReviews(fittingReviews);
-        setOverflowReviews(extraReviews);
-      }
 
-      // New topics (first contact — no completed reviews yet)
-      const reviewedTemaIds = new Set((reviewsRes.data || []).map(r => r.tema_id));
-      const { data: completedReviewTemas } = await supabase
-        .from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida");
-      const completedTemaIds = new Set((completedReviewTemas || []).map(r => r.tema_id));
-      const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id) && !completedTemaIds.has(t.id));
+        let usedReviewMinutes = 0;
+        if (reviewsRes.data && reviewsRes.data.length > 0) {
+          const temaIds = [...new Set(reviewsRes.data.map(r => r.tema_id))];
+          const [temasRes, doneReviewsRes] = await Promise.all([
+            supabase.from("temas_estudados").select("id, tema, especialidade, subtopico").gt("created_at", resetAt || "1900-01-01T00:00:00Z").in("id", temaIds),
+            supabase.from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida").gt("created_at", resetAt || "1900-01-01T00:00:00Z").in("tema_id", temaIds),
+          ]);
 
-      const topicBudget = Math.min(userDailyMinutes - usedReviewMinutes, Math.round(userDailyMinutes * 0.4));
-      const TOPIC_DURATION = 40;
-      let usedTopicMinutes = 0;
-      const fittingTopics: typeof allNewTopics = [];
-      const extraTopics: typeof allNewTopics = [];
-      for (const t of allNewTopics) {
-        if (fittingTopics.length < 5 && usedTopicMinutes + TOPIC_DURATION <= topicBudget) {
-          fittingTopics.push(t);
-          usedTopicMinutes += TOPIC_DURATION;
+          if (cancelled) return;
+
+          const reviewCounts = new Map<string, number>();
+          for (const r of (doneReviewsRes.data || [])) {
+            reviewCounts.set(r.tema_id, (reviewCounts.get(r.tema_id) || 0) + 1);
+          }
+          for (const tId of temaIds) {
+            const existing = mMap.get(tId) || { correctRate: 0, reviewsDone: 0 };
+            existing.reviewsDone = reviewCounts.get(tId) || 0;
+            mMap.set(tId, existing);
+          }
+
+          const temaMap = new Map((temasRes.data || []).map(t => [t.id, t]));
+          const enriched: ScheduledReview[] = reviewsRes.data
+            .map(r => {
+              const tema = temaMap.get(r.tema_id);
+              return {
+                ...r,
+                tema: tema?.tema || "Tema desconhecido",
+                especialidade: tema?.especialidade || "Geral",
+                subtopico: tema?.subtopico || null,
+                overdue: r.data_revisao < today,
+                estimatedMinutes: reviewTimeEstimates[r.tipo_revisao] || 15,
+              };
+            })
+            .sort((a, b) => {
+              if (a.overdue !== b.overdue) return a.overdue ? -1 : 1;
+              return (b.prioridade || 0) - (a.prioridade || 0);
+            });
+
+          const reviewBudget = Math.round(userDailyMinutes * 0.6);
+          const fittingReviews: ScheduledReview[] = [];
+          const extraReviews: ScheduledReview[] = [];
+          for (const r of enriched) {
+            if (usedReviewMinutes + (r.estimatedMinutes || 15) <= reviewBudget) {
+              fittingReviews.push(r);
+              usedReviewMinutes += r.estimatedMinutes || 15;
+            } else {
+              extraReviews.push(r);
+            }
+          }
+          setScheduledReviews(fittingReviews);
+          setOverflowReviews(extraReviews);
         } else {
-          extraTopics.push(t);
+          setScheduledReviews([]);
+          setOverflowReviews([]);
         }
+
+        const reviewedTemaIds = new Set((reviewsRes.data || []).map(r => r.tema_id));
+        const { data: completedReviewTemas } = await supabase
+          .from("revisoes").select("tema_id").eq("user_id", user.id).eq("status", "concluida");
+        if (cancelled) return;
+        const completedTemaIds = new Set((completedReviewTemas || []).map(r => r.tema_id));
+        const allNewTopics = (todayTemasRes.data || []).filter(t => !reviewedTemaIds.has(t.id) && !completedTemaIds.has(t.id));
+
+        const topicBudget = Math.min(userDailyMinutes - usedReviewMinutes, Math.round(userDailyMinutes * 0.4));
+        const TOPIC_DURATION = 40;
+        let usedTopicMinutes = 0;
+        const fittingTopics: typeof allNewTopics = [];
+        const extraTopics: typeof allNewTopics = [];
+        for (const t of allNewTopics) {
+          if (fittingTopics.length < 5 && usedTopicMinutes + TOPIC_DURATION <= topicBudget) {
+            fittingTopics.push(t);
+            usedTopicMinutes += TOPIC_DURATION;
+          } else {
+            extraTopics.push(t);
+          }
+        }
+        setTodayTopics(fittingTopics);
+        setOverflowTopics(extraTopics);
+        setMasteryData(mMap);
+      } catch (err) {
+        console.error("[DailyPlan.loadToday] failed:", err);
+        if (!cancelled) {
+          // Fallback seguro: zera estados para evitar tela quebrada
+          setScheduledReviews([]);
+          setOverflowReviews([]);
+          setTodayTopics([]);
+          setOverflowTopics([]);
+          toast({
+            title: "Não conseguimos carregar seu plano",
+            description: "Tente recarregar a página em instantes.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-      setTodayTopics(fittingTopics);
-      setOverflowTopics(extraTopics);
-      setMasteryData(mMap);
-      setLoading(false);
     };
     loadToday();
-  }, [user, location.key, resetAt]);
+    return () => { cancelled = true; };
+  }, [user, location.key, resetAt, toast]);
 
   // ── Navigation helpers with studyContext ──
   const navigateWithContext = (path: string, ctx: StudyContext) => {

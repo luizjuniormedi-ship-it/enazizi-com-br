@@ -10,18 +10,29 @@ const DailyPlanWidget = () => {
 
   useEffect(() => {
     if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
+    let cancelled = false;
+    // BR timezone (America/Sao_Paulo)
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "America/Sao_Paulo",
+      year: "numeric", month: "2-digit", day: "2-digit",
+    }).format(new Date());
     supabase
       .from("daily_plans")
       .select("total_blocks, completed_count")
       .eq("user_id", user.id)
       .eq("plan_date", today)
       .maybeSingle()
-      .then(({ data: d }) => {
+      .then(({ data: d, error }) => {
+        if (cancelled) return;
+        if (error) {
+          console.warn("[DailyPlanWidget] load failed:", error.message);
+          return;
+        }
         if (d && d.total_blocks > 0) {
           setData({ total: d.total_blocks, completed: d.completed_count });
         }
       });
+    return () => { cancelled = true; };
   }, [user]);
 
   if (!data) return null;

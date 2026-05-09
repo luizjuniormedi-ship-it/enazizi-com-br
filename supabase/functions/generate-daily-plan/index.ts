@@ -4,7 +4,37 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
 };
+
+/** Returns YYYY-MM-DD in São Paulo time (BRT/BRST aware via Intl). */
+function todayBR(): string {
+  const fmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return fmt.format(new Date()); // en-CA -> YYYY-MM-DD
+}
+
+/** Resolves user via getClaims (asymmetric-key safe), with getUser fallback. */
+async function resolveUserId(authHeader: string, supabaseUrl: string, anonKey: string): Promise<string | null> {
+  if (!authHeader.startsWith("Bearer ")) return null;
+  const token = authHeader.slice(7).trim();
+  if (!token) return null;
+  try {
+    const sb = createClient(supabaseUrl, anonKey);
+    const { data: claims, error: cErr } = await sb.auth.getClaims(token);
+    const sub = claims?.claims?.sub;
+    if (!cErr && typeof sub === "string" && sub.length > 0) return sub;
+    const { data } = await sb.auth.getUser(token);
+    return data?.user?.id ?? null;
+  } catch (e) {
+    console.warn("[generate-daily-plan] resolveUserId failed:", e);
+    return null;
+  }
+}
 
 // ── Approval-score weight logic (mirrored from client) ─────────
 interface PlanWeights {
@@ -38,24 +68,18 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Auth
+    // Auth — getClaims first (works with new asymmetric signing keys)
     const authHeader = req.headers.get("Authorization") ?? "";
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const {
-      data: { user },
-      error: authErr,
-    } = await userClient.auth.getUser();
-    if (authErr || !user)
+    const userId = await resolveUserId(authHeader, supabaseUrl, anonKey);
+    if (!userId) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: corsHeaders,
       });
+    }
 
     const adminClient = createClient(supabaseUrl, serviceKey);
-    const userId = user.id;
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayBR();
 
     // ── Reset fence: a "jornada atual" só considera dados criados/atualizados
     // após o último reset manual do plano. Histórico pedagógico permanece intacto
@@ -352,8 +376,10 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (e) {
+    console.error("[generate-daily-plan] fatal:", e);
+    const msg = e instanceof Error ? e.message : String(e);
     return new Response(
-      JSON.stringify({ error: e.message }),
+      JSON.stringify({ error: msg }),
       { status: 500, headers: corsHeaders }
     );
   }
