@@ -459,7 +459,21 @@ serve(async (req) => {
       errors: errors.length > 0 ? errors : undefined,
     });
   } catch (e) {
-    console.error("[study-complete]", e);
-    return errorResponse(e instanceof Error ? e.message : "Erro interno", 500);
+    const requestId = (() => {
+      try { return crypto.randomUUID(); } catch { return `req_${Date.now()}`; }
+    })();
+    const msg = e instanceof Error ? e.message : "Erro interno";
+    // Auth failures must surface as 401 JSON envelope, never 500.
+    if (msg === "Token ausente." || msg === "Autenticação falhou." || /token|unauthor|jwt/i.test(msg)) {
+      console.warn("[study-complete] unauthorized", { requestId, msg });
+      return jsonResponse({
+        success: false,
+        error: "UNAUTHORIZED",
+        message: msg === "Autenticação falhou." ? msg : "Token ausente.",
+        requestId,
+      }, 401);
+    }
+    console.error("[study-complete]", { requestId, error: msg });
+    return jsonResponse({ success: false, error: msg, requestId }, 500);
   }
 });
