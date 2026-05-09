@@ -8294,6 +8294,7 @@ export type Database = {
           plan_json: Json
           prep_index: number | null
           recovery_mode: boolean | null
+          request_hash: string | null
           total_blocks: number
           updated_at: string | null
           user_id: string
@@ -8315,6 +8316,7 @@ export type Database = {
           plan_json?: Json
           prep_index?: number | null
           recovery_mode?: boolean | null
+          request_hash?: string | null
           total_blocks?: number
           updated_at?: string | null
           user_id: string
@@ -8336,6 +8338,7 @@ export type Database = {
           plan_json?: Json
           prep_index?: number | null
           recovery_mode?: boolean | null
+          request_hash?: string | null
           total_blocks?: number
           updated_at?: string | null
           user_id?: string
@@ -13911,6 +13914,7 @@ export type Database = {
           planned_date: string
           source: string
           status: string
+          task_hash: string | null
           task_payload: Json
           task_type: string
           updated_at: string
@@ -13924,6 +13928,7 @@ export type Database = {
           planned_date: string
           source?: string
           status?: string
+          task_hash?: string | null
           task_payload?: Json
           task_type: string
           updated_at?: string
@@ -13937,6 +13942,7 @@ export type Database = {
           planned_date?: string
           source?: string
           status?: string
+          task_hash?: string | null
           task_payload?: Json
           task_type?: string
           updated_at?: string
