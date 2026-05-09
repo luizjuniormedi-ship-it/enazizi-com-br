@@ -4,7 +4,7 @@ import { aiFetch } from "../_shared/ai-fetch.ts";
 import { logAiUsage, getCachedContent, setCachedContent } from "../_shared/ai-cache.ts";
 import { searchPubMed, formatPubMedForPrompt, extractSearchTopic } from "../_shared/pubmed-search.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
-import { extractUserId } from "../_shared/ai-phase2-helpers.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
