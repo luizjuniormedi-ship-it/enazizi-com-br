@@ -422,16 +422,8 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
     if (isJsonMode) {
       const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-      // Resolve authUser BEFORE slot generation (was in TDZ when used inside runBatch)
-      let authUser: any = null;
-      if (authHeader) {
-        try {
-          const { data } = await sb.auth.getUser(authHeader.split(" ")[1]);
-          authUser = data?.user;
-        } catch (e) {
-          console.warn("[AUDIT] Failed to get user from auth header:", e);
-        }
-      }
+      // authUser already resolved by requireAuth at function entry
+      const authUser: { id: string } = { id: auth.userId };
 
       // Parse requested count from user message or body
       const countFromMsg = lastMessage?.content?.match(/(\d+)/)?.[0];
