@@ -15,6 +15,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
+import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
