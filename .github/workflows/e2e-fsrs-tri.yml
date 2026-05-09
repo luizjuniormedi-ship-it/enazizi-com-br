@@ -1,0 +1,75 @@
+name: E2E — FSRS + TRI Integration
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  fsrs-tri-e2e:
+    name: FSRS + TRI integrated chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    env:
+      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      PLAYWRIGHT_TEST_BASE_URL: http://localhost:4173
+      CI: "true"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Build app
+        run: npm run build
+
+      - name: Start preview server
+        run: |
+          npx vite preview --port 4173 --host 127.0.0.1 &
+          echo $! > .preview.pid
+          for i in $(seq 1 40); do
+            curl -sf http://127.0.0.1:4173 > /dev/null && exit 0
+            sleep 2
+          done
+          echo "Preview server failed to start" >&2
+          exit 1
+
+      - name: Run FSRS + TRI E2E
+        run: npx playwright test tests/e2e/fsrs-tri-integration.spec.ts --reporter=html
+
+      - name: Stop preview server
+        if: always()
+        run: |
+          if [ -f .preview.pid ]; then kill "$(cat .preview.pid)" || true; fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 14
+
+      - name: Upload test results (screenshots, videos, traces)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: test-results
+          retention-days: 14
