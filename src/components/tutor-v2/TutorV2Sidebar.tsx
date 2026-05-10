@@ -97,9 +97,10 @@ export default function TutorV2Sidebar({ session }: TutorV2SidebarProps) {
 function SidebarItem({ icon: Icon, label, active = false, count }: { icon: any; label: string; active?: boolean; count?: string }) {
   return (
     <button className={cn(
-      "w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group",
-      active ? "bg-white/5 text-white shadow-sm border border-white/5" : "text-slate-500 hover:text-white hover:bg-white/5"
+      "w-full flex items-center justify-between px-4 py-3.5 rounded-2xl transition-all duration-300 group relative overflow-hidden",
+      active ? "bg-white/5 text-white shadow-lg border border-white/10 ring-1 ring-white/5" : "text-slate-500 hover:text-white hover:bg-white/5"
     )}>
+      {active && <div className="absolute inset-y-0 left-0 w-1 bg-indigo-500 rounded-r-full" />}
       <div className="flex items-center gap-3">
         <Icon className={cn("h-4 w-4", active ? "text-indigo-400" : "text-slate-600 group-hover:text-indigo-400")} />
         <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
