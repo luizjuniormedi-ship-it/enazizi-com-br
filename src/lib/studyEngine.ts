@@ -316,7 +316,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .select("tema, subtema, taxa_acerto, questoes_feitas, source")
       .eq("user_id", userId)
       .eq("source", "simulado")
-      .gt("data_registro", resetAt || "1900-01-01T00:00:00Z")
+      .or(`data_registro.gt.${resetAt || "1900-01-01T00:00:00Z"},data_registro.gte.${todayIso}`)
       .order("taxa_acerto", { ascending: true })
       .limit(20)
       .then((res: any) => ({
