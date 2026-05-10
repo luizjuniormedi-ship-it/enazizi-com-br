@@ -10,11 +10,17 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  console.log("[TUTOR_V2_EDGE_RECEIVED]", { method: req.method, url: req.url });
+  
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
 
   try {
     const startTime = Date.now();
     const auth = await requireAuth(req);
+    console.log("[TUTOR_V2_AUTH_STATUS]", { ok: auth.ok, userId: auth.userId });
+    
     if (!auth.ok) return auth.response;
     const { userId } = auth;
 
