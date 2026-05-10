@@ -210,12 +210,15 @@ serve(async (req) => {
     let response;
     let modelUsed = "openai/gpt-4o";
 
+    // If jsonResponse is true, we override stream to false
+    const stream = !jsonResponse;
+
     try {
-      console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED id=${requestId} model=${modelUsed}`);
+      console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED id=${requestId} model=${modelUsed} stream=${stream}`);
       response = await aiFetch({
         model: modelUsed,
         messages: [{ role: "system", content: systemPrompt }, ...messages],
-        stream: true,
+        stream,
         maxTokens: 4096,
         timeoutMs: 30000, 
         userId
@@ -225,11 +228,11 @@ serve(async (req) => {
       console.warn(`[mentor-chat] PRIMARY_AI_FAILED id=${requestId}`, err);
       modelUsed = "openai/gpt-4o-mini";
       try {
-        console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED (fallback) id=${requestId} model=${modelUsed}`);
+        console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED (fallback) id=${requestId} model=${modelUsed} stream=${stream}`);
         response = await aiFetch({
           model: modelUsed,
           messages: [{ role: "system", content: systemPrompt }, ...messages],
-          stream: true,
+          stream,
           maxTokens: 4096,
           timeoutMs: 15000,
           userId
@@ -251,6 +254,19 @@ serve(async (req) => {
 
     const elapsed = Date.now() - startMs;
     console.log(`[mentor-chat] RESPONSE_SENT id=${requestId} model=${modelUsed} elapsed=${elapsed}ms`);
+
+    if (jsonResponse) {
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || "";
+      return json({
+        ok: true,
+        content,
+        message: content,
+        modelUsed,
+        requestId,
+        elapsedMs: Date.now() - startTime
+      });
+    }
 
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
