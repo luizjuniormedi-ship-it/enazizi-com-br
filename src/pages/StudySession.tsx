@@ -1,3 +1,8 @@
+console.error("🔥 BUILD_FORENSE", {
+  component: "StudySession.tsx",
+  timestamp: Date.now(),
+  version: "FORENSE_V1"
+});
 import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
