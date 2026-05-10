@@ -345,6 +345,13 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
+    const isOpenAI5 = /^openai\/gpt-5/.test(ref.model);
+    const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
+    const body: Record<string, unknown> = {
+      model: ref.model,
+      messages,
+      [tokenField]: AI_MAX_TOKENS,
+    };
     const res = await fetchWithTimeout(
       AI_GATEWAY_URL,
       {
@@ -353,7 +360,7 @@ async function callOnce(
           Authorization: `Bearer ${gatewayKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ model: ref.model, messages, max_tokens: AI_MAX_TOKENS }),
+        body: JSON.stringify(body),
       },
       AI_TIMEOUT_MS,
     );
@@ -420,6 +427,46 @@ Active recall:
 3. Qual erro comum a banca explora?
 
 Próxima ação: tente novamente em instantes para um aprofundamento completo.`;
+}
+
+// Modelos com status "ruim" e checagem recente são pulados.
+// Se a checagem é antiga (> 15 min), assume saudável.
+const HEALTH_BAD_STATUS = new Set(["down", "quota_exhausted", "model_not_found"]);
+const HEALTH_FRESH_MS = 15 * 60 * 1000;
+
+async function filterByHealth(supabase: any | undefined, chain: ModelRef[]): Promise<ModelRef[]> {
+  if (!supabase || chain.length === 0) return chain;
+  try {
+    const models = chain.map((c) => c.model);
+    const { data, error } = await supabase
+      .from("ai_provider_health")
+      .select("provider, model, status, checked_at")
+      .in("model", models);
+    if (error || !data) return chain;
+
+    const now = Date.now();
+    const badKeys = new Set<string>();
+    for (const row of data) {
+      if (!HEALTH_BAD_STATUS.has(row.status)) continue;
+      const ts = row.checked_at ? new Date(row.checked_at).getTime() : 0;
+      if (now - ts <= HEALTH_FRESH_MS) {
+        badKeys.add(`${row.provider}::${row.model}`);
+      }
+    }
+    if (badKeys.size === 0) return chain;
+    const filtered = chain.filter((c) => !badKeys.has(`${c.provider}::${c.model}`));
+    if (filtered.length === 0) {
+      console.warn("[AI_RUNTIME_HEALTH] All chain models flagged unhealthy — proceeding anyway", { chain });
+      return chain;
+    }
+    if (filtered.length !== chain.length) {
+      console.log("[AI_RUNTIME_HEALTH] Skipping unhealthy models", { skipped: [...badKeys] });
+    }
+    return filtered;
+  } catch (err) {
+    console.warn("[AI_RUNTIME_HEALTH_LOOKUP_FAILED]", err instanceof Error ? err.message : String(err));
+    return chain;
+  }
 }
 
 async function logRun(
@@ -497,10 +544,14 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     return rest;
   }
 
-  const chain: ModelRef[] = [
+  const fullChain: ModelRef[] = [
     { provider: selection.provider, model: selection.model },
     ...selection.fallbackChain,
   ];
+
+  // Health-aware filtering: pula modelos com falha recente conhecida.
+  // Se nenhum sobrar, mantém a chain original (não bloqueia tudo).
+  const chain = await filterByHealth(input.supabase, fullChain);
 
   for (let i = 0; i < chain.length; i++) {
     const ref = chain[i];

@@ -1062,6 +1062,63 @@ export type Database = {
           },
         ]
       }
+      ai_model_registry: {
+        Row: {
+          cost_tier: string
+          created_at: string
+          enabled: boolean
+          id: string
+          latency_tier: string
+          model: string
+          notes: string | null
+          priority: number
+          provider: string
+          quality_tier: string
+          specialty: string
+          supports_json: boolean
+          supports_reasoning: boolean
+          supports_vision: boolean
+          task_type: string
+          updated_at: string
+        }
+        Insert: {
+          cost_tier?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          latency_tier?: string
+          model: string
+          notes?: string | null
+          priority?: number
+          provider: string
+          quality_tier?: string
+          specialty?: string
+          supports_json?: boolean
+          supports_reasoning?: boolean
+          supports_vision?: boolean
+          task_type?: string
+          updated_at?: string
+        }
+        Update: {
+          cost_tier?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          latency_tier?: string
+          model?: string
+          notes?: string | null
+          priority?: number
+          provider?: string
+          quality_tier?: string
+          specialty?: string
+          supports_json?: boolean
+          supports_reasoning?: boolean
+          supports_vision?: boolean
+          task_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_operational_alerts: {
         Row: {
           alert_type: string
@@ -1105,6 +1162,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      ai_provider_health: {
+        Row: {
+          checked_at: string
+          error_count: number
+          id: string
+          last_error: string | null
+          last_error_code: string | null
+          latency_ms: number | null
+          metadata: Json
+          model: string
+          provider: string
+          status: string
+          success_count: number
+        }
+        Insert: {
+          checked_at?: string
+          error_count?: number
+          id?: string
+          last_error?: string | null
+          last_error_code?: string | null
+          latency_ms?: number | null
+          metadata?: Json
+          model: string
+          provider: string
+          status?: string
+          success_count?: number
+        }
+        Update: {
+          checked_at?: string
+          error_count?: number
+          id?: string
+          last_error?: string | null
+          last_error_code?: string | null
+          latency_ms?: number | null
+          metadata?: Json
+          model?: string
+          provider?: string
+          status?: string
+          success_count?: number
+        }
+        Relationships: []
       }
       ai_routing_decisions: {
         Row: {
