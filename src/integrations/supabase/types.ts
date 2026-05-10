@@ -21428,6 +21428,19 @@ export type Database = {
         Returns: undefined
       }
       mark_stale_cme_jobs_failed: { Args: never; Returns: undefined }
+      match_rag_chunks: {
+        Args: {
+          match_count: number
+          match_threshold: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          document_id: string
+          id: string
+          similarity: number
+        }[]
+      }
       match_tutor_memory: {
         Args: {
           match_count?: number
