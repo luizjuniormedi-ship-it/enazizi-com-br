@@ -22,6 +22,7 @@ import { EnaflixThemeCard } from "@/components/enaflix/EnaflixThemeCard";
 import { EnaflixRecommendationCard } from "@/components/enaflix/EnaflixRecommendationRow";
 import AchievementToast from "@/components/gamification/AchievementToast";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
+import { UnifiedMissionHero } from "@/components/dashboard/UnifiedMissionHero";
 
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
@@ -210,75 +211,17 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Hero Cinematic Style - Netflix Medical */}
-      <div className="px-4 sm:px-8 lg:px-14">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="relative min-h-[500px] rounded-[40px] overflow-hidden flex items-end p-8 sm:p-12 lg:p-16 group"
-        >
-          {/* Background Poster */}
-          <div className="absolute inset-0">
-            <img 
-              src="https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=2000&auto=format&fit=crop" 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-              alt="Medical Mission"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#050508]/80 via-transparent to-transparent" />
-          </div>
-
-          <div className="relative z-10 max-w-3xl space-y-6">
-            <div className="flex flex-col gap-2">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3"
-              >
-                <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40 shadow-[0_0_15px_rgba(var(--pixar-blue),0.5)]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
-              </motion.div>
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
-                Sua missão de hoje, <span className="gradient-text">{firstName}</span>
-              </h1>
-              <p className="text-lg sm:text-xl text-white/80 font-medium max-w-xl leading-tight">
-                {activeRec?.title || "Começar revisão inteligente"} — {activeRec?.description || "O motor ACE está preparando sua jornada personalizada."}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Enaflix3DButton 
-                size="lg" 
-                glow 
-                iconLeft={<Rocket className="h-5 w-5" />}
-                onClick={() => navigate(`/dashboard/sessao-estudo?source=dashboard_hero`)}
-              >
-                Começar agora
-              </Enaflix3DButton>
-              <Enaflix3DButton 
-                variant="outline" 
-                size="lg" 
-                iconLeft={<Clock className="h-5 w-5" />}
-                onClick={() => navigate("/dashboard/flashcards")}
-              >
-                Ver revisões
-              </Enaflix3DButton>
-              
-              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                <Brain className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-white/70 italic">
-                   "IA ACE: {adaptiveState?.justification || 'Ajuste adaptativo baseado no seu ritmo.'}"
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      {/* Hero unificado — fonte única de CTA principal (deriva de useStudyNext) */}
+      <UnifiedMissionHero
+        firstName={firstName}
+        recommendationTitle={activeRec?.title}
+        recommendationDescription={activeRec?.description}
+        adaptiveJustification={adaptiveState?.justification}
+      />
 
 
       <div className="enaflix-stagger space-y-16 pb-24">
-        {/* Atividade Recente / Continuar */}
+        {/* Atividade Recente / Continuar — só renderiza com dados reais */}
         {(continueModules.length > 0) && (
           <EnaflixRow title="Continuar Estudando">
             {continueModules.map(m => (
@@ -286,74 +229,16 @@ const Dashboard = () => {
                 key={m.id}
                 title={m.title}
                 category={m.category}
-                progress={Math.floor(Math.random() * 90) + 10} // Mock progress
-                lastAccess="hoje"
+                lastAccess="recente"
                 onClick={() => navigate(m.path || `/dashboard/${m.id}`)}
               />
             ))}
           </EnaflixRow>
         )}
 
-        <EnaflixRow title="Temas Populares">
-          <EnaflixThemeCard title="Cardiologia" icon="🫀" gradient="from-red-500 to-orange-500" />
-          <EnaflixThemeCard title="Pediatria" icon="👶" gradient="from-blue-500 to-cyan-500" />
-          <EnaflixThemeCard title="Cirurgia" icon="🔪" gradient="from-emerald-500 to-teal-500" />
-          <EnaflixThemeCard title="Gineco" icon="🤰" gradient="from-pink-500 to-rose-500" />
-          <EnaflixThemeCard title="Preventiva" icon="🛡️" gradient="from-violet-500 to-purple-500" />
-        </EnaflixRow>
-
-        <EnaflixRow title="Revisões Recomendadas">
-          <EnaflixCinematicCard 
-            variant="poster"
-            onClick={() => navigate("/dashboard/flashcards")}
-          >
-            <div className="p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                <Target className="h-8 w-8 text-primary" />
-                <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-black text-xl text-white">Pediatria: Crescimento</h4>
-                <p className="text-sm text-white/60 italic">"Risco de esquecimento alto detectado pela IA"</p>
-              </div>
-              <Enaflix3DButton size="sm" className="w-full">Revisar Agora</Enaflix3DButton>
-            </div>
-          </EnaflixCinematicCard>
-          
-          <EnaflixCinematicCard 
-            variant="poster"
-            onClick={() => navigate("/dashboard/flashcards")}
-          >
-            <div className="p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                <Clock className="h-8 w-8 text-primary" />
-                <EnaflixBadge type="urgente" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-black text-xl text-white">Cirurgia: Abdome Agudo</h4>
-                <p className="text-sm text-white/60 italic">Dificuldade estimada: Média (15 min)</p>
-              </div>
-              <Enaflix3DButton size="sm" variant="outline" className="w-full">Agendar</Enaflix3DButton>
-            </div>
-          </EnaflixCinematicCard>
-
-          <EnaflixCinematicCard 
-            variant="poster"
-            onClick={() => navigate("/dashboard/simulados")}
-          >
-            <div className="p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                <BookOpen className="h-8 w-8 text-primary" />
-                <EnaflixBadge type="ia" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-black text-xl text-white">Gineco & Obstetrícia</h4>
-                <p className="text-sm text-white/60 italic">"Focar em temas com queda de 12% no acerto"</p>
-              </div>
-              <Enaflix3DButton size="sm" variant="violet" className="w-full">Treinar Erros</Enaflix3DButton>
-            </div>
-          </EnaflixCinematicCard>
-        </EnaflixRow>
+        {/* "Temas Populares" e "Revisões Recomendadas" hardcoded foram removidos.
+            Substituições reais (derivadas de user_topic_profiles + FSRS due) virão
+            nas próximas fases. Não exibimos placeholders fake. */}
 
         <EnaflixRow title="Tutor IA & Co-Pilot">
            <EnaflixCinematicCard variant="tutor" className="col-span-full h-48 flex items-center p-8 gap-8">

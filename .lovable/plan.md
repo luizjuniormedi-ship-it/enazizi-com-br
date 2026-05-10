@@ -1,74 +1,89 @@
+# Refatoração Enterprise — BI + Gamificação + Dashboards ENAZIZI/ENAFLIX
 
-# Auditoria Completa BI + Gamificação + Painéis — ENAZIZI/ENAFLIX
+Auditoria já gerou 5 relatórios em `.lovable/`. Agora é execução. Trabalho em **10 fases incrementais**, cada uma testável isolada, sem tocar em FSRS/TRI matemático, prompts IA, modelos, schema cognitivo ou rotas.
 
-## Escopo
-Auditoria **read-only / diagnóstica**. Nenhum código de produto, prompt, modelo IA, FSRS/TRI ou payload será alterado. Saída = relatórios em `.lovable/`.
+## Princípios invioláveis
+- **Verdade dos dados:** widget sem dado real → `<DadosInsuficientesCard />` ou `return null`. Zero `Math.random()`, zero hardcode, zero "IA detectou" fake.
+- **Uma fonte de ação:** toda prioridade principal sai de `useStudyNext()`. Mission/Planner/Recovery/CTA derivam, não competem.
+- **Dashboard ≠ Cockpit:** Dashboard = emocional/foco único. Cockpit = analítico/FSRS+TRI.
+- **Gamificação adulta:** remover "Rei das Questões" etc. → Domínio, Retenção, Estabilidade, Evolução.
+- **Professor operacional:** lista priorizada de alunos em risco com ações, não galeria de gráficos.
 
-## Entregáveis (5 arquivos)
+## Fases
 
-1. **`.lovable/bi-inventory-report.md`** — Inventário completo
-   Tabela: `painel | rota | perfil (aluno/prof/admin) | status | fonte de dados | dados reais? | problema`
-   Cobertura: Dashboard, ENAFLIX, Planner, Missão diária, Recovery, Simulados, Analytics, Approval Score, Chance por banca, Performance por tema, Heatmap erros, FSRS, TRI, Timeline, Ranking, XP, Streak, Badges, painéis professor (turma, risco, heatmap, engajamento, FSRS/TRI coletivo), painéis admin/CEO.
+### Fase 1 — Limpeza crítica (PRIORIDADE MÁXIMA)
+- Remover `Math.random()` em `Dashboard.tsx:289` → fallback honesto.
+- Remover 8 cards hardcoded de especialidades (`Dashboard.tsx:297-355`) → derivar de `user_topic_profiles` real ou esconder.
+- Criar `<DadosInsuficientesCard />` reutilizável.
+- Esconder com `data?.length ? ... : null`: Rankings, ApprovalPredictor, ApprovalScoreCard vazio, WeakTopics vazio, TopicEvolution vazio.
 
-2. **`.lovable/bi-aluno-audit.md`** — Auditoria aluno
-   - Hierarquia visual, redundâncias (ex: Cockpit vs DashboardMetricsGrid)
-   - KPIs fake/placeholder vs reais
-   - Mobile (430px atual)
-   - Conexão real com FSRS/TRI/approval_scores
-   - Gamificação infantilizada vs profissional
-   - Widgets sem ação prática
+### Fase 2 — Arquitetura Dashboard
+Reduzir Dashboard.tsx a:
+1. `UnifiedMissionHero` (1 CTA único: "Continuar missão" do `useStudyNext`)
+2. 3 KPIs: revisões vencidas, tempo estudado, consistência
+3. RecoveryCard (condicional)
+4. Próxima ação (derivada de `useStudyNext`)
+5. ENAFLIX rows
+Remover: analytics profundos, múltiplos heroes, excesso de cards.
 
-3. **`.lovable/bi-professor-audit.md`** — Auditoria professor
-   - Capacidade de ação (aluno em risco, queda, abandono, burnout)
-   - KPIs duplicados, rankings úteis vs ruído
-   - FSRS/TRI coletivo
-   - Overload visual
-   - Decisão prática por painel
+### Fase 3 — Cockpit Cognitivo
+Reorganizar `CognitiveCockpit` em ordem operacional:
+- Theta TRI · Retenção FSRS · Stability · Lapses · Recovery Load
+- Weak Topics · Evolução · Heatmap
+- Curva de retenção · Especialidades críticas
 
-4. **`.lovable/gamification-audit.md`** — Gamificação
-   - XP, níveis, streak, badges, achievements, rankings
-   - Integração real com FSRS/TRI (reforça aprendizado ou só decora?)
-   - Risco de compulsão / competitividade tóxica
-   - Profissional vs infantil
-   - Painéis diários (missão, recovery, agenda) — coerência, timezone, duplicação
+### Fase 4 — Consolidação de componentes
+- **Heroes** → `UnifiedMissionHero` (mescla DashboardHero, CinematicMissionHero, MissionHeroAnimated, CockpitHero)
+- **Alertas** → `AlertOrchestrator` com priority queue + cooldown + agrupamento (mescla SmartAlerts, BehavioralAlerts, SmartAlertCard, NotificationBell, SmartNotifications)
+- **Professor** → `ProfessorCommandCenter` (mescla ClassAnalytics + ProfessorBIPanel; reduz 12 abas → 4-5)
 
-5. **`.lovable/final-bi-gamification-audit.md`** — Relatório final consolidado
-   Seções: Inventário · Aluno · Professor · Gamificação · Painéis Diários · KPIs · FSRS/TRI Analytics · UX/UI · Mobile · Performance · Dados Reais · Redundâncias · Problemas · Melhorias · Quick Wins · Riscos · Prioridades (CRÍTICO/ALTO/MÉDIO/BAIXO) · **Veredito Final**.
-   Responde: premium? profissional? pronto p/ escala? gamificação funciona? BI gera ação? quais dashboards remover/redesign? quais KPIs faltam?
+### Fase 5 — Professor Enterprise
+Criar painel **"Alunos em risco hoje"**:
+- Query: queda de retenção, perda de streak, lapses altos, abandono FSRS, queda de theta, burnout risk
+- Cada linha: nome · motivo · gravidade · ações [Atribuir Recovery] [Mentoria] [Replanejar]
+- Heatmap coletivo por especialidade/turma/dificuldade
 
-## Metodologia (como vou auditar)
+### Fase 6 — Gamificação cognitiva
+- Renomear achievements infantis → adultos profissionais (sem migração de schema; só labels/UI)
+- Reduzir peso de conquistas por volume; destacar retenção/estabilidade
+- Novos labels: "7 dias sem lapses", "Stability > 80", "Theta ↑ 0.5", "Recovery concluído"
+- StreakInteligente: tolerância para feriado/burnout (lógica client-side em cima do streak existente)
 
-**Fase A — Mapeamento estático**
-- `rg` para listar todas as rotas em `src/App.tsx` / `src/constants/routes.ts`
-- Listar `src/pages/` (aluno, professor, admin) e `src/components/{dashboard,cockpit,dashboard-v2,enaflix,planner,daily-plan,gamification,professor,product-metrics,analytics,radar,proficiency}/`
-- Identificar hooks de dados: `useCockpitData`, `useDashboardData`, `useStudyNext`, `useOrchestrator`, `useMonthlyGoal`, `useProductMetrics`, planner/professor hooks
+### Fase 7 — Performance & Mobile
+- Reduzir `min-h-[500px]` → `min-h-[340px]` em widgets mobile
+- Lazy loading + Suspense + skeletons no Dashboard
+- Deduplicar queries via React Query keys
 
-**Fase B — Validação de dados reais**
-- Para cada widget: rastrear hook → query Supabase / edge function → tabela real
-- Cruzar com `dashboard-snapshot`, `approval_scores`, `practice_attempts`, `revisoes`, `user_gamification`, `error_bank`, `medical_domain_map`, `exam_sessions`
-- `supabase--read_query` em amostras para detectar campos sempre nulos / sempre zero / mock
-- Flag: dados reais ✅ · cache stale ⚠️ · placeholder/mock ❌
+### Fase 8 — Reativar pipelines de dados
+- Cron diário `ranking_snapshots` (edge function + pg_cron)
+- Backfill `user_topic_profiles` (edge function on-demand quando usuário entra no Cockpit)
+- Reativar `approval_scores` snapshot diário
+*(estes 3 são os únicos itens que tocam edge functions; nenhum altera schema)*
 
-**Fase C — Validação UX/UI/mobile**
-- `browser--navigate_to_sandbox` + `browser--screenshot` em rotas-chave (dashboard, planner, missão, ENAFLIX, professor, ranking) em **mobile 430px** e **desktop 1366px**
-- `image_tools--zoom_image` para verificar legibilidade, overflow, hierarquia
-- `browser--performance_profile` em painéis pesados (Cockpit, ProductMetrics, professor)
-- `code--read_console_logs` + `code--read_network_requests` para queries duplicadas / 4xx / 5xx
+### Fase 9 — UX premium
+- Reduzir glow/animações excessivas
+- Hierarquia tipográfica clara
+- Espaçamento generoso
 
-**Fase D — Análise pedagógica + gamificação**
-- Cruzar gamificação (`user_gamification`, achievements) com FSRS reviews e approval_score → mede integração
-- Detectar: streaks que premiam volume sem qualidade, XP sem reforço cognitivo, badges decorativos
-- Avaliar painel professor: cada KPI gera decisão? (intervir, reforçar, atribuir)
+### Fase 10 — Dead code
+- Auditar `dashboard-v2/*` → mover não usado para `legacy_archive/` ou deletar imports órfãos
 
-**Fase E — Classificação e veredito**
-- Cada achado: impacto · risco · solução · prioridade
-- Quick wins (≤1 dia) destacados
-- Veredito final honesto, sem inflar
+## Ordem de execução proposta
+**Esta resposta entrega Fases 1 + 2 + parcial 4 (UnifiedMissionHero + AlertOrchestrator)** — os blocos com maior impacto/risco e que destravam o resto. Fases 3, 5, 6, 7, 8, 9, 10 ficam para próximas iterações curtas (cada uma um prompt focado), evitando uma mega-PR difícil de revisar.
 
-## Restrições
-❌ Sem edição de código / prompts / modelos / FSRS-TRI / schema / payloads
-❌ Sem redesign — só diagnóstico e recomendação
-✅ Somente leitura, screenshots, queries SELECT, geração dos 5 .md
+## Arquivos previstos nesta primeira leva
+- `src/components/common/DadosInsuficientesCard.tsx` (novo)
+- `src/components/dashboard/UnifiedMissionHero.tsx` (novo)
+- `src/components/alerts/AlertOrchestrator.tsx` (novo)
+- `src/pages/Dashboard.tsx` (refator: remove random/hardcode, slim layout)
+- Stubs de export para manter retrocompat de imports antigos
 
-## Estimativa
-~30–40 chamadas de ferramenta (rg + leitura de pages/hooks + ~12 screenshots mobile/desktop + ~10 queries SQL + escrita dos 5 relatórios). Resultado em uma única passada.
+## O que NÃO vou tocar
+FSRS math · TRI · prompts IA · modelos · schema DB · rotas · auth · provider tree · planner core · tutor core · ENAFLIX core · admin.
+
+## Entregáveis
+1. Código das Fases 1+2+4 parcial
+2. `.lovable/refactor-phase-1-2-report.md` com diff arquitetural e roadmap das fases restantes
+3. Confirmação de smoke test no preview (430px)
+
+Aprovar para eu executar Fases 1-2 + UnifiedMissionHero + AlertOrchestrator agora.
