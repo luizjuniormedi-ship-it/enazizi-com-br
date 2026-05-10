@@ -62,13 +62,13 @@ const AgentChat = ({
   title, subtitle, welcomeMessage, welcomeMessageWithUploads, placeholder, functionName,
   onSaveMessage, quickActions, renderAssistantMessage, showUploadButton, autoPromptAfterUpload,
   linkToAgent, previousContentLoader, initialPrompt, onSendRef,
-  topic, subtopic, specialty, pedagogicalHeader, hideUploadsPicker,
+  topic, subtopic, specialty, pedagogicalHeader, hideUploadsPicker, initialConversationId,
 }: AgentChatProps) => {
   const navigate = useNavigate();
   const chat = useAgentChat({
     functionName, welcomeMessage, welcomeMessageWithUploads, autoPromptAfterUpload,
     quickActions, onSaveMessage, previousContentLoader, initialPrompt, onSendRef,
-    topic, subtopic, specialty,
+    topic, subtopic, specialty, initialConversationId,
   });
 
   const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage } = useTutorCME();
