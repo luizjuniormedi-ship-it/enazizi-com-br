@@ -203,7 +203,7 @@ function DatabaseStatus() {
       // Check RLS and RPC existence
       const results: any = {};
       
-      const { data: rpcCheck } = await supabase.rpc('check_function_exists', { func_name: 'match_rag_chunks' });
+      const { data: rpcCheck } = await (supabase.rpc as any)('check_function_exists', { func_name: 'match_rag_chunks' });
       results.match_rag_chunks_exists = rpcCheck;
 
       // Check RLS on rag_chunks
