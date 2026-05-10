@@ -201,6 +201,24 @@ export function useTutorStream() {
 
         if (!resp.body) throw new Error("No response body");
 
+        const contentType = resp.headers.get("Content-Type") || "";
+        const isJson = contentType.includes("application/json");
+
+        if (isJson) {
+          const data = await resp.json();
+          console.log("[useTutorStream] Received JSON instead of stream:", data);
+          if (data.ok === false || !data.content) {
+            onError?.({ status: resp.status, message: data.message || "Erro na resposta da IA" });
+            return null;
+          }
+          const content = data.content || data.message || "";
+          onFirstChunk?.();
+          onDelta(content);
+          onComplete?.(content);
+          setIsStreaming(false);
+          return content;
+        }
+
         const reader = resp.body.getReader();
         const decoder = new TextDecoder();
         let textBuffer = "";
