@@ -33,9 +33,14 @@ import { useEnaflixPersonalizedRows } from "@/hooks/useEnaflixPersonalizedRows";
 import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixDynamicCard } from "@/components/enaflix/EnaflixDynamicCard";
 import { emitShadowEvent } from "@/lib/shadowAdaptive";
+import { MascotAvatar } from "@/components/mascot/MascotAvatar";
+import { MascotBubble } from "@/components/mascot/MascotBubble";
+import { useMascotState } from "@/components/mascot/useMascotState";
+
 
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
+
 
 function normalize(s: string) {
   return s
@@ -52,6 +57,9 @@ export default function EnaflixPage() {
   const { user } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
+  const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
+
+
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
   const { data: studyNext, isLoading: missionLoading } = useStudyNext();
   const { data: dashData } = useDashboardData();
@@ -122,6 +130,17 @@ export default function EnaflixPage() {
 
   const [forceReady, setForceReady] = useState(false);
   const isLoading = (isLoadingLessons || (isLoadingUsage && !!user) || adminLoading) && !forceReady;
+
+  useEffect(() => {
+    if (!isLoading && aiLessons) {
+      triggerInteraction({
+        state: 'idle',
+        type: 'welcome',
+        speech: "Bem-vindo ao ENAFLIX. Escolha um módulo para mergulhar no conhecimento médico."
+      });
+    }
+  }, [isLoading, !!aiLessons]); // Simplified dependency to avoid loop if triggerInteraction changes
+
 
   useEffect(() => {
     // Aumentamos o timeout de segurança para 8s e forçamos o log se falhar
@@ -812,6 +831,14 @@ export default function EnaflixPage() {
           </div>
         </main>
       )}
+
+      {/* Mascot Integration */}
+      <div className="fixed bottom-10 right-10 z-[100] flex flex-col items-end gap-3 pointer-events-none scale-90 sm:scale-100 origin-bottom-right">
+        <MascotBubble speech={mascotSpeech} />
+        <div className="pointer-events-auto">
+          <MascotAvatar state={mascotState} size="lg" />
+        </div>
+      </div>
     </div>
   );
 }

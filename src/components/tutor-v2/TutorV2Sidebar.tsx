@@ -3,12 +3,13 @@ import {
   Settings, 
   BookOpen, 
   Target, 
-  Brain, 
   AlertTriangle, 
   ClipboardCheck,
   Zap,
   ChevronRight
 } from "lucide-react";
+import { MascotAvatar } from "../mascot/MascotAvatar";
+
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import TutorV2History from "./TutorV2History";
@@ -25,9 +26,10 @@ export default function TutorV2Sidebar({ session }: TutorV2SidebarProps) {
       
       <div className="p-6 relative z-10 flex flex-col h-full">
         <div className="flex items-center gap-4 mb-10 group cursor-pointer">
-          <div className="h-12 w-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-xl shadow-indigo-500/20 group-hover:scale-105 transition-transform">
-            <Brain className="h-7 w-7 text-white" />
+          <div className="h-14 w-14 group-hover:scale-110 transition-transform duration-500">
+            <MascotAvatar state="idle" size="md" />
           </div>
+
           <div>
             <h2 className="text-base font-black text-white uppercase tracking-wider leading-none">Tutor V2</h2>
             <div className="flex items-center gap-1.5 mt-1.5">
