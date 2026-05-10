@@ -62,8 +62,8 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           animate={{ opacity: 1 }}
           className="flex gap-4 mb-8"
         >
-          <div className="h-8 w-8 rounded-xl bg-indigo-500 flex items-center justify-center flex-shrink-0">
-            <Brain className="h-5 w-5 text-white animate-pulse" />
+          <div className="h-8 w-8 rounded-xl bg-indigo-500/10 ring-1 ring-indigo-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src={enaziziMascot} alt="Tutor ENAZIZI" className="h-8 w-8 object-cover animate-pulse" />
           </div>
           <div className="p-4 rounded-2xl bg-slate-800/50 border border-white/5 flex gap-1 items-center h-10">
             <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" />
