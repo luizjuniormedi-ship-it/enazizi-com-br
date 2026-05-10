@@ -159,21 +159,21 @@ export default function TopRiskStudents({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-              {onActionAssign && (
+              {onAssignRecovery && (
                 <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold uppercase tracking-wider"
-                  onClick={() => onActionAssign(s.user_id)}>
-                  Atribuir tarefa
+                  onClick={() => onAssignRecovery(s.user_id, s.display_name)}>
+                  <Target className="h-3 w-3 mr-1" /> Recovery
                 </Button>
               )}
-              {onActionMentor && (
+              {onOpenMentor && (
                 <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold uppercase tracking-wider"
-                  onClick={() => onActionMentor(s.user_id)}>
+                  onClick={() => onOpenMentor(s.user_id)}>
                   Mentoria
                 </Button>
               )}
-              {onActionTrack && (
+              {onOpenDrawer && (
                 <Button size="sm" className="h-8 text-[11px] font-bold uppercase tracking-wider"
-                  onClick={() => onActionTrack(s.user_id)}>
+                  onClick={() => onOpenDrawer(s.user_id)}>
                   Detalhes <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               )}
