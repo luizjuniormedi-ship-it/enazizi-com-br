@@ -6,19 +6,26 @@ import {
   AlertTriangle, 
   ClipboardCheck,
   Zap,
-  ChevronRight
+  ChevronRight,
+  TrendingUp,
+  Brain
 } from "lucide-react";
 import { MascotAvatar } from "../mascot/MascotAvatar";
-
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import TutorV2History from "./TutorV2History";
+import { motion } from "framer-motion";
 
 interface TutorV2SidebarProps {
   session: any;
+  stats?: {
+    topicsCount: number;
+    retention: number;
+    errors: number;
+  };
 }
 
-export default function TutorV2Sidebar({ session }: TutorV2SidebarProps) {
+export default function TutorV2Sidebar({ session, stats }: TutorV2SidebarProps) {
   return (
     <aside className="w-80 border-r border-white/5 bg-slate-950 flex flex-col hidden xl:flex relative overflow-hidden">
       {/* Sidebar background glow */}
@@ -40,12 +47,21 @@ export default function TutorV2Sidebar({ session }: TutorV2SidebarProps) {
         </div>
 
         <div className="space-y-8 flex-1 overflow-y-auto custom-scrollbar pr-2">
+          {/* Timeline / Cognitive Evolution */}
+          <div>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-4 px-2">Evolução Cognitiva</p>
+            <div className="grid grid-cols-2 gap-2 px-2">
+              <StatCard icon={TrendingUp} label="Retenção" value={`${stats?.retention || 0}%`} color="text-emerald-400" />
+              <StatCard icon={Brain} label="Tópicos" value={stats?.topicsCount || 0} color="text-indigo-400" />
+            </div>
+          </div>
+
           <div>
             <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-4 px-2">Módulos de Elite</p>
             <nav className="space-y-1.5">
               <SidebarItem icon={Target} label="Mission Control" active count="12" />
               <SidebarItem icon={BookOpen} label="Quality Map" />
-              <SidebarItem icon={AlertTriangle} label="Error Bank" count="4" />
+              <SidebarItem icon={AlertTriangle} label="Error Bank" count={stats?.errors.toString() || "0"} />
               <SidebarItem icon={Zap} label="Smart Planner" />
               <SidebarItem icon={ClipboardCheck} label="FSRS Dashboard" />
             </nav>
@@ -93,6 +109,18 @@ export default function TutorV2Sidebar({ session }: TutorV2SidebarProps) {
         </div>
       </div>
     </aside>
+  );
+}
+
+function StatCard({ icon: Icon, label, value, color }: { icon: any, label: string, value: string | number, color: string }) {
+  return (
+    <div className="p-3 rounded-xl bg-white/5 border border-white/5 flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 text-slate-500">
+        <Icon className="h-3 w-3" />
+        <span className="text-[8px] font-black uppercase tracking-widest">{label}</span>
+      </div>
+      <span className={cn("text-[13px] font-black", color)}>{value}</span>
+    </div>
   );
 }
 
