@@ -2,12 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
-
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = "google/gemini-3-flash-preview";
-const FALLBACK_MODEL = "google/gemini-2.5-flash";
-const AI_TIMEOUT_MS = 30_000;
-const AI_MAX_TOKENS = 4096;
+import { runAI, type AIComplexity, type AICognitiveLoad } from "../_shared/ai-runtime-orchestrator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -457,13 +452,32 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       { role: "user", content: message }
     ];
 
-    const providerResult = await resolveTutorAiResponse(supabase, {
+    // ---- AI Runtime Orchestrator (Fase 1) ----
+    const cogRaw = String(context.cognitive_load ?? "").toLowerCase();
+    const cognitiveLoad: AICognitiveLoad =
+      cogRaw.includes("alta") || cogRaw === "high" || Number(context.cognitive_load) >= 0.75
+        ? "high"
+        : cogRaw.includes("baixa") || cogRaw === "low"
+        ? "low"
+        : "normal";
+    const msgLen = (message || "").length;
+    const wantsDeep = /por que|porque|mecanismo|fisiopatolog|explica.*detalhe|aprofund|raciocínio|raciocinio/i.test(message || "");
+    const wantsSimple = /resum|simples|rápido|rapido|tldr|curto/i.test(message || "");
+    const complexity: AIComplexity = wantsSimple ? "low" : wantsDeep || msgLen > 240 ? "high" : "medium";
+
+    const providerResult = await runAI({
+      taskType: "tutor_chat",
+      specialty: session.specialty || null,
+      topic: session.topic || null,
+      complexity,
+      cognitiveLoad,
+      requiresReasoning: wantsDeep,
+      budgetMode: "balanced",
       messages,
       userId,
       sessionId,
-      topic: session.topic || "",
-      userMessage: message,
       requestId,
+      supabase,
     });
 
     let assistantMessage = providerResult.content;

@@ -1148,6 +1148,84 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_runtime_logs: {
+        Row: {
+          attempts: Json
+          budget_mode: string | null
+          created_at: string
+          error_code: string | null
+          estimated_cost: number | null
+          fallback_chain: Json
+          fallback_used: boolean
+          id: string
+          input_tokens: number | null
+          latency_ms: number | null
+          metadata: Json
+          model: string | null
+          output_tokens: number | null
+          prompt_profile: string | null
+          provider: string | null
+          quality_score: number | null
+          request_id: string | null
+          session_id: string | null
+          specialty: string | null
+          success: boolean
+          task_type: string
+          topic: string | null
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: Json
+          budget_mode?: string | null
+          created_at?: string
+          error_code?: string | null
+          estimated_cost?: number | null
+          fallback_chain?: Json
+          fallback_used?: boolean
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          metadata?: Json
+          model?: string | null
+          output_tokens?: number | null
+          prompt_profile?: string | null
+          provider?: string | null
+          quality_score?: number | null
+          request_id?: string | null
+          session_id?: string | null
+          specialty?: string | null
+          success?: boolean
+          task_type: string
+          topic?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: Json
+          budget_mode?: string | null
+          created_at?: string
+          error_code?: string | null
+          estimated_cost?: number | null
+          fallback_chain?: Json
+          fallback_used?: boolean
+          id?: string
+          input_tokens?: number | null
+          latency_ms?: number | null
+          metadata?: Json
+          model?: string | null
+          output_tokens?: number | null
+          prompt_profile?: string | null
+          provider?: string | null
+          quality_score?: number | null
+          request_id?: string | null
+          session_id?: string | null
+          specialty?: string | null
+          success?: boolean
+          task_type?: string
+          topic?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_usage_control: {
         Row: {
           ai_calls_limit: number
