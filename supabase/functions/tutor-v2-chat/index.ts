@@ -263,8 +263,10 @@ function detectQuestionReviewMode(
   const ansMatch = lower.match(/(?:marquei|respondi|escolhi|minha resposta (?:foi|é)|fui na?)\s*(?:a letra\s*)?["']?([a-e])["']?/i);
   if (ansMatch) studentAnswer = ansMatch[1].toUpperCase();
 
-  // Length floor — questions are usually long
-  const longEnough = text.length >= 180;
+  // Length floors — distinct thresholds per path
+  const longEnough = text.length >= 180;          // strong heuristic
+  const mediumEnough = text.length >= 90;         // short clinical case w/ explicit ask
+  const hasQuestionMark = /\?/.test(text);
 
   let active = false;
   let questionType: QuestionReviewDetection["questionType"] = null;
@@ -272,10 +274,10 @@ function detectQuestionReviewMode(
   if (uniqueAlts.length >= 3) {
     active = true;
     questionType = clinicalHits.length >= 2 ? "clinical_case" : "multiple_choice";
-  } else if (signals.includes("objective_keyword") && longEnough) {
+  } else if (signals.includes("objective_keyword") && (longEnough || (mediumEnough && hasQuestionMark))) {
     active = true;
     questionType = clinicalHits.length >= 2 ? "clinical_case" : "objective";
-  } else if (signals.includes("clinical_case") && longEnough && /\?/.test(text)) {
+  } else if (signals.includes("clinical_case") && hasQuestionMark && (longEnough || mediumEnough)) {
     active = true;
     questionType = "clinical_case";
   } else if (signals.includes("student_asking_correction")) {
