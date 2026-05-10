@@ -6,11 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, Send, Sparkles, ArrowUpRight, MessageSquare, 
   Lightbulb, Brain, FileQuestion, Wand2, Clapperboard, 
-  Play, Stethoscope, Activity, BookOpen
+  Play, Stethoscope, Activity, BookOpen, Clock, AlertCircle,
+  ExternalLink
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
@@ -119,6 +122,8 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
+  const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
   const scrollRef = useRef<HTMLDivElement>(null);
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
 
@@ -201,13 +206,47 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
     navigate(`/dashboard/sessao-estudo?${params.toString()}`);
   };
 
+  const handleGenerateLesson = async () => {
+    if (!context.topic || isGeneratingLesson) return;
+    
+    setIsGeneratingLesson(true);
+    setLessonStatus('processing');
+    
+    try {
+      // Find the last assistant message to use as context if available
+      const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+
+      const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
+        body: {
+          topic: context.topic,
+          lessonType: 'aula_completa',
+          cmeEnabled: true,
+          customContent: lastAssistantMsg?.content
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Aula gerada com sucesso!");
+      setLessonStatus('ready');
+    } catch (err: any) {
+      console.error("Lesson generation failed", err);
+      setLessonStatus('failed');
+      toast.error(err.message || "Falha ao gerar aula.");
+    } finally {
+      setIsGeneratingLesson(false);
+    }
+  };
+
   const transformFullSession = () => {
     if (!context.topic) return;
     const params = new URLSearchParams();
     params.set("topic", context.topic);
     if (context.specialty) params.set("specialty", context.specialty);
     params.set("mode", "transform");
-    // Redireciona para o Mentor Hub que agora lida com sessões persistidas e automação
+    
+    // Check if we have an active conversation ID in the state (though this panel doesn't track it as easily as AgentChat)
+    // We navigate to /dashboard/mentor which handles the session loading
     navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
@@ -246,21 +285,44 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
         {context.topic && (
           <div className="flex gap-2">
             <Button 
-              variant="default" 
+              variant={lessonStatus === 'ready' ? "default" : "default"} 
               size="sm" 
-              className="flex-1 h-9 text-[10px] font-black gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 shadow-lg shadow-orange-900/20 border-none transition-all group active:scale-95"
-              onClick={transformFullSession}
+              className={cn(
+                "flex-1 h-9 text-[10px] font-black gap-2 rounded-xl transition-all group active:scale-95 shadow-lg border-none",
+                lessonStatus === 'ready' 
+                  ? "bg-gradient-to-r from-green-600 to-emerald-600 shadow-green-900/20" 
+                  : lessonStatus === 'failed'
+                  ? "bg-gradient-to-r from-red-600 to-rose-600 shadow-red-900/20"
+                  : "bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 shadow-orange-900/20"
+              )}
+              onClick={handleGenerateLesson}
+              disabled={isGeneratingLesson}
             >
-              <Clapperboard className="h-3.5 w-3.5 group-hover:animate-bounce" />
-              TRANSFORMAR SESSÃO COMPLETA
+              {isGeneratingLesson ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> GERANDO...</>
+              ) : lessonStatus === 'ready' ? (
+                <><Play className="h-3.5 w-3.5" /> AULA PRONTA</>
+              ) : lessonStatus === 'failed' ? (
+                <><AlertCircle className="h-3.5 w-3.5" /> TENTAR NOVAMENTE</>
+              ) : (
+                <><Clapperboard className="h-3.5 w-3.5 group-hover:animate-bounce" /> TRANSFORMAR SESSÃO COMPLETA</>
+              )}
             </Button>
+            
+            {lessonStatus === 'processing' && (
+              <div className="h-9 px-3 flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 text-[9px] font-bold text-primary animate-pulse">
+                <Clock className="h-3 w-3" /> ESTRUTURANDO...
+              </div>
+            )}
+            
             <Button 
               variant="outline" 
               size="sm" 
               className="h-9 px-3 text-[10px] font-black gap-2 rounded-xl border-primary/30 text-primary hover:bg-primary/10 backdrop-blur-md transition-all active:scale-95"
+              onClick={transformFullSession}
             >
-              <Play className="h-3.5 w-3.5" />
-              ULTIMA RESPOSTA
+              <ExternalLink className="h-3.5 w-3.5" />
+              DETALHES
             </Button>
           </div>
         )}

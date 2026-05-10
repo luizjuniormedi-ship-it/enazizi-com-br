@@ -191,25 +191,45 @@ export const useTutorCME = () => {
     } else {
       debug("conversationId received", { conversationId });
 
-      // Bug fix: conversationId vem de chat_conversations.id, mas tutor_messages
-      // referencia tutor_sessions.id. Resolvemos via tutor_sessions.conversation_id.
-      // Fallback final: ler direto de chat_messages (fonte primária histórica).
+      // Bug fix: conversationId pode ser session_id (tutor_sessions) ou conversation_id (chat_conversations)
       let resolvedSessionId: string | null = null;
+      let isChatConversation = false;
+      
       try {
-        const { data: ts } = await supabaseClient
-          .from("tutor_sessions" as any)
+        // First try as conversationId
+        const { data: conv } = await supabaseClient
+          .from("chat_conversations")
           .select("id")
-          .eq("conversation_id", conversationId)
+          .eq("id", conversationId)
           .maybeSingle();
-        resolvedSessionId = (ts as any)?.id ?? null;
+        
+        if (conv) {
+          isChatConversation = true;
+          // Try to find linked tutor session
+          const { data: ts } = await supabaseClient
+            .from("tutor_sessions" as any)
+            .select("id")
+            .eq("conversation_id", conversationId)
+            .maybeSingle();
+          if (ts) resolvedSessionId = (ts as any).id;
+        } else {
+          // Check if it's already a session_id
+          const { data: ts } = await supabaseClient
+            .from("tutor_sessions" as any)
+            .select("id")
+            .eq("id", conversationId)
+            .maybeSingle();
+          if (ts) resolvedSessionId = (ts as any).id;
+        }
       } catch (e) {
-        debug("tutor_sessions lookup failed", e);
+        debug("session lookup failed", e);
       }
-      debug("resolved tutor_session_id", { resolvedSessionId });
+      debug("resolved state", { resolvedSessionId, isChatConversation });
 
       // Retry curto para cobrir race condition: a última mensagem pode ainda
       // estar sendo persistida quando o usuário clica "Gerar aula".
       const fetchAssistantMessages = async (): Promise<any[]> => {
+        // Option 1: fetch from tutor_messages if we have a sessionId
         if (resolvedSessionId) {
           const { data } = await supabaseClient
             .from("tutor_messages")
@@ -219,14 +239,18 @@ export const useTutorCME = () => {
             .order("created_at", { ascending: true });
           if (data && data.length > 0) return data;
         }
-        // Fallback: chat_messages (fonte primária do tutor legacy).
+        
+        // Option 2: fetch from chat_messages using conversationId
         const { data: chatData } = await supabaseClient
           .from("chat_messages")
           .select("id, content, role, created_at")
           .eq("conversation_id", conversationId)
           .eq("role", "assistant")
           .order("created_at", { ascending: true });
-        return chatData || [];
+        
+        if (chatData && chatData.length > 0) return chatData;
+
+        return [];
       };
 
       // Até 5 tentativas com backoff progressivo para esperar persistência (total ~6s).
@@ -651,6 +675,25 @@ export const useTutorCME = () => {
        } catch (e) {
          console.error("Error finding lesson for topic:", e);
          return null;
+       }
+     },
+     generateTextualLesson: async (params: { topic: string; conversationId?: string; sessionId?: string; customContent?: string }) => {
+       try {
+         const { data, error } = await supabaseClient.functions.invoke('generate-tutor-lesson', {
+           body: {
+             topic: params.topic,
+             conversationId: params.conversationId,
+             sessionId: params.sessionId,
+             customContent: params.customContent,
+             lessonType: 'aula_completa',
+             cmeEnabled: true
+           }
+         });
+         if (error) throw error;
+         return data;
+       } catch (e) {
+         console.error("Error generating textual lesson:", e);
+         throw e;
        }
      }
   };

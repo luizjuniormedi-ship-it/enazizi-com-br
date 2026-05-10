@@ -20,7 +20,7 @@ interface AgentHeaderProps {
   onUploadClick: () => void;
   onTransformSession?: () => void;
   hasMessages?: boolean;
-  lessonStatus?: 'idle' | 'processing' | 'ready';
+  lessonStatus?: 'idle' | 'processing' | 'ready' | 'failed';
 }
 
 const AgentHeader = memo(({
@@ -59,13 +59,17 @@ const AgentHeader = memo(({
                "hidden md:flex h-10 text-[10px] gap-2 shadow-xl px-5 font-black uppercase tracking-[0.2em] transition-all rounded-full",
                lessonStatus === 'ready' 
                 ? "bg-white text-black hover:bg-white/90 scale-105" 
+                : lessonStatus === 'failed'
+                ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20"
                 : "bg-primary/10 border-primary/30 text-primary hover:bg-primary/20"
              )}
           >
             {lessonStatus === 'ready' ? (
               <><Play className="h-4 w-4 fill-current" /> Assistir Aula</>
             ) : lessonStatus === 'processing' ? (
-              <><Clock className="h-4 w-4" /> Em Produção</>
+              <><Clock className="h-4 w-4 animate-spin" /> Em Produção</>
+            ) : lessonStatus === 'failed' ? (
+              <>Tentar Novamente</>
             ) : (
               <><Film className="h-4 w-4" /> Gerar Aula</>
             )}

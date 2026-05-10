@@ -367,7 +367,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             topic: topic || undefined,
             subtopic: subtopic || undefined,
             specialty: specialty || undefined,
-            requestId
+            requestId,
+            sessionId: history.activeConversationId || undefined // Explicitly pass session ID if it differs
           },
           onFirstChunk: () => {
             console.log(`[useAgentChat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);

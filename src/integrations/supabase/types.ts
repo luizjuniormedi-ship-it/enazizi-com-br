@@ -19195,6 +19195,57 @@ export type Database = {
           },
         ]
       }
+      tutor_lessons: {
+        Row: {
+          cme_pipeline_id: string | null
+          cme_status: string | null
+          content: Json
+          conversation_id: string | null
+          created_at: string | null
+          error_message: string | null
+          generation_status: Database["public"]["Enums"]["lesson_generation_status"]
+          id: string
+          lesson_type: Database["public"]["Enums"]["lesson_type_enum"]
+          session_id: string | null
+          source_message_count: number
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          cme_pipeline_id?: string | null
+          cme_status?: string | null
+          content: Json
+          conversation_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          generation_status?: Database["public"]["Enums"]["lesson_generation_status"]
+          id?: string
+          lesson_type?: Database["public"]["Enums"]["lesson_type_enum"]
+          session_id?: string | null
+          source_message_count?: number
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          cme_pipeline_id?: string | null
+          cme_status?: string | null
+          content?: Json
+          conversation_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          generation_status?: Database["public"]["Enums"]["lesson_generation_status"]
+          id?: string
+          lesson_type?: Database["public"]["Enums"]["lesson_type_enum"]
+          session_id?: string | null
+          source_message_count?: number
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       tutor_memory_search_logs: {
         Row: {
           abbreviation_overlap_count: number | null
@@ -21634,6 +21685,13 @@ export type Database = {
         | "blocked_clinical"
         | "experimental_only"
         | "published"
+      lesson_generation_status: "queued" | "processing" | "completed" | "failed"
+      lesson_type_enum:
+        | "resumo"
+        | "aula_completa"
+        | "revisao"
+        | "questoes"
+        | "mapa_mental"
       medical_image_type:
         | "ecg"
         | "xray"
@@ -21906,6 +21964,14 @@ export const Constants = {
         "blocked_clinical",
         "experimental_only",
         "published",
+      ],
+      lesson_generation_status: ["queued", "processing", "completed", "failed"],
+      lesson_type_enum: [
+        "resumo",
+        "aula_completa",
+        "revisao",
+        "questoes",
+        "mapa_mental",
       ],
       medical_image_type: [
         "ecg",
