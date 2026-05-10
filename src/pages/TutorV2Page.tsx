@@ -231,7 +231,7 @@ export default function TutorV2Page() {
 
   return (
     <div className="flex h-screen bg-slate-950 text-white overflow-hidden font-sans selection:bg-indigo-500/30">
-      <TutorV2Sidebar session={session} />
+      <TutorV2Sidebar session={session} stats={stats} />
       <main className="flex-1 relative flex flex-col min-w-0">
         <TutorV2ChatPanel session={session} />
       </main>
