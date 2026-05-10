@@ -549,10 +549,14 @@ const AgentChat = ({
       </Dialog>
 
       {/* Agile Player Overlay */}
-      {showAgilePlayer && cmeState.aggregationId && (
+      {(showAgilePlayer || lessonStatus === 'ready') && (cmeState.aggregationId || debugLessonId) && (
         <AgileLessonPlayer 
-          aggregationId={cmeState.aggregationId} 
-          onClose={() => setShowAgilePlayer(false)} 
+          aggregationId={cmeState.aggregationId || debugLessonId || ""} 
+          onClose={() => {
+            setShowAgilePlayer(false);
+            setLessonStatus('idle');
+            setDebugLessonId(null);
+          }} 
         />
       )}
     </div>
