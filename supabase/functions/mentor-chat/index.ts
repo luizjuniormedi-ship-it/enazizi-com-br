@@ -192,15 +192,16 @@ serve(async (req) => {
       requestId
     }).catch(e => console.error("[mentor-chat] usage log failed", e));
 
+    console.log(`[mentor-chat] SEND_COMPLETED id=${requestId}`);
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 
   } catch (error) {
-    console.error(`[mentor-chat] fatal id=${requestId}`, error);
+    console.error(`[mentor-chat] SEND_FAILED id=${requestId}`, error);
     return json({ 
       error: "internal_error", 
-      message: "Ocorreu um erro inesperado no Tutor IA. Nossa equipe foi notificada." 
+      message: "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível." 
     }, 500);
   }
 });
