@@ -11476,6 +11476,42 @@ export type Database = {
         }
         Relationships: []
       }
+      mascot_interactions: {
+        Row: {
+          created_at: string
+          emotional_state: string
+          fsrs_context: Json | null
+          id: string
+          interaction_type: string
+          metadata: Json | null
+          planner_context: Json | null
+          trigger_source: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emotional_state: string
+          fsrs_context?: Json | null
+          id?: string
+          interaction_type: string
+          metadata?: Json | null
+          planner_context?: Json | null
+          trigger_source?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emotional_state?: string
+          fsrs_context?: Json | null
+          id?: string
+          interaction_type?: string
+          metadata?: Json | null
+          planner_context?: Json | null
+          trigger_source?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       master_content_library: {
         Row: {
           audit_logs: Json | null
