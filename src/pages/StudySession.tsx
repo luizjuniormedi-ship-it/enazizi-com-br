@@ -1124,31 +1124,43 @@ const StudySession = () => {
               )}
             </div>
 
-            {/* Phase Action Buttons */}
+            {/* Phase Action Buttons & Error Handling */}
             <div className="border-t border-border px-3 pt-2 space-y-2">
               {!isLoading && phase !== "scoring" && (
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
-                  {phase === "lesson" && (
+                  {/* Botão de "Tentar Novamente" se não houver resposta do assistente para a fase atual */}
+                  {messages.length > 0 && messages[messages.length - 1].role !== "assistant" && (
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="text-xs whitespace-nowrap bg-amber-600 hover:bg-amber-700 text-white" 
+                      onClick={() => streamChat(messages, phase, topic)}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" /> Tentar novamente {PHASE_META[phase].shortLabel}
+                    </Button>
+                  )}
+
+                  {phase === "lesson" && messages.some(m => m.role === "assistant" && m.content.length > 100) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-purple-500/30 text-purple-400 hover:bg-purple-500/10" onClick={() => goToPhase("active-recall")}>
                       <Brain className="h-3.5 w-3.5 mr-1" /> Active Recall
                     </Button>
                   )}
-                  {(phase === "active-recall" || phase === "lesson") && (
+                  {(phase === "active-recall" || phase === "lesson") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-orange-500/30 text-orange-400 hover:bg-orange-500/10" onClick={() => goToPhase("questions")}>
                       <HelpCircle className="h-3.5 w-3.5 mr-1" /> Questões MCQ
                     </Button>
                   )}
-                  {(phase === "questions") && (
+                  {(phase === "questions") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-green-500/30 text-green-400 hover:bg-green-500/10" onClick={() => goToPhase("discussion")}>
                       <MessageSquare className="h-3.5 w-3.5 mr-1" /> Discussão Clínica
                     </Button>
                   )}
-                  {(phase === "discussion" || phase === "questions") && (
+                  {(phase === "discussion" || phase === "questions") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10" onClick={() => goToPhase("discursive")}>
                       <Stethoscope className="h-3.5 w-3.5 mr-1" /> Caso Discursivo
                     </Button>
                   )}
-                  {(phase === "discursive" || phase === "discussion") && (
+                  {(phase === "discursive" || phase === "discussion") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-primary/30 text-primary hover:bg-primary/10" onClick={() => goToPhase("scoring")}>
                       <TrendingUp className="h-3.5 w-3.5 mr-1" /> Pontuar Sessão
                     </Button>
