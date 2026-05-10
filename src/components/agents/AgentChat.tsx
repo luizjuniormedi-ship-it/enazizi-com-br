@@ -107,9 +107,15 @@ const AgentChat = ({
 
   const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
   const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [lessonData, setLessonData] = useState<any>(null);
 
   const handleTransformSession = useCallback(async () => {
-    if (chat.messages.length <= 1 || lessonStatus === 'processing') return;
+    console.log("[LESSON_CLICK]", { sessionId: chat.activeConversationId, topic, messagesCount: chat.messages.length });
+    
+    if (chat.messages.length <= 1 || lessonStatus === 'processing') {
+      console.warn("[LESSON_CLICK_SKIPPED]", { length: chat.messages.length, status: lessonStatus });
+      return;
+    }
     
     // Check if we have an active conversation
     if (!chat.activeConversationId) {
@@ -121,24 +127,30 @@ const AgentChat = ({
     const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
 
     try {
-      console.debug("[TutorLesson] Starting generation", { topic, conversationId: chat.activeConversationId });
-      
-      const result = await generateTextualLesson({
+      const payload = {
         topic: topic || "Clínica Médica",
         conversationId: chat.activeConversationId,
-        customContent: lastAssistantMessage?.content
-      });
+        customContent: lastAssistantMessage?.content,
+        cmeEnabled: false // Desligar CME totalmente durante este teste de debug
+      };
+      
+      console.log("[LESSON_PAYLOAD]", payload);
+      
+      const result = await generateTextualLesson(payload);
+      console.log("[LESSON_RESPONSE]", result);
 
-      if (result.success) {
-        toast.success("Aula textual gerada! Iniciando renderização cinematográfica...");
+      if (result.success && result.lesson) {
+        toast.success("Aula textual gerada com sucesso!");
+        setLessonData(result.lesson);
         setLessonStatus('ready');
+        // A UI deve agora exibir a aula
       } else {
         throw new Error(result.message || "Falha ao gerar aula");
       }
     } catch (err: any) {
-      console.error("[TutorLesson] Generation failed", err);
+      console.error("[LESSON_ERROR]", err);
       setLessonStatus('failed');
-      toast.error(err.message || "O serviço de vídeo está indisponível, mas sua aula está salva.");
+      toast.error(err.message || "Não foi possível gerar a aula textual.");
     }
   }, [chat.messages, chat.activeConversationId, topic, generateTextualLesson, lessonStatus]);
 
