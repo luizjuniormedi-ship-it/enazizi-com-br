@@ -10,8 +10,10 @@ import {
   AlertCircle, 
   Coffee, 
   Trophy, 
-  Target 
+  Target,
+  ShieldAlert
 } from 'lucide-react';
+
 
 interface MascotAvatarProps {
   state: MascotState;
