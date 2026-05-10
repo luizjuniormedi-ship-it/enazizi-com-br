@@ -40,14 +40,27 @@ serve(async (req) => {
       .from("user_fsrs_stats")
       .select("*")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
+
+    // 4. Memory & Cognitive Metrics (Simulated or fetched if tables exist)
+    const { data: memory } = await supabase
+      .from("tutor_memory_search_logs")
+      .select("chunks_found")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
     return new Response(JSON.stringify({ 
       ok: true, 
       context: {
+        user_id: userId,
         errors: errors || [],
         mission: mission || null,
-        fsrs: fsrs || null
+        fsrs: fsrs || null,
+        memory_chunks_used: memory?.chunks_found || 0,
+        cognitive_load: 0.45, // Placeholder for actual calculation
+        detected_gaps: (errors || []).map((e: any) => e.topic)
       }
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
