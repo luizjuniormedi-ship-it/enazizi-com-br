@@ -64,7 +64,7 @@ interface TutorMessageItemProps {
 
 const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty, isFirstMessage }: TutorMessageItemProps) => {
   const navigate = useNavigate();
-  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer, getLessonForMessage, findLessonByTopic } = useTutorCME();
+  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, retryRender, resetState, showAgilePlayer, setShowAgilePlayer, getLessonForMessage, findLessonByTopic } = useTutorCME();
   const { isAdmin, isProfessor, roles } = useUserRoles();
   const { isEnabled } = useFeatureFlags();
 
