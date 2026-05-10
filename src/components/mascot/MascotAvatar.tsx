@@ -80,22 +80,31 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
         exit={{ scale: 0.8, opacity: 0 }}
         className="relative z-10 w-full h-full bg-background/80 backdrop-blur-md rounded-2xl border border-primary/20 shadow-xl flex items-center justify-center overflow-hidden"
       >
-        <div className="w-1/2 h-1/2 transition-all duration-500 transform scale-125">
-          {getIcon()}
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <motion.img 
+            src={enaziziMascot} 
+            alt="Mascote ENAZIZI"
+            className="w-full h-full object-contain"
+            animate={state === 'thinking' ? {
+              scale: [1, 1.05, 1],
+              rotate: [0, 1, -1, 0]
+            } : state === 'celebration' ? {
+              scale: [1, 1.2, 1],
+              y: [0, -10, 0]
+            } : {
+              y: [0, -4, 0]
+            }}
+            transition={{
+              duration: state === 'thinking' ? 2 : 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
         </div>
         
-        {/* Animated Eyes/Sensors */}
-        <div className="absolute top-1/4 left-1/4 right-1/4 flex justify-between px-2">
-          <motion.div 
-            animate={{ scaleY: [1, 0.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity, times: [0, 0.1, 0.2] }}
-            className="w-1.5 h-1.5 bg-primary rounded-full" 
-          />
-          <motion.div 
-            animate={{ scaleY: [1, 0.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity, times: [0, 0.1, 0.2], delay: 0.1 }}
-            className="w-1.5 h-1.5 bg-primary rounded-full" 
-          />
+        {/* State Icon Overlay */}
+        <div className="absolute bottom-1 right-1 w-1/3 h-1/3 bg-background/90 rounded-full border border-primary/20 flex items-center justify-center p-1 shadow-lg z-20">
+          {getIcon()}
         </div>
       </motion.div>
     </div>
