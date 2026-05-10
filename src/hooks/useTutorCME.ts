@@ -195,6 +195,9 @@ export const useTutorCME = () => {
       let resolvedSessionId: string | null = null;
       let isChatConversation = false;
       
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
       try {
         // First try as conversationId
         const { data: conv } = await supabaseClient
@@ -221,24 +224,59 @@ export const useTutorCME = () => {
             .maybeSingle();
           if (ts) resolvedSessionId = (ts as any).id;
         }
+
+        // If not found, create a tutor_session to avoid FK violation
+        if (!resolvedSessionId) {
+          debug("tutor_session not found, creating one for conversationId", { conversationId });
+          const { data: newTs, error: tsError } = await supabaseClient
+            .from("tutor_sessions")
+            .insert({
+              conversation_id: isChatConversation ? conversationId : null,
+              user_id: user.id,
+              mode: 'livre',
+              topic: 'Aula Gerada via CME'
+            } as any)
+            .select("id")
+            .single();
+          
+          if (tsError) {
+            debug("failed to create tutor_session", tsError);
+            // Race condition check: maybe it was created by another process
+            if (tsError.code === '23505' && isChatConversation) {
+              const { data: ts } = await supabaseClient
+                .from("tutor_sessions")
+                .select("id")
+                .eq("conversation_id", conversationId)
+                .maybeSingle();
+              if (ts) resolvedSessionId = ts.id;
+            }
+          } else {
+            resolvedSessionId = newTs.id;
+          }
+        }
       } catch (e) {
-        debug("session lookup failed", e);
+        debug("session resolution/creation failed", e);
       }
+
+      if (!resolvedSessionId) {
+        debug("ABORT: Could not resolve or create tutor_session", { conversationId });
+        throw new Error("A sessão ainda está sendo preparada. Tente novamente em alguns instantes.");
+      }
+
       debug("resolved state", { resolvedSessionId, isChatConversation });
 
       // Retry curto para cobrir race condition: a última mensagem pode ainda
       // estar sendo persistida quando o usuário clica "Gerar aula".
       const fetchAssistantMessages = async (): Promise<any[]> => {
         // Option 1: fetch from tutor_messages if we have a sessionId
-        if (resolvedSessionId) {
-          const { data } = await supabaseClient
-            .from("tutor_messages")
-            .select("id, content, role, created_at")
-            .eq("tutor_session_id", resolvedSessionId)
-            .eq("role", "assistant")
-            .order("created_at", { ascending: true });
-          if (data && data.length > 0) return data;
-        }
+        const { data } = await supabaseClient
+          .from("tutor_messages")
+          .select("id, content, role, created_at")
+          .eq("tutor_session_id", resolvedSessionId)
+          .eq("role", "assistant")
+          .order("created_at", { ascending: true });
+        
+        if (data && data.length > 0) return data;
         
         // Option 2: fetch from chat_messages using conversationId
         const { data: chatData } = await supabaseClient
@@ -299,10 +337,29 @@ export const useTutorCME = () => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error("Usuário não autenticado");
 
+    // Recalcular resolvedSessionId se perdemos contexto (improvável mas seguro)
+    let finalSessionId = conversationId;
+    if (conversationId.length > 0) {
+       // We should have it from above if it's the normal path
+       // If it's the customContent path, we might still need to resolve it
+       if (!customContent) {
+         // It's already resolved in the block above
+       } else {
+         // For customContent path, we should also try to resolve
+         const { data: ts } = await supabaseClient
+            .from("tutor_sessions" as any)
+            .select("id")
+            .eq("conversation_id", conversationId)
+            .maybeSingle();
+         if (ts) finalSessionId = (ts as any).id;
+       }
+    }
+
     const { data: aggregation, error: aggError } = await supabaseClient
       .from("cme_session_aggregations")
       .insert({
-        tutor_session_id: conversationId,
+        tutor_session_id: (resolvedSessionId as any) || finalSessionId, // This was the bug!
+        source_conversation_id: isChatConversation ? conversationId : null,
         user_id: user.id,
         aggregated_content: fullText,
         total_blocks: blocks.length,
