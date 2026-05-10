@@ -193,7 +193,14 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       </div>
 
       <footer className="p-6 border-t border-white/5 bg-slate-950/90 backdrop-blur-3xl absolute bottom-0 w-full z-20">
+        {/* Mascot UI Integrated */}
+        <div className="absolute -top-32 right-8 flex flex-col items-end gap-2 pointer-events-none">
+          <MascotBubble speech={mascotSpeech} />
+          <MascotAvatar state={mascotState} size="lg" className="pointer-events-auto" />
+        </div>
+        
         <div className="max-w-4xl mx-auto">
+
           <TutorV2Input onSendMessage={handleSendMessage} disabled={isTyping} />
         </div>
       </footer>
