@@ -139,12 +139,16 @@ const AgentChat = ({
       console.warn("[GERAR_AULA] CLICK_SKIPPED", { length: chat.messages.length, status: lessonStatus });
       return;
     }
+
+    // Cancelar qualquer request anterior em curso
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     
     setLessonStatus('processing');
     console.log("[GERAR_AULA] FUNCTION_START");
 
     try {
-      const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
       const payload = {
         topic: topic || "Clínica Médica",
         conversationId: chat.activeConversationId,
@@ -153,7 +157,8 @@ const AgentChat = ({
       };
       
       const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
-        body: payload
+        body: payload,
+        signal: controller.signal
       });
 
       console.log("[GERAR_AULA] FUNCTION_RESPONSE", { data, error });
@@ -174,9 +179,15 @@ const AgentChat = ({
       console.log("[GERAR_AULA] PLAYER_OPENED");
       toast.success("Aula gerada com sucesso!");
     } catch (err: any) {
+      if (err instanceof Error && err.name === "AbortError") return;
       console.error("[GERAR_AULA] ERROR", err);
       setLessonStatus('failed');
       toast.error(err.message || "Falha ao gerar aula.");
+    } finally {
+      if (abortControllerRef.current === controller) {
+        abortControllerRef.current = null;
+      }
+      setLessonStatus('idle'); // Ensure loading cleans up
     }
   }, [chat.messages, chat.activeConversationId, topic, lessonStatus]);
 
