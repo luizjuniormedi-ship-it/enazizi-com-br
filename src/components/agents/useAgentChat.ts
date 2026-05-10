@@ -525,7 +525,16 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   useEffect(() => {
     // Se temos mensagens e o prompt inicial, e a conversa já é a ativa, marcamos como disparado para evitar duplicidade no refresh
     if (messages.length > 1 && initialPrompt && !initialPromptFiredRef.current) {
-      const hasInitialMessage = messages.some(m => m.role === "user" && m.content.toLowerCase().includes(initialPrompt.toLowerCase()));
+      // Formata o prompt esperado para comparação
+      const formattedInitial = initialPrompt.toLowerCase().startsWith("quero estudar") 
+        ? initialPrompt.toLowerCase() 
+        : `quero estudar: ${initialPrompt.toLowerCase()}`;
+
+      const hasInitialMessage = messages.some(m => 
+        m.role === "user" && 
+        (m.content.toLowerCase().includes(formattedInitial) || m.content.toLowerCase().includes(initialPrompt.toLowerCase()))
+      );
+
       if (hasInitialMessage) {
         console.debug("[useAgentChat] initialPrompt already present in history, skipping autostart");
         initialPromptFiredRef.current = true;
