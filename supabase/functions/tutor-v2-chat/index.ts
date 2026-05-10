@@ -263,8 +263,10 @@ function detectQuestionReviewMode(
   const ansMatch = lower.match(/(?:marquei|respondi|escolhi|minha resposta (?:foi|é)|fui na?)\s*(?:a letra\s*)?["']?([a-e])["']?/i);
   if (ansMatch) studentAnswer = ansMatch[1].toUpperCase();
 
-  // Length floor — questions are usually long
-  const longEnough = text.length >= 180;
+  // Length floors — distinct thresholds per path
+  const longEnough = text.length >= 180;          // strong heuristic
+  const mediumEnough = text.length >= 90;         // short clinical case w/ explicit ask
+  const hasQuestionMark = /\?/.test(text);
 
   let active = false;
   let questionType: QuestionReviewDetection["questionType"] = null;
@@ -272,10 +274,10 @@ function detectQuestionReviewMode(
   if (uniqueAlts.length >= 3) {
     active = true;
     questionType = clinicalHits.length >= 2 ? "clinical_case" : "multiple_choice";
-  } else if (signals.includes("objective_keyword") && longEnough) {
+  } else if (signals.includes("objective_keyword") && (longEnough || (mediumEnough && hasQuestionMark))) {
     active = true;
     questionType = clinicalHits.length >= 2 ? "clinical_case" : "objective";
-  } else if (signals.includes("clinical_case") && longEnough && /\?/.test(text)) {
+  } else if (signals.includes("clinical_case") && hasQuestionMark && (longEnough || mediumEnough)) {
     active = true;
     questionType = "clinical_case";
   } else if (signals.includes("student_asking_correction")) {
@@ -623,10 +625,11 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       "Clínica", "Sintomas", "Exame físico", "Diferencial", "Exames", 
       "Tratamento", "Pegadinhas", "Resumo", "Active recall", "Próxima ação"
     ];
-    const foundBlocks = mandatoryBlocks.filter(b => assistantMessage.includes(b));
-    const missingBlocks = mandatoryBlocks.filter(b => !assistantMessage.includes(b));
-    const pedagogicalScore = Math.round((foundBlocks.length / mandatoryBlocks.length) * 100);
-    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length, requestId });
+    // QUESTION_REVIEW_MODE uses its own 11-step rubric — skip generic 15-block penalty
+    const foundBlocks = qReview.active ? mandatoryBlocks : mandatoryBlocks.filter(b => assistantMessage.includes(b));
+    const missingBlocks = qReview.active ? [] : mandatoryBlocks.filter(b => !assistantMessage.includes(b));
+    const pedagogicalScore = qReview.active ? 100 : Math.round((foundBlocks.length / mandatoryBlocks.length) * 100);
+    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length, skipped_for_qreview: qReview.active, requestId });
 
     const safetyKeywords = ["cuidado", "emergência", "urgência", "alerta", "contraindicação"];
     const hasSafetyInfo = safetyKeywords.some(k => assistantMessage.toLowerCase().includes(k));
