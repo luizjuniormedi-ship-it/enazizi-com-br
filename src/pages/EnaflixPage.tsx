@@ -831,6 +831,14 @@ export default function EnaflixPage() {
           </div>
         </main>
       )}
+
+      {/* Mascot Integration */}
+      <div className="fixed bottom-10 right-10 z-[100] flex flex-col items-end gap-3 pointer-events-none scale-90 sm:scale-100 origin-bottom-right">
+        <MascotBubble speech={mascotSpeech} />
+        <div className="pointer-events-auto">
+          <MascotAvatar state={mascotState} size="lg" />
+        </div>
+      </div>
     </div>
   );
 }
