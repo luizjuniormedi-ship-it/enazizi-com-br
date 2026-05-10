@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Brain, Activity, ShieldCheck, Zap, Ghost, GraduationCap, AlertTriangle, TrendingUp, Info } from "lucide-react";
