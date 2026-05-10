@@ -486,10 +486,9 @@ export const useTutorCME = () => {
         topic: params.topic,
         source_type: 'cme',
         aggregation_id: aggregationId,
-        session_id: params.conversationId,
+        session_id: (result.aggregation as any).tutor_session_id,
         short_summary: params.summary,
         status: 'pending_review'
-
       });
 
       // Phase 8: Hardening - Snapshot
