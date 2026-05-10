@@ -506,9 +506,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   // Auto-fire initialPrompt
   useEffect(() => {
-    if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading) {
+    if (initialPrompt && !initialPromptFiredRef.current && user) {
+      if (isLoading) {
+        console.log("[useAgentChat] initialPrompt pending: waiting for isLoading to be false");
+        return;
+      }
+      console.log("[useAgentChat] auto-firing initialPrompt:", initialPrompt);
       initialPromptFiredRef.current = true;
-      const timer = setTimeout(() => handleSend(initialPrompt), 500);
+      const timer = setTimeout(() => {
+        console.log("[useAgentChat] executing auto-fired initialPrompt");
+        handleSend(initialPrompt);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [initialPrompt, user, isLoading, handleSend]);
