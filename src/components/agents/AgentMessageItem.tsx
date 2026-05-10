@@ -124,6 +124,7 @@ const AgentMessageItem = memo(
                                !validation.eligible;
 
     const handleCMETransform = (isFullSession: boolean = false) => {
+      console.error(`🔥 GERAR_AULA_REAL :: ARQUIVO=AgentMessageItem.tsx :: HANDLER=handleCMETransform :: isFullSession=${isFullSession}`);
       const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
       const baseTitle = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
       const title = isFullSession ? `🎬 Videoaula Completa: ${baseTitle}` : baseTitle;

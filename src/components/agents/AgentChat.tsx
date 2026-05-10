@@ -111,7 +111,7 @@ const AgentChat = ({
 
 
   const handleTransformSession = useCallback(async () => {
-    console.error("🔥 BOTAO GERAR AULA - AgentChat.tsx - handleTransformSession");
+    console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AgentChat.tsx :: HANDLER=handleTransformSession");
     console.log("[GERAR_AULA] CLICK", {
       conversationId: chat.activeConversationId,
       sessionId: chat.activeConversationId, // Fallback if no specific sessionId

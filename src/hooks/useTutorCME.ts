@@ -412,7 +412,7 @@ export const useTutorCME = () => {
     isFullSession?: boolean;
     onComplete?: (aggregationId: string) => void;
   }) => {
-    console.error("🔥 BOTAO GERAR AULA - useTutorCME.ts - transformToVideo", params);
+    console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=useTutorCME.ts :: HANDLER=transformToVideo", params);
     setState({ status: 'queued', progress: 5, message: "Iniciando pipeline..." });
     lastEventRef.current = Date.now();
     console.debug("[CME] transformToVideo start", {

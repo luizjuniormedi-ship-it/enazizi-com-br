@@ -58,7 +58,7 @@ const AgentHeader = memo(({
             variant={lessonStatus === 'ready' ? "default" : "outline"} 
             size="sm" 
             onClick={() => {
-              console.error("🔥 BOTAO GERAR AULA - AgentHeader.tsx - Button Click");
+              console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AgentHeader.tsx :: HANDLER=Button:Gerar Aula");
               onTransformSession();
             }}
              className={cn(

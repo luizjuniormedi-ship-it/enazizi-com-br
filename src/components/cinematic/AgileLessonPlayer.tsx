@@ -27,6 +27,10 @@ interface AgileLessonPlayerProps {
 }
 
 export const AgileLessonPlayer = ({ aggregationId, initialLesson, onClose }: AgileLessonPlayerProps) => {
+  console.error("🔥 PLAYER_OPEN_ATTEMPT", { aggregationId, initialLesson });
+  useEffect(() => {
+    console.error("🔥 PLAYER_MOUNTED");
+  }, []);
   const [blocks, setBlocks] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
