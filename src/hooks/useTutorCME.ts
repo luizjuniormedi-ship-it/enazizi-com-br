@@ -239,7 +239,7 @@ export const useTutorCME = () => {
 
     if (messages.length === 0) {
       debug("ABORT: no assistant messages persisted for this conversation", { conversationId });
-      throw new Error("Não encontramos o histórico de mensagens desta sessão para gerar a aula. Por favor, envie uma mensagem primeiro ou aguarde alguns segundos para a sincronização do banco de dados.");
+      throw new Error("Não encontramos o histórico de mensagens desta sessão para gerar a aula. Por favor, certifique-se de que o Tutor já respondeu pelo menos uma vez e aguarde alguns segundos para a sincronização completa.");
     }
 
     const fullText = messages.map(m => m.content).join("\n\n---\n\n");
