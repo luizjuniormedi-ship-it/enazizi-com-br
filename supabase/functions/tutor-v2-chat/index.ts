@@ -718,7 +718,7 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
         cognitive_load: context.cognitive_load || 0.0,
         detected_gaps: context.detected_gaps || [],
         planner_signals: [{ type: "adaptive_replan", priority: pedagogicalScore > 80 ? "low" : "high" }],
-        error_signals: missingBlocks.length > 5 ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
+        error_signals: (qReview.active === false && missingBlocks.length > 5) ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
         latency_ms: latency,
         model_used: providerResult.model
       });
