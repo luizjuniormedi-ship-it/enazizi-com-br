@@ -22,7 +22,7 @@ const AGENTS: AgentDef[] = [
     title: "Tutor IA V2 — Nova Geração",
     description:
       "Arquitetura limpa integrada ao ecossistema ENAZIZI. Médico, pedagógico, adaptativo e rastreável. Integrado ao Planner, FSRS e Error Bank.",
-    accent: "indigo",
+    accent: "violet",
     highlight: true,
     badge: "Nova Geração",
     category: "ensino",
