@@ -589,15 +589,17 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
     const msgLen = (message || "").length;
     const wantsDeep = /por que|porque|mecanismo|fisiopatolog|explica.*detalhe|aprofund|raciocínio|raciocinio/i.test(message || "");
     const wantsSimple = /resum|simples|rápido|rapido|tldr|curto/i.test(message || "");
-    const complexity: AIComplexity = wantsSimple ? "low" : wantsDeep || msgLen > 240 ? "high" : "medium";
+    const baseComplexity: AIComplexity = wantsSimple ? "low" : wantsDeep || msgLen > 240 ? "high" : "medium";
+    // QUESTION_REVIEW_MODE always demands clinical reasoning → force high complexity
+    const complexity: AIComplexity = qReview.active ? "high" : baseComplexity;
 
     const providerResult = await runAI({
-      taskType: "tutor_chat",
+      taskType: qReview.active ? "clinical_reasoning" : "tutor_chat",
       specialty: session.specialty || null,
       topic: session.topic || null,
       complexity,
       cognitiveLoad,
-      requiresReasoning: wantsDeep,
+      requiresReasoning: wantsDeep || qReview.active,
       budgetMode: "balanced",
       messages,
       userId,
