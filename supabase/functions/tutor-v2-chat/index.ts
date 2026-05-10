@@ -33,20 +33,25 @@ serve(async (req) => {
     );
 
     // 1. Get Session & History
-    const { data: session } = await supabase
+    const { data: session, error: sessionError } = await supabase
       .from("tutor_sessions")
       .select("*")
       .eq("id", sessionId)
-      .single();
+      .maybeSingle();
 
-    if (!session) throw new Error("Session not found");
+    if (sessionError || !session) {
+      console.error("[TUTOR_V2] Session error:", sessionError);
+      throw new Error("Sessão não encontrada. Por favor, inicie um novo tema.");
+    }
 
-    const { data: history } = await supabase
+    const { data: history, error: historyError } = await supabase
       .from("tutor_messages")
       .select("role, content")
       .eq("tutor_session_id", sessionId)
       .order("created_at", { ascending: true })
       .limit(10);
+    
+    if (historyError) console.warn("[TUTOR_V2] History error:", historyError);
 
     // [PHASE_0_CONTEXT] 
     let context = {};
