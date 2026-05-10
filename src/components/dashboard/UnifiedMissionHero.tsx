@@ -48,6 +48,7 @@ export function UnifiedMissionHero({
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.8 }}
         className="relative min-h-[420px] sm:min-h-[460px] rounded-[40px] overflow-hidden flex items-end p-6 sm:p-12 lg:p-16 group"
+        data-testid="unified-mission-hero"
       >
         <div className="absolute inset-0">
           <img
