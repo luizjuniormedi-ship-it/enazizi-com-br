@@ -96,11 +96,15 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
 
     const aiResponse = await aiFetch({
       messages,
-      model: "openai/gpt-4o",
-      temperature: 0.7
+      model: "google/gemini-2.5-flash",
+      userId,
     });
 
-    if (!aiResponse.ok) throw new Error("AI provider error");
+    if (!aiResponse.ok) {
+      const errBody = await aiResponse.text().catch(() => "");
+      console.error("[TUTOR_V2] AI provider error", aiResponse.status, errBody.slice(0, 500));
+      throw new Error("AI provider error");
+    }
 
     const aiResult = await aiResponse.json();
     let assistantMessage = aiResult.choices?.[0]?.message?.content;
