@@ -113,7 +113,13 @@ const AgentChat = ({
   const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [lessonData, setLessonData] = useState<any>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
 
   const handleTransformSession = useCallback(async () => {
     console.error("🔥 REAL_CLICK_SOURCE", {
