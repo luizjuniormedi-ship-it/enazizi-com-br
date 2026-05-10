@@ -1,8 +1,9 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Brain, User, Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import { User, Plus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import enaziziMascot from "@/assets/enazizi-mascot.png";
 
 interface TutorV2MessageListProps {
   messages: any[];
