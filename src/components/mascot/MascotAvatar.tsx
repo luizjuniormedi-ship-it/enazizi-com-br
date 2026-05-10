@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MascotState } from './MascotEngine';
+import enaziziMascot from "@/assets/enazizi-mascot.png";
 import { 
   Brain, 
   Sparkles, 
