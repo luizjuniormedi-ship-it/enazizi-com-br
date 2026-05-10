@@ -113,7 +113,7 @@ export default function AdminCEO() {
         supabase.from("revisoes" as any).select("id")
           .gte("created_at", weekStart).eq("status", "concluida"),
         // Practice attempts
-        supabase.from("practice_attempts" as any).select("is_correct")
+        supabase.from("practice_attempts" as any).select("correct")
           .gte("created_at", weekStart).limit(1000),
         // Tutor sessions
         supabase.from("chat_conversations").select("id")
@@ -146,7 +146,7 @@ export default function AdminCEO() {
 
       // Accuracy
       const attempts = practiceAttempts || [];
-      const correct = attempts.filter((a: any) => a.is_correct).length;
+      const correct = attempts.filter((a: any) => a.correct).length;
       const avgAccuracy = attempts.length > 0 ? Math.round((correct / attempts.length) * 100) : 0;
 
       // AI errors breakdown
