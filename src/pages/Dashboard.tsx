@@ -291,6 +291,13 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Floating Mascot */}
+      <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-2">
+        <MascotBubble speech={mascotSpeech} />
+        <MascotAvatar state={mascotState} size="lg" />
+      </div>
+
+
     </div>
   );
 };
