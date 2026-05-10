@@ -264,6 +264,11 @@ const PedagogicalHeaderBridge = ({
   );
 };
 
+console.error("🔥 BUILD_FORENSE", {
+  component: "AIMentor.tsx",
+  timestamp: Date.now(),
+  version: "FORENSE_V1"
+});
 const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   console.log("[AIMentor] Rendering with ref:", !!ref);
   const [searchParams, setSearchParams] = useSearchParams();

@@ -20,6 +20,9 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 });
 
 serve(async (req) => {
+  console.error("[EDGE_FORENSE] REQUEST_RECEIVED", {
+    ts: Date.now()
+  });
   console.error("[EDGE] mentor-chat :: REQUEST_RECEIVED");
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -314,6 +317,10 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[mentor-chat] FATAL_CAUGHT id=${requestId}`, error);
+    console.error("[EDGE_FORENSE] RESPONSE_SENT", {
+      ts: Date.now(),
+      ok: true
+    });
     console.error("[EDGE] mentor-chat :: RESPONSE_SENT");
     return json({ 
       ok: false, error: "internal_error", message: fallbackMessage,

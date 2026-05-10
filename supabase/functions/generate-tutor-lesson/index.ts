@@ -14,6 +14,9 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 });
 
 serve(async (req) => {
+  console.error("[EDGE_FORENSE] REQUEST_RECEIVED", {
+    ts: Date.now()
+  });
   console.error("[EDGE] generate-tutor-lesson :: REQUEST_RECEIVED");
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -150,8 +153,13 @@ Responda APENAS o JSON:
       success: true,
       lesson: lessonContent
     });
+    console.error("[EDGE_FORENSE] RESPONSE_SENT", {
+      ts: Date.now(),
+      ok: true
+    });
     console.error("[EDGE] generate-tutor-lesson :: RESPONSE_SENT");
   } catch (error) {
+    console.error("[EDGE_FORENSE] FATAL_ERROR", error);
     console.error(`[generate-tutor-lesson] [CRITICAL_ERROR] id=${requestId}`, error);
     return json({ 
       ok: true, // Always true for MODO HARD

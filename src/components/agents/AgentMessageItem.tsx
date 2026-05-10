@@ -1,3 +1,8 @@
+console.error("🔥 BUILD_FORENSE", {
+  component: "AgentMessageItem.tsx",
+  timestamp: Date.now(),
+  version: "FORENSE_V1"
+});
 import { memo, useMemo, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
@@ -124,6 +129,12 @@ const AgentMessageItem = memo(
                                !validation.eligible;
 
     const handleCMETransform = (isFullSession: boolean = false) => {
+      console.error("🔥 REAL_CLICK_SOURCE", {
+        component: "AgentMessageItem.tsx",
+        handler: "handleCMETransform",
+        isFullSession,
+        ts: Date.now()
+      });
       console.error(`🔥 GERAR_AULA_REAL :: ARQUIVO=AgentMessageItem.tsx :: HANDLER=handleCMETransform :: isFullSession=${isFullSession}`);
       const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
       const baseTitle = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;

@@ -1,3 +1,12 @@
+console.error("🔥 APP_BUILD_ID", {
+  build: "FORENSE_REAL_V1",
+  ts: Date.now()
+});
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister());
+  });
+}
 /* ENAZIZI v2.3 */
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";

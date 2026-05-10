@@ -1,3 +1,8 @@
+console.error("🔥 BUILD_FORENSE", {
+  component: "TutorChatPanel.tsx",
+  timestamp: Date.now(),
+  version: "FORENSE_V1"
+});
 import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -207,6 +212,11 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   };
 
   const handleGenerateLesson = async () => {
+    console.error("🔥 REAL_CLICK_SOURCE", {
+      component: "TutorChatPanel.tsx",
+      handler: "handleGenerateLesson",
+      ts: Date.now()
+    });
     console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=TutorChatPanel.tsx :: HANDLER=handleGenerateLesson");
     if (!context.topic || isGeneratingLesson) return;
     
