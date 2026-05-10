@@ -687,6 +687,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       content: assistantMessage,
       metadata: {
         flashcard_suggestion: flashcardSuggestion,
+        question_review: questionReview,
+        question_review_detection: qReview.active ? { signals: qReview.signals, type: qReview.questionType, student_answer_detected: qReview.studentAnswer } : null,
         provider: providerResult.provider,
         model: providerResult.model,
         fallback_used: providerResult.fallbackUsed,
