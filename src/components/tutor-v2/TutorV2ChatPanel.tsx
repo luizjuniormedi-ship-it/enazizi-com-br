@@ -46,17 +46,23 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
     setIsTyping(true);
 
     // Optimistic: append user message immediately
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: tempId,
-        role: "user",
-        content: text,
-        tutor_session_id: session.id,
-        user_id: user.id,
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    setMessages((prev) => {
+      // Evitar duplicata se o realtime já inseriu
+      if (prev.some(m => m.id === tempId || (m.role === 'user' && m.content === text && Math.abs(new Date(m.created_at).getTime() - Date.now()) < 2000))) {
+        return prev;
+      }
+      return [
+        ...prev,
+        {
+          id: tempId,
+          role: "user",
+          content: text,
+          tutor_session_id: session.id,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        },
+      ];
+    });
 
     try {
       // Persist user message
@@ -67,23 +73,10 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
 
-      // Append assistant reply directly (don't depend on realtime)
-      if (response.content) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: response.content,
-            tutor_session_id: session.id,
-            user_id: user.id,
-            created_at: new Date().toISOString(),
-            metadata: response.flashcardSuggestion
-              ? { flashcard_suggestion: response.flashcardSuggestion }
-              : undefined,
-          },
-        ]);
-      }
+      // We DON'T manually append here anymore because the Edge Function should persist 
+      // the assistant message to the database, and our Realtime subscription will pick it up.
+      // If we manually append AND have Realtime, we'll see duplicates or double-renders.
+      console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
       setError(err.message || "Ocorreu um erro ao processar sua mensagem.");
