@@ -19517,6 +19517,78 @@ export type Database = {
         }
         Relationships: []
       }
+      tutor_v2_audits: {
+        Row: {
+          blocks_found: string[] | null
+          blocks_missing: string[] | null
+          cognitive_load: number | null
+          created_at: string | null
+          detected_gaps: string[] | null
+          feynman_score: number | null
+          hallucination_warning: boolean | null
+          id: string
+          latency_ms: number | null
+          medical_safety_score: number | null
+          message_id: string | null
+          model_used: string | null
+          pedagogical_score: number | null
+          phase_0_context: Json | null
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          blocks_found?: string[] | null
+          blocks_missing?: string[] | null
+          cognitive_load?: number | null
+          created_at?: string | null
+          detected_gaps?: string[] | null
+          feynman_score?: number | null
+          hallucination_warning?: boolean | null
+          id?: string
+          latency_ms?: number | null
+          medical_safety_score?: number | null
+          message_id?: string | null
+          model_used?: string | null
+          pedagogical_score?: number | null
+          phase_0_context?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          blocks_found?: string[] | null
+          blocks_missing?: string[] | null
+          cognitive_load?: number | null
+          created_at?: string | null
+          detected_gaps?: string[] | null
+          feynman_score?: number | null
+          hallucination_warning?: boolean | null
+          id?: string
+          latency_ms?: number | null
+          medical_safety_score?: number | null
+          message_id?: string | null
+          model_used?: string | null
+          pedagogical_score?: number | null
+          phase_0_context?: Json | null
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_v2_audits_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tutor_v2_audits_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_v2_events: {
         Row: {
           cost: number | null
