@@ -28,6 +28,16 @@ async function pingModel(model: string, key: string) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), PING_TIMEOUT_MS);
   try {
+    const isOpenAI5 = /^openai\/gpt-5/.test(model);
+    const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
+    const body: Record<string, unknown> = {
+      model,
+      messages: [
+        { role: "system", content: "ping" },
+        { role: "user", content: "ok" },
+      ],
+      [tokenField]: 8,
+    };
     const res = await fetch(AI_GATEWAY_URL, {
       method: "POST",
       signal: ctrl.signal,
@@ -35,14 +45,7 @@ async function pingModel(model: string, key: string) {
         Authorization: `Bearer ${key}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        model,
-        max_tokens: 8,
-        messages: [
-          { role: "system", content: "ping" },
-          { role: "user", content: "ok" },
-        ],
-      }),
+      body: JSON.stringify(body),
     });
     const latency = Date.now() - start;
     const body = await res.text();
