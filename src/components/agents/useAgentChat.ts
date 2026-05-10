@@ -129,6 +129,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const { streamResponse } = useTutorStream();
   const { fetchAdaptive, isAdaptiveEnabled } = useTutorAdaptiveContext();
 
+  // Load initial conversation if provided
+  useEffect(() => {
+    if (initialConversationId && history.activeConversationId !== initialConversationId) {
+      console.debug("[useAgentChat] Loading initial conversation:", initialConversationId);
+      history.loadConversation(initialConversationId);
+    }
+  }, [initialConversationId, history.loadConversation]); // history.loadConversation is stable because of useCallback in useTutorHistory
+
   // Auto-save (uses history.activeConversationId)
   useEffect(() => {
     registerAutoSave(() => {
