@@ -281,21 +281,44 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
         {context.topic && (
           <div className="flex gap-2">
             <Button 
-              variant="default" 
+              variant={lessonStatus === 'ready' ? "default" : "default"} 
               size="sm" 
-              className="flex-1 h-9 text-[10px] font-black gap-2 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 shadow-lg shadow-orange-900/20 border-none transition-all group active:scale-95"
-              onClick={transformFullSession}
+              className={cn(
+                "flex-1 h-9 text-[10px] font-black gap-2 rounded-xl transition-all group active:scale-95 shadow-lg border-none",
+                lessonStatus === 'ready' 
+                  ? "bg-gradient-to-r from-green-600 to-emerald-600 shadow-green-900/20" 
+                  : lessonStatus === 'failed'
+                  ? "bg-gradient-to-r from-red-600 to-rose-600 shadow-red-900/20"
+                  : "bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 shadow-orange-900/20"
+              )}
+              onClick={handleGenerateLesson}
+              disabled={isGeneratingLesson}
             >
-              <Clapperboard className="h-3.5 w-3.5 group-hover:animate-bounce" />
-              TRANSFORMAR SESSÃO COMPLETA
+              {isGeneratingLesson ? (
+                <><Loader2 className="h-3.5 w-3.5 animate-spin" /> GERANDO...</>
+              ) : lessonStatus === 'ready' ? (
+                <><Play className="h-3.5 w-3.5" /> AULA PRONTA</>
+              ) : lessonStatus === 'failed' ? (
+                <><AlertCircle className="h-3.5 w-3.5" /> TENTAR NOVAMENTE</>
+              ) : (
+                <><Clapperboard className="h-3.5 w-3.5 group-hover:animate-bounce" /> TRANSFORMAR SESSÃO COMPLETA</>
+              )}
             </Button>
+            
+            {lessonStatus === 'processing' && (
+              <div className="h-9 px-3 flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 text-[9px] font-bold text-primary animate-pulse">
+                <Clock className="h-3 w-3" /> ESTRUTURANDO...
+              </div>
+            )}
+            
             <Button 
               variant="outline" 
               size="sm" 
               className="h-9 px-3 text-[10px] font-black gap-2 rounded-xl border-primary/30 text-primary hover:bg-primary/10 backdrop-blur-md transition-all active:scale-95"
+              onClick={transformFullSession}
             >
-              <Play className="h-3.5 w-3.5" />
-              ULTIMA RESPOSTA
+              <ExternalLink className="h-3.5 w-3.5" />
+              DETALHES
             </Button>
           </div>
         )}
