@@ -113,7 +113,7 @@ export default function AdminCEO() {
         supabase.from("revisoes" as any).select("id")
           .gte("created_at", weekStart).eq("status", "concluida"),
         // Practice attempts
-        supabase.from("practice_attempts" as any).select("is_correct")
+        supabase.from("practice_attempts" as any).select("correct")
           .gte("created_at", weekStart).limit(1000),
         // Tutor sessions
         supabase.from("chat_conversations").select("id")
