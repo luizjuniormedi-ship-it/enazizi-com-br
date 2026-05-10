@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,7 +24,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // 1. Get Session & Context
+    // 1. Get Session & History
     const { data: session } = await supabase
       .from("tutor_sessions")
       .select("*")
@@ -32,33 +33,41 @@ serve(async (req) => {
 
     if (!session) throw new Error("Session not found");
 
+    const { data: history } = await supabase
+      .from("tutor_messages")
+      .select("role, content")
+      .eq("tutor_session_id", sessionId)
+      .order("created_at", { ascending: true })
+      .limit(10);
+
     // Get medical context
     const { data: contextData } = await supabase.functions.invoke("tutor-v2-context-builder");
     const context = contextData?.context || {};
 
-    // 2. Build AI Prompt with Medical Quality Map
-    const systemPrompt = `Você é o Tutor IA V2 do ENAZIZI.
-Tema: ${session.topic} (${session.specialty})
+    // 2. Build AI Prompt with OFFICIAL PEDAGOGICAL NUCLEUS
+    const systemPrompt = `${PROMPT_COMPLETO}
 
-DIRETRIZES MÉDICAS:
-- Use bibliografia oficial.
-- Se for Cardio, foque em Braunwald/SBC.
-- Se for GO, foque em Williams/Febrasgo.
-- Seja socrático.
+CONTEXTO DA SESSÃO ATUAL:
+Tema: ${session.topic}
+Especialidade: ${session.specialty || 'Geral'}
 
 CONTEXTO DO ALUNO:
-- Missão: ${context.mission?.title || 'Exploração Livre'}
-- Erros recentes: ${context.errors?.map((e: any) => e.topic).join(', ') || 'Nenhum'}
+- Missão Ativa: ${context.mission?.title || 'Exploração Livre'}
+- Lacunas detectadas (erros): ${context.errors?.map((e: any) => e.topic).join(', ') || 'Nenhuma detectada'}
+- Status FSRS: ${context.fsrs?.pending_reviews || 0} revisões pendentes.
 
-INSTRUÇÃO ESPECIAL:
-Sempre que detectar um conceito chave, adicione ao final da resposta (separado por ---) uma sugestão de flashcard no formato:
-FLASHCARD_SUGGESTION: {"front": "...", "back": "..."}`;
+INSTRUÇÃO OPERACIONAL:
+Use bibliografia oficial. Seja socrático. Adote o modo de resposta obrigatório do Protocolo ENAZIZI.
+Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final (opcional).`;
+
+    const messages = [
+      { role: "system", content: systemPrompt },
+      ...(history || []).map((m: any) => ({ role: m.role, content: m.content })),
+      { role: "user", content: message }
+    ];
 
     const aiResponse = await aiFetch({
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: message }
-      ],
+      messages,
       model: "openai/gpt-4o",
       temperature: 0.7
     });
@@ -71,16 +80,12 @@ FLASHCARD_SUGGESTION: {"front": "...", "back": "..."}`;
     // Extract flashcard suggestion if present
     let flashcardSuggestion = null;
     if (assistantMessage.includes("FLASHCARD_SUGGESTION:")) {
-      const parts = assistantMessage.split("---");
-      const lastPart = parts[parts.length - 1];
-      if (lastPart.includes("FLASHCARD_SUGGESTION:")) {
-        try {
-          const jsonStr = lastPart.split("FLASHCARD_SUGGESTION:")[1].trim();
-          flashcardSuggestion = JSON.parse(jsonStr);
-          assistantMessage = assistantMessage.replace(/---.*FLASHCARD_SUGGESTION:.*$/s, "").trim();
-        } catch (e) {
-          console.error("Error parsing flashcard suggestion:", e);
-        }
+      const parts = assistantMessage.split("FLASHCARD_SUGGESTION:");
+      assistantMessage = parts[0].trim();
+      try {
+        flashcardSuggestion = JSON.parse(parts[1].trim());
+      } catch (e) {
+        console.error("Error parsing flashcard suggestion:", e);
       }
     }
 
@@ -92,16 +97,18 @@ FLASHCARD_SUGGESTION: {"front": "...", "back": "..."}`;
       content: assistantMessage,
       metadata: {
         flashcard_suggestion: flashcardSuggestion,
-        model: "gpt-4o"
+        model: "gpt-4o",
+        context_version: "v2.1"
       }
     });
 
     // 4. Log Event
-    await supabase.from("tutor_v2_events").insert({
+    await supabase.from("tutor_events").insert({
       user_id: userId,
       session_id: sessionId,
       event_type: "message_sent",
-      success: true
+      topic: session.topic,
+      payload: { model: "gpt-4o" }
     });
 
     return new Response(JSON.stringify({ 

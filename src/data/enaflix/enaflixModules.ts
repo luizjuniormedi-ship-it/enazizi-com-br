@@ -300,13 +300,13 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     id: "mentor",
     title: "Tutor IA",
     description: "Tutor, Mentor, Revisão e Estratégia ENARE em um só lugar",
-    route: "/dashboard/mentor",
+    route: "/dashboard/tutor-v2",
     category: "conteudo",
     icon: Brain,
-    badge: "premium",
+    badge: "ia",
     accent: "primary",
     featured: true,
-    keywords: ["tutor", "mentor", "estratégia", "enare", "dúvida", "chat"],
+    keywords: ["tutor", "mentor", "estratégia", "enare", "dúvida", "chat", "v2"],
   },
 
   // ───────── PROGRESSO & ESTRATÉGIA ─────────
