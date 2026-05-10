@@ -264,6 +264,8 @@ const App = () => (
                   <Route path="agentes" element={<ModuleErrorBoundary module="agentes"><AgentsHub /></ModuleErrorBoundary>} />
                   <Route path="uploads" element={<ModuleErrorBoundary module="uploads"><Uploads /></ModuleErrorBoundary>} />
                   <Route path="coach" element={<ModuleErrorBoundary module="coach"><MotivationalCoach /></ModuleErrorBoundary>} />
+                  <Route path="tutor-v2" element={<TutorV2Page />} />
+                  <Route path="tutor-v2/:sessionId" element={<TutorV2Page />} />
                   <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
 
                   {/* Legado & Redirects Internos */}
