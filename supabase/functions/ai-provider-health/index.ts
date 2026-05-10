@@ -48,12 +48,12 @@ async function pingModel(model: string, key: string) {
       body: JSON.stringify(body),
     });
     const latency = Date.now() - start;
-    const body = await res.text();
+    const responseText = await res.text();
     if (!res.ok) {
       let code = `HTTP_${res.status}`;
-      let msg = body.slice(0, 240);
+      let msg = responseText.slice(0, 240);
       try {
-        const parsed = JSON.parse(body);
+        const parsed = JSON.parse(responseText);
         code = parsed?.error?.code || parsed?.error?.type || code;
         msg = parsed?.error?.message || msg;
       } catch (_) { /* keep raw */ }
