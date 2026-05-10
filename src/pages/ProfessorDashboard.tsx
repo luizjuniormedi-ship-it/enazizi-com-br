@@ -50,6 +50,8 @@ const ProfessorDashboard = () => {
     loading: false,
     questions_json: [],
   });
+  const [drawerStudentId, setDrawerStudentId] = useState<string | null>(null);
+  const [recoveryFor, setRecoveryFor] = useState<{ id: string; name: string; specialty?: string } | null>(null);
   const [questionsDialog, setQuestionsDialog] = useState<{ open: boolean; simulado: any }>({
     open: false,
     simulado: null,
