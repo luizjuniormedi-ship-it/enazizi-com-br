@@ -337,4 +337,55 @@ const ProfessorDashboard = () => {
   );
 };
 
+const SUB_TABS: Record<string, { value: string; label: string }[]> = {
+  operacional: [
+    { value: "risco", label: "Alunos em risco" },
+    { value: "heatmap", label: "Heatmap turma" },
+    { value: "aluno", label: "Aluno individual" },
+    { value: "plantao", label: "Casos plantão" },
+  ],
+  turmas: [
+    { value: "minhas", label: "Minhas turmas" },
+    { value: "analytics", label: "BI da turma" },
+    { value: "bi", label: "BI agregada" },
+    { value: "video", label: "Sala de vídeo" },
+  ],
+  simulados: [
+    { value: "lista", label: "Simulados" },
+    { value: "osce", label: "OSCE" },
+  ],
+  mentoria: [
+    { value: "temas", label: "Temas e atribuições" },
+    { value: "planos", label: "Planos de mentoria" },
+    { value: "proficiencia", label: "Proficiência" },
+  ],
+  auditoria: [
+    { value: "trace", label: "Trace e logs" },
+  ],
+};
+
+function SubTabsBar({ group, active, onChange }: { group: string; active: string; onChange: (v: string) => void }) {
+  const subs = SUB_TABS[group] || [];
+  if (subs.length <= 1) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-3 px-1">
+      {subs.map((s) => (
+        <button
+          key={s.value}
+          type="button"
+          onClick={() => onChange(s.value)}
+          className={
+            "h-8 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors " +
+            (active === s.value
+              ? "bg-primary/20 text-primary border border-primary/40"
+              : "bg-white/[0.03] text-white/60 border border-white/10 hover:bg-white/[0.06] hover:text-white/90")
+          }
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default ProfessorDashboard;
