@@ -34,8 +34,14 @@ import { EnaflixRow } from "@/components/enaflix/EnaflixRow";
 import { EnaflixDynamicCard } from "@/components/enaflix/EnaflixDynamicCard";
 import { emitShadowEvent } from "@/lib/shadowAdaptive";
 
+import { emitShadowEvent } from "@/lib/shadowAdaptive";
+import { MascotAvatar } from "@/components/mascot/MascotAvatar";
+import { MascotBubble } from "@/components/mascot/MascotBubble";
+import { useMascotState } from "@/components/mascot/useMascotState";
+
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
+
 
 function normalize(s: string) {
   return s
