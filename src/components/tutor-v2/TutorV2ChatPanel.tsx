@@ -93,19 +93,25 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   };
 
   return (
-    <div className="flex flex-col h-full bg-slate-900/50">
-      <header className="p-4 border-b border-white/5 bg-slate-900/80 backdrop-blur-md z-10">
+    <div className="flex flex-col h-full bg-slate-900/40 relative overflow-hidden">
+      {/* Background Decorative Glow */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
+      
+      <header className="p-4 border-b border-white/5 bg-slate-950/60 backdrop-blur-2xl z-20 sticky top-0">
         <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-8 w-8 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-              <div className="h-4 w-4 bg-indigo-500 rounded-md" />
+          <div className="flex items-center gap-4 group">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shadow-lg group-hover:border-indigo-500/50 transition-all">
+              <div className="h-5 w-5 bg-indigo-500 rounded-lg animate-cinematic-pulse-core" />
             </div>
             <div>
-              <h1 className="text-sm font-black uppercase tracking-widest text-white/90">
-                {session.topic || "Sessão de Estudo"}
-              </h1>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
-                {session.specialty || "Clínica Médica"} • V2 Active
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm font-black uppercase tracking-widest text-white/90">
+                  {session.topic || "Sessão de Estudo"}
+                </h1>
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+              <p className="text-[10px] text-indigo-400 font-black uppercase tracking-tighter mt-0.5">
+                {session.specialty || "Sessão Premium Ativa"} • Protocolo Feynman
               </p>
             </div>
           </div>
@@ -113,18 +119,21 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-smooth pb-20">
-        <div className="max-w-4xl mx-auto w-full p-6">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto scroll-smooth pb-32 custom-scrollbar">
+        <div className="max-w-4xl mx-auto w-full p-6 space-y-8">
           {isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="h-6 w-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center animate-pulse">
+                <div className="h-6 w-6 bg-indigo-500 rounded-lg animate-spin" />
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recuperando histórico cognitivo...</p>
             </div>
           ) : (
             <TutorV2MessageList messages={messages} isTyping={isTyping} />
           )}
 
           {error && (
-            <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-3">
+            <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-3 animate-slide-up">
               <AlertCircle className="h-4 w-4" />
               {error}
             </div>
@@ -132,8 +141,10 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         </div>
       </div>
 
-      <footer className="p-6 border-t border-white/5 bg-slate-950/80 backdrop-blur-xl absolute bottom-0 w-full">
-        <TutorV2Input onSendMessage={handleSendMessage} disabled={isTyping} />
+      <footer className="p-6 border-t border-white/5 bg-slate-950/90 backdrop-blur-3xl absolute bottom-0 w-full z-20">
+        <div className="max-w-4xl mx-auto">
+          <TutorV2Input onSendMessage={handleSendMessage} disabled={isTyping} />
+        </div>
       </footer>
     </div>
   );
