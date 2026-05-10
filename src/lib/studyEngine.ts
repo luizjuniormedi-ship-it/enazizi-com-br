@@ -294,7 +294,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .eq("user_id", userId)
       .eq("status", "pendente")
       .lte("data_revisao", new Date().toISOString().slice(0, 10))
-      .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
+      .or(`created_at.gt.${resetAt || "1900-01-01T00:00:00Z"},created_at.gte.${todayIso}`)
       .order("prioridade", { ascending: false })
       .limit(20), "revisoes"),
     safe(() => supabase
@@ -302,7 +302,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .select("id, tema, subtema, vezes_errado, dominado, categoria_erro")
       .eq("user_id", userId)
       .eq("dominado", false)
-      .gt("updated_at", resetAt || "1900-01-01T00:00:00Z")
+      .or(`updated_at.gt.${resetAt || "1900-01-01T00:00:00Z"},updated_at.gte.${todayIso}`)
       .order("vezes_errado", { ascending: false })
       .limit(20), "error_bank"),
     // Performance unified view (read-only): combines error_bank + simulado + fsrs.
