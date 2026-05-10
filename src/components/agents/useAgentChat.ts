@@ -94,6 +94,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const autoPromptFiredRef = useRef(false);
   const initialPromptFiredRef = useRef(false);
   const isAutoStartingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
@@ -174,6 +175,11 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         return;
       }
 
+      // Cancelar qualquer request anterior em curso
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setSendCooldown(true);
       setTimeout(() => setSendCooldown(false), 2000);
 
@@ -209,7 +215,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         requestId
       });
 
-      // Watchdog implementation - Reduzido para 20s conforme solicitado
+      // Watchdog implementation
       const watchdogTimeout = setTimeout(() => {
         if (isLoading) {
           console.error(`[TUTOR] WATCHDOG_TRIGGERED id=${requestId} - Stage: ${loadingStage} - elapsed=${Date.now() - startTime}ms`);
@@ -219,14 +225,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           
           setMessages(prev => {
             const last = prev[prev.length - 1];
-            // Se já tivermos o assistant no final, mas vazio ou erro
             if (last && last.role === "assistant") {
               if (!last.content || last.isError) {
                 return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMsg, isError: true } : m);
               }
               return prev;
             }
-            // Se a última for do user, adiciona o assistant fallback
             if (last && last.role === "user") {
               return [...prev, { role: "assistant", content: fallbackMsg, isError: true }];
             }
@@ -241,95 +245,50 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       }, 20000);
 
-      // Ensure conversation exists
       const convId = await history.ensureConversation(text);
       if (convId) {
         await history.persistUserMessage(convId, text);
-        console.log(`[TUTOR] PERSIST_STARTED (user) id=${requestId}`);
       }
 
       let assistantSoFar = "";
+      let assistantMsgCreated = false;
       const contextToSend = contextOverride
         ? context.buildUserContext(contextOverride)
         : context.buildUserContext();
 
-      // ── Memória pedagógica: lookup ANTES da IA ─────────────────────────
       try {
         setLoadingStage("🧠 Verificando memória pedagógica...");
         const reuse = await memory.lookup(text, user?.id ?? null);
         if (reuse && reuse.markdown) {
-          console.log(`[TUTOR] MEMORY_HIT id=${requestId}`);
           clearTimeout(watchdogTimeout);
-          import("@/lib/tutor/tutorMemory")
-            .then(({ adjustMemoryQuality }) => adjustMemoryQuality(reuse.hit.id, +1))
-            .catch(() => {});
           setLoadingStage("✨ Recuperando resposta da memória...");
           const md = reuse.markdown;
-          const slices = [
-            md.slice(0, Math.floor(md.length * 0.4)),
-            md.slice(0, Math.floor(md.length * 0.75)),
-            md,
-          ];
-          for (const partial of slices) {
-            setMessages((prev) => {
-              const last = prev[prev.length - 1];
-              if (
-                last?.role === "assistant" &&
-                prev.length > 1 &&
-                prev[prev.length - 2]?.role === "user"
-              ) {
-                return prev.map((m, i) =>
-                  i === prev.length - 1 ? { ...m, content: partial } : m,
-                );
-              }
-              return [
-                ...prev,
-                { role: "assistant", content: partial },
-              ];
-            });
-            await new Promise((r) => setTimeout(r, 90));
-          }
-          setMessages((prev) =>
-            prev.map((m, i) =>
-              i === prev.length - 1 && m.role === "assistant"
-                ? {
-                    ...m,
-                    content: md,
-                    memoryId: reuse.hit.id,
-                    memoryReuseCount: (reuse.hit.reuse_count ?? 0) + 1,
-                    sourceQuestion: text,
-                    memoryQualityScore: reuse.hit.quality_score,
-                    memoryScope: reuse.hit.scope,
-                    memoryBlocks: reuse.hit.blocks,
-                  }
-                : m,
-            ),
-          );
+          setMessages((prev) => [...prev, { 
+            role: "assistant", 
+            content: md,
+            memoryId: reuse.hit.id,
+            memoryReuseCount: (reuse.hit.reuse_count ?? 0) + 1,
+            sourceQuestion: text,
+            memoryQualityScore: reuse.hit.quality_score,
+            memoryScope: reuse.hit.scope,
+            memoryBlocks: reuse.hit.blocks,
+          }]);
           if (convId) {
             await history.persistAssistantMessage(convId, md);
             history.loadConversations();
           }
-          telemetry.track("tutor_memory_reused", {
-            memory_id: reuse.hit.id,
-            quality_score: reuse.hit.quality_score,
-            response_ms: Date.now() - tutorStartedAt,
-            requestId
-          });
           setIsLoading(false);
           setLoadingStage("");
-          console.log(`[TUTOR] UI_UNLOCKED id=${requestId} source=memory`);
           return;
         }
       } catch (err) {
-        if (import.meta.env.DEV) console.warn("[memory] lookup error", err);
+        /* noop */
       }
       
-      // Redundant RAG removed — mentor-chat handles retrieval internally for better performance and resilience.
       setLoadingStage("🔍 Analisando material e referências...");
       
       let adaptiveContext: unknown = undefined;
       let adaptiveStatus: "off" | "ok" | "failed" | "skipped" = "off";
-      let ragBibliography: any[] = [];
 
       if (isAdaptiveEnabled) {
         const adaptive = await fetchAdaptive({
@@ -337,42 +296,34 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           conversationId: convId ?? null,
         });
         adaptiveStatus = adaptive.status;
-        if (adaptive.context) {
-          adaptiveContext = adaptive.context;
-        }
+        adaptiveContext = adaptive.context;
       }
 
       const applyDelta = (fullText: string, data?: any) => {
-        if (!assistantSoFar && fullText) console.log(`[TUTOR] STREAM_CHUNK_RECEIVED id=${requestId}`);
+        if (!fullText) return;
+        if (!assistantSoFar) setLoadingStage("✍️ Gerando resposta...");
         assistantSoFar = fullText;
-        if (data?.sources && Array.isArray(data.sources)) {
-          ragBibliography = data.sources.map((s: any) => ({
-            id: s.id,
-            source: s.source || "Base de Conhecimento",
-            content: s.content || "",
-            document_id: s.document_id
-          }));
-        }
 
-        setMessages((prev) => {
-          const last = prev[prev.length - 1];
-          if (
-            last?.role === "assistant" &&
-            prev.length > 1 &&
-            prev[prev.length - 2]?.role === "user"
-          ) {
-            return prev.map((m, i) =>
-              i === prev.length - 1 ? { ...m, content: fullText, bibliography: ragBibliography } : m
-            );
-          }
-          return [...prev, { role: "assistant", content: fullText, bibliography: ragBibliography }];
-        });
+        const ragBibliography = data?.sources?.map((s: any) => ({
+          id: s.id,
+          source: s.source || "Base de Conhecimento",
+          content: s.content || "",
+          document_id: s.document_id
+        })) || [];
+
+        if (!assistantMsgCreated) {
+          assistantMsgCreated = true;
+          setMessages((prev) => [...prev, { role: "assistant", content: assistantSoFar, bibliography: ragBibliography }]);
+        } else {
+          setMessages((prev) =>
+            prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar, bibliography: ragBibliography } : m))
+          );
+        }
       };
 
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
-        console.log(`[TUTOR] PROVIDER_STARTED id=${requestId}`);
         const result = await streamResponse({
           url: CHAT_URL,
           body: {
@@ -387,23 +338,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             requestId,
             sessionId: history.activeConversationId || undefined
           },
-          onFirstChunk: () => {
-            console.log(`[TUTOR] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
-            console.log(`[TUTOR] STREAM_STARTED id=${requestId}`);
-            console.log(`[TUTOR] ASSISTANT_APPEND_STARTED id=${requestId}`);
-            setLoadingStage("✍️ Gerando resposta...");
-          },
+          signal: controller.signal,
+          onFirstChunk: () => setLoadingStage("✍️ Gerando resposta..."),
           onDelta: applyDelta,
           onError: ({ status, message }) => {
             console.error(`[TUTOR] SEND_FAILED id=${requestId}`, { status, message });
             clearTimeout(watchdogTimeout);
-            
             toast({ 
               title: "Tutor IA Indisponível", 
               description: message || "Erro ao conectar com o agente IA", 
               variant: "destructive" 
             });
-            
             setMessages(prev => {
               const last = prev[prev.length - 1];
               if (last && last.role === "assistant") {
@@ -415,67 +360,35 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         });
 
         clearTimeout(watchdogTimeout);
-        console.log(`[TUTOR] STREAM_FINISHED id=${requestId}`);
-        console.log(`[TUTOR] ASSISTANT_APPEND_FINISHED id=${requestId}`);
-
-        if (result === null && !assistantSoFar) {
-          setIsLoading(false);
-          setLoadingStage("");
-          console.log(`[TUTOR] SEND_COMPLETED (empty) id=${requestId}`);
-          console.log(`[TUTOR] LOADING_CLEARED id=${requestId}`);
-          return;
-        }
 
         if (convId && assistantSoFar) {
-          console.log(`[TUTOR] PERSIST_STARTED id=${requestId}`);
           await history.persistAssistantMessage(convId, assistantSoFar);
-          console.log(`[TUTOR] PERSIST_FINISHED id=${requestId}`);
           history.loadConversations();
         }
 
-        if (assistantSoFar) {
-          telemetry.track("tutor_response_received", {
-            source: "ai",
-            response_ms: Date.now() - tutorStartedAt,
-            length: assistantSoFar.length,
-            requestId
-          });
-          console.log(`[TUTOR] SEND_COMPLETED (success) id=${requestId}`);
-        }
-
-        // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
         if (assistantSoFar && assistantSoFar.trim().length > 0) {
-          memory
-            .persist({
-              question: text,
-              answerMarkdown: assistantSoFar,
-              userId: user?.id ?? null,
-              topic,
-              subtopic,
-              specialty,
-            })
-            .catch(() => {});
+          memory.persist({
+            question: text,
+            answerMarkdown: assistantSoFar,
+            userId: user?.id ?? null,
+            topic,
+            subtopic,
+            specialty,
+          }).catch(() => {});
         }
-
-        console.log(`[TUTOR] SEND_COMPLETED id=${requestId}`);
 
         if (onSaveMessage && assistantSoFar) {
           try {
             const count = await onSaveMessage(assistantSoFar);
             if (count > 0) {
-              const lastIdx = messages.length;
-              setSavedMsgIdxs((prev) => new Set(prev).add(lastIdx));
-              toast({
-                title: "✅ Salvo automaticamente!",
-                description: `${count} item(ns) salvo(s) no seu banco.`,
-              });
+              setSavedMsgIdxs((prev) => new Set(prev).add(messages.length));
+              toast({ title: "✅ Salvo automaticamente!", description: `${count} item(ns) salvo(s).` });
               context.reloadPreviousContent();
             }
-          } catch {
-            /* noop */
-          }
+          } catch { /* noop */ }
         }
       } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") return;
         console.error(`[TUTOR] SEND_FAILED id=${requestId}`, e);
         clearTimeout(watchdogTimeout);
         setMessages(prev => {
@@ -488,7 +401,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       } finally {
         setIsLoading(false);
         setLoadingStage("");
-        console.log(`[TUTOR] UI_UNLOCKED id=${requestId} elapsed=${Date.now() - startTime}ms`);
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
     },
     [input, isLoading, sendCooldown, user, quickActions, messages, telemetry, topic, subtopic, history, context, memory, isAdaptiveEnabled, fetchAdaptive, streamResponse, CHAT_URL, specialty, toast, onSaveMessage]
@@ -524,70 +439,26 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     };
   }, [onSendRef, handleSend]);
 
-  // Auto-fire initialPrompt
+  // Auto-fire initialPrompt once on mount — após session check
   useEffect(() => {
-    // Se temos um ID de conversa inicial sendo carregado, não disparar autostart
-    if (initialConversationId) {
-      console.debug("[useAgentChat] initialConversationId present, deferring initialPrompt autostart");
-      initialPromptFiredRef.current = true;
-      return;
-    }
+    if (!sessionChecked) return;
+    if (pendingSession) return;
+    if (!initialPrompt) return;
+    if (initialPromptFiredRef.current) return;
+    if (!user || isLoading) return;
 
-    // Se temos mensagens e o prompt inicial, e a conversa já é a ativa, marcamos como disparado para evitar duplicidade no refresh
-    if (messages.length > 1 && initialPrompt && !initialPromptFiredRef.current) {
-      // Formata o prompt esperado para comparação
-      const formattedInitial = initialPrompt.toLowerCase().startsWith("quero estudar") 
-        ? initialPrompt.toLowerCase() 
-        : `quero estudar: ${initialPrompt.toLowerCase()}`;
+    initialPromptFiredRef.current = true;
+    const timer = setTimeout(() => handleSend(initialPrompt), 500);
+    return () => clearTimeout(timer);
+  }, [initialPrompt, user, sessionChecked, pendingSession, isLoading, handleSend]);
 
-      const hasInitialMessage = messages.some(m => 
-        m.role === "user" && 
-        (m.content.toLowerCase().includes(formattedInitial) || m.content.toLowerCase().includes(initialPrompt.toLowerCase()))
-      );
-
-      if (hasInitialMessage) {
-        console.debug("[useAgentChat] initialPrompt already present in history, skipping autostart");
-        initialPromptFiredRef.current = true;
-        return;
-      }
-    }
-
-    if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading && !isAutoStartingRef.current) {
-      // Se já temos histórico carregado (mais que a mensagem de boas vindas), não disparar autostart
-      // Isso evita que o autostart limpe uma sessão existente que o usuário abriu.
-      if (messages.length > 1) {
-        console.debug("[useAgentChat] History already present, skipping autostart for initialPrompt");
-        initialPromptFiredRef.current = true;
-        return;
-      }
-
-      console.debug("[useAgentChat] triggering autostart for initialPrompt:", initialPrompt);
-      isAutoStartingRef.current = true;
-      
-      const timer = setTimeout(async () => {
-        try {
-          if (pendingSession) {
-            console.debug("[useAgentChat] Discarding pending session for autostart priority");
-            handleDiscardSession();
-          }
-          
-          console.debug("[useAgentChat] calling handleSend for initialPrompt");
-          // Formata o prompt inicial para o padrão do Tutor IA
-          const formattedPrompt = initialPrompt.toLowerCase().startsWith("quero estudar") 
-            ? initialPrompt 
-            : `Quero estudar: ${initialPrompt}`;
-            
-          await handleSend(formattedPrompt);
-          initialPromptFiredRef.current = true;
-        } catch (err) {
-          console.error("[useAgentChat] autostart failed:", err);
-        } finally {
-          isAutoStartingRef.current = false;
-        }
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession, messages, initialConversationId]);
+  // Cleanup no unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
 
   const handleSaveMessage = useCallback(
     async (idx: number, content: string) => {
