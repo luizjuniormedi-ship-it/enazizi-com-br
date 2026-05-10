@@ -79,3 +79,9 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.backfill-user-topic-profiles]
     verify_jwt = false
+  [functions.tutor-v2-chat]
+    verify_jwt = false
+  [functions.tutor-v2-context-builder]
+    verify_jwt = false
+  [functions.generate-tutor-v2-lesson]
+    verify_jwt = false
