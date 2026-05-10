@@ -164,12 +164,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   const handleSend = useCallback(
     async (overridePrompt?: string, contextOverride?: string) => {
-      const requestId = Math.random().toString(36).substring(7);
-      console.log(`[useAgentChat] SEND_STARTED id=${requestId}`, { overridePrompt, isLoading, sendCooldown });
+      const requestId = crypto.randomUUID();
+      console.log(`[TUTOR] SEND_STARTED id=${requestId}`, { overridePrompt, isLoading, sendCooldown });
 
       const text = overridePrompt || input.trim();
       if (!text || isLoading || sendCooldown || !user) {
-        console.warn(`[useAgentChat] SEND_SKIPPED id=${requestId}`, { text: !!text, isLoading, sendCooldown, user: !!user });
+        console.warn(`[TUTOR] SEND_SKIPPED id=${requestId}`, { text: !!text, isLoading, sendCooldown, user: !!user });
         return;
       }
 
@@ -195,6 +195,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const userMsg: Msg = { role: "user", content: text };
       const allMessages = [...messages, userMsg];
       setMessages(allMessages);
+      console.log(`[TUTOR] USER_MESSAGE_APPENDED id=${requestId}`);
+      
       setInput("");
       setIsLoading(true);
       setLoadingStage("🔍 Buscando referências científicas...");
@@ -206,7 +208,32 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         requestId
       });
 
-      // Ensure conversation exists (delegated to useTutorHistory)
+      // Watchdog implementation
+      const watchdogTimeout = setTimeout(() => {
+        if (isLoading) {
+          console.error(`[TUTOR] WATCHDOG_TRIGGERED id=${requestId}`);
+          setIsLoading(false);
+          setLoadingStage("");
+          const fallbackMsg = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
+          setMessages(prev => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === "assistant" && (last.content === "" || last.content === undefined)) {
+              return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMsg, isError: true } : m);
+            }
+            if (last && last.role === "user") {
+              return [...prev, { role: "assistant", content: fallbackMsg, isError: true }];
+            }
+            return prev;
+          });
+          toast({
+            title: "Instabilidade Detectada",
+            description: "A resposta está demorando mais que o esperado. O Tutor continuará com o conhecimento base.",
+            variant: "destructive"
+          });
+        }
+      }, 25000);
+
+      // Ensure conversation exists
       const convId = await history.ensureConversation(text);
       if (convId) {
         await history.persistUserMessage(convId, text);
@@ -222,7 +249,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         setLoadingStage("🧠 Verificando memória pedagógica...");
         const reuse = await memory.lookup(text, user?.id ?? null);
         if (reuse && reuse.markdown) {
-          console.log(`[useAgentChat] MEMORY_HIT id=${requestId}`);
+          console.log(`[TUTOR] MEMORY_HIT id=${requestId}`);
+          clearTimeout(watchdogTimeout);
           import("@/lib/tutor/tutorMemory")
             .then(({ adjustMemoryQuality }) => adjustMemoryQuality(reuse.hit.id, +1))
             .catch(() => {});
@@ -280,12 +308,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           });
           setIsLoading(false);
           setLoadingStage("");
-          console.log(`[useAgentChat] SEND_COMPLETED (memory) id=${requestId}`);
+          console.log(`[TUTOR] SEND_COMPLETED (memory) id=${requestId}`);
           return;
         }
       } catch (err) {
         if (import.meta.env.DEV) console.warn("[memory] lookup error", err);
       }
+      
       setLoadingStage("🔍 Buscando referências científicas...");
 
       let adaptiveContext: unknown = undefined;
@@ -293,7 +322,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       let ragBibliography: any[] = [];
 
       try {
-        console.log(`[useAgentChat] RETRIEVAL_STARTED id=${requestId}`);
+        console.log(`[TUTOR] RETRIEVAL_STARTED id=${requestId}`);
         setLoadingStage("🔍 Buscando na Base de Conhecimento...");
         
         const ragPromise = supabase.functions.invoke("search-rag-context", {
@@ -305,7 +334,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         );
 
         const { data: ragData } = await Promise.race([ragPromise, timeoutPromise]) as any;
-        console.log(`[useAgentChat] RETRIEVAL_FINISHED id=${requestId}`, { success: ragData?.success });
+        console.log(`[TUTOR] RETRIEVAL_FINISHED id=${requestId}`, { success: ragData?.success });
         
         if (ragData?.success && Array.isArray(ragData.bibliography)) {
           ragBibliography = ragData.bibliography;
@@ -315,7 +344,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           }
         }
       } catch (err) {
-        console.warn(`[useAgentChat] RETRIEVAL_FAILED id=${requestId}`, err);
+        console.warn(`[TUTOR] RETRIEVAL_FAILED id=${requestId}`, err);
       }
 
       if (isAdaptiveEnabled) {
@@ -346,16 +375,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         });
       };
 
-      const controller = new AbortController();
-      const abortTimeout = setTimeout(() => {
-        console.warn(`[useAgentChat] PROVIDER_TIMEOUT id=${requestId}`);
-        controller.abort();
-      }, 30000);
-
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
-        console.log(`[useAgentChat] PROVIDER_REQUEST_STARTED id=${requestId}`);
+        console.log(`[TUTOR] MENTOR_CHAT_INVOKE_STARTED id=${requestId}`);
         const result = await streamResponse({
           url: CHAT_URL,
           body: {
@@ -368,18 +391,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             subtopic: subtopic || undefined,
             specialty: specialty || undefined,
             requestId,
-            sessionId: history.activeConversationId || undefined // Explicitly pass session ID if it differs
+            sessionId: history.activeConversationId || undefined
           },
           onFirstChunk: () => {
-            console.log(`[useAgentChat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
-            clearTimeout(abortTimeout);
+            console.log(`[TUTOR] MENTOR_CHAT_RESPONSE_RECEIVED id=${requestId}`);
+            console.log(`[TUTOR] ASSISTANT_APPEND_STARTED id=${requestId}`);
             setLoadingStage("✍️ Gerando resposta...");
-            console.log(`[useAgentChat] ASSISTANT_APPEND_STARTED id=${requestId}`);
           },
           onDelta: applyDelta,
           onError: ({ status, message }) => {
-            console.error(`[useAgentChat] PROVIDER_ERROR id=${requestId}`, { status, message });
-            clearTimeout(abortTimeout);
+            console.error(`[TUTOR] SEND_FAILED id=${requestId}`, { status, message });
+            clearTimeout(watchdogTimeout);
             
             toast({ 
               title: "Tutor IA Indisponível", 
@@ -397,11 +419,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           },
         });
 
-        console.log(`[useAgentChat] ASSISTANT_APPEND_FINISHED id=${requestId}`);
+        clearTimeout(watchdogTimeout);
+        console.log(`[TUTOR] ASSISTANT_APPEND_FINISHED id=${requestId}`);
 
         if (result === null && !assistantSoFar) {
           setIsLoading(false);
           setLoadingStage("");
+          console.log(`[TUTOR] LOADING_CLEARED id=${requestId}`);
           return;
         }
 
@@ -433,7 +457,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             .catch(() => {});
         }
 
-        console.log(`[useAgentChat] SEND_COMPLETED id=${requestId}`);
+        console.log(`[TUTOR] SEND_COMPLETED id=${requestId}`);
 
         if (onSaveMessage && assistantSoFar) {
           try {
@@ -452,48 +476,22 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           }
         }
       } catch (e) {
-        console.error(`[useAgentChat] SEND_FAILED id=${requestId}`, e);
-        const fallbackMsg = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
-        
+        console.error(`[TUTOR] SEND_FAILED id=${requestId}`, e);
+        clearTimeout(watchdogTimeout);
         setMessages(prev => {
           const last = prev[prev.length - 1];
           if (last && last.role === "assistant") {
-            return prev.map((m, i) => i === prev.length - 1 ? { ...m, isError: true, content: fallbackMsg } : m);
+            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMessage, isError: true } : m);
           }
-          return [...prev, { role: "assistant", content: fallbackMsg, isError: true }];
-        });
-
-        toast({
-          title: "Instabilidade Temporária",
-          description: "O Tutor IA encontrou um problema, mas continuará com o conhecimento disponível.",
-          variant: "destructive",
+          return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
         });
       } finally {
         setIsLoading(false);
         setLoadingStage("");
-        if (typeof abortTimeout !== 'undefined') clearTimeout(abortTimeout);
+        console.log(`[TUTOR] LOADING_CLEARED id=${requestId}`);
       }
     },
-    [
-      input,
-      isLoading,
-      sendCooldown,
-      user,
-      messages,
-      quickActions,
-      CHAT_URL,
-      toast,
-      onSaveMessage,
-      history,
-      context,
-      streamResponse,
-      isAdaptiveEnabled,
-      fetchAdaptive,
-      memory,
-      topic,
-      subtopic,
-      specialty,
-    ]
+    [input, isLoading, sendCooldown, user, quickActions, messages, telemetry, topic, subtopic, history, context, memory, isAdaptiveEnabled, fetchAdaptive, streamResponse, CHAT_URL, specialty, toast, onSaveMessage]
   );
 
   /**

@@ -201,7 +201,7 @@ const AgentMessageItem = memo(
                   <div className="space-y-3">
                     {msg.bibliography.map((ref, i) => (
                       <div key={i} className="text-xs text-white/70 leading-relaxed pl-3 border-l-2 border-primary/20">
-                        <span className="font-bold text-white/90">[{ref.source}{ref.page ? ` p.${ref.page}` : ''}]:</span> {ref.content}
+                        <span className="font-bold text-white/90">[{ref.source || "Fonte Confiável"}{ref.page ? ` p.${ref.page}` : ''}]:</span> {ref.content}
                       </div>
                     ))}
                   </div>
