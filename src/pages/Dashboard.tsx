@@ -47,6 +47,19 @@ const Dashboard = () => {
   const { data: snapshot, isLoading: snapLoading, error: snapError, refetch: refreshSnapshot } = useAnalyticsSnapshot();
   const enaflixUsage = useEnaflixUsage();
   const recentIds = enaflixUsage.recentIds;
+  const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
+
+  useEffect(() => {
+    if (!dashLoading && dashData) {
+      const name = dashData.displayName?.split(" ")[0] || "Doutor";
+      triggerInteraction({
+        state: 'idle',
+        type: 'welcome',
+        speech: `Bem-vindo de volta, ${name}. Vamos dominar novos temas hoje?`
+      });
+    }
+  }, [dashLoading, dashData, triggerInteraction]);
+
 
   const continueModules = useMemo(() => {
     return recentIds
