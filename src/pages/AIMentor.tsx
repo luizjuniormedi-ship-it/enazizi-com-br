@@ -163,14 +163,20 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
           transition={{ duration: 1, delay: 0.8 }}
           className="flex flex-wrap justify-center gap-3 pt-4"
         >
-          {suggestions.map((sug, i) => (
+          {suggestions.map((sug) => (
             <button 
               key={sug}
-              onClick={() => onSend(sug)}
+              onClick={() => {
+                setInputValue(sug);
+                setSelectedSuggestion(sug);
+                // Dar foco no input após selecionar chip para melhor UX
+                document.getElementById('tutor-premium-input')?.focus();
+              }}
               className={cn(
-                "px-5 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-sm font-bold text-white/40",
-                "hover:text-primary hover:border-primary/30 hover:bg-primary/5 hover:scale-105 transition-all duration-300",
-                "backdrop-blur-md shadow-lg"
+                "px-5 py-2.5 rounded-2xl border transition-all duration-300 backdrop-blur-md shadow-lg text-sm font-bold",
+                (selectedSuggestion === sug || inputValue === sug)
+                  ? "bg-primary/20 border-primary text-primary scale-105"
+                  : "bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/20 hover:bg-white/10"
               )}
             >
               {sug}
