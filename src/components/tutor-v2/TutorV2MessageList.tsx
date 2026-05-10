@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
-import { User, Plus, Zap } from "lucide-react";
+import { User, Plus, Zap, Check, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import ProgressiveBlocks from "./ProgressiveBlocks";
 import { MascotAvatar } from "../mascot/MascotAvatar";
+
 
 interface TutorV2MessageListProps {
   messages: any[];
