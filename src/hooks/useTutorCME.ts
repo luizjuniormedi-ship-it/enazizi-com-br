@@ -303,7 +303,7 @@ export const useTutorCME = () => {
     }));
 
     await supabaseClient.from("cme_lesson_blocks").insert(blockInserts as any);
-    return { aggregation, blocks };
+    return { aggregation, blocks: blockInserts };
   }, [supabaseClient]);
 
 
