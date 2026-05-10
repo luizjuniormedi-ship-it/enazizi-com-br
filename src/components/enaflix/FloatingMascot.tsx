@@ -1,5 +1,5 @@
-import { ENAFLIX_MASCOT } from "@/data/enaflix/enaflixArt";
 import { cn } from "@/lib/utils";
+import { MascotAvatar } from "../mascot/MascotAvatar";
 
 interface Props {
   className?: string;
