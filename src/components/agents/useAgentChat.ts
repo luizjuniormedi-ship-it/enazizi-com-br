@@ -354,6 +354,10 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             userContext: contextToSend || undefined,
             adaptiveContext: adaptiveContext,
             adaptiveMeta: { status: adaptiveStatus },
+            conversationId: convId || undefined,
+            topic: topic || undefined,
+            subtopic: subtopic || undefined,
+            specialty: specialty || undefined,
           },
           onFirstChunk: () => {
             clearTimeout(abortTimeout);
