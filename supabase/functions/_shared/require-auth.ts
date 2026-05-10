@@ -88,18 +88,16 @@ export async function requireAuth(req: Request): Promise<RequireAuthResult> {
     global: { headers: { Authorization: authHeader } },
   });
 
-  // 1) getClaims — cheap, JWKS-based.
+  // 1) Fallback: getUser (network call).
+  // getClaims is not a standard supabase-js method in this version, so we skip it to avoid noise.
   try {
-    const { data, error } = await supabase.auth.getClaims(token);
-    const sub = data?.claims?.sub;
-    if (!error && sub) {
-      return { ok: true, userId: String(sub), token, requestId };
+    const { data, error } = await supabase.auth.getUser(token);
+    if (!error && data?.user?.id) {
+      return { ok: true, userId: data.user.id, token, requestId };
     }
   } catch (e) {
-    console.warn("[require-auth] getClaims threw, falling back to getUser:", e);
+    console.warn("[require-auth] getUser threw:", e);
   }
-
-  // 2) Fallback: getUser (network call).
   try {
     const { data, error } = await supabase.auth.getUser(token);
     if (!error && data?.user?.id) {
