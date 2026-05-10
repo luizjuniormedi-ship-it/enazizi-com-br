@@ -1,8 +1,9 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Brain, User, Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import { User, Plus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import enaziziMascot from "@/assets/enazizi-mascot.png";
 
 interface TutorV2MessageListProps {
   messages: any[];
@@ -23,10 +24,12 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           )}
         >
           <div className={cn(
-            "h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1",
-            msg.role === "assistant" ? "bg-indigo-500 shadow-lg shadow-indigo-500/20" : "bg-slate-700"
+            "h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden",
+            msg.role === "assistant" ? "bg-indigo-500/10 ring-1 ring-indigo-500/30 shadow-lg shadow-indigo-500/20" : "bg-slate-700"
           )}>
-            {msg.role === "assistant" ? <Brain className="h-5 w-5 text-white" /> : <User className="h-5 w-5 text-white" />}
+            {msg.role === "assistant"
+              ? <img src={enaziziMascot} alt="Tutor ENAZIZI" className="h-8 w-8 object-cover" />
+              : <User className="h-5 w-5 text-white" />}
           </div>
           
           <div className={cn(
@@ -59,8 +62,8 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           animate={{ opacity: 1 }}
           className="flex gap-4 mb-8"
         >
-          <div className="h-8 w-8 rounded-xl bg-indigo-500 flex items-center justify-center flex-shrink-0">
-            <Brain className="h-5 w-5 text-white animate-pulse" />
+          <div className="h-8 w-8 rounded-xl bg-indigo-500/10 ring-1 ring-indigo-500/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <img src={enaziziMascot} alt="Tutor ENAZIZI" className="h-8 w-8 object-cover animate-pulse" />
           </div>
           <div className="p-4 rounded-2xl bg-slate-800/50 border border-white/5 flex gap-1 items-center h-10">
             <span className="w-1 h-1 bg-slate-400 rounded-full animate-bounce" />

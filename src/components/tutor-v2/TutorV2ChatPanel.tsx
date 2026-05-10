@@ -45,17 +45,45 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
     
     setIsTyping(true);
 
-    try {
-      // First save user message to DB
-      await addMessage(user.id, "user", text);
-      
-      // Then call AI
-      const response = await TutorV2Service.sendMessage(session.id, text);
-      
-      if (!response.ok) throw new Error(response.error || "Erro na resposta da IA");
+    // Optimistic: append user message immediately
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        role: "user",
+        content: text,
+        tutor_session_id: session.id,
+        user_id: user.id,
+        created_at: new Date().toISOString(),
+      },
+    ]);
 
-      // The subscription to tutor_messages will automatically update the UI with the assistant's message
-      // as it's saved by the Edge Function.
+    try {
+      // Persist user message
+      await addMessage(user.id, "user", text);
+
+      // Call AI
+      const response = await TutorV2Service.sendMessage(session.id, text);
+
+      if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
+
+      // Append assistant reply directly (don't depend on realtime)
+      if (response.content) {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: crypto.randomUUID(),
+            role: "assistant",
+            content: response.content,
+            tutor_session_id: session.id,
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+            metadata: response.flashcardSuggestion
+              ? { flashcard_suggestion: response.flashcardSuggestion }
+              : undefined,
+          },
+        ]);
+      }
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
       setError(err.message || "Ocorreu um erro ao processar sua mensagem.");
