@@ -25,14 +25,13 @@ export default function TutorObservability() {
         .from("tutor_v2_audits")
         .select(`
           *,
-          session:session_id ( topic ),
-          user:user_id ( email )
+          session:session_id ( topic )
         `)
         .order("created_at", { ascending: false })
         .limit(50);
       
       if (error) throw error;
-      return data;
+      return data as any[];
     }
   });
 
