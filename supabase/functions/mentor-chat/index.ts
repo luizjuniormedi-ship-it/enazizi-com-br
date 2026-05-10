@@ -21,46 +21,46 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const bodyForId = await req.clone().json().catch(() => ({}));
-  const requestId = bodyForId.requestId || crypto.randomUUID();
-  console.log(`[mentor-chat] SEND_STARTED id=${requestId}`);
+  const requestId = crypto.randomUUID();
+  console.log(`[mentor-chat] REQUEST_RECEIVED id=${requestId}`);
 
   try {
     // 1. Authentication Hardening
     const auth = await requireAuth(req);
     if (!auth.ok) {
-      console.warn(`[mentor-chat] unauthorized id=${requestId}`);
+      console.warn(`[mentor-chat] AUTH_FAILED id=${requestId}`);
       return auth.response;
     }
     const { userId } = auth;
+    console.log(`[mentor-chat] AUTH_OK id=${requestId} user=${userId}`);
 
     // 2. Input Validation
     let body;
     try {
       body = await req.json();
     } catch (e) {
-      return json({ error: "invalid_json", message: "Corpo da requisição inválido." }, 400);
+      console.error(`[mentor-chat] BODY_INVALID id=${requestId}`, e);
+      return json({ error: "invalid_json", message: "Corpo da requisição inválido.", requestId }, 400);
     }
 
     const { messages, userContext, targetExam, skipCache = false, conversationId, topic: userTopic, specialty: userSpecialty } = body;
+    console.log(`[mentor-chat] BODY_VALIDATED id=${requestId} conv=${conversationId}`);
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      return json({ error: "missing_messages", message: "Histórico de mensagens é obrigatório." }, 400);
+      return json({ error: "missing_messages", message: "Histórico de mensagens é obrigatório.", requestId }, 400);
     }
-
-    console.debug(`[mentor-chat] processing id=${requestId} user=${userId} conv=${conversationId} msgs=${messages.length}`);
 
     // 3. Environment & Config Audit
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("[mentor-chat] Missing environment variables");
-      return json({ error: "config_error", message: "Erro de configuração no servidor." }, 500);
+      console.error(`[mentor-chat] CONFIG_ERROR id=${requestId}`);
+      return json({ error: "config_error", message: "Erro de configuração no servidor.", requestId }, 500);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // 4. Cache Management (v2 - Loop 4A)
+    // 4. Cache Management
     const lastUserMessage = messages[messages.length - 1]?.content || "";
     const semanticHash = await buildPromptHash({ lastUserMessage, userContext, targetExam, specialty: userSpecialty });
     
@@ -74,7 +74,7 @@ serve(async (req) => {
       });
 
       if (cacheResult.hit && cacheResult.content?.text) {
-        console.debug(`[mentor-chat] cache_hit id=${requestId}`);
+        console.log(`[mentor-chat] CACHE_HIT id=${requestId}`);
         await logAIUsage({
           userId,
           module: "mentor-chat",
@@ -84,7 +84,13 @@ serve(async (req) => {
           requestId
         });
 
-        return json({ content: cacheResult.content.text, cached: true });
+        return json({ 
+          ok: true,
+          content: cacheResult.content.text, 
+          message: cacheResult.content.text,
+          cached: true, 
+          requestId 
+        });
       }
     }
 
@@ -106,11 +112,13 @@ serve(async (req) => {
     const searchTopic = extractSearchTopic(messages);
     if (searchTopic && searchTopic.length >= 3) {
       try {
+        console.log(`[mentor-chat] RETRIEVAL_STARTED (PubMed) id=${requestId}`);
         const articles = await searchPubMed(searchTopic, 3);
         const pubmedBlock = formatPubMedForPrompt(articles);
         if (pubmedBlock) systemPrompt += pubmedBlock;
+        console.log(`[mentor-chat] RETRIEVAL_FINISHED (PubMed) id=${requestId}`);
       } catch (e) {
-        console.warn("[mentor-chat] PubMed enrichment failed (non-critical):", e);
+        console.warn(`[mentor-chat] PubMed enrichment failed id=${requestId}:`, e);
       }
     }
 
@@ -122,7 +130,7 @@ serve(async (req) => {
         content: lastUserMessage,
         user_id: userId
       }).then(({ error }) => {
-        if (error) console.error(`[mentor-chat] failed to persist user message: ${error.message}`);
+        if (error) console.error(`[mentor-chat] PERSIST_USER_FAILED id=${requestId}: ${error.message}`);
       });
     }
 
@@ -131,6 +139,8 @@ serve(async (req) => {
     let response;
     let modelUsed = "openai/gpt-4o";
 
+    const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
+
     try {
       console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED id=${requestId} model=${modelUsed}`);
       response = await aiFetch({
@@ -138,12 +148,12 @@ serve(async (req) => {
         messages: [{ role: "system", content: systemPrompt }, ...messages],
         stream: true,
         maxTokens: 4096,
-        timeoutMs: 30000,
+        timeoutMs: 25000, // 25s timeout for primary
         userId
       });
       console.log(`[mentor-chat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
     } catch (err) {
-      console.warn(`[mentor-chat] primary_ai_failed id=${requestId}`, err);
+      console.warn(`[mentor-chat] PRIMARY_AI_FAILED id=${requestId}`, err);
       modelUsed = "openai/gpt-4o-mini";
       try {
         console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED (fallback) id=${requestId} model=${modelUsed}`);
@@ -157,7 +167,7 @@ serve(async (req) => {
         });
         console.log(`[mentor-chat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
       } catch (fallbackErr) {
-        console.error(`[mentor-chat] PROVIDER_ERROR id=${requestId}`, fallbackErr);
+        console.error(`[mentor-chat] FATAL_CAUGHT id=${requestId}`, fallbackErr);
         await logAIUsage({
           userId,
           module: "mentor-chat",
@@ -168,20 +178,19 @@ serve(async (req) => {
         });
         
         return json({ 
+          ok: false,
           error: "ai_failed", 
-          message: "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível." 
-        }, 503);
+          message: fallbackMessage,
+          requestId,
+          fallbackUsed: true
+        }, 200); // Return 200 with OK=false to handle gracefully in frontend
       }
     }
 
     const elapsed = Date.now() - startMs;
-    console.debug(`[mentor-chat] streaming_start id=${requestId} model=${modelUsed} elapsed=${elapsed}ms`);
+    console.log(`[mentor-chat] RESPONSE_NORMALIZED id=${requestId} model=${modelUsed} elapsed=${elapsed}ms`);
 
     // 8. Stream Management & Logging
-    // We return the response body directly for streaming, 
-    // but we spawn an async task to log usage once the stream is likely finished.
-    // Note: In a production environment, you might use a TransformStream to capture tokens and log exactly.
-    // For now, we log the start of the successful stream.
     logAIUsage({
       userId,
       module: "mentor-chat",
@@ -190,18 +199,21 @@ serve(async (req) => {
       success: true,
       latencyMs: elapsed,
       requestId
-    }).catch(e => console.error("[mentor-chat] usage log failed", e));
+    }).catch(e => console.error(`[mentor-chat] LOG_USAGE_FAILED id=${requestId}`, e));
 
-    console.log(`[mentor-chat] SEND_COMPLETED id=${requestId}`);
+    console.log(`[mentor-chat] RESPONSE_SENT id=${requestId}`);
     return new Response(response.body, {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 
   } catch (error) {
-    console.error(`[mentor-chat] SEND_FAILED id=${requestId}`, error);
+    console.error(`[mentor-chat] FATAL_CAUGHT id=${requestId}`, error);
     return json({ 
+      ok: false,
       error: "internal_error", 
-      message: "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível." 
+      message: "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.",
+      requestId,
+      fallbackUsed: true
     }, 500);
   }
 });
