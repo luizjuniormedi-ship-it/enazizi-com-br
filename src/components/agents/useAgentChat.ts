@@ -55,6 +55,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
     topic = null,
     subtopic = null,
     specialty = null,
+    initialConversationId = null,
   } = opts;
 
   const navigate = useNavigate();
