@@ -44,6 +44,11 @@ export default function TutorV2Sidebar({ session }: TutorV2SidebarProps) {
           </div>
 
           <div>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-4">Histórico Recente</p>
+            <TutorV2History />
+          </div>
+
+          <div>
             <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-4">Contexto Clínico</p>
             <div className="space-y-2">
               <ContextBadge label="Harrison 21ed" color="bg-blue-500" />
