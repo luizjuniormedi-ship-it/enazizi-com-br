@@ -70,9 +70,10 @@ export default function CinematicBuilder() {
     setIsProcessing(true);
     // Logic to call the edge function cme-start-pipeline
     // For now we simulate or call it via searchParams if we had tutorSessionId
-    const tutorSessionId = searchParams.get('tutorSessionId');
+    const tutorSessionId = searchParams.get('tutorSessionId') || searchParams.get('session');
     if (!tutorSessionId) {
-      toast.error("Tutor Session ID is missing");
+      console.warn("[CinematicBuilder] Tutor Session ID is missing in query params");
+      toast.error("ID da sessão do Tutor ausente. Não é possível iniciar o pipeline.");
       setIsProcessing(false);
       return;
     }
