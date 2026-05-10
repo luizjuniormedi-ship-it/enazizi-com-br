@@ -7,6 +7,10 @@ import TutorV2Input from "./TutorV2Input";
 import TutorV2Actions from "./TutorV2Actions";
 import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { MascotAvatar } from "../mascot/MascotAvatar";
+import { MascotBubble } from "../mascot/MascotBubble";
+import { useMascotState } from "../mascot/useMascotState";
+
 
 interface TutorV2ChatPanelProps {
   session: any;
