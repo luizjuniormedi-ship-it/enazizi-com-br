@@ -6,6 +6,7 @@ import TutorV2MessageList from "./TutorV2MessageList";
 import TutorV2Input from "./TutorV2Input";
 import TutorV2Actions from "./TutorV2Actions";
 import { AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 
 interface TutorV2ChatPanelProps {
   session: any;
@@ -16,6 +17,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   const { messages, isLoading, addMessage, setMessages } = useTutorV2Messages(session.id);
   const [isTyping, setIsTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,6 +74,28 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       const response = await TutorV2Service.sendMessage(session.id, text);
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
+      if (response?.fallback) {
+        toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
+      }
+      if (response?.content) {
+        setMessages((prev) => {
+          const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
+          if (alreadyVisible) return prev;
+          return [
+            ...prev,
+            {
+              id: response.requestId || crypto.randomUUID(),
+              role: "assistant",
+              content: response.content,
+              tutor_session_id: session.id,
+              user_id: user.id,
+              created_at: new Date().toISOString(),
+              metadata: { fallback_used: !!response.fallback, provider: response.provider },
+            },
+          ];
+        });
+      }
+      setLastFailedMessage(null);
 
       // We DON'T manually append here anymore because the Edge Function should persist 
       // the assistant message to the database, and our Realtime subscription will pick it up.
@@ -79,7 +103,10 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
-      setError(err.message || "Ocorreu um erro ao processar sua mensagem.");
+      const friendlyMessage = err.message || "O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.";
+      setLastFailedMessage(text);
+      setError(friendlyMessage);
+      toast.error(friendlyMessage);
     } finally {
       setIsTyping(false);
     }
@@ -126,9 +153,21 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
           )}
 
           {error && (
-            <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-3 animate-slide-up">
-              <AlertCircle className="h-4 w-4" />
-              {error}
+            <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center justify-between gap-3 animate-slide-up">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+              {lastFailedMessage && (
+                <button
+                  type="button"
+                  onClick={() => handleSendMessage(lastFailedMessage)}
+                  disabled={isTyping}
+                  className="shrink-0 rounded-xl border border-red-500/30 px-3 py-1 font-black uppercase tracking-widest text-[10px] text-red-300 hover:bg-red-500/10 disabled:opacity-50"
+                >
+                  Tentar novamente
+                </button>
+              )}
             </div>
           )}
         </div>
