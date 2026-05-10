@@ -94,6 +94,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const autoPromptFiredRef = useRef(false);
   const initialPromptFiredRef = useRef(false);
   const isAutoStartingRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
