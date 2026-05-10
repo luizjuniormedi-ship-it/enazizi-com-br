@@ -379,6 +379,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                     quickActions={quickActions}
                     onSendRef={onSendRef}
                     initialPrompt={pendingPrompt || undefined}
+                    initialConversationId={activeConversationId}
                     hideUploadsPicker
                     pedagogicalHeader={({ messages }) => (
                       <PedagogicalHeaderBridge
