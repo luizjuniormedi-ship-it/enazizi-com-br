@@ -452,13 +452,32 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       { role: "user", content: message }
     ];
 
-    const providerResult = await resolveTutorAiResponse(supabase, {
+    // ---- AI Runtime Orchestrator (Fase 1) ----
+    const cogRaw = String(context.cognitive_load ?? "").toLowerCase();
+    const cognitiveLoad: AICognitiveLoad =
+      cogRaw.includes("alta") || cogRaw === "high" || Number(context.cognitive_load) >= 0.75
+        ? "high"
+        : cogRaw.includes("baixa") || cogRaw === "low"
+        ? "low"
+        : "normal";
+    const msgLen = (message || "").length;
+    const wantsDeep = /por que|porque|mecanismo|fisiopatolog|explica.*detalhe|aprofund|raciocínio|raciocinio/i.test(message || "");
+    const wantsSimple = /resum|simples|rápido|rapido|tldr|curto/i.test(message || "");
+    const complexity: AIComplexity = wantsSimple ? "low" : wantsDeep || msgLen > 240 ? "high" : "medium";
+
+    const providerResult = await runAI({
+      taskType: "tutor_chat",
+      specialty: session.specialty || null,
+      topic: session.topic || null,
+      complexity,
+      cognitiveLoad,
+      requiresReasoning: wantsDeep,
+      budgetMode: "balanced",
       messages,
       userId,
       sessionId,
-      topic: session.topic || "",
-      userMessage: message,
       requestId,
+      supabase,
     });
 
     let assistantMessage = providerResult.content;
