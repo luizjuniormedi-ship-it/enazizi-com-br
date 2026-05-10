@@ -99,7 +99,9 @@ const MODELS = {
   flashLite: { provider: "lovable-ai", model: "google/gemini-2.5-flash-lite" } as ModelRef,
   pro: { provider: "lovable-ai", model: "google/gemini-2.5-pro" } as ModelRef,
   gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-5-mini" } as ModelRef,
-  gpt5: { provider: "lovable-ai", model: "openai/gpt-5" } as ModelRef,
+  gpt5: { provider: "lovable-ai", model: "openai/gpt-5.5-pro" } as ModelRef,
+
+
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {

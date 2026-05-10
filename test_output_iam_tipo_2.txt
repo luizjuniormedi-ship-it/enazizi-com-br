@@ -1,0 +1,136 @@
+## 🎯 BLOCO 1 — MISSÃO CLÍNICA
+O Infarto Agudo do Miocárdio (IAM) Tipo 2 é frequentemente negligenciado ou mal diagnosticado na prática clínica e em provas de residência. Enquanto o Tipo 1 é o "evento coronariano clássico" (placa que rompe), o Tipo 2 é a "falência do sistema sob estresse". Entendê-lo é crucial para evitar condutas iatrogênicas, como prescrever antiagregantes potentes e anticoagulantes para um paciente que está sangrando ou séptico.
+
+---
+
+## 🧭 BLOCO 2 — ROADMAP COGNITIVO
+1.  **A Intuição:** A balança que quebrou.
+2.  **A Definição:** Desequilíbrio entre oferta e demanda (4ª Definição Universal).
+3.  **A Fisiopatologia:** Estresse hemodinâmico vs. Reserva coronária.
+4.  **A Clínica:** O paciente crítico com troponina positiva.
+5.  **A Conduta:** Tratar a causa base (não o vaso, inicialmente).
+
+---
+
+## 🟢 BLOCO 3 — INTUIÇÃO & EXPLICAÇÃO LEIGA
+Imagine um motor de carro.
+**IAM Tipo 1:** É como se uma sujeira entupisse a mangueira de combustível de repente. O motor para porque não chega nada.
+**IAM Tipo 2:** A mangueira está normal (ou apenas um pouco estreita), mas você está tentando subir uma ladeira íngreme com o pé no acelerador (estresse/taquicardia) ou o combustível acabou no tanque (anemia/hipotensão). O motor "funde" não por entupimento, mas porque exigiram dele mais do que ele podia entregar naquele momento.
+
+---
+
+## 🔵 BLOCO 4 — DEFINIÇÃO TÉCNICA & CLASSIFICAÇÃO
+Segundo a **4ª Definição Universal de Infarto (2018)**:
+O IAM Tipo 2 é a injúria miocárdica com necrose (subida e/ou queda de troponina + 1 valor acima do p99) em que um mecanismo **diverso** da aterotrombose coronariana aguda (placa rota) causa desequilíbrio entre oferta e demanda de Oxigênio ($O_2$).
+
+**Critérios Obrigatórios:**
+*   Elevação/queda de Troponina.
+*   Evidência de desequilíbrio entre oferta/demanda (sem trombose aguda).
+*   Pelo menos um: sintomas de isquemia, novas alterações de ST-T no ECG ou novas ondas Q.
+
+---
+
+## 🧬 BLOCO 5 — FISIOPATOLOGIA PROFUNDA
+O miocárdio é um tecido de extração máxima de $O_2$ fixa. Para aumentar a oferta, ele depende quase exclusivamente do fluxo coronariano.
+
+**A Cascata do Desequilíbrio:**
+1.  **Gatilho (↑ Demanda):** Taquiarritmias persistentes (Ex: FA com alta resposta), Crise Hipertensiva Grave.
+    *   *Mecanismo:* ↑ FC reduz o tempo de diástole (quando as coronárias se perfundem) e ↑ o trabalho de ejeção.
+2.  **Gatilho (↓ Oferta):** Anemia severa, Hipoxemia (Insuf. Respiratória), Hipotensão/Choque, Vasoespasmo coronário ou Dissecção Espontânea.
+    *   *Mecanismo:* ↓ Conteúdo arterial de $O_2$ ou ↓ Pressão de perfusão coronária.
+3.  **Resultado Celular:** Isquemia subendocárdica (a zona mais sensível à pressão intracavitária) → Falência da bomba de Na+/K+ → Morte celular (Necrose) → Liberação de Troponina na circulação.
+
+---
+
+## 🩺 BLOCO 6 — INTEGRAÇÃO CLÍNICA & TEMPORAL
+*   **Perfil do Paciente:** Idoso, com múltiplas comorbidades, internado por causas não-cardíacas (Pneumonia, ITU, Pós-operatório).
+*   **Tempo:** A elevação da troponina costuma acompanhar o pico do insulto clínico (ex: no auge da febre ou da hipotensão).
+*   **Exame Físico:** Frequentemente dominado pela causa base (estertores crepitantes da pneumonia, sinais de desidratação, palidez cutâneo-mucosa).
+
+---
+
+## 🧠 BLOCO 7 — RACIOCÍNIO DIAGNÓSTICO & EXAMES
+O desafio é: **É Tipo 1 ou Tipo 2?**
+*   **ECG:** Frequentemente mostra infra de ST ou inversão de onda T (isquemia subendocárdica clássica). Menos comum ter supra de ST (exceto no vasoespasmo).
+*   **Troponina:** Curva de subida e descida está presente em ambos. No Tipo 2, os valores tendem a ser mais baixos do que no Tipo 1, mas há sobreposição.
+*   **Ecocardiograma:** Pode mostrar hipocinesia em território coronariano se houver doença arterial prévia "desmascarada" pelo estresse.
+
+---
+
+## ⚖️ BLOCO 8 — DIAGNÓSTICOS DIFERENCIAIS
+| Condição | Mecanismo | Diferencial Chave |
+| :--- | :--- | :--- |
+| **IAM Tipo 1** | Ruptura de Placa / Trombo | Início súbito, dor típica, sem fator estressor óbvio. |
+| **IAM Tipo 2** | Desbalanço Oferta/Demanda | Presença de gatilho (Sepse, Anemia, Taquicardia). |
+| **Injúria Miocárdica** | Dano direto (Miocardite/Sepse) | Troponina elevada mas **estável** (sem curva) ou sem evidência de isquemia. |
+
+---
+
+## 💊 BLOCO 9 — CONDUTA & TOMADA DE DECISÃO
+A regra de ouro: **Trate a causa, não apenas o marcador.**
+
+1.  **Estabilização:**
+    *   Se Anemia (Hb < 7-8): Transfundir.
+    *   Se Taquiarritmia: Controlar frequência ou Cardioverter.
+    *   Se Hipoxemia: Suporte ventilatório.
+    *   Se Hipotensão: Vasopressores ou Volume.
+2.  **Antiagregação/Anticoagulação:** **CUIDADO!** Não é rotina no Tipo 2 inicial. Se o paciente está com IAM Tipo 2 por sangramento digestivo, o AAS vai matá-lo.
+3.  **Avaliação Coronariana:** Após estabilizar a fase aguda, considerar estratificação (CATE ou AngioTC) para ver se há coronariopatia crônica subjacente.
+
+---
+
+## 🎯 BLOCO 10 — PEGADINHAS & ERROS DE PRECEPTORIA
+*   **Erro Crítico:** Tratar toda troponina alta com Protocolo de SCA (AAS + Clopidogrel + Heparina) sem avaliar o contexto. Isso causa hemorragias evitáveis.
+*   **Pegadinha de Prova:** Paciente jovem, usuário de cocaína com dor precordial e supra de ST. É Tipo 2 (Vasoespasmo). A prova perguntará qual droga é contraindicada: **Betabloqueadores** (pelo risco de estimulação alfa-adrenérgica sem oposição).
+
+---
+
+## 🔁 BLOCO 11 — ACTIVE RECALL (Tente responder mentalmente)
+1. Qual a diferença fundamental entre IAM tipo 1 e tipo 2 no mecanismo coronariano?
+2. Um paciente com Sepse e troponina subindo, sem dor ou alteração no ECG, tem IAM tipo 2 ou Injúria Miocárdica?
+3. Por que o IAM tipo 2 cursa mais com infra de ST do que com supra?
+
+---
+
+## 📝 BLOCO 12 — QUESTÃO COMENTADA
+**(ENARE)** Paciente de 72 anos, internado por pneumonia grave e choque séptico em uso de noradrenalina. Apresenta ao ECG infra de ST em parede lateral e troponina ultrassensível de 1500 ng/L (Referência < 14). O paciente não apresenta dor torácica. Qual a conduta imediata mais adequada quanto ao coração?
+
+A) Iniciar AAS, Clopidogrel e Heparina plena.
+B) Encaminhar para Cateterismo de urgência (estratificação invasiva).
+C) Otimizar o tratamento da sepse e o suporte hemodinâmico.
+D) Iniciar Trombolítico.
+
+**Gabarito: C.**
+**Justificativa:** Trata-se de um IAM Tipo 2 clássico por choque (↓ oferta por má perfusão e ↑ demanda pela sepse/noradrenalina). A prioridade é reverter o choque. "A" e "D" aumentam o risco de sangramento e "B" é prematuro em um paciente instável por causa extra-cardíaca.
+
+---
+
+## 🧩 BLOCO 13 — RESUMO FEYNMAN
+O IAM Tipo 1 é um **acidente de trânsito** (pista bloqueada).
+O IAM Tipo 2 é **pane por excesso de carga** (carro pesado demais para o motor que tem).
+**Essência:** Troponina positiva + Isquemia + Gatilho sistêmico = IAM Tipo 2.
+
+---
+
+## 📌 BLOCO 14 — MAPA MENTAL TEXTUAL
+```
+IAM Tipo 2
+├── Causa Base: DESEQUILÍBRIO (Oferta vs Demanda)
+├── Etiologias
+│   ├── ↑ Demanda: Taquicardia, Hipertensão, Estresse
+│   └── ↓ Oferta: Anemia, Hipoxemia, Choque, Vasoespasmo
+├── Diagnóstico
+│   ├── Clínica: Paciente Crítico / Gatilho identificável
+│   ├── ECG: Frequentemente isquemia subendocárdica (Infra ST)
+│   └── Lab: Curva de Troponina (+)
+└── Tratamento
+    ├── Prioridade: Corrigir o Gatilho
+    └── Secundário: Avaliar coronariopatia após estabilidade
+```
+
+---
+
+## 🚀 BLOCO 15 — PRÓXIMOS PASSOS
+*   Revisar **Injúria Miocárdica** (Troponina alta sem isquemia - Ex: insuficiência renal).
+*   Estudar **Angina de Prinzmetal** (Exemplo específico de Tipo 2 por vasoespasmo).
+*   Praticar leitura de ECG com foco em **Infra de ST e diagnósticos diferenciais**.

@@ -745,6 +745,25 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
           request_id: requestId,
         },
       });
+    } else {
+      // Record successful pedagogical event
+      await recordTutorEvent(supabase, {
+        userId,
+        sessionId,
+        topic: session.topic,
+        eventType: qReview.active ? "question_review_success" : "pedagogical_response_success",
+        outcome: providerResult.model,
+        relatedMessageId: savedMsg?.id || null,
+        payload: {
+          provider: providerResult.provider,
+          model: providerResult.model,
+          latency_ms: providerResult.latencyMs,
+          pedagogical_score: pedagogicalScore,
+          feynman_score: feynmanScore,
+          q_review_active: qReview.active,
+          request_id: requestId,
+        },
+      });
     }
 
     console.log("[TUTOR_V2_RESPONSE_SENT]", { latency, provider: providerResult.provider, model: providerResult.model, fallbackUsed: providerResult.fallbackUsed, requestId });
