@@ -121,6 +121,8 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingLesson, setIsGeneratingLesson] = useState(false);
+  const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
   const scrollRef = useRef<HTMLDivElement>(null);
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${FUNCTION_NAME}`;
 
@@ -201,6 +203,37 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
     params.set("auto", "1");
     params.set("origin", "tutor-handoff");
     navigate(`/dashboard/sessao-estudo?${params.toString()}`);
+  };
+
+  const handleGenerateLesson = async () => {
+    if (!context.topic || isGeneratingLesson) return;
+    
+    setIsGeneratingLesson(true);
+    setLessonStatus('processing');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
+        body: {
+          topic: context.topic,
+          lessonType: 'aula_completa',
+          cmeEnabled: true
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success("Aula gerada com sucesso!");
+      setLessonStatus('ready');
+      
+      // If textual lesson is ready, we could show it. For now, let's navigate to a viewer if it existed.
+      // But according to prompt, we just need to fix the generation flow.
+    } catch (err: any) {
+      console.error("Lesson generation failed", err);
+      setLessonStatus('failed');
+      toast.error(err.message || "Falha ao gerar aula.");
+    } finally {
+      setIsGeneratingLesson(false);
+    }
   };
 
   const transformFullSession = () => {
