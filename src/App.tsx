@@ -99,6 +99,10 @@ const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "Prac
 const MnemonicStudioPage = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
 const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryPage"), "MnemonicHistoryPage");
 const TutorV2Page = lazyWithRetry(() => import("./pages/TutorV2Page"), "TutorV2Page");
+const TutorV2Redirect = () => {
+  console.warn("[LEGACY_TUTOR_BLOCKED] redirecting to Tutor V2");
+  return <PreserveQueryNavigate to="/dashboard/tutor-v2" />;
+};
 const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
 const MindMapFullscreen = lazyWithRetry(() => import("./pages/MindMapFullscreen"), "MindMapFullscreen");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
