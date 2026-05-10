@@ -116,9 +116,11 @@ export default function TopRiskStudents({
               <AlertTriangle className="h-3 w-3 mr-1" /> {warning} atenção
             </Badge>
           )}
-          <Button size="sm" variant="ghost" onClick={load}>
-            <RefreshCw className="h-3 w-3" />
-          </Button>
+          {onReload && (
+            <Button size="sm" variant="ghost" onClick={onReload}>
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       </div>
 
