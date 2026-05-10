@@ -165,7 +165,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const handleSend = useCallback(
     async (overridePrompt?: string, contextOverride?: string) => {
       const requestId = crypto.randomUUID();
-      console.log(`[TUTOR] SEND_STARTED id=${requestId}`, { overridePrompt, isLoading, sendCooldown });
+      const startTime = Date.now();
+      console.log(`[TUTOR] SEND_STARTED id=${requestId}`);
 
       const text = overridePrompt || input.trim();
       if (!text || isLoading || sendCooldown || !user) {
@@ -195,7 +196,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const userMsg: Msg = { role: "user", content: text };
       const allMessages = [...messages, userMsg];
       setMessages(allMessages);
-      console.log(`[TUTOR] USER_MESSAGE_APPENDED id=${requestId}`);
+      console.log(`[TUTOR] REQUEST_CREATED id=${requestId}`);
       
       setInput("");
       setIsLoading(true);
@@ -211,7 +212,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       // Watchdog implementation - Reduzido para 20s conforme solicitado
       const watchdogTimeout = setTimeout(() => {
         if (isLoading) {
-          console.error(`[TUTOR] WATCHDOG_TRIGGERED id=${requestId} - Stage: ${loadingStage}`);
+          console.error(`[TUTOR] WATCHDOG_TRIGGERED id=${requestId} - Stage: ${loadingStage} - elapsed=${Date.now() - startTime}ms`);
           setIsLoading(false);
           setLoadingStage("");
           const fallbackMsg = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
@@ -244,6 +245,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const convId = await history.ensureConversation(text);
       if (convId) {
         await history.persistUserMessage(convId, text);
+        console.log(`[TUTOR] PERSIST_STARTED (user) id=${requestId}`);
       }
 
       let assistantSoFar = "";
@@ -315,7 +317,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           });
           setIsLoading(false);
           setLoadingStage("");
-          console.log(`[TUTOR] SEND_COMPLETED (memory) id=${requestId}`);
+          console.log(`[TUTOR] UI_UNLOCKED id=${requestId} source=memory`);
           return;
         }
       } catch (err) {
@@ -341,6 +343,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       }
 
       const applyDelta = (fullText: string, data?: any) => {
+        if (!assistantSoFar && fullText) console.log(`[TUTOR] STREAM_CHUNK_RECEIVED id=${requestId}`);
         assistantSoFar = fullText;
         if (data?.sources && Array.isArray(data.sources)) {
           ragBibliography = data.sources.map((s: any) => ({
@@ -369,7 +372,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
-        console.log(`[TUTOR] MENTOR_CHAT_INVOKE_STARTED id=${requestId}`);
+        console.log(`[TUTOR] PROVIDER_STARTED id=${requestId}`);
         const result = await streamResponse({
           url: CHAT_URL,
           body: {
@@ -385,7 +388,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             sessionId: history.activeConversationId || undefined
           },
           onFirstChunk: () => {
-            console.log(`[TUTOR] MENTOR_CHAT_RESPONSE_RECEIVED id=${requestId}`);
+            console.log(`[TUTOR] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
+            console.log(`[TUTOR] STREAM_STARTED id=${requestId}`);
             console.log(`[TUTOR] ASSISTANT_APPEND_STARTED id=${requestId}`);
             setLoadingStage("✍️ Gerando resposta...");
           },
@@ -411,6 +415,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         });
 
         clearTimeout(watchdogTimeout);
+        console.log(`[TUTOR] STREAM_FINISHED id=${requestId}`);
         console.log(`[TUTOR] ASSISTANT_APPEND_FINISHED id=${requestId}`);
 
         if (result === null && !assistantSoFar) {
@@ -422,7 +427,9 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
 
         if (convId && assistantSoFar) {
+          console.log(`[TUTOR] PERSIST_STARTED id=${requestId}`);
           await history.persistAssistantMessage(convId, assistantSoFar);
+          console.log(`[TUTOR] PERSIST_FINISHED id=${requestId}`);
           history.loadConversations();
         }
 
@@ -481,7 +488,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       } finally {
         setIsLoading(false);
         setLoadingStage("");
-        console.log(`[TUTOR] LOADING_CLEARED id=${requestId}`);
+        console.log(`[TUTOR] UI_UNLOCKED id=${requestId} elapsed=${Date.now() - startTime}ms`);
       }
     },
     [input, isLoading, sendCooldown, user, quickActions, messages, telemetry, topic, subtopic, history, context, memory, isAdaptiveEnabled, fetchAdaptive, streamResponse, CHAT_URL, specialty, toast, onSaveMessage]
