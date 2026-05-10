@@ -211,7 +211,7 @@ export const useTutorCME = () => {
             .select("id")
             .eq("conversation_id", conversationId)
             .maybeSingle();
-          resolvedSessionId = (ts as any)?.id ?? null;
+          if (ts) resolvedSessionId = (ts as any).id;
         } else {
           // Check if it's already a session_id
           const { data: ts } = await supabaseClient
@@ -219,7 +219,7 @@ export const useTutorCME = () => {
             .select("id")
             .eq("id", conversationId)
             .maybeSingle();
-          if (ts) resolvedSessionId = ts.id;
+          if (ts) resolvedSessionId = (ts as any).id;
         }
       } catch (e) {
         debug("session lookup failed", e);
