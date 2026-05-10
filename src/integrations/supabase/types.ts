@@ -19524,6 +19524,7 @@ export type Database = {
           cognitive_load: number | null
           created_at: string | null
           detected_gaps: string[] | null
+          error_signals: Json | null
           feynman_score: number | null
           hallucination_warning: boolean | null
           id: string
@@ -19533,6 +19534,7 @@ export type Database = {
           model_used: string | null
           pedagogical_score: number | null
           phase_0_context: Json | null
+          planner_signals: Json | null
           session_id: string | null
           user_id: string | null
         }
@@ -19542,6 +19544,7 @@ export type Database = {
           cognitive_load?: number | null
           created_at?: string | null
           detected_gaps?: string[] | null
+          error_signals?: Json | null
           feynman_score?: number | null
           hallucination_warning?: boolean | null
           id?: string
@@ -19551,6 +19554,7 @@ export type Database = {
           model_used?: string | null
           pedagogical_score?: number | null
           phase_0_context?: Json | null
+          planner_signals?: Json | null
           session_id?: string | null
           user_id?: string | null
         }
@@ -19560,6 +19564,7 @@ export type Database = {
           cognitive_load?: number | null
           created_at?: string | null
           detected_gaps?: string[] | null
+          error_signals?: Json | null
           feynman_score?: number | null
           hallucination_warning?: boolean | null
           id?: string
@@ -19569,6 +19574,7 @@ export type Database = {
           model_used?: string | null
           pedagogical_score?: number | null
           phase_0_context?: Json | null
+          planner_signals?: Json | null
           session_id?: string | null
           user_id?: string | null
         }
