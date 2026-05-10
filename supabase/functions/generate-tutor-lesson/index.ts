@@ -97,8 +97,21 @@ Responda APENAS o JSON:
         response_format: { type: "json_object" }
       });
 
+      if (!aiResponse.ok) {
+        const errorText = await aiResponse.text();
+        console.error(`[generate-tutor-lesson] [AI_FETCH_ERROR] id=${requestId} status=${aiResponse.status}`, errorText);
+        throw new Error(`AI Provider returned ${aiResponse.status}: ${errorText.slice(0, 100)}`);
+      }
+
       const aiResult = await aiResponse.json();
-      const rawContent = aiResult.choices[0].message.content;
+      console.log(`[generate-tutor-lesson] [AI_RESULT_RECEIVED] id=${requestId}`, JSON.stringify(aiResult).slice(0, 200));
+      
+      const rawContent = aiResult.choices?.[0]?.message?.content;
+      if (!rawContent) {
+        console.error(`[generate-tutor-lesson] [INVALID_AI_RESPONSE] id=${requestId}`, aiResult);
+        throw new Error("Resposta da IA não contém o campo 'choices' esperado.");
+      }
+
       console.log(`[generate-tutor-lesson] [PROVIDER_DONE] id=${requestId}`);
       lessonContent = parseAiJson(rawContent);
     } catch (aiErr) {
