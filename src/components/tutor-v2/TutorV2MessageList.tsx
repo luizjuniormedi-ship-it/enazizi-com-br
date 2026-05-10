@@ -41,18 +41,14 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
             msg.role === "assistant" ? "flex-row" : "flex-row-reverse"
           )}
         >
-          <div className={cn(
-            "h-10 w-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden relative group",
-            msg.role === "assistant" 
-              ? "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20" 
-              : "bg-slate-800 border border-white/10"
-          )}>
+          <div className="flex-shrink-0 mt-1">
             {msg.role === "assistant"
-              ? <img src={enaziziMascot} alt="Tutor ENAZIZI" className="h-10 w-10 object-cover group-hover:scale-110 transition-transform" />
-              : <User className="h-5 w-5 text-slate-400" />}
-            {msg.role === "assistant" && (
-              <div className="absolute inset-0 bg-indigo-500/20 animate-pulse pointer-events-none" />
-            )}
+              ? <MascotAvatar state="teaching" size="sm" />
+              : (
+                <div className="h-10 w-10 rounded-2xl flex items-center justify-center bg-slate-800 border border-white/10">
+                  <User className="h-5 w-5 text-slate-400" />
+                </div>
+              )}
           </div>
           
           <div className={cn(
