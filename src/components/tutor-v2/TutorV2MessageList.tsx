@@ -24,10 +24,12 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           )}
         >
           <div className={cn(
-            "h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1",
-            msg.role === "assistant" ? "bg-indigo-500 shadow-lg shadow-indigo-500/20" : "bg-slate-700"
+            "h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden",
+            msg.role === "assistant" ? "bg-indigo-500/10 ring-1 ring-indigo-500/30 shadow-lg shadow-indigo-500/20" : "bg-slate-700"
           )}>
-            {msg.role === "assistant" ? <Brain className="h-5 w-5 text-white" /> : <User className="h-5 w-5 text-white" />}
+            {msg.role === "assistant"
+              ? <img src={enaziziMascot} alt="Tutor ENAZIZI" className="h-8 w-8 object-cover" />
+              : <User className="h-5 w-5 text-white" />}
           </div>
           
           <div className={cn(
