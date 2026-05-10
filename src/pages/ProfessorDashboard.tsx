@@ -235,12 +235,18 @@ const ProfessorDashboard = () => {
 
           {/* OPERACIONAL: Alunos em risco · Heatmap turma · Aluno individual · Casos plantão */}
           <TabsContent value="operacional" className="mt-4 space-y-6">
+            {(activeSub === "risco" || activeSub === "heatmap") && (
+              <OperationalKpiBar analytics={classAnalytics.data} loading={classAnalytics.loading} />
+            )}
             {activeSub === "risco" && (
               <TopRiskStudents
-                callAPI={callAPI}
-                onActionAssign={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
-                onActionMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
-                onActionTrack={() => { setActiveSub("aluno"); }}
+                analytics={classAnalytics.data}
+                loading={classAnalytics.loading}
+                error={classAnalytics.error}
+                onReload={classAnalytics.reload}
+                onAssignRecovery={(id, name) => setRecoveryFor({ id, name })}
+                onOpenMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
+                onOpenDrawer={(id) => setDrawerStudentId(id)}
               />
             )}
             {activeSub === "heatmap" && <ClassCognitiveHeatmap callAPI={callAPI} />}
