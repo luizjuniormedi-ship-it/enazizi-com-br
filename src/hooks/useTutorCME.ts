@@ -345,8 +345,7 @@ export const useTutorCME = () => {
       }
     });
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) throw new Error("Usuário não autenticado");
+    // user já foi validado no início da função
 
     // Recalcular resolvedSessionId se perdemos contexto (improvável mas seguro)
     let finalSessionId = conversationId;
