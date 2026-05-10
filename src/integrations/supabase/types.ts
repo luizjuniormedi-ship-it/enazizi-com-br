@@ -19581,6 +19581,142 @@ export type Database = {
           },
         ]
       }
+      tutor_qa_results: {
+        Row: {
+          category: string
+          created_at: string
+          details: string | null
+          id: string
+          latency_ms: number | null
+          model_used: string | null
+          payload: Json | null
+          run_id: string | null
+          score: number | null
+          status: string
+          test_name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          latency_ms?: number | null
+          model_used?: string | null
+          payload?: Json | null
+          run_id?: string | null
+          score?: number | null
+          status: string
+          test_name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          latency_ms?: number | null
+          model_used?: string | null
+          payload?: Json | null
+          run_id?: string | null
+          score?: number | null
+          status?: string
+          test_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_qa_results_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_qa_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tutor_qa_runs: {
+        Row: {
+          finished_at: string | null
+          global_score: number | null
+          ia_runtime_score: number | null
+          id: string
+          metadata: Json | null
+          pedagogical_score: number | null
+          performance_score: number | null
+          security_score: number | null
+          stability_score: number | null
+          started_at: string
+          status: string
+          triggered_by: string | null
+          ux_score: number | null
+        }
+        Insert: {
+          finished_at?: string | null
+          global_score?: number | null
+          ia_runtime_score?: number | null
+          id?: string
+          metadata?: Json | null
+          pedagogical_score?: number | null
+          performance_score?: number | null
+          security_score?: number | null
+          stability_score?: number | null
+          started_at?: string
+          status: string
+          triggered_by?: string | null
+          ux_score?: number | null
+        }
+        Update: {
+          finished_at?: string | null
+          global_score?: number | null
+          ia_runtime_score?: number | null
+          id?: string
+          metadata?: Json | null
+          pedagogical_score?: number | null
+          performance_score?: number | null
+          security_score?: number | null
+          stability_score?: number | null
+          started_at?: string
+          status?: string
+          triggered_by?: string | null
+          ux_score?: number | null
+        }
+        Relationships: []
+      }
+      tutor_qa_snapshots: {
+        Row: {
+          content_hash: string | null
+          content_raw: string | null
+          created_at: string
+          id: string
+          run_id: string | null
+          scenario_key: string
+          snapshot_type: string
+        }
+        Insert: {
+          content_hash?: string | null
+          content_raw?: string | null
+          created_at?: string
+          id?: string
+          run_id?: string | null
+          scenario_key: string
+          snapshot_type: string
+        }
+        Update: {
+          content_hash?: string | null
+          content_raw?: string | null
+          created_at?: string
+          id?: string
+          run_id?: string | null
+          scenario_key?: string
+          snapshot_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_qa_snapshots_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_qa_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tutor_recommendation_cache: {
         Row: {
           confidence: number | null
@@ -21746,6 +21882,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: { Args: never; Returns: boolean }
       is_lesson_staff: { Args: { _user_id: string }; Returns: boolean }
       list_student_facets_for_professor: {
         Args: never
