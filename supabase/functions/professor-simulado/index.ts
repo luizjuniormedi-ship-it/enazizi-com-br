@@ -2729,6 +2729,117 @@ REGRAS:
         return ok({ logs: logs || [] });
       }
 
+      case "assign_intervention": {
+        // Universal professor intervention endpoint with governance + decisions logging.
+        // Body: { intervention_type, target_user_id, severity?, justification?, request_id?, payload? }
+        // intervention_type ∈ recovery | fsrs_review | adaptive_simulado | reduce_load | mentoria | monitor
+        const {
+          intervention_type,
+          target_user_id,
+          severity = "medium",
+          justification = "",
+          request_id: clientReqId,
+          payload = {},
+        } = params as Record<string, any>;
+
+        const VALID = ["recovery", "fsrs_review", "adaptive_simulado", "reduce_load", "mentoria", "monitor"];
+        if (!intervention_type || !VALID.includes(intervention_type)) {
+          throw new Error(`intervention_type inválido. Use: ${VALID.join(", ")}`);
+        }
+        if (!target_user_id || typeof target_user_id !== "string") {
+          throw new Error("target_user_id é obrigatório");
+        }
+
+        const request_id: string = clientReqId || (globalThis.crypto?.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`);
+        const created_at = new Date().toISOString();
+
+        // Side-effect (best-effort, never blocks logs)
+        let side_effect: Record<string, unknown> = { type: "none" };
+        try {
+          if (intervention_type === "recovery" && payload?.specialty && payload?.topics_to_cover) {
+            const { data: assignment } = await sb.from("teacher_study_assignments").insert({
+              professor_id: user.id,
+              title: payload.title || `Recovery dirigido — ${payload.specialty}`,
+              specialty: payload.specialty,
+              topics_to_cover: payload.topics_to_cover,
+              status: "active",
+            }).select("id").single();
+            if (assignment?.id) {
+              await sb.from("teacher_study_assignment_results").insert({
+                assignment_id: assignment.id,
+                student_id: target_user_id,
+                status: "pending",
+              });
+              side_effect = { type: "study_assignment", assignment_id: assignment.id };
+            }
+          } else if (intervention_type === "mentoria") {
+            await sb.from("admin_messages").insert({
+              sender_id: user.id,
+              recipient_id: target_user_id,
+              title: `🎓 Mentoria do Prof. ${professorName}`,
+              content: payload?.message
+                ? String(payload.message)
+                : `O Prof. ${professorName} abriu uma mentoria com você. Justificativa: ${justification || "acompanhamento"}.`,
+              priority: "important",
+            });
+            side_effect = { type: "mentoria_message" };
+          }
+        } catch (sideErr) {
+          console.warn("[assign_intervention] side-effect falhou (não bloqueante):", sideErr);
+          side_effect = { type: "side_effect_failed", error: sideErr instanceof Error ? sideErr.message : String(sideErr) };
+        }
+
+        // governance_logs (actor=professor, target=aluno)
+        let governance_log_id: string | null = null;
+        try {
+          const { data: gov } = await sb.from("governance_logs").insert({
+            admin_id: user.id,
+            action_type: `professor.intervention.${intervention_type}`,
+            target_table: "profiles",
+            severity,
+            details: {
+              request_id,
+              actor_user_id: user.id,
+              target_user_id,
+              intervention_type,
+              justification,
+              payload,
+              side_effect,
+              source_module: "professor_command_center",
+            },
+          }).select("id").single();
+          governance_log_id = gov?.id ?? null;
+        } catch (govErr) {
+          console.error("[assign_intervention] governance_logs falhou:", govErr);
+        }
+
+        // assistant_decisions (fallback / audit per-student)
+        let decision_id: string | null = null;
+        try {
+          const { data: dec } = await sb.from("assistant_decisions").insert({
+            user_id: target_user_id,
+            decision_type: `professor_intervention_${intervention_type}`,
+            source_module: "professor_command_center",
+            input_snapshot: { request_id, actor_user_id: user.id, payload, severity },
+            decision_output: { intervention_type, side_effect, governance_log_id },
+            justification: justification || `Intervenção do Prof. ${professorName}`,
+          }).select("id").single();
+          decision_id = dec?.id ?? null;
+        } catch (decErr) {
+          console.error("[assign_intervention] assistant_decisions falhou:", decErr);
+        }
+
+        return ok({
+          success: true,
+          request_id,
+          intervention_type,
+          governance_log_id,
+          decision_id,
+          side_effect,
+          created_at,
+        });
+      }
+
       default:
         return new Response(JSON.stringify({ error: `Ação desconhecida: ${action}` }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
