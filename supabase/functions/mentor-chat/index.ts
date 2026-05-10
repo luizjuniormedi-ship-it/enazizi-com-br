@@ -272,11 +272,31 @@ serve(async (req) => {
         message: content,
         modelUsed,
         requestId,
+        chunksFound: ragSources.length,
+        sources: ragSources,
         elapsedMs: Date.now() - startTime
       });
     }
 
-    return new Response(response.body, {
+    // Transformation: Prepend sources and wrap the stream
+    const encoder = new TextEncoder();
+    const transformStream = new TransformStream({
+      async start(controller) {
+        if (ragSources.length > 0) {
+          const sourcesChunk = {
+            choices: [{ delta: { content: "" } }],
+            sources: ragSources,
+            requestId
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sourcesChunk)}\n\n`));
+        }
+      },
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+      }
+    });
+
+    return new Response(response.body?.pipeThrough(transformStream), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 
