@@ -141,6 +141,17 @@ export default function EnaflixPage() {
   const isLoading = (isLoadingLessons || (isLoadingUsage && !!user) || adminLoading) && !forceReady;
 
   useEffect(() => {
+    if (!isLoading && aiLessons) {
+      triggerInteraction({
+        state: 'idle',
+        type: 'welcome',
+        speech: "Bem-vindo ao ENAFLIX. Escolha um módulo para mergulhar no conhecimento médico."
+      });
+    }
+  }, [isLoading, !!aiLessons]); // Simplified dependency to avoid loop if triggerInteraction changes
+
+
+  useEffect(() => {
     // Aumentamos o timeout de segurança para 8s e forçamos o log se falhar
     const timer = setTimeout(() => {
       if (isLoading && !forceReady) {
