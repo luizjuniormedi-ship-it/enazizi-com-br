@@ -2,8 +2,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { BarChart3, ChevronRight } from "lucide-react";
+import { BarChart3, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface SpecialtyData {
   specialty: string;
