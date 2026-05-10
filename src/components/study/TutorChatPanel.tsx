@@ -16,8 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/hooks/useTelemetry";
-import { cn } from "@/lib/utils";
-import { useTelemetry } from "@/hooks/useTelemetry";
 
 interface MsgRowProps { role: "user" | "assistant"; content: string; bibliography?: any[] }
 const ChatMsgRow = memo(({ role, content, bibliography }: MsgRowProps) => (
