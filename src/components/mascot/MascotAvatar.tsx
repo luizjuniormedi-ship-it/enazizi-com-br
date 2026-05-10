@@ -10,8 +10,10 @@ import {
   AlertCircle, 
   Coffee, 
   Trophy, 
-  Target 
+  Target,
+  ShieldAlert
 } from 'lucide-react';
+
 
 interface MascotAvatarProps {
   state: MascotState;
@@ -36,13 +38,17 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
       case 'thinking': return <Brain className="text-indigo-400 animate-pulse w-full h-full" />;
       case 'teaching': return <GraduationCap className="text-indigo-400 w-full h-full" />;
       case 'success': return <CheckCircle2 className="text-emerald-400 w-full h-full" />;
-      case 'warning': return <AlertCircle className="text-amber-400 w-full h-full" />;
+      case 'warning': return <AlertCircle className="text-rose-500 w-full h-full" />;
       case 'fatigue': return <Coffee className="text-blue-400 w-full h-full" />;
       case 'celebration': return <Trophy className="text-yellow-400 animate-bounce w-full h-full" />;
       case 'focus': return <Target className="text-rose-400 w-full h-full" />;
+      case 'alert': return <ShieldAlert className="text-amber-500 w-full h-full" />;
+      case 'correcting': return <CheckCircle2 className="text-indigo-400 w-full h-full" />;
       default: return <Sparkles className="text-indigo-400 w-full h-full" />;
     }
   };
+
+
 
   const glowColors = {
     idle: 'rgba(99, 102, 241, 0.2)', // indigo
@@ -52,8 +58,11 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
     warning: 'rgba(245, 158, 11, 0.4)', // amber
     fatigue: 'rgba(59, 130, 246, 0.4)', // blue
     celebration: 'rgba(234, 179, 8, 0.4)', // yellow
-    focus: 'rgba(225, 29, 72, 0.4)' // rose
+    focus: 'rgba(225, 29, 72, 0.4)', // rose
+    alert: 'rgba(239, 68, 68, 0.4)', // red
+    correcting: 'rgba(99, 102, 241, 0.4)' // indigo
   };
+
 
   return (
     <div className={`relative flex items-center justify-center ${sizeClasses[size]} ${className}`}>

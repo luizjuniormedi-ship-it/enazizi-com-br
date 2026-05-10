@@ -1,6 +1,9 @@
-import { useState, useRef } from "react";
-import { Send, Mic, Paperclip } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Mic, Paperclip, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+
+
 
 interface TutorV2InputProps {
   onSendMessage: (text: string) => void;
@@ -9,7 +12,20 @@ interface TutorV2InputProps {
 
 export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputProps) {
   const [text, setText] = useState("");
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
 
   const handleSend = () => {
     if (!text.trim() || disabled) return;
@@ -47,8 +63,12 @@ export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputPr
                 handleSend();
               }
             }}
-            placeholder="Pergunte ao Tutor ou peça uma explicação..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-[14px] py-3.5 resize-none max-h-[200px] text-slate-100 placeholder:text-slate-600 font-medium"
+            placeholder={isOffline ? "Você está offline no momento..." : "Pergunte ao Tutor ou peça uma explicação..."}
+            className={cn(
+              "flex-1 bg-transparent border-none focus:ring-0 text-[14px] py-3.5 resize-none max-h-[200px] font-medium transition-colors",
+              isOffline ? "text-slate-500" : "text-slate-100 placeholder:text-slate-600"
+            )}
+
             rows={1}
             autoFocus
             disabled={disabled}
@@ -73,18 +93,28 @@ export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputPr
         </div>
       </div>
       
-      <div className="flex items-center justify-center gap-4 mt-3">
-        <div className="flex items-center gap-1.5">
-          <span className="h-1 w-1 rounded-full bg-emerald-500" />
-          <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
-            Medical Intelligence Active
+      {isOffline ? (
+        <div className="flex items-center justify-center gap-2 mt-3 animate-pulse">
+          <AlertTriangle className="h-3 w-3 text-amber-500" />
+          <p className="text-[9px] text-amber-500 font-black uppercase tracking-widest">
+            Modo Offline • Reconectando...
           </p>
         </div>
-        <div className="h-1 w-1 rounded-full bg-white/10" />
-        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
-          Protocolo Feynman V2
-        </p>
-      </div>
+      ) : (
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <div className="flex items-center gap-1.5">
+            <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+              Medical Intelligence Active
+            </p>
+          </div>
+          <div className="h-1 w-1 rounded-full bg-white/10" />
+          <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+            Protocolo Feynman V2
+          </p>
+        </div>
+      )}
+
     </div>
   );
 }

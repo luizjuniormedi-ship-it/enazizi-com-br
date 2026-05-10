@@ -33,15 +33,21 @@ export function useTutorV2Messages(sessionId?: string) {
         { event: 'INSERT', schema: 'public', table: 'tutor_messages', filter: `tutor_session_id=eq.${sessionId}` },
         (payload) => {
           setMessages(prev => {
-            // Se já temos uma mensagem com o mesmo conteúdo e papel enviada recentemente (optimistic), não duplicamos
-            const isDuplicate = prev.some(m => 
-              (m.id === payload.new.id) || 
-              (m.role === payload.new.role && m.content === payload.new.content && Math.abs(new Date(m.created_at).getTime() - new Date(payload.new.created_at).getTime()) < 3000)
+            const exists = prev.some(m => m.id === payload.new.id);
+            if (exists) return prev;
+
+            // Filtro de duplicatas por conteúdo (proteção extra para streaming/race conditions)
+            const isContentDuplicate = prev.some(m => 
+              m.role === payload.new.role && 
+              m.content === payload.new.content && 
+              Math.abs(new Date(m.created_at).getTime() - new Date(payload.new.created_at).getTime()) < 2000
             );
-            if (isDuplicate) return prev;
+            if (isContentDuplicate) return prev;
+
             return [...prev, payload.new];
           });
         }
+
       )
       .subscribe();
 

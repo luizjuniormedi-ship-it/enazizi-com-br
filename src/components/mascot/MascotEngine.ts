@@ -7,7 +7,9 @@ export type MascotState =
   | 'warning' 
   | 'fatigue' 
   | 'celebration' 
-  | 'focus';
+  | 'focus'
+  | 'alert'
+  | 'correcting';
 
 export interface MascotInteraction {
   id: string;

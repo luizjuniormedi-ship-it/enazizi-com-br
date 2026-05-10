@@ -23,23 +23,22 @@ async function readFunctionError(err: any) {
 }
 
 export const TutorV2Service = {
-  async sendMessage(sessionId: string, message: string) {
-    console.log("[TUTOR_V2_EDGE_CALL] functionName: tutor-v2-chat", { sessionId, message });
+  async sendMessage(sessionId: string, message: string, retryCount = 0) {
+    console.log("[TUTOR_V2_EDGE_CALL] functionName: tutor-v2-chat", { sessionId, message, retryCount });
     try {
       const { data, error } = await supabase.functions.invoke("tutor-v2-chat", {
         body: { sessionId, message }
       });
       
-      console.log("[TUTOR_V2_EDGE_RESULT]", { data, error });
-      
       if (error) {
-        const structured = await readFunctionError(error);
-        console.error("[TUTOR_V2_EDGE_ERROR] Details:", {
-          message: error.message,
-          name: error.name,
-          structured,
-        });
+        // Estratégia de retry automático para erros transientes (máximo 2 retentativas)
+        if (retryCount < 2 && error.message?.includes("Failed to fetch")) {
+          console.warn(`[TUTOR_V2_RETRY] Attempt ${retryCount + 1}...`);
+          await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
+          return this.sendMessage(sessionId, message, retryCount + 1);
+        }
 
+        const structured = await readFunctionError(error);
         const code = structured?.error || structured?.code;
         if (code === "AI_PROVIDER_NOT_CONFIGURED" || code === "AI_PROVIDER_UNAVAILABLE" || code === "AI_RATE_LIMITED" || code === "AI_QUOTA_EXHAUSTED") {
           throw new Error(structured?.message || FRIENDLY_PROVIDER_ERROR);
@@ -48,16 +47,15 @@ export const TutorV2Service = {
       }
       return data;
     } catch (err: any) {
-      console.error("[TUTOR_V2_INVOKE_CRASH]", err);
-      if (err.message?.includes("Failed to send a request")) {
-        throw new Error("Não foi possível conectar ao servidor do Tutor IA. Verifique sua conexão ou se a função está ativa.");
-      }
-      if (err.message?.includes("AI provider error")) {
-        throw new Error(FRIENDLY_PROVIDER_ERROR);
+      if (retryCount < 2 && (err.message?.includes("NetworkError") || err.message?.includes("AbortError"))) {
+        console.warn(`[TUTOR_V2_RETRY_CATCH] Attempt ${retryCount + 1}...`);
+        await new Promise(r => setTimeout(r, 1000 * (retryCount + 1)));
+        return this.sendMessage(sessionId, message, retryCount + 1);
       }
       throw err;
     }
   },
+
 
   async generateLesson(sessionId: string) {
     const { data, error } = await supabase.functions.invoke("generate-tutor-v2-lesson", {

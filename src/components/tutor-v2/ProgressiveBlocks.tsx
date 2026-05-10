@@ -1,7 +1,24 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import { ChevronRight, Check, HelpCircle, Activity, Stethoscope, AlertTriangle, ShieldAlert } from "lucide-react";
+import { 
+  ChevronRight, 
+  Check, 
+  HelpCircle, 
+  Activity, 
+  Stethoscope, 
+  AlertTriangle, 
+  ShieldAlert,
+  ChevronDown,
+  Brain,
+  Lightbulb,
+  Microscope,
+  GitBranch,
+  Target,
+  Zap,
+  BookOpen,
+  Info
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +26,40 @@ interface ProgressiveBlocksProps {
   content: string;
 }
 
-/**
- * Splits a Tutor V2 response by "## " headings and detects JSON blocks for structured UI.
- */
+const BLOCK_ICONS: Record<string, any> = {
+  "Missão Clínica": Target,
+  "Explicação Feynman": Lightbulb,
+  "Lay/Feynman": Lightbulb,
+  "Definição Técnica": Info,
+  "Técnica": Info,
+  "Fisiopatologia": Microscope,
+  "Fisiopato": Microscope,
+  "Mecanismo molecular": Microscope,
+  "Integração Clínica": Activity,
+  "Aplicação Clínica": Activity,
+  "Aplicação": Activity,
+  "Diagnóstico Diferencial": GitBranch,
+  "Diferencial": GitBranch,
+  "Conduta": Zap,
+  "Pegadinhas": AlertTriangle,
+  "Erros de Preceptoria": ShieldAlert,
+  "Preceptoria": ShieldAlert,
+  "Active Recall": Brain,
+  "Recall": Brain,
+  "Questão Comentada": BookOpen,
+  "Resumo Final": Check,
+  "Resumo": Check,
+  "Referências": BookOpen,
+};
+
 export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
   const parsedContent = useMemo(() => parseContent(content), [content]);
   const [revealed, setRevealed] = useState(1);
+  const [expandedBlocks, setExpandedBlocks] = useState<Record<number, boolean>>({ 0: true });
+
+  const toggleBlock = (idx: number) => {
+    setExpandedBlocks(prev => ({ ...prev, [idx]: !prev[idx] }));
+  };
 
   if (parsedContent.length <= 1 && typeof parsedContent[0] === 'string') {
     return (
@@ -43,22 +88,73 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
   return (
     <div className="space-y-6">
       <AnimatePresence initial={false}>
-        {visible.map((item, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          >
-            {typeof item === 'string' ? (
-              <div className="prose prose-invert prose-sm max-w-none border-l-2 border-indigo-500/30 pl-4 py-1">
-                <ReactMarkdown>{item}</ReactMarkdown>
-              </div>
-            ) : (
-              <StructuredBoard data={item} />
-            )}
-          </motion.div>
-        ))}
+        {visible.map((item, idx) => {
+          const isString = typeof item === 'string';
+          const title = isString ? extractTitle(item) : "Quadro Estruturado";
+          const Icon = BLOCK_ICONS[title] || (isString ? Stethoscope : Activity);
+          const isExpanded = expandedBlocks[idx] ?? true;
+
+          return (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+              className={cn(
+                "rounded-[2rem] border transition-all duration-300 overflow-hidden",
+                isExpanded ? "bg-slate-900/40 border-white/10 shadow-xl" : "bg-slate-900/20 border-white/5"
+              )}
+            >
+              {/* Header colapsável */}
+              <button 
+                onClick={() => toggleBlock(idx)}
+                className="w-full flex items-center justify-between p-5 hover:bg-white/5 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className={cn(
+                    "h-8 w-8 rounded-xl flex items-center justify-center transition-all",
+                    isExpanded ? "bg-indigo-500/20 text-indigo-400" : "bg-slate-800 text-slate-500"
+                  )}>
+                    <Icon className="h-4 w-4" />
+                  </div>
+                  <span className={cn(
+                    "text-[11px] font-black uppercase tracking-[0.2em]",
+                    isExpanded ? "text-white" : "text-slate-500"
+                  )}>
+                    {title}
+                  </span>
+                </div>
+                <ChevronDown className={cn(
+                  "h-4 w-4 text-slate-600 transition-transform duration-300",
+                  isExpanded ? "rotate-180" : "rotate-0"
+                )} />
+              </button>
+
+              <AnimatePresence>
+                {isExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3, ease: "easeInOut" }}
+                  >
+                    <div className="p-6 pt-0 border-t border-white/5 mt-0.5">
+                      {isString ? (
+                        <div className="prose prose-invert prose-sm max-w-none pt-4">
+                          <ReactMarkdown>{item.replace(/^#+\s+.*(\r?\n)?/, '')}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <div className="pt-4">
+                          <StructuredBoard data={item} />
+                        </div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          );
+        })}
       </AnimatePresence>
 
       {hasMore ? (
@@ -90,7 +186,10 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
             </Button>
             <Button
               size="sm"
-              onClick={() => setRevealed((n) => Math.min(parsedContent.length, n + 1))}
+              onClick={() => {
+                setRevealed((n) => Math.min(parsedContent.length, n + 1));
+                setExpandedBlocks(prev => ({ ...prev, [revealed]: true }));
+              }}
               className="h-10 px-5 text-[11px] font-black uppercase tracking-widest gap-2 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/30 rounded-2xl shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               Avançar <ChevronRight className="h-4 w-4" />
@@ -114,10 +213,7 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
 function StructuredBoard({ data }: { data: any }) {
   if (data.type === 'clinical_flow') {
     return (
-      <div className="my-6 p-6 rounded-[2rem] bg-slate-950/80 border border-white/10 shadow-2xl relative overflow-hidden group">
-        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-          <Activity className="h-12 w-12 text-indigo-500" />
-        </div>
+      <div className="space-y-4">
         <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-6 flex items-center gap-2">
           <Stethoscope className="h-4 w-4" /> {data.payload.title || "Fluxograma Clínico"}
         </h4>
@@ -145,7 +241,7 @@ function StructuredBoard({ data }: { data: any }) {
 
   if (data.type === 'differential_diagnosis') {
     return (
-      <div className="my-6 p-6 rounded-[2rem] bg-slate-950/80 border border-white/10 shadow-2xl">
+      <div>
         <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-rose-400 mb-2 flex items-center gap-2">
           <AlertTriangle className="h-4 w-4" /> {data.payload.title || "Diagnóstico Diferencial"}
         </h4>
@@ -190,35 +286,28 @@ function StructuredBoard({ data }: { data: any }) {
 function parseContent(content: string): (string | any)[] {
   if (!content) return [];
   
-  // First, extract JSON blocks
   const result: (string | any)[] = [];
-  let remaining = content;
   
-  // Pattern to find JSON blocks starting with { and ending with }
-  // We specifically look for the types defined in enazizi-prompt
   const jsonRegex = /\{[\s\n]*"type":[\s\n]*"(clinical_flow|differential_diagnosis|pharmacology_compare)"[\s\S]*?\}/g;
   
   let match;
   let lastIdx = 0;
   
   while ((match = jsonRegex.exec(content)) !== null) {
-    // Add preceding text
     const textBefore = content.slice(lastIdx, match.index).trim();
     if (textBefore) {
       result.push(...splitTextIntoBlocks(textBefore));
     }
     
-    // Add JSON block
     try {
       result.push(JSON.parse(match[0]));
     } catch (e) {
-      result.push(match[0]); // fallback to raw if parse fails
+      result.push(match[0]);
     }
     
     lastIdx = match.index + match[0].length;
   }
   
-  // Add remaining text
   const textAfter = content.slice(lastIdx).trim();
   if (textAfter) {
     result.push(...splitTextIntoBlocks(textAfter));
@@ -258,6 +347,8 @@ function extractTitle(block: string): string {
     .replace(/^#+\s*/, "")
     .replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}]\s*/u, "")
     .replace(/^BLOCO\s+\d+\s*[—-]\s*/i, "")
+    .replace(/^\d+\.\s+/, "")
+    .replace(/\s*\(.*\)\s*/, "") // Remove parênteses
     .trim();
   return cleaned || "este bloco";
 }
