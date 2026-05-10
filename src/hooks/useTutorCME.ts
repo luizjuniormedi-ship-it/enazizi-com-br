@@ -179,24 +179,35 @@ export const useTutorCME = () => {
 
   const aggregateSessionContent = useCallback(async (conversationId: string, customContent?: string) => {
     let messages: any[] = [];
+    let resolvedSessionId: string | null = null;
+    let isChatConversation = false;
+
     const debug = (msg: string, extra?: any) => {
       // Logs técnicos: somente console (DEV/observabilidade), nunca na UI.
       if (extra !== undefined) console.debug(`[CME aggregate] ${msg}`, extra);
       else console.debug(`[CME aggregate] ${msg}`);
     };
 
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) throw new Error("Usuário não autenticado");
+
     if (customContent) {
       debug("using customContent (single message path)", { length: customContent.length });
       messages = [{ content: customContent, role: 'assistant' }];
+
+      // Try to resolve session even for custom content
+      try {
+        const { data: ts } = await supabaseClient
+          .from("tutor_sessions" as any)
+          .select("id")
+          .eq("conversation_id", conversationId)
+          .maybeSingle();
+        if (ts) resolvedSessionId = (ts as any).id;
+      } catch (e) {
+        debug("session lookup for custom content failed", e);
+      }
     } else {
       debug("conversationId received", { conversationId });
-
-      // Bug fix: conversationId pode ser session_id (tutor_sessions) ou conversation_id (chat_conversations)
-      let resolvedSessionId: string | null = null;
-      let isChatConversation = false;
-      
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
 
       try {
         // First try as conversationId
