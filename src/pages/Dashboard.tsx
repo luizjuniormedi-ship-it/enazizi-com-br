@@ -210,71 +210,13 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Hero Cinematic Style - Netflix Medical */}
-      <div className="px-4 sm:px-8 lg:px-14">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.98 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="relative min-h-[500px] rounded-[40px] overflow-hidden flex items-end p-8 sm:p-12 lg:p-16 group"
-        >
-          {/* Background Poster */}
-          <div className="absolute inset-0">
-            <img 
-              src="https://images.unsplash.com/photo-1576091160550-2173bdb999ef?q=80&w=2000&auto=format&fit=crop" 
-              className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
-              alt="Medical Mission"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#050508] via-[#050508]/60 to-transparent" />
-            <div className="absolute inset-0 bg-gradient-to-r from-[#050508]/80 via-transparent to-transparent" />
-          </div>
-
-          <div className="relative z-10 max-w-3xl space-y-6">
-            <div className="flex flex-col gap-2">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3"
-              >
-                <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40 shadow-[0_0_15px_rgba(var(--pixar-blue),0.5)]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/50">Missão Crítica</span>
-              </motion.div>
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-black tracking-tighter text-white leading-[0.9] drop-shadow-2xl">
-                Sua missão de hoje, <span className="gradient-text">{firstName}</span>
-              </h1>
-              <p className="text-lg sm:text-xl text-white/80 font-medium max-w-xl leading-tight">
-                {activeRec?.title || "Começar revisão inteligente"} — {activeRec?.description || "O motor ACE está preparando sua jornada personalizada."}
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Enaflix3DButton 
-                size="lg" 
-                glow 
-                iconLeft={<Rocket className="h-5 w-5" />}
-                onClick={() => navigate(`/dashboard/sessao-estudo?source=dashboard_hero`)}
-              >
-                Começar agora
-              </Enaflix3DButton>
-              <Enaflix3DButton 
-                variant="outline" 
-                size="lg" 
-                iconLeft={<Clock className="h-5 w-5" />}
-                onClick={() => navigate("/dashboard/flashcards")}
-              >
-                Ver revisões
-              </Enaflix3DButton>
-              
-              <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
-                <Brain className="h-4 w-4 text-primary" />
-                <span className="text-xs font-bold text-white/70 italic">
-                   "IA ACE: {adaptiveState?.justification || 'Ajuste adaptativo baseado no seu ritmo.'}"
-                </span>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
+      {/* Hero unificado — fonte única de CTA principal (deriva de useStudyNext) */}
+      <UnifiedMissionHero
+        firstName={firstName}
+        recommendationTitle={activeRec?.title}
+        recommendationDescription={activeRec?.description}
+        adaptiveJustification={adaptiveState?.justification}
+      />
 
 
       <div className="enaflix-stagger space-y-16 pb-24">
