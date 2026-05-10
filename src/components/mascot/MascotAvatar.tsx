@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MascotState } from './MascotEngine';
+import enaziziMascot from "@/assets/enazizi-mascot.png";
 import { 
   Brain, 
   Sparkles, 
@@ -24,34 +25,34 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
   className = '' 
 }) => {
   const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-24 h-24',
-    xl: 'w-32 h-32'
+    sm: 'w-10 h-10',
+    md: 'w-14 h-14',
+    lg: 'w-28 h-28',
+    xl: 'w-40 h-40'
   };
 
   const getIcon = () => {
     switch (state) {
-      case 'thinking': return <Brain className="text-primary animate-pulse" />;
-      case 'teaching': return <GraduationCap className="text-primary" />;
-      case 'success': return <CheckCircle2 className="text-green-500" />;
-      case 'warning': return <AlertCircle className="text-yellow-500" />;
-      case 'fatigue': return <Coffee className="text-blue-400" />;
-      case 'celebration': return <Trophy className="text-amber-500 animate-bounce" />;
-      case 'focus': return <Target className="text-red-500" />;
-      default: return <Sparkles className="text-primary" />;
+      case 'thinking': return <Brain className="text-indigo-400 animate-pulse w-full h-full" />;
+      case 'teaching': return <GraduationCap className="text-indigo-400 w-full h-full" />;
+      case 'success': return <CheckCircle2 className="text-emerald-400 w-full h-full" />;
+      case 'warning': return <AlertCircle className="text-amber-400 w-full h-full" />;
+      case 'fatigue': return <Coffee className="text-blue-400 w-full h-full" />;
+      case 'celebration': return <Trophy className="text-yellow-400 animate-bounce w-full h-full" />;
+      case 'focus': return <Target className="text-rose-400 w-full h-full" />;
+      default: return <Sparkles className="text-indigo-400 w-full h-full" />;
     }
   };
 
   const glowColors = {
-    idle: 'rgba(59, 130, 246, 0.2)',
-    thinking: 'rgba(139, 92, 246, 0.4)',
-    teaching: 'rgba(59, 130, 246, 0.4)',
-    success: 'rgba(34, 197, 94, 0.4)',
-    warning: 'rgba(234, 179, 8, 0.4)',
-    fatigue: 'rgba(96, 165, 250, 0.4)',
-    celebration: 'rgba(245, 158, 11, 0.4)',
-    focus: 'rgba(239, 68, 68, 0.4)'
+    idle: 'rgba(99, 102, 241, 0.2)', // indigo
+    thinking: 'rgba(168, 85, 247, 0.4)', // purple
+    teaching: 'rgba(79, 70, 229, 0.4)', // indigo-600
+    success: 'rgba(16, 185, 129, 0.4)', // emerald
+    warning: 'rgba(245, 158, 11, 0.4)', // amber
+    fatigue: 'rgba(59, 130, 246, 0.4)', // blue
+    celebration: 'rgba(234, 179, 8, 0.4)', // yellow
+    focus: 'rgba(225, 29, 72, 0.4)' // rose
   };
 
   return (
@@ -77,24 +78,33 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
-        className="relative z-10 w-full h-full bg-background/80 backdrop-blur-md rounded-2xl border border-primary/20 shadow-xl flex items-center justify-center overflow-hidden"
+        className="relative z-10 w-full h-full bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] border border-white/10 shadow-2xl flex items-center justify-center overflow-hidden group"
       >
-        <div className="w-1/2 h-1/2 transition-all duration-500 transform scale-125">
-          {getIcon()}
+        <div className="absolute inset-0 flex items-center justify-center p-2">
+          <motion.img 
+            src={enaziziMascot} 
+            alt="Mascote ENAZIZI"
+            className="w-full h-full object-contain"
+            animate={state === 'thinking' ? {
+              scale: [1, 1.05, 1],
+              rotate: [0, 1, -1, 0]
+            } : state === 'celebration' ? {
+              scale: [1, 1.2, 1],
+              y: [0, -10, 0]
+            } : {
+              y: [0, -4, 0]
+            }}
+            transition={{
+              duration: state === 'thinking' ? 2 : 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
         </div>
         
-        {/* Animated Eyes/Sensors */}
-        <div className="absolute top-1/4 left-1/4 right-1/4 flex justify-between px-2">
-          <motion.div 
-            animate={{ scaleY: [1, 0.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity, times: [0, 0.1, 0.2] }}
-            className="w-1.5 h-1.5 bg-primary rounded-full" 
-          />
-          <motion.div 
-            animate={{ scaleY: [1, 0.1, 1] }}
-            transition={{ duration: 4, repeat: Infinity, times: [0, 0.1, 0.2], delay: 0.1 }}
-            className="w-1.5 h-1.5 bg-primary rounded-full" 
-          />
+        {/* State Icon Overlay */}
+        <div className="absolute bottom-1 right-1 w-1/3 h-1/3 bg-background/90 rounded-full border border-primary/20 flex items-center justify-center p-1 shadow-lg z-20">
+          {getIcon()}
         </div>
       </motion.div>
     </div>

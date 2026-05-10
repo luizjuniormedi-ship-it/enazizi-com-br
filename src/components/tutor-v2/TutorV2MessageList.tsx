@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import ProgressiveBlocks from "./ProgressiveBlocks";
-import enaziziMascot from "@/assets/enazizi-mascot.png";
+import { MascotAvatar } from "../mascot/MascotAvatar";
 
 interface TutorV2MessageListProps {
   messages: any[];
@@ -20,8 +20,8 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center py-20 text-center"
         >
-          <div className="h-20 w-20 rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-6">
-            <img src={enaziziMascot} alt="Tutor" className="h-16 w-16 object-contain animate-float-gentle" />
+          <div className="mb-6">
+            <MascotAvatar state="idle" size="lg" />
           </div>
           <h3 className="text-xl font-bold text-white mb-2">Iniciando sua Sessão Premium</h3>
           <p className="text-slate-400 text-sm max-w-xs">
@@ -41,18 +41,14 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
             msg.role === "assistant" ? "flex-row" : "flex-row-reverse"
           )}
         >
-          <div className={cn(
-            "h-10 w-10 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1 overflow-hidden relative group",
-            msg.role === "assistant" 
-              ? "bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20" 
-              : "bg-slate-800 border border-white/10"
-          )}>
+          <div className="flex-shrink-0 mt-1">
             {msg.role === "assistant"
-              ? <img src={enaziziMascot} alt="Tutor ENAZIZI" className="h-10 w-10 object-cover group-hover:scale-110 transition-transform" />
-              : <User className="h-5 w-5 text-slate-400" />}
-            {msg.role === "assistant" && (
-              <div className="absolute inset-0 bg-indigo-500/20 animate-pulse pointer-events-none" />
-            )}
+              ? <MascotAvatar state="teaching" size="sm" />
+              : (
+                <div className="h-10 w-10 rounded-2xl flex items-center justify-center bg-slate-800 border border-white/10">
+                  <User className="h-5 w-5 text-slate-400" />
+                </div>
+              )}
           </div>
           
           <div className={cn(
@@ -118,8 +114,8 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           animate={{ opacity: 1, y: 0 }}
           className="flex gap-4 mb-8"
         >
-          <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20 ring-1 ring-white/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
-            <img src={enaziziMascot} alt="Tutor ENAZIZI" className="h-10 w-10 object-cover animate-pulse" />
+          <div className="flex-shrink-0">
+            <MascotAvatar state="thinking" size="sm" />
           </div>
           <div className="p-5 rounded-[1.8rem] bg-slate-900/50 border border-white/5 flex gap-1.5 items-center h-12 shadow-xl backdrop-blur-sm">
             <span className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-bounce" />

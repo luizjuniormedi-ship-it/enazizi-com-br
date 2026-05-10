@@ -139,8 +139,8 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       <header className="p-4 border-b border-white/5 bg-slate-950/60 backdrop-blur-2xl z-20 sticky top-0">
         <div className="max-w-6xl mx-auto w-full flex items-center justify-between">
           <div className="flex items-center gap-4 group">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center shadow-lg group-hover:border-indigo-500/50 transition-all">
-              <div className="h-5 w-5 bg-indigo-500 rounded-lg animate-cinematic-pulse-core" />
+            <div className="flex-shrink-0">
+              <MascotAvatar state="idle" size="sm" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -162,9 +162,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
         <div className="max-w-4xl mx-auto w-full p-6 space-y-8">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center animate-pulse">
-                <div className="h-6 w-6 bg-indigo-500 rounded-lg animate-spin" />
-              </div>
+              <MascotAvatar state="thinking" size="md" />
               <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Recuperando histórico cognitivo...</p>
             </div>
           ) : (

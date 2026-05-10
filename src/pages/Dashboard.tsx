@@ -259,8 +259,8 @@ const Dashboard = () => {
 
         <EnaflixRow title="Tutor IA & Co-Pilot">
            <EnaflixCinematicCard variant="tutor" className="col-span-full h-48 flex items-center p-8 gap-8">
-              <div className="h-32 w-32 rounded-3xl bg-gradient-to-br from-primary/20 to-violet-500/20 flex items-center justify-center border border-white/10 shrink-0">
-                <Sparkles className="h-16 w-16 text-primary animate-pulse" />
+              <div className="shrink-0 group-hover:scale-110 transition-transform duration-500">
+                <MascotAvatar state="teaching" size="xl" />
               </div>
               <div className="space-y-4 flex-1">
                 <div>

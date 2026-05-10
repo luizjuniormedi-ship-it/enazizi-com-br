@@ -1,4 +1,5 @@
 import { GraduationCap, ArrowRight, Target, Zap, History, FileText, ChevronDown, Lightbulb } from "lucide-react";
+import { MascotAvatar } from "../mascot/MascotAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -32,12 +33,8 @@ const TutorStartScreen = ({
       <div className="relative overflow-hidden rounded-2xl border border-primary/10 p-3 sm:p-8 mb-3 sm:mb-4 text-center bg-gradient-to-br from-primary/5 via-card to-accent/5 gradient-shift">
         <div className="absolute inset-0 pattern-dots opacity-30 pointer-events-none" />
         <div className="relative z-10 space-y-2 sm:space-y-4">
-          <div className="flex h-20 w-20 sm:h-28 sm:w-28 rounded-3xl bg-gradient-to-br from-primary/25 to-accent/25 items-center justify-center mx-auto tutor-glow float-gentle border border-primary/15 overflow-hidden">
-            <img 
-              src="/src/assets/enazizi-mascot.png" 
-              alt="Mascote ENAZIZI" 
-              className="w-full h-full object-contain p-2"
-            />
+          <div className="mx-auto mb-4">
+            <MascotAvatar state="idle" size="xl" />
           </div>
           <div>
             <h2 className="text-base sm:text-2xl font-bold">
