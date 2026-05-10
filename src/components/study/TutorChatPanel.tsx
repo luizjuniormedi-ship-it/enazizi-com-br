@@ -6,11 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Loader2, Send, Sparkles, ArrowUpRight, MessageSquare, 
   Lightbulb, Brain, FileQuestion, Wand2, Clapperboard, 
-  Play, Stethoscope, Activity, BookOpen
+  Play, Stethoscope, Activity, BookOpen, Clock, AlertCircle
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useStreamingResponse } from "@/hooks/tutor/useStreamingResponse";
 import { FUNCTION_NAME } from "@/components/tutor/TutorConstants";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useTelemetry } from "@/hooks/useTelemetry";
 
