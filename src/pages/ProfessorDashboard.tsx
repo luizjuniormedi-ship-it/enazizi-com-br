@@ -347,6 +347,28 @@ const ProfessorDashboard = () => {
           />
         </Suspense>
       )}
+
+      <StudentOperationalDrawer
+        studentId={drawerStudentId}
+        open={!!drawerStudentId}
+        onClose={() => setDrawerStudentId(null)}
+        callAPI={callAPI}
+        onAssignRecovery={(id, suggestedSpecialty) => {
+          const name = (classAnalytics.data?.students || []).find((s: any) => s.user_id === id)?.display_name || "Aluno";
+          setRecoveryFor({ id, name, specialty: suggestedSpecialty });
+        }}
+        onOpenMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); setDrawerStudentId(null); }}
+      />
+
+      <QuickInterventionDialog
+        open={!!recoveryFor}
+        onClose={() => setRecoveryFor(null)}
+        studentId={recoveryFor?.id || null}
+        studentName={recoveryFor?.name}
+        suggestedSpecialty={recoveryFor?.specialty}
+        callAPI={callAPI}
+        onSuccess={() => classAnalytics.reload()}
+      />
     </div>
   );
 };
