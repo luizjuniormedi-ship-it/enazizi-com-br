@@ -146,7 +146,7 @@ export default function AdminCEO() {
 
       // Accuracy
       const attempts = practiceAttempts || [];
-      const correct = attempts.filter((a: any) => a.is_correct).length;
+      const correct = attempts.filter((a: any) => a.correct).length;
       const avgAccuracy = attempts.length > 0 ? Math.round((correct / attempts.length) * 100) : 0;
 
       // AI errors breakdown
