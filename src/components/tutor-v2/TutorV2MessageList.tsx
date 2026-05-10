@@ -121,14 +121,15 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
               
               {msg.role === "assistant" && (
                 <div className="flex items-center gap-4">
-                  <Badge variant="ghost" className="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest p-0 h-auto hover:bg-transparent">
+                  <Badge variant="outline" className="text-[9px] font-black text-indigo-500/50 uppercase tracking-widest p-0 h-auto hover:bg-transparent border-none">
                     Enazizi V2
                   </Badge>
                   <div className="h-3 w-[1px] bg-white/5" />
                   <div className="flex items-center gap-2">
-                    <Badge variant="ghost" className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter p-0 h-auto hover:bg-transparent flex items-center gap-1">
+                    <Badge variant="outline" className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter p-0 h-auto hover:bg-transparent flex items-center gap-1 border-none">
                       <Layout className="h-3 w-3" /> {msg.metadata?.model || "gpt-4o"}
                     </Badge>
+
                     {msg.metadata?.fallback_used && (
                       <Badge variant="outline" className="text-[8px] font-black text-amber-500/70 border-amber-500/20 bg-amber-500/5 px-1.5 h-4 uppercase">
                         Fallback
