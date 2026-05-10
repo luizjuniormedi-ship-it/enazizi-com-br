@@ -22,6 +22,7 @@ import { EnaflixThemeCard } from "@/components/enaflix/EnaflixThemeCard";
 import { EnaflixRecommendationCard } from "@/components/enaflix/EnaflixRecommendationRow";
 import AchievementToast from "@/components/gamification/AchievementToast";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
+import { UnifiedMissionHero } from "@/components/dashboard/UnifiedMissionHero";
 
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
