@@ -318,6 +318,17 @@ export default function EnaflixPage() {
       if (!next) setQuery("");
       return next;
     });
+    // Scroll to top so user actually sees the search drawer (fixed at top-16)
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleShowAllModules = () => {
+    if (!searchOpen) setSearchOpen(true);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
