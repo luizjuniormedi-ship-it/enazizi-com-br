@@ -213,11 +213,15 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
     setLessonStatus('processing');
     
     try {
+      // Find the last assistant message to use as context if available
+      const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
+
       const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
         body: {
           topic: context.topic,
           lessonType: 'aula_completa',
-          cmeEnabled: true
+          cmeEnabled: true,
+          customContent: lastAssistantMsg?.content
         }
       });
 
@@ -225,9 +229,6 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
 
       toast.success("Aula gerada com sucesso!");
       setLessonStatus('ready');
-      
-      // If textual lesson is ready, we could show it. For now, let's navigate to a viewer if it existed.
-      // But according to prompt, we just need to fix the generation flow.
     } catch (err: any) {
       console.error("Lesson generation failed", err);
       setLessonStatus('failed');
