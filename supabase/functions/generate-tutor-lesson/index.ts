@@ -123,14 +123,19 @@ Responda APENAS com um objeto JSON válido seguindo este formato:
 
     if (cmeEnabled) {
       try {
+        console.log(`[generate-tutor-lesson] TRIGGERING_CME id=${requestId} lessonId=${lesson.id}`);
         const cmeResp = await supabase.functions.invoke("cme-start-pipeline", {
           body: { 
             lessonId: lesson.id,
             title: lesson.title,
             topic: topic || lesson.title,
-            content: lessonContent
+            content: lessonContent,
+            isFullSession: true
           }
         });
+        
+        console.log(`[generate-tutor-lesson] CME_RESPONSE id=${requestId}`, cmeResp.data);
+        
         if (cmeResp.data?.pipelineId) {
           pipelineId = cmeResp.data.pipelineId;
           cmeStatus = "queued";
@@ -138,6 +143,9 @@ Responda APENAS com um objeto JSON válido seguindo este formato:
             cme_pipeline_id: pipelineId,
             cme_status: cmeStatus
           }).eq('id', lesson.id);
+        } else if (cmeResp.data?.status === 'queued') {
+          cmeStatus = "queued";
+          pipelineId = cmeResp.data.pipelineId || cmeResp.data.id;
         }
       } catch (cmeErr) {
         console.error(`[generate-tutor-lesson] CME_TRIGGER_FAILED id=${requestId}`, cmeErr);
