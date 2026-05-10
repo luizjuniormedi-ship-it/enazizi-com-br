@@ -151,6 +151,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
         hallucination_warning: hallucinationWarning,
         cognitive_load: context.cognitive_load || 0.0,
         detected_gaps: context.detected_gaps || [],
+        planner_signals: [{ type: "adaptive_replan", priority: pedagogicalScore > 80 ? "low" : "high" }],
+        error_signals: missingBlocks.length > 5 ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
         latency_ms: latency,
         model_used: "gpt-4o"
       });
