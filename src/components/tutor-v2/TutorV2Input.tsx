@@ -93,18 +93,28 @@ export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputPr
         </div>
       </div>
       
-      <div className="flex items-center justify-center gap-4 mt-3">
-        <div className="flex items-center gap-1.5">
-          <span className="h-1 w-1 rounded-full bg-emerald-500" />
-          <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
-            Medical Intelligence Active
+      {isOffline ? (
+        <div className="flex items-center justify-center gap-2 mt-3 animate-pulse">
+          <AlertTriangle className="h-3 w-3 text-amber-500" />
+          <p className="text-[9px] text-amber-500 font-black uppercase tracking-widest">
+            Modo Offline • Reconectando...
           </p>
         </div>
-        <div className="h-1 w-1 rounded-full bg-white/10" />
-        <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
-          Protocolo Feynman V2
-        </p>
-      </div>
+      ) : (
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <div className="flex items-center gap-1.5">
+            <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+            <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+              Medical Intelligence Active
+            </p>
+          </div>
+          <div className="h-1 w-1 rounded-full bg-white/10" />
+          <p className="text-[9px] text-slate-500 font-black uppercase tracking-widest">
+            Protocolo Feynman V2
+          </p>
+        </div>
+      )}
+
     </div>
   );
 }
