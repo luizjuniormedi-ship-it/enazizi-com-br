@@ -107,7 +107,8 @@ const AgentChat = ({
 
   const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
   const [showDiagnostic, setShowDiagnostic] = useState(false);
-  const [debugLessonId, setDebugLessonId] = useState<string | null>(null);
+  const [lessonData, setLessonData] = useState<any>(null);
+
 
   const [lessonData, setLessonData] = useState<any>(null);
 
