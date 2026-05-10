@@ -28,7 +28,7 @@ export default function FsrsReviewCard() {
         // 1) FSRS due (cards com `due <= now`)
         const nowIso = new Date().toISOString();
         const { count: due } = await supabase
-          .from("fsrs_cards")
+          .from("legacy_fsrs_bridge")
           .select("id", { count: "exact", head: true })
           .eq("user_id", user.id)
           .lte("due", nowIso);
