@@ -319,6 +319,7 @@ const StudySession = () => {
           .limit(50);
         const studiedTopics = (studiedData || []).map((t) => t.tema);
 
+        if (!mountedRef.current) return;
         setPerformance({ totalQuestions: total, correctAnswers: correct, level, readiness, specialties, weakTopics, studiedTopics });
       } catch (err) {
         console.error("Error loading performance:", err);
@@ -328,6 +329,7 @@ const StudySession = () => {
   }, [user]);
 
   const savePerformance = useCallback(async (data: PerformanceData) => {
+    if (!mountedRef.current) return;
     setPerformance(data);
     if (user && data.studiedTopics.length > 0) {
       const latestTopic = data.studiedTopics[data.studiedTopics.length - 1];
