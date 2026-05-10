@@ -440,7 +440,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
               Authorization: authHeader,
             },
-            body: JSON.stringify({ source: "study-complete", actionType }),
+            body: JSON.stringify({ source: isSimuladoFinish ? "study-complete:simulado" : "study-complete:outcome", actionType }),
           })
             .then(async (r) => {
               if (!r.ok) {
