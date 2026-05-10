@@ -255,7 +255,7 @@ const ProfessorDashboard = () => {
                 loading={classAnalytics.loading}
                 error={classAnalytics.error}
                 onReload={classAnalytics.reload}
-                onAssignRecovery={(id, name) => setRecoveryFor({ id, name })}
+                onAssignRecovery={(id, name) => setIntervention({ id, name, type: "recovery" })}
                 onOpenMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
                 onOpenDrawer={(id) => setDrawerStudentId(id)}
               />
