@@ -3,7 +3,7 @@ console.error("🔥 BUILD_FORENSE", {
   timestamp: Date.now(),
   version: "FORENSE_V1"
 });
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Film, Sparkles, Play, AlertCircle } from "lucide-react";
