@@ -110,8 +110,6 @@ const AgentChat = ({
   const [lessonData, setLessonData] = useState<any>(null);
 
 
-  const [lessonData, setLessonData] = useState<any>(null);
-
   const handleTransformSession = useCallback(async () => {
     console.log("[LESSON_CLICK]", { sessionId: chat.activeConversationId, topic, messagesCount: chat.messages.length });
     
