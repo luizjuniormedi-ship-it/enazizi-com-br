@@ -164,10 +164,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   const handleSend = useCallback(
     async (overridePrompt?: string, contextOverride?: string) => {
-      console.debug("[useAgentChat] handleSend", { overridePrompt, isLoading, sendCooldown });
+      const requestId = Math.random().toString(36).substring(7);
+      console.log(`[useAgentChat] SEND_STARTED id=${requestId}`, { overridePrompt, isLoading, sendCooldown });
 
       const text = overridePrompt || input.trim();
-      if (!text || isLoading || sendCooldown || !user) return;
+      if (!text || isLoading || sendCooldown || !user) {
+        console.warn(`[useAgentChat] SEND_SKIPPED id=${requestId}`, { text: !!text, isLoading, sendCooldown, user: !!user });
+        return;
+      }
 
       setSendCooldown(true);
       setTimeout(() => setSendCooldown(false), 2000);
@@ -199,6 +203,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         topic: topic ?? null,
         subtopic: subtopic ?? null,
         message_length: text.length,
+        requestId
       });
 
       // Ensure conversation exists (delegated to useTutorHistory)
@@ -213,19 +218,15 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         : context.buildUserContext();
 
       // ── Memória pedagógica: lookup ANTES da IA ─────────────────────────
-      // Tentamos reusar uma resposta de qualidade já existente. Se houver hit,
-      // simulamos um "stream local" (chunks faseados) para preservar a UX, e
-      // pulamos a chamada à edge function. Falha-silenciosa em qualquer erro.
       try {
         setLoadingStage("🧠 Verificando memória pedagógica...");
         const reuse = await memory.lookup(text, user?.id ?? null);
         if (reuse && reuse.markdown) {
-          // Reuso bem-sucedido → +1 (fire-and-forget).
+          console.log(`[useAgentChat] MEMORY_HIT id=${requestId}`);
           import("@/lib/tutor/tutorMemory")
             .then(({ adjustMemoryQuality }) => adjustMemoryQuality(reuse.hit.id, +1))
             .catch(() => {});
           setLoadingStage("✨ Recuperando resposta da memória...");
-          // Stream local em 3 etapas para manter sensação cinematográfica.
           const md = reuse.markdown;
           const slices = [
             md.slice(0, Math.floor(md.length * 0.4)),
@@ -251,7 +252,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             });
             await new Promise((r) => setTimeout(r, 90));
           }
-          // Marca a mensagem final com metadata de memória (badge + regenerate).
           setMessages((prev) =>
             prev.map((m, i) =>
               i === prev.length - 1 && m.role === "assistant"
@@ -276,42 +276,46 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             memory_id: reuse.hit.id,
             quality_score: reuse.hit.quality_score,
             response_ms: Date.now() - tutorStartedAt,
-          });
-          telemetry.track("tutor_response_received", {
-            source: "memory",
-            response_ms: Date.now() - tutorStartedAt,
+            requestId
           });
           setIsLoading(false);
           setLoadingStage("");
+          console.log(`[useAgentChat] SEND_COMPLETED (memory) id=${requestId}`);
           return;
         }
       } catch (err) {
         if (import.meta.env.DEV) console.warn("[memory] lookup error", err);
-        // Segue fluxo normal — a IA assume.
       }
       setLoadingStage("🔍 Buscando referências científicas...");
 
-      // Sprint 5 — Adaptive context (opt-in via flag, falha-silenciosa).
-      // Não bloqueia o envio se desligado ou se a edge falhar.
       let adaptiveContext: unknown = undefined;
       let adaptiveStatus: "off" | "ok" | "failed" | "skipped" = "off";
       let ragBibliography: any[] = [];
 
       try {
+        console.log(`[useAgentChat] RETRIEVAL_STARTED id=${requestId}`);
         setLoadingStage("🔍 Buscando na Base de Conhecimento...");
-        const { data: ragData } = await supabase.functions.invoke("search-rag-context", {
+        
+        const ragPromise = supabase.functions.invoke("search-rag-context", {
           body: { query: text, topic: topic || undefined }
         });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000)
+        );
+
+        const { data: ragData } = await Promise.race([ragPromise, timeoutPromise]) as any;
+        console.log(`[useAgentChat] RETRIEVAL_FINISHED id=${requestId}`, { success: ragData?.success });
+        
         if (ragData?.success && Array.isArray(ragData.bibliography)) {
           ragBibliography = ragData.bibliography;
-          // Se tiver contexto RAG, podemos injetar como contextOverride para a IA
           if (ragBibliography.length > 0) {
             const ragContext = ragBibliography.map(b => `[FONTE: ${b.source}${b.page ? ` p.${b.page}` : ''}]: ${b.content}`).join("\n\n");
             contextOverride = (contextOverride || "") + "\n\n--- CONTEXTO RAG DA ORGANIZAÇÃO ---\n" + ragContext + "\n--- FIM DO CONTEXTO RAG ---";
           }
         }
       } catch (err) {
-        console.error("RAG Context fetch failed:", err);
+        console.warn(`[useAgentChat] RETRIEVAL_FAILED id=${requestId}`, err);
       }
 
       if (isAdaptiveEnabled) {
@@ -325,7 +329,6 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       }
 
-      // Helper: apply a streamed delta to the messages array (last assistant turn).
       const applyDelta = (fullText: string) => {
         assistantSoFar = fullText;
         setMessages((prev) => {
@@ -344,9 +347,15 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       };
 
       const controller = new AbortController();
-      const abortTimeout = setTimeout(() => controller.abort(), 60000);
+      const abortTimeout = setTimeout(() => {
+        console.warn(`[useAgentChat] PROVIDER_TIMEOUT id=${requestId}`);
+        controller.abort();
+      }, 30000);
+
+      const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
+        console.log(`[useAgentChat] PROVIDER_REQUEST_STARTED id=${requestId}`);
         const result = await streamResponse({
           url: CHAT_URL,
           body: {
@@ -358,56 +367,38 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             topic: topic || undefined,
             subtopic: subtopic || undefined,
             specialty: specialty || undefined,
+            requestId
           },
           onFirstChunk: () => {
+            console.log(`[useAgentChat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
             clearTimeout(abortTimeout);
             setLoadingStage("✍️ Gerando resposta...");
+            console.log(`[useAgentChat] ASSISTANT_APPEND_STARTED id=${requestId}`);
           },
           onDelta: applyDelta,
           onError: ({ status, message }) => {
+            console.error(`[useAgentChat] PROVIDER_ERROR id=${requestId}`, { status, message });
             clearTimeout(abortTimeout);
             
-            let description = message || "Erro ao conectar com o agente IA";
-            
-            // Tratamento de payloads JSON controlados retornados pela Edge Function
-            if (message && (message.includes('{"') || message.includes('error'))) {
-              try {
-                const parsed = JSON.parse(message);
-                description = parsed.message || parsed.error || description;
-              } catch (e) {
-                // Not JSON, keep original
-              }
-            }
-
-            const errorMessages: Record<number, string> = {
-              429: "Muitas requisições. Aguarde alguns segundos.",
-              402: "Créditos de IA insuficientes.",
-              401: "Sessão expirada. Por favor, recarregue a página.",
-              500: "Erro interno no Tutor. Tente novamente.",
-              503: "O serviço de IA está instável no momento.",
-            };
-            
-            if (status && errorMessages[status]) {
-              description = errorMessages[status];
-            }
-
             toast({ 
               title: "Tutor IA Indisponível", 
-              description, 
+              description: message || "Erro ao conectar com o agente IA", 
               variant: "destructive" 
             });
             
             setMessages(prev => {
               const last = prev[prev.length - 1];
               if (last && last.role === "assistant") {
-                return prev.map((m, i) => i === prev.length - 1 ? { ...m, isError: true, content: description } : m);
+                return prev.map((m, i) => i === prev.length - 1 ? { ...m, isError: true, content: fallbackMessage } : m);
               }
-              return [...prev, { role: "assistant", content: description, isError: true }];
+              return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
             });
           },
         });
 
-        if (result === null) {
+        console.log(`[useAgentChat] ASSISTANT_APPEND_FINISHED id=${requestId}`);
+
+        if (result === null && !assistantSoFar) {
           setIsLoading(false);
           setLoadingStage("");
           return;
@@ -423,11 +414,11 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             source: "ai",
             response_ms: Date.now() - tutorStartedAt,
             length: assistantSoFar.length,
+            requestId
           });
         }
 
         // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
-        // Salva a resposta gerada para reuso futuro. Falha-silenciosa.
         if (assistantSoFar && assistantSoFar.trim().length > 0) {
           memory
             .persist({
@@ -440,6 +431,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             })
             .catch(() => {});
         }
+
+        console.log(`[useAgentChat] SEND_COMPLETED id=${requestId}`);
 
         if (onSaveMessage && assistantSoFar) {
           try {
@@ -458,15 +451,26 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           }
         }
       } catch (e) {
-        console.error(e);
+        console.error(`[useAgentChat] SEND_FAILED id=${requestId}`, e);
+        const fallbackMsg = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
+        
+        setMessages(prev => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === "assistant") {
+            return prev.map((m, i) => i === prev.length - 1 ? { ...m, isError: true, content: fallbackMsg } : m);
+          }
+          return [...prev, { role: "assistant", content: fallbackMsg, isError: true }];
+        });
+
         toast({
-          title: "Erro",
-          description: "Falha ao conectar com o agente IA.",
+          title: "Instabilidade Temporária",
+          description: "O Tutor IA encontrou um problema, mas continuará com o conhecimento disponível.",
           variant: "destructive",
         });
       } finally {
         setIsLoading(false);
         setLoadingStage("");
+        if (typeof abortTimeout !== 'undefined') clearTimeout(abortTimeout);
       }
     },
     [
