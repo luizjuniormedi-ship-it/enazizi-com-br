@@ -107,9 +107,17 @@ const AgentChat = ({
 
   const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
   const [showDiagnostic, setShowDiagnostic] = useState(false);
+  const [debugLessonId, setDebugLessonId] = useState<string | null>(null);
+
+  const [lessonData, setLessonData] = useState<any>(null);
 
   const handleTransformSession = useCallback(async () => {
-    if (chat.messages.length <= 1 || lessonStatus === 'processing') return;
+    console.log("[LESSON_CLICK]", { sessionId: chat.activeConversationId, topic, messagesCount: chat.messages.length });
+    
+    if (chat.messages.length <= 1 || lessonStatus === 'processing') {
+      console.warn("[LESSON_CLICK_SKIPPED]", { length: chat.messages.length, status: lessonStatus });
+      return;
+    }
     
     // Check if we have an active conversation
     if (!chat.activeConversationId) {
@@ -121,24 +129,61 @@ const AgentChat = ({
     const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
 
     try {
-      console.debug("[TutorLesson] Starting generation", { topic, conversationId: chat.activeConversationId });
-      
-      const result = await generateTextualLesson({
+      const payload = {
         topic: topic || "Clínica Médica",
         conversationId: chat.activeConversationId,
-        customContent: lastAssistantMessage?.content
-      });
+        customContent: lastAssistantMessage?.content,
+        cmeEnabled: true // Vamos ativar CME para que ele gere a aggregation necessária para o AgilePlayer
+      };
+      
+      console.log("[LESSON_PAYLOAD]", payload);
+      
+      const result = await generateTextualLesson(payload);
+      console.log("[LESSON_RESPONSE]", result);
 
-      if (result.success) {
-        toast.success("Aula textual gerada! Iniciando renderização cinematográfica...");
-        setLessonStatus('ready');
+      if (result.success && result.lessonId) {
+        toast.success("Aula textual gerada com sucesso!");
+        
+        // Buscar a aggregation criada para o AgilePlayer
+        const { data: agg } = await supabase
+          .from('cme_session_aggregations')
+          .select('id')
+          .eq('source_conversation_id', chat.activeConversationId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (agg) {
+          console.log("[LESSON_SAVED] aggregation_id found", agg.id);
+          setDebugLessonId(agg.id);
+          setLessonStatus('ready');
+          // O AgilePlayer será aberto via overlay
+        } else {
+          // Fallback se a aggregation demorar um pouco (race condition)
+          setTimeout(async () => {
+             const { data: aggRetry } = await supabase
+              .from('cme_session_aggregations')
+              .select('id')
+              .eq('source_conversation_id', chat.activeConversationId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+             if (aggRetry) {
+               setDebugLessonId(aggRetry.id);
+               setLessonStatus('ready');
+             } else {
+               toast.error("Aula gerada, mas houve um atraso na sincronização visual.");
+               setLessonStatus('failed');
+             }
+          }, 2000);
+        }
       } else {
         throw new Error(result.message || "Falha ao gerar aula");
       }
     } catch (err: any) {
-      console.error("[TutorLesson] Generation failed", err);
+      console.error("[LESSON_ERROR]", err);
       setLessonStatus('failed');
-      toast.error(err.message || "O serviço de vídeo está indisponível, mas sua aula está salva.");
+      toast.error(err.message || "Não foi possível gerar a aula.");
     }
   }, [chat.messages, chat.activeConversationId, topic, generateTextualLesson, lessonStatus]);
 
@@ -504,10 +549,14 @@ const AgentChat = ({
       </Dialog>
 
       {/* Agile Player Overlay */}
-      {showAgilePlayer && cmeState.aggregationId && (
+      {(showAgilePlayer || lessonStatus === 'ready') && (cmeState.aggregationId || debugLessonId) && (
         <AgileLessonPlayer 
-          aggregationId={cmeState.aggregationId} 
-          onClose={() => setShowAgilePlayer(false)} 
+          aggregationId={cmeState.aggregationId || debugLessonId || ""} 
+          onClose={() => {
+            setShowAgilePlayer(false);
+            setLessonStatus('idle');
+            setDebugLessonId(null);
+          }} 
         />
       )}
     </div>
