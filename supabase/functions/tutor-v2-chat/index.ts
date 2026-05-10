@@ -548,6 +548,12 @@ serve(async (req) => {
     }
     console.log("[PHASE_0_CONTEXT]", JSON.stringify(context));
 
+    // [QUESTION_REVIEW_MODE] Stage A — detect + steer prompt (no UI changes)
+    const qReview = detectQuestionReviewMode(message, history || []);
+    if (qReview.active) {
+      console.log("[QUESTION_REVIEW_MODE]", { signals: qReview.signals, type: qReview.questionType, requestId });
+    }
+
     // 2. Build AI Prompt
     const systemPrompt = `${PROMPT_COMPLETO}
 
@@ -564,7 +570,7 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
 2. Percorra as Fases Cognitivas (Leiga → Técnica → Mecanismo → Clínica → Prova → Recall → Consolidação).
 3. Use bibliografia oficial (Harrison, Robbins, etc.).
 4. Adote o modo de resposta obrigatório do Protocolo de 15 Blocos ENAZIZI.
-5. Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final.`;
+5. Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final.${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
 
     const messages = [
       { role: "system", content: systemPrompt },
