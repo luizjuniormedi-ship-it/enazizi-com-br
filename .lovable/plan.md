@@ -1,84 +1,74 @@
-## Fase 3 — Redesign Cinematográfico ENAFLIX (UX/UI)
 
-Apenas camada visual. Toda lógica (queries, mutations, edge functions, RLS, signed URLs, checklist backend, telemetria) permanece idêntica.
+# Auditoria Completa BI + Gamificação + Painéis — ENAZIZI/ENAFLIX
 
-### Escopo de telas
+## Escopo
+Auditoria **read-only / diagnóstica**. Nenhum código de produto, prompt, modelo IA, FSRS/TRI ou payload será alterado. Saída = relatórios em `.lovable/`.
 
-1. `src/pages/admin/AdminLessonsMemory.tsx` → **Central de Produção ENAFLIX**
-2. `src/pages/VideoLessonPlayer.tsx` → **Player Premium estilo Netflix/Disney+**
-3. `src/pages/MyLessonsPage.tsx` → **Home ENAFLIX do aluno** (já parcialmente Enaflix; aprofundar)
+## Entregáveis (5 arquivos)
 
-### Novos componentes (em `src/components/enaflix/admin/`)
+1. **`.lovable/bi-inventory-report.md`** — Inventário completo
+   Tabela: `painel | rota | perfil (aluno/prof/admin) | status | fonte de dados | dados reais? | problema`
+   Cobertura: Dashboard, ENAFLIX, Planner, Missão diária, Recovery, Simulados, Analytics, Approval Score, Chance por banca, Performance por tema, Heatmap erros, FSRS, TRI, Timeline, Ranking, XP, Streak, Badges, painéis professor (turma, risco, heatmap, engajamento, FSRS/TRI coletivo), painéis admin/CEO.
 
-- `ProductionHeroHeader.tsx` — hero cinematográfico com gradiente animado, glow, contadores (total / publicadas / em estruturação / aguardando revisão).
-- `ProductionTabs.tsx` — tabs horizontais Netflix (Todas / Estruturando / Em revisão / Prontas / Publicadas / Arquivadas) com indicador animado.
-- `ProductionFilterBar.tsx` — busca premium + chips de filtro (disciplina, score).
-- `LessonProductionCard.tsx` — card cinematográfico (thumbnail grande, gradient overlay, hover zoom, badges com glow, score pedagógico, duração, ações flutuantes).
-- `LessonStatusBadge.tsx` — badges premium animados (`structuring`, `pending_review`, `ready_to_publish`, `published`, etc.) com ícone + glow específico.
-- `LessonChecklistRing.tsx` — progresso circular + lista visual dos 5 itens do checklist (mantém os mesmos nomes/keys do backend).
-- `LessonDetailDrawer.tsx` — drawer lateral (Radix Sheet) com blur, abas internas: Resumo IA, Capítulos, Roteiro, Prompts (Gemini/NotebookLM), Objetivos, Pegadinhas, Flashcards, Quiz, Score.
-- `LessonActionsMenu.tsx` — action pills (Reestruturar IA, Exportar NotebookLM/Gemini/Vids/Markdown, Upload vídeo, Preview seguro, Publicar) reaproveitando handlers existentes.
-- `LessonThumbnail.tsx` — thumbnail com fallback estilo Pixar/ENAFLIX + skeleton.
+2. **`.lovable/bi-aluno-audit.md`** — Auditoria aluno
+   - Hierarquia visual, redundâncias (ex: Cockpit vs DashboardMetricsGrid)
+   - KPIs fake/placeholder vs reais
+   - Mobile (430px atual)
+   - Conexão real com FSRS/TRI/approval_scores
+   - Gamificação infantilizada vs profissional
+   - Widgets sem ação prática
 
-### Novos componentes do Player
+3. **`.lovable/bi-professor-audit.md`** — Auditoria professor
+   - Capacidade de ação (aluno em risco, queda, abandono, burnout)
+   - KPIs duplicados, rankings úteis vs ruído
+   - FSRS/TRI coletivo
+   - Overload visual
+   - Decisão prática por painel
 
-Em `src/components/enaflix/player/`:
-- `CinematicPlayerHero.tsx` — overlay gradient, ambient glow, título cinematográfico.
-- `PlayerAutoHideControls.tsx` — controles que somem após inatividade.
-- `PlayerProgressBar.tsx` — progress premium com chapters dots.
-- `PlayerSidebarChapters.tsx` — sidebar de capítulos.
-- `PlayerSidebarMaterials.tsx` — materiais (flashcards, quiz, prompts).
+4. **`.lovable/gamification-audit.md`** — Gamificação
+   - XP, níveis, streak, badges, achievements, rankings
+   - Integração real com FSRS/TRI (reforça aprendizado ou só decora?)
+   - Risco de compulsão / competitividade tóxica
+   - Profissional vs infantil
+   - Painéis diários (missão, recovery, agenda) — coerência, timezone, duplicação
 
-### Home ENAFLIX (aluno)
+5. **`.lovable/final-bi-gamification-audit.md`** — Relatório final consolidado
+   Seções: Inventário · Aluno · Professor · Gamificação · Painéis Diários · KPIs · FSRS/TRI Analytics · UX/UI · Mobile · Performance · Dados Reais · Redundâncias · Problemas · Melhorias · Quick Wins · Riscos · Prioridades (CRÍTICO/ALTO/MÉDIO/BAIXO) · **Veredito Final**.
+   Responde: premium? profissional? pronto p/ escala? gamificação funciona? BI gera ação? quais dashboards remover/redesign? quais KPIs faltam?
 
-Reorganizar `MyLessonsPage.tsx` em rows estilo Netflix usando `EnaflixSectionRow` / `EnaflixSectionRowVideo` já existentes:
-- Hero banner (aula em destaque)
-- Continue Assistindo
-- Recomendado para você (placeholder vindo de `useEducationalMemory` ordenado por recência)
-- Baseado nos seus erros (filtro existente)
-- Revisão FSRS (filtro existente)
-- Novas aulas
-- Em alta
-- Trilhas IA
+## Metodologia (como vou auditar)
 
-Sem novas queries — apenas reorganização visual dos dados já carregados.
+**Fase A — Mapeamento estático**
+- `rg` para listar todas as rotas em `src/App.tsx` / `src/constants/routes.ts`
+- Listar `src/pages/` (aluno, professor, admin) e `src/components/{dashboard,cockpit,dashboard-v2,enaflix,planner,daily-plan,gamification,professor,product-metrics,analytics,radar,proficiency}/`
+- Identificar hooks de dados: `useCockpitData`, `useDashboardData`, `useStudyNext`, `useOrchestrator`, `useMonthlyGoal`, `useProductMetrics`, planner/professor hooks
 
-### Sistema visual
+**Fase B — Validação de dados reais**
+- Para cada widget: rastrear hook → query Supabase / edge function → tabela real
+- Cruzar com `dashboard-snapshot`, `approval_scores`, `practice_attempts`, `revisoes`, `user_gamification`, `error_bank`, `medical_domain_map`, `exam_sessions`
+- `supabase--read_query` em amostras para detectar campos sempre nulos / sempre zero / mock
+- Flag: dados reais ✅ · cache stale ⚠️ · placeholder/mock ❌
 
-- Tokens: usar variáveis semânticas existentes (`--hue-enaflix`, `glass-premium`, `hero-ambient`, `animate-fade-in`, `hover-scale`).
-- Glassmorphism leve (`backdrop-blur-md` + `bg-white/5`).
-- Paleta: preto profundo `#0a0a12`, grafite, roxo ENAFLIX, azul neon discreto, vermelho discreto, branco suave — todos via tokens já presentes em `index.css` / `tailwind.config.ts`.
-- Animações: Framer Motion (já no projeto) — stagger nos grids, fade/slide nos drawers, hover scale nos cards. Sem exagero.
-- Loading: `CinematicSkeleton` + skeleton específico para cards de aula.
+**Fase C — Validação UX/UI/mobile**
+- `browser--navigate_to_sandbox` + `browser--screenshot` em rotas-chave (dashboard, planner, missão, ENAFLIX, professor, ranking) em **mobile 430px** e **desktop 1366px**
+- `image_tools--zoom_image` para verificar legibilidade, overflow, hierarquia
+- `browser--performance_profile` em painéis pesados (Cockpit, ProductMetrics, professor)
+- `code--read_console_logs` + `code--read_network_requests` para queries duplicadas / 4xx / 5xx
 
-### Restrições (NÃO mexer)
+**Fase D — Análise pedagógica + gamificação**
+- Cruzar gamificação (`user_gamification`, achievements) com FSRS reviews e approval_score → mede integração
+- Detectar: streaks que premiam volume sem qualidade, XP sem reforço cognitivo, badges decorativos
+- Avaliar painel professor: cada KPI gera decisão? (intervir, reforçar, atribuir)
 
-- Edge functions, RLS, signed URLs, lógica de publicação, checklist no backend, `tutor_lesson_events`, progress tracking.
-- Hooks de dados (`useEducationalMemory`, queries do admin) — apenas consumir.
-- Nomes de módulos / sidebar / rotas (memory rule).
+**Fase E — Classificação e veredito**
+- Cada achado: impacto · risco · solução · prioridade
+- Quick wins (≤1 dia) destacados
+- Veredito final honesto, sem inflar
 
-### Performance
+## Restrições
+❌ Sem edição de código / prompts / modelos / FSRS-TRI / schema / payloads
+❌ Sem redesign — só diagnóstico e recomendação
+✅ Somente leitura, screenshots, queries SELECT, geração dos 5 .md
 
-- `React.memo` em `LessonProductionCard` e cards da home.
-- `loading="lazy"` em todas as thumbnails.
-- Drawer e abas internas com lazy mount.
-- Sem virtualização inicial (volume atual baixo); preparar grid para adicionar depois.
-
-### Entregáveis finais
-
-1. Build + typecheck limpos (rodados pelo harness).
-2. Relatório `docs/FASE3_ENAFLIX_VISUAL_REDESIGN.md` listando: telas alteradas, componentes novos, animações, melhorias UX/mobile, performance, status final.
-
-### Diagrama
-
-```text
-AdminLessonsMemory
-├── ProductionHeroHeader (counters + ambient glow)
-├── ProductionTabs (status filter)
-├── ProductionFilterBar (search + chips)
-└── Grid<LessonProductionCard>
-        └── click → LessonDetailDrawer
-                     ├── tabs: Resumo / Capítulos / Roteiro / Prompts / Quiz
-                     ├── LessonChecklistRing
-                     └── LessonActionsMenu
-```
+## Estimativa
+~30–40 chamadas de ferramenta (rg + leitura de pages/hooks + ~12 screenshots mobile/desktop + ~10 queries SQL + escrita dos 5 relatórios). Resultado em uma única passada.
