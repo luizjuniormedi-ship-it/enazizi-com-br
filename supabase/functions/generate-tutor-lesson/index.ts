@@ -148,16 +148,15 @@ Responda APENAS o JSON:
     });
 
     console.log(`[generate-tutor-lesson] [RESPONSE_SENT] id=${requestId}`);
+    console.error("[EDGE_FORENSE] RESPONSE_SENT", {
+      ts: Date.now(),
+      ok: true
+    });
     return json({
       ok: true,
       success: true,
       lesson: lessonContent
     });
-    console.error("[EDGE_FORENSE] RESPONSE_SENT", {
-      ts: Date.now(),
-      ok: true
-    });
-    console.error("[EDGE] generate-tutor-lesson :: RESPONSE_SENT");
   } catch (error) {
     console.error("[EDGE_FORENSE] FATAL_ERROR", error);
     console.error(`[generate-tutor-lesson] [CRITICAL_ERROR] id=${requestId}`, error);
