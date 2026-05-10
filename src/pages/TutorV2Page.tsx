@@ -27,7 +27,7 @@ export default function TutorV2Page() {
         .insert({
           user_id: user.id,
           topic: newTopic,
-          title: newTopic,
+          mode: 'livre',
           status: 'active'
         })
         .select()
