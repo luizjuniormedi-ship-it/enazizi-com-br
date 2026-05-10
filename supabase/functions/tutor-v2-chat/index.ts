@@ -208,6 +208,126 @@ async function callProvider(
   }
 }
 
+// ============================================================
+// QUESTION_REVIEW_MODE — Stage A (backend only, backward compatible)
+// Detects medical multiple-choice / clinical-case prompts and asks
+// the model to emit structured pedagogical metadata at the end.
+// ============================================================
+
+type QuestionReviewDetection = {
+  active: boolean;
+  signals: string[];
+  detectedAlternatives: string[];
+  studentAnswer: string | null;
+  questionType: "multiple_choice" | "clinical_case" | "objective" | null;
+};
+
+function detectQuestionReviewMode(
+  userMessage: string,
+  history: Array<{ role: string; content: string }> = [],
+): QuestionReviewDetection {
+  const text = (userMessage || "").trim();
+  const lower = text.toLowerCase();
+  const signals: string[] = [];
+
+  // Alternatives A) B) C) D) E) — at line start, with ) . - or :
+  const altRegex = /(^|\n)\s*([a-eA-E])\s*[\)\.\-:]\s+\S/g;
+  const detectedAlternatives = Array.from(text.matchAll(altRegex)).map((m) => m[2].toUpperCase());
+  const uniqueAlts = Array.from(new Set(detectedAlternatives));
+  if (uniqueAlts.length >= 3) signals.push("alternatives_detected");
+
+  // Objective question keywords
+  const objectiveKeywords = [
+    "assinale", "marque", "alternativa correta", "alternativa incorreta",
+    "qual das", "qual é o diagnóstico", "qual a conduta", "qual o tratamento",
+    "gabarito", "questão", "enem", "enare", "usp", "unicamp", "ufrj", "amrigs", "revalida",
+  ];
+  if (objectiveKeywords.some((k) => lower.includes(k))) signals.push("objective_keyword");
+
+  // Clinical case keywords
+  const clinicalKeywords = [
+    "paciente", "anos de idade", "evolui com", "queixa de", "história de",
+    "exame físico", "ecg", "tomografia", "ressonância", "internado",
+    "dor torácica", "dispneia", "febre há",
+  ];
+  const clinicalHits = clinicalKeywords.filter((k) => lower.includes(k));
+  if (clinicalHits.length >= 2) signals.push("clinical_case");
+
+  // "por que errei" / "errei essa"
+  if (/por que errei|porque errei|errei (essa|a quest)|me explica essa quest/i.test(lower)) {
+    signals.push("student_asking_correction");
+  }
+
+  // Try to detect explicit student answer "marquei B" / "respondi C"
+  let studentAnswer: string | null = null;
+  const ansMatch = lower.match(/(?:marquei|respondi|escolhi|minha resposta (?:foi|é)|fui na?)\s*(?:a letra\s*)?["']?([a-e])["']?/i);
+  if (ansMatch) studentAnswer = ansMatch[1].toUpperCase();
+
+  // Length floor — questions are usually long
+  const longEnough = text.length >= 180;
+
+  let active = false;
+  let questionType: QuestionReviewDetection["questionType"] = null;
+
+  if (uniqueAlts.length >= 3) {
+    active = true;
+    questionType = clinicalHits.length >= 2 ? "clinical_case" : "multiple_choice";
+  } else if (signals.includes("objective_keyword") && longEnough) {
+    active = true;
+    questionType = clinicalHits.length >= 2 ? "clinical_case" : "objective";
+  } else if (signals.includes("clinical_case") && longEnough && /\?/.test(text)) {
+    active = true;
+    questionType = "clinical_case";
+  } else if (signals.includes("student_asking_correction")) {
+    // Look back at last assistant/user messages for a question
+    const recent = history.slice(-4).map((m) => m.content || "").join("\n");
+    if (Array.from(recent.matchAll(altRegex)).length >= 3) {
+      active = true;
+      questionType = "multiple_choice";
+      signals.push("question_in_history");
+    }
+  }
+
+  return {
+    active,
+    signals,
+    detectedAlternatives: uniqueAlts,
+    studentAnswer,
+    questionType,
+  };
+}
+
+const QUESTION_REVIEW_INSTRUCTION = `
+========================================
+MODO ATIVO: QUESTION_REVIEW_MODE
+========================================
+A entrada do aluno contém uma QUESTÃO médica (alternativas A-E, caso clínico ou pergunta objetiva).
+Você DEVE atuar como PROFESSOR CORRETOR do ENAZIZI, NÃO como expositor genérico de blocos.
+
+ESTRUTURA OBRIGATÓRIA da resposta (em pt-BR, em ordem):
+1. Tema e subtema (especialidade + tópico + competência avaliada)
+2. Leitura do enunciado (o que está sendo apresentado clinicamente)
+3. Resposta correta (letra + diagnóstico/conduta)
+4. Por que a CORRETA está correta (com fisiopatologia/raciocínio clínico)
+5. Por que CADA ERRADA está errada (comente A, B, C, D, E individualmente — só pule as que não existirem)
+6. Pegadinha da banca (o erro típico que o examinador induz)
+7. Raciocínio clínico passo a passo
+8. Correção do raciocínio do aluno (se ele errou, explique o porquê do erro; se acertou, explique o porquê do acerto — nunca apenas "certo/errado")
+9. Resumo Feynman (linguagem simples, 1-3 frases)
+10. Active recall (2-3 perguntas curtas)
+11. Ações recomendadas (flashcards, FSRS, error bank, planner, mnemônico, questão similar)
+
+REGRAS:
+- NÃO use os 15 blocos genéricos do modo aula. Use a estrutura acima.
+- NÃO interrompa com checkpoint antes de concluir TODA a correção.
+- Cite bibliografia médica (Harrison, Robbins, Sabiston, Nelson) quando relevante.
+- Sem inglês solto, sem LaTeX, sem "however".
+
+METADADOS OBRIGATÓRIOS:
+Ao final da resposta (após tudo), em uma ÚNICA linha, emita:
+QUESTION_REVIEW_METADATA: {"mode":"QUESTION_REVIEW_MODE","question_type":"multiple_choice|clinical_case|objective","difficulty":"easy|medium|hard","exam_style":"ENARE|USP|UNICAMP|REVALIDA|GENERIC","main_topic":"...","subtopic":"...","correct_answer":"A|B|C|D|E|null","student_answer":"A|B|C|D|E|null","is_correct":true|false|null,"trap_type":"...","reasoning_error":"...","memory_anchor":"frase curta para fixação","next_action":"revisar X / treinar Y","review_priority":"low|medium|high","fsrs_candidates":["conceito 1","conceito 2"],"error_bank_signal":{"should_create":true|false,"category":"raciocínio clínico|conceito|memória","reason":"..."},"planner_signal":{"should_suggest":true|false,"topic":"...","priority":"low|medium|high"},"suggested_actions":["create_fsrs","send_to_planner","generate_similar_question","create_mnemonic","explain_alternative_a","compare_topics"]}
+`.trim();
+
 function buildEmergencyTemplate(topic: string, userMessage: string) {
   const focus = topic || userMessage || "o tema informado";
   return `Não consegui acessar o modelo de IA agora, mas posso estruturar seu estudo com base em ${focus}.
@@ -428,6 +548,12 @@ serve(async (req) => {
     }
     console.log("[PHASE_0_CONTEXT]", JSON.stringify(context));
 
+    // [QUESTION_REVIEW_MODE] Stage A — detect + steer prompt (no UI changes)
+    const qReview = detectQuestionReviewMode(message, history || []);
+    if (qReview.active) {
+      console.log("[QUESTION_REVIEW_MODE]", { signals: qReview.signals, type: qReview.questionType, requestId });
+    }
+
     // 2. Build AI Prompt
     const systemPrompt = `${PROMPT_COMPLETO}
 
@@ -444,7 +570,7 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
 2. Percorra as Fases Cognitivas (Leiga → Técnica → Mecanismo → Clínica → Prova → Recall → Consolidação).
 3. Use bibliografia oficial (Harrison, Robbins, etc.).
 4. Adote o modo de resposta obrigatório do Protocolo de 15 Blocos ENAZIZI.
-5. Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final.`;
+5. Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final.${qReview.active ? "\n\n" + QUESTION_REVIEW_INSTRUCTION + (qReview.studentAnswer ? `\n\nResposta declarada pelo aluno: ${qReview.studentAnswer}` : "") : ""}`;
 
     const messages = [
       { role: "system", content: systemPrompt },
@@ -463,15 +589,17 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
     const msgLen = (message || "").length;
     const wantsDeep = /por que|porque|mecanismo|fisiopatolog|explica.*detalhe|aprofund|raciocínio|raciocinio/i.test(message || "");
     const wantsSimple = /resum|simples|rápido|rapido|tldr|curto/i.test(message || "");
-    const complexity: AIComplexity = wantsSimple ? "low" : wantsDeep || msgLen > 240 ? "high" : "medium";
+    const baseComplexity: AIComplexity = wantsSimple ? "low" : wantsDeep || msgLen > 240 ? "high" : "medium";
+    // QUESTION_REVIEW_MODE always demands clinical reasoning → force high complexity
+    const complexity: AIComplexity = qReview.active ? "high" : baseComplexity;
 
     const providerResult = await runAI({
-      taskType: "tutor_chat",
+      taskType: qReview.active ? "clinical_reasoning" : "tutor_chat",
       specialty: session.specialty || null,
       topic: session.topic || null,
       complexity,
       cognitiveLoad,
-      requiresReasoning: wantsDeep,
+      requiresReasoning: wantsDeep || qReview.active,
       budgetMode: "balanced",
       messages,
       userId,
@@ -517,6 +645,40 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       }
     }
 
+    // Extract QUESTION_REVIEW_METADATA (Stage A)
+    let questionReview: any = null;
+    if (assistantMessage.includes("QUESTION_REVIEW_METADATA:")) {
+      const idx = assistantMessage.indexOf("QUESTION_REVIEW_METADATA:");
+      const before = assistantMessage.slice(0, idx).trim();
+      const after = assistantMessage.slice(idx + "QUESTION_REVIEW_METADATA:".length).trim();
+      // grab JSON object — first { to matching last } on same trailing chunk
+      const firstBrace = after.indexOf("{");
+      const lastBrace = after.lastIndexOf("}");
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        const jsonRaw = after.slice(firstBrace, lastBrace + 1);
+        try {
+          questionReview = JSON.parse(jsonRaw);
+          assistantMessage = before;
+          console.log("[QUESTION_REVIEW_METADATA_PARSED]", {
+            type: questionReview?.question_type,
+            correct: questionReview?.correct_answer,
+            student: questionReview?.student_answer,
+            is_correct: questionReview?.is_correct,
+            requestId,
+          });
+        } catch (e) {
+          console.warn("[QUESTION_REVIEW_METADATA_PARSE_FAIL]", e instanceof Error ? e.message : String(e));
+        }
+      }
+    }
+    // If detector saw a student answer but model didn't include it, hydrate
+    if (questionReview && !questionReview.student_answer && qReview.studentAnswer) {
+      questionReview.student_answer = qReview.studentAnswer;
+      if (questionReview.correct_answer && questionReview.is_correct == null) {
+        questionReview.is_correct = questionReview.correct_answer === qReview.studentAnswer;
+      }
+    }
+
     // 3. Save Assistant Message
     const { data: savedMsg, error: saveError } = await supabase.from("tutor_messages").insert({
       tutor_session_id: sessionId,
@@ -525,6 +687,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       content: assistantMessage,
       metadata: {
         flashcard_suggestion: flashcardSuggestion,
+        question_review: questionReview,
+        question_review_detection: qReview.active ? { signals: qReview.signals, type: qReview.questionType, student_answer_detected: qReview.studentAnswer } : null,
         provider: providerResult.provider,
         model: providerResult.model,
         fallback_used: providerResult.fallbackUsed,
@@ -554,7 +718,7 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
         cognitive_load: context.cognitive_load || 0.0,
         detected_gaps: context.detected_gaps || [],
         planner_signals: [{ type: "adaptive_replan", priority: pedagogicalScore > 80 ? "low" : "high" }],
-        error_signals: missingBlocks.length > 5 ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
+        error_signals: (qReview.active === false && missingBlocks.length > 5) ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
         latency_ms: latency,
         model_used: providerResult.model
       });
@@ -592,6 +756,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
         : assistantMessage,
       suggestedActions: providerResult.model === "emergency_template_response" ? ["Gerar resumo", "Criar flashcards", "Tentar novamente"] : undefined,
       flashcardSuggestion,
+      questionReview,
+      questionReviewActive: qReview.active,
       audit: { pedagogicalScore, feynmanScore },
       provider: { name: providerResult.provider, model: providerResult.model, attempts: providerResult.attempts.map(a => ({ model: a.model, success: a.success, status: a.status, code: a.code, latency_ms: a.latency_ms })) },
       requestId,
