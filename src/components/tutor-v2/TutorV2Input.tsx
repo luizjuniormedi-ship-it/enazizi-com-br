@@ -61,8 +61,12 @@ export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputPr
                 handleSend();
               }
             }}
-            placeholder="Pergunte ao Tutor ou peça uma explicação..."
-            className="flex-1 bg-transparent border-none focus:ring-0 text-[14px] py-3.5 resize-none max-h-[200px] text-slate-100 placeholder:text-slate-600 font-medium"
+            placeholder={isOffline ? "Você está offline no momento..." : "Pergunte ao Tutor ou peça uma explicação..."}
+            className={cn(
+              "flex-1 bg-transparent border-none focus:ring-0 text-[14px] py-3.5 resize-none max-h-[200px] font-medium transition-colors",
+              isOffline ? "text-slate-500" : "text-slate-100 placeholder:text-slate-600"
+            )}
+
             rows={1}
             autoFocus
             disabled={disabled}
