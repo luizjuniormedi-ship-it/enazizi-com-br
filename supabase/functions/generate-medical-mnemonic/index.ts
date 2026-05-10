@@ -230,44 +230,28 @@ function validatePayload(body: unknown): MnemonicRequest {
   if (!body || typeof body !== "object") throw new Error("Body inválido.");
   const b = body as Record<string, unknown>;
 
-  // Accept both formats: tema/termos (new) and topic/items (legacy unified service)
   const tema = (b.tema ?? b.topic) as string | undefined;
-  const termos = (b.termos ?? b.items) as string[] | undefined;
+  const termos = (b.termos ?? b.items ?? b.requiredTerms) as string[] | undefined;
 
   if (!tema || typeof tema !== "string" || !tema.trim())
     throw new Error("Campo 'tema' é obrigatório.");
   if (!Array.isArray(termos) || termos.length === 0)
     throw new Error("Campo 'termos' deve ser um array não vazio.");
-  for (const t of termos) {
-    if (typeof t !== "string" || !t.trim())
-      throw new Error("Cada termo deve ser uma string não vazia.");
-  }
+  
   return {
     tema,
     termos,
-    estilo: typeof b.estilo === "string" ? b.estilo : (typeof b.contentType === "string" ? b.contentType : undefined),
-    publico: typeof b.publico === "string" ? b.publico : undefined,
+    estilo: (b.estilo || b.contentType) as string,
+    publico: b.publico as string,
+    specialty: b.specialty as string,
+    subtheme: b.subtheme as string,
+    requiredTerms: termos,
   };
 }
 
-function normalizeTerms(tema: string, termos: string[]): { tema: string; termos: string[] } {
-  const trimmedTema = tema.trim();
-  const seen = new Set<string>();
-  const unique: string[] = [];
-  for (const t of termos) {
-    const trimmed = t.trim();
-    const key = trimmed.toLowerCase();
-    if (trimmed && !seen.has(key)) {
-      seen.add(key);
-      unique.push(trimmed);
-    }
-  }
-  return { tema: trimmedTema, termos: unique };
-}
-
 function buildContext(req: MnemonicRequest): string {
-  let ctx = `Tema: ${req.tema}\nTermos: ${req.termos.join(", ")}`;
-  if (req.estilo) ctx += `\nEstilo desejado: ${req.estilo}`;
+  let ctx = `Especialidade: ${req.specialty || "Geral"}\nTema: ${req.tema}\nSubtema: ${req.subtheme || "Não especificado"}\nTermos Obrigatórios: ${req.termos.join(", ")}`;
+  if (req.estilo) ctx += `\nEstilo: ${req.estilo}`;
   if (req.publico) ctx += `\nPúblico-alvo: ${req.publico}`;
   return ctx;
 }
