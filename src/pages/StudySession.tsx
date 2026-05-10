@@ -563,15 +563,14 @@ const StudySession = () => {
         if (contentType && contentType.includes("application/json")) {
           const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
           console.error("[StudySession] study-session function error JSON:", err);
+          if (!mountedRef.current) return;
           
           if (err.isFallbackActive) {
             console.info("[StudySession] Fallback active via JSON response");
-            // If the function already provided content via fallback, it might have been in the JSON (not implemented yet in edge, but good to have)
             if (err.fallbackContent) {
               const assistantMsg: Msg = { role: "assistant", content: err.fallbackContent };
               setMessages(prev => [...prev, assistantMsg]);
             }
-            setIsLoading(false);
             return;
           }
 
@@ -583,9 +582,9 @@ const StudySession = () => {
             toast({ title: "Erro no Tutor", description: err.error || "Ocorreu uma falha na IA.", variant: "destructive" });
           }
         } else {
+          if (!mountedRef.current) return;
           toast({ title: "Erro de Conexão", description: `Falha na comunicação com o servidor (${resp.status})`, variant: "destructive" });
         }
-        setIsLoading(false);
         return;
       }
 
