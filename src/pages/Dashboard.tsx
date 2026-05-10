@@ -250,7 +250,7 @@ const Dashboard = () => {
                   <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
                   <p className="text-white/60">Deep learning applied aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
-                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/mentor")}>
+                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/tutor-v2")}>
                   Iniciar Conversa
                 </Enaflix3DButton>
               </div>
