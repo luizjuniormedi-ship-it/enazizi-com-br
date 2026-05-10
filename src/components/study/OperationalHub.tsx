@@ -61,9 +61,15 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
     navigate(target);
   };
   const handleStartStudy = () => {
+    if (!topicInput.trim()) {
+      toast.error("Escolha ou digite um tema para iniciar.");
+      return;
+    }
     if (user) trackStudyAction(user.id, "estudar", "start_topic", { topic: topicInput });
     onStartStudy();
   };
+
+  const selectedTopic = topicInput.trim().toLowerCase();
 
   return (
     <div className="flex-1 overflow-y-auto">
