@@ -38,11 +38,11 @@ const suggestions = [
   "Antibióticos na UTI"
 ];
 
-const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
+const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => void; initialValue?: string }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const firstName = user?.user_metadata?.display_name?.split(" ")[0] || "Doutor";
-  const [inputValue, setInputValue] = useState("");
+  const [inputValue, setInputValue] = useState(initialValue || "");
 
   const handleSend = () => {
     if (inputValue.trim()) {
@@ -127,6 +127,7 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-lg sm:text-xl py-4 sm:py-5"
                 placeholder="Ex: 'Quais os critérios de Duke para Endocardite?'"
+                id="tutor-premium-input"
               />
               
               <div className="flex items-center gap-2 pr-2">
@@ -139,6 +140,7 @@ const TutorPremiumHero = ({ onSend }: { onSend: (p: string) => void }) => {
                    glow 
                    onClick={handleSend}
                    className="h-14 sm:h-16 px-8 rounded-2xl text-base font-bold flex items-center gap-2 group/btn"
+                   disabled={!inputValue.trim()}
                  >
                    <span>Estudar Agora</span>
                    <Zap className="h-5 w-5 group-hover/btn:scale-110 transition-transform fill-current" />
@@ -245,9 +247,18 @@ const PedagogicalHeaderBridge = ({
 
 const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   console.log("[AIMentor] Rendering with ref:", !!ref);
+  const [searchParams] = useSearchParams();
+  const initialTopic = searchParams.get("topic") || "";
+  
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
+
+  useEffect(() => {
+    if (initialTopic && !hasStarted) {
+      handleSend(initialTopic);
+    }
+  }, []);
 
   const handleSend = (prompt: string) => {
     setIsCinematicLoading(true);
@@ -301,7 +312,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
               exit={{ opacity: 0, y: -50, scale: 0.95 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             >
-              <TutorPremiumHero onSend={handleSend} />
+              <TutorPremiumHero onSend={handleSend} initialValue={initialTopic} />
             </motion.div>
           ) : (
             <motion.div
