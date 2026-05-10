@@ -384,7 +384,7 @@ const App = () => (
 
                 {/* --- STUDY SHORTCUTS --- */}
                 <Route path="/study/tutor" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
-                  <Route index element={<ChatGPT />} />
+                  <Route index element={<PreserveQueryNavigate to="/dashboard/tutor-v2" />} />
                 </Route>
                 <Route path="/study/flashcards" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                   <Route index element={<Flashcards />} />
