@@ -521,11 +521,14 @@ const StudySession = () => {
   }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode, searchParams, getStudySessionHeaders, targetExam]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
+    console.debug("[StudySession] streamChat called", { currentPhase, currentTopic, msgsCount: msgs.length });
     setIsLoading(true);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
 
     try {
       const headers = await getStudySessionHeaders();
+      console.debug("[StudySession] invoking study-session function...");
+      
       const resp = await fetch(url, {
         method: "POST",
         headers,
@@ -539,15 +542,23 @@ const StudySession = () => {
         }),
       });
 
+      console.debug("[StudySession] study-session response received", { status: resp.status, ok: resp.ok });
+
       if (!resp.ok) {
         const contentType = resp.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+          console.error("[StudySession] study-session function error JSON:", err);
           
-          // Se for um erro que a Edge Function já tratou com fallback via JSON (caso não consiga abrir stream)
           if (err.isFallbackActive) {
             console.info("[StudySession] Fallback active via JSON response");
-            return; // O conteúdo já foi tratado ou será enviado por outra via
+            // If the function already provided content via fallback, it might have been in the JSON (not implemented yet in edge, but good to have)
+            if (err.fallbackContent) {
+              const assistantMsg: Msg = { role: "assistant", content: err.fallbackContent };
+              setMessages(prev => [...prev, assistantMsg]);
+            }
+            setIsLoading(false);
+            return;
           }
 
           if (resp.status === 429) {
@@ -555,13 +566,7 @@ const StudySession = () => {
           } else if (resp.status === 402) {
             toast({ title: "Créditos esgotados", description: "Adicione créditos ao workspace.", variant: "destructive" });
           } else {
-            // Silencia erro se for apenas timeout da IA mas tiver fallback (tratado abaixo no catch ou via status especial)
-            if (err.error === "Erro no serviço de IA" && currentPhase === "questions") {
-              console.warn("[StudySession] IA timeout, expected fallback stream or retry");
-              // Não mostra toast destrutivo aqui, deixa o catch ou a stream lidar
-            } else {
-              toast({ title: "Erro", description: err.error, variant: "destructive" });
-            }
+            toast({ title: "Erro no Tutor", description: err.error || "Ocorreu uma falha na IA.", variant: "destructive" });
           }
         } else {
           toast({ title: "Erro de Conexão", description: `Falha na comunicação com o servidor (${resp.status})`, variant: "destructive" });
@@ -570,14 +575,23 @@ const StudySession = () => {
         return;
       }
 
-      const reader = resp.body!.getReader();
+      if (!resp.body) {
+        throw new Error("No response body received from study-session function");
+      }
+
+      const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
       let assistantContent = "";
+      let hasReceivedChunks = false;
+
+      console.debug("[StudySession] starting stream read...");
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        
+        hasReceivedChunks = true;
         buffer += decoder.decode(value, { stream: true });
 
         let idx: number;
@@ -586,18 +600,24 @@ const StudySession = () => {
           buffer = buffer.slice(idx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") break;
+          
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") {
+            console.debug("[StudySession] stream read [DONE]");
+            break;
+          }
+
           try {
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(jsonStr);
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
+                if (last?.role === "assistant" && prev.length > msgs.length) {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
+                
                 if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
                   firstQuestionTrackedRef.current = true;
                   trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
@@ -605,11 +625,21 @@ const StudySession = () => {
                 return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
-          } catch {}
+          } catch (e) {
+            // Ignore parse errors for partial JSON lines
+          }
         }
       }
+
+      console.debug("[StudySession] assistant message completed", { length: assistantContent.length });
+
+      if (!assistantContent && hasReceivedChunks) {
+         console.warn("[StudySession] received chunks but assistantContent is empty");
+      } else if (!hasReceivedChunks) {
+         console.warn("[StudySession] no chunks received at all");
+      }
+
       // After streaming completes, check if this was an MCQ answer.
-      // We trust ONLY the structured SIGNAL block — never emoji/regex.
       const lastUserMsg = msgs[msgs.length - 1];
       if (lastUserMsg?.role === "user" && assistantContent) {
         if (currentPhase === "reinforcement") {
@@ -624,7 +654,7 @@ const StudySession = () => {
         }
       }
     } catch (err: any) {
-      console.error("Connection error in streamChat:", err);
+      console.error("[StudySession] connection error in streamChat:", err);
       if (currentPhase === "questions") {
         toast({ 
           title: "Instabilidade na IA", 
@@ -638,8 +668,9 @@ const StudySession = () => {
           variant: "destructive" 
         });
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const startStudy = async () => {
@@ -707,20 +738,24 @@ const StudySession = () => {
 
   const goToPhase = async (targetPhase: Phase) => {
     if (isLoading) return;
+    console.debug("[StudySession] goToPhase called", { targetPhase });
     setPhase(targetPhase);
     const label = PHASE_META[targetPhase].label;
     const userMsg: Msg = { role: "user", content: `Avançar para: ${label}` };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
+    console.debug("[StudySession] mission step advanced", { targetPhase, label });
     await streamChat(newMsgs, targetPhase, topic);
   };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
+    console.debug("[StudySession] sendMessage called", { input: input.trim(), phase, topic });
     const userMsg: Msg = { role: "user", content: input.trim() };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     setInput("");
+    console.debug("[StudySession] message sent local", { role: "user", content: userMsg.content });
     await streamChat(newMsgs, phase, topic);
   };
 
@@ -1089,31 +1124,43 @@ const StudySession = () => {
               )}
             </div>
 
-            {/* Phase Action Buttons */}
+            {/* Phase Action Buttons & Error Handling */}
             <div className="border-t border-border px-3 pt-2 space-y-2">
               {!isLoading && phase !== "scoring" && (
                 <div className="flex gap-1.5 overflow-x-auto pb-1">
-                  {phase === "lesson" && (
+                  {/* Botão de "Tentar Novamente" se não houver resposta do assistente para a fase atual */}
+                  {messages.length > 0 && messages[messages.length - 1].role !== "assistant" && (
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      className="text-xs whitespace-nowrap bg-amber-600 hover:bg-amber-700 text-white" 
+                      onClick={() => streamChat(messages, phase, topic)}
+                    >
+                      <RotateCcw className="h-3.5 w-3.5 mr-1" /> Tentar novamente {PHASE_META[phase].shortLabel}
+                    </Button>
+                  )}
+
+                  {phase === "lesson" && messages.some(m => m.role === "assistant" && m.content.length > 100) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-purple-500/30 text-purple-400 hover:bg-purple-500/10" onClick={() => goToPhase("active-recall")}>
                       <Brain className="h-3.5 w-3.5 mr-1" /> Active Recall
                     </Button>
                   )}
-                  {(phase === "active-recall" || phase === "lesson") && (
+                  {(phase === "active-recall" || phase === "lesson") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-orange-500/30 text-orange-400 hover:bg-orange-500/10" onClick={() => goToPhase("questions")}>
                       <HelpCircle className="h-3.5 w-3.5 mr-1" /> Questões MCQ
                     </Button>
                   )}
-                  {(phase === "questions") && (
+                  {(phase === "questions") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-green-500/30 text-green-400 hover:bg-green-500/10" onClick={() => goToPhase("discussion")}>
                       <MessageSquare className="h-3.5 w-3.5 mr-1" /> Discussão Clínica
                     </Button>
                   )}
-                  {(phase === "discussion" || phase === "questions") && (
+                  {(phase === "discussion" || phase === "questions") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10" onClick={() => goToPhase("discursive")}>
                       <Stethoscope className="h-3.5 w-3.5 mr-1" /> Caso Discursivo
                     </Button>
                   )}
-                  {(phase === "discursive" || phase === "discussion") && (
+                  {(phase === "discursive" || phase === "discussion") && messages.some(m => m.role === "assistant" && m.content.length > 50) && (
                     <Button variant="outline" size="sm" className="text-xs whitespace-nowrap border-primary/30 text-primary hover:bg-primary/10" onClick={() => goToPhase("scoring")}>
                       <TrendingUp className="h-3.5 w-3.5 mr-1" /> Pontuar Sessão
                     </Button>

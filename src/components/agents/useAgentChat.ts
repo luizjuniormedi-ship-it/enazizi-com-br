@@ -508,25 +508,39 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   // Auto-fire initialPrompt
   useEffect(() => {
+    console.debug("[useAgentChat] initialPrompt check", { 
+      initialPrompt, 
+      user: !!user, 
+      isLoading, 
+      initialPromptFired: initialPromptFiredRef.current, 
+      isAutoStarting: isAutoStartingRef.current 
+    });
+
     if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading && !isAutoStartingRef.current) {
-      console.debug("[useAgentChat] Auto-firing initialPrompt:", initialPrompt);
+      console.debug("[useAgentChat] triggering autostart for initialPrompt:", initialPrompt);
       isAutoStartingRef.current = true;
       
       const timer = setTimeout(async () => {
         try {
-          // Se houver sessão pendente e for auto-start, priorizamos o prompt novo
-          // mas limpamos a sessão anterior para evitar conflito visual/lógico
           if (pendingSession) {
             console.debug("[useAgentChat] Discarding pending session for autostart priority");
             handleDiscardSession();
           }
           
-          await handleSend(initialPrompt);
+          console.debug("[useAgentChat] calling handleSend for initialPrompt");
+          // Formata o prompt inicial para o padrão do Tutor IA
+          const formattedPrompt = initialPrompt.toLowerCase().startsWith("quero estudar") 
+            ? initialPrompt 
+            : `Quero estudar: ${initialPrompt}`;
+            
+          await handleSend(formattedPrompt);
           initialPromptFiredRef.current = true;
+        } catch (err) {
+          console.error("[useAgentChat] autostart failed:", err);
         } finally {
           isAutoStartingRef.current = false;
         }
-      }, 300);
+      }, 500);
       return () => clearTimeout(timer);
     }
   }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession]);
