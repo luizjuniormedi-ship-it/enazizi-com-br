@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAuth } from "../_shared/require-auth.ts";
-import { aiFetch, getAiErrorMessage } from "../_shared/ai-fetch.ts";
+import { aiFetch, getAiErrorMessage, parseAiJson } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -97,7 +97,9 @@ Responda APENAS com um objeto JSON válido seguindo este formato:
     });
 
     const aiResult = await aiResponse.json();
-    const lessonContent = JSON.parse(aiResult.choices[0].message.content);
+    const rawContent = aiResult.choices[0].message.content;
+    console.log(`[generate-tutor-lesson] AI_RESPONSE_RECEIVED id=${requestId} length=${rawContent?.length}`);
+    const lessonContent = parseAiJson(rawContent);
 
     // 3. Save to tutor_lessons
     const { data: lesson, error: insError } = await supabase

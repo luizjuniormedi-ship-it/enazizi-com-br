@@ -21202,6 +21202,7 @@ export type Database = {
         Args: { f_name: string; u_id: string }
         Returns: boolean
       }
+      check_function_exists: { Args: { func_name: string }; Returns: boolean }
       check_system_health: { Args: never; Returns: undefined }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
       cleanup_tutor_cache: { Args: never; Returns: undefined }
@@ -21328,6 +21329,7 @@ export type Database = {
           feedback_text: string
         }[]
       }
+      get_rag_health_stats: { Args: never; Returns: Json }
       get_ranking_leaderboard: {
         Args: { _limit?: number }
         Returns: {

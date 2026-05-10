@@ -56,7 +56,8 @@ serve(async (req) => {
       topic: userTopic, 
       specialty: userSpecialty,
       bypassRAG = false,
-      debugOnlyRAG = false
+      debugOnlyRAG = false,
+      jsonResponse = false
     } = body;
 
     console.log(`[mentor-chat] BODY_VALIDATED id=${requestId} conv=${conversationId} bypassRAG=${bypassRAG} debugOnlyRAG=${debugOnlyRAG}`);
@@ -133,15 +134,22 @@ serve(async (req) => {
         console.log(`[mentor-chat] RETRIEVAL_STARTED (RAG) id=${requestId}`);
         const retrievalStart = Date.now();
         
-        // Use custom RAG with match_rag_chunks
-        const queryEmbedding = await createEmbedding(lastUserMessage);
-        const { data: chunks, error: rpcError } = await supabase.rpc("match_rag_chunks", {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.5,
-          match_count: 5
-        });
-        
-        if (rpcError) throw rpcError;
+        // Timeout for RAG (8s as requested)
+        const retrievalPromise = (async () => {
+          const queryEmbedding = await createEmbedding(lastUserMessage);
+          const { data: chunks, error: rpcError } = await supabase.rpc("match_rag_chunks", {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.5,
+            match_count: 5
+          });
+          if (rpcError) throw rpcError;
+          return chunks;
+        })();
+
+        const chunks = await Promise.race([
+          retrievalPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000))
+        ]) as any[];
         
         if (chunks && chunks.length > 0) {
           ragContext = chunks.map((c: any) => c.content).join("\n\n");
@@ -168,10 +176,11 @@ serve(async (req) => {
           });
         }
       } catch (e) {
-        console.warn(`[mentor-chat] RAG retrieval failed/timed out id=${requestId}:`, e.message);
+        console.warn(`[mentor-chat] RAG_RETRIEVAL_FAILED id=${requestId} error=${e.message}`);
         if (debugOnlyRAG) {
           return json({ ok: false, error: "rag_failed", message: e.message, requestId }, 500);
         }
+        // Continue without RAG
       }
     }
 
@@ -209,12 +218,15 @@ serve(async (req) => {
     let response;
     let modelUsed = "openai/gpt-4o";
 
+    // If jsonResponse is true, we override stream to false
+    const stream = !jsonResponse;
+
     try {
-      console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED id=${requestId} model=${modelUsed}`);
+      console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED id=${requestId} model=${modelUsed} stream=${stream}`);
       response = await aiFetch({
         model: modelUsed,
         messages: [{ role: "system", content: systemPrompt }, ...messages],
-        stream: true,
+        stream,
         maxTokens: 4096,
         timeoutMs: 30000, 
         userId
@@ -224,11 +236,11 @@ serve(async (req) => {
       console.warn(`[mentor-chat] PRIMARY_AI_FAILED id=${requestId}`, err);
       modelUsed = "openai/gpt-4o-mini";
       try {
-        console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED (fallback) id=${requestId} model=${modelUsed}`);
+        console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED (fallback) id=${requestId} model=${modelUsed} stream=${stream}`);
         response = await aiFetch({
           model: modelUsed,
           messages: [{ role: "system", content: systemPrompt }, ...messages],
-          stream: true,
+          stream,
           maxTokens: 4096,
           timeoutMs: 15000,
           userId
@@ -244,14 +256,47 @@ serve(async (req) => {
         return json({ 
           ok: false, error: "ai_failed", message: fallbackMessage,
           requestId, fallbackUsed: true, elapsedMs: Date.now() - startTime
-        }, 200);
+        }, 503);
       }
     }
 
     const elapsed = Date.now() - startMs;
     console.log(`[mentor-chat] RESPONSE_SENT id=${requestId} model=${modelUsed} elapsed=${elapsed}ms`);
 
-    return new Response(response.body, {
+    if (jsonResponse) {
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || "";
+      return json({
+        ok: true,
+        content,
+        message: content,
+        modelUsed,
+        requestId,
+        chunksFound: ragSources.length,
+        sources: ragSources,
+        elapsedMs: Date.now() - startTime
+      });
+    }
+
+    // Transformation: Prepend sources and wrap the stream
+    const encoder = new TextEncoder();
+    const transformStream = new TransformStream({
+      async start(controller) {
+        if (ragSources.length > 0) {
+          const sourcesChunk = {
+            choices: [{ delta: { content: "" } }],
+            sources: ragSources,
+            requestId
+          };
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(sourcesChunk)}\n\n`));
+        }
+      },
+      transform(chunk, controller) {
+        controller.enqueue(chunk);
+      }
+    });
+
+    return new Response(response.body?.pipeThrough(transformStream), {
       headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
     });
 

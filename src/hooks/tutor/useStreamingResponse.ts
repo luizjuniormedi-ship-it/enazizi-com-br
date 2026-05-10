@@ -84,9 +84,11 @@ export function useStreamingResponse() {
         body: JSON.stringify(body),
       });
 
-      if (!resp.ok) {
+      const contentType = resp.headers.get("Content-Type") || "";
+      if (!resp.ok || !contentType.includes("text/event-stream")) {
         const errData = await resp.json().catch(() => ({}));
-        onError(errData.error || "Erro ao conectar com o ChatGPT");
+        console.error("[useStreamingResponse] Response error or non-stream received:", { ok: resp.ok, contentType, errData });
+        onError(errData.message || errData.error || "Erro ao conectar com o Tutor IA.");
         return null;
       }
 

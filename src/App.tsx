@@ -151,6 +151,7 @@ const CMEExecutiveDashboard = lazyWithRetry(() => import("./pages/admin/cme/Exec
 const CMEGPUFleet = lazyWithRetry(() => import("./pages/admin/cme/GPUFleet"), "CMEGPUFleet");
 const CMERenderQueues = lazyWithRetry(() => import("./pages/admin/cme/RenderQueues"), "CMERenderQueues");
 const CMEObservability = lazyWithRetry(() => import("./pages/admin/cme/Observability"), "CMEObservability");
+const DiagnosticTutor = lazyWithRetry(() => import("./pages/admin/DiagnosticTutor"), "DiagnosticTutor");
 
 const NOCDashboard = lazyWithRetry(() => import("./pages/admin/NOCDashboard"), "NOCDashboard");
 
@@ -355,6 +356,7 @@ const App = () => (
                   <Route path="render-queues" element={<CMERenderQueues />} />
                   <Route path="cme-observability" element={<CMEObservability />} />
                   <Route path="system-checklist" element={<SystemChecklist />} />
+                  <Route path="diagnostico-tutor" element={<DiagnosticTutor />} />
                   <Route path="health" element={<SystemHealth />} />
                   <Route path="cme-media-monitor" element={<CMEMediaMonitor />} />
                   <Route path="builder/:id" element={<CinematicBuilder />} />
