@@ -60,6 +60,9 @@ export const useDashboardData = () => {
   const { isEnabled } = useFeatureFlags();
   const snapshotEnabled = isEnabled("new_dashboard_snapshot_enabled");
   const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayIso = todayStart.toISOString();
 
   return useQuery({
     queryKey: ["dashboard-data", user?.id, !!coreData, resetAt],
