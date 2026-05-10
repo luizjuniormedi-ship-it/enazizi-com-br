@@ -40,9 +40,9 @@ export function useFsrsDueCount(): FsrsDueResult {
     queryFn: async () => {
       const nowIso = new Date().toISOString();
 
-      // 1) Cards vencidos do usuário
+      // 1) Cards vencidos do usuário (usa bridge para legados)
       const { data: dueCards } = await supabase
-        .from("fsrs_cards")
+        .from("legacy_fsrs_bridge")
         .select("id, card_ref_id, card_type")
         .eq("user_id", user!.id)
         .lte("due", nowIso);

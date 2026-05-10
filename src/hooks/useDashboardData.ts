@@ -60,6 +60,9 @@ export const useDashboardData = () => {
   const { isEnabled } = useFeatureFlags();
   const snapshotEnabled = isEnabled("new_dashboard_snapshot_enabled");
   const resetAt = coreData?.profile.last_study_plan_reset_at ?? null;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayIso = todayStart.toISOString();
 
   return useQuery({
     queryKey: ["dashboard-data", user?.id, !!coreData, resetAt],
@@ -91,9 +94,16 @@ export const useDashboardData = () => {
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
           // [planner-unification] Fonte viva: daily_plan_tasks. specialty/topic + estimated_minutes alimentam subjects/subjectHours.
-          supabase.from("daily_plan_tasks").select("completed, created_at, completed_at, estimated_minutes, specialty, topic, daily_plan_id").eq("user_id", userId).gt("created_at", resetAt || "1900-01-01T00:00:00Z"),
+          // Permite ver tarefas de hoje mesmo se o plano foi resetado hoje.
+          supabase.from("daily_plan_tasks").select("completed, created_at, completed_at, estimated_minutes, specialty, topic, daily_plan_id")
+            .eq("user_id", userId)
+            .or(`created_at.gt.${resetAt || "1900-01-01T00:00:00Z"},created_at.gte.${todayIso}`),
           // [planner-unification-final] Fonte viva: daily_plans. Detecta presença de plano ativo nos últimos 7 dias.
-          supabase.from("daily_plans").select("id, plan_date, total_blocks, created_at, updated_at").eq("user_id", userId).gte("plan_date", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0]).gt("updated_at", resetAt || "1900-01-01T00:00:00Z").order("plan_date", { ascending: false }).limit(1).maybeSingle(),
+          supabase.from("daily_plans").select("id, plan_date, total_blocks, created_at, updated_at")
+            .eq("user_id", userId)
+            .gte("plan_date", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0])
+            .or(`updated_at.gt.${resetAt || "1900-01-01T00:00:00Z"},updated_at.gte.${todayIso}`)
+            .order("plan_date", { ascending: false }).limit(1).maybeSingle(),
           supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
           supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),

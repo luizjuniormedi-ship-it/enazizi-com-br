@@ -258,6 +258,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   const recs: StudyRecommendation[] = [];
   const cd = coreData; // optional pre-fetched data from useCoreData
   const resetAt = cd?.profile.last_study_plan_reset_at ?? null;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayIso = todayStart.toISOString();
 
   // Individual queries with safe fallback — one failure never breaks the engine
   const safe = async <T>(fn: () => PromiseLike<{ data: T | null; error: any }>, label: string): Promise<T | null> => {
@@ -291,7 +294,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .eq("user_id", userId)
       .eq("status", "pendente")
       .lte("data_revisao", new Date().toISOString().slice(0, 10))
-      .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
+      .or(`created_at.gt.${resetAt || "1900-01-01T00:00:00Z"},created_at.gte.${todayIso}`)
       .order("prioridade", { ascending: false })
       .limit(20), "revisoes"),
     safe(() => supabase
@@ -299,7 +302,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .select("id, tema, subtema, vezes_errado, dominado, categoria_erro")
       .eq("user_id", userId)
       .eq("dominado", false)
-      .gt("updated_at", resetAt || "1900-01-01T00:00:00Z")
+      .or(`updated_at.gt.${resetAt || "1900-01-01T00:00:00Z"},updated_at.gte.${todayIso}`)
       .order("vezes_errado", { ascending: false })
       .limit(20), "error_bank"),
     // Performance unified view (read-only): combines error_bank + simulado + fsrs.
@@ -313,7 +316,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .select("tema, subtema, taxa_acerto, questoes_feitas, source")
       .eq("user_id", userId)
       .eq("source", "simulado")
-      .gt("data_registro", resetAt || "1900-01-01T00:00:00Z")
+      .or(`data_registro.gt.${resetAt || "1900-01-01T00:00:00Z"},data_registro.gte.${todayIso}`)
       .order("taxa_acerto", { ascending: true })
       .limit(20)
       .then((res: any) => ({
@@ -333,7 +336,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .from("temas_estudados")
       .select("id, tema, especialidade, data_estudo, status, dificuldade, subtopic_id, topic_id, specialty_id")
       .eq("user_id", userId)
-      .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
+      .or(`created_at.gt.${resetAt || "1900-01-01T00:00:00Z"},created_at.gte.${todayIso}`)
       .order("data_estudo", { ascending: false })
       .limit(50), "temas"),
     // FSRS query — only when flag ON
@@ -343,7 +346,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
         .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
         .eq("user_id", userId)
         .lte("due", new Date().toISOString())
-        .gt("updated_at", resetAt || "1900-01-01T00:00:00Z")
+        .or(`updated_at.gt.${resetAt || "1900-01-01T00:00:00Z"},updated_at.gte.${todayIso}`)
         .order("due", { ascending: true })
         .limit(30), "fsrs"),
     ] : [

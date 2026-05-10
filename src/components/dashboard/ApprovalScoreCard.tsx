@@ -37,16 +37,18 @@ export default function ApprovalScoreCard() {
   const [isRecalculating, setIsRecalculating] = useState(false);
 
   // Read latest persisted score
-  const { data: scoreData, refetch } = useQuery({
+  const { data: scoreData, isLoading, error, refetch } = useQuery({
     queryKey: ["approval-score-latest", user?.id],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("approval_scores")
         .select("*")
         .eq("user_id", user!.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      
+      if (error) throw error;
       return data as ScoreData | null;
     },
     enabled: !!user,
@@ -64,7 +66,8 @@ export default function ApprovalScoreCard() {
       if (res.error) throw res.error;
       await refetch();
       toast.success("Score atualizado com sucesso");
-    } catch {
+    } catch (err) {
+      console.error("Recalculate error:", err);
       toast.error("Não foi possível atualizar. Tente novamente.");
     } finally {
       setIsRecalculating(false);
@@ -73,7 +76,31 @@ export default function ApprovalScoreCard() {
 
   const clampPercent = (value: number) => Math.max(0, Math.min(100, Math.round(value)));
 
-  const score = clampPercent(scoreData?.score ?? 0);
+  if (isLoading) {
+    return (
+      <Card className="border-muted animate-pulse">
+        <CardContent className="p-4 h-[200px] flex flex-col justify-center items-center">
+          <RefreshCw className="h-6 w-6 text-muted-foreground animate-spin mb-2" />
+          <p className="text-sm text-muted-foreground">Sincronizando chance de aprovação...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="border-destructive/30">
+        <CardContent className="p-4 flex flex-col items-center text-center">
+          <AlertTriangle className="h-6 w-6 text-destructive mb-2" />
+          <p className="text-sm font-semibold text-destructive">Erro de sincronização</p>
+          <p className="text-xs text-muted-foreground mb-3">Não foi possível carregar seu score.</p>
+          <Button size="sm" variant="outline" onClick={() => refetch()}>Tentar novamente</Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const score = scoreData ? clampPercent(scoreData.score) : 0;
   const status = getStatus(score);
 
   // Build weak points from sub-dimensions

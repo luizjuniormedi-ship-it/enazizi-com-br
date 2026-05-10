@@ -2,8 +2,9 @@ import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Link } from "react-router-dom";
-import { BarChart3, ChevronRight } from "lucide-react";
+import { BarChart3, ChevronRight, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface SpecialtyData {
   specialty: string;
@@ -56,22 +57,69 @@ const getLabel = (score: number) => {
 const SpecialtyProgressCard = () => {
   const { user } = useAuth();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ["specialty-progress", user?.id],
     enabled: !!user,
     staleTime: 3 * 60 * 1000,
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("medical_domain_map")
         .select("specialty, domain_score, questions_answered, correct_answers")
         .eq("user_id", user!.id)
         .order("domain_score", { ascending: false });
 
+      if (error) throw error;
       return (data || []) as SpecialtyData[];
     },
   });
 
-  if (isLoading || !data || data.length === 0) return null;
+  if (isLoading) {
+    return (
+      <div className="glass-card p-6 space-y-5 animate-pulse">
+        <div className="h-6 w-48 bg-muted rounded mb-4" />
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div key={i} className="h-8 bg-muted rounded w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="glass-card p-6 text-center">
+        <p className="text-sm text-muted-foreground">Não foi possível carregar seu mapa de domínio.</p>
+      </div>
+    );
+  }
+
+  const hasData = data && data.some(d => d.questions_answered > 0);
+
+  if (!hasData) {
+    return (
+      <div className="glass-card p-6 space-y-4">
+        <h2 className="text-lg font-semibold flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          Mapa Clínico de Domínio
+        </h2>
+        <div className="flex flex-col items-center justify-center py-6 text-center space-y-3">
+          <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+            <BarChart3 className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <p className="text-sm font-medium">Aguardando seu primeiro estudo</p>
+            <p className="text-xs text-muted-foreground max-w-[200px] mx-auto">
+              Seu mapa clínico será gerado automaticamente conforme você responde questões.
+            </p>
+          </div>
+          <Link to="/tutor">
+            <Button size="sm">Começar a estudar</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   const avgScore = Math.round(data.reduce((sum, d) => sum + d.domain_score, 0) / data.length);
   const totalQuestions = data.reduce((sum, d) => sum + d.questions_answered, 0);
