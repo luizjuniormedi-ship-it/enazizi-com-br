@@ -298,7 +298,7 @@ const NewProfessorSimuladoPage = () => {
         </Tabs>
 
         {/* Floating Footer Actions */}
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur-xl border-t border-white/5 z-50">
+        <div className="fixed bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] bg-background/80 backdrop-blur-xl border-t border-white/5 z-50">
           <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
             <div className="hidden sm:block">
               <p className="text-[10px] font-black uppercase tracking-widest text-white/40">
