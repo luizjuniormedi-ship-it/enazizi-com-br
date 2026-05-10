@@ -280,6 +280,7 @@ const AgentMessageItem = memo(
                       variant="ghost" 
                       size="sm" 
                       className="h-7 text-[10px] gap-1 text-muted-foreground"
+                      onClick={() => navigate('/admin/monitoring')}
                     >
                       <BarChart3 className="h-3 w-3" /> Analytics
                     </Button>
