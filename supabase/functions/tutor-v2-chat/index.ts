@@ -52,7 +52,9 @@ serve(async (req) => {
     let context = {};
     try {
       console.log("[TUTOR_V2] Calling context-builder...");
-      const { data: contextData, error: contextError } = await supabase.functions.invoke("tutor-v2-context-builder");
+      const { data: contextData, error: contextError } = await supabase.functions.invoke("tutor-v2-context-builder", {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
       if (contextError) {
         console.warn("[TUTOR_V2] context-builder error:", contextError);
       } else {
