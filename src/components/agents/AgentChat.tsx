@@ -329,6 +329,8 @@ const AgentChat = ({
         }
         hasMessages={chat.messages.filter(m => m.role === "assistant").length > 0}
         lessonStatus={sessionLesson ? (sessionLesson.aggregation?.manual_video_url ? 'ready' : 'processing') : lessonStatus}
+        isAdmin={isAdmin}
+        onToggleDiagnostic={() => setShowDiagnostic(v => !v)}
       />
 
       <input type="file" ref={chat.fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />
