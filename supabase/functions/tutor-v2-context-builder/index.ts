@@ -54,9 +54,9 @@ serve(async (req) => {
       context: {
         user_id: userId,
         errors: errors || [],
-        mission: mission || null,
-        fsrs: fsrs || null,
-        memory_chunks_used: memory?.chunks_found || 0,
+        mission: mission,
+        fsrs: fsrs,
+        memory_chunks_used: memory_chunks_used,
         cognitive_load: 0.45, // Placeholder for actual calculation
         detected_gaps: (errors || []).map((e: any) => e.topic)
       }
