@@ -657,12 +657,14 @@ const StudySession = () => {
 
       // After streaming completes, check if this was an MCQ answer.
       const lastUserMsg = msgs[msgs.length - 1];
-      if (lastUserMsg?.role === "user" && assistantContent) {
+      if (lastUserMsg?.role === "user" && assistantContent && mountedRef.current) {
         if (currentPhase === "reinforcement") {
           const signal = parseStudySignal(assistantContent);
           if (signal && signal.wasCorrect && signal.confidence >= 0.5) {
             toast({ title: "✅ Conceito corrigido!", description: "Você fixou o ponto. Continuando..." });
-            setTimeout(() => setPhase(preReinforcementPhase), 2000);
+            setTimeout(() => {
+              if (mountedRef.current) setPhase(preReinforcementPhase);
+            }, 2000);
           }
           detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
         } else if (currentPhase === "questions" || currentPhase === "discussion") {
@@ -670,7 +672,9 @@ const StudySession = () => {
         }
       }
     } catch (err: any) {
+      if (err.name === "AbortError") return;
       console.error("[StudySession] connection error in streamChat:", err);
+      if (!mountedRef.current) return;
       if (currentPhase === "questions") {
         toast({ 
           title: "Instabilidade na IA", 
@@ -685,7 +689,12 @@ const StudySession = () => {
         });
       }
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
+      if (streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+      }
     }
   };
 
