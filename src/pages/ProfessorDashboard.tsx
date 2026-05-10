@@ -238,9 +238,9 @@ const ProfessorDashboard = () => {
           {/* Sub-aba selector — mostra apenas o sub do grupo ativo */}
           <SubTabsBar group={activeTab} active={activeSub} onChange={setActiveSub} />
 
-          {/* OPERACIONAL: Alunos em risco · Heatmap turma · Aluno individual · Casos plantão */}
+          {/* OPERACIONAL: Risco · Matriz cognitiva · Heatmap · Timeline · Ranking · Aluno · Casos */}
           <TabsContent value="operacional" className="mt-4 space-y-6">
-            {(activeSub === "risco" || activeSub === "heatmap") && (
+            {(activeSub === "risco" || activeSub === "matriz" || activeSub === "heatmap" || activeSub === "ranking") && (
               <OperationalKpiBar analytics={classAnalytics.data} loading={classAnalytics.loading} />
             )}
             {activeSub === "risco" && (
@@ -254,7 +254,14 @@ const ProfessorDashboard = () => {
                 onOpenDrawer={(id) => setDrawerStudentId(id)}
               />
             )}
+            {activeSub === "matriz" && (
+              <ClassCognitiveMatrix analytics={classAnalytics.data} loading={classAnalytics.loading} />
+            )}
             {activeSub === "heatmap" && <ClassCognitiveHeatmap callAPI={callAPI} />}
+            {activeSub === "timeline" && <ProfessorInterventionTimeline callAPI={callAPI} />}
+            {activeSub === "ranking" && (
+              <ProfessionalLeaderboard analytics={classAnalytics.data} loading={classAnalytics.loading} />
+            )}
             {activeSub === "aluno" && (
               <Suspense fallback={null}><StudentTracker callAPI={callAPI} /></Suspense>
             )}
