@@ -408,8 +408,8 @@ const AgentMessageItem = memo(
 
                         <div className="p-3 bg-white/5 border border-white/5 rounded-lg space-y-2">
                           <div className="flex justify-between text-[9px] text-slate-500">
-                            <span>WORKER: {state.isStuck ? 'NONE_AVAILABLE' : 'CLUSTER-GPU-ALPHA-01'}</span>
-                            <span>LATENCY: {state.isStuck ? '---' : '42ms'}</span>
+                            <span>WORKER: {state.isStuck ? 'NONE_AVAILABLE' : (state.workerStatus === 'online' ? (state.workerStatus || 'ALLOCATING...') : 'OFFLINE')}</span>
+                            <span>LATENCY: {state.isStuck ? '---' : (state.progress > 0 ? 'CALCULATING...' : '---')}</span>
                           </div>
                           <div className="flex justify-between text-[9px] text-slate-500">
                             <span>ID: {state.projectId?.slice(0, 12) || 'QUEUED'}</span>
