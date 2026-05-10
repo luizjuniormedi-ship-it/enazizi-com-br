@@ -599,10 +599,12 @@ const StudySession = () => {
       let hasReceivedChunks = false;
 
       console.debug("[StudySession] starting stream read...");
+      let assistantMsgCreated = false;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!mountedRef.current) break;
         
         hasReceivedChunks = true;
         buffer += decoder.decode(value, { stream: true });
@@ -625,17 +627,18 @@ const StudySession = () => {
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
+              if (!mountedRef.current) break;
               setMessages((prev) => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant" && prev.length > msgs.length) {
+                if (!assistantMsgCreated) {
+                  assistantMsgCreated = true;
+                  if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
+                    firstQuestionTrackedRef.current = true;
+                    trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
+                  }
+                  return [...prev, { role: "assistant", content: assistantContent }];
+                } else {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
-                
-                if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
-                  firstQuestionTrackedRef.current = true;
-                  trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
-                }
-                return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
           } catch (e) {
