@@ -22,7 +22,10 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const requestId = crypto.randomUUID();
+  const startTime = Date.now();
   console.log(`[mentor-chat] REQUEST_RECEIVED id=${requestId}`);
+
+  const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
   try {
     // 1. Authentication Hardening
@@ -40,14 +43,14 @@ serve(async (req) => {
       body = await req.json();
     } catch (e) {
       console.error(`[mentor-chat] BODY_INVALID id=${requestId}`, e);
-      return json({ error: "invalid_json", message: "Corpo da requisição inválido.", requestId }, 400);
+      return json({ ok: false, error: "invalid_json", message: "Corpo da requisição inválido.", requestId }, 400);
     }
 
     const { messages, userContext, targetExam, skipCache = false, conversationId, topic: userTopic, specialty: userSpecialty } = body;
     console.log(`[mentor-chat] BODY_VALIDATED id=${requestId} conv=${conversationId}`);
 
     if (!Array.isArray(messages) || messages.length === 0) {
-      return json({ error: "missing_messages", message: "Histórico de mensagens é obrigatório.", requestId }, 400);
+      return json({ ok: false, error: "missing_messages", message: "Histórico de mensagens é obrigatório.", requestId }, 400);
     }
 
     // 3. Environment & Config Audit
@@ -55,7 +58,7 @@ serve(async (req) => {
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       console.error(`[mentor-chat] CONFIG_ERROR id=${requestId}`);
-      return json({ error: "config_error", message: "Erro de configuração no servidor.", requestId }, 500);
+      return json({ ok: false, error: "config_error", message: "Erro de configuração no servidor.", requestId }, 500);
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -84,12 +87,15 @@ serve(async (req) => {
           requestId
         });
 
+        const elapsedMs = Date.now() - startTime;
+        console.log(`[mentor-chat] RESPONSE_SENT id=${requestId} elapsed=${elapsedMs}ms source=cache`);
         return json({ 
           ok: true,
           content: cacheResult.content.text, 
           message: cacheResult.content.text,
           cached: true, 
-          requestId 
+          requestId,
+          elapsedMs
         });
       }
     }
@@ -108,17 +114,25 @@ serve(async (req) => {
       systemPrompt += `\n\n--- CONTEXTO ATUAL DA SESSÃO ---\nTópico: ${userTopic || "Não especificado"}\nEspecialidade: ${userSpecialty || "Geral"}\n--- FIM DO CONTEXTO ---`;
     }
 
-    // PubMed enrichment (safe-failure)
+    // PubMed enrichment (safe-failure with 8s timeout)
     const searchTopic = extractSearchTopic(messages);
     if (searchTopic && searchTopic.length >= 3) {
       try {
         console.log(`[mentor-chat] RETRIEVAL_STARTED (PubMed) id=${requestId}`);
-        const articles = await searchPubMed(searchTopic, 3);
+        const retrievalStart = Date.now();
+        
+        // Timeout de 8s para retrieval
+        const pubmedPromise = searchPubMed(searchTopic, 3);
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000));
+        
+        const articles = await Promise.race([pubmedPromise, timeoutPromise]) as any;
         const pubmedBlock = formatPubMedForPrompt(articles);
         if (pubmedBlock) systemPrompt += pubmedBlock;
-        console.log(`[mentor-chat] RETRIEVAL_FINISHED (PubMed) id=${requestId}`);
+        
+        const retrievalElapsed = Date.now() - retrievalStart;
+        console.log(`[mentor-chat] RETRIEVAL_FINISHED (PubMed) id=${requestId} elapsed=${retrievalElapsed}ms`);
       } catch (e) {
-        console.warn(`[mentor-chat] PubMed enrichment failed id=${requestId}:`, e);
+        console.warn(`[mentor-chat] PubMed enrichment failed/timed out id=${requestId}:`, e.message);
       }
     }
 
@@ -134,12 +148,10 @@ serve(async (req) => {
       });
     }
 
-    // 7. IA Orchestrator with Fallback
+    // 7. IA Orchestrator with Fallback and Timeouts
     const startMs = Date.now();
     let response;
     let modelUsed = "openai/gpt-4o";
-
-    const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
     try {
       console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED id=${requestId} model=${modelUsed}`);
@@ -148,7 +160,7 @@ serve(async (req) => {
         messages: [{ role: "system", content: systemPrompt }, ...messages],
         stream: true,
         maxTokens: 4096,
-        timeoutMs: 25000, // 25s timeout for primary
+        timeoutMs: 20000, // 20s timeout for primary conforme solicitado
         userId
       });
       console.log(`[mentor-chat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
@@ -162,7 +174,7 @@ serve(async (req) => {
           messages: [{ role: "system", content: systemPrompt }, ...messages],
           stream: true,
           maxTokens: 4096,
-          timeoutMs: 15000,
+          timeoutMs: 10000, // Fallback mais rápido
           userId
         });
         console.log(`[mentor-chat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
@@ -182,8 +194,9 @@ serve(async (req) => {
           error: "ai_failed", 
           message: fallbackMessage,
           requestId,
-          fallbackUsed: true
-        }, 200); // Return 200 with OK=false to handle gracefully in frontend
+          fallbackUsed: true,
+          elapsedMs: Date.now() - startTime
+        }, 200);
       }
     }
 
@@ -211,9 +224,10 @@ serve(async (req) => {
     return json({ 
       ok: false,
       error: "internal_error", 
-      message: "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.",
+      message: fallbackMessage,
       requestId,
-      fallbackUsed: true
+      fallbackUsed: true,
+      elapsedMs: Date.now() - startTime
     }, 500);
   }
 });

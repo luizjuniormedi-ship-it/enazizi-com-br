@@ -284,26 +284,30 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
     if (initialTopic && !hasStarted && !autoStartProcessed.current) {
       console.debug("[AIMentor] topic detected in URL, starting auto-flow:", initialTopic);
       autoStartProcessed.current = true;
-      handleStart(initialTopic);
       
-      // Limpa o parâmetro topic imediatamente para evitar duplicidade no refresh
-      const newParams = new URLSearchParams(searchParams);
+      // Limpa os parâmetros da URL IMEDIATAMENTE para evitar duplicidade no refresh
+      const newParams = new URLSearchParams(window.location.search);
       newParams.delete("topic");
-      setSearchParams(newParams, { replace: true });
+      const newRelativePathQuery = window.location.pathname + (newParams.toString() ? "?" + newParams.toString() : "");
+      window.history.replaceState(null, "", newRelativePathQuery);
+      
+      handleStart(`Quero estudar: ${initialTopic}`);
     } 
     // Se temos apenas sessão, já marcamos como iniciado (evita hero screen)
-    else if (initialSessionId && !hasStarted) {
+    else if (initialSessionId && !hasStarted && !autoStartProcessed.current) {
       console.debug("[AIMentor] session detected in URL, bypassing hero");
+      autoStartProcessed.current = true;
       setHasStarted(true);
       setActiveConversationId(initialSessionId);
       
-      // Limpa os parâmetros de sessão para deixar a URL limpa
-      const newParams = new URLSearchParams(searchParams);
+      // Limpa os parâmetros de sessão
+      const newParams = new URLSearchParams(window.location.search);
       newParams.delete("session");
       newParams.delete("conversationId");
-      setSearchParams(newParams, { replace: true });
+      const newRelativePathQuery = window.location.pathname + (newParams.toString() ? "?" + newParams.toString() : "");
+      window.history.replaceState(null, "", newRelativePathQuery);
     }
-  }, [initialTopic, initialSessionId, hasStarted, searchParams, setSearchParams]);
+  }, [initialTopic, initialSessionId, hasStarted]);
 
   const handleStart = (prompt: string) => {
     setPendingPrompt(prompt);

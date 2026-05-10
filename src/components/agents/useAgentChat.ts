@@ -208,30 +208,37 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         requestId
       });
 
-      // Watchdog implementation
+      // Watchdog implementation - Reduzido para 20s conforme solicitado
       const watchdogTimeout = setTimeout(() => {
         if (isLoading) {
-          console.error(`[TUTOR] WATCHDOG_TRIGGERED id=${requestId}`);
+          console.error(`[TUTOR] WATCHDOG_TRIGGERED id=${requestId} - Stage: ${loadingStage}`);
           setIsLoading(false);
           setLoadingStage("");
           const fallbackMsg = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
+          
           setMessages(prev => {
             const last = prev[prev.length - 1];
-            if (last && last.role === "assistant" && (last.content === "" || last.content === undefined)) {
-              return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMsg, isError: true } : m);
+            // Se já tivermos o assistant no final, mas vazio ou erro
+            if (last && last.role === "assistant") {
+              if (!last.content || last.isError) {
+                return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: fallbackMsg, isError: true } : m);
+              }
+              return prev;
             }
+            // Se a última for do user, adiciona o assistant fallback
             if (last && last.role === "user") {
               return [...prev, { role: "assistant", content: fallbackMsg, isError: true }];
             }
             return prev;
           });
+
           toast({
             title: "Instabilidade Detectada",
-            description: "A resposta está demorando mais que o esperado. O Tutor continuará com o conhecimento base.",
+            description: "A resposta está demorando mais que o esperado. O Tutor continuará com o conhecimento disponível.",
             variant: "destructive"
           });
         }
-      }, 25000);
+      }, 20000);
 
       // Ensure conversation exists
       const convId = await history.ensureConversation(text);
@@ -323,18 +330,28 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       try {
         console.log(`[TUTOR] RETRIEVAL_STARTED id=${requestId}`);
-        setLoadingStage("🔍 Buscando na Base de Conhecimento...");
+        setLoadingStage("🔍 Consultando base de conhecimento...");
         
         const ragPromise = supabase.functions.invoke("search-rag-context", {
-          body: { query: text, topic: topic || undefined }
+          body: { query: text, topic: topic || undefined, requestId }
         });
         
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise<{data: any, error: any}>((_, reject) => 
           setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000)
         );
 
-        const { data: ragData } = await Promise.race([ragPromise, timeoutPromise]) as any;
-        console.log(`[TUTOR] RETRIEVAL_FINISHED id=${requestId}`, { success: ragData?.success });
+        const raceResult = await Promise.race([ragPromise, timeoutPromise]);
+        const ragData = raceResult?.data;
+        const ragError = raceResult?.error;
+
+        if (ragError) {
+          console.warn(`[TUTOR] RETRIEVAL_ERROR id=${requestId}`, ragError);
+        }
+
+        console.log(`[TUTOR] RETRIEVAL_FINISHED id=${requestId}`, { 
+          success: !!ragData?.success,
+          chunks: ragData?.bibliography?.length || 0
+        });
         
         if (ragData?.success && Array.isArray(ragData.bibliography)) {
           ragBibliography = ragData.bibliography;
@@ -345,6 +362,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       } catch (err) {
         console.warn(`[TUTOR] RETRIEVAL_FAILED id=${requestId}`, err);
+        // Não trava o fluxo, apenas loga e segue sem contexto RAG
       }
 
       if (isAdaptiveEnabled) {
@@ -425,6 +443,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         if (result === null && !assistantSoFar) {
           setIsLoading(false);
           setLoadingStage("");
+          console.log(`[TUTOR] SEND_COMPLETED (empty) id=${requestId}`);
           console.log(`[TUTOR] LOADING_CLEARED id=${requestId}`);
           return;
         }
@@ -441,6 +460,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             length: assistantSoFar.length,
             requestId
           });
+          console.log(`[TUTOR] SEND_COMPLETED (success) id=${requestId}`);
         }
 
         // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
