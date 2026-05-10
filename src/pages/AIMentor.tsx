@@ -123,20 +123,22 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
           <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-violet-500/20 to-primary/20 rounded-[32px] blur-xl opacity-20 group-hover:opacity-50 transition duration-1000" />
           
           <div className="relative group/input">
-            <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl rounded-[28px] border border-white/10 group-hover/input:border-primary/40 transition-all duration-500 shadow-2xl" />
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl rounded-[28px] sm:rounded-[32px] border border-white/10 group-hover/input:border-primary/40 transition-all duration-500 shadow-2xl" />
             
-            <div className="relative flex items-center p-2 sm:p-3 pl-6 sm:pl-8">
-              <Brain className="h-6 w-6 text-primary/60 mr-4" />
-              <input 
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-lg sm:text-xl py-4 sm:py-5"
-                placeholder="Ex: 'Quais os critérios de Duke para Endocardite?'"
-                id="tutor-premium-input"
-              />
+            <div className="relative flex flex-col sm:flex-row items-center p-2 sm:p-3 pl-4 sm:pl-8 gap-2">
+              <div className="flex items-center w-full flex-1">
+                <Brain className="h-6 w-6 text-primary/60 mr-4 hidden sm:block" />
+                <input 
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-base sm:text-xl py-4 sm:py-5 min-w-0"
+                  placeholder="Ex: 'Quais os critérios de Duke para Endocardite?'"
+                  id="tutor-premium-input"
+                />
+              </div>
               
-              <div className="flex items-center gap-2 pr-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto pr-2 pb-2 sm:pb-0">
                  <button className="hidden sm:flex p-4 rounded-2xl hover:bg-white/5 text-white/40 hover:text-white transition-all">
                    <Mic className="h-6 w-6" />
                  </button>
@@ -145,7 +147,7 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
                    size="lg" 
                    glow 
                    onClick={handleSend}
-                   className="h-14 sm:h-16 px-8 rounded-2xl text-base font-bold flex items-center gap-2 group/btn"
+                   className="h-12 sm:h-16 flex-1 sm:flex-initial px-6 sm:px-8 rounded-2xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 group/btn"
                    disabled={!inputValue.trim()}
                  >
                    <span>Estudar Agora</span>
