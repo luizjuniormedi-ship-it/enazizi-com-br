@@ -29,7 +29,8 @@ const AgentHeader = memo(({
   title, subtitle, selectedCount, isFullscreen, onToggleFullscreen,
   onNewConversation, onToggleHistory, autoSpeak, onToggleAutoSpeak,
   showUploadButton, isUploading, onUploadClick,
-  onTransformSession, hasMessages, lessonStatus = 'idle'
+  onTransformSession, hasMessages, lessonStatus = 'idle',
+  onToggleDiagnostic, isAdmin
 }: AgentHeaderProps) => {
   return (
     <div className="pt-2 pb-6 px-4 sm:px-12 flex items-center justify-between gap-4 border-b border-white/5 bg-transparent backdrop-blur-3xl">
