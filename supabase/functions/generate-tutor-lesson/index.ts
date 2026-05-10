@@ -57,7 +57,10 @@ serve(async (req) => {
       return json({ error: "no_messages", message: "Não encontramos mensagens suficientes para montar a aula." }, 400);
     }
 
-    const historyText = messages.map(m => `[${m.role.toUpperCase()}]: ${m.content}`).join("\n\n");
+    let historyText = messages.map(m => `[${m.role.toUpperCase()}]: ${m.content}`).join("\n\n");
+    if (customContent) {
+      historyText = `[CONTEXTO ADICIONAL]: ${customContent}\n\n` + historyText;
+    }
 
     // 2. Call AI to Generate Structured Lesson
     const systemPrompt = `Você é um Tutor Médico especialista em pedagogia clínica. 
