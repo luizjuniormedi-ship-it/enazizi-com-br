@@ -336,7 +336,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
       .from("temas_estudados")
       .select("id, tema, especialidade, data_estudo, status, dificuldade, subtopic_id, topic_id, specialty_id")
       .eq("user_id", userId)
-      .gt("created_at", resetAt || "1900-01-01T00:00:00Z")
+      .or(`created_at.gt.${resetAt || "1900-01-01T00:00:00Z"},created_at.gte.${todayIso}`)
       .order("data_estudo", { ascending: false })
       .limit(50), "temas"),
     // FSRS query — only when flag ON
@@ -346,7 +346,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
         .select("id, card_type, card_ref_id, stability, difficulty, state, due, lapses")
         .eq("user_id", userId)
         .lte("due", new Date().toISOString())
-        .gt("updated_at", resetAt || "1900-01-01T00:00:00Z")
+        .or(`updated_at.gt.${resetAt || "1900-01-01T00:00:00Z"},updated_at.gte.${todayIso}`)
         .order("due", { ascending: true })
         .limit(30), "fsrs"),
     ] : [
