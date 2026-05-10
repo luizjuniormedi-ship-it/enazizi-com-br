@@ -1,4 +1,5 @@
 import { GraduationCap, ArrowRight, Target, Zap, History, FileText, ChevronDown, Lightbulb } from "lucide-react";
+import { MascotAvatar } from "../mascot/MascotAvatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
