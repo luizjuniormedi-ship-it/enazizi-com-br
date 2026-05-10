@@ -26,8 +26,6 @@ async function testTheme(theme) {
       budgetMode: "premium",
     });
     
-    console.log(`[Selection] ${theme.topic}: ${selection.model} (${selection.reason})`);
-
     const result = await runAI({
       taskType: theme.topic === "Questão A-E" ? "simulado_review" : "tutor_chat",
       topic: theme.topic,
@@ -36,8 +34,10 @@ async function testTheme(theme) {
       budgetMode: "premium",
     });
 
+    const latency = Date.now() - start;
+    
     if (result.fallbackUsed) {
-      console.log(`[Fallback] ${theme.topic} failed on primary model. First attempt error: ${result.attempts[0].code}: ${result.attempts[0].message}`);
+      console.log(`[Fallback] ${theme.topic} used ${result.model}. First attempt failed.`);
     }
 
     const filename = `test_output_${theme.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
@@ -61,7 +61,7 @@ async function testTheme(theme) {
 }
 
 async function validate() {
-  console.log("Starting Forensic Validation...");
+  console.log("Starting Final Forensic Validation...");
   const results = await Promise.all(themes.map(testTheme));
 
   console.log("\n--- EVALUATION RESULTS ---\n");
@@ -72,7 +72,6 @@ async function validate() {
     const content = r.content;
     const lower = content.toLowerCase();
     
-    // Detailed block check
     const blocks = {
       "Missão": /missão|missao/i.test(lower),
       "Intuição": /intuição|intuicao/i.test(lower) || content.includes("1️⃣"),
@@ -97,7 +96,7 @@ async function validate() {
       Tema: r.theme,
       Blocks: `${presentCount}/15`,
       Model: r.model,
-      Score: (presentCount / 1.5).toFixed(1), // 0-10 scale approx
+      Score: (presentCount / 1.5).toFixed(1),
       Integrations: "Logs OK",
       Status: presentCount >= 13 ? "✅ APROVADO" : "🟡 ATENÇÃO"
     };
