@@ -29,10 +29,10 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           </div>
           
           <div className={cn(
-            "p-4 rounded-2xl max-w-[80%] text-[13px] leading-relaxed",
+            "p-4 rounded-2xl max-w-[80%] text-[13px] leading-relaxed prose prose-invert prose-sm",
             msg.role === "assistant" ? "bg-slate-800/50 border border-white/5 text-slate-200" : "bg-indigo-600 text-white"
           )}>
-            <ReactMarkdown className="prose prose-invert prose-sm max-w-none">
+            <ReactMarkdown>
               {msg.content}
             </ReactMarkdown>
           </div>
