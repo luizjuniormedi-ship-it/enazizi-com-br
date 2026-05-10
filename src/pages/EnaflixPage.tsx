@@ -3,7 +3,7 @@
  * 
  * Agora promovido a HOME principal do sistema.
  */
-import { useEffect, useMemo, useState, useCallback, lazy, Suspense } from "react";
+import { useEffect, useMemo, useState, useCallback, lazy, Suspense, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +17,7 @@ import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
 import { EnaflixSectionRowVideo } from "@/components/enaflix/EnaflixSectionRowVideo";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
+import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { EnaflixBillboardSkeleton } from "@/components/enaflix/EnaflixBillboardSkeleton";
 import { EnaflixRowSkeleton } from "@/components/enaflix/EnaflixRowSkeleton";
@@ -364,16 +365,29 @@ export default function EnaflixPage() {
         <div
           className="fixed top-16 inset-x-0 z-40 bg-[#050508]/95 backdrop-blur-xl border-b border-white/5 shadow-[0_20px_48px_-16px_rgba(0,0,0,0.85)] animate-drawer-in"
         >
-          <div className="px-4 sm:px-8 lg:px-14 py-5">
+          <div className="px-4 sm:px-8 lg:px-14 py-5 flex flex-col sm:flex-row gap-4 items-center">
             <EnaflixSearchBar
               value={query}
               onChange={setQuery}
               placeholder="Buscar simulados, flashcards, anamnese, ECG..."
               autoFocus
             />
+            {query.trim().length > 3 && (
+              <Enaflix3DButton
+                size="sm"
+                variant="violet"
+                className="w-full sm:w-auto h-10 px-6 rounded-full text-xs font-black uppercase tracking-widest gap-2 group shrink-0"
+                onClick={() => navigate(`/dashboard/mentor?topic=${encodeURIComponent(query)}`)}
+              >
+                <Sparkles className="h-3.5 w-3.5 group-hover:animate-pulse" />
+                Estudar com Tutor IA
+              </Enaflix3DButton>
+            )}
+          </div>
+          <div className="px-4 sm:px-8 lg:px-14 pb-3">
             {query && (
               <p
-                className="text-xs text-white/50 mt-3 opacity-0 animate-text-reveal"
+                className="text-xs text-white/50 opacity-0 animate-text-reveal"
                 style={{ animationDelay: "200ms" }}
               >
                 {filteredModules.length === 0
