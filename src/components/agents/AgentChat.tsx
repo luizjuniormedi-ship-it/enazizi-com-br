@@ -106,12 +106,26 @@ const AgentChat = ({
     const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
     if (!lastAssistantMessage) return;
 
+    // Bug fix: NUNCA criar conversationId fake — sem conversa persistida o
+    // pipeline CME não consegue agregar mensagens reais.
+    if (!chat.activeConversationId) {
+      console.warn("[CME] Aborting transformSession: no active conversation persisted yet.");
+      toast.error("Aguarde a conversa ser salva antes de gerar a aula.", { id: "cme-no-conversation" });
+      return;
+    }
+
     const extractionResult = extractInlineTutorBlocks(lastAssistantMessage.content);
     const cognitiveBlocks = extractionResult.blocks;
     const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
     const baseTitle = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
     const title = `🎬 Videoaula Completa: ${baseTitle}`;
     const summary = summaryBlock?.payload?.bullets?.join(". ") || lastAssistantMessage.content.slice(0, 300);
+
+    console.debug("[CME] handleTransformSession", {
+      conversationId: chat.activeConversationId,
+      messages: chat.messages.length,
+      lastAssistantLength: lastAssistantMessage.content.length,
+    });
 
     await transformToVideo({
       title,
@@ -120,11 +134,12 @@ const AgentChat = ({
       summary,
       sourceContent: lastAssistantMessage.content,
       blocks: cognitiveBlocks,
-      conversationId: chat.activeConversationId || crypto.randomUUID(),
+      conversationId: chat.activeConversationId,
       isFullSession: true,
-      onComplete: (id) => console.log("CME Pipeline started for project:", id)
+      onComplete: (id) => console.debug("[CME] aggregation complete", { aggregationId: id })
     });
   }, [chat.messages, chat.activeConversationId, specialty, topic, transformToVideo]);
+
 
   // Upload handler
   const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
