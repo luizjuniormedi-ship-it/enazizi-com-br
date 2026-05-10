@@ -10,6 +10,21 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function MedicalMasteryDashboard() {
   const { data: metrics, isLoading } = useMedicalMastery();
+  const { triggerInteraction } = useMascotState();
+
+  useEffect(() => {
+    if (!isLoading && metrics) {
+      const highRisk = metrics.find(m => m.overload_risk > 0.6);
+      if (highRisk) {
+        triggerInteraction({
+          state: 'fatigue',
+          type: 'alert',
+          speech: `Atenção: alto risco de sobrecarga em ${highRisk.node_name}. Que tal uma pausa?`
+        });
+      }
+    }
+  }, [isLoading, metrics, triggerInteraction]);
+
 
   if (isLoading) return (
     <div className="p-12 flex flex-col items-center justify-center space-y-4">
