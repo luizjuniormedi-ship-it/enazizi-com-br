@@ -349,19 +349,37 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           onDelta: applyDelta,
           onError: ({ status, message }) => {
             clearTimeout(abortTimeout);
-            const errorMessages: Record<number, string> = {
-              429: "Limite de requisições atingido. Aguarde alguns segundos e tente novamente.",
-              402: "Créditos de IA esgotados. Adicione créditos no seu workspace para continuar.",
-              401: "Sessão expirada. Faça login novamente.",
-              500: "Erro interno do servidor. Tente novamente.",
-            };
-            const description =
-              (status && errorMessages[status]) ||
-              message ||
-              "Erro ao conectar com o agente IA";
-            toast({ title: "Erro", description, variant: "destructive" });
             
-            // Mark last message as error if possible
+            let description = message || "Erro ao conectar com o agente IA";
+            
+            // Tratamento de payloads JSON controlados retornados pela Edge Function
+            if (message && (message.includes('{"') || message.includes('error'))) {
+              try {
+                const parsed = JSON.parse(message);
+                description = parsed.message || parsed.error || description;
+              } catch (e) {
+                // Not JSON, keep original
+              }
+            }
+
+            const errorMessages: Record<number, string> = {
+              429: "Muitas requisições. Aguarde alguns segundos.",
+              402: "Créditos de IA insuficientes.",
+              401: "Sessão expirada. Por favor, recarregue a página.",
+              500: "Erro interno no Tutor. Tente novamente.",
+              503: "O serviço de IA está instável no momento.",
+            };
+            
+            if (status && errorMessages[status]) {
+              description = errorMessages[status];
+            }
+
+            toast({ 
+              title: "Tutor IA Indisponível", 
+              description, 
+              variant: "destructive" 
+            });
+            
             setMessages(prev => {
               const last = prev[prev.length - 1];
               if (last && last.role === "assistant") {
