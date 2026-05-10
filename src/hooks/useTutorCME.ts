@@ -671,6 +671,25 @@ export const useTutorCME = () => {
          console.error("Error finding lesson for topic:", e);
          return null;
        }
+     },
+     generateTextualLesson: async (params: { topic: string; conversationId?: string; sessionId?: string; customContent?: string }) => {
+       try {
+         const { data, error } = await supabaseClient.functions.invoke('generate-tutor-lesson', {
+           body: {
+             topic: params.topic,
+             conversationId: params.conversationId,
+             sessionId: params.sessionId,
+             customContent: params.customContent,
+             lessonType: 'aula_completa',
+             cmeEnabled: true
+           }
+         });
+         if (error) throw error;
+         return data;
+       } catch (e) {
+         console.error("Error generating textual lesson:", e);
+         throw e;
+       }
      }
   };
 };
