@@ -482,7 +482,7 @@ const AgentChat = ({
             <Button type="button" variant="secondary" onClick={resetCmeState} className="text-xs h-8">
               Fechar
             </Button>
-            {['rendering', 'gpu_rendering', 'pending_hardware', 'ready'].includes(String(cmeState.status)) && (
+            {isAdmin && ['rendering', 'gpu_rendering', 'pending_hardware', 'ready'].includes(String(cmeState.status)) && (
               <Button
                 type="button"
                 className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
