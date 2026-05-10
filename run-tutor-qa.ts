@@ -5,13 +5,26 @@ import { runTutorQA } from "./supabase/functions/_shared/tutor-qa-engine.ts";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+console.log("SUPABASE_URL present:", !!SUPABASE_URL);
+console.log("SUPABASE_SERVICE_ROLE_KEY present:", !!SUPABASE_SERVICE_ROLE_KEY);
+
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("Missing credentials.");
+  Deno.exit(1);
+}
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 async function main() {
   console.log("Triggering Tutor QA Runner...");
   
   // Try to find an admin user to attribute the run to
-  const { data: users } = await supabase.auth.admin.listUsers();
+  const { data: users, error: userError } = await supabase.auth.admin.listUsers();
+  if (userError) {
+    console.error("Error listing users:", userError.message);
+    return;
+  }
+
   const admin = users?.users?.find(u => u.user_metadata?.role === 'admin') || users?.users?.[0];
   
   if (!admin) {
@@ -28,3 +41,4 @@ async function main() {
 }
 
 main();
+
