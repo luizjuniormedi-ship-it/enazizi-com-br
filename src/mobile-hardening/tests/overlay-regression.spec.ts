@@ -32,8 +32,9 @@ test.describe("Mobile Hardening v2 — overlay & dead-button regression", () => 
       await page.waitForLoadState("networkidle");
 
       const issues = await page.evaluate(async () => {
+        // @ts-ignore — resolvido em runtime pelo Vite dev server
         const mod = await import("/src/mobile-hardening/utils/overlayDetector.ts");
-        return mod.detectOverlayIssues(document.body).map((i) => ({
+        return mod.detectOverlayIssues(document.body).map((i: any) => ({
           type: i.type,
           message: i.message,
           tag: i.element.tagName,
@@ -48,10 +49,11 @@ test.describe("Mobile Hardening v2 — overlay & dead-button regression", () => 
       await page.waitForLoadState("networkidle");
 
       const dead = await page.evaluate(async () => {
+        // @ts-ignore — resolvido em runtime pelo Vite dev server
         const mod = await import(
           "/src/mobile-hardening/utils/clickableAssertions.ts"
         );
-        return mod.detectDeadButtons(document.body).map((i) => ({
+        return mod.detectDeadButtons(document.body).map((i: any) => ({
           reason: i.reason,
           message: i.message,
         }));
