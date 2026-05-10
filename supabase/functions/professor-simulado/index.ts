@@ -1315,6 +1315,266 @@ REGRAS INVIOLÁVEIS:
           .sort((a, b) => b.student_count - a.student_count)
           .slice(0, 15);
 
+        // ============================================================
+        // COGNITIVE ENRICHMENT (Fase 1 — class_analytics v2)
+        // Real data only. If samples are too small, severity = "unknown".
+        // ============================================================
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 86400000).toISOString();
+
+        // FSRS cards aggregate per user
+        const { data: fsrsAll } = await sb
+          .from("fsrs_cards")
+          .select("user_id, stability, difficulty, lapses, reps, due, state")
+          .in("user_id", studentIds);
+
+        // FSRS reviews last 30d
+        const { data: fsrsReviews30 } = await sb
+          .from("fsrs_review_log")
+          .select("user_id, rating, reviewed_at")
+          .in("user_id", studentIds)
+          .gte("reviewed_at", thirtyDaysAgo);
+
+        // Practice attempts last 7d / 30d for trend & retention proxy
+        const { data: pa30 } = await sb
+          .from("practice_attempts")
+          .select("user_id, correct, created_at, especialidade")
+          .in("user_id", studentIds)
+          .gte("created_at", thirtyDaysAgo);
+
+        // Approval scores (latest per user)
+        const { data: approvals } = await sb
+          .from("approval_scores")
+          .select("user_id, score, created_at")
+          .in("user_id", studentIds)
+          .order("created_at", { ascending: false });
+
+        const latestApproval: Record<string, number> = {};
+        const prevApproval: Record<string, number> = {};
+        for (const a of (approvals || [])) {
+          if (!(a.user_id in latestApproval)) latestApproval[a.user_id] = a.score;
+          else if (!(a.user_id in prevApproval)) prevApproval[a.user_id] = a.score;
+        }
+
+        // Per-user cognitive aggregates
+        const cognitiveByUser: Record<string, {
+          avg_stability: number | null;
+          avg_lapses: number | null;
+          due_overdue: number;
+          reviews_30d: number;
+          again_rate: number | null; // rating==1 share — proxy for retention failure
+          retention_score: number | null; // 1 - again_rate
+          theta_proxy: number | null; // accuracy 30d normalized
+          overload_score: number; // due overdue + heavy review load
+          ignored_reviews: number;
+          weak_specialty: string | null;
+          accuracy_7d: number | null;
+          accuracy_prev: number | null;
+        }> = {};
+
+        for (const sid of studentIds) {
+          const cards = (fsrsAll || []).filter((c: any) => c.user_id === sid);
+          const reviews = (fsrsReviews30 || []).filter((r: any) => r.user_id === sid);
+          const attempts30 = (pa30 || []).filter((p: any) => p.user_id === sid);
+          const stability = cards.length > 0 ? cards.reduce((s: number, c: any) => s + (c.stability || 0), 0) / cards.length : null;
+          const lapses = cards.length > 0 ? cards.reduce((s: number, c: any) => s + (c.lapses || 0), 0) / cards.length : null;
+          const overdue = cards.filter((c: any) => c.due && new Date(c.due).getTime() < now.getTime()).length;
+          const againCount = reviews.filter((r: any) => r.rating === 1).length;
+          const againRate = reviews.length > 0 ? againCount / reviews.length : null;
+          const retentionScore = againRate === null ? null : Math.max(0, Math.round((1 - againRate) * 100));
+          // accuracy proxy splits last 7d vs prior 23d
+          const a7 = attempts30.filter((a: any) => new Date(a.created_at).toISOString() >= sevenDaysAgo);
+          const aPrev = attempts30.filter((a: any) => new Date(a.created_at).toISOString() < sevenDaysAgo);
+          const acc7 = a7.length >= 5 ? Math.round((a7.filter((a: any) => a.correct).length / a7.length) * 100) : null;
+          const accPrev = aPrev.length >= 5 ? Math.round((aPrev.filter((a: any) => a.correct).length / aPrev.length) * 100) : null;
+          const thetaProxy = attempts30.length >= 10
+            ? Math.round((attempts30.filter((a: any) => a.correct).length / attempts30.length) * 100)
+            : null;
+
+          // weakest specialty by error_bank for this student
+          const errsForUser = (errors || []).filter((e: any) => e.user_id === sid);
+          const errMap: Record<string, number> = {};
+          for (const e of errsForUser) errMap[e.tema] = (errMap[e.tema] || 0) + (e.vezes_errado || 0);
+          const weakSpec = Object.entries(errMap).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+
+          // overload: many overdue + high review volume
+          const overload = overdue * 2 + Math.min(reviews.length, 50);
+          // ignored reviews proxy: cards overdue with no review in 30d
+          const ignored = cards.filter((c: any) => c.due && new Date(c.due).getTime() < now.getTime() && c.state >= 2).length - reviews.length;
+
+          cognitiveByUser[sid] = {
+            avg_stability: stability !== null ? Math.round(stability * 100) / 100 : null,
+            avg_lapses: lapses !== null ? Math.round(lapses * 100) / 100 : null,
+            due_overdue: overdue,
+            reviews_30d: reviews.length,
+            again_rate: againRate !== null ? Math.round(againRate * 100) / 100 : null,
+            retention_score: retentionScore,
+            theta_proxy: thetaProxy,
+            overload_score: overload,
+            ignored_reviews: Math.max(0, ignored),
+            weak_specialty: weakSpec,
+            accuracy_7d: acc7,
+            accuracy_prev: accPrev,
+          };
+        }
+
+        // student_cognitive_risks
+        const studentCognitiveRisks = students.map((s: any) => {
+          const c = cognitiveByUser[s.user_id];
+          const stat = studentStats.find((x: any) => x.user_id === s.user_id);
+          const lapses = c.avg_lapses ?? 0;
+          const ret = c.retention_score ?? 100;
+          const stab = c.avg_stability ?? 0;
+          const inactive = stat?.days_inactive ?? 0;
+          // composite risk (0-100, higher worse)
+          let risk = 0;
+          if (lapses >= 2) risk += 25;
+          if (ret < 70) risk += 25;
+          if (stab > 0 && stab < 1) risk += 15;
+          if (inactive >= 7) risk += 25;
+          if (c.overload_score > 30) risk += 10;
+          risk = Math.min(100, risk);
+          const risk_level: "low" | "warning" | "critical" = risk >= 60 ? "critical" : risk >= 30 ? "warning" : "low";
+          // burnout heuristic
+          let burnoutSignals = 0;
+          if (c.overload_score > 30) burnoutSignals++;
+          if (c.accuracy_7d !== null && c.accuracy_prev !== null && c.accuracy_7d < c.accuracy_prev - 10) burnoutSignals++;
+          if (lapses >= 3) burnoutSignals++;
+          const burnout: "low" | "moderate" | "high" = burnoutSignals >= 3 ? "high" : burnoutSignals >= 1 ? "moderate" : "low";
+          // suggested action
+          let suggested: "recovery" | "reduce_load" | "mentoria" | "simulado_adaptativo" | "revisao_fsrs" | "monitorar" = "monitorar";
+          let justification = "Sem sinais críticos.";
+          if (lapses >= 2 && ret < 70) {
+            suggested = "revisao_fsrs";
+            justification = `Lapses elevados (${lapses.toFixed(1)}) e retenção baixa (${ret}%).`;
+          } else if (c.weak_specialty && (stat?.total_errors ?? 0) >= 5) {
+            suggested = "recovery";
+            justification = `Erros concentrados em ${c.weak_specialty}.`;
+          } else if (c.overload_score > 30 && burnout !== "low") {
+            suggested = "reduce_load";
+            justification = `Sobrecarga (${c.overload_score}) com sinais de burnout.`;
+          } else if (inactive >= 5) {
+            suggested = "mentoria";
+            justification = `Inativo há ${inactive} dias.`;
+          } else if (c.accuracy_7d !== null && c.accuracy_prev !== null && c.accuracy_7d < c.accuracy_prev - 10) {
+            suggested = "simulado_adaptativo";
+            justification = `Queda de acurácia: ${c.accuracy_prev}% → ${c.accuracy_7d}%.`;
+          }
+          return {
+            user_id: s.user_id,
+            display_name: s.display_name || s.email,
+            risk_score: risk,
+            risk_level,
+            burnout_risk: burnout,
+            overload_score: c.overload_score,
+            avg_stability: c.avg_stability,
+            avg_lapses: c.avg_lapses,
+            retention_score: c.retention_score,
+            theta_proxy: c.theta_proxy,
+            inactive_days: inactive,
+            ignored_reviews: c.ignored_reviews,
+            weak_specialty: c.weak_specialty,
+            suggested_action: suggested,
+            justification,
+          };
+        });
+
+        // cognitive_summary
+        const validStab = Object.values(cognitiveByUser).map(c => c.avg_stability).filter((v): v is number => v !== null);
+        const validLapses = Object.values(cognitiveByUser).map(c => c.avg_lapses).filter((v): v is number => v !== null);
+        const validRet = Object.values(cognitiveByUser).map(c => c.retention_score).filter((v): v is number => v !== null);
+        const validTheta = Object.values(cognitiveByUser).map(c => c.theta_proxy).filter((v): v is number => v !== null);
+        const validOverload = Object.values(cognitiveByUser).map(c => c.overload_score);
+
+        const avgOf = (arr: number[]) => arr.length ? Math.round((arr.reduce((s, x) => s + x, 0) / arr.length) * 100) / 100 : null;
+
+        // trend 7d/30d via approval scores
+        const latestVals = Object.values(latestApproval);
+        const prevVals = Object.values(prevApproval);
+        const avgLatest = latestVals.length ? latestVals.reduce((s, x) => s + x, 0) / latestVals.length : null;
+        const avgPrev = prevVals.length ? prevVals.reduce((s, x) => s + x, 0) / prevVals.length : null;
+        const trend30: "up" | "down" | "stable" | null = avgLatest !== null && avgPrev !== null
+          ? (avgLatest > avgPrev + 2 ? "up" : avgLatest < avgPrev - 2 ? "down" : "stable")
+          : null;
+
+        const weakestSpec = specialtyBreakdown[specialtyBreakdown.length - 1]?.specialty || null;
+        const strongestSpec = specialtyBreakdown[0]?.specialty || null;
+
+        const cognitive_summary = {
+          avg_theta: avgOf(validTheta),
+          avg_stability: avgOf(validStab),
+          avg_retention: avgOf(validRet),
+          avg_lapses: avgOf(validLapses),
+          avg_recovery_load: avgOf(validOverload),
+          burnout_risk_students: studentCognitiveRisks.filter(r => r.burnout_risk !== "low").length,
+          overload_students: studentCognitiveRisks.filter(r => r.overload_score > 30).length,
+          inactive_students: inactiveCount,
+          weakest_specialty: weakestSpec,
+          strongest_specialty: strongestSpec,
+          trend_7d: null,
+          trend_30d: trend30,
+        };
+
+        // cognitive_matrix: specialty x metric
+        // For each specialty, aggregate retention/lapses/stability of users who have errors in it,
+        // plus difficulty (avg domain difficulty proxy via errors/score).
+        const cognitive_matrix: any[] = [];
+        const specialtyUserMap: Record<string, Set<string>> = {};
+        (errors || []).forEach((e: any) => {
+          if (!specialtyUserMap[e.tema]) specialtyUserMap[e.tema] = new Set();
+          specialtyUserMap[e.tema].add(e.user_id);
+        });
+        // also seed via medical_domain_map specialties
+        (domains || []).forEach((d: any) => {
+          if (!specialtyUserMap[d.specialty]) specialtyUserMap[d.specialty] = new Set();
+          specialtyUserMap[d.specialty].add(d.user_id);
+        });
+
+        const sevFor = (val: number | null, bands: { good: number; attention: number; risk: number }, inverse = false): "good" | "attention" | "risk" | "critical" | "unknown" => {
+          if (val === null) return "unknown";
+          if (inverse) {
+            // higher is worse (lapses)
+            if (val <= bands.good) return "good";
+            if (val <= bands.attention) return "attention";
+            if (val <= bands.risk) return "risk";
+            return "critical";
+          }
+          if (val >= bands.good) return "good";
+          if (val >= bands.attention) return "attention";
+          if (val >= bands.risk) return "risk";
+          return "critical";
+        };
+
+        for (const [specialty, userSet] of Object.entries(specialtyUserMap).slice(0, 20)) {
+          const uids = Array.from(userSet);
+          const sample = uids.length;
+          if (sample < 1) continue;
+          const stabs = uids.map(u => cognitiveByUser[u]?.avg_stability).filter((v): v is number => typeof v === "number");
+          const laps = uids.map(u => cognitiveByUser[u]?.avg_lapses).filter((v): v is number => typeof v === "number");
+          const rets = uids.map(u => cognitiveByUser[u]?.retention_score).filter((v): v is number => typeof v === "number");
+          const ovls = uids.map(u => cognitiveByUser[u]?.overload_score).filter((v): v is number => typeof v === "number");
+          const domVals = (domains || []).filter((d: any) => d.specialty === specialty).map((d: any) => d.domain_score);
+          const avgDom = domVals.length ? Math.round(domVals.reduce((a: number, b: number) => a + b, 0) / domVals.length) : null;
+
+          const stabAvg = stabs.length ? Math.round((stabs.reduce((a, b) => a + b, 0) / stabs.length) * 100) / 100 : null;
+          const lapAvg = laps.length ? Math.round((laps.reduce((a, b) => a + b, 0) / laps.length) * 100) / 100 : null;
+          const retAvg = rets.length ? Math.round(rets.reduce((a, b) => a + b, 0) / rets.length) : null;
+          const ovlAvg = ovls.length ? Math.round(ovls.reduce((a, b) => a + b, 0) / ovls.length) : null;
+
+          const baseRow = (metric: string, value: number | null, severity: any) => ({
+            specialty, metric, value,
+            trend_7d: null, trend_30d: null,
+            severity: sample < 3 && value !== null ? "attention" : severity,
+            sample_size: sample,
+          });
+
+          cognitive_matrix.push(baseRow("retention", retAvg, sevFor(retAvg, { good: 80, attention: 65, risk: 50 })));
+          cognitive_matrix.push(baseRow("lapses", lapAvg, sevFor(lapAvg, { good: 1, attention: 2, risk: 3 }, true)));
+          cognitive_matrix.push(baseRow("stability", stabAvg, sevFor(stabAvg, { good: 5, attention: 2, risk: 1 })));
+          cognitive_matrix.push(baseRow("recovery_load", ovlAvg, sevFor(ovlAvg, { good: 10, attention: 25, risk: 40 }, true)));
+          cognitive_matrix.push(baseRow("difficulty", avgDom, sevFor(avgDom, { good: 75, attention: 60, risk: 45 })));
+        }
+
         return ok({
           students: studentStats,
           weakTopics,
@@ -1322,7 +1582,76 @@ REGRAS INVIOLÁVEIS:
           atRiskStudents,
           engagement: { avg_streak: avgStreak, avg_xp: avgXp, inactive_count: inactiveCount, activity_completion_rate: activityCompletionRate },
           specialtyBreakdown,
+          cognitive_summary,
+          cognitive_matrix,
+          student_cognitive_risks: studentCognitiveRisks,
         });
+      }
+
+      case "intervention_timeline": {
+        // Returns a unified intervention/event timeline for the professor's students.
+        // Sources: assistant_decisions (limited to professor's students) +
+        //          teacher_study_assignments + teacher_simulado_results (creation/completion).
+        const { faculdade, periodo, student_id, limit } = params;
+        const effectiveFaculdade = faculdade || professorFaculdade;
+        const lim = Math.min(Number(limit) || 50, 200);
+
+        // Determine students in scope
+        let sQ = sb.from("profiles").select("user_id, display_name").eq("status", "active");
+        if (effectiveFaculdade) sQ = sQ.eq("faculdade", effectiveFaculdade);
+        if (periodo) sQ = sQ.eq("periodo", periodo);
+        if (student_id) sQ = sQ.eq("user_id", student_id);
+        const { data: scopeStudents } = await sQ;
+        const sIds = (scopeStudents || []).map((s: any) => s.user_id);
+        if (sIds.length === 0) return ok({ events: [] });
+        const nameMap: Record<string, string> = {};
+        for (const s of (scopeStudents || [])) nameMap[s.user_id] = s.display_name || "Aluno";
+
+        // assistant_decisions
+        const { data: decisions } = await sb
+          .from("assistant_decisions")
+          .select("id, user_id, decision_type, source_module, justification, created_at")
+          .in("user_id", sIds)
+          .order("created_at", { ascending: false })
+          .limit(lim);
+
+        // teacher study assignments (created by professor)
+        const { data: assigns } = await sb
+          .from("teacher_study_assignments")
+          .select("id, professor_id, title, specialty, created_at")
+          .eq("professor_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(lim);
+
+        const events: any[] = [];
+        for (const d of (decisions || [])) {
+          events.push({
+            id: `dec_${d.id}`,
+            timestamp: d.created_at,
+            kind: "ai_decision",
+            student_id: d.user_id,
+            student_name: nameMap[d.user_id] || "Aluno",
+            label: d.decision_type,
+            source: d.source_module,
+            justification: d.justification || "",
+            severity: "info",
+          });
+        }
+        for (const a of (assigns || [])) {
+          events.push({
+            id: `asg_${a.id}`,
+            timestamp: a.created_at,
+            kind: "professor_assignment",
+            student_id: null,
+            student_name: null,
+            label: a.title || "Atribuição",
+            source: "professor",
+            justification: a.specialty ? `Especialidade: ${a.specialty}` : "",
+            severity: "action",
+          });
+        }
+        events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        return ok({ events: events.slice(0, lim) });
       }
 
       case "student_detail": {
