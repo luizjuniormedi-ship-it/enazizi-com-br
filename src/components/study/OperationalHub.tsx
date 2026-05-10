@@ -72,7 +72,10 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
   const selectedTopic = topicInput.trim().toLowerCase();
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div
+      className="flex-1 overflow-y-auto"
+      style={{ paddingTop: "calc(env(safe-area-inset-top) + 12px)" }}
+    >
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-10 flex flex-col gap-8">
         {/* Header premium e silencioso */}
         <header className="space-y-1 text-center sm:text-left">
@@ -91,8 +94,8 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
         <Section title="Estudo Direto" icon={Play} subtitle="O que você quer dominar agora?" className="order-1">
           {/* Quick start: tópico livre — Estética Cockpit */}
           <div className="rounded-2xl border-0 bg-card/40 backdrop-blur-sm p-6 space-y-4 shadow-sm relative overflow-hidden group">
-            <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            
+            <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+
             <div className="relative flex items-center gap-3 text-[13px] font-bold uppercase tracking-wider text-muted-foreground/70">
               <Sparkles className="h-4 w-4 text-primary" />
               <span>Tema de foco</span>
@@ -105,25 +108,34 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
                 onKeyDown={(e) => e.key === "Enter" && handleStartStudy()}
                 className="flex-1 h-12 bg-white/5 border-white/10 rounded-xl text-base font-medium placeholder:text-muted-foreground/40 focus:ring-primary/20"
               />
-              <Button 
-                onClick={handleStartStudy} 
-                disabled={!topicInput.trim()}
-                className="h-12 px-8 rounded-xl font-black text-sm uppercase tracking-tight shadow-glow-sm transition-all hover:scale-[1.02] active:scale-95"
+              <Button
+                onClick={handleStartStudy}
+                aria-disabled={!topicInput.trim()}
+                className="h-12 px-8 rounded-xl font-black text-sm uppercase tracking-tight shadow-glow-sm transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
               >
                 <Play className="h-4 w-4 mr-2 fill-current" /> Iniciar Sessão
               </Button>
             </div>
             <div className="relative flex flex-wrap gap-2 pt-1">
-              {SUGGESTED_TOPICS.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => onTopicChange(t)}
-                  className="text-[11px] font-bold px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-primary/10 hover:text-primary transition-all text-muted-foreground/70"
-                >
-                  {t}
-                </button>
-              ))}
+              {SUGGESTED_TOPICS.map((t) => {
+                const isSelected = selectedTopic === t.toLowerCase();
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => onTopicChange(t)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      "text-xs font-bold px-3.5 py-2 min-h-9 rounded-lg border transition-all cursor-pointer",
+                      isSelected
+                        ? "border-primary/60 bg-primary/15 text-primary shadow-glow-sm"
+                        : "border-white/5 bg-white/5 hover:bg-primary/10 hover:text-primary text-muted-foreground/80"
+                    )}
+                  >
+                    {t}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
