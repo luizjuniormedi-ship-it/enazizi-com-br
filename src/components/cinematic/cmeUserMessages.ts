@@ -1,64 +1,64 @@
 /**
  * CME — Mapeamento de mensagens técnicas → amigáveis ao usuário final.
  *
- * Override freeze: cme-ux-correct-fix (10/05/2026).
- * Usuário final NUNCA pode ver: TutorCME_Pipeline, worker, queue, stage,
- * Semantic Planning, GPU Rendering, failure stack, recovery engine.
+ * Sprint 5 Update: Parar de mascarar erros reais como "instabilidade temporária".
  */
 
 const TECH_PATTERNS: { match: RegExp; humanized: string }[] = [
   {
     match: /nenhuma mensagem encontrada/i,
     humanized:
-      "Sua aula ainda está sendo preparada. Tente novamente em alguns instantes.",
-  },
-  {
-    match: /TutorCME_Pipeline|CME_Pipeline|cme pipeline|falha no componente/i,
-    humanized: "Ocorreu uma instabilidade temporária na geração da aula.",
-  },
-  {
-    match: /recovery engine|sistema de recupera/i,
-    humanized: "Estamos tentando recuperar sua sessão.",
+      "Sua aula ainda está sendo preparada (mensagens não persistidas). Tente novamente em alguns instantes.",
   },
   {
     match: /RENDER_JOB_NOT_CREATED|render job not created|orchestrator/i,
-    humanized: "A geração ainda não foi iniciada. Tente novamente em alguns instantes.",
+    humanized: "A geração ainda não foi iniciada pelo orquestrador. Tente novamente em alguns instantes.",
   },
   {
-    match: /worker|gpu|hls|cdn|scene graph|semantic planning/i,
-    humanized: "Estamos preparando os recursos da aula. Isso pode levar alguns instantes.",
+    match: /worker offline|no worker available|hardware/i,
+    humanized: "Nenhum Worker GPU disponível no momento. A aula foi estruturada e está pronta para renderização manual no Builder.",
   },
   {
-    match: /queue|enqueued|dequeued|stage/i,
-    humanized: "Sua aula está na fila de geração.",
+    match: /timeout/i,
+    humanized: "O tempo de processamento esgotou. Verifique o status no Dashboard Administrativo.",
   },
 ];
 
 /** Converte mensagem técnica em mensagem amigável para o usuário final. */
 export function humanizeCMEMessage(raw: string | null | undefined): string {
   if (!raw || !raw.trim()) {
-    return "Ocorreu uma instabilidade temporária. Tente novamente em alguns instantes.";
+    return "Ocorreu uma falha na geração da aula (sem mensagem de erro).";
   }
+  
+  // Se for admin, mostramos o erro real sempre para facilitar debug
+  // No frontend o componente AgentMessageItem já verifica isAdmin para mostrar telemetria, 
+  // mas aqui garantimos que a mensagem amigável não esconda o erro técnico totalmente se for algo novo.
+  
   for (const { match, humanized } of TECH_PATTERNS) {
     if (match.test(raw)) return humanized;
   }
-  // Mensagem desconhecida: cair no genérico amigável.
-  return "Ocorreu uma instabilidade temporária na geração da aula.";
+  
+  // Se não bater em nenhum padrão amigável conhecido, retornamos a mensagem original "limpa"
+  return raw.replace(/Error: |[a-z0-9-]{36}/gi, '').trim() || "Erro inesperado na geração.";
 }
 
 /** Status amigáveis exibidos ao usuário final. */
 export const FRIENDLY_STATUS_LABEL: Record<string, string> = {
   processing: "Preparando sua aula…",
   ready: "Aula pronta!",
-  failed: "Não conseguimos preparar a aula agora",
-  waiting_hardware: "Aguardando início da geração…",
+  failed: "Falha na preparação da aula",
+  waiting_hardware: "Aguardando Worker GPU…",
+  pending_hardware: "Aguardando hardware disponível",
 };
 
-/** Estágios técnicos → rótulo amigável (apenas o essencial visível). */
+/** Estágios técnicos → rótulo amigável. */
 export function friendlyStageLabel(progress: number): string {
   if (progress >= 100) return "Concluído";
-  if (progress >= 80) return "Finalizando geração…";
-  if (progress >= 50) return "Renderizando aula…";
-  if (progress >= 25) return "Organizando o conteúdo…";
-  return "Preparando sua aula…";
+  if (progress >= 80) return "GPU Rendering Finalizado";
+  if (progress >= 70) return "Worker Atribuído";
+  if (progress >= 60) return "Render Job Criado";
+  if (progress >= 40) return "Scene Graph Gerado";
+  if (progress >= 30) return "Semantic Planning Pronto";
+  if (progress >= 10) return "Conteúdo Agregado";
+  return "Iniciando Pipeline…";
 }
