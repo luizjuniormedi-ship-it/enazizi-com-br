@@ -21,6 +21,9 @@ interface MnemonicRequest {
   termos: string[];
   estilo?: string;
   publico?: string;
+  specialty?: string;
+  subtheme?: string;
+  requiredTerms?: string[];
 }
 
 interface Associacao {
@@ -85,8 +88,8 @@ interface ConsolidatedOutput {
 // CONSTANTS
 // ══════════════════════════════════════════════════
 
-const OPENAI_MODEL = "google/gemini-2.5-flash";
-const OPENAI_TEMP = 1.0; // Fixed: gpt-5-mini only supports default (1.0)
+const OPENAI_MODEL = "openai/gpt-4o";
+const OPENAI_TEMP = 1.0; 
 const SCORE_MEDICO_MIN = 90;
 const SCORE_PEDAGOGICO_MIN = 85;
 
@@ -94,38 +97,38 @@ const SCORE_PEDAGOGICO_MIN = 85;
 // PROMPTS
 // ══════════════════════════════════════════════════
 
-const PROMPT_GERADOR = `Você é um professor de medicina e especialista em memorização clínica.
-Crie mnemônicos médicos com altíssima fidelidade.
+const PROMPT_GERADOR = `Você é um professor de medicina e especialista em memorização clínica com profundo conhecimento em literatura médica (Harrison, Sabiston, Tratado de Medicina Interna).
+Crie mnemônicos médicos com altíssima fidelidade e precisão acadêmica.
 
-Regras:
-- incluir todos os termos sem omitir nenhum
-- não trocar sentido clínico
-- não usar sinônimos que alterem precisão
-- a sigla deve respeitar os termos
-- a frase deve ser útil em aula médica
+Regras de Ouro:
+- Fidelidade Clínica: Não sacrifique a precisão médica por uma rima.
+- Abrangência: Incluir todos os termos e subtemas obrigatórios fornecidos.
+- Semântica: A sigla e a frase devem ter conexão lógica com o tema.
+- Estrutura: Use o formato JSON especificado rigorosamente.
 
 Retorne SOMENTE JSON válido com:
 {
   "sigla": "string",
   "frase_mnemonica": "string",
-  "explicacao_tecnica": "string",
-  "explicacao_didatica": "string",
+  "explicacao_tecnica": "string (detalhada, com base científica)",
+  "explicacao_didatica": "string (como explicar isso a um aluno)",
   "associacoes": [
     { "letra": "string", "termo_original": "string", "representacao_no_mnemonico": "string" }
   ],
-  "observacoes": ["string"]
+  "observacoes": ["string (inclua 'Pérolas Clínicas' e 'Armadilhas de Prova')"]
 }`;
 
-const PROMPT_AUDITOR_MEDICO = `Você é um auditor médico extremamente rigoroso.
+const PROMPT_AUDITOR_MEDICO = `Você é um auditor médico especialista (Board Certified) extremamente rigoroso, treinado para identificar imprecisões em mnemônicos.
 
-Sua missão:
-- detectar omissões
-- detectar distorções semânticas
-- detectar erro de associação letra-termo
-- detectar risco clínico
+Sua missão crítica:
+- Detectar omissões de termos obrigatórios.
+- Detectar distorções semânticas que alterem o sentido clínico.
+- Validar se cada letra da sigla corresponde exatamente ao termo original.
+- Identificar riscos clínicos (ex: mnemônico sugere conduta errada).
+- Avaliar se o mnemônico segue a literatura (Harrison, Sabiston, etc.).
 
-Dê nota de 0 a 100.
-Se houver falha relevante, produza uma versão corrigida.
+Dê nota de 0 a 100 baseada na fidelidade clínica.
+Se a nota for < 100, você DEVE produzir uma versão corrigida impecável.
 
 Retorne SOMENTE JSON válido com:
 {
@@ -228,44 +231,28 @@ function validatePayload(body: unknown): MnemonicRequest {
   if (!body || typeof body !== "object") throw new Error("Body inválido.");
   const b = body as Record<string, unknown>;
 
-  // Accept both formats: tema/termos (new) and topic/items (legacy unified service)
   const tema = (b.tema ?? b.topic) as string | undefined;
-  const termos = (b.termos ?? b.items) as string[] | undefined;
+  const termos = (b.termos ?? b.items ?? b.requiredTerms) as string[] | undefined;
 
   if (!tema || typeof tema !== "string" || !tema.trim())
     throw new Error("Campo 'tema' é obrigatório.");
   if (!Array.isArray(termos) || termos.length === 0)
     throw new Error("Campo 'termos' deve ser um array não vazio.");
-  for (const t of termos) {
-    if (typeof t !== "string" || !t.trim())
-      throw new Error("Cada termo deve ser uma string não vazia.");
-  }
+  
   return {
     tema,
     termos,
-    estilo: typeof b.estilo === "string" ? b.estilo : (typeof b.contentType === "string" ? b.contentType : undefined),
-    publico: typeof b.publico === "string" ? b.publico : undefined,
+    estilo: (b.estilo || b.contentType) as string,
+    publico: b.publico as string,
+    specialty: b.specialty as string,
+    subtheme: b.subtheme as string,
+    requiredTerms: termos,
   };
 }
 
-function normalizeTerms(tema: string, termos: string[]): { tema: string; termos: string[] } {
-  const trimmedTema = tema.trim();
-  const seen = new Set<string>();
-  const unique: string[] = [];
-  for (const t of termos) {
-    const trimmed = t.trim();
-    const key = trimmed.toLowerCase();
-    if (trimmed && !seen.has(key)) {
-      seen.add(key);
-      unique.push(trimmed);
-    }
-  }
-  return { tema: trimmedTema, termos: unique };
-}
-
 function buildContext(req: MnemonicRequest): string {
-  let ctx = `Tema: ${req.tema}\nTermos: ${req.termos.join(", ")}`;
-  if (req.estilo) ctx += `\nEstilo desejado: ${req.estilo}`;
+  let ctx = `Especialidade: ${req.specialty || "Geral"}\nTema: ${req.tema}\nSubtema: ${req.subtheme || "Não especificado"}\nTermos Obrigatórios: ${req.termos.join(", ")}`;
+  if (req.estilo) ctx += `\nEstilo: ${req.estilo}`;
   if (req.publico) ctx += `\nPúblico-alvo: ${req.publico}`;
   return ctx;
 }

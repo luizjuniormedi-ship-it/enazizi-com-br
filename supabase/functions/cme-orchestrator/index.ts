@@ -285,6 +285,7 @@ async function handleRequest(req: Request) {
   if (action === 'publish_enaflix') {
     const { jobId, videoUrl } = safePayload;
 
+    /* Random failure removed for production stability
     if (Math.random() < 0.05) {
       await supabaseClient.from('cme_system_incidents').insert({
         component: 'ENAFLIX_PUBLISH',
@@ -299,6 +300,7 @@ async function handleRequest(req: Request) {
         fallback_available: true,
       }, 500);
     }
+    */
 
     await supabaseClient.from('cme_video_assets').insert({
       video_project_id: projectId,
