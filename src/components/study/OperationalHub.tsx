@@ -356,7 +356,7 @@ function ActionCard({
       type="button"
       onClick={onClick}
       className={cn(
-        "text-left rounded-2xl border-0 bg-card/40 p-4 transition-all shadow-sm",
+        "text-left rounded-2xl border-0 bg-card/40 p-4 transition-all shadow-sm cursor-pointer",
         "hover:bg-card hover:shadow-glow-sm hover:scale-[1.02]",
         accent ? "ring-1 ring-primary/30 bg-primary/[0.03]" : "",
       )}
