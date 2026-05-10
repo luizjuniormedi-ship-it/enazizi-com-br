@@ -7,6 +7,10 @@ import TutorV2Input from "./TutorV2Input";
 import TutorV2Actions from "./TutorV2Actions";
 import { AlertCircle } from "lucide-react";
 import { toast } from "sonner";
+import { MascotAvatar } from "../mascot/MascotAvatar";
+import { MascotBubble } from "../mascot/MascotBubble";
+import { useMascotState } from "../mascot/useMascotState";
+
 
 interface TutorV2ChatPanelProps {
   session: any;
@@ -19,6 +23,8 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
+
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -29,6 +35,11 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isTyping || !user) return;
     setError(null);
+    triggerInteraction({ 
+      state: 'thinking', 
+      type: 'motivation', 
+      speech: "Analisando seu raciocínio médico..." 
+    });
 
     // Optimistic update
     const tempId = crypto.randomUUID();
@@ -40,10 +51,6 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       user_id: user.id,
       created_at: new Date().toISOString()
     };
-    
-    // addMessage handles DB insert, but we also update local state for real-time feel
-    // if addMessage insert is successful, the subscription will handle the duplicate if not careful
-    // Actually, useTutorV2Messages subscription will add the "real" one.
     
     setIsTyping(true);
 
@@ -97,12 +104,24 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       }
       setLastFailedMessage(null);
 
-      // We DON'T manually append here anymore because the Edge Function should persist 
-      // the assistant message to the database, and our Realtime subscription will pick it up.
-      // If we manually append AND have Realtime, we'll see duplicates or double-renders.
+      // If questionReview mode is detected, react to it
+      if (response?.questionReviewActive) {
+        triggerInteraction({
+          state: response?.questionReview?.is_correct ? 'success' : 'warning',
+          type: 'feedback',
+          speech: response?.questionReview?.is_correct ? "Excelente raciocínio!" : "Percebi um ponto de confusão aqui."
+        });
+      } else {
+        triggerInteraction({
+          state: 'teaching',
+          type: 'explanation'
+        });
+      }
+
       console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
+      triggerInteraction({ state: 'warning', type: 'alert', speech: "Encontrei uma instabilidade, tente novamente." });
       const friendlyMessage = err.message || "O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.";
       setLastFailedMessage(text);
       setError(friendlyMessage);
@@ -174,7 +193,14 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       </div>
 
       <footer className="p-6 border-t border-white/5 bg-slate-950/90 backdrop-blur-3xl absolute bottom-0 w-full z-20">
+        {/* Mascot UI Integrated */}
+        <div className="absolute -top-32 right-8 flex flex-col items-end gap-2 pointer-events-none">
+          <MascotBubble speech={mascotSpeech} />
+          <MascotAvatar state={mascotState} size="lg" className="pointer-events-auto" />
+        </div>
+        
         <div className="max-w-4xl mx-auto">
+
           <TutorV2Input onSendMessage={handleSendMessage} disabled={isTyping} />
         </div>
       </footer>

@@ -23,6 +23,10 @@ import { EnaflixRecommendationCard } from "@/components/enaflix/EnaflixRecommend
 import AchievementToast from "@/components/gamification/AchievementToast";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import { UnifiedMissionHero } from "@/components/dashboard/UnifiedMissionHero";
+import { MascotAvatar } from "@/components/mascot/MascotAvatar";
+import { MascotBubble } from "@/components/mascot/MascotBubble";
+import { useMascotState } from "@/components/mascot/useMascotState";
+
 
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
@@ -43,6 +47,19 @@ const Dashboard = () => {
   const { data: snapshot, isLoading: snapLoading, error: snapError, refetch: refreshSnapshot } = useAnalyticsSnapshot();
   const enaflixUsage = useEnaflixUsage();
   const recentIds = enaflixUsage.recentIds;
+  const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
+
+  useEffect(() => {
+    if (!dashLoading && dashData) {
+      const name = dashData.displayName?.split(" ")[0] || "Doutor";
+      triggerInteraction({
+        state: 'idle',
+        type: 'welcome',
+        speech: `Bem-vindo de volta, ${name}. Vamos dominar novos temas hoje?`
+      });
+    }
+  }, [dashLoading, dashData, triggerInteraction]);
+
 
   const continueModules = useMemo(() => {
     return recentIds
@@ -273,6 +290,13 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Floating Mascot */}
+      <div className="fixed bottom-8 right-8 z-[100] flex flex-col items-end gap-2">
+        <MascotBubble speech={mascotSpeech} />
+        <MascotAvatar state={mascotState} size="lg" />
+      </div>
+
 
     </div>
   );
