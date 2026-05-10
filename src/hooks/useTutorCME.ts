@@ -321,6 +321,12 @@ export const useTutorCME = () => {
   }) => {
     setState({ status: 'queued', progress: 5, message: "Iniciando pipeline..." });
     lastEventRef.current = Date.now();
+    console.debug("[CME] transformToVideo start", {
+      conversationId: params.conversationId,
+      isFullSession: !!params.isFullSession,
+      hasSourceContent: !!params.sourceContent,
+      sourceLength: params.sourceContent?.length ?? 0,
+    });
 
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
@@ -336,6 +342,7 @@ export const useTutorCME = () => {
       );
       aggregationId = result.aggregation.id;
       lessonBlocks = result.blocks;
+      console.debug("[CME] aggregation ok", { aggregationId, blocks: lessonBlocks.length });
       
       // Update with title and manual flag
       await supabaseClient
@@ -348,6 +355,7 @@ export const useTutorCME = () => {
         .eq('id', aggregationId);
 
       setState(s => ({ ...s, aggregationId, progress: 10, message: "Conteúdo estruturado..." }));
+
 
       const { data: project, error: projectError } = await supabaseClient
         .from("cme_video_projects")
