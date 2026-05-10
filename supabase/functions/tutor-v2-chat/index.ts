@@ -625,10 +625,11 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       "Clínica", "Sintomas", "Exame físico", "Diferencial", "Exames", 
       "Tratamento", "Pegadinhas", "Resumo", "Active recall", "Próxima ação"
     ];
-    const foundBlocks = mandatoryBlocks.filter(b => assistantMessage.includes(b));
-    const missingBlocks = mandatoryBlocks.filter(b => !assistantMessage.includes(b));
-    const pedagogicalScore = Math.round((foundBlocks.length / mandatoryBlocks.length) * 100);
-    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length, requestId });
+    // QUESTION_REVIEW_MODE uses its own 11-step rubric — skip generic 15-block penalty
+    const foundBlocks = qReview.active ? mandatoryBlocks : mandatoryBlocks.filter(b => assistantMessage.includes(b));
+    const missingBlocks = qReview.active ? [] : mandatoryBlocks.filter(b => !assistantMessage.includes(b));
+    const pedagogicalScore = qReview.active ? 100 : Math.round((foundBlocks.length / mandatoryBlocks.length) * 100);
+    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length, skipped_for_qreview: qReview.active, requestId });
 
     const safetyKeywords = ["cuidado", "emergência", "urgência", "alerta", "contraindicação"];
     const hasSafetyInfo = safetyKeywords.some(k => assistantMessage.toLowerCase().includes(k));
