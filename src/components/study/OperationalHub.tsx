@@ -14,6 +14,7 @@
  * uma ação rápida e a sessão arranca normalmente.
  */
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import {
   Clock, Target, Flame, CalendarDays,
   RotateCcw, Play, AlertTriangle, FileText,
