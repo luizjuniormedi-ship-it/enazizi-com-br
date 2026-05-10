@@ -36,13 +36,15 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
       case 'thinking': return <Brain className="text-indigo-400 animate-pulse w-full h-full" />;
       case 'teaching': return <GraduationCap className="text-indigo-400 w-full h-full" />;
       case 'success': return <CheckCircle2 className="text-emerald-400 w-full h-full" />;
-      case 'warning': return <AlertCircle className="text-amber-400 w-full h-full" />;
+      case 'warning': return <AlertCircle className="text-rose-500 w-full h-full" />;
       case 'fatigue': return <Coffee className="text-blue-400 w-full h-full" />;
       case 'celebration': return <Trophy className="text-yellow-400 animate-bounce w-full h-full" />;
       case 'focus': return <Target className="text-rose-400 w-full h-full" />;
+      case 'alert': return <ShieldAlert className="text-amber-500 w-full h-full" />;
       default: return <Sparkles className="text-indigo-400 w-full h-full" />;
     }
   };
+
 
   const glowColors = {
     idle: 'rgba(99, 102, 241, 0.2)', // indigo
