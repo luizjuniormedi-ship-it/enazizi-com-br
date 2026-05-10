@@ -104,12 +104,24 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       }
       setLastFailedMessage(null);
 
-      // We DON'T manually append here anymore because the Edge Function should persist 
-      // the assistant message to the database, and our Realtime subscription will pick it up.
-      // If we manually append AND have Realtime, we'll see duplicates or double-renders.
+      // If questionReview mode is detected, react to it
+      if (response?.questionReviewActive) {
+        triggerInteraction({
+          state: response?.questionReview?.is_correct ? 'success' : 'warning',
+          type: 'feedback',
+          speech: response?.questionReview?.is_correct ? "Excelente raciocínio!" : "Percebi um ponto de confusão aqui."
+        });
+      } else {
+        triggerInteraction({
+          state: 'teaching',
+          type: 'explanation'
+        });
+      }
+
       console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
+      triggerInteraction({ state: 'warning', type: 'alert', speech: "Encontrei uma instabilidade, tente novamente." });
       const friendlyMessage = err.message || "O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.";
       setLastFailedMessage(text);
       setError(friendlyMessage);
