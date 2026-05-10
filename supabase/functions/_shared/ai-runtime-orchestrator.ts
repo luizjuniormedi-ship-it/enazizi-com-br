@@ -95,11 +95,12 @@ export interface AIRunResult {
 // Modelos validados em produção via Lovable AI Gateway.
 const MODELS = {
   flash: { provider: "lovable-ai", model: "google/gemini-3-flash-preview" } as ModelRef,
-  flashStable: { provider: "lovable-ai", model: "google/gemini-2.5-flash" } as ModelRef,
-  flashLite: { provider: "lovable-ai", model: "google/gemini-2.5-flash-lite" } as ModelRef,
-  pro: { provider: "lovable-ai", model: "google/gemini-2.5-pro" } as ModelRef,
-  gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-5-mini" } as ModelRef,
-  gpt5: { provider: "lovable-ai", model: "openai/gpt-5" } as ModelRef,
+  flashStable: { provider: "lovable-ai", model: "google/gemini-2.0-flash" } as ModelRef,
+  flashLite: { provider: "lovable-ai", model: "google/gemini-2.0-flash-lite" } as ModelRef,
+  pro: { provider: "lovable-ai", model: "google/gemini-2.0-pro-exp-02-05" } as ModelRef,
+  gpt5Mini: { provider: "lovable-ai", model: "openai/gpt-4o-mini" } as ModelRef,
+  gpt5: { provider: "lovable-ai", model: "openai/gpt-4o" } as ModelRef,
+
 };
 
 const COST_TIER: Record<string, "low" | "medium" | "high"> = {
