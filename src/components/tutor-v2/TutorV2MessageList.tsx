@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import ProgressiveBlocks from "./ProgressiveBlocks";
-import enaziziMascot from "@/assets/enazizi-mascot.png";
+import { MascotAvatar } from "../mascot/MascotAvatar";
 
 interface TutorV2MessageListProps {
   messages: any[];
