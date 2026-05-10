@@ -328,7 +328,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
               exit={{ opacity: 0, y: -50, scale: 0.95 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             >
-              <TutorPremiumHero onSend={handleSend} initialValue={initialTopic} />
+              <TutorPremiumHero onSend={handleStart} initialValue={initialTopic} />
             </motion.div>
           ) : (
             <motion.div
@@ -351,6 +351,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                     functionName="mentor-chat"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
+                    initialPrompt={pendingPrompt || undefined}
                     hideUploadsPicker
                     pedagogicalHeader={({ messages }) => (
                       <PedagogicalHeaderBridge
