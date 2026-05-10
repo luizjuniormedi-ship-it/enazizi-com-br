@@ -600,10 +600,20 @@ const AgentChat = ({
             )}
           </div>
 
-          <DialogFooter className="sm:justify-start">
+          <DialogFooter className="sm:justify-start gap-2">
             <Button type="button" variant="secondary" onClick={resetCmeState} className="text-xs h-8">
               Fechar
             </Button>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={downloadForensics} 
+              className="text-[10px] h-8 gap-2 border-dashed opacity-50 hover:opacity-100"
+            >
+              <Download className="h-3 w-3" /> Logs Forenses
+            </Button>
+
             {isAdmin && ['rendering', 'gpu_rendering', 'pending_hardware', 'ready'].includes(String(cmeState.status)) && (
               <Button
                 type="button"
@@ -630,7 +640,9 @@ const AgentChat = ({
             setLessonStatus('idle');
             setLessonData(null);
           }} 
-        />
+        >
+          {/* Inject Forensic Button in Player if needed, or keep it in the modal */}
+        </AgileLessonPlayer>
       )}
     </div>
   );
