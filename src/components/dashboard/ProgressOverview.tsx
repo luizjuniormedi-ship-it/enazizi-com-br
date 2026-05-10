@@ -42,10 +42,14 @@ function ProgressOverview() {
   const { profile } = useNeuroanalytics();
   const prediction = useApprovalPrediction();
 
-  // Score preditivo > snapshot legado (fallback se sem dados)
-  const approvalScore = prediction?.score ?? snap?.approvalScore ?? 0;
-  
-  const coveragePct = coverage?.requiredCoveragePct ?? 0;
+  // Score preditivo > snapshot legado (null se sem dados — exibe '—' honestamente)
+  const approvalScoreRaw = prediction?.score ?? snap?.approvalScore ?? null;
+  const approvalScore = approvalScoreRaw ?? 0;
+  const hasApproval = approvalScoreRaw != null && approvalScoreRaw > 0;
+
+  const coveragePctRaw = coverage?.requiredCoveragePct ?? null;
+  const coveragePct = coveragePctRaw ?? 0;
+  const hasCoverage = coverage != null;
   const goalPct = goal?.percentComplete ?? 0;
 
   // Readiness (prontidão p/ prova) — média acertos de simulados recentes
@@ -160,12 +164,15 @@ function ProgressOverview() {
             icon={Target}
             label="Aprovação"
             value={approvalScore}
-            suffix="%"
+            displayValue={hasApproval ? undefined : "—"}
+            suffix={hasApproval ? "%" : undefined}
             size="sm"
             subtitle={
               prediction?.daysToExam != null
                 ? `${prediction.daysToExam}d até a prova`
-                : snap?.phase ? `Fase: ${snap.phase}` : "Acompanhe sua trajetória"
+                : hasApproval
+                  ? (snap?.phase ? `Fase: ${snap.phase}` : "Acompanhe sua trajetória")
+                  : "Sem dado suficiente — pratique para calibrar"
             }
             onClick={() => navigate("/dashboard/sessao-estudo?source=progress_overview_score")}
           />
@@ -174,11 +181,12 @@ function ProgressOverview() {
             icon={ShieldCheck}
             label="Cobertura"
             value={coveragePct}
-            suffix="%"
+            displayValue={hasCoverage ? undefined : "—"}
+            suffix={hasCoverage ? "%" : undefined}
             size="sm"
             subtitle={
-              coverage
-                ? `${coverage.requiredSeen}/${coverage.requiredTopics} obrigatórios`
+              hasCoverage
+                ? `${coverage!.requiredSeen}/${coverage!.requiredTopics} obrigatórios`
                 : "Currículo em construção"
             }
             onClick={() => navigate("/dashboard/sessao-estudo?source=progress_overview_coverage")}
