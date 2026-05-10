@@ -76,23 +76,7 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       // We DON'T manually append here anymore because the Edge Function should persist 
       // the assistant message to the database, and our Realtime subscription will pick it up.
       // If we manually append AND have Realtime, we'll see duplicates or double-renders.
-      // Only append if it's NOT persisted by the Edge Function (usually it is).
       console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
-            role: "assistant",
-            content: response.content,
-            tutor_session_id: session.id,
-            user_id: user.id,
-            created_at: new Date().toISOString(),
-            metadata: response.flashcardSuggestion
-              ? { flashcard_suggestion: response.flashcardSuggestion }
-              : undefined,
-          },
-        ]);
-      }
     } catch (err: any) {
       console.error("Error in Tutor V2 chat:", err);
       setError(err.message || "Ocorreu um erro ao processar sua mensagem.");
