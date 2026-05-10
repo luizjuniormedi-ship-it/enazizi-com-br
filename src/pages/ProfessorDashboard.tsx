@@ -369,19 +369,40 @@ const ProfessorDashboard = () => {
         open={!!drawerStudentId}
         onClose={() => setDrawerStudentId(null)}
         callAPI={callAPI}
-        onAssignRecovery={(id, suggestedSpecialty) => {
-          const name = (classAnalytics.data?.students || []).find((s: any) => s.user_id === id)?.display_name || "Aluno";
-          setRecoveryFor({ id, name, specialty: suggestedSpecialty });
+        risk={
+          drawerStudentId
+            ? (classAnalytics.data?.student_cognitive_risks || []).find(
+                (r: any) => r.user_id === drawerStudentId,
+              ) || null
+            : null
+        }
+        onAction={(type, suggestedSpecialty, suggestedJustification) => {
+          if (!drawerStudentId) return;
+          const name =
+            (classAnalytics.data?.students || []).find((s: any) => s.user_id === drawerStudentId)
+              ?.display_name ||
+            (classAnalytics.data?.student_cognitive_risks || []).find(
+              (r: any) => r.user_id === drawerStudentId,
+            )?.display_name ||
+            "Aluno";
+          setIntervention({
+            id: drawerStudentId,
+            name,
+            type,
+            specialty: suggestedSpecialty,
+            justification: suggestedJustification,
+          });
         }}
-        onOpenMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); setDrawerStudentId(null); }}
       />
 
       <QuickInterventionDialog
-        open={!!recoveryFor}
-        onClose={() => setRecoveryFor(null)}
-        studentId={recoveryFor?.id || null}
-        studentName={recoveryFor?.name}
-        suggestedSpecialty={recoveryFor?.specialty}
+        open={!!intervention}
+        onClose={() => setIntervention(null)}
+        studentId={intervention?.id || null}
+        studentName={intervention?.name}
+        interventionType={intervention?.type || "recovery"}
+        suggestedSpecialty={intervention?.specialty}
+        suggestedJustification={intervention?.justification}
         callAPI={callAPI}
         onSuccess={() => classAnalytics.reload()}
       />
