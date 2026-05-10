@@ -26,6 +26,7 @@ import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
+import { humanizeCMEMessage, FRIENDLY_STATUS_LABEL, friendlyStageLabel } from "@/components/cinematic/cmeUserMessages";
 
 /** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
 function linkifyBareUrls(text: string): string {
@@ -63,7 +64,7 @@ interface TutorMessageItemProps {
 
 const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, specialty, isFirstMessage }: TutorMessageItemProps) => {
   const navigate = useNavigate();
-  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, resetState, showAgilePlayer, setShowAgilePlayer, getLessonForMessage, findLessonByTopic } = useTutorCME();
+  const { state, workerHealth, transformToVideo, triggerPedagogicalFallback, retryRender, resetState, showAgilePlayer, setShowAgilePlayer, getLessonForMessage, findLessonByTopic } = useTutorCME();
   const { isAdmin, isProfessor, roles } = useUserRoles();
   const { isEnabled } = useFeatureFlags();
 
@@ -360,122 +361,178 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
             {/* Modal de Status CME */}
             <Dialog open={state.status !== 'idle'} onOpenChange={(open) => !open && resetState()}>
               <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white">
-                <DialogHeader>
-                  <DialogTitle className="flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-amber-500" />
-                    Fábrica de Vídeos CME
-                  </DialogTitle>
-                  <DialogDescription className="text-slate-400">
-                    Processando com telemetria cognitiva e resiliência enterprise. {state.isStuck ? 'Recuperação automática acionada.' : 'Pipeline nominal.'}
-                  </DialogDescription>
-
-                </DialogHeader>
-                
-                <div className="py-6 space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-                      <span>Fase: {state.message || state.status}</span>
-                      <span>{state.progress}%</span>
-                    </div>
-                    <Progress value={state.progress} className="h-1.5 bg-white/5" />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { id: 'planning', label: 'Semantic Planning' },
-                      { id: 'mapping', label: 'Knowledge Mapping' },
-                      { id: 'graphing', label: 'Scene Graphing' },
-                      { id: 'worker_selection', label: 'Worker Selection' },
-                      { id: 'gpu_rendering', label: 'GPU Render' },
-                      { id: 'pending_hardware', label: 'Waiting Hardware' }
-                    ].map((step, idx) => (
-                      <div key={step.id} className={cn(
-                        "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
-                        state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
-                        state.progress >= ([30, 35, 50, 70, 80, 65][idx]) ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
-                        "bg-white/5 border-white/5 text-slate-600"
-                      )}>
-                        <div className={cn(
-                          "h-1.5 w-1.5 rounded-full",
-                          state.status === step.id ? "bg-amber-500 animate-pulse" : 
-                          state.progress >= ([30, 35, 50, 70, 80, 65][idx]) ? "bg-amber-500" : "bg-slate-700"
-                        )} />
-                        {step.label}
+                {!isAdmin ? (
+                  // ===== USER MODE (override freeze: cme-ux-correct-fix) =====
+                  <>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-amber-500" />
+                        Geração da aula
+                      </DialogTitle>
+                      <DialogDescription className="text-slate-400">
+                        {state.status === 'failed'
+                          ? humanizeCMEMessage(state.error)
+                          : (FRIENDLY_STATUS_LABEL[state.status === 'ready' ? 'ready' : 'processing'])}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-6 space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs text-slate-400">
+                          <span className="truncate pr-2">{friendlyStageLabel(state.progress)}</span>
+                          <span className="tabular-nums">{state.progress}%</span>
+                        </div>
+                        <Progress value={state.progress} className="h-2 bg-white/5" />
                       </div>
-                    ))}
-                  </div>
-
-                  {workerHealth && (
-                    <div className="flex items-center gap-4 px-2 py-1 bg-white/5 rounded border border-white/10 text-[9px] text-slate-400">
-                      <div className="flex items-center gap-1">
-                        <div className={cn("h-1 w-1 rounded-full", workerHealth.workers_online > 0 ? "bg-green-500" : "bg-red-500")} />
-                        GPU Workers: {workerHealth.workers_online}
-                      </div>
-                      {workerHealth.workers_online > 0 && (
-                        <>
-                          <div>VRAM: {Math.round((workerHealth.used_vram_mb / workerHealth.total_vram_mb) * 100)}%</div>
-                          <div>Load: {Math.round(workerHealth.avg_load)}%</div>
-                        </>
+                      {state.isStuck && state.status !== 'failed' && (
+                        <div className="p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg text-xs text-zinc-300">
+                          Sua aula está demorando um pouco mais que o normal. Você pode aguardar ou usar uma versão alternativa em slides.
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-8 text-xs mt-2"
+                            onClick={() => state.projectId && triggerPedagogicalFallback(state.projectId)}
+                          >
+                            Usar versão em slides
+                          </Button>
+                        </div>
+                      )}
+                      {state.status === 'failed' && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-xs">
+                          {humanizeCMEMessage(state.error)}
+                        </div>
                       )}
                     </div>
-                  )}
-
-                  {state.isStuck && (
-                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2">
-                      <div className="flex items-center gap-2 text-amber-400 text-[10px] font-bold">
-                        <AlertCircle className="h-3 w-3" />
-                        PIPELINE EM ESPERA (STANDBY)
-                      </div>
-                      <p className="text-[9px] text-amber-300/70 italic">
-                        O cluster GPU está com alta demanda ou offline. Você pode aguardar ou usar o fallback pedagógico instantâneo.
-                      </p>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="w-full h-7 text-[10px] bg-amber-500/20 border-amber-500/30 text-amber-500 hover:bg-amber-500/30"
-                        onClick={() => state.projectId && triggerPedagogicalFallback(state.projectId)}
-                      >
-                        Ativar Fallback de Slides
+                    <DialogFooter className="sm:justify-end gap-2">
+                      {state.status === 'failed' && state.projectId && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-xs h-8"
+                          onClick={() => state.projectId && retryRender(state.projectId)}
+                        >
+                          Tentar novamente
+                        </Button>
+                      )}
+                      <Button type="button" variant="secondary" onClick={resetState} className="text-xs h-8">
+                        Fechar
                       </Button>
-                    </div>
-                  )}
+                    </DialogFooter>
+                  </>
+                ) : (
+                  // ===== ADMIN MODE: telemetria técnica completa =====
+                  <>
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-amber-500" />
+                        Fábrica de Vídeos CME
+                      </DialogTitle>
+                      <DialogDescription className="text-slate-400">
+                        Processando com telemetria cognitiva e resiliência enterprise. {state.isStuck ? 'Recuperação automática acionada.' : 'Pipeline nominal.'}
+                      </DialogDescription>
+                    </DialogHeader>
 
-                  {state.projectId && (
-                    <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
-                      <div className={cn("h-1 w-1 rounded-full bg-green-500", !state.isStuck && "animate-ping")} />
-                      TELEMETRY: {state.isStuck ? 'STANDBY' : 'ACTIVE'} | ID_{state.projectId.slice(0, 8)}
-                    </div>
-                  )}
+                    <div className="py-6 space-y-6">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
+                          <span>Fase: {state.message || state.status}</span>
+                          <span>{state.progress}%</span>
+                        </div>
+                        <Progress value={state.progress} className="h-1.5 bg-white/5" />
+                      </div>
 
-                  {state.status === 'failed' && (
-                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs italic">
-                      Erro: {state.error}
-                    </div>
-                  )}
-                </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        {[
+                          { id: 'planning', label: 'Semantic Planning' },
+                          { id: 'mapping', label: 'Knowledge Mapping' },
+                          { id: 'graphing', label: 'Scene Graphing' },
+                          { id: 'worker_selection', label: 'Worker Selection' },
+                          { id: 'gpu_rendering', label: 'GPU Render' },
+                          { id: 'pending_hardware', label: 'Waiting Hardware' }
+                        ].map((step, idx) => (
+                          <div key={step.id} className={cn(
+                            "flex items-center gap-2 p-2 rounded-lg border text-[10px] font-bold uppercase tracking-tight transition-all duration-300",
+                            state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+                            state.progress >= ([30, 35, 50, 70, 80, 65][idx]) ? "bg-amber-500/10 border-amber-500/20 text-amber-500" :
+                            "bg-white/5 border-white/5 text-slate-600"
+                          )}>
+                            <div className={cn(
+                              "h-1.5 w-1.5 rounded-full",
+                              state.status === step.id ? "bg-amber-500 animate-pulse" :
+                              state.progress >= ([30, 35, 50, 70, 80, 65][idx]) ? "bg-amber-500" : "bg-slate-700"
+                            )} />
+                            {step.label}
+                          </div>
+                        ))}
+                      </div>
 
-                <DialogFooter className="sm:justify-start">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={resetState}
-                    className="text-xs h-8"
-                  >
-                    Fechar
-                  </Button>
-                  {['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware'].includes(String(state.status)) && (
-                    <Button
-                      type="button"
-                      className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
-                      onClick={() => {
-                        resetState();
-                        navigate(`/admin/cinematic-engine/${state.projectId}`);
-                      }}
-                    >
-                      <Play className="h-3 w-3" /> Ver no Monitor
-                    </Button>
-                  )}
-                </DialogFooter>
+                      {workerHealth && (
+                        <div className="flex items-center gap-4 px-2 py-1 bg-white/5 rounded border border-white/10 text-[9px] text-slate-400">
+                          <div className="flex items-center gap-1">
+                            <div className={cn("h-1 w-1 rounded-full", workerHealth.workers_online > 0 ? "bg-green-500" : "bg-red-500")} />
+                            GPU Workers: {workerHealth.workers_online}
+                          </div>
+                          {workerHealth.workers_online > 0 && (
+                            <>
+                              <div>VRAM: {Math.round((workerHealth.used_vram_mb / workerHealth.total_vram_mb) * 100)}%</div>
+                              <div>Load: {Math.round(workerHealth.avg_load)}%</div>
+                            </>
+                          )}
+                        </div>
+                      )}
+
+                      {state.isStuck && (
+                        <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg space-y-2">
+                          <div className="flex items-center gap-2 text-amber-400 text-[10px] font-bold">
+                            <AlertCircle className="h-3 w-3" />
+                            PIPELINE EM ESPERA (STANDBY)
+                          </div>
+                          <p className="text-[9px] text-amber-300/70 italic">
+                            O cluster GPU está com alta demanda ou offline. Você pode aguardar ou usar o fallback pedagógico instantâneo.
+                          </p>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-7 text-[10px] bg-amber-500/20 border-amber-500/30 text-amber-500 hover:bg-amber-500/30"
+                            onClick={() => state.projectId && triggerPedagogicalFallback(state.projectId)}
+                          >
+                            Ativar Fallback de Slides
+                          </Button>
+                        </div>
+                      )}
+
+                      {state.projectId && (
+                        <div className="text-[10px] text-slate-500 font-mono flex items-center gap-2">
+                          <div className={cn("h-1 w-1 rounded-full bg-green-500", !state.isStuck && "animate-ping")} />
+                          TELEMETRY: {state.isStuck ? 'STANDBY' : 'ACTIVE'} | ID_{state.projectId.slice(0, 8)}
+                        </div>
+                      )}
+
+                      {state.status === 'failed' && (
+                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-xs italic">
+                          Erro: {state.error}
+                        </div>
+                      )}
+                    </div>
+
+                    <DialogFooter className="sm:justify-start">
+                      <Button type="button" variant="secondary" onClick={resetState} className="text-xs h-8">
+                        Fechar
+                      </Button>
+                      {['rendering', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware'].includes(String(state.status)) && (
+                        <Button
+                          type="button"
+                          className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"
+                          onClick={() => {
+                            resetState();
+                            navigate(`/admin/cinematic-engine/${state.projectId}`);
+                          }}
+                        >
+                          <Play className="h-3 w-3" /> Ver no Monitor
+                        </Button>
+                      )}
+                    </DialogFooter>
+                  </>
+                )}
               </DialogContent>
             </Dialog>
 
