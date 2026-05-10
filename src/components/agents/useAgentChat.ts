@@ -443,6 +443,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         if (result === null && !assistantSoFar) {
           setIsLoading(false);
           setLoadingStage("");
+          console.log(`[TUTOR] SEND_COMPLETED (empty) id=${requestId}`);
           console.log(`[TUTOR] LOADING_CLEARED id=${requestId}`);
           return;
         }
@@ -459,6 +460,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             length: assistantSoFar.length,
             requestId
           });
+          console.log(`[TUTOR] SEND_COMPLETED (success) id=${requestId}`);
         }
 
         // ── Memória pedagógica: persist DEPOIS da IA ────────────────────
