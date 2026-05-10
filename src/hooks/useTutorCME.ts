@@ -520,6 +520,7 @@ export const useTutorCME = () => {
         }
       }
 
+      console.debug("[CME] scene graph created", { sceneGraphId: sceneGraph.id, projectId });
       setState(s => ({ ...s, sceneGraphId: sceneGraph.id }));
       await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado e persistido", aggregationId || undefined);
 
