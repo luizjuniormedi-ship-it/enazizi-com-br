@@ -258,6 +258,9 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   const recs: StudyRecommendation[] = [];
   const cd = coreData; // optional pre-fetched data from useCoreData
   const resetAt = cd?.profile.last_study_plan_reset_at ?? null;
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayIso = todayStart.toISOString();
 
   // Individual queries with safe fallback — one failure never breaks the engine
   const safe = async <T>(fn: () => PromiseLike<{ data: T | null; error: any }>, label: string): Promise<T | null> => {
