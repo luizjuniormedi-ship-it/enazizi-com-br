@@ -128,7 +128,7 @@ function HealthStats() {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const { data: stats, error } = await supabase.rpc('get_rag_health_stats');
+      const { data: stats, error } = await (supabase.rpc as any)('get_rag_health_stats');
       if (error) {
         // Fallback if RPC doesn't exist yet
         const { data: chunks } = await supabase.from('rag_chunks').select('id', { count: 'exact', head: true });
