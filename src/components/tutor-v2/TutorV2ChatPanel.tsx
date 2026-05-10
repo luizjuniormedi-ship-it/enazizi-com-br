@@ -77,6 +77,24 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
       if (response?.fallback) {
         toast.warning("O Tutor encontrou instabilidade no provedor de IA. Sua sessão foi preservada. Tente novamente.");
       }
+      if (response?.content) {
+        setMessages((prev) => {
+          const alreadyVisible = prev.some((m) => m.role === "assistant" && m.content === response.content);
+          if (alreadyVisible) return prev;
+          return [
+            ...prev,
+            {
+              id: response.requestId || crypto.randomUUID(),
+              role: "assistant",
+              content: response.content,
+              tutor_session_id: session.id,
+              user_id: user.id,
+              created_at: new Date().toISOString(),
+              metadata: { fallback_used: !!response.fallback, provider: response.provider },
+            },
+          ];
+        });
+      }
       setLastFailedMessage(null);
 
       // We DON'T manually append here anymore because the Edge Function should persist 
