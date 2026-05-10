@@ -207,6 +207,7 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   };
 
   const handleGenerateLesson = async () => {
+    console.error("🔥 BOTAO GERAR AULA - TutorChatPanel.tsx - handleGenerateLesson");
     if (!context.topic || isGeneratingLesson) return;
     
     setIsGeneratingLesson(true);

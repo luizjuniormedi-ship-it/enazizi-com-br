@@ -57,7 +57,10 @@ const AgentHeader = memo(({
           <Button 
             variant={lessonStatus === 'ready' ? "default" : "outline"} 
             size="sm" 
-            onClick={onTransformSession}
+            onClick={() => {
+              console.error("🔥 BOTAO GERAR AULA - AgentHeader.tsx - Button Click");
+              onTransformSession();
+            }}
              className={cn(
                "hidden md:flex h-10 text-[10px] gap-2 shadow-xl px-5 font-black uppercase tracking-[0.2em] transition-all rounded-full",
                lessonStatus === 'ready' 
