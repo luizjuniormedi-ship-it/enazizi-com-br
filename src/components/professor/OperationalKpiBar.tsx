@@ -51,12 +51,12 @@ export default function OperationalKpiBar({ analytics, loading }: Props) {
   const inactive = analytics?.engagement?.inactive_count ?? 0;
   const completion = analytics?.engagement?.activity_completion_rate ?? 0;
 
-  const kpis = [
-    { icon: Activity, label: "Alunos ativos", value: students.length, tone: "neutral" as const },
-    { icon: AlertCircle, label: "Crítico", value: critical, tone: "critical" as const },
-    { icon: AlertTriangle, label: "Atenção", value: warning, tone: "warning" as const },
-    { icon: UserX, label: "Inativos > 7d", value: inactive, tone: inactive > 0 ? "warning" : "neutral" as const },
-    { icon: CheckCircle2, label: "Conclusão", value: `${completion}%`, tone: completion >= 70 ? "good" : "neutral" as const },
+  const kpis: { icon: React.ElementType; label: string; value: number | string; tone: "neutral" | "good" | "warning" | "critical" }[] = [
+    { icon: Activity, label: "Alunos ativos", value: students.length, tone: "neutral" },
+    { icon: AlertCircle, label: "Crítico", value: critical, tone: "critical" },
+    { icon: AlertTriangle, label: "Atenção", value: warning, tone: "warning" },
+    { icon: UserX, label: "Inativos > 7d", value: inactive, tone: inactive > 0 ? "warning" : "neutral" },
+    { icon: CheckCircle2, label: "Conclusão", value: `${completion}%`, tone: completion >= 70 ? "good" : "neutral" },
   ];
 
   return (
