@@ -299,8 +299,15 @@ export default function EnaflixPage() {
           destination: m.route
         }
       });
+      if (m.route) {
+        if (/^https?:\/\//i.test(m.route)) {
+          window.open(m.route, "_blank", "noopener,noreferrer");
+        } else {
+          navigate(m.route);
+        }
+      }
     },
-    [recordVisit],
+    [recordVisit, navigate],
   );
 
   const handleClose = () => {
