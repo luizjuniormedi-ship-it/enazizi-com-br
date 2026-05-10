@@ -22,6 +22,8 @@ import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
 import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import ProfessorTurmaManager from "@/components/professor/ProfessorTurmaManager";
+import TopRiskStudents from "@/components/professor/TopRiskStudents";
+import ClassCognitiveHeatmap from "@/components/professor/ClassCognitiveHeatmap";
 
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
@@ -35,7 +37,8 @@ const ProfessorDashboard = () => {
   const navigate = useNavigate();
   const [simulados, setSimulados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("simulados");
+  const [activeTab, setActiveTab] = useState("operacional");
+  const [activeSub, setActiveSub] = useState<string>("risco");
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
     simulado: null,
@@ -183,75 +186,133 @@ const ProfessorDashboard = () => {
           }
         />
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Professor Command Center — 5 grupos operacionais
+            (12 tabs originais preservadas como sub-abas dentro de cada grupo) */}
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            // sub padrão por grupo
+            const firstSub: Record<string, string> = {
+              operacional: "risco",
+              turmas: "minhas",
+              simulados: "lista",
+              mentoria: "temas",
+              auditoria: "trace",
+            };
+            setActiveSub(firstSub[v] || "");
+          }}
+          className="w-full"
+        >
           <div className="rounded-2xl border border-white/5 bg-card/20 backdrop-blur-md p-2">
             <TabsList className="flex h-auto w-full flex-wrap justify-start gap-2 bg-transparent p-0">
               {[
-                { value: "simulados", label: "📝 Simulados" },
-                { value: "plantao", label: "🏥 Casos Plantão" },
-                { value: "video", label: "Video", icon: <Video className="h-3.5 w-3.5" /> },
-                { value: "temas", label: "📖 Temas" },
-                { value: "alunos", label: "👤 Aluno" },
-                { value: "turmas", label: "👥 Minhas Turmas" },
-                { value: "analytics", label: "📊 Turma BI" },
-                { value: "bi", label: "📈 BI" },
-                { value: "mentoria", label: "📋 Mentoria" },
-                { value: "osce", label: "🩺 OSCE" },
-                { value: "proficiencia", label: "🎯 Proficiência" },
-                { value: "auditoria", label: "🔍 Auditoria" }
+                { value: "operacional", label: "Operacional" },
+                { value: "turmas", label: "Turmas" },
+                { value: "simulados", label: "Simulados" },
+                { value: "mentoria", label: "Mentoria" },
+                { value: "auditoria", label: "Auditoria" },
               ].map((tab) => (
-                <TabsTrigger 
+                <TabsTrigger
                   key={tab.value}
-                  value={tab.value} 
+                  value={tab.value}
                   className="h-10 min-w-[48%] flex-1 justify-center rounded-xl border border-white/5 px-4 text-[11px] font-black uppercase tracking-wider transition-all data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-glow-sm sm:min-w-fit sm:flex-none"
                 >
-                  {tab.icon && <span className="mr-1.5">{tab.icon}</span>}
                   {tab.label.toUpperCase()}
                 </TabsTrigger>
               ))}
             </TabsList>
           </div>
 
-          <TabsContent value="simulados" className="space-y-4 mt-4 w-full max-w-5xl mx-auto">
-            <SimuladosKpiCards {...totals} />
+          {/* Sub-aba selector — mostra apenas o sub do grupo ativo */}
+          <SubTabsBar group={activeTab} active={activeSub} onChange={setActiveSub} />
 
-            {loading ? (
-              <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
-            ) : simulados.length === 0 ? (
-              <Card>
-                <CardContent className="p-12 text-center">
-                  <GraduationCap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">Nenhum simulado criado</h3>
-                  <Button onClick={() => handleOpenCreate()}>CRIAR SIMULADO</Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {simulados.map((sim) => (
-                  <SimuladoListItem
-                    key={sim.id}
-                    sim={sim}
-                    onView={handleViewResults}
-                    onEdit={handleOpenCreate}
-                    onQuestions={handleOpenQuestions}
-                    onDelete={handleDeleteSimulado}
-                  />
-                ))}
-              </div>
+          {/* OPERACIONAL: Alunos em risco · Heatmap turma · Aluno individual · Casos plantão */}
+          <TabsContent value="operacional" className="mt-4 space-y-6">
+            {activeSub === "risco" && (
+              <TopRiskStudents
+                callAPI={callAPI}
+                onActionAssign={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
+                onActionMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
+                onActionTrack={() => { setActiveSub("aluno"); }}
+              />
+            )}
+            {activeSub === "heatmap" && <ClassCognitiveHeatmap callAPI={callAPI} />}
+            {activeSub === "aluno" && (
+              <Suspense fallback={null}><StudentTracker callAPI={callAPI} /></Suspense>
+            )}
+            {activeSub === "plantao" && (
+              <Suspense fallback={null}><ProfessorPlantao callAPI={callAPI} /></Suspense>
             )}
           </TabsContent>
 
-          <TabsContent value="plantao" className="mt-4"><Suspense fallback={null}><ProfessorPlantao callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="temas" className="mt-4"><Suspense fallback={null}><TeacherStudyAssignments callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="video" className="mt-4"><Suspense fallback={null}><VideoRoom callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="alunos" className="mt-4"><Suspense fallback={null}><StudentTracker callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="analytics" className="mt-4"><Suspense fallback={null}><ClassAnalytics callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="turmas" className="mt-4"><ProfessorTurmaManager callAPI={callAPI} /></TabsContent>
-          <TabsContent value="bi" className="mt-4"><Suspense fallback={null}><ProfessorBIPanel callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="mentoria" className="mt-4"><Suspense fallback={null}><MentorThemePlans callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="osce" className="mt-4"><Suspense fallback={null}><ProfessorPracticalExams callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="proficiencia" className="mt-4"><Suspense fallback={null}><ProfessorProficiencyPlans callAPI={callAPI} /></Suspense></TabsContent>
-          <TabsContent value="auditoria" className="mt-4"><ProfessorTraceAudit callAPI={callAPI} /></TabsContent>
+          {/* TURMAS: Minhas turmas · BI da turma · BI agregada · Video */}
+          <TabsContent value="turmas" className="mt-4">
+            {activeSub === "minhas" && <ProfessorTurmaManager callAPI={callAPI} />}
+            {activeSub === "analytics" && (
+              <Suspense fallback={null}><ClassAnalytics callAPI={callAPI} /></Suspense>
+            )}
+            {activeSub === "bi" && (
+              <Suspense fallback={null}><ProfessorBIPanel callAPI={callAPI} /></Suspense>
+            )}
+            {activeSub === "video" && (
+              <Suspense fallback={null}><VideoRoom callAPI={callAPI} /></Suspense>
+            )}
+          </TabsContent>
+
+          {/* SIMULADOS: Lista · OSCE */}
+          <TabsContent value="simulados" className="mt-4 space-y-4">
+            {activeSub === "lista" && (
+              <div className="space-y-4 w-full max-w-5xl mx-auto">
+                <SimuladosKpiCards {...totals} />
+                {loading ? (
+                  <div className="text-center py-12"><Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" /></div>
+                ) : simulados.length === 0 ? (
+                  <Card>
+                    <CardContent className="p-12 text-center">
+                      <GraduationCap className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">Nenhum simulado criado</h3>
+                      <Button onClick={() => handleOpenCreate()}>CRIAR SIMULADO</Button>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <div className="space-y-3">
+                    {simulados.map((sim) => (
+                      <SimuladoListItem
+                        key={sim.id}
+                        sim={sim}
+                        onView={handleViewResults}
+                        onEdit={handleOpenCreate}
+                        onQuestions={handleOpenQuestions}
+                        onDelete={handleDeleteSimulado}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {activeSub === "osce" && (
+              <Suspense fallback={null}><ProfessorPracticalExams callAPI={callAPI} /></Suspense>
+            )}
+          </TabsContent>
+
+          {/* MENTORIA: Temas/atribuições · Mentoria · Proficiência */}
+          <TabsContent value="mentoria" className="mt-4">
+            {activeSub === "temas" && (
+              <Suspense fallback={null}><TeacherStudyAssignments callAPI={callAPI} /></Suspense>
+            )}
+            {activeSub === "planos" && (
+              <Suspense fallback={null}><MentorThemePlans callAPI={callAPI} /></Suspense>
+            )}
+            {activeSub === "proficiencia" && (
+              <Suspense fallback={null}><ProfessorProficiencyPlans callAPI={callAPI} /></Suspense>
+            )}
+          </TabsContent>
+
+          {/* AUDITORIA */}
+          <TabsContent value="auditoria" className="mt-4">
+            {activeSub === "trace" && <ProfessorTraceAudit callAPI={callAPI} />}
+          </TabsContent>
         </Tabs>
       </main>
 
@@ -275,5 +336,56 @@ const ProfessorDashboard = () => {
     </div>
   );
 };
+
+const SUB_TABS: Record<string, { value: string; label: string }[]> = {
+  operacional: [
+    { value: "risco", label: "Alunos em risco" },
+    { value: "heatmap", label: "Heatmap turma" },
+    { value: "aluno", label: "Aluno individual" },
+    { value: "plantao", label: "Casos plantão" },
+  ],
+  turmas: [
+    { value: "minhas", label: "Minhas turmas" },
+    { value: "analytics", label: "BI da turma" },
+    { value: "bi", label: "BI agregada" },
+    { value: "video", label: "Sala de vídeo" },
+  ],
+  simulados: [
+    { value: "lista", label: "Simulados" },
+    { value: "osce", label: "OSCE" },
+  ],
+  mentoria: [
+    { value: "temas", label: "Temas e atribuições" },
+    { value: "planos", label: "Planos de mentoria" },
+    { value: "proficiencia", label: "Proficiência" },
+  ],
+  auditoria: [
+    { value: "trace", label: "Trace e logs" },
+  ],
+};
+
+function SubTabsBar({ group, active, onChange }: { group: string; active: string; onChange: (v: string) => void }) {
+  const subs = SUB_TABS[group] || [];
+  if (subs.length <= 1) return null;
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-3 px-1">
+      {subs.map((s) => (
+        <button
+          key={s.value}
+          type="button"
+          onClick={() => onChange(s.value)}
+          className={
+            "h-8 px-3 rounded-full text-[10px] font-bold uppercase tracking-wider transition-colors " +
+            (active === s.value
+              ? "bg-primary/20 text-primary border border-primary/40"
+              : "bg-white/[0.03] text-white/60 border border-white/10 hover:bg-white/[0.06] hover:text-white/90")
+          }
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export default ProfessorDashboard;
