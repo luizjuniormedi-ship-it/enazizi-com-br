@@ -177,23 +177,66 @@ export const useTutorCME = () => {
 
   const aggregateSessionContent = useCallback(async (conversationId: string, customContent?: string) => {
     let messages: any[] = [];
-    
+    const debug = (msg: string, extra?: any) => {
+      // Logs técnicos: somente console (DEV/observabilidade), nunca na UI.
+      if (extra !== undefined) console.debug(`[CME aggregate] ${msg}`, extra);
+      else console.debug(`[CME aggregate] ${msg}`);
+    };
+
     if (customContent) {
+      debug("using customContent (single message path)", { length: customContent.length });
       messages = [{ content: customContent, role: 'assistant' }];
     } else {
-      const { data, error } = await supabaseClient
-        .from("tutor_messages")
-        .select("id, content, role, created_at")
-        .eq("tutor_session_id", conversationId)
-        .eq("role", "assistant")
-        .order("created_at", { ascending: true });
+      debug("conversationId received", { conversationId });
 
-      if (error) throw error;
-      messages = data || [];
+      // Bug fix: conversationId vem de chat_conversations.id, mas tutor_messages
+      // referencia tutor_sessions.id. Resolvemos via tutor_sessions.conversation_id.
+      // Fallback final: ler direto de chat_messages (fonte primária histórica).
+      let resolvedSessionId: string | null = null;
+      try {
+        const { data: ts } = await supabaseClient
+          .from("tutor_sessions" as any)
+          .select("id")
+          .eq("conversation_id", conversationId)
+          .maybeSingle();
+        resolvedSessionId = (ts as any)?.id ?? null;
+      } catch (e) {
+        debug("tutor_sessions lookup failed", e);
+      }
+      debug("resolved tutor_session_id", { resolvedSessionId });
+
+      // Retry curto para cobrir race condition: a última mensagem pode ainda
+      // estar sendo persistida quando o usuário clica "Gerar aula".
+      const fetchAssistantMessages = async (): Promise<any[]> => {
+        if (resolvedSessionId) {
+          const { data } = await supabaseClient
+            .from("tutor_messages")
+            .select("id, content, role, created_at")
+            .eq("tutor_session_id", resolvedSessionId)
+            .eq("role", "assistant")
+            .order("created_at", { ascending: true });
+          if (data && data.length > 0) return data;
+        }
+        // Fallback: chat_messages (fonte primária do tutor legacy).
+        const { data: chatData } = await supabaseClient
+          .from("chat_messages")
+          .select("id, content, role, created_at")
+          .eq("conversation_id", conversationId)
+          .eq("role", "assistant")
+          .order("created_at", { ascending: true });
+        return chatData || [];
+      };
+
+      // Até 3 tentativas com backoff 0/600/1200ms para esperar persistência.
+      for (let attempt = 0; attempt < 3 && messages.length === 0; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 600));
+        messages = await fetchAssistantMessages();
+        debug(`fetch attempt ${attempt + 1}`, { messagesFound: messages.length });
+      }
     }
 
     if (messages.length === 0) {
-      // Override freeze: cme-ux-correct-fix — mensagem amigável.
+      debug("ABORT: no assistant messages persisted for this conversation", { conversationId });
       throw new Error("Sua aula ainda está sendo preparada. Tente novamente em alguns instantes.");
     }
 
@@ -204,12 +247,6 @@ export const useTutorCME = () => {
     let sections = fullText.split(/\n(?=#{1,2}\s)/).filter(s => s.trim().length > 0);
     if (sections.length === 0 && fullText.trim()) {
       sections = [fullText.trim()];
-    } else if (sections.length > 0 && !sections[0].trim().startsWith('#')) {
-      // If the first part doesn't have a header, it's the intro
-      const intro = sections[0];
-      if (intro.length > 0) {
-        // Leave it as is, will be handled in the loop
-      }
     }
     
     sections.forEach((section, idx) => {
@@ -249,7 +286,11 @@ export const useTutorCME = () => {
       .select()
       .single();
 
-    if (aggError) throw aggError;
+    if (aggError) {
+      debug("aggregation insert failed", aggError);
+      throw aggError;
+    }
+    debug("aggregation created", { aggregationId: aggregation?.id, blocks: blocks.length });
 
     const blockInserts = blocks.map((b, idx) => ({
       aggregation_id: aggregation.id,
@@ -265,6 +306,7 @@ export const useTutorCME = () => {
     return { aggregation, blocks };
   }, [supabaseClient]);
 
+
   const transformToVideo = useCallback(async (params: {
     title: string;
     specialty: string;
@@ -279,6 +321,12 @@ export const useTutorCME = () => {
   }) => {
     setState({ status: 'queued', progress: 5, message: "Iniciando pipeline..." });
     lastEventRef.current = Date.now();
+    console.debug("[CME] transformToVideo start", {
+      conversationId: params.conversationId,
+      isFullSession: !!params.isFullSession,
+      hasSourceContent: !!params.sourceContent,
+      sourceLength: params.sourceContent?.length ?? 0,
+    });
 
     try {
       const { data: { user } } = await supabaseClient.auth.getUser();
@@ -294,6 +342,7 @@ export const useTutorCME = () => {
       );
       aggregationId = result.aggregation.id;
       lessonBlocks = result.blocks;
+      console.debug("[CME] aggregation ok", { aggregationId, blocks: lessonBlocks.length });
       
       // Update with title and manual flag
       await supabaseClient
@@ -306,6 +355,7 @@ export const useTutorCME = () => {
         .eq('id', aggregationId);
 
       setState(s => ({ ...s, aggregationId, progress: 10, message: "Conteúdo estruturado..." }));
+
 
       const { data: project, error: projectError } = await supabaseClient
         .from("cme_video_projects")
@@ -329,6 +379,7 @@ export const useTutorCME = () => {
 
       if (projectError) throw projectError;
       const projectId = project.id;
+      console.debug("[CME] project created", { projectId, aggregationId });
       setState(s => ({ ...s, projectId, progress: 20, message: "Projeto criado e enviado para revisão ADM." }));
 
       // Index to Educational Memory
@@ -469,6 +520,7 @@ export const useTutorCME = () => {
         }
       }
 
+      console.debug("[CME] scene graph created", { sceneGraphId: sceneGraph.id, projectId });
       setState(s => ({ ...s, sceneGraphId: sceneGraph.id }));
       await logPipelineEvent(projectId, 'graphing', 'completed', 50, "Scene Graph gerado e persistido", aggregationId || undefined);
 
