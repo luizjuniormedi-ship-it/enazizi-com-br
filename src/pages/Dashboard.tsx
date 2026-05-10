@@ -278,7 +278,7 @@ const Dashboard = () => {
 
 
       <div className="enaflix-stagger space-y-16 pb-24">
-        {/* Atividade Recente / Continuar */}
+        {/* Atividade Recente / Continuar — só renderiza com dados reais */}
         {(continueModules.length > 0) && (
           <EnaflixRow title="Continuar Estudando">
             {continueModules.map(m => (
@@ -286,74 +286,16 @@ const Dashboard = () => {
                 key={m.id}
                 title={m.title}
                 category={m.category}
-                progress={Math.floor(Math.random() * 90) + 10} // Mock progress
-                lastAccess="hoje"
+                lastAccess="recente"
                 onClick={() => navigate(m.path || `/dashboard/${m.id}`)}
               />
             ))}
           </EnaflixRow>
         )}
 
-        <EnaflixRow title="Temas Populares">
-          <EnaflixThemeCard title="Cardiologia" icon="🫀" gradient="from-red-500 to-orange-500" />
-          <EnaflixThemeCard title="Pediatria" icon="👶" gradient="from-blue-500 to-cyan-500" />
-          <EnaflixThemeCard title="Cirurgia" icon="🔪" gradient="from-emerald-500 to-teal-500" />
-          <EnaflixThemeCard title="Gineco" icon="🤰" gradient="from-pink-500 to-rose-500" />
-          <EnaflixThemeCard title="Preventiva" icon="🛡️" gradient="from-violet-500 to-purple-500" />
-        </EnaflixRow>
-
-        <EnaflixRow title="Revisões Recomendadas">
-          <EnaflixCinematicCard 
-            variant="poster"
-            onClick={() => navigate("/dashboard/flashcards")}
-          >
-            <div className="p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                <Target className="h-8 w-8 text-primary" />
-                <EnaflixBadge type="ia" className="bg-primary/20 text-primary border-primary/40" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-black text-xl text-white">Pediatria: Crescimento</h4>
-                <p className="text-sm text-white/60 italic">"Risco de esquecimento alto detectado pela IA"</p>
-              </div>
-              <Enaflix3DButton size="sm" className="w-full">Revisar Agora</Enaflix3DButton>
-            </div>
-          </EnaflixCinematicCard>
-          
-          <EnaflixCinematicCard 
-            variant="poster"
-            onClick={() => navigate("/dashboard/flashcards")}
-          >
-            <div className="p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                <Clock className="h-8 w-8 text-primary" />
-                <EnaflixBadge type="urgente" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-black text-xl text-white">Cirurgia: Abdome Agudo</h4>
-                <p className="text-sm text-white/60 italic">Dificuldade estimada: Média (15 min)</p>
-              </div>
-              <Enaflix3DButton size="sm" variant="outline" className="w-full">Agendar</Enaflix3DButton>
-            </div>
-          </EnaflixCinematicCard>
-
-          <EnaflixCinematicCard 
-            variant="poster"
-            onClick={() => navigate("/dashboard/simulados")}
-          >
-            <div className="p-6 space-y-4">
-              <div className="flex justify-between items-start">
-                <BookOpen className="h-8 w-8 text-primary" />
-                <EnaflixBadge type="ia" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-black text-xl text-white">Gineco & Obstetrícia</h4>
-                <p className="text-sm text-white/60 italic">"Focar em temas com queda de 12% no acerto"</p>
-              </div>
-              <Enaflix3DButton size="sm" variant="violet" className="w-full">Treinar Erros</Enaflix3DButton>
-            </div>
-          </EnaflixCinematicCard>
-        </EnaflixRow>
+        {/* "Temas Populares" e "Revisões Recomendadas" hardcoded foram removidos.
+            Substituições reais (derivadas de user_topic_profiles + FSRS due) virão
+            nas próximas fases. Não exibimos placeholders fake. */}
 
         <EnaflixRow title="Tutor IA & Co-Pilot">
            <EnaflixCinematicCard variant="tutor" className="col-span-full h-48 flex items-center p-8 gap-8">
