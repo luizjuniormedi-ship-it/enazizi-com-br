@@ -1,3 +1,4 @@
+console.error("🔥 BUILD_ID", import.meta.env.VITE_APP_VERSION || "DEV_SNAPSHOT");
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
@@ -111,7 +112,7 @@ const AgentChat = ({
 
 
   const handleTransformSession = useCallback(async () => {
-    console.error("🔥 BOTAO GERAR AULA - AgentChat.tsx - handleTransformSession");
+    console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AgentChat.tsx :: HANDLER=handleTransformSession");
     console.log("[GERAR_AULA] CLICK", {
       conversationId: chat.activeConversationId,
       sessionId: chat.activeConversationId, // Fallback if no specific sessionId

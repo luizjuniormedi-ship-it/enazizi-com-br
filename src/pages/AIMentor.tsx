@@ -374,6 +374,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                 <div className="flex-1 relative flex flex-col min-w-0 w-full max-w-full lg:rounded-t-[40px] border-t border-x border-white/10 bg-black/60 backdrop-blur-[120px] shadow-2xl overflow-hidden transition-all duration-700">
                   <div className="absolute inset-0 bg-gradient-to-b from-primary/10 via-transparent to-transparent pointer-events-none" />
                   
+                  {(() => { console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AIMentor.tsx :: RENDER=AgentChat"); return null; })()}
                   <AgentChat
                     title="ENAZIZI Cognitive Engine"
                     subtitle="Núcleo de Inteligência Médica Premium"

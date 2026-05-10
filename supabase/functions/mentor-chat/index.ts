@@ -20,6 +20,7 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 });
 
 serve(async (req) => {
+  console.error("[EDGE] mentor-chat :: REQUEST_RECEIVED");
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const requestId = crypto.randomUUID();
@@ -313,6 +314,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error(`[mentor-chat] FATAL_CAUGHT id=${requestId}`, error);
+    console.error("[EDGE] mentor-chat :: RESPONSE_SENT");
     return json({ 
       ok: false, error: "internal_error", message: fallbackMessage,
       requestId, fallbackUsed: true, elapsedMs: Date.now() - startTime,
