@@ -72,6 +72,8 @@ const AdminLessonRatingsPanel = lazy(() => import("@/components/admin/AdminLesso
 const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/TutorLessonStructureDashboard").then(m => ({ default: m.TutorLessonStructureDashboard })));
 const TutorVideoAuditPanel = lazy(() => import("@/components/admin/TutorVideoAuditPanel").then(m => ({ default: m.TutorVideoAuditPanel })));
 const KnowledgeBaseAdmin = lazy(() => import("@/components/admin/KnowledgeBaseAdmin").then(m => ({ default: m.KnowledgeBaseAdmin })));
+const TutorQAPanel = lazy(() => import("@/components/admin/TutorQAPanel"));
+
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
@@ -151,6 +153,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "bi", label: "BI & KPIs", icon: BarChart3 },
         { key: "audit", label: "Auditoria", icon: Shield },
         { key: "system-checklist", label: "Checklist", icon: ShieldCheck },
+        { key: "tutor-qa", label: "Tutor QA Engine", icon: Beaker },
+
       ],
     },
   ];
@@ -628,6 +632,8 @@ const Admin = () => {
                   {activeSection === "bi" && <Suspense fallback={<PanelLoader />}><AdminBIPanel callAdmin={callAdmin} /></Suspense>}
                   {activeSection === "audit" && <Suspense fallback={<PanelLoader />}><AdminAuditLog auditLogs={auditLogs} auditLoading={auditLoading} loadAuditLog={loadAuditLog} /></Suspense>}
                   {activeSection === "system-checklist" && <Suspense fallback={<PanelLoader />}><SystemChecklist /></Suspense>}
+                  {activeSection === "tutor-qa" && <Suspense fallback={<PanelLoader />}><TutorQAPanel /></Suspense>}
+
 
 
 
