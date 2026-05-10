@@ -31,11 +31,11 @@ const quickActions = [
 ];
 
 const suggestions = [
-  "ECG na Emergência",
-  "Protocolo de Sepse",
-  "GGO na Radiologia",
-  "Conduta em AVC",
-  "Antibióticos na UTI"
+  "Endocardite Bacteriana",
+  "Protocolo de Sepse 2024",
+  "GGO na Radiologia Tórax",
+  "Conduta em AVC Isquêmico",
+  "Antibióticos na UTI Adulto"
 ];
 
 const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => void; initialValue?: string }) => {
@@ -43,11 +43,17 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
   const navigate = useNavigate();
   const firstName = user?.user_metadata?.display_name?.split(" ")[0] || "Doutor";
   const [inputValue, setInputValue] = useState(initialValue || "");
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialValue) {
+      setInputValue(initialValue);
+    }
+  }, [initialValue]);
 
   const handleSend = () => {
     if (inputValue.trim()) {
       onSend(inputValue);
-      setInputValue("");
     }
   };
 
@@ -117,20 +123,22 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
           <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 via-violet-500/20 to-primary/20 rounded-[32px] blur-xl opacity-20 group-hover:opacity-50 transition duration-1000" />
           
           <div className="relative group/input">
-            <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl rounded-[28px] border border-white/10 group-hover/input:border-primary/40 transition-all duration-500 shadow-2xl" />
+            <div className="absolute inset-0 bg-white/5 backdrop-blur-3xl rounded-[28px] sm:rounded-[32px] border border-white/10 group-hover/input:border-primary/40 transition-all duration-500 shadow-2xl" />
             
-            <div className="relative flex items-center p-2 sm:p-3 pl-6 sm:pl-8">
-              <Brain className="h-6 w-6 text-primary/60 mr-4" />
-              <input 
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-lg sm:text-xl py-4 sm:py-5"
-                placeholder="Ex: 'Quais os critérios de Duke para Endocardite?'"
-                id="tutor-premium-input"
-              />
+            <div className="relative flex flex-col sm:flex-row items-center p-2 sm:p-3 pl-4 sm:pl-8 gap-2">
+              <div className="flex items-center w-full flex-1">
+                <Brain className="h-6 w-6 text-primary/60 mr-4 hidden sm:block" />
+                <input 
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-base sm:text-xl py-4 sm:py-5 min-w-0"
+                  placeholder="Ex: 'Quais os critérios de Duke para Endocardite?'"
+                  id="tutor-premium-input"
+                />
+              </div>
               
-              <div className="flex items-center gap-2 pr-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto pr-2 pb-2 sm:pb-0">
                  <button className="hidden sm:flex p-4 rounded-2xl hover:bg-white/5 text-white/40 hover:text-white transition-all">
                    <Mic className="h-6 w-6" />
                  </button>
@@ -139,7 +147,7 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
                    size="lg" 
                    glow 
                    onClick={handleSend}
-                   className="h-14 sm:h-16 px-8 rounded-2xl text-base font-bold flex items-center gap-2 group/btn"
+                   className="h-12 sm:h-16 flex-1 sm:flex-initial px-6 sm:px-8 rounded-2xl text-sm sm:text-base font-bold flex items-center justify-center gap-2 group/btn"
                    disabled={!inputValue.trim()}
                  >
                    <span>Estudar Agora</span>
@@ -157,14 +165,20 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
           transition={{ duration: 1, delay: 0.8 }}
           className="flex flex-wrap justify-center gap-3 pt-4"
         >
-          {suggestions.map((sug, i) => (
+          {suggestions.map((sug) => (
             <button 
               key={sug}
-              onClick={() => onSend(sug)}
+              onClick={() => {
+                setInputValue(sug);
+                setSelectedSuggestion(sug);
+                // Dar foco no input após selecionar chip para melhor UX
+                document.getElementById('tutor-premium-input')?.focus();
+              }}
               className={cn(
-                "px-5 py-2.5 rounded-2xl bg-white/5 border border-white/5 text-sm font-bold text-white/40",
-                "hover:text-primary hover:border-primary/30 hover:bg-primary/5 hover:scale-105 transition-all duration-300",
-                "backdrop-blur-md shadow-lg"
+                "px-5 py-2.5 rounded-2xl border transition-all duration-300 backdrop-blur-md shadow-lg text-sm font-bold",
+                (selectedSuggestion === sug || inputValue === sug)
+                  ? "bg-primary/20 border-primary text-primary scale-105"
+                  : "bg-white/5 border-white/5 text-white/40 hover:text-white hover:border-white/20 hover:bg-white/10"
               )}
             >
               {sug}
@@ -247,31 +261,34 @@ const PedagogicalHeaderBridge = ({
 
 const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   console.log("[AIMentor] Rendering with ref:", !!ref);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialTopic = searchParams.get("topic") || "";
+  const autoStartProcessed = useRef(false);
   
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
   useEffect(() => {
-    if (initialTopic && !hasStarted) {
-      handleSend(initialTopic);
-    }
-  }, []);
+    if (initialTopic && !hasStarted && !autoStartProcessed.current) {
+      autoStartProcessed.current = true;
+      
+      // Limpar o parâmetro da URL para evitar duplicidade no refresh
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("topic");
+      setSearchParams(newParams, { replace: true });
 
-  const handleSend = (prompt: string) => {
+      handleStart(initialTopic);
+    }
+  }, [initialTopic]);
+
+  const handleStart = (prompt: string) => {
+    setPendingPrompt(prompt);
     setIsCinematicLoading(true);
     setTimeout(() => {
       setHasStarted(true);
       setIsCinematicLoading(false);
-      setTimeout(() => {
-        if (onSendRef.current) {
-          onSendRef.current(prompt);
-        } else {
-          console.warn("[AIMentor] onSendRef.current is null when trying to send prompt");
-        }
-      }, 500);
     }, 1200);
   };
 
@@ -312,7 +329,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
               exit={{ opacity: 0, y: -50, scale: 0.95 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             >
-              <TutorPremiumHero onSend={handleSend} initialValue={initialTopic} />
+              <TutorPremiumHero onSend={handleStart} initialValue={initialTopic} />
             </motion.div>
           ) : (
             <motion.div
@@ -335,6 +352,7 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                     functionName="mentor-chat"
                     quickActions={quickActions}
                     onSendRef={onSendRef}
+                    initialPrompt={pendingPrompt || undefined}
                     hideUploadsPicker
                     pedagogicalHeader={({ messages }) => (
                       <PedagogicalHeaderBridge

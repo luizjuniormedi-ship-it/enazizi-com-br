@@ -19,7 +19,7 @@ const AgentInputBar = memo(({
   input, onInputChange, placeholder, isLoading, sendCooldown, onSend,
   hasSpeechRecognition, isListening, onToggleListening,
 }: AgentInputBarProps) => (
-  <div className="relative w-full max-w-4xl mx-auto pb-6 px-4 sm:px-0">
+  <div className="relative w-full max-w-4xl mx-auto pb-4 sm:pb-6 px-4 sm:px-0 mb-[env(safe-area-inset-bottom,1rem)]">
     <motion.div 
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
