@@ -288,6 +288,7 @@ function ContextItem({ icon: Icon, label, value, progress, color = "bg-indigo-50
         />
       </div>
     </div>
+  );
 }
 
 function QuickAction({ label, icon: Icon }: { label: string; icon: any }) {
