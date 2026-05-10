@@ -1,8 +1,8 @@
 # Auditoria UX — CME Mobile (produção)
 
-> **Status:** documentação apenas. **Nenhum código produtivo alterado.**
-> **Execução:** primeira tarefa pós-freeze (a partir de 25/05/2026).
-> **Decisão:** override freeze recusado — risco de regressão pré-GO-LIVE.
+> **Status:** ✅ Correções aplicadas com override de freeze (`cme-ux-correct-fix`).
+> **Execução:** Concluído em 10/05/2026.
+> **Decisão:** Override aprovado para corrigir causa raiz de falhas críticas de geração no GO-LIVE.
 
 ---
 
