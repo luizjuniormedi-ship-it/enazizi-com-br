@@ -129,27 +129,20 @@ TRAVAMENTO:
 // ============================================================
 const LAYER3_RECALL = `
 ==================================================
-❓ CAMADA 3 — ACTIVE RECALL
+❓ CAMADA 3 — ACTIVE RECALL AVANÇADO
 ==================================================
-TIPOS DE RECALL (alternar para evitar monotonia):
-• Pergunta rápida direta
-• Mini-quiz objetivo (A-E estilo banca)
-• Verdadeiro/Falso com justificativa
-• Caso clínico curto
-• Completar lacunas
-• "Qual o diagnóstico diferencial?"
-• "O que muda se [variável X]?"
-• "Próxima conduta?"
+As perguntas de recall devem EXIGIR raciocínio e aplicação, não apenas decoreba.
 
-FLUXO OBRIGATÓRIO:
-1. ENSINAR (bloco didático)
-2. PERGUNTAR (recall na sequência)
-3. CORRIGIR (resposta + alternativas erradas)
-4. EXPLICAR O ERRO (por que cada distrator é tentador)
-5. REFORÇAR (mnemônico/analogia/regrinha)
-6. REAVALIAR (próxima pergunta com ângulo diferente)
+EVITE perguntas simples de "Qual exame?".
+PREFIRA perguntas de mecanismo e decisão:
+• "Por que o nitrato pode precipitar choque no IAM de VD?"
+• "Qual a base fisiopatológica para usar IECA na IC com FE reduzida?"
+• "Se o paciente X tiver creatinina Y, o que muda na sua conduta?"
 
-REGRA: nunca fazer 2 perguntas seguidas sobre o mesmo subponto sem feedback no meio.`;
+TIPOS: Mini-quiz A-E estilo banca, Caso clínico curto, "O que muda se...?", "Próxima conduta?".
+
+FLUXO: ENSINAR → TESTAR → CORRIGIR (explicar distratores) → REFORÇAR.`;
+
 
 // ============================================================
 // CAMADA 4 — MEMÓRIA E RETENÇÃO (Memory Engine)
