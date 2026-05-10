@@ -1,127 +1,147 @@
 ## 🎯 BLOCO 1 — MISSÃO CLÍNICA
 
-O choque séptico é a **emergência médica definitiva**. Não é apenas uma infecção grave; é uma falência catastrófica da microcirculação. No hospital, cada hora de atraso no antibiótico aumenta a mortalidade em 8%. Na prova, é o tema rei de terapia intensiva e infectologia.
+O choque séptico é a **emergência médica definitiva**.  
+Não é apenas uma infecção grave; é o colapso catastrófico da homeostase.  
+É a principal causa de morte em UTIs e o tema mais cobrado em provas de residência (ENARE/USP/SUS-SP).  
+Nossa missão: Entender por que o paciente choca mesmo com o coração batendo e por que o tempo é o seu maior inimigo.
 
 ---
 
 ## 🧭 BLOCO 2 — ROADMAP COGNITIVO
 
-1.  **A Intuição:** A "mangueira furada" e a "bomba fraca".
-2.  **Definição:** O que o Sepsis-3 diz oficialmente.
-3.  **Fisiopatologia:** A cascata de citocinas e a disfunção mitocondrial.
-4.  **Clínica:** Como o corpo grita por socorro.
-5.  **Conduta:** O "Bundle de 1 hora".
-6.  **Desafio:** Questão de residência para fixar.
+1. **Intuição:** O "vazamento" e o "relaxamento" total.  
+2. **Definição:** Critérios Sepsis-3 (o que mudou).  
+3. **Fisiopatologia:** A tempestade de citocinas e a paralisia vascular.  
+4. **Clínica:** O choque distributivo e a hipoperfusão oculta.  
+5. **Conduta:** A hora de ouro (Protocolo de 1h).  
+6. **Prova:** As pegadinhas sobre lactato e noradrenalina.
 
 ---
 
 ## 🟢 BLOCO 3 — INTUIÇÃO & EXPLICAÇÃO LEIGA
 
-Imagine que o sistema circulatório é uma rede de irrigação de uma cidade.
-Na sepse, um "invasor" (bactéria/vírus) entra no sistema.
-Em vez de atacar apenas o invasor, o exército da cidade (sistema imune) se desespera e explode granadas em todos os canos.
-As mangueiras ficam cheias de furos (vasodilatação e vazamento de líquido).
-A pressão da água cai tanto que os bairros (órgãos) param de receber água.
-Mesmo que a bomba (coração) bata rápido, a água não chega onde precisa. Se não consertarmos os furos e dermos pressão rápido, a cidade "morre".
+Imagine que o sistema circulatório é uma rede de encanamento com uma bomba (coração).  
+Na sepse, a infecção envia um sinal de "falso alarme" para todo o corpo.  
+Em vez de lutar apenas onde está o vírus ou bactéria, todos os canos do corpo decidem se dilatar (abrir) ao mesmo tempo.  
+Resultado: A pressão despenca porque os canos estão largos demais para o volume de sangue disponível.  
+Além disso, os canos ficam "porosos" e o líquido vaza para fora (edema).  
+**O sangue não chega nos órgãos não porque falta bomba, mas porque o sistema "espaçou".**
 
 ---
 
 ## 🔵 BLOCO 4 — DEFINIÇÃO TÉCNICA & CLASSIFICAÇÃO
 
-De acordo com o Consenso Internacional **Sepsis-3**:
+De acordo com o Consenso **Sepsis-3**:  
+O Choque Séptico é um subgrupo da sepse em que alterações circulatórias e celulares/metabólicas são graves o suficiente para aumentar substancialmente a mortalidade.
 
-**Choque Séptico** é um subconjunto da sepse em que alterações circulatórias, celulares e metabólicas são profundas o suficiente para aumentar substancialmente a mortalidade.
+**Critérios Clínicos (Obrigatórios):**  
+1. Necessidade de **Vasopressor** para manter PAM ≥ 65 mmHg.  
+2. **Lactato > 2 mmol/L** (18 mg/dL) mesmo após ressuscitação volêmica adequada.  
 
-**Critérios Clínicos:**
-1.  Necessidade de **Vasopressor** para manter PAM ≥ 65 mmHg.
-2.  **Lactato > 2 mmol/L** (18 mg/dL) mesmo após ressuscitação volêmica adequada.
+*Nota:* Se tiver apenas a infecção com disfunção de órgão, é Sepse. Se precisar de droga para pressão ou o lactato subir após o soro, é CHOQUE.
 
 ---
 
 ## 🧬 BLOCO 5 — FISIOPATOLOGIA PROFUNDA
 
-A base é a **Resposta Inflamatória Sistêmica Desregulada**:
+A base é a Resposta Inflamatória Sistêmica Desregulada:
 
-1.  **Vasodilatação Maciça:** PAMPs (ex: LPS de Gram negativos) ativam macrófagos → liberação de NO (Óxido Nítrico) → relaxamento da musculatura lisa vascular.
-2.  **Aumento da Permeabilidade Capilar:** Citocinas (TNF-α, IL-1) quebram o glicocálix endotelial → o plasma "vaza" para o terceiro espaço.
-3.  **Microtrombose:** Ativação da cascata de coagulação + inibição da fibrinólise → microtrombos entopem os capilares.
-4.  **Disfunção Mitocondrial (Hibernação Celular):** A célula não consegue usar o oxigênio mesmo que ele chegue (Hipóxia Citopática).
+**1. Vasodilatação Sistêmica (O grande vilão):**  
+Padrão molecular (PAMPs/DAMPs) → Ativação de Macrófagos → Liberação de **Óxido Nítrico (NO)**.  
+O NO promove relaxamento da musculatura lisa vascular → Queda da Resistência Vascular Sistêmica (RVS).
+
+**2. Aumento da Permeabilidade Capilar:**  
+Citocinas (TNF-α, IL-1) quebram o **Glicocálix** endotelial.  
+Soro e proteínas vazam para o interstício → Hipovolemia relativa + Edema.
+
+**3. Disfunção Mitocondrial (Hibernação Celular):**  
+O oxigênio chega, mas a mitocôndria não consegue usá-lo devido ao estresse oxidativo.  
+Célula muda para metabolismo anaeróbio → Produção excessiva de **Lactato**.
+
+**4. Coagulopatia:**  
+Ativação da cascata de coagulação + Inibição da fibrinólise → Microtrombos → CID.
 
 ---
 
 ## 🩺 BLOCO 6 — INTEGRAÇÃO CLÍNICA & TEMPORAL
 
-*   **Fase Precoce (Choque Quente):** Extremidades quentes, tempo de enchimento capilar rápido, taquicardia. O corpo tenta compensar aumentando o débito cardíaco.
-*   **Fase Tardia (Choque Frio):** Extremidades frias, cianose, lidevo reticular. O coração começa a falhar (miocardiopatia da sepse).
-*   **Sinais de Alvo:** Oligúria (insuficiência renal), confusão mental (encefalopatia séptica), taquipneia (acidose metabólica compensada).
+*   **Fase Precoce ("Choque Quente"):** Pele quente, extremidades rosadas, tempo de enchimento capilar rápido, taquicardia. (RVS está baixa, mas o Débito Cardíaco ainda tenta compensar).
+*   **Fase Tardia ("Choque Frio"):** Pele fria, pálida, cianótica, mármore (livedo). Vasoconstrição periférica extrema tentando salvar o cérebro.
+*   **Disfunções de Órgãos (qSOFA / SOFA):** 
+    *   **Cérebro:** Confusão mental, agitação.
+    *   **Rim:** Oligúria (fluxo renal reduzido).
+    *   **Pulmão:** Hipoxemia (vazamento capilar pulmonar/SARA).
 
 ---
 
 ## 🧠 BLOCO 7 — RACIOCÍNIO DIAGNÓSTICO & EXAMES
 
-*   **Lactato:** Marcador de hipóxia tecidual e metabolismo anaeróbio.
-*   ** qSOFA (Triagem rápida):** FR ≥ 22, Alteração de consciência, PAS ≤ 100. (Lembre-se: não define mais sepse, monitora risco).
-*   **SOFA Score:** Avalia 6 sistemas (Resp, Coag, Hepático, CV, SNC, Renal). Aumento de ≥ 2 pontos = Sepse.
-*   **Culturas:** Devem ser colhidas ANTES do antibiótico (se não atrasar > 45 min).
+O diagnóstico é **CLÍNICO**. Não espere culturas para agir!
+
+1. **Lactato:** Marcador de hipoperfusão e estresse metabólico. (S=alta, E=baixa).  
+2. **Hemoculturas:** Colher 2 pares (aeróbio/anaeróbio) de sítios diferentes ANTES do ATB.  
+3. **Procalcitonina:** Ajuda a diferenciar causa bacteriana vs viral/inflamatória.  
+4. **Ecocardio à beira leito (VExUS/POCUS):** Avaliar se o coração está aguentando e se há resposta a volume.
 
 ---
 
 ## ⚖️ BLOCO 8 — DIAGNÓSTICOS DIFERENCIAIS
 
-| Condição | Diferencial Chave | Achado na Sepse |
+| Condição | Sinal-chave | Como diferenciar |
 | :--- | :--- | :--- |
-| **Choque Hipovolêmico** | História de sangramento/desidratação | Tem foco infeccioso evidente |
-| **Choque Cardiogênico** | PVC alta, Congestão pulmonar (B3) | PVC costuma estar baixa/normal inicial |
-| **Choque Obstrutivo** | Turgência jugular, desvio de traqueia | Sem sinais de obstrução mecânica |
+| **Choque Hipovolêmico** | Mucosas secas, turgor reduzido | PVC baixa, responde bem a volume |
+| **Choque Cardiogênico** | Estase jugular, estertores crepitantes | IC baixa, congestão pulmonar |
+| **Choque Anafilático** | Estridor, placas urticárias | História de exposição a alérgeno |
+| **Choque Neurogênico** | Bradicardia + Hipotensão | Trauma medular, pele quente e seca |
 
 ---
 
 ## 💊 BLOCO 9 — CONDUTA & TOMADA DE DECISÃO
 
-**Bundle de 1 Hora (Surviving Sepsis Campaign):**
+**Protocolo de 1 Hora (Surviving Sepsis Campaign):**
 
-1.  **Medir Lactato:** Re-medir se > 2.
-2.  **Culturas:** Sangue (2 pares), urina, secreções.
-3.  **Antibiótico de Amplo Espectro:** Na VEIA, agora!
-4.  **Cristaloides:** 30 mL/kg se hipotensão ou lactato ≥ 4.
-5.  **Vasopressores:** Se PAM < 65 após volume. **Droga de escolha: Noradrenalina.**
+1.  **Medir Lactato:** Re-medir se o inicial for > 2.
+2.  **Culturas:** Colher antes do antibiótico (mas não atrasar o ATB por isso!).
+3.  **Antibiótico de Amplo Espectro:** Na VEIA, na PRIMEIRA HORA. (Cada hora de atraso aumenta mortalidade em 8%).
+4.  **Cristaloides:** 30 ml/kg se hipotenso ou lactato ≥ 4. (Cuidado com sobrecarga!).
+5.  **Vasopressor (Noradrenalina):** Se PAM < 65 após ou durante o volume. É a droga de escolha.
 
 ---
 
 ## 🎯 BLOCO 10 — PEGADINHAS & ERROS DE PRECEPTORIA
 
-*   **Erro que mata:** Esperar acabar os 30ml/kg de soro para começar a Noradrenalina. Se o paciente está chocado, inicie a Nora precocemente (pode ser em acesso periférico temporário).
-*   **Pegadinha de Prova:** Achar que precisa de febre para ser sepse. Pacientes idosos e imunossuprimidos frequentemente fazem **hipotermia**.
-*   **Cuidado:** O isolamento do germe na cultura ocorre em apenas 30-50% dos casos. Não descarte o diagnóstico se a cultura vier negativa.
+*   **Erro que mata:** Esperar acabar os 30ml/kg de soro para iniciar a Nora. **Mentira!** Se a pressão está crítica (PAM < 50), inicie a Nora em acesso periférico enquanto o soro corre.
+*   **Pegadinha de Prova:** "Sepsis-3 eliminou o termo Sepse Grave". Agora é só Sepse ou Choque Séptico.
+*   **O erro do Lactato:** Lactato alto nem sempre é falta de oxigênio; pode ser excesso de adrenalina endógena. Mas, na prova, Lactato Alto = Má Perfusão.
 
 ---
 
 ## 🔁 BLOCO 11 — ACTIVE RECALL
 
-1.  Quais são os dois critérios que definem choque séptico no Sepsis-3?
-2.  Qual a primeira droga vasoativa de escolha?
-3.  Por que o lactato aumenta no choque?
-4.  Qual o volume de cristaloide recomendado na ressuscitação inicial?
+1. Qual a droga de primeira escolha para o choque séptico?
+2. Por que o choque séptico tem extremidades quentes inicialmente?
+3. Quais os dois critérios clínicos para definir Choque Séptico no Sepsis-3?
+4. Qual a meta de PAM no tratamento?
 
 ---
 
 ## 📝 BLOCO 12 — QUESTÃO COMENTADA
 
-**(ENARE)** Paciente de 72 anos, admitido com tosse e febre. PA 80/40 mmHg, FC 120 bpm, FR 28 irpm, SatO2 88%. Após 2 litros de Ringer Lactato, a PA mantém-se 82/44 mmHg e o Lactato é de 4,5 mmol/L. Qual a classificação e conduta imediata?
+**Questão (ENARE):** Paciente 75 anos, pneumonia, PA 80/40 mmHg, FC 120 bpm, SatO2 88%. Após 2 litros de Ringer Lactato, PA mantém-se 85/45 mmHg e o lactato retorna 4,5 mmol/L. Qual a próxima conduta e o diagnóstico?
 
-A) Sepse; manter observação.
-B) Choque Séptico; iniciar Noradrenalina e Antibiótico.
-C) Choque Hipovolêmico; mais 2 litros de soro.
-D) Síndrome da Resposta Inflamatória; Corticoide.
+A) Hidratação extra 30ml/kg; Sepse.
+B) Iniciar Noradrenalina; Choque Séptico.
+C) Iniciar Dobutamina; Choque Cardiogênico.
+D) Esperar culturas para iniciar ATB; Sepse Grave.
 
-**Gabarito: B.**
-*Justificativa:* O paciente tem foco infeccioso, hipotensão refratária a volume e lactato elevado. Isso preenche os critérios de choque séptico. A conduta é suporte pressórico e erradicação do foco.
+**Gabarito: B**
+**Justificativa:** O paciente recebeu volume, não atingiu meta de PAM e mantém lactato > 2. Isso preenche rigorosamente os critérios de Choque Séptico. A conduta imediata é vasopressor (Nora).
 
 ---
 
 ## 🧩 BLOCO 13 — RESUMO FEYNMAN
 
-O choque séptico é quando uma infecção faz a pressão cair tanto que o soro e os remédios não conseguem levar oxigênio para os órgãos, e as células começam a "morrer de fome" (metabolismo de lactato). **Frase de ouro:** "Volume para encher o tanque, Nora para fechar a torneira e Antibiótico para matar o cupim".
+O Choque Séptico é como uma **represa que furou em mil lugares (vazamento capilar)** enquanto as **comportas de saída abriram demais (vasodilatação)**. O nível da água (pressão) cai tanto que as turbinas (órgãos) param de girar. O tratamento é fechar as comportas (Noradrenalina), tentar tampar os furos (Antibiótico) e repor o nível da água (Soro).
 
 ---
 
@@ -129,23 +149,25 @@ O choque séptico é quando uma infecção faz a pressão cair tanto que o soro 
 
 ```
 Choque Séptico
-├── Causa: Resposta imune desregulada à infecção
-├── Fisiopato: Vasodilatação (NO) + Leak Capilar + Microtrombos
-├── Diagnóstico (Sepsis-3)
-│   ├── Precisa de Vasopressor (PAM ≥ 65)
+├── Causa: Resposta imune desregulada → Óxido Nítrico ↑↑
+├── Diagnóstico:
+│   ├── Infecção + Vasopressor p/ PAM ≥ 65
 │   └── Lactato > 2 mmol/L (pós-volume)
-├── Conduta (1 hora)
+├── Fisiopato:
+│   ├── Vasodilatação (RVS ↓)
+│   ├── Vazamento Capilar (Edema)
+│   └── Microtrombos (CID)
+├── Conduta (1h):
 │   ├── Lactato + Culturas
-│   ├── ATB Amplo Espectro
-│   ├── Cristaloide (30ml/kg)
-│   └── Noradrenalina (Drog-escolha)
-└── Alvo: PAM > 65 e clareamento de lactato
+│   ├── Antibiótico (Amplo espectro)
+│   └── Cristalóide (30ml/kg) → Noradrenalina
+└── Alarme: Tempo é Tecido!
 ```
 
 ---
 
 ## 🚀 BLOCO 15 — PRÓXIMOS PASSOS
 
-*   Estudar **Curva de Lactato** (Lactate Clearance).
-*   Revisar **Drogas Vasoativas** (Nora vs Vasopressina vs Dobuta).
-*   Próximo tema sugerido: **Manejo da Via Aérea na Sepse** (Cuidado com a queda da PA na indução!). Meta-análise de referência: *Surviving Sepsis Campaign 2021*.
+*   Estudar **Escore SOFA** (para diferenciar infecção de sepse).
+*   Revisar **Drogas Vasoativas** (Nora vs Vasopressina vs Adrenalina).
+*   Próximo desafio sugerido: **Disfunção Miocárdica na Sepse** (quando usar Dobutamina?).
