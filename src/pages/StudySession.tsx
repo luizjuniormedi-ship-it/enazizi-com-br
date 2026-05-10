@@ -228,9 +228,12 @@ const StudySession = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Unmount: track completion (>=3 questions) or abandonment
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
+      streamAbortRef.current?.abort();
+      reinforcementAbortRef.current?.abort();
       if (firstQuestionTrackedRef.current && !sessionCompleteTrackedRef.current) {
         const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
         const completed = performance.totalQuestions >= 3;
