@@ -1,23 +1,22 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReactMarkdown from "react-markdown";
-import { ChevronRight, Check, HelpCircle } from "lucide-react";
+import { ChevronRight, Check, HelpCircle, Activity, Stethoscope, AlertTriangle, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface ProgressiveBlocksProps {
   content: string;
 }
 
 /**
- * Splits a Tutor V2 response by "## " headings (typical of the 15-block protocol)
- * and reveals one block at a time. Between blocks, asks the student if they want
- * to advance or have a doubt — only advances after explicit confirmation.
+ * Splits a Tutor V2 response by "## " headings and detects JSON blocks for structured UI.
  */
 export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
-  const blocks = useMemo(() => splitBlocks(content), [content]);
+  const parsedContent = useMemo(() => parseContent(content), [content]);
   const [revealed, setRevealed] = useState(1);
 
-  if (blocks.length <= 1) {
+  if (parsedContent.length <= 1 && typeof parsedContent[0] === 'string') {
     return (
       <div className="prose prose-invert prose-sm max-w-none">
         <ReactMarkdown>{content}</ReactMarkdown>
@@ -25,9 +24,11 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
     );
   }
 
-  const visible = blocks.slice(0, revealed);
-  const hasMore = revealed < blocks.length;
-  const currentTitle = extractTitle(blocks[revealed - 1]);
+  const visible = parsedContent.slice(0, revealed);
+  const hasMore = revealed < parsedContent.length;
+  
+  const lastVisible = visible[visible.length - 1];
+  const currentTitle = typeof lastVisible === 'string' ? extractTitle(lastVisible) : "este quadro clínico";
 
   const focusInput = () => {
     const el = document.querySelector<HTMLTextAreaElement>(
@@ -40,17 +41,22 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <AnimatePresence initial={false}>
-        {visible.map((block, idx) => (
+        {visible.map((item, idx) => (
           <motion.div
             key={idx}
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="prose prose-invert prose-sm max-w-none border-l-2 border-indigo-500/30 pl-4"
           >
-            <ReactMarkdown>{block}</ReactMarkdown>
+            {typeof item === 'string' ? (
+              <div className="prose prose-invert prose-sm max-w-none border-l-2 border-indigo-500/30 pl-4 py-1">
+                <ReactMarkdown>{item}</ReactMarkdown>
+              </div>
+            ) : (
+              <StructuredBoard data={item} />
+            )}
           </motion.div>
         ))}
       </AnimatePresence>
@@ -60,42 +66,44 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
           key={`checkpoint-${revealed}`}
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-5 p-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 ring-1 ring-white/5"
+          className="mt-8 p-6 rounded-3xl bg-indigo-500/5 border border-indigo-500/20 ring-1 ring-white/5 shadow-2xl backdrop-blur-sm"
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400/80">
-              Checkpoint • Bloco {revealed} de {blocks.length}
-            </span>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">
+                Checkpoint Cognitivo • {revealed}/{parsedContent.length}
+              </span>
+            </div>
           </div>
-          <p className="text-[13px] text-slate-200 leading-relaxed mb-3">
-            Antes de seguir, ficou alguma <strong className="text-indigo-300">dúvida sobre {currentTitle}</strong>?
-            Se quiser, me pergunte agora — ou avance para o próximo bloco.
+          <p className="text-[14px] text-slate-200 leading-relaxed mb-5">
+            Deseja aprofundar em <strong className="text-indigo-300 font-bold">{currentTitle}</strong> ou podemos prosseguir com o raciocínio clínico?
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <Button
               size="sm"
               variant="ghost"
               onClick={focusInput}
-              className="h-8 px-3 text-[10px] font-black uppercase tracking-tighter gap-1.5 bg-white/5 hover:bg-white/10 text-slate-200 border border-white/10"
+              className="h-10 px-4 text-[11px] font-black uppercase tracking-widest gap-2 bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 rounded-2xl"
             >
-              <HelpCircle className="h-3.5 w-3.5" /> Tenho dúvida
+              <HelpCircle className="h-4 w-4" /> Tenho uma dúvida
             </Button>
             <Button
               size="sm"
-              onClick={() => setRevealed((n) => Math.min(blocks.length, n + 1))}
-              className="h-8 px-4 text-[10px] font-black uppercase tracking-tighter gap-1.5 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border border-indigo-500/30"
+              onClick={() => setRevealed((n) => Math.min(parsedContent.length, n + 1))}
+              className="h-10 px-5 text-[11px] font-black uppercase tracking-widest gap-2 bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-400/30 rounded-2xl shadow-lg shadow-indigo-600/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              Avançar <ChevronRight className="h-3.5 w-3.5" />
+              Avançar <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
         </motion.div>
       ) : (
-        <div className="flex items-center justify-between pt-2 border-t border-white/5">
-          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400/70">
-            Bloco {revealed} de {blocks.length}
+        <div className="flex items-center justify-between pt-6 border-t border-white/5 mt-4">
+          <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400/50">
+            Fim da Transmissão Cognitiva
           </span>
-          <span className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-400/80">
-            <Check className="h-3 w-3" /> Aula completa
+          <span className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-emerald-400">
+            <Check className="h-3 w-3" /> Aula Completa
           </span>
         </div>
       )}
@@ -103,16 +111,131 @@ export default function ProgressiveBlocks({ content }: ProgressiveBlocksProps) {
   );
 }
 
-function splitBlocks(content: string): string[] {
+function StructuredBoard({ data }: { data: any }) {
+  if (data.type === 'clinical_flow') {
+    return (
+      <div className="my-6 p-6 rounded-[2rem] bg-slate-950/80 border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+          <Activity className="h-12 w-12 text-indigo-500" />
+        </div>
+        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-6 flex items-center gap-2">
+          <Stethoscope className="h-4 w-4" /> {data.payload.title || "Fluxograma Clínico"}
+        </h4>
+        <div className="space-y-4">
+          {data.payload.nodes.map((node: any, idx: number) => (
+            <div key={node.id} className="flex flex-col items-center">
+              <div className={cn(
+                "p-4 rounded-2xl border w-full max-w-md transition-all",
+                node.kind === 'decision' ? "bg-amber-500/10 border-amber-500/30 text-amber-200" :
+                node.kind === 'action' ? "bg-indigo-500/10 border-indigo-500/30 text-indigo-200" :
+                "bg-emerald-500/10 border-emerald-500/30 text-emerald-200"
+              )}>
+                <p className="text-[13px] font-bold text-center leading-snug">{node.label}</p>
+                {node.kind === 'decision' && <p className="text-[9px] uppercase tracking-widest text-amber-500/70 font-black mt-2 text-center">Decisão Clínica</p>}
+              </div>
+              {idx < data.payload.nodes.length - 1 && (
+                <div className="h-6 w-0.5 bg-gradient-to-b from-slate-700 to-transparent my-1" />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (data.type === 'differential_diagnosis') {
+    return (
+      <div className="my-6 p-6 rounded-[2rem] bg-slate-950/80 border border-white/10 shadow-2xl">
+        <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-rose-400 mb-2 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" /> {data.payload.title || "Diagnóstico Diferencial"}
+        </h4>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-6">Queixa: {data.payload.chief_complaint}</p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {data.payload.items.map((item: any) => (
+            <div key={item.name} className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[13px] font-black text-white">{item.name}</span>
+                <span className={cn(
+                  "text-[9px] font-black uppercase px-2 py-0.5 rounded-full",
+                  item.severity === 'critica' ? "bg-red-500/20 text-red-400" : "bg-indigo-500/20 text-indigo-400"
+                )}>
+                  {item.probability ? `${Math.round(item.probability * 100)}%` : item.severity}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {item.pros?.slice(0, 2).map((pro: string, i: number) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <div className="h-1 w-1 rounded-full bg-emerald-500 mt-1.5" />
+                    <p className="text-[11px] text-slate-400 leading-tight">{pro}</p>
+                  </div>
+                ))}
+              </div>
+              {item.doNotMiss && (
+                <div className="mt-3 flex items-center gap-1.5 text-rose-500">
+                  <ShieldAlert className="h-3 w-3" />
+                  <span className="text-[8px] font-black uppercase tracking-tighter">Do Not Miss</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return <pre className="text-[10px] text-slate-500">{JSON.stringify(data, null, 2)}</pre>;
+}
+
+function parseContent(content: string): (string | any)[] {
   if (!content) return [];
-  const lines = content.split(/\r?\n/);
+  
+  // First, extract JSON blocks
+  const result: (string | any)[] = [];
+  let remaining = content;
+  
+  // Pattern to find JSON blocks starting with { and ending with }
+  // We specifically look for the types defined in enazizi-prompt
+  const jsonRegex = /\{[\s\n]*"type":[\s\n]*"(clinical_flow|differential_diagnosis|pharmacology_compare)"[\s\S]*?\}/g;
+  
+  let match;
+  let lastIdx = 0;
+  
+  while ((match = jsonRegex.exec(content)) !== null) {
+    // Add preceding text
+    const textBefore = content.slice(lastIdx, match.index).trim();
+    if (textBefore) {
+      result.push(...splitTextIntoBlocks(textBefore));
+    }
+    
+    // Add JSON block
+    try {
+      result.push(JSON.parse(match[0]));
+    } catch (e) {
+      result.push(match[0]); // fallback to raw if parse fails
+    }
+    
+    lastIdx = match.index + match[0].length;
+  }
+  
+  // Add remaining text
+  const textAfter = content.slice(lastIdx).trim();
+  if (textAfter) {
+    result.push(...splitTextIntoBlocks(textAfter));
+  }
+  
+  return result;
+}
+
+function splitTextIntoBlocks(text: string): string[] {
+  const lines = text.split(/\r?\n/);
   const blocks: string[] = [];
   let current: string[] = [];
 
   const flush = () => {
     if (current.length) {
-      const text = current.join("\n").trim();
-      if (text) blocks.push(text);
+      const t = current.join("\n").trim();
+      if (t) blocks.push(t);
       current = [];
     }
   };
