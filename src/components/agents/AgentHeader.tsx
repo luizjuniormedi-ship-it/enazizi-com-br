@@ -108,6 +108,11 @@ const AgentHeader = memo(({
                 <Upload className="h-4 w-4 mr-2" /> {isUploading ? "Enviando..." : "Enviar material"}
               </DropdownMenuItem>
             )}
+            {isAdmin && onToggleDiagnostic && (
+              <DropdownMenuItem onClick={onToggleDiagnostic} className="text-primary font-bold">
+                <Activity className="h-4 w-4 mr-2" /> Diagnóstico Real
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
