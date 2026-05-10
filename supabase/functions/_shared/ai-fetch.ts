@@ -26,6 +26,7 @@ interface AiFetchOptions {
   stream?: boolean;
   tools?: any[];
   tool_choice?: any;
+  response_format?: any;
   maxRetries?: number;
   timeoutMs?: number;
   maxTokens?: number;
