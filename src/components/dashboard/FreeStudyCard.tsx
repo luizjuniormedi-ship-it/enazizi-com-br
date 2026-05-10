@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 
 const MODULES = [
-  { label: "Tutor IA", path: "/dashboard/mentor", icon: MessageSquare, color: "text-primary" },
+  { label: "Tutor IA", path: "/dashboard/tutor-v2", icon: MessageSquare, color: "text-primary" },
   { label: "Prova Prática", path: "/dashboard/prova-pratica", icon: Stethoscope, color: "text-blue-500" },
   { label: "Flashcards", path: "/dashboard/flashcards", icon: Layers, color: "text-violet-500" },
   { label: "Simulados", path: "/dashboard/simulados", icon: ClipboardList, color: "text-emerald-500" },
