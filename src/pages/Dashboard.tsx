@@ -23,6 +23,10 @@ import { EnaflixRecommendationCard } from "@/components/enaflix/EnaflixRecommend
 import AchievementToast from "@/components/gamification/AchievementToast";
 import MissionControlSkeleton from "@/components/mission-control/MissionControlSkeleton";
 import { UnifiedMissionHero } from "@/components/dashboard/UnifiedMissionHero";
+import { MascotAvatar } from "@/components/mascot/MascotAvatar";
+import { MascotBubble } from "@/components/mascot/MascotBubble";
+import { useMascotState } from "@/components/mascot/useMascotState";
+
 
 const ProgressOverview = lazy(() => import("@/components/dashboard/ProgressOverview"));
 const MedicalMasteryDashboard = lazy(() => import("@/components/MedicalMasteryDashboard").then(m => ({ default: m.MedicalMasteryDashboard })));
