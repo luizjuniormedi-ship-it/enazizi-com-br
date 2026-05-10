@@ -10,7 +10,8 @@ import {
   Brain, 
   HelpCircle,
   Volume2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Download
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
