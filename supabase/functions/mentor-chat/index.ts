@@ -134,15 +134,22 @@ serve(async (req) => {
         console.log(`[mentor-chat] RETRIEVAL_STARTED (RAG) id=${requestId}`);
         const retrievalStart = Date.now();
         
-        // Use custom RAG with match_rag_chunks
-        const queryEmbedding = await createEmbedding(lastUserMessage);
-        const { data: chunks, error: rpcError } = await supabase.rpc("match_rag_chunks", {
-          query_embedding: queryEmbedding,
-          match_threshold: 0.5,
-          match_count: 5
-        });
-        
-        if (rpcError) throw rpcError;
+        // Timeout for RAG (8s as requested)
+        const retrievalPromise = (async () => {
+          const queryEmbedding = await createEmbedding(lastUserMessage);
+          const { data: chunks, error: rpcError } = await supabase.rpc("match_rag_chunks", {
+            query_embedding: queryEmbedding,
+            match_threshold: 0.5,
+            match_count: 5
+          });
+          if (rpcError) throw rpcError;
+          return chunks;
+        })();
+
+        const chunks = await Promise.race([
+          retrievalPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000))
+        ]) as any[];
         
         if (chunks && chunks.length > 0) {
           ragContext = chunks.map((c: any) => c.content).join("\n\n");
@@ -169,10 +176,11 @@ serve(async (req) => {
           });
         }
       } catch (e) {
-        console.warn(`[mentor-chat] RAG retrieval failed/timed out id=${requestId}:`, e.message);
+        console.warn(`[mentor-chat] RAG_RETRIEVAL_FAILED id=${requestId} error=${e.message}`);
         if (debugOnlyRAG) {
           return json({ ok: false, error: "rag_failed", message: e.message, requestId }, 500);
         }
+        // Continue without RAG
       }
     }
 
