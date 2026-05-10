@@ -1,8 +1,13 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { aiFetch } from "../_shared/ai-fetch.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
+
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const PRIMARY_MODEL = "google/gemini-3-flash-preview";
+const FALLBACK_MODEL = "google/gemini-2.5-flash";
+const AI_TIMEOUT_MS = 30_000;
+const AI_MAX_TOKENS = 4096;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +15,356 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+type TutorContext = {
+  mission?: { title?: string } | null;
+  detected_gaps?: string[] | null;
+  fsrs?: { pending_reviews?: number } | null;
+  cognitive_load?: number | string | null;
+};
+
+type ProviderConfig = {
+  provider: "lovable-ai";
+  model: string;
+};
+
+type ProviderAttempt = ProviderConfig & {
+  success: boolean;
+  status?: number;
+  code?: string;
+  message?: string;
+  latency_ms: number;
+};
+
+type ProviderResult = {
+  content: string;
+  provider: string;
+  model: string;
+  fallbackUsed: boolean;
+  attempts: ProviderAttempt[];
+  latencyMs: number;
+};
+
+function getGatewayKey() {
+  return Deno.env.get("LOVABLE_API_KEY") ||
+    Deno.env.get("AI_GATEWAY_API_KEY") ||
+    Deno.env.get("LOVABLE_AI_GATEWAY_KEY") ||
+    "";
+}
+
+function getEnvPresence() {
+  return {
+    LOVABLE_API_KEY: Boolean(Deno.env.get("LOVABLE_API_KEY")),
+    OPENAI_API_KEY: Boolean(Deno.env.get("OPENAI_API_KEY")),
+    GEMINI_API_KEY: Boolean(Deno.env.get("GEMINI_API_KEY")),
+    AI_GATEWAY_API_KEY: Boolean(Deno.env.get("AI_GATEWAY_API_KEY")),
+    LOVABLE_AI_GATEWAY_KEY: Boolean(Deno.env.get("LOVABLE_AI_GATEWAY_KEY")),
+  };
+}
+
+function extractProviderError(status: number | undefined, bodyText: string, err?: unknown) {
+  const fallbackMessage = err instanceof Error ? err.message : bodyText || "Provider unavailable";
+  let code = status ? `HTTP_${status}` : "AI_PROVIDER_ERROR";
+  let message = fallbackMessage;
+
+  try {
+    const parsed = JSON.parse(bodyText);
+    const providerError = parsed?.error || parsed;
+    code = providerError?.code || providerError?.type || code;
+    message = providerError?.message || parsed?.message || message;
+  } catch {
+    if (status === 401 || status === 403) code = "AI_AUTH_ERROR";
+    else if (status === 402) code = "AI_QUOTA_EXHAUSTED";
+    else if (status === 404) code = "AI_MODEL_NOT_FOUND";
+    else if (status === 429) code = "AI_RATE_LIMITED";
+    else if (status && status >= 500) code = "AI_PROVIDER_UNAVAILABLE";
+  }
+
+  if (err instanceof DOMException && err.name === "AbortError") {
+    code = "TIMEOUT";
+    message = "AI provider request timed out";
+  }
+
+  return { code, message: String(message).slice(0, 300) };
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function recordTutorEvent(
+  supabase: any,
+  input: {
+    userId: string;
+    sessionId: string;
+    topic?: string | null;
+    eventType: string;
+    outcome?: string;
+    payload: Record<string, unknown>;
+    relatedMessageId?: string | null;
+  }
+) {
+  try {
+    const { error } = await supabase.from("tutor_events").insert({
+      user_id: input.userId,
+      conversation_id: input.sessionId,
+      topic: input.topic || null,
+      event_type: input.eventType,
+      outcome: input.outcome || null,
+      related_message_id: input.relatedMessageId || null,
+      payload: input.payload,
+    });
+    if (error) console.warn("[TUTOR_V2_EVENT_LOG_FAILED]", input.eventType, error.message);
+  } catch (eventError) {
+    console.warn("[TUTOR_V2_EVENT_LOG_FAILED]", input.eventType, eventError instanceof Error ? eventError.message : String(eventError));
+  }
+}
+
+async function callProvider(
+  provider: ProviderConfig,
+  gatewayKey: string,
+  messages: Array<{ role: string; content: string }>,
+  requestId: string,
+): Promise<{ content?: string; attempt: ProviderAttempt }> {
+  const attemptStart = Date.now();
+
+  try {
+    const response = await fetchWithTimeout(
+      AI_GATEWAY_URL,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${gatewayKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: provider.model,
+          messages,
+          max_tokens: AI_MAX_TOKENS,
+        }),
+      },
+      AI_TIMEOUT_MS,
+    );
+
+    const latency_ms = Date.now() - attemptStart;
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      const parsedError = extractProviderError(response.status, responseText);
+      console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
+        provider: provider.provider,
+        model: provider.model,
+        status: response.status,
+        code: parsedError.code,
+        message: parsedError.message,
+        requestId,
+      });
+      return { attempt: { ...provider, success: false, status: response.status, ...parsedError, latency_ms } };
+    }
+
+    let parsed: any;
+    try {
+      parsed = JSON.parse(responseText);
+    } catch {
+      const parsedError = { code: "AI_INVALID_JSON", message: "AI provider returned invalid JSON" };
+      console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
+        provider: provider.provider,
+        model: provider.model,
+        status: response.status,
+        code: parsedError.code,
+        message: parsedError.message,
+        requestId,
+      });
+      return { attempt: { ...provider, success: false, status: response.status, ...parsedError, latency_ms } };
+    }
+
+    const content = parsed?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== "string") {
+      const parsedError = { code: "AI_EMPTY_RESPONSE", message: "AI provider returned no assistant content" };
+      console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
+        provider: provider.provider,
+        model: provider.model,
+        status: response.status,
+        code: parsedError.code,
+        message: parsedError.message,
+        requestId,
+      });
+      return { attempt: { ...provider, success: false, status: response.status, ...parsedError, latency_ms } };
+    }
+
+    return { content, attempt: { ...provider, success: true, status: response.status, latency_ms } };
+  } catch (err) {
+    const latency_ms = Date.now() - attemptStart;
+    const parsedError = extractProviderError(undefined, "", err);
+    console.error("[TUTOR_V2_AI_PROVIDER_ERROR]", {
+      provider: provider.provider,
+      model: provider.model,
+      status: undefined,
+      code: parsedError.code,
+      message: parsedError.message,
+      requestId,
+    });
+    return { attempt: { ...provider, success: false, ...parsedError, latency_ms } };
+  }
+}
+
+function buildEmergencyTemplate(topic: string, userMessage: string) {
+  const focus = topic || userMessage || "o tema informado";
+  return `Não consegui acessar o modelo de IA agora, mas posso estruturar seu estudo com base em ${focus}.
+
+Introdução: vamos organizar o tema em uma sequência segura para revisão médica.
+
+Explicação leiga: pense no problema como uma cadeia de causa, mecanismo, manifestação clínica e conduta.
+
+Técnica: identifique definição, fisiopatologia, quadro clínico, diagnóstico, tratamento e pegadinhas de prova.
+
+Active recall:
+1. Qual é a definição central de ${focus}?
+2. Qual achado clínico muda a conduta?
+3. Qual erro comum a banca costuma explorar?
+
+Próxima ação: tente novamente em instantes para eu aprofundar com raciocínio adaptativo completo.`;
+}
+
+async function resolveTutorAiResponse(
+  supabase: any,
+  input: {
+    messages: Array<{ role: string; content: string }>;
+    userId: string;
+    sessionId: string;
+    topic: string;
+    userMessage: string;
+    requestId: string;
+  }
+): Promise<ProviderResult> {
+  const gatewayKey = getGatewayKey();
+  const envPresence = getEnvPresence();
+  console.log("[TUTOR_V2_AI_ENV_STATUS]", envPresence);
+
+  if (!gatewayKey) {
+    await recordTutorEvent(supabase, {
+      userId: input.userId,
+      sessionId: input.sessionId,
+      topic: input.topic,
+      eventType: "ai_provider_error",
+      outcome: "not_configured",
+      payload: {
+        provider: "lovable-ai",
+        model: PRIMARY_MODEL,
+        error_code: "AI_PROVIDER_NOT_CONFIGURED",
+        latency_ms: 0,
+        fallback_used: true,
+        success: false,
+        env_presence: envPresence,
+        request_id: input.requestId,
+      },
+    });
+    return {
+      content: buildEmergencyTemplate(input.topic, input.userMessage),
+      provider: "template",
+      model: "emergency_template_response",
+      fallbackUsed: true,
+      attempts: [{ provider: "lovable-ai", model: PRIMARY_MODEL, success: false, code: "AI_PROVIDER_NOT_CONFIGURED", message: "O provedor de IA do Tutor não está configurado.", latency_ms: 0 }],
+      latencyMs: 0,
+    };
+  }
+
+  const providers: ProviderConfig[] = [
+    { provider: "lovable-ai", model: PRIMARY_MODEL },
+    { provider: "lovable-ai", model: FALLBACK_MODEL },
+  ];
+
+  const attempts: ProviderAttempt[] = [];
+  const totalStart = Date.now();
+
+  for (const provider of providers) {
+    const result = await callProvider(provider, gatewayKey, input.messages, input.requestId);
+    attempts.push(result.attempt);
+
+    if (!result.attempt.success) {
+      await recordTutorEvent(supabase, {
+        userId: input.userId,
+        sessionId: input.sessionId,
+        topic: input.topic,
+        eventType: "ai_provider_error",
+        outcome: result.attempt.code || "provider_error",
+        payload: {
+          provider: provider.provider,
+          model: provider.model,
+          error_code: result.attempt.code,
+          latency_ms: result.attempt.latency_ms,
+          fallback_used: true,
+          success: false,
+          request_id: input.requestId,
+        },
+      });
+      continue;
+    }
+
+    const fallbackUsed = attempts.length > 1;
+    if (fallbackUsed) {
+      await recordTutorEvent(supabase, {
+        userId: input.userId,
+        sessionId: input.sessionId,
+        topic: input.topic,
+        eventType: "ai_provider_recovered",
+        outcome: "fallback_model_success",
+        payload: {
+          provider: provider.provider,
+          model: provider.model,
+          latency_ms: result.attempt.latency_ms,
+          fallback_used: true,
+          success: true,
+          request_id: input.requestId,
+        },
+      });
+    }
+
+    return {
+      content: result.content!,
+      provider: provider.provider,
+      model: provider.model,
+      fallbackUsed,
+      attempts,
+      latencyMs: Date.now() - totalStart,
+    };
+  }
+
+  await recordTutorEvent(supabase, {
+    userId: input.userId,
+    sessionId: input.sessionId,
+    topic: input.topic,
+    eventType: "ai_provider_fallback_used",
+    outcome: "emergency_template_response",
+    payload: {
+      provider: "template",
+      model: "emergency_template_response",
+      error_code: attempts.at(-1)?.code || "AI_PROVIDER_UNAVAILABLE",
+      latency_ms: Date.now() - totalStart,
+      fallback_used: true,
+      success: true,
+      request_id: input.requestId,
+    },
+  });
+
+  return {
+    content: buildEmergencyTemplate(input.topic, input.userMessage),
+    provider: "template",
+    model: "emergency_template_response",
+    fallbackUsed: true,
+    attempts,
+    latencyMs: Date.now() - totalStart,
+  };
+}
+
 serve(async (req) => {
-  console.log("[TUTOR_V2_EDGE_RECEIVED]", { method: req.method, url: req.url });
+  const requestId = crypto.randomUUID();
+  console.log("[TUTOR_V2_EDGE_RECEIVED]", { method: req.method, url: req.url, requestId });
   
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,12 +373,18 @@ serve(async (req) => {
   try {
     const startTime = Date.now();
     const auth = await requireAuth(req);
-    console.log("[TUTOR_V2_AUTH_STATUS]", { ok: auth.ok, userId: auth.userId });
+    console.log("[TUTOR_V2_AUTH_STATUS]", { ok: auth.ok, userId: auth.userId, requestId });
     
     if (!auth.ok) return auth.response;
     const { userId } = auth;
 
     const { sessionId, message } = await req.json();
+    if (!sessionId || !message || typeof message !== "string") {
+      return new Response(JSON.stringify({ ok: false, error: "INVALID_REQUEST", message: "Sessão e mensagem são obrigatórias.", requestId }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -37,11 +396,15 @@ serve(async (req) => {
       .from("tutor_sessions")
       .select("*")
       .eq("id", sessionId)
+      .eq("user_id", userId)
       .maybeSingle();
 
     if (sessionError || !session) {
-      console.error("[TUTOR_V2] Session error:", sessionError);
-      throw new Error("Sessão não encontrada. Por favor, inicie um novo tema.");
+      console.error("[TUTOR_V2] Session error:", { message: sessionError?.message, requestId });
+      return new Response(JSON.stringify({ ok: false, error: "SESSION_NOT_FOUND", message: "Sessão não encontrada. Por favor, inicie um novo tema.", requestId }), {
+        status: 404,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const { data: history, error: historyError } = await supabase
@@ -51,22 +414,22 @@ serve(async (req) => {
       .order("created_at", { ascending: true })
       .limit(10);
     
-    if (historyError) console.warn("[TUTOR_V2] History error:", historyError);
+    if (historyError) console.warn("[TUTOR_V2] History error:", { message: historyError.message, requestId });
 
     // [PHASE_0_CONTEXT] 
-    let context = {};
+    let context: TutorContext = {};
     try {
-      console.log("[TUTOR_V2] Calling context-builder...");
+      console.log("[TUTOR_V2] Calling context-builder...", { requestId });
       const { data: contextData, error: contextError } = await supabase.functions.invoke("tutor-v2-context-builder", {
         headers: { Authorization: `Bearer ${auth.token}` }
       });
       if (contextError) {
-        console.warn("[TUTOR_V2] context-builder error:", contextError);
+        console.warn("[TUTOR_V2] context-builder error:", { message: contextError.message, requestId });
       } else {
         context = contextData?.context || {};
       }
     } catch (e) {
-      console.warn("[TUTOR_V2] context-builder call failed:", e);
+      console.warn("[TUTOR_V2] context-builder call failed:", e instanceof Error ? e.message : String(e));
     }
     console.log("[PHASE_0_CONTEXT]", JSON.stringify(context));
 
@@ -94,32 +457,25 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       { role: "user", content: message }
     ];
 
-    const aiResponse = await aiFetch({
+    const providerResult = await resolveTutorAiResponse(supabase, {
       messages,
-      model: "google/gemini-2.5-flash",
       userId,
+      sessionId,
+      topic: session.topic || "",
+      userMessage: message,
+      requestId,
     });
 
-    if (!aiResponse.ok) {
-      const errBody = await aiResponse.text().catch(() => "");
-      console.error("[TUTOR_V2] AI provider error", aiResponse.status, errBody.slice(0, 500));
-      throw new Error("AI provider error");
-    }
-
-    const aiResult = await aiResponse.json();
-    let assistantMessage = aiResult.choices?.[0]?.message?.content;
+    let assistantMessage = providerResult.content;
     const latency = Date.now() - startTime;
 
     // --- PEDAGOGICAL AUDIT LAYER ---
-    
-    // [FEYNMAN_LAYER] Detection
     const feynmanKeywords = ["analogia", "imagine", "simples", "como se fosse", "trocando em miúdos"];
     const hasAnalogies = feynmanKeywords.some(k => assistantMessage.toLowerCase().includes(k));
     const hasRecall = assistantMessage.toLowerCase().includes("active recall") || assistantMessage.includes("?");
     const feynmanScore = (hasAnalogies ? 50 : 0) + (hasRecall ? 50 : 0);
-    console.log("[FEYNMAN_LAYER]", { analogy_used: hasAnalogies, recall_generated: hasRecall });
+    console.log("[FEYNMAN_LAYER]", { analogy_used: hasAnalogies, recall_generated: hasRecall, requestId });
 
-    // [PEDAGOGICAL_BLOCK_VALIDATION]
     const mandatoryBlocks = [
       "Introdução", "Explicação leiga", "Técnica", "Fisiologia", "Fisiopatologia", 
       "Clínica", "Sintomas", "Exame físico", "Diferencial", "Exames", 
@@ -128,12 +484,11 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
     const foundBlocks = mandatoryBlocks.filter(b => assistantMessage.includes(b));
     const missingBlocks = mandatoryBlocks.filter(b => !assistantMessage.includes(b));
     const pedagogicalScore = Math.round((foundBlocks.length / mandatoryBlocks.length) * 100);
-    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length });
+    console.log("[PEDAGOGICAL_BLOCK_VALIDATION]", { found: foundBlocks.length, missing: missingBlocks.length, requestId });
 
-    // [MEDICAL_SAFETY_CHECK]
     const safetyKeywords = ["cuidado", "emergência", "urgência", "alerta", "contraindicação"];
     const hasSafetyInfo = safetyKeywords.some(k => assistantMessage.toLowerCase().includes(k));
-    const hallucinationWarning = assistantMessage.length < 50; // Simple heuristic for now
+    const hallucinationWarning = assistantMessage.length < 50 || (!hasSafetyInfo && !providerResult.fallbackUsed);
 
     // Extract flashcard suggestion
     let flashcardSuggestion = null;
@@ -142,28 +497,33 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       assistantMessage = parts[0].trim();
       try {
         flashcardSuggestion = JSON.parse(parts[1].trim());
-        console.log("[FSRS_AUTOGEN]", { cards_generated: 1 });
+        console.log("[FSRS_AUTOGEN]", { cards_generated: 1, requestId });
       } catch (e) {
-        console.error("Error parsing flashcard suggestion:", e);
+        console.error("[TUTOR_V2_FLASHCARD_PARSE_ERROR]", e instanceof Error ? e.message : String(e));
       }
     }
 
     // 3. Save Assistant Message
-    const { data: savedMsg } = await supabase.from("tutor_messages").insert({
+    const { data: savedMsg, error: saveError } = await supabase.from("tutor_messages").insert({
       tutor_session_id: sessionId,
       user_id: userId,
       role: "assistant",
       content: assistantMessage,
       metadata: {
         flashcard_suggestion: flashcardSuggestion,
-        model: "gpt-4o",
+        provider: providerResult.provider,
+        model: providerResult.model,
+        fallback_used: providerResult.fallbackUsed,
+        request_id: requestId,
         pedagogical_audit: {
           feynman_score: feynmanScore,
-          pedagogical_score,
+          pedagogical_score: pedagogicalScore,
           missing_blocks: missingBlocks
         }
       }
     }).select().single();
+
+    if (saveError) console.warn("[TUTOR_V2_SAVE_MESSAGE_FAILED]", { message: saveError.message, requestId });
 
     // 4. Record Audit
     if (savedMsg) {
@@ -172,8 +532,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
         session_id: sessionId,
         message_id: savedMsg.id,
         phase_0_context: context,
-        pedagogical_score,
-        feynman_score,
+        pedagogical_score: pedagogicalScore,
+        feynman_score: feynmanScore,
         blocks_found: foundBlocks,
         blocks_missing: missingBlocks,
         hallucination_warning: hallucinationWarning,
@@ -182,24 +542,57 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
         planner_signals: [{ type: "adaptive_replan", priority: pedagogicalScore > 80 ? "low" : "high" }],
         error_signals: missingBlocks.length > 5 ? [{ type: "pedagogical_gap", blocks: missingBlocks }] : [],
         latency_ms: latency,
-        model_used: "gpt-4o"
+        model_used: providerResult.model
       });
     }
 
-    console.log("[TUTOR_V2_RESPONSE_SENT]", { latency });
+    if (providerResult.fallbackUsed) {
+      await recordTutorEvent(supabase, {
+        userId,
+        sessionId,
+        topic: session.topic,
+        eventType: "ai_provider_fallback_used",
+        outcome: providerResult.model,
+        relatedMessageId: savedMsg?.id || null,
+        payload: {
+          provider: providerResult.provider,
+          model: providerResult.model,
+          error_code: providerResult.attempts.find(a => !a.success)?.code || null,
+          latency_ms: providerResult.latencyMs,
+          fallback_used: true,
+          success: true,
+          request_id: requestId,
+        },
+      });
+    }
+
+    console.log("[TUTOR_V2_RESPONSE_SENT]", { latency, provider: providerResult.provider, model: providerResult.model, fallbackUsed: providerResult.fallbackUsed, requestId });
 
     return new Response(JSON.stringify({ 
-      ok: true, 
+      ok: true,
+      success: true,
+      fallback: providerResult.fallbackUsed,
       content: assistantMessage,
+      message: providerResult.fallbackUsed
+        ? "Não consegui acessar o modelo principal agora, mas preservei sua sessão e gerei uma resposta segura."
+        : assistantMessage,
+      suggestedActions: providerResult.model === "emergency_template_response" ? ["Gerar resumo", "Criar flashcards", "Tentar novamente"] : undefined,
       flashcardSuggestion,
-      audit: { pedagogicalScore, feynmanScore }
+      audit: { pedagogicalScore, feynmanScore },
+      provider: { name: providerResult.provider, model: providerResult.model, attempts: providerResult.attempts.map(a => ({ model: a.model, success: a.success, status: a.status, code: a.code, latency_ms: a.latency_ms })) },
+      requestId,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (error) {
-    console.error("[TUTOR-V2-CHAT] Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error("[TUTOR-V2-CHAT] Error:", error instanceof Error ? { message: error.message, stack: error.stack, requestId } : { error: String(error), requestId });
+    return new Response(JSON.stringify({
+      ok: false,
+      error: "TUTOR_V2_INTERNAL_ERROR",
+      message: "O Tutor encontrou uma falha interna controlada. Sua sessão foi preservada. Tente novamente.",
+      requestId,
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
