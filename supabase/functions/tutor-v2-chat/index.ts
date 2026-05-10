@@ -645,6 +645,40 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       }
     }
 
+    // Extract QUESTION_REVIEW_METADATA (Stage A)
+    let questionReview: any = null;
+    if (assistantMessage.includes("QUESTION_REVIEW_METADATA:")) {
+      const idx = assistantMessage.indexOf("QUESTION_REVIEW_METADATA:");
+      const before = assistantMessage.slice(0, idx).trim();
+      const after = assistantMessage.slice(idx + "QUESTION_REVIEW_METADATA:".length).trim();
+      // grab JSON object — first { to matching last } on same trailing chunk
+      const firstBrace = after.indexOf("{");
+      const lastBrace = after.lastIndexOf("}");
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        const jsonRaw = after.slice(firstBrace, lastBrace + 1);
+        try {
+          questionReview = JSON.parse(jsonRaw);
+          assistantMessage = before;
+          console.log("[QUESTION_REVIEW_METADATA_PARSED]", {
+            type: questionReview?.question_type,
+            correct: questionReview?.correct_answer,
+            student: questionReview?.student_answer,
+            is_correct: questionReview?.is_correct,
+            requestId,
+          });
+        } catch (e) {
+          console.warn("[QUESTION_REVIEW_METADATA_PARSE_FAIL]", e instanceof Error ? e.message : String(e));
+        }
+      }
+    }
+    // If detector saw a student answer but model didn't include it, hydrate
+    if (questionReview && !questionReview.student_answer && qReview.studentAnswer) {
+      questionReview.student_answer = qReview.studentAnswer;
+      if (questionReview.correct_answer && questionReview.is_correct == null) {
+        questionReview.is_correct = questionReview.correct_answer === qReview.studentAnswer;
+      }
+    }
+
     // 3. Save Assistant Message
     const { data: savedMsg, error: saveError } = await supabase.from("tutor_messages").insert({
       tutor_session_id: sessionId,
