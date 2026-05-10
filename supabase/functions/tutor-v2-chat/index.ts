@@ -44,21 +44,22 @@ serve(async (req) => {
     const { data: contextData } = await supabase.functions.invoke("tutor-v2-context-builder");
     const context = contextData?.context || {};
 
-    // 2. Build AI Prompt with OFFICIAL PEDAGOGICAL NUCLEUS
+    // 2. Build AI Prompt with OFFICIAL ADAPTIVE FEYNMAN ENGINE
     const systemPrompt = `${PROMPT_COMPLETO}
 
-CONTEXTO DA SESSÃO ATUAL:
-Tema: ${session.topic}
-Especialidade: ${session.specialty || 'Geral'}
-
-CONTEXTO DO ALUNO:
+ESTADO COGNITIVO DO ALUNO (FASE 0):
+- Tema: ${session.topic}
+- Especialidade: ${session.specialty || 'Geral'}
 - Missão Ativa: ${context.mission?.title || 'Exploração Livre'}
-- Lacunas detectadas (erros): ${context.errors?.map((e: any) => e.topic).join(', ') || 'Nenhuma detectada'}
+- Erros Recorrentes (Lacunas): ${context.errors?.map((e: any) => e.topic).join(', ') || 'Nenhuma detectada'}
 - Status FSRS: ${context.fsrs?.pending_reviews || 0} revisões pendentes.
 
-INSTRUÇÃO OPERACIONAL:
-Use bibliografia oficial. Seja socrático. Adote o modo de resposta obrigatório do Protocolo ENAZIZI.
-Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final (opcional).`;
+INSTRUÇÃO OPERACIONAL ADAPTATIVA:
+1. Aplique o Método Feynman para simplificar conceitos complexos.
+2. Percorra as Fases Cognitivas (Leiga → Técnica → Mecanismo → Clínica → Prova → Recall → Consolidação).
+3. Use bibliografia oficial (Harrison, Robbins, etc.).
+4. Adote o modo de resposta obrigatório do Protocolo de 15 Blocos ENAZIZI.
+5. Sempre que detectar um conceito chave, adicione FLASHCARD_SUGGESTION: {"front": "...", "back": "..."} ao final.`;
 
     const messages = [
       { role: "system", content: systemPrompt },
