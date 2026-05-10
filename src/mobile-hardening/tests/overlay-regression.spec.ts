@@ -49,10 +49,9 @@ test.describe("Mobile Hardening v2 — overlay & dead-button regression", () => 
       await page.waitForLoadState("networkidle");
 
       const dead = await page.evaluate(async () => {
+        const path = "/src/mobile-hardening/utils/clickableAssertions.ts";
         // @ts-ignore — resolvido em runtime pelo Vite dev server
-        const mod = await import(
-          "/src/mobile-hardening/utils/clickableAssertions.ts"
-        );
+        const mod = await import(/* @vite-ignore */ path);
         return mod.detectDeadButtons(document.body).map((i: any) => ({
           reason: i.reason,
           message: i.message,
