@@ -3,7 +3,7 @@ import { Sparkles, GraduationCap, Zap, Brain, Map as MapIcon, Plus } from "lucid
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
-import AgileLessonPlayer from "@/components/cinematic/AgileLessonPlayer";
+import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 
 interface TutorV2ActionsProps {
   session: any;
