@@ -146,5 +146,23 @@ Centralizar em `src/cme/ux/userMessages.ts` (criar pós-freeze).
 
 ---
 
-**Owner pós-freeze:** primeira tarefa após 25/05/2026.
-**Estimativa:** 2-3 dias de trabalho focado, 1 PR por etapa do plano (8 PRs pequenos).
+---
+
+## 8. Causa Raiz & Solução Técnica (GO-LIVE Fix)
+
+**Causa raiz identificada:**
+- Mismatch de IDs: `chat_conversations.id` era usado onde o pipeline esperava `tutor_sessions.id`.
+- Fallback ausente: `tutor_messages` era a única fonte, falhando se a persistência inicial estivesse lenta ou em tabelas legadas (`chat_messages`).
+- Race Condition: O pipeline iniciava antes da última mensagem do Tutor ser persistida no banco.
+- IDs Falsos: `AgentChat.tsx` gerava UUIDs aleatórios em fallback, impedindo o vínculo correto com mensagens reais.
+
+**Soluções aplicadas:**
+- **Resolução dinâmica de IDs**: Hook `useTutorCME` agora resolve `conversation_id` -> `tutor_session_id`.
+- **Fallback de Mensagens**: Se `tutor_messages` falha, o sistema busca em `chat_messages`.
+- **Retry com Backoff**: Implementado retry automático (0/600/1200ms) na agregação para vencer race conditions de escrita.
+- **Bloqueio de UUID Fake**: `AgentChat` agora aguarda ID real e exibe toast amigável em caso de atraso.
+
+---
+
+**Owner:** Aplicado via override emergencial.
+**Testes:** `tests/e2e/cme-pipeline-regression.spec.ts` (Playwright) cobrindo todos os cenários de regressão.
