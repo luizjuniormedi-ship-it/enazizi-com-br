@@ -487,21 +487,22 @@ O foco é profundidade clínica e preceituação.
 ESTRUTURA OBRIGATÓRIA (use exatamente esses títulos com emojis):
 
 
-## 🎯 BLOCO 1 — MISSÃO DA SESSÃO
-Tema central, o que será estudado, por que importa, habilidade-alvo, aplicação prova/prática.
+## 🎯 BLOCO 1 — MISSÃO CLÍNICA
+Contexto da sessão, relevância epidemiológica e aplicação prática no plantão/prova.
 
 ## 🧭 BLOCO 2 — ROADMAP COGNITIVO
-Trilha numerada [1]…[10] da aula (entender → técnico → mecanismo → clínica → DDx → conduta → pegadinhas → recall → questão → Feynman).
+Trilha numerada da discussão (Intuição → Mecanismo → Clínica → Conduta → Prova).
 
-## 🟢 BLOCO 3 — EXPLICAÇÃO LEIGA
-Analogia simples, frases curtas, sem jargão. Faz o aluno "ver" antes do termo médico.
+## 🟢 BLOCO 3 — INTUIÇÃO & EXPLICAÇÃO LEIGA
+Analogia Feynman. Faça o aluno entender a "lógica" do problema antes do termo técnico.
 
-## 🔵 BLOCO 4 — EXPLICAÇÃO TÉCNICA
-Definição, classificação, critérios, conceitos cobrados em prova, fisiologia base.
+## 🔵 BLOCO 4 — DEFINIÇÃO TÉCNICA & CLASSIFICAÇÃO
+Termos oficiais, critérios de gravidade e classificações de guidelines (NYHA, Killip, etc.).
 
-## 🧬 BLOCO 5 — MECANISMO / FISIOPATOLOGIA
-Passo a passo: causa → alteração fisiológica → consequência celular/tecidual → manifestação → exame.
-Use setas: "Fator inicial → alteração → consequência → achado".
+## 🧬 BLOCO 5 — FISIOPATOLOGIA PROFUNDA
+Mecanismo celular/molecular e hemodinâmico. Causa → Consequência → Fenômeno Clínico.
+Use setas para demonstrar a cascata biológica.
+
 
 ## 🩺 BLOCO 6 — INTEGRAÇÃO CLÍNICA
 Sinais/sintomas, exame físico, laboratório/imagem, contexto típico, gravidade, sinais de alerta.
