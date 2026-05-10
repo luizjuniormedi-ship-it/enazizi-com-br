@@ -21,6 +21,8 @@ interface AgentHeaderProps {
   onTransformSession?: () => void;
   hasMessages?: boolean;
   lessonStatus?: 'idle' | 'processing' | 'ready' | 'failed';
+  onToggleDiagnostic?: () => void;
+  isAdmin?: boolean;
 }
 
 const AgentHeader = memo(({
