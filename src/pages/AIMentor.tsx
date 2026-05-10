@@ -272,7 +272,6 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
 
   useEffect(() => {
     if (initialTopic && !hasStarted && !autoStartProcessed.current) {
-      console.log("[AIMentor] Auto-starting with topic:", initialTopic);
       autoStartProcessed.current = true;
       
       // Limpar o parâmetro da URL para evitar duplicidade no refresh
