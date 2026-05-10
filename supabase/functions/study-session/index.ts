@@ -21,6 +21,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+/** Standard JSON response helper */
+const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
+  status,
+  headers: { ...corsHeaders, "Content-Type": "application/json" },
+});
+
 function getLevelPrompt(performanceData: unknown): string {
   const data = performanceData as any;
   if (!data || !data.totalQuestions || data.totalQuestions < 5) return "";
@@ -64,12 +70,6 @@ REGRA DE REFORÇO POR ERRO:
 - Ao retomar: use ângulo diferente (se errou diagnóstico → foque em conduta; se errou conduta → foque em complicações)`;
 }
 
-/**
- * STRUCTURED SIGNAL CONTRACT
- * Whenever the AI corrects an objective answer (MCQ A–E), it MUST append a
- * machine-readable SIGNAL block at the end of its message. The frontend uses
- * this block (NOT regex on emojis) to update error_bank, FSRS and outcomes.
- */
 const STRUCTURED_SIGNAL_BLOCK = `
 ==================================================
 SINAL ESTRUTURADO OBRIGATÓRIO (NÃO REMOVER)
@@ -125,7 +125,6 @@ Mostre o painel organizado:
 Se não houver dados, informe e sugira começar.`;
 
     case "lesson": {
-      // Compact mode — short Feynman-style explanation
       if (studyMode === "compact") {
         return `${getCompactLessonPrompt()}
 ${levelPrompt}
@@ -147,7 +146,6 @@ REGRAS:
 - Após a resposta do aluno à pergunta: corrija brevemente e pergunte se quer aprofundar ou ir para questões`;
       }
 
-      // Review mode — exam-focused
       if (studyMode === "review") {
         return `${getRecallPrompt()}
 ${levelPrompt}
@@ -180,7 +178,6 @@ REGRAS:
 - Máximo 500 palavras`;
       }
 
-      // Correction mode — error-focused
       if (studyMode === "correction") {
         return `${getReinforcementPrompt()}
 ${levelPrompt}
@@ -206,7 +203,6 @@ REGRAS:
 - Após resposta: corrija e ofereça mais uma questão de reforço`;
       }
 
-      // Default: full mode (existing behavior)
       return `${getLessonPrompt()}
 ${levelPrompt}
 ${weakTopicsPrompt}
@@ -403,49 +399,24 @@ Formato:
 └────────┬────────┘
          ↓
 ┌─────────────────┐
-│    CONDUTA       │
-│ (1ª linha)       │
+│    CONDUTA      │
+│ (padrão-ouro)    │
 └─────────────────┘
 
-REGRAS do mapa:
-- Preencher cada caixa com dados ESPECÍFICOS do tema (não genéricos)
-- Incluir bifurcações quando houver decisão clínica (ex: "Se X → A | Se Y → B")
-- Máximo 8 caixas para manter legibilidade
-- O mapa deve servir como RESUMO VISUAL para revisão rápida`;
+REGRAS:
+- Use símbolos ASCII simples
+- Seja objetivo nas etapas do fluxograma`;
 
-    case "reinforcement": {
-      const levelPrompt = getLevelPrompt(performanceData);
-      const data = performanceData as any;
-      const errorCategory = data?.reinforcement?.categoriaErro || "conceito";
-      const errorTopic = data?.reinforcement?.topic || topic;
-      const errorContent = data?.reinforcement?.content || "";
-      const cycle = data?.reinforcement?.cycle || 1;
-
-      const angleMap: Record<string, string> = {
-        conceito: "fisiopatologia e mecanismo",
-        aplicação: "caso clínico e conduta",
-        interpretação: "diagnóstico diferencial",
-        conduta: "evidência e protocolo",
-      };
-      const angle = angleMap[errorCategory] || "conceito-chave";
-
+    case "reinforcement":
       return `${getReinforcementPrompt()}
 ${levelPrompt}
-FASE ATUAL: LOOP DE REFORÇO INTELIGENTE (ciclo ${cycle}/2)
-Tema: "${errorTopic}"
+FASE ATUAL: REFORÇO IMEDIATO (STATE RE)
+Tema: "${topic}"
 
-O ALUNO ACABOU DE ERRAR UMA QUESTÃO. Você deve corrigir o erro de forma rápida e eficaz.
-
-${errorContent ? `CONTEXTO DO ERRO:\n${errorContent}\n` : ""}
-
-FORMATO OBRIGATÓRIO (em UMA ÚNICA mensagem, máximo 250 palavras):
-
-## 💡 Vamos corrigir isso
-
-1. **O que aconteceu:** explique em 2 frases o erro específico (sem julgamento)
-2. **O conceito correto:** explicação FOCADA no ponto exato do erro, com enfoque em "${angle}"
-3. **Dica de prova:** 1 frase com o detalhe que diferencia a resposta correta
-4. **❓ Questão de verificação:** 1 questão MCQ (A-E) sobre o MESMO conceito, mas com ângulo diferente
+O aluno acabou de errar um conceito. Você deve REFORÇAR este ponto específico:
+1. Explique o ponto de erro em 3-4 frases
+2. Use uma analogia ou mnemônico
+3. Crie uma pequena questão de verificação (V/F ou MCQ rápida) sobre este EXATO ponto
 
 REGRAS:
 - NÃO repita o enunciado original — aborde o conceito por outro ângulo
@@ -453,7 +424,6 @@ REGRAS:
 - Seja BREVE — o objetivo é corrigir, não dar aula completa
 - A questão de verificação deve testar exatamente o ponto que o aluno errou
 - Ao final diga: "Qual sua resposta? (A, B, C, D ou E)"`;
-    }
 
     default: {
       const levelPrompt = getLevelPrompt(performanceData);
@@ -480,7 +450,6 @@ async function fetchFallbackQuestion(supabase: any, topic: string) {
     .limit(5);
 
   if (error || !data || data.length === 0) return null;
-  // Return a random one from the matches
   return data[Math.floor(Math.random() * data.length)];
 }
 
@@ -505,33 +474,36 @@ ${options}
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const requestId = crypto.randomUUID();
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
 
   const userId = await extractUserId(req);
   if (!userId) {
-    return new Response(JSON.stringify({ error: "Autenticação obrigatória." }), {
-      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return json({ error: "Autenticação obrigatória." }, 401);
   }
 
   if (activeStreams >= MAX_CONCURRENT_STREAMS) {
-    return new Response(
-      JSON.stringify({ error: "Servidor ocupado. Tente novamente em alguns segundos.", retry: true }),
-      { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "3" } },
-    );
+    return json({ error: "Servidor ocupado. Tente novamente em alguns segundos.", retry: true }, 503);
   }
 
   activeStreams++;
   try {
-    const { messages, phase, topic, userContext, performanceData, session_memory, studyMode, targetExam } = await req.json();
+    let body;
+    try {
+      body = await req.json();
+    } catch (e) {
+      return json({ error: "invalid_json", message: "Corpo da requisição inválido." }, 400);
+    }
+
+    const { messages, phase, topic, userContext, performanceData, studyMode, targetExam } = body;
 
     if (!Array.isArray(messages)) {
-      return new Response(JSON.stringify({ error: "Campo 'messages' é obrigatório." }), {
-        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return json({ error: "Campo 'messages' é obrigatório." }, 400);
     }
+
+    console.debug(`[study-session] id=${requestId} user=${userId} phase=${phase} topic=${topic}`);
 
     let systemPrompt = getPhasePrompt(phase, topic, performanceData, studyMode);
     const bancaProfile = getBancaProfile(targetExam);
@@ -542,7 +514,6 @@ serve(async (req) => {
     }
 
     if (userContext) {
-      // Truncate user context to reduce payload if it's too large
       const truncatedContext = String(userContext).slice(0, 4000);
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO ---\n${truncatedContext}\n--- FIM ---`;
     }
@@ -551,12 +522,9 @@ serve(async (req) => {
     const isQuestionPhase = phase === "questions";
     const modelTier = isLightPhase ? "standard" : "pro";
     const usedModel = getModelForTier(modelTier);
+    const timeoutMs = isQuestionPhase ? 15000 : 45000;
     
-    // Controlled timeout for question generation (8-12s) vs others (45s)
-    const timeoutMs = isQuestionPhase ? 12000 : 45000;
-    
-    // Trim history to reduce tokens
-    const trimmedMessages = messages.slice(-8);
+    const trimmedMessages = messages.slice(-10);
     const startMs = Date.now();
 
     try {
@@ -564,8 +532,9 @@ serve(async (req) => {
         model: usedModel,
         messages: [{ role: "system", content: systemPrompt }, ...trimmedMessages],
         stream: true,
-        maxTokens: isLightPhase ? 2048 : 4096, // Reduced tokens for performance
+        maxTokens: isLightPhase ? 2048 : 4096,
         timeoutMs,
+        userId
       });
 
       const elapsed = Date.now() - startMs;
@@ -593,7 +562,7 @@ serve(async (req) => {
       });
 
     } catch (aiErr) {
-      console.error("[StudySession] AI Call failed:", aiErr);
+      console.error(`[study-session] id=${requestId} AI Call failed:`, aiErr);
       
       // Fallback OBRIGATÓRIO para fase de questões
       if (isQuestionPhase) {
@@ -601,9 +570,6 @@ serve(async (req) => {
         if (fallback) {
           activeStreams = Math.max(0, activeStreams - 1);
           const content = formatQuestionAsText(fallback);
-          // Return as a single SSE message or plain JSON? 
-          // Frontend expects SSE stream usually, but can handle JSON error.
-          // Let's send a special SSE sequence that says "FALLBACK"
           const encoder = new TextEncoder();
           const stream = new ReadableStream({
             start(controller) {
@@ -620,29 +586,33 @@ serve(async (req) => {
         }
       }
 
+      // Fallback genérico para outras fases (não deixa a tela vazia)
+      if (phase === "lesson") {
+        activeStreams = Math.max(0, activeStreams - 1);
+        const encoder = new TextEncoder();
+        const stream = new ReadableStream({
+          start(controller) {
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ 
+              choices: [{ delta: { content: `⚠️ *A IA está um pouco lenta.* Vamos tentar continuar em modo reduzido.\n\n**Foco em ${topic}:** O TEP é uma emergência vascular pulmonar crítica. O diagnóstico de escolha costuma ser a Angio-TC de tórax. O tratamento de escolha é a anticoagulação.\n\nPodemos tentar carregar o conteúdo completo novamente? Clique no botão abaixo ou digite sua dúvida.` } }]
+            })}\n\n`));
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          }
+        });
+        return new Response(stream, { headers: { ...corsHeaders, "Content-Type": "text/event-stream" } });
+      }
+
       throw aiErr;
     }
   } catch (e) {
     activeStreams = Math.max(0, activeStreams - 1);
     const isTimeout = e instanceof Error && (e.name === "AbortError" || e.message.includes("timeout"));
     
-    // Log final failure
-    logAiUsage({
-      userId,
-      functionName: "study-session-error",
-      modelUsed: "fallback",
-      success: false,
-      responseTimeMs: 0,
-      errorMessage: `Final error: ${e instanceof Error ? e.message : String(e)} (Timeout: ${isTimeout})`,
-    }).catch(() => {});
-
-    return new Response(JSON.stringify({ 
+    return json({ 
       error: "Erro no serviço de IA", 
       message: isTimeout ? "Tempo esgotado. Tente novamente." : "Falha na geração.",
       isTimeout,
-      isFallbackActive: isQuestionPhase // Indica ao frontend que tentamos/conseguimos fallback
-    }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+      isFallbackActive: true
+    }, 500);
   }
 });
