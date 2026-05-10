@@ -322,48 +322,12 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         if (import.meta.env.DEV) console.warn("[memory] lookup error", err);
       }
       
-      setLoadingStage("🔍 Buscando referências científicas...");
-
+      // Redundant RAG removed — mentor-chat handles retrieval internally for better performance and resilience.
+      setLoadingStage("🔍 Analisando material e referências...");
+      
       let adaptiveContext: unknown = undefined;
       let adaptiveStatus: "off" | "ok" | "failed" | "skipped" = "off";
       let ragBibliography: any[] = [];
-
-      try {
-        console.log(`[TUTOR] RETRIEVAL_STARTED id=${requestId}`);
-        setLoadingStage("🔍 Consultando base de conhecimento...");
-        
-        const ragPromise = supabase.functions.invoke("search-rag-context", {
-          body: { query: text, topic: topic || undefined, requestId }
-        });
-        
-        const timeoutPromise = new Promise<{data: any, error: any}>((_, reject) => 
-          setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000)
-        );
-
-        const raceResult = await Promise.race([ragPromise, timeoutPromise]);
-        const ragData = raceResult?.data;
-        const ragError = raceResult?.error;
-
-        if (ragError) {
-          console.warn(`[TUTOR] RETRIEVAL_ERROR id=${requestId}`, ragError);
-        }
-
-        console.log(`[TUTOR] RETRIEVAL_FINISHED id=${requestId}`, { 
-          success: !!ragData?.success,
-          chunks: ragData?.bibliography?.length || 0
-        });
-        
-        if (ragData?.success && Array.isArray(ragData.bibliography)) {
-          ragBibliography = ragData.bibliography;
-          if (ragBibliography.length > 0) {
-            const ragContext = ragBibliography.map(b => `[FONTE: ${b.source}${b.page ? ` p.${b.page}` : ''}]: ${b.content}`).join("\n\n");
-            contextOverride = (contextOverride || "") + "\n\n--- CONTEXTO RAG DA ORGANIZAÇÃO ---\n" + ragContext + "\n--- FIM DO CONTEXTO RAG ---";
-          }
-        }
-      } catch (err) {
-        console.warn(`[TUTOR] RETRIEVAL_FAILED id=${requestId}`, err);
-        // Não trava o fluxo, apenas loga e segue sem contexto RAG
-      }
 
       if (isAdaptiveEnabled) {
         const adaptive = await fetchAdaptive({
