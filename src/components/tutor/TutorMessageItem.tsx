@@ -372,7 +372,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
                       <DialogDescription className="text-slate-400">
                         {state.status === 'failed'
                           ? humanizeCMEMessage(state.error)
-                          : (FRIENDLY_STATUS_LABEL[state.status === 'completed' || state.status === 'ready' ? 'ready' : 'processing'])}
+                          : (FRIENDLY_STATUS_LABEL[state.status === 'ready' ? 'ready' : 'processing'])}
                       </DialogDescription>
                     </DialogHeader>
                     <div className="py-6 space-y-4">
