@@ -342,7 +342,7 @@ const AgentChat = ({
         </div>
       )}
 
-      {chat.sessionChecked && chat.pendingSession && chat.messages.length <= 1 && (
+      {chat.sessionChecked && chat.pendingSession && chat.messages.length <= 1 && !initialPrompt && (
         <ResumeSessionBanner
           updatedAt={chat.pendingSession.updated_at}
           onResume={chat.handleResumeSession}

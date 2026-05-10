@@ -685,6 +685,8 @@
   --pixar-pink:   330 90% 65%;
   --pixar-mint:   158 84% 56%;
   --pixar-amber:   38 96% 60%;
+  --enaflix-danger: 354 80% 50%;
+  --enaflix-grad-danger: linear-gradient(180deg, hsl(0 92% 70%) 0%, hsl(var(--enaflix-danger) / 1) 50%, hsl(354 80% 25%) 100%);
 
   --pixar-grad-primary:
     linear-gradient(180deg,

@@ -369,6 +369,11 @@ export default function EnaflixPage() {
             <EnaflixSearchBar
               value={query}
               onChange={setQuery}
+              onEnter={() => {
+                if (query.trim().length > 3) {
+                  navigate(`/dashboard/mentor?topic=${encodeURIComponent(query)}`);
+                }
+              }}
               placeholder="Buscar simulados, flashcards, anamnese, ECG..."
               autoFocus
             />

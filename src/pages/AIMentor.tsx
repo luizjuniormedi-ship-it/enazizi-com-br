@@ -38,7 +38,7 @@ const suggestions = [
   "Antibióticos na UTI Adulto"
 ];
 
-const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => void; initialValue?: string }) => {
+const TutorPremiumHero = ({ onSend, initialValue, onInputValueChange }: { onSend: (p: string) => void; initialValue?: string; onInputValueChange?: (v: string) => void }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const firstName = user?.user_metadata?.display_name?.split(" ")[0] || "Doutor";
@@ -130,7 +130,11 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
                 <Brain className="h-6 w-6 text-primary/60 mr-4 hidden sm:block" />
                 <input 
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setInputValue(val);
+                    onInputValueChange?.(val);
+                  }}
                   onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                   className="bg-transparent border-0 outline-none flex-1 text-white placeholder:text-white/20 text-base sm:text-xl py-4 sm:py-5 min-w-0"
                   placeholder="Ex: 'Quais os critérios de Duke para Endocardite?'"
@@ -170,6 +174,7 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
               key={sug}
               onClick={() => {
                 setInputValue(sug);
+                onInputValueChange?.(sug);
                 setSelectedSuggestion(sug);
                 // Dar foco no input após selecionar chip para melhor UX
                 document.getElementById('tutor-premium-input')?.focus();
@@ -268,20 +273,32 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
-  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(initialTopic || null);
+
+  useEffect(() => {
+    console.debug("[AIMentor] topic in URL updated:", initialTopic);
+    if (initialTopic) {
+      setPendingPrompt(initialTopic);
+    }
+  }, [initialTopic]);
 
   useEffect(() => {
     if (initialTopic && !hasStarted && !autoStartProcessed.current) {
+      console.debug("[AIMentor] topic detected in URL, starting auto-flow:", initialTopic);
       autoStartProcessed.current = true;
-      
-      // Limpar o parâmetro da URL para evitar duplicidade no refresh
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete("topic");
-      setSearchParams(newParams, { replace: true });
-
       handleStart(initialTopic);
     }
   }, [initialTopic]);
+
+  // Limpa o parâmetro da URL apenas depois que o chat já foi montado e o autostart disparado
+  useEffect(() => {
+    if (hasStarted && autoStartProcessed.current && searchParams.has("topic")) {
+      console.debug("[AIMentor] Cleaning topic from URL after successful start");
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("topic");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [hasStarted, searchParams, setSearchParams]);
 
   const handleStart = (prompt: string) => {
     setPendingPrompt(prompt);
@@ -329,7 +346,11 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
               exit={{ opacity: 0, y: -50, scale: 0.95 }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
             >
-              <TutorPremiumHero onSend={handleStart} initialValue={initialTopic} />
+              <TutorPremiumHero 
+                onSend={handleStart} 
+                initialValue={pendingPrompt || ""} 
+                onInputValueChange={(v) => setPendingPrompt(v)}
+              />
             </motion.div>
           ) : (
             <motion.div

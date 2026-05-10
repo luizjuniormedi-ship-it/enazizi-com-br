@@ -90,6 +90,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
   const isUploadingRef = useRef(false);
   const autoPromptFiredRef = useRef(false);
   const initialPromptFiredRef = useRef(false);
+  const isAutoStartingRef = useRef(false);
 
   const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${functionName}`;
 
@@ -152,6 +153,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   const handleSend = useCallback(
     async (overridePrompt?: string, contextOverride?: string) => {
+      console.debug("[useAgentChat] handleSend", { overridePrompt, isLoading, sendCooldown });
 
       const text = overridePrompt || input.trim();
       if (!text || isLoading || sendCooldown || !user) return;
@@ -506,12 +508,28 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   // Auto-fire initialPrompt
   useEffect(() => {
-    if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading) {
-      initialPromptFiredRef.current = true;
-      const timer = setTimeout(() => handleSend(initialPrompt), 500);
+    if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading && !isAutoStartingRef.current) {
+      console.debug("[useAgentChat] Auto-firing initialPrompt:", initialPrompt);
+      isAutoStartingRef.current = true;
+      
+      const timer = setTimeout(async () => {
+        try {
+          // Se houver sessão pendente e for auto-start, priorizamos o prompt novo
+          // mas limpamos a sessão anterior para evitar conflito visual/lógico
+          if (pendingSession) {
+            console.debug("[useAgentChat] Discarding pending session for autostart priority");
+            handleDiscardSession();
+          }
+          
+          await handleSend(initialPrompt);
+          initialPromptFiredRef.current = true;
+        } finally {
+          isAutoStartingRef.current = false;
+        }
+      }, 300);
       return () => clearTimeout(timer);
     }
-  }, [initialPrompt, user, isLoading, handleSend]);
+  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession]);
 
   const handleSaveMessage = useCallback(
     async (idx: number, content: string) => {
