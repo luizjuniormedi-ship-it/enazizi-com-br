@@ -197,7 +197,7 @@ export default function EnaflixPage() {
     });
   }, [visibleModules, query]);
 
-  const isSearching = query.trim().length > 0;
+  const isSearching = query.trim().length > 0 || showAll;
 
   const moduleById = useMemo(() => {
     const map = new Map<string, EnaflixModule>();
