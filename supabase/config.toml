@@ -75,3 +75,7 @@ project_id = "qszsyskumcmuknumwxtk"
     verify_jwt = false
   [functions.run-pipeline]
     verify_jwt = false
+  [functions.approval-snapshot-cron]
+    verify_jwt = false
+  [functions.backfill-user-topic-profiles]
+    verify_jwt = false

@@ -393,8 +393,7 @@ serve(async (req) => {
       });
     }
 
-    // ── 8. Loop 4B-fix-3: dispara calculate-approval-score ao finalizar simulado ──
-    // Fire-and-forget, não bloqueia finalização. Usa o JWT real do usuário.
+    // ── 8. Dispara calculate-approval-score: simulado SEMPRE; outros eventos com rate-limit (1/2h) ──
     const isSimuladoFinish =
       actionType === "simulado_complete" ||
       actionType === "simulation_complete" ||
@@ -403,7 +402,33 @@ serve(async (req) => {
       (typeof metadata?.originModule === "string" &&
         /simulad|simulation/i.test(metadata.originModule as string));
 
-    if (isSimuladoFinish) {
+    const isMeaningfulOutcome =
+      typeof wasCorrect === "boolean" ||
+      actionType === "review" ||
+      actionType === "error_review" ||
+      actionType === "lesson_complete" ||
+      actionType === "chronicle_complete";
+
+    let shouldDispatchApproval = isSimuladoFinish;
+    if (!shouldDispatchApproval && isMeaningfulOutcome) {
+      // Rate-limit: só recalcula se o último approval_score do usuário tem >2h
+      try {
+        const { data: lastScore } = await db
+          .from("approval_scores")
+          .select("created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const lastTs = (lastScore as any)?.created_at ? new Date((lastScore as any).created_at).getTime() : 0;
+        const ageH = (Date.now() - lastTs) / 3_600_000;
+        if (!lastTs || ageH >= 2) shouldDispatchApproval = true;
+      } catch {
+        shouldDispatchApproval = true; // se falhar a checagem, prefere disparar
+      }
+    }
+
+    if (shouldDispatchApproval) {
       const authHeader = req.headers.get("Authorization");
       if (authHeader) {
         const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -415,7 +440,7 @@ serve(async (req) => {
               "Content-Type": "application/json",
               Authorization: authHeader,
             },
-            body: JSON.stringify({ source: "study-complete", actionType }),
+            body: JSON.stringify({ source: isSimuladoFinish ? "study-complete:simulado" : "study-complete:outcome", actionType }),
           })
             .then(async (r) => {
               if (!r.ok) {
