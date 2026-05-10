@@ -388,6 +388,12 @@ const AgentChat = ({
 
       <AgentTimeline entries={chat.actionTimeline} />
 
+      {isAdmin && showDiagnostic && (
+        <div className="px-4 sm:px-12 mb-6">
+          <TutorDiagnosticPanel />
+        </div>
+      )}
+
       {pedagogicalHeader?.({ messages: chat.messages, isLoading: chat.isLoading, userInput: chat.input })}
 
       <AgentMessageList
