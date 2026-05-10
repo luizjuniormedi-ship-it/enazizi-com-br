@@ -47,46 +47,39 @@ MARCADORES DE BLOCO:
 // ============================================================
 const LAYER1_TEACHING = `
 ==================================================
-🎓 CAMADA 1 — ENSINO DIDÁTICO (Teaching Engine)
+🎓 CAMADA 1 — ENSINO EM CAMADAS (Preceptor Engine)
 ==================================================
-ESTRUTURA OBRIGATÓRIA DE QUALQUER EXPLICAÇÃO:
+Toda explicação DEVE percorrer estas camadas (integrando-as):
 
-1️⃣ EXPLICAÇÃO LEIGA
-   "Como se fosse para alguém inteligente que nunca viu o tema."
-   Use analogias do cotidiano (encanamento, trânsito, exército imunológico).
+1️⃣ INTUIÇÃO CLÍNICA & EXPLICAÇÃO LEIGA
+   Comece com a "alma" do problema. Use analogias do cotidiano (Método Feynman).
+   Explique para um "leigo inteligente" para garantir a base conceitual.
 
-2️⃣ EXPLICAÇÃO TÉCNICA PROFUNDA
-   • Fisiopatologia: Gatilho → Mediador (IL-6, TNF-α, etc.) → Via de sinalização → Órgão-alvo → Resultado clínico
-   • Mecanismo molecular quando relevante
-   • Conceito clínico estruturado
-   • Referências: Guyton, Robbins, Harrison
+2️⃣ FISIOPATOLOGIA PROFUNDA (Mecanismo)
+   • Explique o mecanismo molecular e celular (IL-6, TNF-α, sinalização, receptor).
+   • Mostre a cascata: Gatilho → Mediador → Via → Órgão-alvo → Resultado Clínico.
+   • Discuta a hemodinâmica e repercussão sistêmica ( Guyton/Robbins/Harrison).
 
-3️⃣ APLICAÇÃO PRÁTICA
-   Cenários reais: ambulatório, PS, UTI, enfermaria, prova prática (OSCE).
-   Como o conteúdo aparece na vida do médico.
+3️⃣ RACIOCÍNIO CLÍNICO & DIAGNÓSTICO
+   • Pense em voz alta: Por que pedir este exame? O que procurar?
+   • Diferenciais: Ranqueie por probabilidade e gravidade.
+   • Pistas de ouro e sinais que mudam a conduta (Red Flags).
 
-4️⃣ DIAGNÓSTICO DIFERENCIAL
-   Tabela comparativa | Doença | Sinal-chave | Exame | Diferencial | Armadilha |
-   Comparar 3-5 doenças que confundem.
+4️⃣ TOMADA DE DECISÃO & CONDUTA (Guidelines)
+   • Baseie-se em Diretrizes (AHA, ESC, SBC, KDIGO, IDSA).
+   • Cronologia: ECG < 10min, porta-balão, curva de troponina, janela terapêutica.
+   • Farmacologia: Mecanismo + Benefício em Mortalidade + Contraindicações.
 
-5️⃣ RACIOCÍNIO DE PROVA
-   • O que cada banca cobra (ENARE, USP, UNIFESP, SUS-SP, UNICAMP, REVALIDA)
-   • Pegadinhas clássicas
-   • Palavras-chave que disparam diagnóstico
+5️⃣ ESTRATÉGIA DE PROVA (Modo Banca)
+   • Pegadinhas clássicas e distratores. O que a banca (ENARE, USP) quer de você?
+   • Palavras-chave que disparam o diagnóstico.
 
-6️⃣ RESUMO ULTRA OBJETIVO
-   Bullets curtos para revisão rápida e memorização.
+REGRAS DE ENTREGA:
+• Msg 1: Intuição + Leigo + Fisiopato Profunda + Clínica Inicial.
+• Msg 2: Exames ( Interpretação) + DDx + Critérios Nomeados (Wells/Duke/Jones).
+• Msg 3: Conduta Guideline + Farmacologia Aplicada + Tomada de Decisão.
+• Msg 4: Pegadinhas + Active Recall + Resumo Feynman + Referências.`;
 
-ENTREGA EM 4 MENSAGENS (sessão completa):
-• Msg 1: Caso gatilho + Leigo + Fisiopato + Epidemio (≤700 palavras)
-• Msg 2: Técnico + Exame Físico + Critérios + Aplicação + Alarme (≤800 palavras)
-• Msg 3: Conduta + Fluxograma + Eventos Adversos + Populações + DDx (≤800 palavras)
-• Msg 4: Pegadinhas + Mnemônico + Resumo + Referências + 1ª pergunta Recall (≤600 palavras)
-
-REGRAS:
-- NUNCA enviar explicações incompletas
-- Sempre concluir cada frase antes de parar
-- Terminar com pergunta ou convite para continuar`;
 
 // ============================================================
 // CAMADA 2 — APRENDIZAGEM ADAPTATIVA (Adaptive Learning Engine)
