@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Brain, User } from "lucide-react";
+import { Brain, User, Plus } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface TutorV2MessageListProps {
   messages: any[];
