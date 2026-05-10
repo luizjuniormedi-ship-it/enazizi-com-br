@@ -3,7 +3,40 @@ console.error("🔥 BUILD_FORENSE", {
   timestamp: Date.now(),
   version: "FORENSE_V1"
 });
+
+// Forensics Log Store
+const FORENSICS_STORE: any = {
+  build: "FORENSE_REAL_V1",
+  clicks: [],
+  network: [],
+  errors: [],
+  sessions: []
+};
+
+// Global interceptors for forensics
+if (typeof window !== 'undefined') {
+  const originalLog = console.log;
+  const originalError = console.error;
+  
+  console.log = (...args) => {
+    if (String(args[0]).includes('[GERAR_AULA]')) {
+      FORENSICS_STORE.clicks.push({ ts: Date.now(), data: args });
+    }
+    originalLog.apply(console, args);
+  };
+
+  window.addEventListener('error', (event) => {
+    FORENSICS_STORE.errors.push({ 
+      ts: Date.now(), 
+      msg: event.message, 
+      file: event.filename,
+      line: event.lineno
+    });
+  });
+}
+
 import { useCallback, useEffect, useState, useRef } from "react";
+import { Download } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Film, Sparkles, Play, AlertCircle } from "lucide-react";
