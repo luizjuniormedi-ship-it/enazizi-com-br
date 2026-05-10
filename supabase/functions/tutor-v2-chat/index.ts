@@ -756,6 +756,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
         : assistantMessage,
       suggestedActions: providerResult.model === "emergency_template_response" ? ["Gerar resumo", "Criar flashcards", "Tentar novamente"] : undefined,
       flashcardSuggestion,
+      questionReview,
+      questionReviewActive: qReview.active,
       audit: { pedagogicalScore, feynmanScore },
       provider: { name: providerResult.provider, model: providerResult.model, attempts: providerResult.attempts.map(a => ({ model: a.model, success: a.success, status: a.status, code: a.code, latency_ms: a.latency_ms })) },
       requestId,
