@@ -365,15 +365,15 @@ async function callOnce(
       AI_TIMEOUT_MS,
     );
     const latency_ms = Date.now() - start;
-    const body = await res.text();
+    const responseText = await res.text();
 
     if (!res.ok) {
-      const e = extractProviderError(res.status, body);
+      const e = extractProviderError(res.status, responseText);
       return { attempt: { ...ref, success: false, status: res.status, ...e, latency_ms } };
     }
     let parsed: any;
     try {
-      parsed = JSON.parse(body);
+      parsed = JSON.parse(responseText);
     } catch {
       return {
         attempt: {
