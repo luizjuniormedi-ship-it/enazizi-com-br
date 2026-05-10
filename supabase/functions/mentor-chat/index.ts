@@ -256,7 +256,7 @@ serve(async (req) => {
         return json({ 
           ok: false, error: "ai_failed", message: fallbackMessage,
           requestId, fallbackUsed: true, elapsedMs: Date.now() - startTime
-        }, 200);
+        }, 503);
       }
     }
 
