@@ -15,7 +15,7 @@ export default function TutorV2Page() {
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { session, isLoading } = useTutorV2Session(sessionId);
+  const { session, isLoading, stats } = useTutorV2Session(sessionId);
   const [newTopic, setNewTopic] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [bootStatus, setBootStatus] = useState("");
