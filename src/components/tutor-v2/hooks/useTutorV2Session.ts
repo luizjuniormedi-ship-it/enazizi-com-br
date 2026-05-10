@@ -5,6 +5,11 @@ export function useTutorV2Session(sessionId?: string) {
   const [session, setSession] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<any>(null);
+  const [stats, setStats] = useState({
+    topicsCount: 0,
+    retention: 0,
+    errors: 0
+  });
 
   useEffect(() => {
     if (!sessionId) {
@@ -23,6 +28,13 @@ export function useTutorV2Session(sessionId?: string) {
 
         if (fetchError) throw fetchError;
         setSession(data);
+
+        // Simulated session stats for the timeline
+        setStats({
+          topicsCount: 5,
+          retention: 78,
+          errors: 2
+        });
       } catch (err) {
         setError(err);
       } finally {
@@ -33,5 +45,5 @@ export function useTutorV2Session(sessionId?: string) {
     fetchSession();
   }, [sessionId]);
 
-  return { session, isLoading, error };
+  return { session, isLoading, error, stats };
 }
