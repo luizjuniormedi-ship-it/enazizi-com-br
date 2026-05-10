@@ -28,9 +28,9 @@ const AGENTS: AgentDef[] = [
     category: "ensino",
   },
   {
-    to: "/dashboard/mentor",
+    to: "/dashboard/tutor-v2",
     icon: Sparkles,
-    title: "Tutor IA — Mentor Principal (Legado)",
+    title: "Tutor IA — Mentor Principal",
     description:
       "Seu professor particular. Aulas pelo Protocolo ENAZIZI: explicação → fisiopatologia → clínica → questões → caso discursivo.",
     accent: "success",
@@ -138,7 +138,7 @@ const CATEGORY_META = {
 
 const SPOTLIGHT: SpotlightAgent[] = [
   {
-    to: "/dashboard/mentor",
+    to: "/dashboard/tutor-v2",
     icon: Sparkles,
     title: "Aprenda qualquer tema com seu Tutor IA",
     description:
