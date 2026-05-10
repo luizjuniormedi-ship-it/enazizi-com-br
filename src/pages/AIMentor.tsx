@@ -259,18 +259,26 @@ const PedagogicalHeaderBridge = ({
 
 const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   console.log("[AIMentor] Rendering with ref:", !!ref);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialTopic = searchParams.get("topic") || "";
+  const autoStartProcessed = useRef(false);
   
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
 
   useEffect(() => {
-    if (initialTopic && !hasStarted) {
+    if (initialTopic && !hasStarted && !autoStartProcessed.current) {
+      console.log("[AIMentor] Auto-starting with topic:", initialTopic);
+      autoStartProcessed.current = true;
       handleSend(initialTopic);
+      
+      // Limpar o parâmetro da URL para evitar duplicidade no refresh
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("topic");
+      setSearchParams(newParams, { replace: true });
     }
-  }, []);
+  }, [initialTopic]);
 
   const handleSend = (prompt: string) => {
     setIsCinematicLoading(true);
