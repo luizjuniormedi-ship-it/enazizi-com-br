@@ -179,6 +179,11 @@ const AgentChat = ({
     URL.revokeObjectURL(url);
   }, [chat.activeConversationId, chat.messages.length, lessonStatus, topic]);
 
+  useEffect(() => {
+    window.addEventListener('download-forensics', downloadForensics);
+    return () => window.removeEventListener('download-forensics', downloadForensics);
+  }, [downloadForensics]);
+
   const handleTransformSession = useCallback(async () => {
     console.error("🔥 REAL_CLICK_SOURCE", {
       component: "AgentChat.tsx",
