@@ -1,6 +1,6 @@
 
 import { PROMPT_COMPLETO } from "./supabase/functions/_shared/enazizi-prompt.ts";
-import { runAI, PROMPT_PROFILES } from "./supabase/functions/_shared/ai-runtime-orchestrator.ts";
+import { runAI, selectAIModel } from "./supabase/functions/_shared/ai-runtime-orchestrator.ts";
 
 const themes = [
   { topic: "IAM Tipo 2", message: "Me explique IAM Tipo 2." },
@@ -19,6 +19,15 @@ async function testTheme(theme) {
 
   const start = Date.now();
   try {
+    const selection = selectAIModel({
+      taskType: theme.topic === "Questão A-E" ? "simulado_review" : "tutor_chat",
+      topic: theme.topic,
+      complexity: "high",
+      budgetMode: "premium",
+    });
+    
+    console.log(`[Selection] ${theme.topic}: ${selection.model} (${selection.reason})`);
+
     const result = await runAI({
       taskType: theme.topic === "Questão A-E" ? "simulado_review" : "tutor_chat",
       topic: theme.topic,
@@ -28,12 +37,17 @@ async function testTheme(theme) {
     });
 
     const latency = Date.now() - start;
+    
+    const filename = `test_output_${theme.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
+    await Deno.writeTextFile(filename, result.content);
+
     return {
       theme: theme.topic,
       content: result.content,
       model: result.model,
       latency,
-      success: true
+      success: true,
+      selection
     };
   } catch (err) {
     return {
@@ -45,47 +59,45 @@ async function testTheme(theme) {
 }
 
 async function validate() {
-  console.log("Starting Parallel Forensic Validation...");
+  console.log("Starting Forensic Validation...");
   const results = await Promise.all(themes.map(testTheme));
 
-
-  // Final Evaluation Logic
   console.log("\n--- EVALUATION RESULTS ---\n");
   
   const tableData = results.map(r => {
     if (!r.success) return { Tema: r.theme, Status: "ERROR: " + r.error };
     
     const content = r.content;
-    const blocks = [
-      "Missão clínica", "Intuição clínica", "Feynman", "Técnica", "Fisiopatologia", 
-      "Mecanismo molecular", "Hemodinâmica", "Aplicação clínica", "Diferencial", 
-      "Exames", "Conduta", "Pegadinhas", "Erros de preceptoria", "Active recall", "FSRS/Planner"
-    ];
+    const lower = content.toLowerCase();
     
-    // Simple heuristic check for presence of blocks/sections
-    // The prompt enforces visual formatting with emojis and markers
-    let presentCount = 0;
-    if (content.includes("1️⃣") || content.includes("INTUIÇÃO")) presentCount++;
-    if (content.includes("2️⃣") || content.includes("FISIOPATOLOGIA")) presentCount++;
-    if (content.includes("3️⃣") || content.includes("RACIOCÍNIO")) presentCount++;
-    if (content.includes("4️⃣") || content.includes("CONDUTA")) presentCount++;
-    if (content.includes("5️⃣") || content.includes("STRATEGY") || content.includes("BANCA")) presentCount++;
-    if (content.includes("🔬") || content.includes("🧬")) presentCount++;
-    if (content.includes("🩺") || content.includes("📋")) presentCount++;
-    if (content.includes("❓") || content.includes("RECALL")) presentCount++;
-    if (content.includes("QUESTION_REVIEW_METADATA")) presentCount += 5; // Metadata check
-
-    // Mapping presentCount to a 15-block scale for the table
-    // This is an estimation for the validation summary
-    const blocksCount = Math.min(15, Math.floor(presentCount * 1.5) + (r.theme === "Questão A-E" ? 5 : 0));
+    // Detailed block check
+    const blocks = {
+      "Missão": /missão|missao/i.test(lower),
+      "Intuição": /intuição|intuicao/i.test(lower) || content.includes("1️⃣"),
+      "Lay/Feynman": /feynman|leigo|analogia/i.test(lower),
+      "Técnica": /técnica|tecnica/i.test(lower) || content.includes("🔬"),
+      "Fisiopato": /fisiopatologia|fisiopato/i.test(lower) || content.includes("🧬") || content.includes("2️⃣"),
+      "Molecular": /molecular|celular|receptor/i.test(lower),
+      "Hemodinâmica": /hemodinâmica|hemodinamica|sistêmica/i.test(lower),
+      "Aplicação": /aplicação|clinica|hospitalar/i.test(lower) || content.includes("3️⃣") || content.includes("🏥"),
+      "Diferencial": /diferencial|ddx/i.test(lower) || content.includes("🔀"),
+      "Exames": /exame|diagnóstico/i.test(lower) || content.includes("🩺"),
+      "Conduta": /conduta|guideline|diretriz/i.test(lower) || content.includes("💊") || content.includes("4️⃣"),
+      "Pegadinhas": /pegadinha|banca|distrator/i.test(lower) || content.includes("⚠️") || content.includes("5️⃣"),
+      "Preceptoria": /preceptoria|erro|residência/i.test(lower),
+      "Recall": /recall|pergunta|quiz/i.test(lower) || content.includes("❓"),
+      "Integração": /fsrs|planner|error bank/i.test(lower) || content.includes("QUESTION_REVIEW_METADATA")
+    };
+    
+    const presentCount = Object.values(blocks).filter(Boolean).length;
 
     return {
       Tema: r.theme,
-      Blocks: `${blocksCount}/15`,
+      Blocks: `${presentCount}/15`,
       Model: r.model,
-      Score: blocksCount >= 13 ? "9.5/10" : "7.0/10",
+      Score: (presentCount / 1.5).toFixed(1), // 0-10 scale approx
       Integrations: "Logs OK",
-      Status: blocksCount >= 13 ? "✅ APROVADO" : "🟡 ATENÇÃO"
+      Status: presentCount >= 13 ? "✅ APROVADO" : "🟡 ATENÇÃO"
     };
   });
 
