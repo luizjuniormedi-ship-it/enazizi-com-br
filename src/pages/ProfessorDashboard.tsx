@@ -29,7 +29,7 @@ import ProfessorInterventionTimeline from "@/components/professor/ProfessorInter
 import ProfessionalLeaderboard from "@/components/professor/ProfessionalLeaderboard";
 import OperationalKpiBar from "@/components/professor/OperationalKpiBar";
 import StudentOperationalDrawer from "@/components/professor/StudentOperationalDrawer";
-import QuickInterventionDialog from "@/components/professor/QuickInterventionDialog";
+import QuickInterventionDialog, { type InterventionType } from "@/components/professor/QuickInterventionDialog";
 import { useClassAnalytics } from "@/hooks/useClassAnalytics";
 
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
