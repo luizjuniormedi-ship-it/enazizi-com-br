@@ -340,8 +340,17 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       }
 
-      const applyDelta = (fullText: string) => {
+      const applyDelta = (fullText: string, data?: any) => {
         assistantSoFar = fullText;
+        if (data?.sources && Array.isArray(data.sources)) {
+          ragBibliography = data.sources.map((s: any) => ({
+            id: s.id,
+            source: s.source || "Base de Conhecimento",
+            content: s.content || "",
+            document_id: s.document_id
+          }));
+        }
+
         setMessages((prev) => {
           const last = prev[prev.length - 1];
           if (
