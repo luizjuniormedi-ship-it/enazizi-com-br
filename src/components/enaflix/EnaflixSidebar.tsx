@@ -55,7 +55,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
       { to: "/dashboard/mnemonic-studio", label: "Mnemônicos", icon: BrainCircuit },
-      { to: "/dashboard/mentor", label: "Tutor IA", icon: Brain, badge: "Premium" },
+      { to: "/dashboard/tutor-v2", label: "Tutor IA", icon: Brain, badge: "Premium" },
     ]
   },
   {

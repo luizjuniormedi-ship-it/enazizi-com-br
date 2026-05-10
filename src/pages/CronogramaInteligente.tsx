@@ -99,7 +99,7 @@ export interface TemaComputado extends TemaEstudado {
   diasSemRevisar: number;
 }
 
-export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "historico" | "graficos" | "config" | "plano";
+export type TabCronograma = "visao" | "hoje" | "novo" | "temas" | "criticos" | "historico" | "graficos" | "config";
 
 /* ======================== CONSTANTS ======================== */
 
@@ -301,7 +301,7 @@ const CronogramaInteligente = () => {
 
   // Recarregar dados ao trocar de tab para garantir dados frescos
   useEffect(() => {
-    if (tab !== "plano" && tab !== "novo" && tab !== "config") {
+    if (tab !== "novo" && tab !== "config") {
       loadData();
     }
   }, [tab]);
@@ -567,28 +567,7 @@ const CronogramaInteligente = () => {
         <CronogramaConfiguracoes config={config} onSave={handleSaveConfig} />
       )}
 
-      {tab === "plano" && (
-        // [planner-unification-final] StudyPlanContent (shape semanal weeklySchedule) APOSENTADO.
-        // O estado tab="plano" foi mantido apenas para compatibilidade com links antigos.
-        // A entrada na navegação (CronogramaHeader) foi removida.
-        <div className="glass-card p-6 text-center space-y-3">
-          <h3 className="text-lg font-semibold">📋 Plano de Estudos semanal aposentado</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            O plano semanal foi substituído pelo <strong>Plano do Dia</strong>, gerado e atualizado
-            automaticamente pelo motor adaptativo do ENAZIZI.
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Acesse <strong>Plano do Dia</strong> no menu principal para ver suas tarefas de hoje.
-          </p>
-          <button
-            type="button"
-            onClick={() => setTab("hoje")}
-            className="mt-2 px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition"
-          >
-            Ir para Agenda de Hoje
-          </button>
-        </div>
-      )}
+      {/* [planner-unification-final] O estado tab="plano" (weeklySchedule) foi aposentado */}
     </div>
   );
 };
