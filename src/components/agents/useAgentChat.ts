@@ -584,7 +584,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession, messages]);
+  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession, messages, initialConversationId]);
 
   const handleSaveMessage = useCallback(
     async (idx: number, content: string) => {
