@@ -37,7 +37,8 @@ const ProfessorDashboard = () => {
   const navigate = useNavigate();
   const [simulados, setSimulados] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("simulados");
+  const [activeTab, setActiveTab] = useState("operacional");
+  const [activeSub, setActiveSub] = useState<string>("risco");
   const [resultsDialog, setResultsDialog] = useState<ResultsDialogState>({
     open: false,
     simulado: null,
