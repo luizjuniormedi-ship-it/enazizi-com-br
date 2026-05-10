@@ -278,7 +278,7 @@ const App = () => (
                   <Route path="quiz" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo" />} />
                   <Route path="revisoes" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo?focus=reviews" />} />
                   <Route path="revisao" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo?focus=reviews" />} />
-                  <Route path="tutor" element={<PreserveQueryNavigate to="/dashboard/sessao-estudo" />} />
+                  <Route path="tutor" element={<TutorV2Redirect />} />
                   <Route path="questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="banco-questoes" element={<Navigate to="/dashboard/simulados" replace />} />
                   <Route path="plano-dia" element={<Navigate to="/dashboard" replace />} />
