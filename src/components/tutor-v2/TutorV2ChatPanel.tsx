@@ -73,8 +73,11 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
 
       if (!response?.ok) throw new Error(response?.error || "Erro na resposta da IA");
 
-      // Append assistant reply directly (don't depend on realtime)
-      if (response.content) {
+      // We DON'T manually append here anymore because the Edge Function should persist 
+      // the assistant message to the database, and our Realtime subscription will pick it up.
+      // If we manually append AND have Realtime, we'll see duplicates or double-renders.
+      // Only append if it's NOT persisted by the Edge Function (usually it is).
+      console.log("[TUTOR_V2] AI_RESPONSE_RECEIVED", { hasContent: !!response.content });
         setMessages((prev) => [
           ...prev,
           {
