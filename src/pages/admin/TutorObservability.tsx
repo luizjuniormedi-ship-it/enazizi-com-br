@@ -157,7 +157,7 @@ export default function TutorObservability() {
                     <TableCell>
                       <div className="font-medium">{audit.session?.topic || "No topic"}</div>
                       <div className="text-xs text-muted-foreground truncate max-w-[150px]">
-                        {audit.user?.email || "Unknown user"}
+                        ID: {audit.user_id.slice(0, 8)}...
                       </div>
                     </TableCell>
                     <TableCell>
