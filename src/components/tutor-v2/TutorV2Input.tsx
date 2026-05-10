@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
-import { Send, Mic, Paperclip } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, Mic, Paperclip, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
 
 interface TutorV2InputProps {
   onSendMessage: (text: string) => void;
