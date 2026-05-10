@@ -21,6 +21,9 @@ interface MnemonicRequest {
   termos: string[];
   estilo?: string;
   publico?: string;
+  specialty?: string;
+  subtheme?: string;
+  requiredTerms?: string[];
 }
 
 interface Associacao {
