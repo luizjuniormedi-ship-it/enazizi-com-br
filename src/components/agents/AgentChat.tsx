@@ -1,3 +1,4 @@
+console.error("🔥 BUILD_ID", import.meta.env.VITE_APP_VERSION || "DEV_SNAPSHOT");
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";

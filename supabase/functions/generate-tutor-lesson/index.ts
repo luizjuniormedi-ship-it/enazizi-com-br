@@ -14,6 +14,7 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 });
 
 serve(async (req) => {
+  console.error("[EDGE] generate-tutor-lesson :: REQUEST_RECEIVED");
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const requestId = crypto.randomUUID();
