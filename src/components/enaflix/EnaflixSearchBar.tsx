@@ -9,7 +9,7 @@ interface Props {
   autoFocus?: boolean;
 }
 
-export function EnaflixSearchBar({ value, onChange, placeholder, autoFocus }: Props) {
+export function EnaflixSearchBar({ value, onChange, placeholder, autoFocus, onEnter }: Props & { onEnter?: () => void }) {
   const ref = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -32,6 +32,11 @@ export function EnaflixSearchBar({ value, onChange, placeholder, autoFocus }: Pr
         ref={ref}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && onEnter) {
+            onEnter();
+          }
+        }}
         placeholder={placeholder ?? "Buscar módulos..."}
         aria-label="Buscar módulos"
         className="flex-1 bg-transparent border-0 outline-none text-sm text-white placeholder:text-white/50 px-3 py-2.5"
