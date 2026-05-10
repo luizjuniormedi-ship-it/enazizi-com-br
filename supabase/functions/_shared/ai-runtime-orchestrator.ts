@@ -497,10 +497,14 @@ export async function runAI(input: AIRunInput): Promise<AIRunResult> {
     return rest;
   }
 
-  const chain: ModelRef[] = [
+  const fullChain: ModelRef[] = [
     { provider: selection.provider, model: selection.model },
     ...selection.fallbackChain,
   ];
+
+  // Health-aware filtering: pula modelos com falha recente conhecida.
+  // Se nenhum sobrar, mantém a chain original (não bloqueia tudo).
+  const chain = await filterByHealth(input.supabase, fullChain);
 
   for (let i = 0; i < chain.length; i++) {
     const ref = chain[i];
