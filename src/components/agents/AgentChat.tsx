@@ -54,6 +54,8 @@ interface AgentChatProps {
   pedagogicalHeader?: (ctx: { messages: { role: string; content: string }[]; isLoading: boolean; userInput: string }) => React.ReactNode;
   /** Hide the uploads picker entirely (useful for pure tutor experiences). */
   hideUploadsPicker?: boolean;
+  /** Optional initial conversation to load. */
+  initialConversationId?: string | null;
 }
 
 const AgentChat = ({
