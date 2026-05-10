@@ -36,8 +36,10 @@ async function testTheme(theme) {
       budgetMode: "premium",
     });
 
-    const latency = Date.now() - start;
-    
+    if (result.fallbackUsed) {
+      console.log(`[Fallback] ${theme.topic} failed on primary model. First attempt error: ${result.attempts[0].code}: ${result.attempts[0].message}`);
+    }
+
     const filename = `test_output_${theme.topic.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.txt`;
     await Deno.writeTextFile(filename, result.content);
 
