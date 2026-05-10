@@ -527,12 +527,19 @@ const StudySession = () => {
   }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode, searchParams, getStudySessionHeaders, targetExam]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
+    if (!mountedRef.current) return;
     console.debug("[StudySession] streamChat called", { currentPhase, currentTopic, msgsCount: msgs.length });
+    
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+
     setIsLoading(true);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
 
     try {
       const headers = await getStudySessionHeaders();
+      if (!mountedRef.current) return;
       console.debug("[StudySession] invoking study-session function...");
       
       const resp = await fetch(url, {
@@ -546,6 +553,7 @@ const StudySession = () => {
           studyMode,
           targetExam,
         }),
+        signal: controller.signal,
       });
 
       console.debug("[StudySession] study-session response received", { status: resp.status, ok: resp.ok });
