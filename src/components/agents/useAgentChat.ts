@@ -523,6 +523,13 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   // Auto-fire initialPrompt
   useEffect(() => {
+    // Se temos um ID de conversa inicial sendo carregado, não disparar autostart
+    if (initialConversationId) {
+      console.debug("[useAgentChat] initialConversationId present, deferring initialPrompt autostart");
+      initialPromptFiredRef.current = true;
+      return;
+    }
+
     // Se temos mensagens e o prompt inicial, e a conversa já é a ativa, marcamos como disparado para evitar duplicidade no refresh
     if (messages.length > 1 && initialPrompt && !initialPromptFiredRef.current) {
       // Formata o prompt esperado para comparação
