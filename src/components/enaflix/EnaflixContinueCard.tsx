@@ -52,20 +52,22 @@ export function EnaflixContinueCard({
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-tighter">
-            <span className="text-white/40">Progresso</span>
-            <span className="text-white/80">{progress}%</span>
+        {typeof progress === "number" && (
+          <div className="space-y-2">
+            <div className="flex justify-between items-end text-[10px] font-bold uppercase tracking-tighter">
+              <span className="text-white/40">Progresso</span>
+              <span className="text-white/80">{progress}%</span>
+            </div>
+            <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 1, ease: "easeOut" }}
+                className="h-full bg-gradient-to-r from-primary via-violet-500 to-primary/80 shadow-[0_0_10px_rgba(var(--pixar-blue),0.5)]"
+              />
+            </div>
           </div>
-          <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 1, ease: "easeOut" }}
-              className="h-full bg-gradient-to-r from-primary via-violet-500 to-primary/80 shadow-[0_0_10px_rgba(var(--pixar-blue),0.5)]"
-            />
-          </div>
-        </div>
+        )}
 
         <div className="flex items-center justify-between pt-2">
           <div className="flex flex-col gap-0.5">
