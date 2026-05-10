@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 
 const MOBILE_ITEMS = [
   { to: "/enaflix", label: "Início", icon: Home },
-  { to: "/dashboard/mentor", label: "Tutor IA", icon: Brain },
+  { to: "/dashboard/tutor-v2", label: "Tutor IA", icon: Brain },
   { to: "/dashboard/sessao-estudo", label: "Estudar", icon: PlayCircle },
   { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
   { to: "/dashboard/perfil", label: "Perfil", icon: User },
