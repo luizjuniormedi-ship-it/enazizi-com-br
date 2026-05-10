@@ -328,9 +328,9 @@ const AgentChat = ({
         onTransformSession={
           sessionLesson?.aggregation?.manual_video_url 
             ? () => window.open(sessionLesson.aggregation.manual_video_url, '_blank')
-            : (functionName.includes("tutor") ? handleTransformSession : undefined)
+            : (functionName.includes("tutor") && chat.activeConversationId ? handleTransformSession : undefined)
         }
-        hasMessages={chat.messages.filter(m => m.role === "assistant").length > 0}
+        hasMessages={chat.messages.filter(m => m.role === "assistant").length > 1}
         lessonStatus={sessionLesson ? (sessionLesson.aggregation?.manual_video_url ? 'ready' : 'processing') : 'idle'}
       />
 

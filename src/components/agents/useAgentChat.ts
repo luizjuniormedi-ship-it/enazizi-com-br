@@ -523,9 +523,25 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   // Auto-fire initialPrompt
   useEffect(() => {
+    // Se temos um ID de conversa inicial sendo carregado, não disparar autostart
+    if (initialConversationId) {
+      console.debug("[useAgentChat] initialConversationId present, deferring initialPrompt autostart");
+      initialPromptFiredRef.current = true;
+      return;
+    }
+
     // Se temos mensagens e o prompt inicial, e a conversa já é a ativa, marcamos como disparado para evitar duplicidade no refresh
     if (messages.length > 1 && initialPrompt && !initialPromptFiredRef.current) {
-      const hasInitialMessage = messages.some(m => m.role === "user" && m.content.toLowerCase().includes(initialPrompt.toLowerCase()));
+      // Formata o prompt esperado para comparação
+      const formattedInitial = initialPrompt.toLowerCase().startsWith("quero estudar") 
+        ? initialPrompt.toLowerCase() 
+        : `quero estudar: ${initialPrompt.toLowerCase()}`;
+
+      const hasInitialMessage = messages.some(m => 
+        m.role === "user" && 
+        (m.content.toLowerCase().includes(formattedInitial) || m.content.toLowerCase().includes(initialPrompt.toLowerCase()))
+      );
+
       if (hasInitialMessage) {
         console.debug("[useAgentChat] initialPrompt already present in history, skipping autostart");
         initialPromptFiredRef.current = true;
@@ -568,7 +584,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession, messages]);
+  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession, messages, initialConversationId]);
 
   const handleSaveMessage = useCallback(
     async (idx: number, content: string) => {
