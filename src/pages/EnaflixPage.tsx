@@ -299,12 +299,14 @@ export default function EnaflixPage() {
           destination: m.route
         }
       });
-      if (m.route) {
-        if (/^https?:\/\//i.test(m.route)) {
-          window.open(m.route, "_blank", "noopener,noreferrer");
-        } else {
-          navigate(m.route);
-        }
+      if (!m.route) {
+        console.warn(`[Enaflix] Card "${m.id}" sem rota definida — navegação ignorada`);
+        return;
+      }
+      if (/^https?:\/\//i.test(m.route)) {
+        window.open(m.route, "_blank", "noopener,noreferrer");
+      } else {
+        navigate(m.route);
       }
     },
     [recordVisit, navigate],
