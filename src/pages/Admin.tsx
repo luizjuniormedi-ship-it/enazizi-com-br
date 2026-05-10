@@ -151,6 +151,8 @@ function buildNavGroups(pendingCount: number): NavGroup[] {
         { key: "bi", label: "BI & KPIs", icon: BarChart3 },
         { key: "audit", label: "Auditoria", icon: Shield },
         { key: "system-checklist", label: "Checklist", icon: ShieldCheck },
+        { key: "tutor-qa", label: "Tutor QA Engine", icon: Beaker },
+
       ],
     },
   ];
