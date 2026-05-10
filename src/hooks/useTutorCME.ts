@@ -379,6 +379,7 @@ export const useTutorCME = () => {
 
       if (projectError) throw projectError;
       const projectId = project.id;
+      console.debug("[CME] project created", { projectId, aggregationId });
       setState(s => ({ ...s, projectId, progress: 20, message: "Projeto criado e enviado para revisão ADM." }));
 
       // Index to Educational Memory
