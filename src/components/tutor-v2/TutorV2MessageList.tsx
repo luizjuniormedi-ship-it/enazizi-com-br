@@ -61,14 +61,13 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
               ? "bg-slate-900/80 border border-white/5 text-slate-200 backdrop-blur-md" 
               : "bg-gradient-to-br from-indigo-600 to-indigo-700 text-white border border-white/10"
           )}>
-            <div className={cn(
-              "prose prose-invert prose-sm max-w-none",
-              msg.role === "user" && "prose-p:text-white prose-headings:text-white"
-            )}>
-              <ReactMarkdown>
-                {msg.content}
-              </ReactMarkdown>
-            </div>
+            {msg.role === "assistant" ? (
+              <ProgressiveBlocks content={msg.content} />
+            ) : (
+              <div className="prose prose-invert prose-sm max-w-none prose-p:text-white prose-headings:text-white">
+                <ReactMarkdown>{msg.content}</ReactMarkdown>
+              </div>
+            )}
 
             {msg.metadata?.flashcard_suggestion && (
               <motion.div 
