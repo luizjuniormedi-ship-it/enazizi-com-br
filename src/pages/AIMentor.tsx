@@ -285,26 +285,25 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
       console.debug("[AIMentor] topic detected in URL, starting auto-flow:", initialTopic);
       autoStartProcessed.current = true;
       handleStart(initialTopic);
+      
+      // Limpa o parâmetro topic imediatamente para evitar duplicidade no refresh
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("topic");
+      setSearchParams(newParams, { replace: true });
     } 
     // Se temos apenas sessão, já marcamos como iniciado (evita hero screen)
     else if (initialSessionId && !hasStarted) {
       console.debug("[AIMentor] session detected in URL, bypassing hero");
       setHasStarted(true);
       setActiveConversationId(initialSessionId);
-    }
-  }, [initialTopic, initialSessionId, hasStarted]);
-
-  // Limpa o parâmetro da URL apenas depois que o chat já foi montado e o autostart disparado
-  useEffect(() => {
-    if (hasStarted && (searchParams.has("topic") || searchParams.has("session") || searchParams.has("conversationId"))) {
-      console.debug("[AIMentor] Cleaning URL parameters after successful start");
+      
+      // Limpa os parâmetros de sessão para deixar a URL limpa
       const newParams = new URLSearchParams(searchParams);
-      // Removemos apenas topic se for autostart, mantemos conversationId se quisermos permitir refresh?
-      // Na verdade, para evitar duplicação no refresh, limpamos topic.
-      if (searchParams.has("topic")) newParams.delete("topic");
+      newParams.delete("session");
+      newParams.delete("conversationId");
       setSearchParams(newParams, { replace: true });
     }
-  }, [hasStarted, searchParams, setSearchParams]);
+  }, [initialTopic, initialSessionId, hasStarted, searchParams, setSearchParams]);
 
   const handleStart = (prompt: string) => {
     setPendingPrompt(prompt);
