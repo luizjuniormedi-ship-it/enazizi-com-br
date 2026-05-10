@@ -114,6 +114,9 @@ const StudySession = () => {
   const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const [targetExam, setTargetExam] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const reinforcementAbortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const firstQuestionTrackedRef = useRef(false);
   const sessionCompleteTrackedRef = useRef(false);
