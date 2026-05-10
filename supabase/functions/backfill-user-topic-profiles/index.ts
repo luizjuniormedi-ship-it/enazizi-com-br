@@ -183,9 +183,20 @@ Deno.serve(async (req) => {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY);
   const t0 = Date.now();
 
-  const targets: string[] = body?.user_id
-    ? [String(body.user_id)]
-    : await listActiveUsers(admin);
+  let targets: string[] = [];
+  if (body?.user_id) {
+    targets = [String(body.user_id)];
+  } else if (body?.force_all === true) {
+    // One-time historical backfill: todos os user_id de error_bank ∪ fsrs_cards
+    const ids = new Set<string>();
+    for (const [table] of [["error_bank"], ["fsrs_cards"]] as const) {
+      const { data } = await admin.from(table).select("user_id").limit(20000);
+      for (const r of (data || []) as any[]) if (r?.user_id) ids.add(String(r.user_id));
+    }
+    targets = Array.from(ids);
+  } else {
+    targets = await listActiveUsers(admin);
+  }
 
   const results: any[] = [];
   for (const uid of targets) {
