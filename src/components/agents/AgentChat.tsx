@@ -104,46 +104,41 @@ const AgentChat = ({
     fetchSessionLesson();
   }, [chat.activeConversationId]);
 
-  const handleTransformSession = useCallback(async () => {
-    if (chat.messages.length === 0) return;
-    
-    // Find the last assistant message to get some context for the title
-    const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
-    if (!lastAssistantMessage) return;
+  const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
 
-    // Bug fix: NUNCA criar conversationId fake — sem conversa persistida o
-    // pipeline CME não consegue agregar mensagens reais.
+  const handleTransformSession = useCallback(async () => {
+    if (chat.messages.length <= 1 || lessonStatus === 'processing') return;
+    
+    // Check if we have an active conversation
     if (!chat.activeConversationId) {
-      console.warn("[CME] Aborting transformSession: no active conversation persisted yet.");
-      toast.error("Aguarde a conversa ser salva antes de gerar a aula.", { id: "cme-no-conversation" });
+      toast.error("Aguarde a conversa ser salva antes de gerar a aula.");
       return;
     }
 
-    const extractionResult = extractInlineTutorBlocks(lastAssistantMessage.content);
-    const cognitiveBlocks = extractionResult.blocks;
-    const summaryBlock = cognitiveBlocks.find(b => b.type === 'summary');
-    const baseTitle = summaryBlock?.payload?.title || `Aula sobre ${topic || 'Medicina'}`;
-    const title = `🎬 Videoaula Completa: ${baseTitle}`;
-    const summary = summaryBlock?.payload?.bullets?.join(". ") || lastAssistantMessage.content.slice(0, 300);
+    setLessonStatus('processing');
+    const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
 
-    console.debug("[CME] handleTransformSession", {
-      conversationId: chat.activeConversationId,
-      messages: chat.messages.length,
-      lastAssistantLength: lastAssistantMessage.content.length,
-    });
+    try {
+      console.debug("[TutorLesson] Starting generation", { topic, conversationId: chat.activeConversationId });
+      
+      const result = await generateTextualLesson({
+        topic: topic || "Clínica Médica",
+        conversationId: chat.activeConversationId,
+        customContent: lastAssistantMessage?.content
+      });
 
-    await transformToVideo({
-      title,
-      specialty: specialty || "Geral",
-      topic: topic || "Clínica Médica",
-      summary,
-      sourceContent: lastAssistantMessage.content,
-      blocks: cognitiveBlocks,
-      conversationId: chat.activeConversationId,
-      isFullSession: true,
-      onComplete: (id) => console.debug("[CME] aggregation complete", { aggregationId: id })
-    });
-  }, [chat.messages, chat.activeConversationId, specialty, topic, transformToVideo]);
+      if (result.success) {
+        toast.success("Aula textual gerada! Iniciando renderização cinematográfica...");
+        setLessonStatus('ready');
+      } else {
+        throw new Error(result.message || "Falha ao gerar aula");
+      }
+    } catch (err: any) {
+      console.error("[TutorLesson] Generation failed", err);
+      setLessonStatus('failed');
+      toast.error(err.message || "O serviço de vídeo está indisponível, mas sua aula está salva.");
+    }
+  }, [chat.messages, chat.activeConversationId, topic, generateTextualLesson, lessonStatus]);
 
 
   // Upload handler
