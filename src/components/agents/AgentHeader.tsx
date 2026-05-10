@@ -20,7 +20,7 @@ interface AgentHeaderProps {
   onUploadClick: () => void;
   onTransformSession?: () => void;
   hasMessages?: boolean;
-  lessonStatus?: 'idle' | 'processing' | 'ready';
+  lessonStatus?: 'idle' | 'processing' | 'ready' | 'failed';
 }
 
 const AgentHeader = memo(({
