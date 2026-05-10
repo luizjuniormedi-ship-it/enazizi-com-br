@@ -47,6 +47,7 @@ export default function EnaflixPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
   const { user } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
@@ -196,7 +197,7 @@ export default function EnaflixPage() {
     });
   }, [visibleModules, query]);
 
-  const isSearching = query.trim().length > 0;
+  const isSearching = query.trim().length > 0 || showAll;
 
   const moduleById = useMemo(() => {
     const map = new Map<string, EnaflixModule>();
@@ -315,9 +316,24 @@ export default function EnaflixPage() {
   const handleSearchToggle = () => {
     setSearchOpen((v) => {
       const next = !v;
-      if (!next) setQuery("");
+      if (!next) {
+        setQuery("");
+        setShowAll(false);
+      }
       return next;
     });
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleShowAllModules = () => {
+    setSearchOpen(true);
+    setQuery("");
+    setShowAll(true);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -757,7 +773,7 @@ export default function EnaflixPage() {
               <div className="px-4 sm:px-8 lg:px-14 pt-2">
                 <button
                   type="button"
-                  onClick={handleSearchToggle}
+                  onClick={handleShowAllModules}
                   className="inline-flex items-center gap-2 text-sm font-medium text-white/70 hover:text-white transition-colors rounded-full px-4 py-2 hover:bg-white/[0.06] border border-white/10 hover:border-white/20"
                 >
                   <span>Ver todos os módulos</span>
