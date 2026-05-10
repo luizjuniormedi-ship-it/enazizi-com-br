@@ -18,14 +18,26 @@ export default function TutorV2Actions({ session }: TutorV2ActionsProps) {
   const handleGenerateLesson = async () => {
     setIsGenerating(true);
     try {
+      console.log("[GERAR_AULA] FUNCTION_START", { sessionId: session.id });
       const { data, error } = await supabase.functions.invoke("generate-tutor-v2-lesson", {
         body: { sessionId: session.id }
       });
 
+      console.log("[GERAR_AULA] FUNCTION_RESPONSE", { data, error });
+
       if (error) throw error;
 
-      setLessonData(data.lesson.content);
+      // Normalize lesson data
+      const lesson = data?.lesson?.content || data?.lesson || data?.content || data;
+      console.log("[GERAR_AULA] NORMALIZED_LESSON", lesson);
+
+      if (!lesson) {
+        throw new Error("Não foi possível extrair o conteúdo da aula da resposta.");
+      }
+
+      setLessonData(lesson);
       setShowPlayer(true);
+      console.log("[GERAR_AULA] PLAYER_OPENED");
       
       toast({
         title: "Aula Gerada!",

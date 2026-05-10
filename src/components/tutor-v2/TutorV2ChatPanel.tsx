@@ -46,17 +46,23 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
     setIsTyping(true);
 
     // Optimistic: append user message immediately
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: tempId,
-        role: "user",
-        content: text,
-        tutor_session_id: session.id,
-        user_id: user.id,
-        created_at: new Date().toISOString(),
-      },
-    ]);
+    setMessages((prev) => {
+      // Evitar duplicata se o realtime já inseriu
+      if (prev.some(m => m.id === tempId || (m.role === 'user' && m.content === text && Math.abs(new Date(m.created_at).getTime() - Date.now()) < 2000))) {
+        return prev;
+      }
+      return [
+        ...prev,
+        {
+          id: tempId,
+          role: "user",
+          content: text,
+          tutor_session_id: session.id,
+          user_id: user.id,
+          created_at: new Date().toISOString(),
+        },
+      ];
+    });
 
     try {
       // Persist user message
