@@ -75,15 +75,7 @@ const TAB_HELP: Record<string, { title: string; steps: string[] }> = {
       "Após melhorar o desempenho, o tema sai automaticamente desta lista",
     ],
   },
-  plano: {
-    title: "Plano de Estudos",
-    steps: [
-      "Importe um edital em PDF para gerar temas automaticamente por IA",
-      "Revise os temas extraídos e ajuste especialidades antes de confirmar",
-      "Todos os temas importados entram no cronograma com revisão agendada",
-      "Você também pode adicionar temas manualmente pela aba 'Novo Tema'",
-    ],
-  },
+  // [planner-unification-final] Ajuda da aba "plano" removida.
   historico: {
     title: "Histórico de Revisões",
     steps: [
