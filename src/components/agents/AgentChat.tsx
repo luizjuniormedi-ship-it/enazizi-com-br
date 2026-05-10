@@ -1,3 +1,8 @@
+console.error("🔥 BUILD_FORENSE", {
+  component: "AgentChat.tsx",
+  timestamp: Date.now(),
+  version: "FORENSE_V1"
+});
 console.error("🔥 BUILD_ID", import.meta.env.VITE_APP_VERSION || "DEV_SNAPSHOT");
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -112,6 +117,11 @@ const AgentChat = ({
 
 
   const handleTransformSession = useCallback(async () => {
+    console.error("🔥 REAL_CLICK_SOURCE", {
+      component: "AgentChat.tsx",
+      handler: "handleTransformSession",
+      ts: Date.now()
+    });
     console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AgentChat.tsx :: HANDLER=handleTransformSession");
     console.log("[GERAR_AULA] CLICK", {
       conversationId: chat.activeConversationId,

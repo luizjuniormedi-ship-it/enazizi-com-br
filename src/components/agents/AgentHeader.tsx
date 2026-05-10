@@ -1,3 +1,8 @@
+console.error("🔥 BUILD_FORENSE", {
+  component: "AgentHeader.tsx",
+  timestamp: Date.now(),
+  version: "FORENSE_V1"
+});
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -58,6 +63,11 @@ const AgentHeader = memo(({
             variant={lessonStatus === 'ready' ? "default" : "outline"} 
             size="sm" 
             onClick={() => {
+              console.error("🔥 REAL_CLICK_SOURCE", {
+                component: "AgentHeader.tsx",
+                handler: "Button:Gerar Aula",
+                ts: Date.now()
+              });
               console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AgentHeader.tsx :: HANDLER=Button:Gerar Aula");
               onTransformSession();
             }}
