@@ -97,6 +97,10 @@ serve(async (req) => {
       systemPrompt += `\n\n--- MATERIAL DE ESTUDO DO ALUNO ---\n${userContext}\n--- FIM DO MATERIAL ---`;
     }
 
+    if (userTopic || userSpecialty) {
+      systemPrompt += `\n\n--- CONTEXTO ATUAL DA SESSÃO ---\nTópico: ${userTopic || "Não especificado"}\nEspecialidade: ${userSpecialty || "Geral"}\n--- FIM DO CONTEXTO ---`;
+    }
+
     // PubMed enrichment (safe-failure)
     const searchTopic = extractSearchTopic(messages);
     if (searchTopic && searchTopic.length >= 3) {
