@@ -346,9 +346,9 @@ const AgentChat = ({
         onTransformSession={
           sessionLesson?.aggregation?.manual_video_url 
             ? () => window.open(sessionLesson.aggregation.manual_video_url, '_blank')
-            : (chat.activeConversationId ? handleTransformSession : undefined)
+            : handleTransformSession
         }
-        hasMessages={chat.messages.filter(m => m.role === "assistant").length > 0}
+        hasMessages={chat.messages.length > 1}
         lessonStatus={sessionLesson ? (sessionLesson.aggregation?.manual_video_url ? 'ready' : 'processing') : lessonStatus}
         isAdmin={isAdmin}
         onToggleDiagnostic={() => setShowDiagnostic(v => !v)}
