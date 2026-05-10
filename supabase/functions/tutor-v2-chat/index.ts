@@ -2,12 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { requireAuth } from "../_shared/require-auth.ts";
 import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
-
-const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
-const PRIMARY_MODEL = "google/gemini-3-flash-preview";
-const FALLBACK_MODEL = "google/gemini-2.5-flash";
-const AI_TIMEOUT_MS = 30_000;
-const AI_MAX_TOKENS = 4096;
+import { runAI, type AIComplexity, type AICognitiveLoad } from "../_shared/ai-runtime-orchestrator.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
