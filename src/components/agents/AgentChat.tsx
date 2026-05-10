@@ -72,6 +72,7 @@ const AgentChat = ({
     topic, subtopic, specialty, initialConversationId,
   });
 
+  const { isAdmin } = useAdminCheck();
   const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage } = useTutorCME();
   const sync = useTutorAdaptiveSync();
 
