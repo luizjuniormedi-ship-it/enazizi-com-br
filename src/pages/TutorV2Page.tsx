@@ -103,12 +103,13 @@ export default function TutorV2Page() {
             className="flex flex-col items-center text-center mb-16"
           >
             <div className="flex items-center gap-6 mb-8 group">
-              <div className="h-20 w-20 rounded-[2.2rem] bg-gradient-to-br from-indigo-500 via-indigo-600 to-purple-700 flex items-center justify-center shadow-2xl shadow-indigo-500/30 ring-1 ring-white/20 relative">
-                <Brain className="h-10 w-10 text-white animate-float-gentle" />
-                <div className="absolute -right-2 -top-2 h-8 w-8 rounded-full bg-slate-900 border border-indigo-500/50 flex items-center justify-center shadow-lg">
+              <div className="h-24 w-24 group-hover:scale-105 transition-transform duration-500 relative">
+                <MascotAvatar state="idle" size="lg" />
+                <div className="absolute -right-2 -top-2 h-8 w-8 rounded-full bg-slate-900 border border-indigo-500/50 flex items-center justify-center shadow-lg z-20">
                   <Sparkles className="h-4 w-4 text-indigo-400 animate-pulse" />
                 </div>
               </div>
+
               <div className="text-left">
                 <div className="flex items-center gap-2">
                   <h1 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">Tutor IA V2</h1>
