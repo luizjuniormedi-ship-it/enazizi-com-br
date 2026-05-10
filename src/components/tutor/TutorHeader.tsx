@@ -33,8 +33,8 @@ const TutorHeader = ({
       >
         <ArrowLeft className="h-5 w-5" />
       </Button>
-      <div className="h-14 w-11 sm:h-[4.5rem] sm:w-14 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg">
-        <img src={tutorAvatar} alt="Tutor" className="h-full w-full object-contain" />
+      <div className="h-14 w-11 sm:h-[4.5rem] sm:w-14 rounded-2xl overflow-hidden flex-shrink-0 tutor-glow float-gentle ring-2 ring-primary/30 shadow-lg bg-primary/10 p-1">
+        <img src="/src/assets/enazizi-mascot.png" alt="Tutor" className="h-full w-full object-contain" />
       </div>
       <div className="min-w-0">
         <h1 className="text-base sm:text-xl font-bold truncate">Tutor</h1>

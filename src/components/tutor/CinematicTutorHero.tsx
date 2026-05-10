@@ -116,19 +116,20 @@ export const CinematicTutorHero: React.FC<CinematicTutorHeroProps> = ({
             {/* Ring elegante */}
             <div
               className={cn(
-                "relative h-12 w-12 sm:h-14 sm:w-14 rounded-2xl overflow-hidden",
+                "relative h-12 w-12 sm:h-14 sm:w-14 rounded-2xl overflow-hidden flex items-center justify-center",
                 "ring-2 ring-white/15",
                 "shadow-[0_8px_24px_-6px_hsl(var(--module-hue)/0.4)]",
                 "transition-transform duration-700",
                 "[transition-timing-function:var(--ease-out-expo)]",
                 "hover:scale-105",
+                "bg-primary/20 p-1.5",
               )}
               style={{
                 animation: "float 6s ease-in-out infinite",
               }}
             >
               <img
-                src={tutorAvatar}
+                src="/src/assets/enazizi-mascot.png"
                 alt="Tutor IA"
                 className="h-full w-full object-contain"
               />

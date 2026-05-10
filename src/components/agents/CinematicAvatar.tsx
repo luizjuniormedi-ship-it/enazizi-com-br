@@ -38,7 +38,7 @@ export default function CinematicAvatar({
       {/* Avatar image */}
       <div className="relative z-[1] flex items-center justify-center h-full">
         <img
-          src={tutorCinematicAvatar}
+          src="/src/assets/enazizi-mascot.png"
           alt="Tutor Dr. Enazizi"
           className={`
             object-contain transition-all duration-700
