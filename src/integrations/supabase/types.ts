@@ -6386,6 +6386,7 @@ export type Database = {
           metadata: Json | null
           narrative_density: number | null
           pipeline_last_error: string | null
+          source_conversation_id: string | null
           started_at: string | null
           status: string | null
           title: string | null
@@ -6413,6 +6414,7 @@ export type Database = {
           metadata?: Json | null
           narrative_density?: number | null
           pipeline_last_error?: string | null
+          source_conversation_id?: string | null
           started_at?: string | null
           status?: string | null
           title?: string | null
@@ -6440,6 +6442,7 @@ export type Database = {
           metadata?: Json | null
           narrative_density?: number | null
           pipeline_last_error?: string | null
+          source_conversation_id?: string | null
           started_at?: string | null
           status?: string | null
           title?: string | null
@@ -6449,6 +6452,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "cme_session_aggregations_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "cme_session_aggregations_tutor_session_id_fkey"
             columns: ["tutor_session_id"]
