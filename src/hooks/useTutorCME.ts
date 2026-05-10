@@ -227,9 +227,9 @@ export const useTutorCME = () => {
         return chatData || [];
       };
 
-      // Até 3 tentativas com backoff 0/600/1200ms para esperar persistência.
-      for (let attempt = 0; attempt < 3 && messages.length === 0; attempt++) {
-        if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 600));
+      // Até 5 tentativas com backoff progressivo para esperar persistência (total ~6s).
+      for (let attempt = 0; attempt < 5 && messages.length === 0; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, attempt * 1200));
         messages = await fetchAssistantMessages();
         debug(`fetch attempt ${attempt + 1}`, { messagesFound: messages.length });
       }
