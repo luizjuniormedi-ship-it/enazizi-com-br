@@ -150,7 +150,7 @@ Responda APENAS o JSON:
       success: true,
       lesson: lessonContent
     });
-
+    console.error("[EDGE] generate-tutor-lesson :: RESPONSE_SENT");
   } catch (error) {
     console.error(`[generate-tutor-lesson] [CRITICAL_ERROR] id=${requestId}`, error);
     return json({ 
