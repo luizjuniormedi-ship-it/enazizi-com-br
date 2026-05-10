@@ -98,6 +98,7 @@ const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "Prac
 
 const MnemonicStudioPage = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
 const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryPage"), "MnemonicHistoryPage");
+const TutorV2Page = lazyWithRetry(() => import("./pages/TutorV2Page"), "TutorV2Page");
 const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
 const MindMapFullscreen = lazyWithRetry(() => import("./pages/MindMapFullscreen"), "MindMapFullscreen");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
@@ -263,6 +264,8 @@ const App = () => (
                   <Route path="agentes" element={<ModuleErrorBoundary module="agentes"><AgentsHub /></ModuleErrorBoundary>} />
                   <Route path="uploads" element={<ModuleErrorBoundary module="uploads"><Uploads /></ModuleErrorBoundary>} />
                   <Route path="coach" element={<ModuleErrorBoundary module="coach"><MotivationalCoach /></ModuleErrorBoundary>} />
+                  <Route path="tutor-v2" element={<TutorV2Page />} />
+                  <Route path="tutor-v2/:sessionId" element={<TutorV2Page />} />
                   <Route path="orchestrator-insights" element={<AdminRoute><AdminOrchestratorInsights /></AdminRoute>} />
 
                   {/* Legado & Redirects Internos */}

@@ -17,14 +17,23 @@ interface AgentDef {
 
 const AGENTS: AgentDef[] = [
   {
+    to: "/dashboard/tutor-v2",
+    icon: Sparkles,
+    title: "Tutor IA V2 — Nova Geração",
+    description:
+      "Arquitetura limpa integrada ao ecossistema ENAZIZI. Médico, pedagógico, adaptativo e rastreável. Integrado ao Planner, FSRS e Error Bank.",
+    accent: "violet",
+    highlight: true,
+    badge: "Nova Geração",
+    category: "ensino",
+  },
+  {
     to: "/dashboard/mentor",
     icon: Sparkles,
-    title: "Tutor IA — Mentor Principal",
+    title: "Tutor IA — Mentor Principal (Legado)",
     description:
-      "Seu professor particular com GPT-5.4. Aulas pelo Protocolo ENAZIZI: explicação → fisiopatologia → clínica → questões → caso discursivo.",
+      "Seu professor particular. Aulas pelo Protocolo ENAZIZI: explicação → fisiopatologia → clínica → questões → caso discursivo.",
     accent: "success",
-    highlight: true,
-    badge: "Principal",
     category: "ensino",
   },
   {

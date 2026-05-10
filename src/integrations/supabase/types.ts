@@ -19327,6 +19327,7 @@ export type Database = {
           created_at: string
           id: string
           input_context_json: Json | null
+          metadata: Json | null
           model_used: string | null
           role: string
           tokens_used: number | null
@@ -19338,6 +19339,7 @@ export type Database = {
           created_at?: string
           id?: string
           input_context_json?: Json | null
+          metadata?: Json | null
           model_used?: string | null
           role?: string
           tokens_used?: number | null
@@ -19349,6 +19351,7 @@ export type Database = {
           created_at?: string
           id?: string
           input_context_json?: Json | null
+          metadata?: Json | null
           model_used?: string | null
           role?: string
           tokens_used?: number | null
@@ -19411,6 +19414,7 @@ export type Database = {
           mode: string
           source_context: string | null
           specialty: string | null
+          status: string | null
           subtopic: string | null
           topic: string | null
           updated_at: string
@@ -19425,6 +19429,7 @@ export type Database = {
           mode?: string
           source_context?: string | null
           specialty?: string | null
+          status?: string | null
           subtopic?: string | null
           topic?: string | null
           updated_at?: string
@@ -19439,6 +19444,7 @@ export type Database = {
           mode?: string
           source_context?: string | null
           specialty?: string | null
+          status?: string | null
           subtopic?: string | null
           topic?: string | null
           updated_at?: string
@@ -19510,6 +19516,62 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      tutor_v2_events: {
+        Row: {
+          cost: number | null
+          created_at: string
+          error_code: string | null
+          event_type: string
+          id: string
+          latency_ms: number | null
+          metadata: Json | null
+          model: string | null
+          provider: string | null
+          session_id: string | null
+          success: boolean | null
+          tokens: number | null
+          user_id: string
+        }
+        Insert: {
+          cost?: number | null
+          created_at?: string
+          error_code?: string | null
+          event_type: string
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          model?: string | null
+          provider?: string | null
+          session_id?: string | null
+          success?: boolean | null
+          tokens?: number | null
+          user_id: string
+        }
+        Update: {
+          cost?: number | null
+          created_at?: string
+          error_code?: string | null
+          event_type?: string
+          id?: string
+          latency_ms?: number | null
+          metadata?: Json | null
+          model?: string | null
+          provider?: string | null
+          session_id?: string | null
+          success?: boolean | null
+          tokens?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tutor_v2_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "tutor_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tutor_video_recommendation_telemetry: {
         Row: {
