@@ -21,8 +21,9 @@ const json = (data: any, status = 200) => new Response(JSON.stringify(data), {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
-  const requestId = crypto.randomUUID();
-  console.debug(`[mentor-chat] request_start id=${requestId}`);
+  const bodyForId = await req.clone().json().catch(() => ({}));
+  const requestId = bodyForId.requestId || crypto.randomUUID();
+  console.log(`[mentor-chat] SEND_STARTED id=${requestId}`);
 
   try {
     // 1. Authentication Hardening
