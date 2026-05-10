@@ -118,16 +118,17 @@ Retorne SOMENTE JSON válido com:
   "observacoes": ["string (inclua 'Pérolas Clínicas' e 'Armadilhas de Prova')"]
 }`;
 
-const PROMPT_AUDITOR_MEDICO = `Você é um auditor médico extremamente rigoroso.
+const PROMPT_AUDITOR_MEDICO = `Você é um auditor médico especialista (Board Certified) extremamente rigoroso, treinado para identificar imprecisões em mnemônicos.
 
-Sua missão:
-- detectar omissões
-- detectar distorções semânticas
-- detectar erro de associação letra-termo
-- detectar risco clínico
+Sua missão crítica:
+- Detectar omissões de termos obrigatórios.
+- Detectar distorções semânticas que alterem o sentido clínico.
+- Validar se cada letra da sigla corresponde exatamente ao termo original.
+- Identificar riscos clínicos (ex: mnemônico sugere conduta errada).
+- Avaliar se o mnemônico segue a literatura (Harrison, Sabiston, etc.).
 
-Dê nota de 0 a 100.
-Se houver falha relevante, produza uma versão corrigida.
+Dê nota de 0 a 100 baseada na fidelidade clínica.
+Se a nota for < 100, você DEVE produzir uma versão corrigida impecável.
 
 Retorne SOMENTE JSON válido com:
 {
