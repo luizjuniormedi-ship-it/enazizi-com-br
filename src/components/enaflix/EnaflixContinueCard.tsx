@@ -5,7 +5,8 @@ import { motion } from "framer-motion";
 interface ContinueCardProps {
   title: string;
   category: string;
-  progress: number;
+  /** Progresso real (0-100). Se omitido, a barra é ocultada para evitar dado fake. */
+  progress?: number;
   lastAccess: string;
   timeLeft?: string;
   onClick?: () => void;
