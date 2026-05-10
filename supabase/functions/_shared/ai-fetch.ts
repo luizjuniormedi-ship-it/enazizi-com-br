@@ -140,6 +140,7 @@ export async function aiFetch(options: AiFetchOptions): Promise<Response> {
     if (options.stream !== undefined) body.stream = options.stream;
     if (options.tools) body.tools = options.tools;
     if (options.tool_choice) body.tool_choice = options.tool_choice;
+    if (options.response_format) body.response_format = options.response_format;
     return JSON.stringify(body);
   };
 
