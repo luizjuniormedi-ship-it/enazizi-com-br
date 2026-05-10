@@ -244,7 +244,9 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
     params.set("topic", context.topic);
     if (context.specialty) params.set("specialty", context.specialty);
     params.set("mode", "transform");
-    // Redireciona para o Mentor Hub que agora lida com sessões persistidas e automação
+    
+    // Check if we have an active conversation ID in the state (though this panel doesn't track it as easily as AgentChat)
+    // We navigate to /dashboard/mentor which handles the session loading
     navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
