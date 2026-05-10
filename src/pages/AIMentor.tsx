@@ -288,12 +288,12 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   }, [initialTopic, initialSessionId]);
 
   useEffect(() => {
-    if (initialTopic && !hasStarted && !autoStartProcessed.current) {
-      console.debug("[AIMentor] topic detected in URL, starting auto-flow:", initialTopic);
+    if ((initialTopic || initialSessionId) && !hasStarted && !autoStartProcessed.current) {
+      console.debug("[AIMentor] topic or session detected in URL, starting auto-flow:", { initialTopic, initialSessionId });
       autoStartProcessed.current = true;
-      handleStart(initialTopic);
+      handleStart(initialTopic || "");
     }
-  }, [initialTopic]);
+  }, [initialTopic, initialSessionId, hasStarted]);
 
   // Limpa o parâmetro da URL apenas depois que o chat já foi montado e o autostart disparado
   useEffect(() => {
