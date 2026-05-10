@@ -11,52 +11,43 @@ const themes = [
   { topic: "Questão A-E", message: "Paciente de 62 anos, com dor torácica há 2 horas, ECG com supra de ST em DII, DIII e aVF. Qual a conduta?\nA) AAS + Clopidogrel + Heparina + Reperfusão imediata\nB) Nitrato sublingual + Morfina + Oxigênio\nC) Apenas observação\nD) Trombólise se delta T < 12h e sem hemodinâmica disponível\nE) Estreptoquinase é a primeira escolha sempre\nMarquei B. Qual a correta?" }
 ];
 
-async function validate() {
-  console.log("Starting Forensic Validation of Master Prompt V4...");
-  
-  const results = [];
+async function testTheme(theme) {
+  const messages = [
+    { role: "system", content: PROMPT_COMPLETO },
+    { role: "user", content: theme.message }
+  ];
 
-  for (const theme of themes) {
-    console.log(`Testing Theme: ${theme.topic}...`);
-    
-    // Simulate the logic in tutor-v2-chat
-    const messages = [
-      { role: "system", content: PROMPT_COMPLETO },
-      { role: "user", content: theme.message }
-    ];
+  const start = Date.now();
+  try {
+    const result = await runAI({
+      taskType: theme.topic === "Questão A-E" ? "simulado_review" : "tutor_chat",
+      topic: theme.topic,
+      messages,
+      complexity: "high",
+      budgetMode: "premium",
+    });
 
-    const start = Date.now();
-    try {
-      // In a real scenario, tutor-v2-chat would decide complexity and specialty
-      // We'll mimic the orchestrator's behavior
-      const result = await runAI({
-        taskType: theme.topic === "Questão A-E" ? "simulado_review" : "tutor_chat",
-        topic: theme.topic,
-        messages,
-        complexity: "high", // We want the best performance for validation
-        budgetMode: "premium",
-      });
-
-      const latency = Date.now() - start;
-      
-      results.push({
-        theme: theme.topic,
-        content: result.content,
-        model: result.model,
-        latency,
-        success: true
-      });
-      
-      console.log(`Done: ${theme.topic} (${result.model})`);
-    } catch (err) {
-      console.error(`Error testing ${theme.topic}:`, err);
-      results.push({
-        theme: theme.topic,
-        error: err.message,
-        success: false
-      });
-    }
+    const latency = Date.now() - start;
+    return {
+      theme: theme.topic,
+      content: result.content,
+      model: result.model,
+      latency,
+      success: true
+    };
+  } catch (err) {
+    return {
+      theme: theme.topic,
+      error: err.message,
+      success: false
+    };
   }
+}
+
+async function validate() {
+  console.log("Starting Parallel Forensic Validation...");
+  const results = await Promise.all(themes.map(testTheme));
+
 
   // Final Evaluation Logic
   console.log("\n--- EVALUATION RESULTS ---\n");
