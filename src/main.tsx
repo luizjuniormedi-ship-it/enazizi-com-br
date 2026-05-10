@@ -1,13 +1,3 @@
-/* ENAZIZI v2.3 */
-console.error("🔥 APP_BUILD_ID", {
-  build: "FORENSE_REAL_V1",
-  ts: Date.now()
-});
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((regs) => {
-    regs.forEach((r) => r.unregister());
-  });
-}
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
@@ -22,6 +12,18 @@ import {
 import { performHardAppReset, unregisterServiceWorkers } from "./lib/app-hard-reset";
 import "./index.css";
 import "./styles/enaflix-tokens.css";
+
+/* ENAZIZI v2.3 */
+console.error("🔥 APP_BUILD_ID", {
+  build: "FORENSE_REAL_V1",
+  ts: Date.now()
+});
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then((regs) => {
+    regs.forEach((r) => r.unregister());
+  });
+}
 
 const canonical = "enazizi.com";
 
