@@ -303,7 +303,7 @@ export const useTutorCME = () => {
     }));
 
     await supabaseClient.from("cme_lesson_blocks").insert(blockInserts as any);
-    return { aggregation, blocks };
+    return { aggregation, blocks: blockInserts };
   }, [supabaseClient]);
 
 
@@ -342,7 +342,11 @@ export const useTutorCME = () => {
       );
       aggregationId = result.aggregation.id;
       lessonBlocks = result.blocks;
-      console.debug("[CME] aggregation ok", { aggregationId, blocks: lessonBlocks.length });
+      console.debug("[CME] aggregation ok", { 
+        aggregationId, 
+        blocks: lessonBlocks.length,
+        resolvedSessionId: (result.aggregation as any).tutor_session_id
+      });
       
       // Update with title and manual flag
       await supabaseClient
