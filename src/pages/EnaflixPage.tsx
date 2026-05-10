@@ -17,6 +17,7 @@ import { EnaflixSectionRow } from "@/components/enaflix/EnaflixSectionRow";
 import { EnaflixModuleCard } from "@/components/enaflix/EnaflixModuleCard";
 import { EnaflixSectionRowVideo } from "@/components/enaflix/EnaflixSectionRowVideo";
 import { EnaflixSearchBar } from "@/components/enaflix/EnaflixSearchBar";
+import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixAmbientParticles } from "@/components/enaflix/EnaflixAmbientParticles";
 import { EnaflixBillboardSkeleton } from "@/components/enaflix/EnaflixBillboardSkeleton";
 import { EnaflixRowSkeleton } from "@/components/enaflix/EnaflixRowSkeleton";
