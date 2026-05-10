@@ -164,10 +164,14 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   const handleSend = useCallback(
     async (overridePrompt?: string, contextOverride?: string) => {
-      console.debug("[useAgentChat] handleSend", { overridePrompt, isLoading, sendCooldown });
+      const requestId = Math.random().toString(36).substring(7);
+      console.log(`[useAgentChat] SEND_STARTED id=${requestId}`, { overridePrompt, isLoading, sendCooldown });
 
       const text = overridePrompt || input.trim();
-      if (!text || isLoading || sendCooldown || !user) return;
+      if (!text || isLoading || sendCooldown || !user) {
+        console.warn(`[useAgentChat] SEND_SKIPPED id=${requestId}`, { text: !!text, isLoading, sendCooldown, user: !!user });
+        return;
+      }
 
       setSendCooldown(true);
       setTimeout(() => setSendCooldown(false), 2000);
@@ -199,6 +203,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         topic: topic ?? null,
         subtopic: subtopic ?? null,
         message_length: text.length,
+        requestId
       });
 
       // Ensure conversation exists (delegated to useTutorHistory)
