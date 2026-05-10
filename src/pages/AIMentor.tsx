@@ -272,16 +272,21 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
 
   useEffect(() => {
     if (initialTopic && !hasStarted && !autoStartProcessed.current) {
+      console.debug("[AIMentor] topic detected in URL, starting auto-flow:", initialTopic);
       autoStartProcessed.current = true;
-      
-      // Limpar o parâmetro da URL para evitar duplicidade no refresh
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete("topic");
-      setSearchParams(newParams, { replace: true });
-
       handleStart(initialTopic);
     }
   }, [initialTopic]);
+
+  // Limpa o parâmetro da URL apenas depois que o chat já foi montado e o autostart disparado
+  useEffect(() => {
+    if (hasStarted && autoStartProcessed.current && searchParams.has("topic")) {
+      console.debug("[AIMentor] Cleaning topic from URL after successful start");
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete("topic");
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [hasStarted, searchParams, setSearchParams]);
 
   const handleStart = (prompt: string) => {
     setPendingPrompt(prompt);
