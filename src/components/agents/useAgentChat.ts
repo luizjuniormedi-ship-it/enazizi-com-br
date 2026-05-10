@@ -330,18 +330,28 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
       try {
         console.log(`[TUTOR] RETRIEVAL_STARTED id=${requestId}`);
-        setLoadingStage("🔍 Buscando na Base de Conhecimento...");
+        setLoadingStage("🔍 Consultando base de conhecimento...");
         
         const ragPromise = supabase.functions.invoke("search-rag-context", {
-          body: { query: text, topic: topic || undefined }
+          body: { query: text, topic: topic || undefined, requestId }
         });
         
-        const timeoutPromise = new Promise((_, reject) => 
+        const timeoutPromise = new Promise<{data: any, error: any}>((_, reject) => 
           setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000)
         );
 
-        const { data: ragData } = await Promise.race([ragPromise, timeoutPromise]) as any;
-        console.log(`[TUTOR] RETRIEVAL_FINISHED id=${requestId}`, { success: ragData?.success });
+        const raceResult = await Promise.race([ragPromise, timeoutPromise]);
+        const ragData = raceResult?.data;
+        const ragError = raceResult?.error;
+
+        if (ragError) {
+          console.warn(`[TUTOR] RETRIEVAL_ERROR id=${requestId}`, ragError);
+        }
+
+        console.log(`[TUTOR] RETRIEVAL_FINISHED id=${requestId}`, { 
+          success: !!ragData?.success,
+          chunks: ragData?.bibliography?.length || 0
+        });
         
         if (ragData?.success && Array.isArray(ragData.bibliography)) {
           ragBibliography = ragData.bibliography;
@@ -352,6 +362,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
         }
       } catch (err) {
         console.warn(`[TUTOR] RETRIEVAL_FAILED id=${requestId}`, err);
+        // Não trava o fluxo, apenas loga e segue sem contexto RAG
       }
 
       if (isAdaptiveEnabled) {
