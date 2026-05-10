@@ -25,10 +25,10 @@ serve(async (req) => {
     const { userId } = auth;
 
     const body = await req.json();
-    const { sessionId, conversationId, topic, lessonType = "aula_completa", cmeEnabled = false } = body;
+    const { sessionId, conversationId, topic, lessonType = "aula_completa", cmeEnabled = false, customContent } = body;
 
-    if (!sessionId && !conversationId && !topic) {
-      return json({ error: "missing_params", message: "É necessário fornecer sessionId, conversationId ou topic." }, 400);
+    if (!sessionId && !conversationId && !topic && !customContent) {
+      return json({ error: "missing_params", message: "É necessário fornecer sessionId, conversationId, topic ou customContent." }, 400);
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
