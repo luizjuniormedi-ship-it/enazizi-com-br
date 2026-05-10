@@ -163,7 +163,7 @@ export function useTutorStream() {
             apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify(body),
-          signal: controller.signal,
+          signal: signal || controller.signal,
         });
 
       try {
