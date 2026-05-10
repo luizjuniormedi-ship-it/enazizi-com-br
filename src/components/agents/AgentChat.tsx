@@ -111,80 +111,57 @@ const AgentChat = ({
 
 
   const handleTransformSession = useCallback(async () => {
-    console.log("[LESSON_CLICK]", { sessionId: chat.activeConversationId, topic, messagesCount: chat.messages.length });
+    console.log("[GERAR_AULA] CLICK", {
+      conversationId: chat.activeConversationId,
+      sessionId: chat.activeConversationId, // Fallback if no specific sessionId
+      topic,
+      messagesCount: chat.messages.length
+    });
     
     if (chat.messages.length <= 1 || lessonStatus === 'processing') {
-      console.warn("[LESSON_CLICK_SKIPPED]", { length: chat.messages.length, status: lessonStatus });
+      console.warn("[GERAR_AULA] CLICK_SKIPPED", { length: chat.messages.length, status: lessonStatus });
       return;
     }
     
-    // Check if we have an active conversation
-    if (!chat.activeConversationId) {
-      toast.error("Aguarde a conversa ser salva antes de gerar a aula.");
-      return;
-    }
-
     setLessonStatus('processing');
-    const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
+    console.log("[GERAR_AULA] FUNCTION_START");
 
     try {
+      const lastAssistantMessage = [...chat.messages].reverse().find(m => m.role === "assistant");
       const payload = {
         topic: topic || "Clínica Médica",
         conversationId: chat.activeConversationId,
-        customContent: lastAssistantMessage?.content,
-        cmeEnabled: true // Vamos ativar CME para que ele gere a aggregation necessária para o AgilePlayer
+        messages: chat.messages.map(m => ({ role: m.role, content: m.content })),
+        lessonType: 'aula_completa'
       };
       
-      console.log("[LESSON_PAYLOAD]", payload);
+      const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
+        body: payload
+      });
+
+      console.log("[GERAR_AULA] FUNCTION_RESPONSE", { data, error });
+
+      if (error) throw error;
+
+      // Normalização da resposta conforme MODO HARD
+      const lesson = data?.lesson || data?.data?.lesson || data?.result?.lesson || data?.content || data?.message;
       
-      const result = await generateTextualLesson(payload);
-      console.log("[LESSON_RESPONSE]", result);
-
-      if (result.success && result.lessonId) {
-        toast.success("Aula textual gerada com sucesso!");
-        
-        // Buscar a aggregation criada para o AgilePlayer
-        const { data: agg } = await supabase
-          .from('cme_session_aggregations')
-          .select('id')
-          .eq('source_conversation_id', chat.activeConversationId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        if (agg) {
-          console.log("[LESSON_SAVED] aggregation_id found", agg.id);
-          setDebugLessonId(agg.id);
-          setLessonStatus('ready');
-          // O AgilePlayer será aberto via overlay
-        } else {
-          // Fallback se a aggregation demorar um pouco (race condition)
-          setTimeout(async () => {
-             const { data: aggRetry } = await supabase
-              .from('cme_session_aggregations')
-              .select('id')
-              .eq('source_conversation_id', chat.activeConversationId)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-             if (aggRetry) {
-               setDebugLessonId(aggRetry.id);
-               setLessonStatus('ready');
-             } else {
-               toast.error("Aula gerada, mas houve um atraso na sincronização visual.");
-               setLessonStatus('failed');
-             }
-          }, 2000);
-        }
-      } else {
-        throw new Error(result.message || "Falha ao gerar aula");
+      if (!lesson) {
+        throw new Error("Resposta da função não contém uma aula válida.");
       }
+
+      console.log("[GERAR_AULA] NORMALIZED_LESSON", lesson);
+      
+      setLessonData(lesson);
+      setLessonStatus('ready');
+      console.log("[GERAR_AULA] PLAYER_OPENED");
+      toast.success("Aula gerada com sucesso!");
     } catch (err: any) {
-      console.error("[LESSON_ERROR]", err);
+      console.error("[GERAR_AULA] ERROR", err);
       setLessonStatus('failed');
-      toast.error(err.message || "Não foi possível gerar a aula.");
+      toast.error(err.message || "Falha ao gerar aula.");
     }
-  }, [chat.messages, chat.activeConversationId, topic, generateTextualLesson, lessonStatus]);
+  }, [chat.messages, chat.activeConversationId, topic, lessonStatus]);
 
 
   // Upload handler
