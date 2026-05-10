@@ -386,7 +386,10 @@ const ProfessorDashboard = () => {
 const SUB_TABS: Record<string, { value: string; label: string }[]> = {
   operacional: [
     { value: "risco", label: "Alunos em risco" },
+    { value: "matriz", label: "Matriz cognitiva" },
     { value: "heatmap", label: "Heatmap turma" },
+    { value: "timeline", label: "Timeline" },
+    { value: "ranking", label: "Ranking" },
     { value: "aluno", label: "Aluno individual" },
     { value: "plantao", label: "Casos plantão" },
   ],
