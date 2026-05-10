@@ -56,7 +56,8 @@ serve(async (req) => {
       topic: userTopic, 
       specialty: userSpecialty,
       bypassRAG = false,
-      debugOnlyRAG = false
+      debugOnlyRAG = false,
+      jsonResponse = false
     } = body;
 
     console.log(`[mentor-chat] BODY_VALIDATED id=${requestId} conv=${conversationId} bypassRAG=${bypassRAG} debugOnlyRAG=${debugOnlyRAG}`);
