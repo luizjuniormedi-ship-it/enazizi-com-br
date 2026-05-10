@@ -114,6 +114,9 @@ const StudySession = () => {
   const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const [targetExam, setTargetExam] = useState<string | null>(null);
+  const mountedRef = useRef(true);
+  const streamAbortRef = useRef<AbortController | null>(null);
+  const reinforcementAbortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const firstQuestionTrackedRef = useRef(false);
   const sessionCompleteTrackedRef = useRef(false);
@@ -225,9 +228,12 @@ const StudySession = () => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  // Unmount: track completion (>=3 questions) or abandonment
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
+      streamAbortRef.current?.abort();
+      reinforcementAbortRef.current?.abort();
       if (firstQuestionTrackedRef.current && !sessionCompleteTrackedRef.current) {
         const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
         const completed = performance.totalQuestions >= 3;
@@ -313,6 +319,7 @@ const StudySession = () => {
           .limit(50);
         const studiedTopics = (studiedData || []).map((t) => t.tema);
 
+        if (!mountedRef.current) return;
         setPerformance({ totalQuestions: total, correctAnswers: correct, level, readiness, specialties, weakTopics, studiedTopics });
       } catch (err) {
         console.error("Error loading performance:", err);
@@ -322,6 +329,7 @@ const StudySession = () => {
   }, [user]);
 
   const savePerformance = useCallback(async (data: PerformanceData) => {
+    if (!mountedRef.current) return;
     setPerformance(data);
     if (user && data.studiedTopics.length > 0) {
       const latestTopic = data.studiedTopics[data.studiedTopics.length - 1];
@@ -426,6 +434,7 @@ const StudySession = () => {
           setPreReinforcementPhase(phase);
 
           setTimeout(async () => {
+            if (!mountedRef.current) return;
             setPhase("reinforcement");
             const reinforceMsg: Msg = {
               role: "user",
@@ -443,10 +452,16 @@ const StudySession = () => {
                 cycle: nextCycle,
               },
             };
+
+            reinforcementAbortRef.current?.abort();
+            const controller = new AbortController();
+            reinforcementAbortRef.current = controller;
+
             setIsLoading(true);
             const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
             try {
               const headers = await getStudySessionHeaders();
+              if (!mountedRef.current) return;
               const resp = await fetch(url, {
                 method: "POST",
                 headers,
@@ -458,15 +473,18 @@ const StudySession = () => {
                   studyMode,
                   targetExam,
                 }),
+                signal: controller.signal,
               });
               if (resp.ok) {
                 const reader = resp.body!.getReader();
                 const decoder = new TextDecoder();
                 let buf = "";
                 let content = "";
+                let assistantMsgCreated = false;
                 while (true) {
                   const { done, value } = await reader.read();
                   if (done) break;
+                  if (!mountedRef.current) break;
                   buf += decoder.decode(value, { stream: true });
                   let idx2: number;
                   while ((idx2 = buf.indexOf("\n")) !== -1) {
@@ -479,14 +497,15 @@ const StudySession = () => {
                     try {
                       const parsed = JSON.parse(json);
                       const delta = parsed.choices?.[0]?.delta?.content;
-                      if (delta) {
+                      if (delta && mountedRef.current) {
                         content += delta;
                         setMessages(prev => {
-                          const last = prev[prev.length - 1];
-                          if (last?.role === "assistant") {
+                          if (!assistantMsgCreated) {
+                            assistantMsgCreated = true;
+                            return [...prev, { role: "assistant", content }];
+                          } else {
                             return prev.map((m, i) => i === prev.length - 1 ? { ...m, content } : m);
                           }
-                          return [...prev, { role: "assistant", content }];
                         });
                       }
                     } catch {}
@@ -494,9 +513,16 @@ const StudySession = () => {
                 }
               }
             } catch (e) {
+              if (e instanceof Error && e.name === "AbortError") return;
               console.error("Reinforcement error:", e);
+            } finally {
+              if (mountedRef.current) {
+                setIsLoading(false);
+              }
+              if (reinforcementAbortRef.current === controller) {
+                reinforcementAbortRef.current = null;
+              }
             }
-            setIsLoading(false);
           }, 1500);
         }
       }
@@ -521,12 +547,19 @@ const StudySession = () => {
   }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode, searchParams, getStudySessionHeaders, targetExam]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
+    if (!mountedRef.current) return;
     console.debug("[StudySession] streamChat called", { currentPhase, currentTopic, msgsCount: msgs.length });
+    
+    streamAbortRef.current?.abort();
+    const controller = new AbortController();
+    streamAbortRef.current = controller;
+
     setIsLoading(true);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
 
     try {
       const headers = await getStudySessionHeaders();
+      if (!mountedRef.current) return;
       console.debug("[StudySession] invoking study-session function...");
       
       const resp = await fetch(url, {
@@ -540,6 +573,7 @@ const StudySession = () => {
           studyMode,
           targetExam,
         }),
+        signal: controller.signal,
       });
 
       console.debug("[StudySession] study-session response received", { status: resp.status, ok: resp.ok });
@@ -549,15 +583,14 @@ const StudySession = () => {
         if (contentType && contentType.includes("application/json")) {
           const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
           console.error("[StudySession] study-session function error JSON:", err);
+          if (!mountedRef.current) return;
           
           if (err.isFallbackActive) {
             console.info("[StudySession] Fallback active via JSON response");
-            // If the function already provided content via fallback, it might have been in the JSON (not implemented yet in edge, but good to have)
             if (err.fallbackContent) {
               const assistantMsg: Msg = { role: "assistant", content: err.fallbackContent };
               setMessages(prev => [...prev, assistantMsg]);
             }
-            setIsLoading(false);
             return;
           }
 
@@ -569,9 +602,9 @@ const StudySession = () => {
             toast({ title: "Erro no Tutor", description: err.error || "Ocorreu uma falha na IA.", variant: "destructive" });
           }
         } else {
+          if (!mountedRef.current) return;
           toast({ title: "Erro de Conexão", description: `Falha na comunicação com o servidor (${resp.status})`, variant: "destructive" });
         }
-        setIsLoading(false);
         return;
       }
 
@@ -586,10 +619,12 @@ const StudySession = () => {
       let hasReceivedChunks = false;
 
       console.debug("[StudySession] starting stream read...");
+      let assistantMsgCreated = false;
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        if (!mountedRef.current) break;
         
         hasReceivedChunks = true;
         buffer += decoder.decode(value, { stream: true });
@@ -612,17 +647,18 @@ const StudySession = () => {
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
+              if (!mountedRef.current) break;
               setMessages((prev) => {
-                const last = prev[prev.length - 1];
-                if (last?.role === "assistant" && prev.length > msgs.length) {
+                if (!assistantMsgCreated) {
+                  assistantMsgCreated = true;
+                  if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
+                    firstQuestionTrackedRef.current = true;
+                    trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
+                  }
+                  return [...prev, { role: "assistant", content: assistantContent }];
+                } else {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
-                
-                if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
-                  firstQuestionTrackedRef.current = true;
-                  trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
-                }
-                return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
           } catch (e) {
@@ -641,12 +677,14 @@ const StudySession = () => {
 
       // After streaming completes, check if this was an MCQ answer.
       const lastUserMsg = msgs[msgs.length - 1];
-      if (lastUserMsg?.role === "user" && assistantContent) {
+      if (lastUserMsg?.role === "user" && assistantContent && mountedRef.current) {
         if (currentPhase === "reinforcement") {
           const signal = parseStudySignal(assistantContent);
           if (signal && signal.wasCorrect && signal.confidence >= 0.5) {
             toast({ title: "✅ Conceito corrigido!", description: "Você fixou o ponto. Continuando..." });
-            setTimeout(() => setPhase(preReinforcementPhase), 2000);
+            setTimeout(() => {
+              if (mountedRef.current) setPhase(preReinforcementPhase);
+            }, 2000);
           }
           detectAndRegisterMCQ(assistantContent, lastUserMsg.content);
         } else if (currentPhase === "questions" || currentPhase === "discussion") {
@@ -654,7 +692,9 @@ const StudySession = () => {
         }
       }
     } catch (err: any) {
+      if (err.name === "AbortError") return;
       console.error("[StudySession] connection error in streamChat:", err);
+      if (!mountedRef.current) return;
       if (currentPhase === "questions") {
         toast({ 
           title: "Instabilidade na IA", 
@@ -669,7 +709,12 @@ const StudySession = () => {
         });
       }
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
+      if (streamAbortRef.current === controller) {
+        streamAbortRef.current = null;
+      }
     }
   };
 
