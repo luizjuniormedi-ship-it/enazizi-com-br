@@ -20,8 +20,8 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
           animate={{ opacity: 1 }}
           className="flex flex-col items-center justify-center py-20 text-center"
         >
-          <div className="h-20 w-20 rounded-[2rem] bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center mb-6">
-            <img src={enaziziMascot} alt="Tutor" className="h-16 w-16 object-contain animate-float-gentle" />
+          <div className="mb-6">
+            <MascotAvatar state="idle" size="lg" />
           </div>
           <h3 className="text-xl font-bold text-white mb-2">Iniciando sua Sessão Premium</h3>
           <p className="text-slate-400 text-sm max-w-xs">
