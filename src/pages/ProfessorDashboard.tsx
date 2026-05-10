@@ -83,6 +83,8 @@ const ProfessorDashboard = () => {
     []
   );
 
+  const classAnalytics = useClassAnalytics(callAPI);
+
   const loadSimulados = useCallback(async () => {
     if (!session) return;
     setLoading(true);
