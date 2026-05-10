@@ -27,6 +27,8 @@ interface UseAgentChatOptions {
   topic?: string | null;
   subtopic?: string | null;
   specialty?: string | null;
+  /** Optional initial conversation to load. */
+  initialConversationId?: string | null;
 }
 
 /**
