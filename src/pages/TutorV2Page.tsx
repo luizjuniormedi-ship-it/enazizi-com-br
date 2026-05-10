@@ -9,7 +9,7 @@ import { Brain, Sparkles, GraduationCap, ArrowRight, Zap, Target, BookOpen, Cloc
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion, AnimatePresence } from "framer-motion";
-import enaziziMascot from "@/assets/enazizi-mascot.png";
+import { MascotAvatar } from "@/components/mascot/MascotAvatar";
 
 export default function TutorV2Page() {
   const { sessionId } = useParams();
