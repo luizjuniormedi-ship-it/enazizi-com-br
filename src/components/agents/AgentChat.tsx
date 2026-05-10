@@ -323,10 +323,10 @@ const AgentChat = ({
         onTransformSession={
           sessionLesson?.aggregation?.manual_video_url 
             ? () => window.open(sessionLesson.aggregation.manual_video_url, '_blank')
-            : (functionName.includes("tutor") && chat.activeConversationId ? handleTransformSession : undefined)
+            : (chat.activeConversationId ? handleTransformSession : undefined)
         }
-        hasMessages={chat.messages.filter(m => m.role === "assistant").length > 1}
-        lessonStatus={sessionLesson ? (sessionLesson.aggregation?.manual_video_url ? 'ready' : 'processing') : 'idle'}
+        hasMessages={chat.messages.filter(m => m.role === "assistant").length > 0}
+        lessonStatus={sessionLesson ? (sessionLesson.aggregation?.manual_video_url ? 'ready' : 'processing') : lessonStatus}
       />
 
       <input type="file" ref={chat.fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />
