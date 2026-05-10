@@ -521,11 +521,14 @@ const StudySession = () => {
   }, [user, topic, reinforcementCycles, phase, messages, performance, studyMode, searchParams, getStudySessionHeaders, targetExam]);
 
   const streamChat = async (msgs: Msg[], currentPhase: Phase, currentTopic: string) => {
+    console.debug("[StudySession] streamChat called", { currentPhase, currentTopic, msgsCount: msgs.length });
     setIsLoading(true);
     const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
 
     try {
       const headers = await getStudySessionHeaders();
+      console.debug("[StudySession] invoking study-session function...");
+      
       const resp = await fetch(url, {
         method: "POST",
         headers,
@@ -539,15 +542,23 @@ const StudySession = () => {
         }),
       });
 
+      console.debug("[StudySession] study-session response received", { status: resp.status, ok: resp.ok });
+
       if (!resp.ok) {
         const contentType = resp.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
           const err = await resp.json().catch(() => ({ error: "Erro desconhecido" }));
+          console.error("[StudySession] study-session function error JSON:", err);
           
-          // Se for um erro que a Edge Function já tratou com fallback via JSON (caso não consiga abrir stream)
           if (err.isFallbackActive) {
             console.info("[StudySession] Fallback active via JSON response");
-            return; // O conteúdo já foi tratado ou será enviado por outra via
+            // If the function already provided content via fallback, it might have been in the JSON (not implemented yet in edge, but good to have)
+            if (err.fallbackContent) {
+              const assistantMsg: Msg = { role: "assistant", content: err.fallbackContent };
+              setMessages(prev => [...prev, assistantMsg]);
+            }
+            setIsLoading(false);
+            return;
           }
 
           if (resp.status === 429) {
@@ -555,13 +566,7 @@ const StudySession = () => {
           } else if (resp.status === 402) {
             toast({ title: "Créditos esgotados", description: "Adicione créditos ao workspace.", variant: "destructive" });
           } else {
-            // Silencia erro se for apenas timeout da IA mas tiver fallback (tratado abaixo no catch ou via status especial)
-            if (err.error === "Erro no serviço de IA" && currentPhase === "questions") {
-              console.warn("[StudySession] IA timeout, expected fallback stream or retry");
-              // Não mostra toast destrutivo aqui, deixa o catch ou a stream lidar
-            } else {
-              toast({ title: "Erro", description: err.error, variant: "destructive" });
-            }
+            toast({ title: "Erro no Tutor", description: err.error || "Ocorreu uma falha na IA.", variant: "destructive" });
           }
         } else {
           toast({ title: "Erro de Conexão", description: `Falha na comunicação com o servidor (${resp.status})`, variant: "destructive" });
@@ -570,14 +575,23 @@ const StudySession = () => {
         return;
       }
 
-      const reader = resp.body!.getReader();
+      if (!resp.body) {
+        throw new Error("No response body received from study-session function");
+      }
+
+      const reader = resp.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
       let assistantContent = "";
+      let hasReceivedChunks = false;
+
+      console.debug("[StudySession] starting stream read...");
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        
+        hasReceivedChunks = true;
         buffer += decoder.decode(value, { stream: true });
 
         let idx: number;
@@ -586,18 +600,24 @@ const StudySession = () => {
           buffer = buffer.slice(idx + 1);
           if (line.endsWith("\r")) line = line.slice(0, -1);
           if (!line.startsWith("data: ")) continue;
-          const json = line.slice(6).trim();
-          if (json === "[DONE]") break;
+          
+          const jsonStr = line.slice(6).trim();
+          if (jsonStr === "[DONE]") {
+            console.debug("[StudySession] stream read [DONE]");
+            break;
+          }
+
           try {
-            const parsed = JSON.parse(json);
+            const parsed = JSON.parse(jsonStr);
             const delta = parsed.choices?.[0]?.delta?.content;
             if (delta) {
               assistantContent += delta;
               setMessages((prev) => {
                 const last = prev[prev.length - 1];
-                if (last?.role === "assistant") {
+                if (last?.role === "assistant" && prev.length > msgs.length) {
                   return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantContent } : m);
                 }
+                
                 if (!firstQuestionTrackedRef.current && assistantContent.length > 50) {
                   firstQuestionTrackedRef.current = true;
                   trackAction('first_question_loaded', { topic, mode: studyMode, phase: currentPhase });
@@ -605,11 +625,21 @@ const StudySession = () => {
                 return [...prev, { role: "assistant", content: assistantContent }];
               });
             }
-          } catch {}
+          } catch (e) {
+            // Ignore parse errors for partial JSON lines
+          }
         }
       }
+
+      console.debug("[StudySession] assistant message completed", { length: assistantContent.length });
+
+      if (!assistantContent && hasReceivedChunks) {
+         console.warn("[StudySession] received chunks but assistantContent is empty");
+      } else if (!hasReceivedChunks) {
+         console.warn("[StudySession] no chunks received at all");
+      }
+
       // After streaming completes, check if this was an MCQ answer.
-      // We trust ONLY the structured SIGNAL block — never emoji/regex.
       const lastUserMsg = msgs[msgs.length - 1];
       if (lastUserMsg?.role === "user" && assistantContent) {
         if (currentPhase === "reinforcement") {
@@ -624,7 +654,7 @@ const StudySession = () => {
         }
       }
     } catch (err: any) {
-      console.error("Connection error in streamChat:", err);
+      console.error("[StudySession] connection error in streamChat:", err);
       if (currentPhase === "questions") {
         toast({ 
           title: "Instabilidade na IA", 
@@ -638,8 +668,9 @@ const StudySession = () => {
           variant: "destructive" 
         });
       }
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const startStudy = async () => {
