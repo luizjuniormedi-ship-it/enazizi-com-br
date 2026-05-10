@@ -89,7 +89,8 @@ export const useTutorCME = () => {
             message: newEvent.message,
             error: newEvent.status === 'failed' ? newEvent.message : s.error,
             isStuck: false,
-            workerStatus: 'online'
+            workerStatus: 'online',
+            workerId: newEvent.worker_id || undefined
           }));
         }
       )
