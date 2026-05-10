@@ -432,6 +432,7 @@ const StudySession = () => {
           setPreReinforcementPhase(phase);
 
           setTimeout(async () => {
+            if (!mountedRef.current) return;
             setPhase("reinforcement");
             const reinforceMsg: Msg = {
               role: "user",
@@ -449,10 +450,16 @@ const StudySession = () => {
                 cycle: nextCycle,
               },
             };
+
+            reinforcementAbortRef.current?.abort();
+            const controller = new AbortController();
+            reinforcementAbortRef.current = controller;
+
             setIsLoading(true);
             const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/study-session`;
             try {
               const headers = await getStudySessionHeaders();
+              if (!mountedRef.current) return;
               const resp = await fetch(url, {
                 method: "POST",
                 headers,
@@ -464,15 +471,18 @@ const StudySession = () => {
                   studyMode,
                   targetExam,
                 }),
+                signal: controller.signal,
               });
               if (resp.ok) {
                 const reader = resp.body!.getReader();
                 const decoder = new TextDecoder();
                 let buf = "";
                 let content = "";
+                let assistantMsgCreated = false;
                 while (true) {
                   const { done, value } = await reader.read();
                   if (done) break;
+                  if (!mountedRef.current) break;
                   buf += decoder.decode(value, { stream: true });
                   let idx2: number;
                   while ((idx2 = buf.indexOf("\n")) !== -1) {
@@ -485,14 +495,15 @@ const StudySession = () => {
                     try {
                       const parsed = JSON.parse(json);
                       const delta = parsed.choices?.[0]?.delta?.content;
-                      if (delta) {
+                      if (delta && mountedRef.current) {
                         content += delta;
                         setMessages(prev => {
-                          const last = prev[prev.length - 1];
-                          if (last?.role === "assistant") {
+                          if (!assistantMsgCreated) {
+                            assistantMsgCreated = true;
+                            return [...prev, { role: "assistant", content }];
+                          } else {
                             return prev.map((m, i) => i === prev.length - 1 ? { ...m, content } : m);
                           }
-                          return [...prev, { role: "assistant", content }];
                         });
                       }
                     } catch {}
@@ -500,9 +511,16 @@ const StudySession = () => {
                 }
               }
             } catch (e) {
+              if (e instanceof Error && e.name === "AbortError") return;
               console.error("Reinforcement error:", e);
+            } finally {
+              if (mountedRef.current) {
+                setIsLoading(false);
+              }
+              if (reinforcementAbortRef.current === controller) {
+                reinforcementAbortRef.current = null;
+              }
             }
-            setIsLoading(false);
           }, 1500);
         }
       }
