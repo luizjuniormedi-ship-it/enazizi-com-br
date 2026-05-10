@@ -23,6 +23,8 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
+
 
   useEffect(() => {
     if (scrollRef.current) {
