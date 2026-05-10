@@ -73,7 +73,7 @@ const AgentChat = ({
   });
 
   const { isAdmin } = useAdminCheck();
-  const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage } = useTutorCME();
+  const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage, generateTextualLesson } = useTutorCME();
   const sync = useTutorAdaptiveSync();
 
   const [sessionLesson, setSessionLesson] = useState<any>(null);
