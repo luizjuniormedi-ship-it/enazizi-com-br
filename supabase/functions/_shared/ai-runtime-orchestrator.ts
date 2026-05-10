@@ -422,6 +422,46 @@ Active recall:
 Próxima ação: tente novamente em instantes para um aprofundamento completo.`;
 }
 
+// Modelos com status "ruim" e checagem recente são pulados.
+// Se a checagem é antiga (> 15 min), assume saudável.
+const HEALTH_BAD_STATUS = new Set(["down", "quota_exhausted", "model_not_found"]);
+const HEALTH_FRESH_MS = 15 * 60 * 1000;
+
+async function filterByHealth(supabase: any | undefined, chain: ModelRef[]): Promise<ModelRef[]> {
+  if (!supabase || chain.length === 0) return chain;
+  try {
+    const models = chain.map((c) => c.model);
+    const { data, error } = await supabase
+      .from("ai_provider_health")
+      .select("provider, model, status, checked_at")
+      .in("model", models);
+    if (error || !data) return chain;
+
+    const now = Date.now();
+    const badKeys = new Set<string>();
+    for (const row of data) {
+      if (!HEALTH_BAD_STATUS.has(row.status)) continue;
+      const ts = row.checked_at ? new Date(row.checked_at).getTime() : 0;
+      if (now - ts <= HEALTH_FRESH_MS) {
+        badKeys.add(`${row.provider}::${row.model}`);
+      }
+    }
+    if (badKeys.size === 0) return chain;
+    const filtered = chain.filter((c) => !badKeys.has(`${c.provider}::${c.model}`));
+    if (filtered.length === 0) {
+      console.warn("[AI_RUNTIME_HEALTH] All chain models flagged unhealthy — proceeding anyway", { chain });
+      return chain;
+    }
+    if (filtered.length !== chain.length) {
+      console.log("[AI_RUNTIME_HEALTH] Skipping unhealthy models", { skipped: [...badKeys] });
+    }
+    return filtered;
+  } catch (err) {
+    console.warn("[AI_RUNTIME_HEALTH_LOOKUP_FAILED]", err instanceof Error ? err.message : String(err));
+    return chain;
+  }
+}
+
 async function logRun(
   supabase: any | undefined,
   input: AIRunInput,
