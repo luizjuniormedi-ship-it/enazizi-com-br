@@ -91,6 +91,66 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
                 </div>
               </motion.div>
             )}
+
+            {msg.metadata?.question_review && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={cn(
+                  "mt-6 p-6 rounded-[2rem] border shadow-2xl overflow-hidden relative",
+                  msg.metadata.question_review.is_correct 
+                    ? "bg-emerald-500/10 border-emerald-500/20" 
+                    : "bg-rose-500/10 border-rose-500/20"
+                )}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <div className={cn(
+                      "h-6 w-6 rounded-full flex items-center justify-center",
+                      msg.metadata.question_review.is_correct ? "bg-emerald-500" : "bg-rose-500"
+                    )}>
+                      {msg.metadata.question_review.is_correct 
+                        ? <Check className="h-4 w-4 text-white" /> 
+                        : <AlertCircle className="h-4 w-4 text-white" />
+                      }
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-300">Resumo da Questão</p>
+                  </div>
+                  <Badge variant="outline" className="text-[9px] font-black uppercase tracking-tighter border-white/10 bg-white/5">
+                    {msg.metadata.question_review.difficulty || "Médio"}
+                  </Badge>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-black text-slate-500 uppercase">Gabarito</p>
+                    <p className="text-[14px] font-black text-white">{msg.metadata.question_review.correct_answer || "N/A"}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[8px] font-black text-slate-500 uppercase">Sua Resposta</p>
+                    <p className={cn(
+                      "text-[14px] font-black",
+                      msg.metadata.question_review.is_correct ? "text-emerald-400" : "text-rose-400"
+                    )}>
+                      {msg.metadata.question_review.student_answer || "N/A"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-black/20 border border-white/5 mb-4">
+                  <p className="text-[10px] text-slate-400 italic">"{msg.metadata.question_review.memory_anchor || "Foco no raciocínio clínico."}"</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {msg.metadata.question_review.suggested_actions?.slice(0, 3).map((action: string, i: number) => (
+                    <Button key={i} variant="ghost" size="sm" className="h-8 px-3 text-[9px] font-black uppercase tracking-tighter bg-white/5 border border-white/10 hover:bg-white/10 text-slate-300">
+                      {action.replace(/_/g, ' ')}
+                    </Button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+
             
             {/* Message Timestamp/Status */}
             <div className={cn(
