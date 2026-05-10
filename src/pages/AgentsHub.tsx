@@ -142,7 +142,7 @@ const SPOTLIGHT: SpotlightAgent[] = [
     icon: Sparkles,
     title: "Aprenda qualquer tema com seu Tutor IA",
     description:
-      "Aula completa pelo Protocolo ENAZIZI: explicação → fisiopatologia → clínica → questões → caso discursivo. Tudo guiado pelo GPT-5.4.",
+      "Aula completa pelo Protocolo ENAZIZI: explicação → fisiopatologia → clínica → questões → caso discursivo. Tudo guiado pelo GPT-4o.",
     accent: "success",
     eyebrow: "Agente principal",
   },

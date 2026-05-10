@@ -29,7 +29,7 @@ function getMotivos(t: TemaComputado): string[] {
 
 function getAcaoRecomendada(t: TemaComputado): string {
   if (t.revisoesAtrasadas > 0) return "Fazer revisão pendente imediatamente";
-  if (t.taxaErro > 60) return "Sessão intensiva com Tutor IA + questões direcionadas";
+  if (t.taxaErro > 60) return "Sessão intensiva com Tutor IA V2 + questões direcionadas";
   if (t.taxaErro > 40) return "Revisar conceitos-chave e praticar questões";
   if (t.ultimaConfianca === "nao_sei") return "Revisão guiada com resumos e flashcards";
   return "Agendar próxima revisão";
