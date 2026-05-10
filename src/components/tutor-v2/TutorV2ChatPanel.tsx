@@ -35,22 +35,15 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
   const handleSendMessage = async (text: string) => {
     if (!text.trim() || isTyping || !user) return;
     setError(null);
+    triggerInteraction({ 
+      state: 'thinking', 
+      type: 'motivation', 
+      speech: "Analisando seu raciocínio médico..." 
+    });
 
     // Optimistic update
     const tempId = crypto.randomUUID();
-    const userMsg = { 
-      id: tempId, 
-      role: "user", 
-      content: text, 
-      tutor_session_id: session.id, 
-      user_id: user.id,
-      created_at: new Date().toISOString()
-    };
-    
-    // addMessage handles DB insert, but we also update local state for real-time feel
-    // if addMessage insert is successful, the subscription will handle the duplicate if not careful
-    // Actually, useTutorV2Messages subscription will add the "real" one.
-    
+...
     setIsTyping(true);
 
     // Optimistic: append user message immediately
