@@ -27,6 +27,8 @@ export interface StreamResponseOptions {
   body: Record<string, unknown>;
   /** Formato esperado da resposta. Default: "markdown" (compatibilidade V1). */
   format?: TutorStreamFormat;
+  /** Optional signal for aborting the fetch. */
+  signal?: AbortSignal;
   /** Called once when the first non-empty delta arrives. */
   onFirstChunk?: () => void;
   /** Called on every flushed delta with the FULL accumulated text so far. */
