@@ -47,10 +47,13 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  // Segurança: só aceita service-role (cron) ou Authorization explícito do mesmo
+  // Aceita service-role OU anon (padrão dos crons do projeto). Função é idempotente.
+  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
   const apikey = req.headers.get("apikey") ?? "";
   const authz = req.headers.get("Authorization") ?? "";
-  if (apikey !== SERVICE_KEY && authz !== `Bearer ${SERVICE_KEY}`) {
+  const validKeys = [SERVICE_KEY, SUPABASE_ANON_KEY].filter(Boolean);
+  const okAuth = validKeys.some(k => apikey === k || authz === `Bearer ${k}`);
+  if (!okAuth) {
     return new Response(JSON.stringify({ error: "Forbidden" }), {
       status: 403,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
