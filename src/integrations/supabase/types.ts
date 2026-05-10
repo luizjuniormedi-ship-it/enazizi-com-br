@@ -8405,6 +8405,36 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_card_diagnostics: {
+        Row: {
+          card_name: string
+          created_at: string | null
+          data_count: number | null
+          error_message: string | null
+          id: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          card_name: string
+          created_at?: string | null
+          data_count?: number | null
+          error_message?: string | null
+          id?: string
+          status: string
+          user_id?: string | null
+        }
+        Update: {
+          card_name?: string
+          created_at?: string | null
+          data_count?: number | null
+          error_message?: string | null
+          id?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       dashboard_snapshots: {
         Row: {
           approval_score: number | null
@@ -20689,6 +20719,17 @@ export type Database = {
         }
         Relationships: []
       }
+      legacy_fsrs_bridge: {
+        Row: {
+          card_ref_id: string | null
+          card_type: string | null
+          due: string | null
+          id: string | null
+          source: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       lesson_rating_stats: {
         Row: {
           average_rating: number | null
@@ -21121,6 +21162,10 @@ export type Database = {
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
+      }
+      ensure_user_medical_domain_map: {
+        Args: { p_user_id: string }
+        Returns: undefined
       }
       evaluate_adaptive_intervention: {
         Args: {
