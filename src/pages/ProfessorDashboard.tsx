@@ -22,6 +22,8 @@ import SimuladosKpiCards from "@/components/professor/SimuladosKpiCards";
 import SimuladoListItem from "@/components/professor/SimuladoListItem";
 import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import ProfessorTurmaManager from "@/components/professor/ProfessorTurmaManager";
+import TopRiskStudents from "@/components/professor/TopRiskStudents";
+import ClassCognitiveHeatmap from "@/components/professor/ClassCognitiveHeatmap";
 
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
