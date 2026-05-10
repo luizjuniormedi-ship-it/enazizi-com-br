@@ -1,21 +1,25 @@
 /**
- * OperationalKpiBar
- * KPIs operacionais reais no topo do grupo Operacional.
- * Consome `class_analytics` (já carregado pelos filhos via callAPI) — recebe via prop
- * para evitar dupla query (deduplication).
- *
- * KPIs verdadeiros (do backend atual):
- *  - Total de alunos
- *  - Em risco crítico
- *  - Em atenção
- *  - Inativos > 7d
- *  - Taxa de conclusão de atividades
- *
- * KPIs cognitivos (Theta médio · Stability · Recovery overload · Burnout)
- * são marcados como "em construção" — NÃO inventamos valor.
+ * OperationalKpiBar V2
+ * KPIs operacionais reais. KPIs cognitivos só renderizam se o backend enviar.
+ * Nunca exibe "0" falso para campos null.
  */
-import { Activity, AlertCircle, AlertTriangle, UserX, CheckCircle2, Brain } from "lucide-react";
+import { Activity, AlertCircle, AlertTriangle, UserX, CheckCircle2, Brain, Flame, Zap, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface CognitiveSummary {
+  avg_theta: number | null;
+  avg_stability: number | null;
+  avg_retention: number | null;
+  avg_lapses: number | null;
+  avg_recovery_load: number | null;
+  burnout_risk_students: number;
+  overload_students: number;
+  inactive_students: number;
+  weakest_specialty: string | null;
+  strongest_specialty: string | null;
+  trend_7d: "up" | "down" | "stable" | null;
+  trend_30d: "up" | "down" | "stable" | null;
+}
 
 interface AnalyticsLite {
   students?: any[];
@@ -26,11 +30,20 @@ interface AnalyticsLite {
     inactive_count: number;
     activity_completion_rate: number;
   };
+  cognitive_summary?: CognitiveSummary | null;
 }
 
 interface Props {
   analytics: AnalyticsLite | null;
   loading?: boolean;
+}
+
+type Tone = "neutral" | "good" | "warning" | "critical";
+interface Kpi {
+  icon: React.ElementType;
+  label: string;
+  value: number | string;
+  tone: Tone;
 }
 
 export default function OperationalKpiBar({ analytics, loading }: Props) {
@@ -50,8 +63,9 @@ export default function OperationalKpiBar({ analytics, loading }: Props) {
   const warning = atRisk.filter((s: any) => s.risk_level === "warning").length;
   const inactive = analytics?.engagement?.inactive_count ?? 0;
   const completion = analytics?.engagement?.activity_completion_rate ?? 0;
+  const cog = analytics?.cognitive_summary || null;
 
-  const kpis: { icon: React.ElementType; label: string; value: number | string; tone: "neutral" | "good" | "warning" | "critical" }[] = [
+  const operational: Kpi[] = [
     { icon: Activity, label: "Alunos ativos", value: students.length, tone: "neutral" },
     { icon: AlertCircle, label: "Crítico", value: critical, tone: "critical" },
     { icon: AlertTriangle, label: "Atenção", value: warning, tone: "warning" },
@@ -59,36 +73,71 @@ export default function OperationalKpiBar({ analytics, loading }: Props) {
     { icon: CheckCircle2, label: "Conclusão", value: `${completion}%`, tone: completion >= 70 ? "good" : "neutral" },
   ];
 
+  const cognitive: Kpi[] = [];
+  if (cog) {
+    if (cog.avg_retention !== null) cognitive.push({
+      icon: Brain,
+      label: "Retenção média",
+      value: `${cog.avg_retention}%`,
+      tone: cog.avg_retention >= 75 ? "good" : cog.avg_retention >= 60 ? "warning" : "critical",
+    });
+    if (cog.avg_lapses !== null) cognitive.push({
+      icon: TrendingDown,
+      label: "Lapses médio",
+      value: cog.avg_lapses,
+      tone: cog.avg_lapses <= 1 ? "good" : cog.avg_lapses <= 2 ? "warning" : "critical",
+    });
+    if (cog.avg_stability !== null) cognitive.push({
+      icon: Brain,
+      label: "Stability FSRS",
+      value: cog.avg_stability,
+      tone: cog.avg_stability >= 5 ? "good" : cog.avg_stability >= 2 ? "warning" : "critical",
+    });
+    if (cog.overload_students > 0) cognitive.push({
+      icon: Zap,
+      label: "Sobrecarga",
+      value: cog.overload_students,
+      tone: "warning",
+    });
+    if (cog.burnout_risk_students > 0) cognitive.push({
+      icon: Flame,
+      label: "Risco burnout",
+      value: cog.burnout_risk_students,
+      tone: "critical",
+    });
+  }
+
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-        {kpis.map((k, i) => (
-          <KpiCard key={i} {...k} />
-        ))}
+        {operational.map((k, i) => <KpiCard key={i} {...k} />)}
       </div>
-      <div className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 flex items-center gap-2">
-        <Brain className="h-3.5 w-3.5 text-white/40 shrink-0" />
-        <p className="text-[10px] text-white/45 leading-snug">
-          Theta TRI médio, Stability FSRS, Recovery overload e Burnout risk
-          aparecerão aqui assim que o pipeline cognitivo expor essas agregações por turma.
-          Sem dado real, não exibimos valor.
-        </p>
-      </div>
+
+      {cognitive.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {cognitive.map((k, i) => <KpiCard key={`c${i}`} {...k} />)}
+        </div>
+      ) : (
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2 flex items-center gap-2">
+          <Brain className="h-3.5 w-3.5 text-white/40 shrink-0" />
+          <p className="text-[10px] text-white/45 leading-snug">
+            KPIs cognitivos (retenção, stability, lapses, burnout) aparecem aqui assim que houver
+            dados FSRS/practice suficientes na turma. Sem dado real, não exibimos valor.
+          </p>
+        </div>
+      )}
+
+      {cog?.weakest_specialty && (
+        <div className="rounded-xl border border-rose-500/20 bg-rose-500/[0.04] px-3 py-2 text-[11px] text-rose-200/80">
+          Especialidade coletivamente mais fraca: <strong className="text-rose-100">{cog.weakest_specialty}</strong>
+          {cog.strongest_specialty && <> · mais forte: <strong className="text-emerald-200">{cog.strongest_specialty}</strong></>}
+        </div>
+      )}
     </div>
   );
 }
 
-function KpiCard({
-  icon: Icon,
-  label,
-  value,
-  tone,
-}: {
-  icon: React.ElementType;
-  label: string;
-  value: number | string;
-  tone: "neutral" | "good" | "warning" | "critical";
-}) {
+function KpiCard({ icon: Icon, label, value, tone }: Kpi) {
   const toneClass = {
     neutral: "border-white/10 bg-white/[0.03]",
     good: "border-emerald-500/25 bg-emerald-500/5",

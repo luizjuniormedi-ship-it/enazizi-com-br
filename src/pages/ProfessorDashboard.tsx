@@ -24,6 +24,9 @@ import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import ProfessorTurmaManager from "@/components/professor/ProfessorTurmaManager";
 import TopRiskStudents from "@/components/professor/TopRiskStudents";
 import ClassCognitiveHeatmap from "@/components/professor/ClassCognitiveHeatmap";
+import ClassCognitiveMatrix from "@/components/professor/ClassCognitiveMatrix";
+import ProfessorInterventionTimeline from "@/components/professor/ProfessorInterventionTimeline";
+import ProfessionalLeaderboard from "@/components/professor/ProfessionalLeaderboard";
 import OperationalKpiBar from "@/components/professor/OperationalKpiBar";
 import StudentOperationalDrawer from "@/components/professor/StudentOperationalDrawer";
 import QuickInterventionDialog from "@/components/professor/QuickInterventionDialog";
@@ -235,9 +238,9 @@ const ProfessorDashboard = () => {
           {/* Sub-aba selector — mostra apenas o sub do grupo ativo */}
           <SubTabsBar group={activeTab} active={activeSub} onChange={setActiveSub} />
 
-          {/* OPERACIONAL: Alunos em risco · Heatmap turma · Aluno individual · Casos plantão */}
+          {/* OPERACIONAL: Risco · Matriz cognitiva · Heatmap · Timeline · Ranking · Aluno · Casos */}
           <TabsContent value="operacional" className="mt-4 space-y-6">
-            {(activeSub === "risco" || activeSub === "heatmap") && (
+            {(activeSub === "risco" || activeSub === "matriz" || activeSub === "heatmap" || activeSub === "ranking") && (
               <OperationalKpiBar analytics={classAnalytics.data} loading={classAnalytics.loading} />
             )}
             {activeSub === "risco" && (
@@ -251,7 +254,14 @@ const ProfessorDashboard = () => {
                 onOpenDrawer={(id) => setDrawerStudentId(id)}
               />
             )}
+            {activeSub === "matriz" && (
+              <ClassCognitiveMatrix analytics={classAnalytics.data} loading={classAnalytics.loading} />
+            )}
             {activeSub === "heatmap" && <ClassCognitiveHeatmap callAPI={callAPI} />}
+            {activeSub === "timeline" && <ProfessorInterventionTimeline callAPI={callAPI} />}
+            {activeSub === "ranking" && (
+              <ProfessionalLeaderboard analytics={classAnalytics.data} loading={classAnalytics.loading} />
+            )}
             {activeSub === "aluno" && (
               <Suspense fallback={null}><StudentTracker callAPI={callAPI} /></Suspense>
             )}
@@ -376,7 +386,10 @@ const ProfessorDashboard = () => {
 const SUB_TABS: Record<string, { value: string; label: string }[]> = {
   operacional: [
     { value: "risco", label: "Alunos em risco" },
+    { value: "matriz", label: "Matriz cognitiva" },
     { value: "heatmap", label: "Heatmap turma" },
+    { value: "timeline", label: "Timeline" },
+    { value: "ranking", label: "Ranking" },
     { value: "aluno", label: "Aluno individual" },
     { value: "plantao", label: "Casos plantão" },
   ],
