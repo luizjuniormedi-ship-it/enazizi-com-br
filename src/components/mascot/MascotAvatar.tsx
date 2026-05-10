@@ -58,8 +58,11 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
     warning: 'rgba(245, 158, 11, 0.4)', // amber
     fatigue: 'rgba(59, 130, 246, 0.4)', // blue
     celebration: 'rgba(234, 179, 8, 0.4)', // yellow
-    focus: 'rgba(225, 29, 72, 0.4)' // rose
+    focus: 'rgba(225, 29, 72, 0.4)', // rose
+    alert: 'rgba(239, 68, 68, 0.4)', // red
+    correcting: 'rgba(99, 102, 241, 0.4)' // indigo
   };
+
 
   return (
     <div className={`relative flex items-center justify-center ${sizeClasses[size]} ${className}`}>
