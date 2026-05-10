@@ -24,6 +24,10 @@ import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import ProfessorTurmaManager from "@/components/professor/ProfessorTurmaManager";
 import TopRiskStudents from "@/components/professor/TopRiskStudents";
 import ClassCognitiveHeatmap from "@/components/professor/ClassCognitiveHeatmap";
+import OperationalKpiBar from "@/components/professor/OperationalKpiBar";
+import StudentOperationalDrawer from "@/components/professor/StudentOperationalDrawer";
+import QuickInterventionDialog from "@/components/professor/QuickInterventionDialog";
+import { useClassAnalytics } from "@/hooks/useClassAnalytics";
 
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
