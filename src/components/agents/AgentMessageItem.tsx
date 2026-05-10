@@ -302,107 +302,156 @@ const AgentMessageItem = memo(
               <Dialog open={state.status !== 'idle'} onOpenChange={(open) => !open && resetState()}>
                 <DialogContent className="sm:max-w-md bg-slate-950 border-white/10 text-white overflow-hidden">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 animate-pulse" />
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2 text-amber-500">
-                      <Sparkles className="h-5 w-5" />
-                      CME Cinematic Factory Enterprise
-                    </DialogTitle>
-                    <DialogDescription className="text-slate-400 text-xs">
-                      Status da Unidade de Processamento Cinematográfico ENAZIZI.
-                    </DialogDescription>
-                  </DialogHeader>
-                  
-                  <div className="py-4 space-y-5">
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
-                        <span>STAGE: {state.message || state.status}</span>
-                        <span className="text-amber-500">{state.progress}%</span>
-                      </div>
-                      <Progress value={state.progress} className="h-1 bg-white/5" />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        { id: 'planning', label: 'Semantic Planning' },
-                        { id: 'mapping', label: 'Knowledge Mapping' },
-                        { id: 'scripting', label: 'Narrative Building' },
-                        { id: 'graphing', label: 'Scene Graph' },
-                        { id: 'voice', label: 'Voice Rendering' },
-                        { id: 'rendering', label: 'GPU Rendering' },
-                        { id: 'hls', label: 'HLS Generation' },
-                        { id: 'cdn', label: 'CDN Validation' }
-                      ].map((step, idx) => (
-                        <div key={step.id} className={cn(
-                          "flex items-center gap-2 p-1.5 rounded border text-[9px] font-bold uppercase transition-all duration-500",
-                          state.progress > (idx * 12.5) || state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-700"
-                        )}>
-                          <div className={cn(
-                            "h-1 w-1 rounded-full",
-                            state.status === step.id ? "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)] animate-pulse" : 
-                            state.progress > (idx * 12.5) ? "bg-amber-500" : "bg-slate-800"
-                          )} />
-                          {step.label}
+                  {!isAdmin ? (
+                    // ===== USER MODE (override freeze: cme-ux-correct-fix) =====
+                    <>
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-amber-500">
+                          <Sparkles className="h-5 w-5" />
+                          Geração da aula
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-400 text-xs">
+                          {state.status === 'failed'
+                            ? humanizeCMEMessage(state.error)
+                            : (FRIENDLY_STATUS_LABEL[state.status === 'ready' ? 'ready' : 'processing'])}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="py-4 space-y-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-xs text-slate-400">
+                            <span className="truncate pr-2">{friendlyStageLabel(state.progress)}</span>
+                            <span className="tabular-nums text-amber-500">{state.progress}%</span>
+                          </div>
+                          <Progress value={state.progress} className="h-1.5 bg-white/5" />
                         </div>
-                      ))}
-                    </div>
-
-                    {state.isStuck && state.status === 'rendering' && (
-                      <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1 animate-in fade-in slide-in-from-top-2">
-                        <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold">
-                          <AlertCircle className="h-3 w-3" />
-                          WORKER OFFLINE
-                        </div>
-                        <p className="text-[9px] text-blue-300/70 italic">
-                          A renderização automática ainda não está conectada a um worker GPU real. O projeto foi estruturado e está pronto para visualização no Builder.
-                        </p>
+                        {state.status === 'failed' && (
+                          <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-xs">
+                            {humanizeCMEMessage(state.error)}
+                          </div>
+                        )}
                       </div>
-                    )}
-
-                    <div className="p-3 bg-white/5 border border-white/5 rounded-lg space-y-2">
-                      <div className="flex justify-between text-[9px] text-slate-500">
-                        <span>WORKER: {state.isStuck ? 'NONE_AVAILABLE' : 'CLUSTER-GPU-ALPHA-01'}</span>
-                        <span>LATENCY: {state.isStuck ? '---' : '42ms'}</span>
-                      </div>
-                      <div className="flex justify-between text-[9px] text-slate-500">
-                        <span>ID: {state.projectId?.slice(0, 12) || 'QUEUED'}</span>
-                        <span className={cn("text-green-500", state.isStuck && "text-amber-500")}>
-                          {state.isStuck ? 'POLLING INACTIVE' : 'REALTIME TELEMETRY ACTIVE'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {state.status === 'failed' && (
-                      <div className="space-y-2">
-                        <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-[10px] italic">
-                          FAILURE: {state.error}
-                        </div>
-                        <Button 
-                          onClick={() => state.projectId && retryRender(state.projectId)} 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full h-8 text-[10px] gap-2 border-red-500/30 text-red-500 hover:bg-red-500/10"
-                        >
-                          <RefreshCw className="h-3 w-3" /> REENFILEIRAR RENDERIZAÇÃO (RETRY)
+                      <DialogFooter className="flex sm:justify-end gap-2 items-center">
+                        {state.status === 'failed' && state.projectId && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-8"
+                            onClick={() => state.projectId && retryRender(state.projectId)}
+                          >
+                            Tentar novamente
+                          </Button>
+                        )}
+                        <Button variant="ghost" onClick={resetState} className="text-xs h-8">
+                          Fechar
                         </Button>
-                      </div>
-                    )}
-                  </div>
+                      </DialogFooter>
+                    </>
+                  ) : (
+                    // ===== ADMIN MODE: telemetria técnica completa =====
+                    <>
+                      <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-amber-500">
+                          <Sparkles className="h-5 w-5" />
+                          CME Cinematic Factory Enterprise
+                        </DialogTitle>
+                        <DialogDescription className="text-slate-400 text-xs">
+                          Status da Unidade de Processamento Cinematográfico ENAZIZI.
+                        </DialogDescription>
+                      </DialogHeader>
 
-                  <DialogFooter className="flex sm:justify-between items-center">
-                    <Button variant="ghost" onClick={resetState} className="text-[10px] h-7">Fechar</Button>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        className="bg-amber-600 hover:bg-amber-700 text-[10px] h-7 gap-2 shadow-lg shadow-amber-900/20"
-                        onClick={() => {
-                          resetState();
-                          navigate(state.projectId ? `/admin/cinematic-engine/${state.projectId}` : '/admin/cinematic-engine');
-                        }}
-                      >
-                        <Play className="h-3 w-3" /> ABRIR NO CME
-                      </Button>
-                    </div>
-                  </DialogFooter>
+                      <div className="py-4 space-y-5">
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                            <span>STAGE: {state.message || state.status}</span>
+                            <span className="text-amber-500">{state.progress}%</span>
+                          </div>
+                          <Progress value={state.progress} className="h-1 bg-white/5" />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          {[
+                            { id: 'planning', label: 'Semantic Planning' },
+                            { id: 'mapping', label: 'Knowledge Mapping' },
+                            { id: 'scripting', label: 'Narrative Building' },
+                            { id: 'graphing', label: 'Scene Graph' },
+                            { id: 'voice', label: 'Voice Rendering' },
+                            { id: 'rendering', label: 'GPU Rendering' },
+                            { id: 'hls', label: 'HLS Generation' },
+                            { id: 'cdn', label: 'CDN Validation' }
+                          ].map((step, idx) => (
+                            <div key={step.id} className={cn(
+                              "flex items-center gap-2 p-1.5 rounded border text-[9px] font-bold uppercase transition-all duration-500",
+                              state.progress > (idx * 12.5) || state.status === step.id ? "bg-amber-500/10 border-amber-500/20 text-amber-500" : "bg-white/5 border-white/5 text-slate-700"
+                            )}>
+                              <div className={cn(
+                                "h-1 w-1 rounded-full",
+                                state.status === step.id ? "bg-amber-500 shadow-[0_0_5px_rgba(245,158,11,0.5)] animate-pulse" :
+                                state.progress > (idx * 12.5) ? "bg-amber-500" : "bg-slate-800"
+                              )} />
+                              {step.label}
+                            </div>
+                          ))}
+                        </div>
+
+                        {state.isStuck && state.status === 'rendering' && (
+                          <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg space-y-1 animate-in fade-in slide-in-from-top-2">
+                            <div className="flex items-center gap-2 text-blue-400 text-[10px] font-bold">
+                              <AlertCircle className="h-3 w-3" />
+                              WORKER OFFLINE
+                            </div>
+                            <p className="text-[9px] text-blue-300/70 italic">
+                              A renderização automática ainda não está conectada a um worker GPU real. O projeto foi estruturado e está pronto para visualização no Builder.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="p-3 bg-white/5 border border-white/5 rounded-lg space-y-2">
+                          <div className="flex justify-between text-[9px] text-slate-500">
+                            <span>WORKER: {state.isStuck ? 'NONE_AVAILABLE' : 'CLUSTER-GPU-ALPHA-01'}</span>
+                            <span>LATENCY: {state.isStuck ? '---' : '42ms'}</span>
+                          </div>
+                          <div className="flex justify-between text-[9px] text-slate-500">
+                            <span>ID: {state.projectId?.slice(0, 12) || 'QUEUED'}</span>
+                            <span className={cn("text-green-500", state.isStuck && "text-amber-500")}>
+                              {state.isStuck ? 'POLLING INACTIVE' : 'REALTIME TELEMETRY ACTIVE'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {state.status === 'failed' && (
+                          <div className="space-y-2">
+                            <div className="p-2 bg-red-500/10 border border-red-500/20 rounded text-red-400 text-[10px] italic">
+                              FAILURE: {state.error}
+                            </div>
+                            <Button
+                              onClick={() => state.projectId && retryRender(state.projectId)}
+                              variant="outline"
+                              size="sm"
+                              className="w-full h-8 text-[10px] gap-2 border-red-500/30 text-red-500 hover:bg-red-500/10"
+                            >
+                              <RefreshCw className="h-3 w-3" /> REENFILEIRAR RENDERIZAÇÃO (RETRY)
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      <DialogFooter className="flex sm:justify-between items-center">
+                        <Button variant="ghost" onClick={resetState} className="text-[10px] h-7">Fechar</Button>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            className="bg-amber-600 hover:bg-amber-700 text-[10px] h-7 gap-2 shadow-lg shadow-amber-900/20"
+                            onClick={() => {
+                              resetState();
+                              navigate(state.projectId ? `/admin/cinematic-engine/${state.projectId}` : '/admin/cinematic-engine');
+                            }}
+                          >
+                            <Play className="h-3 w-3" /> ABRIR NO CME
+                          </Button>
+                        </div>
+                      </DialogFooter>
+                    </>
+                  )}
                 </DialogContent>
               </Dialog>
             </>
