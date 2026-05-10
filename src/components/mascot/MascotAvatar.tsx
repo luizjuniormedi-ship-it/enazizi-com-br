@@ -78,7 +78,7 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
         initial={{ scale: 0.8, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.8, opacity: 0 }}
-        className="relative z-10 w-full h-full bg-background/80 backdrop-blur-md rounded-2xl border border-primary/20 shadow-xl flex items-center justify-center overflow-hidden"
+        className="relative z-10 w-full h-full bg-slate-900/60 backdrop-blur-xl rounded-[2.5rem] border border-white/10 shadow-2xl flex items-center justify-center overflow-hidden group"
       >
         <div className="absolute inset-0 flex items-center justify-center p-2">
           <motion.img 
