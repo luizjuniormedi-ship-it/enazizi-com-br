@@ -22,8 +22,8 @@ export default function TutorV2Page() {
     setIsCreating(true);
     
     try {
-      const { data, error } = await supabase
-        .from("tutor_sessions")
+      const { data, error } = await (supabase
+        .from("tutor_sessions") as any)
         .insert({
           user_id: user.id,
           topic: newTopic,
