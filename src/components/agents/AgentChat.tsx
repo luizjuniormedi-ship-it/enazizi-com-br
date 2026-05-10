@@ -154,12 +154,43 @@ const AgentChat = ({
     };
   }, []);
 
+  const downloadForensics = useCallback(() => {
+    const logData = {
+      ...FORENSICS_STORE,
+      currentSession: {
+        conversationId: chat.activeConversationId,
+        messagesCount: chat.messages.length,
+        lessonStatus,
+        topic
+      },
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `enazizi-tutor-forense-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [chat.activeConversationId, chat.messages.length, lessonStatus, topic]);
+
   const handleTransformSession = useCallback(async () => {
     console.error("🔥 REAL_CLICK_SOURCE", {
       component: "AgentChat.tsx",
       handler: "handleTransformSession",
       ts: Date.now()
     });
+    FORENSICS_STORE.clicks.push({
+      type: "handleTransformSession",
+      ts: Date.now(),
+      conversationId: chat.activeConversationId
+    });
+
     console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AgentChat.tsx :: HANDLER=handleTransformSession");
     console.log("[GERAR_AULA] CLICK", {
       conversationId: chat.activeConversationId,
@@ -189,10 +220,14 @@ const AgentChat = ({
         lessonType: 'aula_completa'
       };
       
+      FORENSICS_STORE.network.push({ type: 'request', ts: Date.now(), payload });
+
       const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
         body: payload,
         signal: controller.signal
       });
+
+      FORENSICS_STORE.network.push({ type: 'response', ts: Date.now(), data, error });
 
       console.log("[GERAR_AULA] FUNCTION_RESPONSE", { data, error });
 
