@@ -121,6 +121,7 @@ Responda APENAS o JSON:
     // Persist internally (fire and forget for hotfix speed)
     supabase.from("tutor_lessons").insert({
       user_id: userId,
+      conversation_id: conversationId,
       title: lessonContent.title,
       lesson_type: lessonType,
       content: lessonContent,
