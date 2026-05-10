@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MascotState } from './MascotEngine';
-import enaziziMascot from "@/assets/enazizi-mascot.png";
+import tutorAvatar from "@/assets/tutor-cinematic-avatar.png";
 import { 
   Brain, 
   Sparkles, 
@@ -82,8 +82,8 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
       >
         <div className="absolute inset-0 flex items-center justify-center p-2">
           <motion.img 
-            src={enaziziMascot} 
-            alt="Mascote ENAZIZI"
+            src={tutorAvatar} 
+            alt="Tutor ENAZIZI"
             className="w-full h-full object-contain"
             animate={state === 'thinking' ? {
               scale: [1, 1.05, 1],
