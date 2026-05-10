@@ -72,6 +72,8 @@ const AdminLessonRatingsPanel = lazy(() => import("@/components/admin/AdminLesso
 const TutorLessonStructureDashboard = lazy(() => import("@/components/admin/TutorLessonStructureDashboard").then(m => ({ default: m.TutorLessonStructureDashboard })));
 const TutorVideoAuditPanel = lazy(() => import("@/components/admin/TutorVideoAuditPanel").then(m => ({ default: m.TutorVideoAuditPanel })));
 const KnowledgeBaseAdmin = lazy(() => import("@/components/admin/KnowledgeBaseAdmin").then(m => ({ default: m.KnowledgeBaseAdmin })));
+const TutorQAPanel = lazy(() => import("@/components/admin/TutorQAPanel"));
+
 
 // ─── Navigation structure ─────────────────────────────
 interface NavItem {
