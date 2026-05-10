@@ -361,9 +361,15 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       };
 
       const controller = new AbortController();
-      const abortTimeout = setTimeout(() => controller.abort(), 60000);
+      const abortTimeout = setTimeout(() => {
+        console.warn(`[useAgentChat] PROVIDER_TIMEOUT id=${requestId}`);
+        controller.abort();
+      }, 30000); // 30s timeout for stream start
+
+      const fallbackMessage = "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível.";
 
       try {
+        console.log(`[useAgentChat] PROVIDER_REQUEST_STARTED id=${requestId}`);
         const result = await streamResponse({
           url: CHAT_URL,
           body: {
@@ -375,56 +381,38 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             topic: topic || undefined,
             subtopic: subtopic || undefined,
             specialty: specialty || undefined,
+            requestId
           },
           onFirstChunk: () => {
+            console.log(`[useAgentChat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
             clearTimeout(abortTimeout);
             setLoadingStage("✍️ Gerando resposta...");
+            console.log(`[useAgentChat] ASSISTANT_APPEND_STARTED id=${requestId}`);
           },
           onDelta: applyDelta,
           onError: ({ status, message }) => {
+            console.error(`[useAgentChat] PROVIDER_ERROR id=${requestId}`, { status, message });
             clearTimeout(abortTimeout);
             
-            let description = message || "Erro ao conectar com o agente IA";
-            
-            // Tratamento de payloads JSON controlados retornados pela Edge Function
-            if (message && (message.includes('{"') || message.includes('error'))) {
-              try {
-                const parsed = JSON.parse(message);
-                description = parsed.message || parsed.error || description;
-              } catch (e) {
-                // Not JSON, keep original
-              }
-            }
-
-            const errorMessages: Record<number, string> = {
-              429: "Muitas requisições. Aguarde alguns segundos.",
-              402: "Créditos de IA insuficientes.",
-              401: "Sessão expirada. Por favor, recarregue a página.",
-              500: "Erro interno no Tutor. Tente novamente.",
-              503: "O serviço de IA está instável no momento.",
-            };
-            
-            if (status && errorMessages[status]) {
-              description = errorMessages[status];
-            }
-
             toast({ 
               title: "Tutor IA Indisponível", 
-              description, 
+              description: message || "Erro ao conectar com o agente IA", 
               variant: "destructive" 
             });
             
             setMessages(prev => {
               const last = prev[prev.length - 1];
               if (last && last.role === "assistant") {
-                return prev.map((m, i) => i === prev.length - 1 ? { ...m, isError: true, content: description } : m);
+                return prev.map((m, i) => i === prev.length - 1 ? { ...m, isError: true, content: fallbackMessage } : m);
               }
-              return [...prev, { role: "assistant", content: description, isError: true }];
+              return [...prev, { role: "assistant", content: fallbackMessage, isError: true }];
             });
           },
         });
 
-        if (result === null) {
+        console.log(`[useAgentChat] ASSISTANT_APPEND_FINISHED id=${requestId}`);
+
+        if (result === null && !assistantSoFar) {
           setIsLoading(false);
           setLoadingStage("");
           return;
@@ -440,6 +428,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
             source: "ai",
             response_ms: Date.now() - tutorStartedAt,
             length: assistantSoFar.length,
+            requestId
           });
         }
 
