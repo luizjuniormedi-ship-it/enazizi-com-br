@@ -49,8 +49,18 @@ serve(async (req) => {
       .limit(10);
 
     // [PHASE_0_CONTEXT] 
-    const { data: contextData } = await supabase.functions.invoke("tutor-v2-context-builder");
-    const context = contextData?.context || {};
+    let context = {};
+    try {
+      console.log("[TUTOR_V2] Calling context-builder...");
+      const { data: contextData, error: contextError } = await supabase.functions.invoke("tutor-v2-context-builder");
+      if (contextError) {
+        console.warn("[TUTOR_V2] context-builder error:", contextError);
+      } else {
+        context = contextData?.context || {};
+      }
+    } catch (e) {
+      console.warn("[TUTOR_V2] context-builder call failed:", e);
+    }
     console.log("[PHASE_0_CONTEXT]", JSON.stringify(context));
 
     // 2. Build AI Prompt
