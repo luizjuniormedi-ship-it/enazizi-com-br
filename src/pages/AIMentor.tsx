@@ -31,11 +31,11 @@ const quickActions = [
 ];
 
 const suggestions = [
-  "ECG na Emergência",
-  "Protocolo de Sepse",
-  "GGO na Radiologia",
-  "Conduta em AVC",
-  "Antibióticos na UTI"
+  "Endocardite Bacteriana",
+  "Protocolo de Sepse 2024",
+  "GGO na Radiologia Tórax",
+  "Conduta em AVC Isquêmico",
+  "Antibióticos na UTI Adulto"
 ];
 
 const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => void; initialValue?: string }) => {
@@ -43,11 +43,17 @@ const TutorPremiumHero = ({ onSend, initialValue }: { onSend: (p: string) => voi
   const navigate = useNavigate();
   const firstName = user?.user_metadata?.display_name?.split(" ")[0] || "Doutor";
   const [inputValue, setInputValue] = useState(initialValue || "");
+  const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialValue) {
+      setInputValue(initialValue);
+    }
+  }, [initialValue]);
 
   const handleSend = () => {
     if (inputValue.trim()) {
       onSend(inputValue);
-      setInputValue("");
     }
   };
 
