@@ -3,6 +3,7 @@ import { User, Plus, Zap } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import ProgressiveBlocks from "./ProgressiveBlocks";
 import enaziziMascot from "@/assets/enazizi-mascot.png";
 
 interface TutorV2MessageListProps {
