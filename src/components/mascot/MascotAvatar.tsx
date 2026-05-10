@@ -43,9 +43,11 @@ export const MascotAvatar: React.FC<MascotAvatarProps> = ({
       case 'celebration': return <Trophy className="text-yellow-400 animate-bounce w-full h-full" />;
       case 'focus': return <Target className="text-rose-400 w-full h-full" />;
       case 'alert': return <ShieldAlert className="text-amber-500 w-full h-full" />;
+      case 'correcting': return <CheckCircle2 className="text-indigo-400 w-full h-full" />;
       default: return <Sparkles className="text-indigo-400 w-full h-full" />;
     }
   };
+
 
 
   const glowColors = {
