@@ -64,9 +64,8 @@ export default function TutorV2Page() {
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 blur-[120px] rounded-full animate-pulse [animation-delay:1s]" />
       
       <div className="relative z-10 flex flex-col items-center">
-        <div className="h-24 w-24 rounded-[2.5rem] bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-2xl shadow-indigo-500/40 relative mb-6">
-          <img src={enaziziMascot} alt="Tutor" className="h-20 w-20 object-contain animate-cinematic-pulse-core" />
-          <div className="absolute inset-0 rounded-[2.5rem] border border-white/20 animate-ping opacity-20" />
+        <div className="mb-6">
+          <MascotAvatar state="thinking" size="xl" />
         </div>
         
         <div className="text-center space-y-3">
