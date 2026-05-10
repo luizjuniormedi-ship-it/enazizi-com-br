@@ -26,6 +26,7 @@ import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import type { Msg } from "@/components/tutor/TutorConstants";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { logVideoRecommendationEvent } from "@/services/tutorVideoRecommendationService";
+import { humanizeCMEMessage, FRIENDLY_STATUS_LABEL, friendlyStageLabel } from "@/components/cinematic/cmeUserMessages";
 
 /** Convert bare URLs in text to markdown links so ReactMarkdown renders them clickable */
 function linkifyBareUrls(text: string): string {
