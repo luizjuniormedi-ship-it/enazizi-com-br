@@ -1,12 +1,5 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription 
-} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,18 +13,23 @@ import {
   Video, 
   Brain, 
   Database,
-  History,
   Layout,
   RefreshCcw,
-  ExternalLink,
   Play,
-  Sparkles
+  Sparkles,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AgileLessonPlayer } from './AgileLessonPlayer';
+import { useAdminCheck } from "@/hooks/useAdminCheck";
+import {
+  humanizeCMEMessage,
+  FRIENDLY_STATUS_LABEL,
+  friendlyStageLabel,
+} from './cmeUserMessages';
 
 interface CMERenderModalProps {
   aggregationId: string;
@@ -39,6 +37,7 @@ interface CMERenderModalProps {
   onComplete?: () => void;
 }
 
+// Telemetria técnica: VISÍVEL APENAS NO MODO ADMIN/DEV.
 const STAGES = [
   { id: 'planning', label: 'Planning', icon: Brain, progress: 15 },
   { id: 'mapping', label: 'Mapping', icon: Database, progress: 35 },
@@ -50,6 +49,7 @@ const STAGES = [
   { id: 'completed', label: 'Finished', icon: CheckCircle2, progress: 100 },
 ];
 
+// Rótulos técnicos (admin/dev only).
 const STAGE_LABELS: Record<string, string> = {
   planning: 'Planejamento Semântico',
   mapping: 'Mapeamento de Conhecimento',
@@ -61,8 +61,11 @@ const STAGE_LABELS: Record<string, string> = {
   completed: 'Concluído',
 };
 
+const MAX_AUTO_RETRIES = 2; // Override freeze: cme-ux-correct-fix.
+
 export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERenderModalProps) => {
   const navigate = useNavigate();
+  const { isAdmin } = useAdminCheck();
   const [events, setEvents] = useState<any[]>([]);
   const [currentStage, setCurrentStage] = useState('aggregation');
   const [progress, setProgress] = useState(0);
@@ -74,6 +77,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
   const [devWorkerLoading, setDevWorkerLoading] = useState(false);
   const [devWorkerError, setDevWorkerError] = useState<string | null>(null);
   const [showAgilePlayer, setShowAgilePlayer] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const lastEventRef = useRef<number>(Date.now());
 
   useEffect(() => {
@@ -96,7 +100,6 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
         if (hasConfigWarning) setConfigState('config_warning');
       }
 
-      // Latest render job
       const { data: job } = await supabase
         .from('cme_render_jobs' as any)
         .select('id, status, progress, config, retry_count, gpu_worker_id, pipeline_last_error, output_url, preview_url, project_id')
@@ -168,7 +171,7 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
       ]);
 
       const hasWorkers = (workers?.length ?? 0) > 0;
-      if (!sg && progress < 50) return; // Still scripting
+      if (!sg && progress < 50) return;
       
       if (!job && progress >= 50) {
         setStatus('failed');
@@ -243,67 +246,141 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-300">
-      <div className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl shadow-primary/10">
-        <div className="p-8 space-y-8">
-          <header className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary animate-pulse">
-                <Video className="h-6 w-6" />
-              </div>
-              <div>
-                <h2 className="text-xl font-black tracking-tight text-white uppercase">CME Cinematic Engine</h2>
-                <p className="text-zinc-500 text-xs font-medium uppercase tracking-widest">Pipeline Enterprise Hardened</p>
-              </div>
-            </div>
-            {status === 'ready' && <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-3 py-1">READY</Badge>}
-            {status === 'waiting_hardware' && <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-3 py-1">PENDING HARDWARE</Badge>}
-            {status === 'failed' && <Badge variant="destructive">FAILED</Badge>}
-          </header>
+  // Retry manual capado (override freeze: cme-ux-correct-fix).
+  const handleManualRetry = async () => {
+    if (retryCount >= MAX_AUTO_RETRIES) {
+      toast.error("Limite de tentativas atingido.", {
+        description: "Por favor, tente novamente mais tarde ou contate o suporte.",
+        id: "cme-retry-limit",
+      });
+      return;
+    }
+    setRetryCount(c => c + 1);
+    setStatus('processing');
+    setError(null);
+    setProgress(0);
+    const projectId = (renderJob as any)?.project_id;
+    if (projectId) {
+      try {
+        await supabase.from("cme_render_jobs").update({ status: 'queued' } as any).eq('project_id', projectId);
+        toast.success("Iniciando nova tentativa…", { id: "cme-retry" });
+      } catch (e: any) {
+        toast.error("Não foi possível iniciar uma nova tentativa agora.", { id: "cme-retry-fail" });
+      }
+    } else {
+      window.location.reload();
+    }
+  };
 
+  // ---- USER MODE (default): UI limpa, sem termos técnicos. ----
+  // ---- ADMIN MODE: telemetria completa visível. ----
+  const friendlyTitle = "Geração da aula";
+  const friendlyStatus = FRIENDLY_STATUS_LABEL[status] ?? FRIENDLY_STATUS_LABEL.processing;
+  const friendlyError = humanizeCMEMessage(error);
+  const friendlyStage = friendlyStageLabel(progress);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-300"
+      style={{
+        paddingTop: "max(env(safe-area-inset-top), 12px)",
+        paddingBottom: "max(env(safe-area-inset-bottom), 12px)",
+        paddingLeft: "max(env(safe-area-inset-left), 12px)",
+        paddingRight: "max(env(safe-area-inset-right), 12px)",
+      }}
+    >
+      <div
+        className="w-full max-w-2xl bg-zinc-950 border border-zinc-800 rounded-3xl overflow-hidden shadow-2xl shadow-primary/10 flex flex-col"
+        style={{ maxHeight: "min(80dvh, 720px)" }}
+      >
+        {/* HEADER (sticky) */}
+        <header className="flex-shrink-0 flex items-center justify-between gap-3 px-5 sm:px-8 py-4 sm:py-5 border-b border-white/5 bg-zinc-950">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+              <Video className="h-5 w-5 sm:h-6 sm:w-6" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-white truncate">
+                {isAdmin ? "CME Cinematic Engine" : friendlyTitle}
+              </h2>
+              <p className="text-zinc-500 text-[10px] sm:text-xs font-medium uppercase tracking-widest truncate">
+                {isAdmin ? "Pipeline Enterprise Hardened" : friendlyStatus}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {status === 'ready' && (
+              <Badge className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 px-2 py-0.5 text-[10px]">
+                {isAdmin ? "READY" : "Pronta"}
+              </Badge>
+            )}
+            {status === 'waiting_hardware' && isAdmin && (
+              <Badge className="bg-amber-500/10 text-amber-500 border-amber-500/20 px-2 py-0.5 text-[10px]">PENDING HARDWARE</Badge>
+            )}
+            {status === 'failed' && isAdmin && (
+              <Badge variant="destructive" className="text-[10px]">FAILED</Badge>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              className="h-9 w-9 text-zinc-400 hover:text-white"
+              aria-label="Fechar"
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </header>
+
+        {/* BODY (scroll) */}
+        <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-5 sm:py-6 space-y-6">
+          {/* Failure card */}
           {status === 'failed' && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-6 space-y-4 animate-in zoom-in-95">
-              <div className="flex items-center gap-3 text-red-500">
-                <AlertCircle className="h-6 w-6" />
-                <h3 className="font-bold">Falha no Pipeline CME</h3>
+            <div className="bg-red-500/10 border border-red-500/20 rounded-2xl p-4 sm:p-6 space-y-3 animate-in zoom-in-95">
+              <div className="flex items-center gap-3 text-red-400">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                <h3 className="font-semibold text-sm">
+                  {isAdmin ? "Falha no Pipeline CME" : "Não conseguimos preparar a aula"}
+                </h3>
               </div>
-              <p className="text-zinc-400 text-sm leading-relaxed">{error || "Erro inesperado."}</p>
-              <div className="flex flex-wrap gap-3">
-                <Button onClick={() => window.location.reload()} variant="outline" className="border-red-500/20 text-red-500">
-                  <RefreshCcw className="mr-2 h-4 w-4" /> Tentar Novamente
-                </Button>
-                <Button onClick={openBuilder} variant="ghost" className="text-zinc-500 underline">Abrir Builder</Button>
-              </div>
+              <p className="text-zinc-300 text-sm leading-relaxed">
+                {isAdmin ? (error || "Erro inesperado.") : friendlyError}
+              </p>
+              {retryCount >= MAX_AUTO_RETRIES && !isAdmin && (
+                <p className="text-zinc-500 text-xs">
+                  Você atingiu o limite de tentativas. Tente novamente mais tarde.
+                </p>
+              )}
             </div>
           )}
 
           {/* Agile Mode Callout */}
-          {['graphing', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware', 'waiting_hardware', 'completed'].includes(currentStage) && progress >= 50 && (
-            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 space-y-4 animate-in slide-in-from-bottom-4 duration-500 shadow-lg shadow-primary/5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 text-primary">
-                  <Sparkles className="h-6 w-6" />
-                  <h3 className="font-bold">Aula Interativa Pronta!</h3>
+          {['graphing', 'render_job_creation', 'worker_selection', 'gpu_rendering', 'pending_hardware', 'waiting_hardware', 'completed'].includes(currentStage) && progress >= 50 && status !== 'failed' && (
+            <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 sm:p-6 space-y-3 animate-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 text-primary min-w-0">
+                  <Sparkles className="h-5 w-5 shrink-0" />
+                  <h3 className="font-bold text-sm truncate">Aula Interativa Pronta!</h3>
                 </div>
-                <Badge className="bg-primary/20 text-primary border-primary/10 uppercase text-[9px] font-black">Acesso Instantâneo</Badge>
+                <Badge className="bg-primary/20 text-primary border-primary/10 uppercase text-[9px] font-black shrink-0">Acesso Instantâneo</Badge>
               </div>
               <p className="text-zinc-400 text-sm leading-relaxed">
-                A estrutura pedagógica e as questões já foram processadas. Você pode assistir a versão interativa agora enquanto a versão cinematográfica é renderizada em background.
+                A estrutura pedagógica e as questões já foram processadas. Você pode assistir a versão interativa agora.
               </p>
               <Button 
                 onClick={() => setShowAgilePlayer(true)}
-                className="w-full bg-primary hover:bg-primary/90 text-white font-black uppercase tracking-widest h-14 rounded-2xl shadow-lg shadow-primary/20 gap-2"
+                className="w-full bg-primary hover:bg-primary/90 text-white font-bold h-12 rounded-2xl gap-2"
               >
-                <Play className="h-5 w-5 fill-current" /> Assistir Versão Ágil
+                <Play className="h-4 w-4 fill-current" /> Assistir Versão Ágil
               </Button>
             </div>
           )}
 
-          {status === 'waiting_hardware' && (
-            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-6 space-y-4 animate-in zoom-in-95">
-              <div className="flex items-center gap-3 text-amber-500">
-                <AlertCircle className="h-6 w-6" />
+          {/* Waiting hardware — DEV worker simulation: ADMIN ONLY */}
+          {status === 'waiting_hardware' && isAdmin && (
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 sm:p-6 space-y-3 animate-in zoom-in-95">
+              <div className="flex items-center gap-3 text-amber-400">
+                <AlertCircle className="h-5 w-5 shrink-0" />
                 <h3 className="font-bold text-sm">Aguardando disponibilidade de GPU</h3>
               </div>
               <Button
@@ -329,26 +406,93 @@ export const CMERenderModal = ({ aggregationId, onComplete, onClose }: CMERender
             </div>
           )}
 
-          <div className="space-y-4">
-            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-zinc-500">
-              <span>{STAGE_LABELS[currentStage] || 'Processando'}</span>
-              <span>{progress}%</span>
+          {/* Waiting hardware — USER MODE: friendly */}
+          {status === 'waiting_hardware' && !isAdmin && (
+            <div className="bg-zinc-900/50 border border-zinc-800 rounded-2xl p-4 sm:p-6 space-y-2">
+              <h3 className="font-semibold text-sm text-zinc-200">Aguardando início da geração…</h3>
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                Sua aula está na fila. Isso pode levar alguns instantes.
+              </p>
+            </div>
+          )}
+
+          {/* Progress */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-xs font-medium text-zinc-400">
+              <span className="truncate pr-2">
+                {isAdmin ? (STAGE_LABELS[currentStage] || 'Processando') : friendlyStage}
+              </span>
+              <span className="tabular-nums shrink-0">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2 bg-zinc-900" />
           </div>
 
-          <div className="flex items-center justify-between pt-4 border-t border-white/5">
-             <div className="flex items-center gap-2">
-                <div className={cn("h-2 w-2 rounded-full", status === 'ready' ? "bg-emerald-500" : "bg-amber-500 animate-pulse")} />
-                <span className="text-[10px] text-zinc-600 font-mono uppercase tracking-tighter">
-                  Pipeline: {status}
-                </span>
-             </div>
-             {status === 'ready' && (
-               <Button onClick={onClose} variant="ghost" className="text-xs">Fechar Monitor</Button>
-             )}
-          </div>
+          {/* ADMIN-ONLY: stage timeline + telemetria */}
+          {isAdmin && (
+            <div className="pt-4 border-t border-white/5 space-y-3">
+              <p className="text-[10px] uppercase tracking-widest text-zinc-600 font-mono">
+                Telemetria (admin/dev)
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
+                {STAGES.map(s => {
+                  const reached = progress >= s.progress;
+                  const Icon = s.icon;
+                  return (
+                    <div
+                      key={s.id}
+                      className={cn(
+                        "flex items-center gap-1.5 px-2 py-1.5 rounded-md border",
+                        reached
+                          ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400"
+                          : "bg-zinc-900/50 border-zinc-800 text-zinc-600"
+                      )}
+                    >
+                      <Icon className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{s.label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="text-[10px] text-zinc-600 font-mono space-y-0.5 pt-2">
+                <div>aggregation_id: {aggregationId}</div>
+                {renderJob?.id && <div>render_job_id: {renderJob.id}</div>}
+                {renderJob?.gpu_worker_id && <div>worker_id: {renderJob.gpu_worker_id}</div>}
+                <div>config: {configState}</div>
+                <div>events: {events.length}</div>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* FOOTER (sticky CTAs) */}
+        <footer className="flex-shrink-0 px-5 sm:px-8 py-4 border-t border-white/5 bg-zinc-950 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className={cn(
+              "h-2 w-2 rounded-full shrink-0",
+              status === 'ready' ? "bg-emerald-500" :
+              status === 'failed' ? "bg-red-500" :
+              "bg-amber-500 animate-pulse"
+            )} />
+            <span className="text-xs text-zinc-500 truncate">
+              {isAdmin ? `Pipeline: ${status}` : friendlyStatus}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            {status === 'failed' && retryCount < MAX_AUTO_RETRIES && (
+              <Button onClick={handleManualRetry} variant="outline" size="sm" className="gap-1.5">
+                <RefreshCcw className="h-3.5 w-3.5" /> Tentar novamente
+              </Button>
+            )}
+            {isAdmin && (
+              <Button onClick={openBuilder} variant="ghost" size="sm" className="text-zinc-400">
+                Abrir no CME
+              </Button>
+            )}
+            <Button onClick={onClose} variant="ghost" size="sm" className="text-zinc-400">
+              Fechar
+            </Button>
+          </div>
+        </footer>
       </div>
 
       {showAgilePlayer && (

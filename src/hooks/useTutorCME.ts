@@ -192,7 +192,10 @@ export const useTutorCME = () => {
       messages = data || [];
     }
 
-    if (messages.length === 0) throw new Error("Nenhuma mensagem encontrada para processar.");
+    if (messages.length === 0) {
+      // Override freeze: cme-ux-correct-fix — mensagem amigável.
+      throw new Error("Sua aula ainda está sendo preparada. Tente novamente em alguns instantes.");
+    }
 
     const fullText = messages.map(m => m.content).join("\n\n---\n\n");
     const blocks: { type: string; title: string; content: string; metadata?: any }[] = [];
@@ -494,12 +497,15 @@ export const useTutorCME = () => {
       return projectId;
     } catch (err: any) {
       console.error("CME Transform Error:", err);
-      setState(s => ({ ...s, status: 'failed', error: err.message, message: err.message }));
-      toast.error(`Falha ao iniciar aula: ${err.message}`);
-      
-      // Phase 8: Hardening - Automatic Incident Reporting
+      // Override freeze: cme-ux-correct-fix — humanizar erro para o usuário.
+      const { humanizeCMEMessage } = await import("@/components/cinematic/cmeUserMessages");
+      const friendly = humanizeCMEMessage(err?.message);
+      setState(s => ({ ...s, status: 'failed', error: friendly, message: friendly }));
+      toast.error(friendly, { id: "cme-transform-error" });
+
+      // Telemetria técnica — só DB/console, nunca na UI.
       await reportIncident("TutorCME_Pipeline", err);
-      
+
       return null;
     }
 
