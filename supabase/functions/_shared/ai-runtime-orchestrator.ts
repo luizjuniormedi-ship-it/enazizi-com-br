@@ -345,6 +345,13 @@ async function callOnce(
 ): Promise<{ content?: string; usage?: { prompt_tokens?: number; completion_tokens?: number }; attempt: AIAttempt }> {
   const start = Date.now();
   try {
+    const isOpenAI5 = /^openai\/gpt-5/.test(ref.model);
+    const tokenField = isOpenAI5 ? "max_completion_tokens" : "max_tokens";
+    const body: Record<string, unknown> = {
+      model: ref.model,
+      messages,
+      [tokenField]: AI_MAX_TOKENS,
+    };
     const res = await fetchWithTimeout(
       AI_GATEWAY_URL,
       {
@@ -353,7 +360,7 @@ async function callOnce(
           Authorization: `Bearer ${gatewayKey}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ model: ref.model, messages, max_tokens: AI_MAX_TOKENS }),
+        body: JSON.stringify(body),
       },
       AI_TIMEOUT_MS,
     );
