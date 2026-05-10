@@ -43,7 +43,15 @@ export default function TutorV2ChatPanel({ session }: TutorV2ChatPanelProps) {
 
     // Optimistic update
     const tempId = crypto.randomUUID();
-...
+    const userMsg = { 
+      id: tempId, 
+      role: "user", 
+      content: text, 
+      tutor_session_id: session.id, 
+      user_id: user.id,
+      created_at: new Date().toISOString()
+    };
+    
     setIsTyping(true);
 
     // Optimistic: append user message immediately
