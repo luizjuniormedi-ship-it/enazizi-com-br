@@ -3,7 +3,6 @@ console.error("🔥 BUILD_FORENSE", {
   timestamp: Date.now(),
   version: "FORENSE_V1"
 });
-console.error("🔥 BUILD_ID", import.meta.env.VITE_APP_VERSION || "DEV_SNAPSHOT");
 import { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
