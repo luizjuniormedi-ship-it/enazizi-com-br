@@ -3,12 +3,13 @@ import {
   Settings, 
   BookOpen, 
   Target, 
-  Brain, 
   AlertTriangle, 
   ClipboardCheck,
   Zap,
   ChevronRight
 } from "lucide-react";
+import { MascotAvatar } from "../mascot/MascotAvatar";
+
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import TutorV2History from "./TutorV2History";
