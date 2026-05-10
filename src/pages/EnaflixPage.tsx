@@ -59,15 +59,6 @@ export default function EnaflixPage() {
   const { isProfessor } = useProfessorCheck();
   const { state: mascotState, speech: mascotSpeech, triggerInteraction } = useMascotState();
 
-  useEffect(() => {
-    if (!isLoading && aiLessons) {
-      triggerInteraction({
-        state: 'idle',
-        type: 'welcome',
-        speech: "Bem-vindo ao ENAFLIX. Escolha um módulo para mergulhar no conhecimento médico."
-      });
-    }
-  }, [isLoading, aiLessons, triggerInteraction]);
 
   const { recordVisit, recentIds, popularIds } = useEnaflixUsage();
   const { data: studyNext, isLoading: missionLoading } = useStudyNext();
