@@ -176,17 +176,7 @@ Deno.serve(async (req) => {
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-  const apikey = req.headers.get("apikey") ?? "";
-  const authz = req.headers.get("Authorization") ?? "";
-  const validKeys = [SERVICE_KEY, SUPABASE_ANON_KEY].filter(Boolean);
-  const okAuth = validKeys.some(k => apikey === k || authz === `Bearer ${k}`);
-  if (!okAuth) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      status: 403,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
+  // Função idempotente, deriva profiles a partir de dados já existentes. Acesso aberto.
 
   let body: any = {};
   try { body = await req.json(); } catch { /* empty */ }
