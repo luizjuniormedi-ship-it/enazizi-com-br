@@ -28,6 +28,7 @@ import { useTutorAdaptiveSync } from "@/components/agents/hooks/useTutorAdaptive
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { TutorDiagnosticPanel } from "@/components/tutor/TutorDiagnosticPanel";
 import { cn } from "@/lib/utils";
 
 interface AgentChatProps {
@@ -105,6 +106,7 @@ const AgentChat = ({
   }, [chat.activeConversationId]);
 
   const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
   const handleTransformSession = useCallback(async () => {
     if (chat.messages.length <= 1 || lessonStatus === 'processing') return;
@@ -327,6 +329,8 @@ const AgentChat = ({
         }
         hasMessages={chat.messages.filter(m => m.role === "assistant").length > 0}
         lessonStatus={sessionLesson ? (sessionLesson.aggregation?.manual_video_url ? 'ready' : 'processing') : lessonStatus}
+        isAdmin={isAdmin}
+        onToggleDiagnostic={() => setShowDiagnostic(v => !v)}
       />
 
       <input type="file" ref={chat.fileInputRef} accept=".pdf,.txt,.docx" className="hidden" onChange={handleFileUpload} />
@@ -383,6 +387,12 @@ const AgentChat = ({
       />
 
       <AgentTimeline entries={chat.actionTimeline} />
+
+      {isAdmin && showDiagnostic && (
+        <div className="px-4 sm:px-12 mb-6">
+          <TutorDiagnosticPanel />
+        </div>
+      )}
 
       {pedagogicalHeader?.({ messages: chat.messages, isLoading: chat.isLoading, userInput: chat.input })}
 

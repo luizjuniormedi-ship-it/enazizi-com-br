@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload, Film, Play, Clock } from "lucide-react";
+import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload, Film, Play, Clock, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 
@@ -21,13 +21,16 @@ interface AgentHeaderProps {
   onTransformSession?: () => void;
   hasMessages?: boolean;
   lessonStatus?: 'idle' | 'processing' | 'ready' | 'failed';
+  onToggleDiagnostic?: () => void;
+  isAdmin?: boolean;
 }
 
 const AgentHeader = memo(({
   title, subtitle, selectedCount, isFullscreen, onToggleFullscreen,
   onNewConversation, onToggleHistory, autoSpeak, onToggleAutoSpeak,
   showUploadButton, isUploading, onUploadClick,
-  onTransformSession, hasMessages, lessonStatus = 'idle'
+  onTransformSession, hasMessages, lessonStatus = 'idle',
+  onToggleDiagnostic, isAdmin
 }: AgentHeaderProps) => {
   return (
     <div className="pt-2 pb-6 px-4 sm:px-12 flex items-center justify-between gap-4 border-b border-white/5 bg-transparent backdrop-blur-3xl">
@@ -103,6 +106,11 @@ const AgentHeader = memo(({
             {showUploadButton && (
               <DropdownMenuItem onClick={onUploadClick} disabled={isUploading}>
                 <Upload className="h-4 w-4 mr-2" /> {isUploading ? "Enviando..." : "Enviar material"}
+              </DropdownMenuItem>
+            )}
+            {isAdmin && onToggleDiagnostic && (
+              <DropdownMenuItem onClick={onToggleDiagnostic} className="text-primary font-bold">
+                <Activity className="h-4 w-4 mr-2" /> Diagnóstico Real
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
