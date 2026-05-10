@@ -303,10 +303,21 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       let ragBibliography: any[] = [];
 
       try {
+        console.log(`[useAgentChat] RETRIEVAL_STARTED id=${requestId}`);
         setLoadingStage("🔍 Buscando na Base de Conhecimento...");
-        const { data: ragData } = await supabase.functions.invoke("search-rag-context", {
+        
+        // Retrieval with 8s timeout
+        const ragPromise = supabase.functions.invoke("search-rag-context", {
           body: { query: text, topic: topic || undefined }
         });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("RETRIEVAL_TIMEOUT")), 8000)
+        );
+
+        const { data: ragData } = await Promise.race([ragPromise, timeoutPromise]) as any;
+        console.log(`[useAgentChat] RETRIEVAL_FINISHED id=${requestId}`, { success: ragData?.success });
+        
         if (ragData?.success && Array.isArray(ragData.bibliography)) {
           ragBibliography = ragData.bibliography;
           // Se tiver contexto RAG, podemos injetar como contextOverride para a IA
@@ -316,7 +327,8 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           }
         }
       } catch (err) {
-        console.error("RAG Context fetch failed:", err);
+        console.warn(`[useAgentChat] RETRIEVAL_FAILED id=${requestId}`, err);
+        // Silently continue without context if RAG fails or times out
       }
 
       if (isAdaptiveEnabled) {
