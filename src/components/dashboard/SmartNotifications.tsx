@@ -111,7 +111,7 @@ export default function SmartNotifications() {
           message: "Você ainda não estudou hoje. Faça pelo menos 1 atividade para não perder sua sequência!",
           action: topRec
             ? { label: "Estudar Agora", path: buildStudyPath(topRec) }
-            : { label: "Estudar Agora", path: "/dashboard/chatgpt" },
+            : { label: "Estudar Agora", path: "/dashboard/mentor" },
           severity: "warning",
         });
       }

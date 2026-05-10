@@ -25,7 +25,7 @@ export const ROUTE_MAP = {
       "/dashboard/videoaulas",
       "/dashboard/videoaulas/explorar",
       "/dashboard/videoaulas/:id",
-      "/dashboard/chatgpt", // Tutor IA
+      "/dashboard/mentor", // Tutor IA
       "/dashboard/planner", // Smart Planner
       "/dashboard/mnemonic-studio-v2",
       "/dashboard/mnemonic-history",
@@ -127,7 +127,7 @@ export const ROUTE_ALIASES = {
   "/dashboard/questoes": "/dashboard/simulados",
   "/dashboard/banco-questoes": "/dashboard/simulados",
   "/dashboard/plano-dia": "/dashboard",
-  "/dashboard/feynman": "/dashboard/chatgpt",
+  "/dashboard/feynman": "/dashboard/mentor",
   "/dashboard/mnemonico": "/dashboard/mnemonic-studio-v2",
   "/dashboard/mnemonic-studio": "/dashboard/mnemonic-studio-v2",
   "/dashboard/missao": "/mission",

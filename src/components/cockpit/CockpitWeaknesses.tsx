@@ -100,7 +100,7 @@ export default function CockpitWeaknesses({ weaknesses }: Props) {
                       tutor_origin: "cockpit-weakness",
                     });
                     if (w.subtema) params.set("sc_subtopic", w.subtema);
-                    navigate(`/dashboard/chatgpt?${params.toString()}`);
+                    navigate(`/dashboard/mentor?${params.toString()}`);
                   }}
                 >
                   <Brain className="h-3 w-3" /> Perguntar ao Tutor

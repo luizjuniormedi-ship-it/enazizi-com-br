@@ -744,7 +744,7 @@ const ClinicalSimulation = () => {
   const openTutorReview = useCallback(() => {
     if (!finalEval) return;
     const missed = finalEval.differential_diagnosis?.filter(d => !d.student_considered).map(d => d.diagnosis).join(", ") || "N/A";
-    navigate("/dashboard/chatgpt", {
+    navigate("/dashboard/mentor", {
       state: {
         initialMessage: `🔬 MODO REVISÃO CLÍNICA\n\nO aluno teve dificuldade no seguinte caso clínico:\n- Especialidade: ${specialty}\n- Diagnóstico correto: ${finalEval.correct_diagnosis}\n- Diferenciais não considerados: ${missed}\n- Pontos fracos: ${finalEval.improvements?.join(", ") || "N/A"}\n\nExplique detalhadamente o raciocínio clínico, os diagnósticos diferenciais e como chegar ao diagnóstico correto.`,
       },

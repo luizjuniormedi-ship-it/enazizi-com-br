@@ -292,7 +292,7 @@ const FlashcardExam = ({
           {answerSubmitted && !isAnswerCorrect() && card.topic && (
             <Button
               variant="outline" size="sm" className="gap-1.5 text-xs"
-              onClick={() => navigate("/dashboard/chatgpt", {
+              onClick={() => navigate("/dashboard/mentor", {
                 state: {
                   initialMessage: `Errei um flashcard sobre "${card.topic}". A pergunta era: "${card.question}". A resposta correta era: "${card.answer}". Me explique este tema seguindo o protocolo ENAZIZI.`,
                   fromErrorBank: true,

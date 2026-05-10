@@ -432,7 +432,7 @@ const QuestionsBank = () => {
                       params.set("sc_objective", "correction");
                       params.set("sc_taskType", "error_review");
                       params.set("sc_reason", `Errou questão: "${practiceQuestion.options[practiceQuestion.correct_index]}"`);
-                      navigate(`/dashboard/chatgpt?${params.toString()}`);
+                      navigate(`/dashboard/mentor?${params.toString()}`);
                     }}
                   >
                     <GraduationCap className="h-5 w-5" />

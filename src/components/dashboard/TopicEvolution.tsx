@@ -42,7 +42,7 @@ const TopicEvolution = () => {
   });
 
   const handleStudyTopic = (specialty: string) => {
-    navigate("/dashboard/chatgpt", {
+    navigate("/dashboard/mentor", {
       state: {
         initialMessage: `Quero estudar o tópico "${specialty}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
         fromErrorBank: true,

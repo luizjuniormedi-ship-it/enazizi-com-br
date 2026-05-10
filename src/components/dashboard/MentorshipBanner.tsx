@@ -167,7 +167,7 @@ const MentorshipBanner = () => {
                       size="sm"
                       variant="outline"
                       className="h-7 text-[11px] gap-1 shrink-0"
-                      onClick={() => navigate("/dashboard/chatgpt?topic=" + encodeURIComponent(m.topics[0]?.topic || ""))}
+                      onClick={() => navigate("/dashboard/mentor?topic=" + encodeURIComponent(m.topics[0]?.topic || ""))}
                     >
                       <Zap className="h-3 w-3" /> Estudar agora
                     </Button>

@@ -518,7 +518,7 @@ const StudentSimulados = () => {
               <p className="text-sm text-muted-foreground mb-6">Quando seu professor criar um simulado para você, ele aparecerá aqui.</p>
               <p className="text-xs text-muted-foreground mb-3">Enquanto isso, continue praticando:</p>
               <div className="flex flex-wrap justify-center gap-3">
-                <Button variant="outline" onClick={() => navigate("/dashboard/chatgpt")} className="gap-2">
+                <Button variant="outline" onClick={() => navigate("/dashboard/mentor")} className="gap-2">
                   <Sparkles className="h-4 w-4" />
                   Praticar com Tutor IA
                 </Button>
@@ -1012,7 +1012,7 @@ const StudentSimulados = () => {
                                     `❌ ${e.conteudo?.slice(0, 150) || "Questão sem enunciado"}${e.motivo_erro ? `\n   ${e.motivo_erro}` : ""}`
                                   ).join("\n\n");
                                   const msg = `Preciso revisar "${topic}" — errei ${data.totalErrors} vez(es) em simulados do professor.\n\n${errDetails}\n\nMe explique cada conceito detalhadamente e me ajude a não errar novamente.`;
-                                  navigate("/dashboard/chatgpt", { state: { fromSimulado: true, initialMessage: msg } });
+                                  navigate("/dashboard/mentor", { state: { fromSimulado: true, initialMessage: msg } });
                                 }}
                               >
                                 <Sparkles className="h-3 w-3" />
@@ -1273,7 +1273,7 @@ const StudentSimulados = () => {
                         className="mt-1 gap-1 text-primary h-7 px-2"
                         onClick={() => {
                           const msg = `Errei esta questão de ${d.topic || "Geral"}:\n\n"${q?.statement?.slice(0, 400)}"\n\nMarquei: "${q?.options?.[d.selected] || "Não respondida"}"\nCorreta: "${q?.options?.[d.correct_index]}"\n\nExplique detalhadamente por que a alternativa correta é a certa e por que a minha está errada.`;
-                          navigate("/dashboard/chatgpt", {
+                          navigate("/dashboard/mentor", {
                             state: { fromSimulado: true, initialMessage: msg }
                           });
                         }}
@@ -1332,7 +1332,7 @@ const StudentSimulados = () => {
                         className="gap-1.5 text-xs"
                         onClick={() => {
                           const msg = `Preciso revisar "${topic}" — errei ${data.count} questão(ões) no simulado "${current.simulado.title}".\n\n${data.questions.map((q, i) => `❌ Q${i+1}: ${q.statement}...\nMarquei: "${q.selected}" — Correta: "${q.correct}"`).join("\n\n")}\n\nMe explique cada erro detalhadamente.`;
-                          navigate("/dashboard/chatgpt", { state: { fromSimulado: true, initialMessage: msg } });
+                          navigate("/dashboard/mentor", { state: { fromSimulado: true, initialMessage: msg } });
                         }}
                       >
                         <Sparkles className="h-3 w-3" />
@@ -1363,7 +1363,7 @@ const StudentSimulados = () => {
                   });
                 const topics = [...new Set(errors.map(e => e.topic))];
                 const msg = `Acabei de fazer o simulado "${current.simulado.title}" e errei ${errors.length} questão(ões). Os temas foram: ${topics.join(", ")}.\n\n${errors.map((e, i) => `❌ Q${i+1} (${e.topic}): ${e.statement.slice(0, 150)}...\nMarquei: "${e.selectedAnswer}" — Correta: "${e.correctAnswer}"`).join("\n\n")}\n\nMe ajude a revisar cada erro com explicações detalhadas.`;
-                navigate("/dashboard/chatgpt", {
+                navigate("/dashboard/mentor", {
                   state: { fromSimulado: true, initialMessage: msg }
                 });
               }}
