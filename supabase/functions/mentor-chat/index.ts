@@ -132,6 +132,7 @@ serve(async (req) => {
     let modelUsed = "openai/gpt-4o";
 
     try {
+      console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED id=${requestId} model=${modelUsed}`);
       response = await aiFetch({
         model: modelUsed,
         messages: [{ role: "system", content: systemPrompt }, ...messages],
@@ -140,10 +141,12 @@ serve(async (req) => {
         timeoutMs: 30000,
         userId
       });
+      console.log(`[mentor-chat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
     } catch (err) {
       console.warn(`[mentor-chat] primary_ai_failed id=${requestId}`, err);
       modelUsed = "openai/gpt-4o-mini";
       try {
+        console.log(`[mentor-chat] PROVIDER_REQUEST_STARTED (fallback) id=${requestId} model=${modelUsed}`);
         response = await aiFetch({
           model: modelUsed,
           messages: [{ role: "system", content: systemPrompt }, ...messages],
@@ -152,8 +155,9 @@ serve(async (req) => {
           timeoutMs: 15000,
           userId
         });
+        console.log(`[mentor-chat] PROVIDER_RESPONSE_RECEIVED id=${requestId}`);
       } catch (fallbackErr) {
-        console.error(`[mentor-chat] fallback_ai_failed id=${requestId}`, fallbackErr);
+        console.error(`[mentor-chat] PROVIDER_ERROR id=${requestId}`, fallbackErr);
         await logAIUsage({
           userId,
           module: "mentor-chat",
@@ -162,9 +166,10 @@ serve(async (req) => {
           errorMessage: getAiErrorMessage(fallbackErr),
           requestId
         });
+        
         return json({ 
           error: "ai_failed", 
-          message: "O Tutor IA está temporariamente indisponível. Tente novamente em instantes." 
+          message: "Encontrei uma instabilidade temporária na base de conhecimento, mas vou continuar sua explicação com o conhecimento disponível." 
         }, 503);
       }
     }
