@@ -24,6 +24,10 @@ import ProfessorTraceAudit from "@/components/professor/ProfessorTraceAudit";
 import ProfessorTurmaManager from "@/components/professor/ProfessorTurmaManager";
 import TopRiskStudents from "@/components/professor/TopRiskStudents";
 import ClassCognitiveHeatmap from "@/components/professor/ClassCognitiveHeatmap";
+import OperationalKpiBar from "@/components/professor/OperationalKpiBar";
+import StudentOperationalDrawer from "@/components/professor/StudentOperationalDrawer";
+import QuickInterventionDialog from "@/components/professor/QuickInterventionDialog";
+import { useClassAnalytics } from "@/hooks/useClassAnalytics";
 
 import type { ResultsDialogState } from "@/components/professor/SimuladoResultsDialog";
 
@@ -46,6 +50,8 @@ const ProfessorDashboard = () => {
     loading: false,
     questions_json: [],
   });
+  const [drawerStudentId, setDrawerStudentId] = useState<string | null>(null);
+  const [recoveryFor, setRecoveryFor] = useState<{ id: string; name: string; specialty?: string } | null>(null);
   const [questionsDialog, setQuestionsDialog] = useState<{ open: boolean; simulado: any }>({
     open: false,
     simulado: null,
@@ -76,6 +82,8 @@ const ProfessorDashboard = () => {
     },
     []
   );
+
+  const classAnalytics = useClassAnalytics(callAPI);
 
   const loadSimulados = useCallback(async () => {
     if (!session) return;
@@ -229,12 +237,18 @@ const ProfessorDashboard = () => {
 
           {/* OPERACIONAL: Alunos em risco · Heatmap turma · Aluno individual · Casos plantão */}
           <TabsContent value="operacional" className="mt-4 space-y-6">
+            {(activeSub === "risco" || activeSub === "heatmap") && (
+              <OperationalKpiBar analytics={classAnalytics.data} loading={classAnalytics.loading} />
+            )}
             {activeSub === "risco" && (
               <TopRiskStudents
-                callAPI={callAPI}
-                onActionAssign={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
-                onActionMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
-                onActionTrack={() => { setActiveSub("aluno"); }}
+                analytics={classAnalytics.data}
+                loading={classAnalytics.loading}
+                error={classAnalytics.error}
+                onReload={classAnalytics.reload}
+                onAssignRecovery={(id, name) => setRecoveryFor({ id, name })}
+                onOpenMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); }}
+                onOpenDrawer={(id) => setDrawerStudentId(id)}
               />
             )}
             {activeSub === "heatmap" && <ClassCognitiveHeatmap callAPI={callAPI} />}
@@ -333,6 +347,28 @@ const ProfessorDashboard = () => {
           />
         </Suspense>
       )}
+
+      <StudentOperationalDrawer
+        studentId={drawerStudentId}
+        open={!!drawerStudentId}
+        onClose={() => setDrawerStudentId(null)}
+        callAPI={callAPI}
+        onAssignRecovery={(id, suggestedSpecialty) => {
+          const name = (classAnalytics.data?.students || []).find((s: any) => s.user_id === id)?.display_name || "Aluno";
+          setRecoveryFor({ id, name, specialty: suggestedSpecialty });
+        }}
+        onOpenMentor={() => { setActiveTab("mentoria"); setActiveSub("temas"); setDrawerStudentId(null); }}
+      />
+
+      <QuickInterventionDialog
+        open={!!recoveryFor}
+        onClose={() => setRecoveryFor(null)}
+        studentId={recoveryFor?.id || null}
+        studentName={recoveryFor?.name}
+        suggestedSpecialty={recoveryFor?.specialty}
+        callAPI={callAPI}
+        onSuccess={() => classAnalytics.reload()}
+      />
     </div>
   );
 };

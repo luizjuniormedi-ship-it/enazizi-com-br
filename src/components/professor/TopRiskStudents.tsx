@@ -7,8 +7,8 @@
  * Sem dados → DadosInsuficientesCard.
  * Sem mocks. Sem KPIs fake.
  */
-import { useEffect, useState, useCallback } from "react";
-import { AlertTriangle, AlertCircle, UserX, Activity, ArrowRight, RefreshCw } from "lucide-react";
+import { useMemo } from "react";
+import { AlertTriangle, AlertCircle, UserX, Activity, ArrowRight, RefreshCw, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,39 +30,32 @@ interface RiskStudent {
 }
 
 interface Props {
-  callAPI: (body: Record<string, unknown>) => Promise<any>;
-  onActionAssign?: (studentId: string) => void;
-  onActionMentor?: (studentId: string) => void;
-  onActionTrack?: (studentId: string) => void;
+  analytics: any | null;
+  loading: boolean;
+  error?: string | null;
+  onReload?: () => void;
+  onAssignRecovery?: (studentId: string, name: string, suggestedSpecialty?: string) => void;
+  onOpenMentor?: (studentId: string) => void;
+  onOpenDrawer?: (studentId: string) => void;
 }
 
-export default function TopRiskStudents({ callAPI, onActionAssign, onActionMentor, onActionTrack }: Props) {
-  const [students, setStudents] = useState<RiskStudent[] | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await callAPI({ action: "class_analytics" });
-      const list: RiskStudent[] = Array.isArray(res?.atRiskStudents) ? res.atRiskStudents : [];
-      // Priorização: critical primeiro, depois por menor score, depois por mais dias inativo
-      list.sort((a, b) => {
-        if (a.risk_level !== b.risk_level) return a.risk_level === "critical" ? -1 : 1;
-        if (a.avg_domain_score !== b.avg_domain_score) return a.avg_domain_score - b.avg_domain_score;
-        return b.days_inactive - a.days_inactive;
-      });
-      setStudents(list);
-    } catch (e: any) {
-      setErr(e?.message || "Erro ao carregar alunos em risco.");
-      setStudents([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [callAPI]);
-
-  useEffect(() => { load(); }, [load]);
+export default function TopRiskStudents({
+  analytics,
+  loading,
+  error,
+  onReload,
+  onAssignRecovery,
+  onOpenMentor,
+  onOpenDrawer,
+}: Props) {
+  const students = useMemo<RiskStudent[]>(() => {
+    const list: RiskStudent[] = Array.isArray(analytics?.atRiskStudents) ? analytics.atRiskStudents : [];
+    return [...list].sort((a, b) => {
+      if (a.risk_level !== b.risk_level) return a.risk_level === "critical" ? -1 : 1;
+      if (a.avg_domain_score !== b.avg_domain_score) return a.avg_domain_score - b.avg_domain_score;
+      return b.days_inactive - a.days_inactive;
+    });
+  }, [analytics]);
 
   if (loading) {
     return (
@@ -74,14 +67,16 @@ export default function TopRiskStudents({ callAPI, onActionAssign, onActionMento
     );
   }
 
-  if (err) {
+  if (error) {
     return (
       <Card className="p-6">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-rose-300">{err}</p>
-          <Button size="sm" variant="outline" onClick={load}>
-            <RefreshCw className="h-3 w-3 mr-1" /> Tentar novamente
-          </Button>
+          <p className="text-sm text-rose-300">{error}</p>
+          {onReload && (
+            <Button size="sm" variant="outline" onClick={onReload}>
+              <RefreshCw className="h-3 w-3 mr-1" /> Tentar novamente
+            </Button>
+          )}
         </div>
       </Card>
     );
@@ -121,9 +116,11 @@ export default function TopRiskStudents({ callAPI, onActionAssign, onActionMento
               <AlertTriangle className="h-3 w-3 mr-1" /> {warning} atenção
             </Badge>
           )}
-          <Button size="sm" variant="ghost" onClick={load}>
-            <RefreshCw className="h-3 w-3" />
-          </Button>
+          {onReload && (
+            <Button size="sm" variant="ghost" onClick={onReload}>
+              <RefreshCw className="h-3 w-3" />
+            </Button>
+          )}
         </div>
       </div>
 
@@ -162,21 +159,21 @@ export default function TopRiskStudents({ callAPI, onActionAssign, onActionMento
             </div>
 
             <div className="flex flex-wrap items-center gap-2 sm:shrink-0">
-              {onActionAssign && (
+              {onAssignRecovery && (
                 <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold uppercase tracking-wider"
-                  onClick={() => onActionAssign(s.user_id)}>
-                  Atribuir tarefa
+                  onClick={() => onAssignRecovery(s.user_id, s.display_name)}>
+                  <Target className="h-3 w-3 mr-1" /> Recovery
                 </Button>
               )}
-              {onActionMentor && (
+              {onOpenMentor && (
                 <Button size="sm" variant="outline" className="h-8 text-[11px] font-bold uppercase tracking-wider"
-                  onClick={() => onActionMentor(s.user_id)}>
+                  onClick={() => onOpenMentor(s.user_id)}>
                   Mentoria
                 </Button>
               )}
-              {onActionTrack && (
+              {onOpenDrawer && (
                 <Button size="sm" className="h-8 text-[11px] font-bold uppercase tracking-wider"
-                  onClick={() => onActionTrack(s.user_id)}>
+                  onClick={() => onOpenDrawer(s.user_id)}>
                   Detalhes <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               )}
