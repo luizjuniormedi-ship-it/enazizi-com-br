@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload, Film, Play, Clock } from "lucide-react";
+import { Paperclip, Maximize2, Minimize2, MoreVertical, Plus, History, Volume2, Upload, Film, Play, Clock, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import tutorAvatar from "@/assets/tutor-avatar-hd.png";
 
