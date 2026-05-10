@@ -738,20 +738,24 @@ const StudySession = () => {
 
   const goToPhase = async (targetPhase: Phase) => {
     if (isLoading) return;
+    console.debug("[StudySession] goToPhase called", { targetPhase });
     setPhase(targetPhase);
     const label = PHASE_META[targetPhase].label;
     const userMsg: Msg = { role: "user", content: `Avançar para: ${label}` };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
+    console.debug("[StudySession] mission step advanced", { targetPhase, label });
     await streamChat(newMsgs, targetPhase, topic);
   };
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
+    console.debug("[StudySession] sendMessage called", { input: input.trim(), phase, topic });
     const userMsg: Msg = { role: "user", content: input.trim() };
     const newMsgs = [...messages, userMsg];
     setMessages(newMsgs);
     setInput("");
+    console.debug("[StudySession] message sent local", { role: "user", content: userMsg.content });
     await streamChat(newMsgs, phase, topic);
   };
 
