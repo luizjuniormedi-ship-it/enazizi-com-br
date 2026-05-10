@@ -54,7 +54,13 @@ const ProfessorDashboard = () => {
     questions_json: [],
   });
   const [drawerStudentId, setDrawerStudentId] = useState<string | null>(null);
-  const [recoveryFor, setRecoveryFor] = useState<{ id: string; name: string; specialty?: string } | null>(null);
+  const [intervention, setIntervention] = useState<{
+    id: string;
+    name: string;
+    type: InterventionType;
+    specialty?: string;
+    justification?: string;
+  } | null>(null);
   const [questionsDialog, setQuestionsDialog] = useState<{ open: boolean; simulado: any }>({
     open: false,
     simulado: null,
