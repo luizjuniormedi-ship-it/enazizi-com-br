@@ -21,11 +21,12 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 interface AgileLessonPlayerProps {
-  aggregationId: string;
+  aggregationId?: string;
+  initialLesson?: any;
   onClose: () => void;
 }
 
-export const AgileLessonPlayer = ({ aggregationId, onClose }: AgileLessonPlayerProps) => {
+export const AgileLessonPlayer = ({ aggregationId, initialLesson, onClose }: AgileLessonPlayerProps) => {
   const [blocks, setBlocks] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +36,41 @@ export const AgileLessonPlayer = ({ aggregationId, onClose }: AgileLessonPlayerP
 
   useEffect(() => {
     const fetchBlocks = async () => {
+      if (initialLesson) {
+        console.log("[AGILE_PLAYER] Using initialLesson", initialLesson);
+        const mappedBlocks = [
+          { title: initialLesson.title, content: initialLesson.intro, block_type: 'introduction', block_order: 0 },
+          ...(initialLesson.sections || []).map((s: any, idx: number) => ({
+            title: s.title,
+            content: `${s.explanation || s.content}\n\n${s.clinicalApplication ? `**Aplicação Clínica:** ${s.clinicalApplication}` : ""}`,
+            block_type: 'deep_dive',
+            block_order: idx + 1,
+            scene_graph_data: { questions: s.questions || [] }
+          })),
+          { title: "Resumo Final", content: initialLesson.summary, block_type: 'summary', block_order: 100 }
+        ];
+        
+        // Se houver questões globais da aula
+        if (initialLesson.questions && initialLesson.questions.length > 0) {
+          mappedBlocks.push({
+            title: "Quiz de Consolidação",
+            content: "Teste seus conhecimentos sobre esta aula.",
+            block_type: 'mini_quiz',
+            block_order: 101,
+            scene_graph_data: { questions: initialLesson.questions }
+          });
+        }
+        
+        setBlocks(mappedBlocks);
+        setIsLoading(false);
+        return;
+      }
+
+      if (!aggregationId) {
+        setIsLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('cme_lesson_blocks')
         .select('*')
@@ -46,7 +82,7 @@ export const AgileLessonPlayer = ({ aggregationId, onClose }: AgileLessonPlayerP
     };
 
     fetchBlocks();
-  }, [aggregationId]);
+  }, [aggregationId, initialLesson]);
 
   const currentBlock = blocks[currentIndex];
   const progress = blocks.length > 0 ? ((currentIndex + 1) / blocks.length) * 100 : 0;
