@@ -720,7 +720,7 @@ export function getResponseBlocksSpec(): string {
 // ============================================================
 // PROMPT MESTRE COMPLETO (default export)
 // ============================================================
-const ENAZIZI_PROMPT = [
+export const PROMPT_COMPLETO = [
   IDENTITY,
   FORMATTING,
   COGNITIVE_PHASES,
@@ -742,4 +742,4 @@ const ENAZIZI_PROMPT = [
   ABSOLUTE_RULES,
 ].join("\n");
 
-export default ENAZIZI_PROMPT;
+export default PROMPT_COMPLETO;

@@ -4,7 +4,8 @@ import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -21,44 +22,41 @@ serve(async (req) => {
     );
 
     // 1. Fetch Error Bank
-    const { data: errors } = await supabase
-      .from("user_errors") // Assuming this table exists based on previous history
-      .select("*")
-      .eq("user_id", userId)
-      .limit(5);
+    let errors = [];
+    try {
+      const { data } = await supabase.from("user_errors").select("*").eq("user_id", userId).limit(5);
+      if (data) errors = data;
+    } catch (e) { console.warn("Table user_errors not found or error:", e); }
 
     // 2. Fetch Planner/Mission
-    const { data: mission } = await supabase
-      .from("user_missions")
-      .select("*")
-      .eq("user_id", userId)
-      .eq("status", "active")
-      .single();
+    let mission = null;
+    try {
+      const { data } = await supabase.from("user_missions").select("*").eq("user_id", userId).eq("status", "active").maybeSingle();
+      if (data) mission = data;
+    } catch (e) { console.warn("Table user_missions not found or error:", e); }
 
     // 3. Fetch FSRS status
-    const { data: fsrs } = await supabase
-      .from("user_fsrs_stats")
-      .select("*")
-      .eq("user_id", userId)
-      .maybeSingle();
+    let fsrs = null;
+    try {
+      const { data } = await supabase.from("user_fsrs_stats").select("*").eq("user_id", userId).maybeSingle();
+      if (data) fsrs = data;
+    } catch (e) { console.warn("Table user_fsrs_stats not found or error:", e); }
 
-    // 4. Memory & Cognitive Metrics (Simulated or fetched if tables exist)
-    const { data: memory } = await supabase
-      .from("tutor_memory_search_logs")
-      .select("chunks_found")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // 4. Memory & Cognitive Metrics
+    let memory_chunks_used = 0;
+    try {
+      const { data } = await supabase.from("tutor_memory_search_logs").select("chunks_found").eq("user_id", userId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+      if (data) memory_chunks_used = data.chunks_found;
+    } catch (e) { console.warn("Table tutor_memory_search_logs not found or error:", e); }
 
     return new Response(JSON.stringify({ 
       ok: true, 
       context: {
         user_id: userId,
         errors: errors || [],
-        mission: mission || null,
-        fsrs: fsrs || null,
-        memory_chunks_used: memory?.chunks_found || 0,
+        mission: mission,
+        fsrs: fsrs,
+        memory_chunks_used: memory_chunks_used,
         cognitive_load: 0.45, // Placeholder for actual calculation
         detected_gaps: (errors || []).map((e: any) => e.topic)
       }

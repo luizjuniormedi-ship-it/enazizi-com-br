@@ -6,7 +6,8 @@ import { PROMPT_COMPLETO } from "../_shared/enazizi-prompt.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 serve(async (req) => {
@@ -32,24 +33,41 @@ serve(async (req) => {
     );
 
     // 1. Get Session & History
-    const { data: session } = await supabase
+    const { data: session, error: sessionError } = await supabase
       .from("tutor_sessions")
       .select("*")
       .eq("id", sessionId)
-      .single();
+      .maybeSingle();
 
-    if (!session) throw new Error("Session not found");
+    if (sessionError || !session) {
+      console.error("[TUTOR_V2] Session error:", sessionError);
+      throw new Error("Sessão não encontrada. Por favor, inicie um novo tema.");
+    }
 
-    const { data: history } = await supabase
+    const { data: history, error: historyError } = await supabase
       .from("tutor_messages")
       .select("role, content")
       .eq("tutor_session_id", sessionId)
       .order("created_at", { ascending: true })
       .limit(10);
+    
+    if (historyError) console.warn("[TUTOR_V2] History error:", historyError);
 
     // [PHASE_0_CONTEXT] 
-    const { data: contextData } = await supabase.functions.invoke("tutor-v2-context-builder");
-    const context = contextData?.context || {};
+    let context = {};
+    try {
+      console.log("[TUTOR_V2] Calling context-builder...");
+      const { data: contextData, error: contextError } = await supabase.functions.invoke("tutor-v2-context-builder", {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      if (contextError) {
+        console.warn("[TUTOR_V2] context-builder error:", contextError);
+      } else {
+        context = contextData?.context || {};
+      }
+    } catch (e) {
+      console.warn("[TUTOR_V2] context-builder call failed:", e);
+    }
     console.log("[PHASE_0_CONTEXT]", JSON.stringify(context));
 
     // 2. Build AI Prompt
