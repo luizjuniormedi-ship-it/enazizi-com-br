@@ -164,6 +164,8 @@ INSTRUÇÃO OPERACIONAL ADAPTATIVA:
       });
     }
 
+    console.log("[TUTOR_V2_RESPONSE_SENT]", { latency });
+
     return new Response(JSON.stringify({ 
       ok: true, 
       content: assistantMessage,
