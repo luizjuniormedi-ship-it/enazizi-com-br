@@ -106,6 +106,7 @@ const AgentChat = ({
   }, [chat.activeConversationId]);
 
   const [lessonStatus, setLessonStatus] = useState<'idle' | 'processing' | 'ready' | 'failed'>('idle');
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
   const handleTransformSession = useCallback(async () => {
     if (chat.messages.length <= 1 || lessonStatus === 'processing') return;
