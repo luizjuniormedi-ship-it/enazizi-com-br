@@ -10,7 +10,8 @@ import {
   Brain, 
   HelpCircle,
   Volume2,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Download
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -277,12 +278,26 @@ export const AgileLessonPlayer = ({ aggregationId, initialLesson, onClose }: Agi
             <ChevronLeft className="h-5 w-5" /> Anterior
           </Button>
 
-          <Button 
-            onClick={handleNext} 
-            className="bg-white text-black hover:bg-zinc-200 rounded-2xl h-12 px-8 font-black uppercase tracking-widest gap-2 shadow-xl shadow-white/5"
-          >
-            {currentIndex === blocks.length - 1 ? 'Finalizar' : 'Próximo'} <ChevronRight className="h-5 w-5" />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => {
+                const event = new CustomEvent('download-forensics');
+                window.dispatchEvent(event);
+              }}
+              className="rounded-xl h-10 px-3 text-[10px] text-zinc-600 hover:text-zinc-400 hover:bg-white/5 opacity-50"
+            >
+              <Download className="h-3 w-3" />
+            </Button>
+
+            <Button 
+              onClick={handleNext} 
+              className="bg-white text-black hover:bg-zinc-200 rounded-2xl h-12 px-8 font-black uppercase tracking-widest gap-2 shadow-xl shadow-white/5"
+            >
+              {currentIndex === blocks.length - 1 ? 'Finalizar' : 'Próximo'} <ChevronRight className="h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </footer>
     </div>

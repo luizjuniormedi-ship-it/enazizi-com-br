@@ -3,7 +3,40 @@ console.error("🔥 BUILD_FORENSE", {
   timestamp: Date.now(),
   version: "FORENSE_V1"
 });
+
+// Forensics Log Store
+const FORENSICS_STORE: any = {
+  build: "FORENSE_REAL_V1",
+  clicks: [],
+  network: [],
+  errors: [],
+  sessions: []
+};
+
+// Global interceptors for forensics
+if (typeof window !== 'undefined') {
+  const originalLog = console.log;
+  const originalError = console.error;
+  
+  console.log = (...args) => {
+    if (String(args[0]).includes('[GERAR_AULA]')) {
+      FORENSICS_STORE.clicks.push({ ts: Date.now(), data: args });
+    }
+    originalLog.apply(console, args);
+  };
+
+  window.addEventListener('error', (event) => {
+    FORENSICS_STORE.errors.push({ 
+      ts: Date.now(), 
+      msg: event.message, 
+      file: event.filename,
+      line: event.lineno
+    });
+  });
+}
+
 import { useCallback, useEffect, useState, useRef } from "react";
+import { Download } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Loader2, Film, Sparkles, Play, AlertCircle } from "lucide-react";
@@ -121,12 +154,48 @@ const AgentChat = ({
     };
   }, []);
 
+  const downloadForensics = useCallback(() => {
+    const logData = {
+      ...FORENSICS_STORE,
+      currentSession: {
+        conversationId: chat.activeConversationId,
+        messagesCount: chat.messages.length,
+        lessonStatus,
+        topic
+      },
+      userAgent: navigator.userAgent,
+      url: window.location.href,
+      timestamp: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `enazizi-tutor-forense-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [chat.activeConversationId, chat.messages.length, lessonStatus, topic]);
+
+  useEffect(() => {
+    window.addEventListener('download-forensics', downloadForensics);
+    return () => window.removeEventListener('download-forensics', downloadForensics);
+  }, [downloadForensics]);
+
   const handleTransformSession = useCallback(async () => {
     console.error("🔥 REAL_CLICK_SOURCE", {
       component: "AgentChat.tsx",
       handler: "handleTransformSession",
       ts: Date.now()
     });
+    FORENSICS_STORE.clicks.push({
+      type: "handleTransformSession",
+      ts: Date.now(),
+      conversationId: chat.activeConversationId
+    });
+
     console.error("🔥 GERAR_AULA_REAL :: ARQUIVO=AgentChat.tsx :: HANDLER=handleTransformSession");
     console.log("[GERAR_AULA] CLICK", {
       conversationId: chat.activeConversationId,
@@ -156,10 +225,14 @@ const AgentChat = ({
         lessonType: 'aula_completa'
       };
       
+      FORENSICS_STORE.network.push({ type: 'request', ts: Date.now(), payload });
+
       const { data, error } = await supabase.functions.invoke('generate-tutor-lesson', {
         body: payload,
         signal: controller.signal
       });
+
+      FORENSICS_STORE.network.push({ type: 'response', ts: Date.now(), data, error });
 
       console.log("[GERAR_AULA] FUNCTION_RESPONSE", { data, error });
 
@@ -532,10 +605,20 @@ const AgentChat = ({
             )}
           </div>
 
-          <DialogFooter className="sm:justify-start">
+          <DialogFooter className="sm:justify-start gap-2">
             <Button type="button" variant="secondary" onClick={resetCmeState} className="text-xs h-8">
               Fechar
             </Button>
+            
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={downloadForensics} 
+              className="text-[10px] h-8 gap-2 border-dashed opacity-50 hover:opacity-100"
+            >
+              <Download className="h-3 w-3" /> Logs Forenses
+            </Button>
+
             {isAdmin && ['rendering', 'gpu_rendering', 'pending_hardware', 'ready'].includes(String(cmeState.status)) && (
               <Button
                 type="button"
@@ -562,7 +645,9 @@ const AgentChat = ({
             setLessonStatus('idle');
             setLessonData(null);
           }} 
-        />
+        >
+          {/* Inject Forensic Button in Player if needed, or keep it in the modal */}
+        </AgileLessonPlayer>
       )}
     </div>
   );
