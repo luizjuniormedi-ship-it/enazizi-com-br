@@ -17,7 +17,10 @@ const TECH_TERMS = [
   'Recovery Engine',
   'Scene Graph',
   'HLS Generation',
-  'CDN Validation'
+  'CDN Validation',
+  'PIPELINE',
+  'TELEMETRY',
+  'CLUSTER-GPU'
 ];
 
 test.describe('CME UX Sanitization', () => {
@@ -39,46 +42,45 @@ test.describe('CME UX Sanitization', () => {
     await page.goto('/dashboard/mentor');
     await expect(page.getByTestId('tutor-page')).toBeVisible({ timeout: 15000 });
 
-    // 3. Trigger CME modal (by clicking "Estudar Agora" or suggestions)
-    // We look for a suggestion or the main input
-    const suggestion = page.getByText('ECG na Emergência').first();
+    // 3. Trigger CME modal (by clicking suggestions or typing)
+    // We try to find any suggestion first
+    const suggestion = page.locator('button:has-text("ECG"), button:has-text("Sepse")').first();
     if (await suggestion.isVisible()) {
       await suggestion.click();
     } else {
       await page.fill('input[placeholder*="Duke"]', 'Protocolo de Sepse');
-      await page.click('button:has-text("Estudar Agora")');
+      await page.press('input[placeholder*="Duke"]', 'Enter');
     }
 
-    // 4. Wait for the CME status modal to potentially appear (it often appears during content prep)
-    // We check for "Geração da aula" which is the humanized title
+    // 4. Wait for the CME status modal to potentially appear
     const modalTitle = page.getByText('Geração da aula');
     
-    // It might be fast, so we wait a bit
-    try {
-      await expect(modalTitle).toBeVisible({ timeout: 10000 });
-    } catch (e) {
-      console.log('CME modal did not appear in time, might have finished or skipped. Checking chat instead.');
-    }
+    // Check if it appears within 10s
+    const modalAppeared = await modalTitle.isVisible({ timeout: 10000 }).catch(() => false);
 
-    // 5. Audit the entire page content for tech terms
+    // 5. Audit the entire page content for tech terms (case insensitive regex check)
     const bodyText = await page.innerText('body');
     
     for (const term of TECH_TERMS) {
-      expect(bodyText).not.toContain(term);
+      // Use regex to avoid partial matches if necessary, but here we want to be strict
+      const regex = new RegExp(term, 'i');
+      expect(bodyText).not.toMatch(regex);
     }
 
-    // 6. Verify humanized labels are present if modal is open
-    if (await modalTitle.isVisible()) {
+    // 6. Verify humanized labels if modal is open
+    if (modalAppeared) {
+      // Should show friendly labels
       await expect(page.getByText('Preparando sua aula…')).toBeVisible();
-      // Check that it doesn't say "TutorCME_Pipeline"
-      await expect(page.getByText('TutorCME_Pipeline')).not.toBeVisible();
+      
+      // Should NOT show tech headers
+      await expect(page.getByText('TutorCME_Pipeline', { exact: false })).not.toBeVisible();
+      await expect(page.getByText('Semantic Planning', { exact: false })).not.toBeVisible();
     }
   });
 
   test('Admin SHOULD see technical CME terms in Admin Audit', async ({ page }) => {
     // 1. Login
     await page.goto('/login');
-    // Note: In E2E env, we assume the user has admin role if configured
     const email = process.env.E2E_USER_EMAIL;
     const password = process.env.E2E_USER_PASSWORD;
     
@@ -91,14 +93,12 @@ test.describe('CME UX Sanitization', () => {
     // 2. Go to Admin Audit
     await page.goto('/admin/cme-audit');
     
-    // If redirected to dashboard, user is not admin
-    if (page.url().includes('dashboard') && !page.url().includes('admin')) {
-      console.log('User is not admin, skipping admin visibility check');
-      return;
+    // 3. Check if we have access and see technical terms
+    if (page.url().includes('admin/cme-audit')) {
+      await expect(page.getByText('Aggregation Status')).toBeVisible({ timeout: 10000 });
+      await expect(page.getByText('Render Status')).toBeVisible();
+    } else {
+      console.log('Skipping admin check as current user is not an admin.');
     }
-
-    // 3. Confirm technical terms exist in admin context
-    await expect(page.getByText('Aggregation Status')).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Render Status')).toBeVisible();
   });
 });
