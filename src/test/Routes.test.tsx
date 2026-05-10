@@ -14,7 +14,7 @@ const VALID_DASHBOARD_ROUTES = [
   "/dashboard/simulados",
   "/dashboard/banco-erros",
   "/dashboard/gerador-questoes",
-  "/dashboard/chatgpt",
+  "/dashboard/mentor",
   "/dashboard/mentor",
   "/dashboard/videoaulas",
   "/dashboard/videoaulas/explorar",
@@ -61,7 +61,7 @@ const VALID_TOP_ROUTES = [
 // Sidebar routes (DashboardSidebar.tsx)
 const SIDEBAR_ROUTES = [
   "/dashboard",
-  "/dashboard/chatgpt",
+  "/dashboard/mentor",
   "/dashboard/sessao-estudo",
   "/dashboard/diagnostico",
   "/dashboard/planner",
@@ -89,7 +89,7 @@ const SIDEBAR_ROUTES = [
 // Mobile nav routes (DashboardLayout.tsx)
 const MOBILE_NAV_ROUTES = [
   "/dashboard",
-  "/dashboard/chatgpt",
+  "/dashboard/mentor",
   "/dashboard/diagnostico",
   "/dashboard/planner",
   "/dashboard/flashcards",
@@ -113,7 +113,7 @@ const MOBILE_NAV_ROUTES = [
 
 // AgentsHub routes
 const AGENTS_HUB_ROUTES = [
-  "/dashboard/chatgpt",
+  "/dashboard/mentor",
   "/dashboard/gerador-questoes",
   "/dashboard/gerar-flashcards",
   "/dashboard/resumos",
@@ -127,7 +127,7 @@ const AGENTS_HUB_ROUTES = [
 
 // Navigate() calls from various pages
 const NAVIGATE_TARGETS = [
-  "/dashboard/chatgpt",        // ErrorBank, QuestionsBank, Flashcards, ExamSimulator, Diagnostic, MedicalDomainMap, TopicEvolution
+  "/dashboard/mentor",        // ErrorBank, QuestionsBank, Flashcards, ExamSimulator, Diagnostic, MedicalDomainMap, TopicEvolution
   "/dashboard",               // Diagnostic
   "/dashboard/gerador-questoes", // QuestionsBank "Gerar mais"
   "/dashboard/simulados",      // CronogramaRecursosRevisao

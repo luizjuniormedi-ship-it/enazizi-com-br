@@ -87,7 +87,7 @@ describe("AgentsHub", () => {
     const links = screen.getAllByRole("link");
     const hrefs = links.map((l) => l.getAttribute("href"));
 
-    expect(hrefs).toContain("/dashboard/chatgpt");
+    expect(hrefs).toContain("/dashboard/mentor");
     expect(hrefs).toContain("/dashboard/questoes");
     expect(hrefs).toContain("/dashboard/gerar-flashcards");
     expect(hrefs).toContain("/dashboard/resumos");

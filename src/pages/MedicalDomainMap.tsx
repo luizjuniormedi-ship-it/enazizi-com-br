@@ -256,7 +256,7 @@ const MedicalDomainMap = () => {
 
   const handleStudyTopic = (specialty: string, subtopic?: string) => {
     const topic = subtopic ? `${subtopic} (${specialty})` : specialty;
-    navigate("/dashboard/chatgpt", {
+    navigate("/dashboard/mentor", {
       state: {
         initialMessage: `Quero estudar o tópico "${topic}". Me dê uma aula completa seguindo o protocolo ENAZIZI.`,
         fromErrorBank: true,

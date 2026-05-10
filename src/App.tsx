@@ -220,7 +220,7 @@ const App = () => (
                   <Route path="simulados" element={<ModuleErrorBoundary module="simulados"><Simulados /></ModuleErrorBoundary>} />
                   <Route path="banco-erros" element={<ModuleErrorBoundary module="banco-erros"><ErrorBank /></ModuleErrorBoundary>} />
                   <Route path="gerador-questoes" element={<ModuleErrorBoundary module="gerador-questoes"><QuestionGenerator /></ModuleErrorBoundary>} />
-                  <Route path="chatgpt" element={<ModuleErrorBoundary module="chatgpt"><ChatGPT /></ModuleErrorBoundary>} />
+                  <Route path="chatgpt" element={<PreserveQueryNavigate to="/dashboard/mentor" />} />
                   <Route path="mentor" element={<ModuleErrorBoundary module="mentor"><AIMentor /></ModuleErrorBoundary>} />
                   
                   {/* Conteúdo */}

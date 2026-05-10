@@ -47,7 +47,7 @@ Por favor:
 3. Foque nos pontos que mais causam erro em provas de residência
 4. Use enfoques DIFERENTES dos que o aluno já viu (aborde por outro ângulo clínico)`;
 
-    navigate("/dashboard/chatgpt", {
+    navigate("/dashboard/mentor", {
       state: {
         initialMessage: prompt,
         fromErrorReview: true,

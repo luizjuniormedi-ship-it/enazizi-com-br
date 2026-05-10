@@ -63,7 +63,7 @@ export function buildStudyPath(
       params.set("phase", phase);
       params.set("tutor_origin", rec.type);
 
-      return `/dashboard/chatgpt?${params}`;
+      return `/dashboard/mentor?${params}`;
     }
 
     case "questoes":

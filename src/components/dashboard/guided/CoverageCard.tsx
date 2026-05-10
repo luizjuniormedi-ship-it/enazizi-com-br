@@ -59,7 +59,7 @@ export default function CoverageCard() {
       specialty: next.especialidade,
       source: "coverage_gap",
     });
-    navigate(`/dashboard/chatgpt?${params.toString()}`);
+    navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
   return (

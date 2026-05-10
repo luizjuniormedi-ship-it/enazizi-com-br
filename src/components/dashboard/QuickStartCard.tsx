@@ -27,7 +27,7 @@ const QuickStartCard = ({ questionsAnswered, flashcards, hasCompletedDiagnostic 
       icon: Brain,
       label: "Estudar com o Tutor IA",
       description: "Aula personalizada sobre qualquer tema",
-      to: "/dashboard/chatgpt",
+      to: "/dashboard/mentor",
       cta: "Abrir Tutor IA",
     },
     {

@@ -299,7 +299,7 @@ const TutorMessageItem = memo(({ msg, onCopy, isLoading, conversationId, topic, 
 
               </div>
               
-              {msg.role === "assistant" && hasPermission && (
+              {msg.role === "assistant" && isAdmin && (
                 <div className="bg-primary/5 rounded-lg p-2 border border-primary/10 flex items-center justify-between">
                   <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">
                     Análise Cognitiva & Lineage

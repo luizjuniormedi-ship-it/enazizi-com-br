@@ -69,7 +69,7 @@ const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErro
   };
 
   const handleStudyWithTutor = (q: SimQuestion) => {
-    navigate("/dashboard/chatgpt", {
+    navigate("/dashboard/mentor", {
       state: {
         initialMessage: `Errei uma questão sobre "${q.topic}". O enunciado era: "${q.statement.slice(0, 200)}". A resposta correta era "${q.options[q.correct]}". Me explique este tema em detalhes seguindo o protocolo ENAZIZI.`,
         fromErrorBank: true,

@@ -73,7 +73,7 @@ export default function BehavioralAlerts() {
                 size="sm"
                 variant="ghost"
                 className="h-7 gap-1 text-xs"
-                onClick={() => navigate(`/dashboard/chatgpt?topic=${encodeURIComponent(a.topic)}&specialty=${encodeURIComponent(a.specialty)}&origin=alert`)}
+                onClick={() => navigate(`/dashboard/mentor?topic=${encodeURIComponent(a.topic)}&specialty=${encodeURIComponent(a.specialty)}&origin=alert`)}
               >
                 Estudar <ArrowRight className="h-3 w-3" />
               </Button>

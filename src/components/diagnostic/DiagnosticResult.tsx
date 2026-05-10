@@ -162,7 +162,7 @@ const DiagnosticResult = ({ questions, answers, xpEarned = 0, previousTopicResul
                 variant="outline"
                 size="sm"
                 className="gap-1.5 text-xs"
-                onClick={() => navigate("/dashboard/chatgpt", {
+                onClick={() => navigate("/dashboard/mentor", {
                   state: {
                     initialMessage: `No nivelamento inicial, tive dificuldade em "${area}" (${Math.round((correct / total) * 100)}% de acerto). Me dê uma aula completa seguindo o protocolo ENAZIZI para reforçar este tema.`,
                     fromErrorBank: true,

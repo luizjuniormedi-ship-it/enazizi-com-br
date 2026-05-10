@@ -25,7 +25,7 @@ const steps: Step[] = [
     title: "🤖 Tutor IA (Principal)",
     description: "Seu mentor pessoal de medicina. Tire dúvidas, estude temas, resolva questões e receba explicações detalhadas — tudo em uma conversa inteligente.",
     tip: "Dica: Envie PDFs na seção de Uploads e o Tutor usará como base para suas respostas!",
-    route: "/dashboard/chatgpt",
+    route: "/dashboard/mentor",
   },
   {
     icon: <Stethoscope className="h-8 w-8 text-primary" />,

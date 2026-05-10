@@ -1065,7 +1065,7 @@ const AnamnesisTrainer = () => {
                 ?.filter(d => !d.student_considered)
                 .map(d => d.diagnosis)
                 .join(", ") || "N/A";
-              navigate("/dashboard/chatgpt", {
+              navigate("/dashboard/mentor", {
                 state: {
                   initialMessage: `🔬 MODO REVISÃO CLÍNICA\n\nO aluno teve dificuldade no seguinte caso de anamnese:\n- Especialidade: ${specialty}\n- Diagnóstico correto: ${evalData.correct_diagnosis}\n- Diferenciais não considerados: ${missed}\n- Pontos fracos: ${evalData.improvements?.join(", ") || "N/A"}\n\nExplique detalhadamente o raciocínio clínico, os diagnósticos diferenciais e como chegar ao diagnóstico correto.`,
                 },

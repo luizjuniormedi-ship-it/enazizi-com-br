@@ -17,7 +17,7 @@ interface AgentDef {
 
 const AGENTS: AgentDef[] = [
   {
-    to: "/dashboard/chatgpt",
+    to: "/dashboard/mentor",
     icon: Sparkles,
     title: "Tutor IA — Mentor Principal",
     description:
@@ -129,7 +129,7 @@ const CATEGORY_META = {
 
 const SPOTLIGHT: SpotlightAgent[] = [
   {
-    to: "/dashboard/chatgpt",
+    to: "/dashboard/mentor",
     icon: Sparkles,
     title: "Aprenda qualquer tema com seu Tutor IA",
     description:

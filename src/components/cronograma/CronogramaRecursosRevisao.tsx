@@ -171,7 +171,7 @@ const CronogramaRecursosRevisao = ({ tema, especialidade }: Props) => {
           variant="outline"
           size="sm"
           className="text-xs"
-          onClick={() => navigate(`/dashboard/chatgpt?${encodeStudyContext({ source: "planner", topic: tema, objective: "review" })}`)}
+          onClick={() => navigate(`/dashboard/mentor?${encodeStudyContext({ source: "planner", topic: tema, objective: "review" })}`)}
         >
           <Brain className="h-3 w-3 mr-1" /> Tutor IA
           <ExternalLink className="h-3 w-3 ml-1" />

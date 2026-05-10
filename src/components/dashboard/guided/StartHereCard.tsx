@@ -75,9 +75,9 @@ export default function StartHereCard() {
   const isContinue = !!last;
   const handleClick = () => {
     if (isContinue && last) {
-      navigate(`/dashboard/chatgpt?conversation=${last.id}&source=guided_start`);
+      navigate(`/dashboard/mentor?conversation=${last.id}&source=guided_start`);
     } else {
-      navigate("/dashboard/chatgpt?source=guided_start");
+      navigate("/dashboard/mentor?source=guided_start");
     }
   };
 

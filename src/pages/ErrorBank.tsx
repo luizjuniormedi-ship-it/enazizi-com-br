@@ -134,7 +134,7 @@ const ErrorBank = () => {
       navigate("/dashboard/mnemonic-studio-v2", { state: { prefillTopic: topTema, prefillItems: items, fromErrorBank: true } });
       return;
     }
-    navigate("/dashboard/chatgpt", { state: { fromErrorBank: true, initialTopic: tema } });
+    navigate("/dashboard/mentor", { state: { fromErrorBank: true, initialTopic: tema } });
   };
 
   const generateFlashcardsFromErrors = async () => {

@@ -560,7 +560,7 @@ const VideoLessonPlayer = () => {
       params.set("tutor_mode", tutorMode);
     }
     
-    navigate(`/dashboard/chatgpt?${params.toString()}`);
+    navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
   const openTutorWithMode = (mode: "feynman" | "exam_sprint") => {
@@ -593,7 +593,7 @@ const VideoLessonPlayer = () => {
     });
     if (currentSegment?.id) params.set("video_segment", currentSegment.id);
     if (ctx) params.set("hotspot_type", "temporal_context");
-    navigate(`/dashboard/chatgpt?${params.toString()}`);
+    navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
   const handleReplaySegment = (seg: VideoSegment) => {
@@ -1018,7 +1018,7 @@ const VideoLessonPlayer = () => {
                               specialty: lesson.specialty || "",
                               context: lesson.id,
                             });
-                            navigate(`/dashboard/chatgpt?${params.toString()}`);
+                            navigate(`/dashboard/mentor?${params.toString()}`);
                           }}
                         >
                           <Sparkles className="h-4 w-4" /> Gerar resumo com o Tutor
@@ -1095,7 +1095,7 @@ const VideoLessonPlayer = () => {
                           topic: lesson.topic || lesson.title || "",
                           context: lesson.id,
                         });
-                        navigate(`/dashboard/chatgpt?${params.toString()}`);
+                        navigate(`/dashboard/mentor?${params.toString()}`);
                       }}
                     >
                       <Sparkles className="h-4 w-4" /> Pedir capítulos ao Tutor

@@ -519,15 +519,25 @@ export function useAgentChat(opts: UseAgentChatOptions) {
 
   // Auto-fire initialPrompt
   useEffect(() => {
-    console.debug("[useAgentChat] initialPrompt check", { 
-      initialPrompt, 
-      user: !!user, 
-      isLoading, 
-      initialPromptFired: initialPromptFiredRef.current, 
-      isAutoStarting: isAutoStartingRef.current 
-    });
+    // Se temos mensagens e o prompt inicial, e a conversa já é a ativa, marcamos como disparado para evitar duplicidade no refresh
+    if (messages.length > 1 && initialPrompt && !initialPromptFiredRef.current) {
+      const hasInitialMessage = messages.some(m => m.role === "user" && m.content.toLowerCase().includes(initialPrompt.toLowerCase()));
+      if (hasInitialMessage) {
+        console.debug("[useAgentChat] initialPrompt already present in history, skipping autostart");
+        initialPromptFiredRef.current = true;
+        return;
+      }
+    }
 
     if (initialPrompt && !initialPromptFiredRef.current && user && !isLoading && !isAutoStartingRef.current) {
+      // Se já temos histórico carregado (mais que a mensagem de boas vindas), não disparar autostart
+      // Isso evita que o autostart limpe uma sessão existente que o usuário abriu.
+      if (messages.length > 1) {
+        console.debug("[useAgentChat] History already present, skipping autostart for initialPrompt");
+        initialPromptFiredRef.current = true;
+        return;
+      }
+
       console.debug("[useAgentChat] triggering autostart for initialPrompt:", initialPrompt);
       isAutoStartingRef.current = true;
       
@@ -554,7 +564,7 @@ export function useAgentChat(opts: UseAgentChatOptions) {
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession]);
+  }, [initialPrompt, user, isLoading, handleSend, pendingSession, handleDiscardSession, messages]);
 
   const handleSaveMessage = useCallback(
     async (idx: number, content: string) => {

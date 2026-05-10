@@ -272,35 +272,36 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   const autoStartProcessed = useRef(false);
   
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [hasStarted, setHasStarted] = useState(!!initialSessionId); // Começa iniciado se já tiver ID de sessão
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(initialTopic || null);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(initialSessionId || null);
 
   useEffect(() => {
-    console.debug("[AIMentor] topic or session in URL updated:", { initialTopic, initialSessionId });
-    if (initialTopic) {
-      setPendingPrompt(initialTopic);
-    }
-    if (initialSessionId) {
-      setActiveConversationId(initialSessionId);
-    }
-  }, [initialTopic, initialSessionId]);
-
-  useEffect(() => {
-    if ((initialTopic || initialSessionId) && !hasStarted && !autoStartProcessed.current) {
-      console.debug("[AIMentor] topic or session detected in URL, starting auto-flow:", { initialTopic, initialSessionId });
+    console.debug("[AIMentor] URL params updated:", { initialTopic, initialSessionId, hasStarted });
+    
+    // Se temos um tópico mas ainda não iniciamos, dispara o fluxo
+    if (initialTopic && !hasStarted && !autoStartProcessed.current) {
+      console.debug("[AIMentor] topic detected in URL, starting auto-flow:", initialTopic);
       autoStartProcessed.current = true;
-      handleStart(initialTopic || "");
+      handleStart(initialTopic);
+    } 
+    // Se temos apenas sessão, já marcamos como iniciado (evita hero screen)
+    else if (initialSessionId && !hasStarted) {
+      console.debug("[AIMentor] session detected in URL, bypassing hero");
+      setHasStarted(true);
+      setActiveConversationId(initialSessionId);
     }
   }, [initialTopic, initialSessionId, hasStarted]);
 
   // Limpa o parâmetro da URL apenas depois que o chat já foi montado e o autostart disparado
   useEffect(() => {
-    if (hasStarted && autoStartProcessed.current && searchParams.has("topic")) {
-      console.debug("[AIMentor] Cleaning topic from URL after successful start");
+    if (hasStarted && (searchParams.has("topic") || searchParams.has("session") || searchParams.has("conversationId"))) {
+      console.debug("[AIMentor] Cleaning URL parameters after successful start");
       const newParams = new URLSearchParams(searchParams);
-      newParams.delete("topic");
+      // Removemos apenas topic se for autostart, mantemos conversationId se quisermos permitir refresh?
+      // Na verdade, para evitar duplicação no refresh, limpamos topic.
+      if (searchParams.has("topic")) newParams.delete("topic");
       setSearchParams(newParams, { replace: true });
     }
   }, [hasStarted, searchParams, setSearchParams]);
@@ -308,10 +309,11 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   const handleStart = (prompt: string) => {
     setPendingPrompt(prompt);
     setIsCinematicLoading(true);
+    // Reduzi o delay para 800ms para ser mais ágil
     setTimeout(() => {
       setHasStarted(true);
       setIsCinematicLoading(false);
-    }, 1200);
+    }, 800);
   };
 
   return (
@@ -380,6 +382,9 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
                     onSendRef={onSendRef}
                     initialPrompt={pendingPrompt || undefined}
                     initialConversationId={activeConversationId}
+                    topic={searchParams.get("topic") || searchParams.get("sc_topic")}
+                    specialty={searchParams.get("specialty")}
+                    subtopic={searchParams.get("subtopic")}
                     hideUploadsPicker
                     pedagogicalHeader={({ messages }) => (
                       <PedagogicalHeaderBridge

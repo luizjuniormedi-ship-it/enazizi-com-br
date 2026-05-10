@@ -96,7 +96,7 @@ export default function NextBestActionCard({ excludePaths = [] }: NextBestAction
       label: "Atalho rápido",
       description: "Sem pendências — peça uma orientação ao Tutor",
       cta: "Falar com Tutor",
-      to: "/dashboard/chatgpt?source=guided_nba",
+      to: "/dashboard/mentor?source=guided_nba",
     };
   }, [totalDue, todayPending, hasRecentError]);
 

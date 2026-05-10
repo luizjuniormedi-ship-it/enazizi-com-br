@@ -14,7 +14,7 @@ const MODULES = [
     key: "tutor",
     label: "Tutor IA",
     icon: MessageSquare,
-    path: (s: string) => `/dashboard/chatgpt?topic=${encodeURIComponent(s)}`,
+    path: (s: string) => `/dashboard/mentor?topic=${encodeURIComponent(s)}`,
     color: "hover:text-blue-500 hover:bg-blue-500/10",
   },
   {

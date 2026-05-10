@@ -9,7 +9,7 @@ type FocusType = "review" | "new" | "test" | "practice";
 
 const focusOptions: { type: FocusType; icon: React.ReactNode; label: string; desc: string; path: string }[] = [
   { type: "review", icon: <Brain className="h-5 w-5" />, label: "Revisão", desc: "Revisar temas já estudados", path: "/dashboard/plano-dia" },
-  { type: "new", icon: <BookOpen className="h-5 w-5" />, label: "Tema Novo", desc: "Aprender conteúdo novo", path: "/dashboard/chatgpt?origin=focus&mode=new" },
+  { type: "new", icon: <BookOpen className="h-5 w-5" />, label: "Tema Novo", desc: "Aprender conteúdo novo", path: "/dashboard/mentor?origin=focus&mode=new" },
   { type: "test", icon: <FileText className="h-5 w-5" />, label: "Simulado", desc: "Praticar com questões", path: "/dashboard/simulados" },
   { type: "practice", icon: <Stethoscope className="h-5 w-5" />, label: "Prática Clínica", desc: "Treinar casos reais", path: "/dashboard/simulacao-clinica" },
 ];

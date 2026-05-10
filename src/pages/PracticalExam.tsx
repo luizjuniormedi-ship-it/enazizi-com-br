@@ -461,7 +461,7 @@ export default function PracticalExam() {
           secondaryLabel="Nova Prova"
           onSecondary={() => { setPhase("setup"); setEvaluation(null); setCaseData(null); }}
           tertiaryLabel="Revisar no Tutor"
-          onTertiary={() => navigate("/dashboard/chatgpt?origin=practical-exam&specialty=" + encodeURIComponent(specialty))}
+          onTertiary={() => navigate("/dashboard/mentor?origin=practical-exam&specialty=" + encodeURIComponent(specialty))}
         />
       </div>
     );

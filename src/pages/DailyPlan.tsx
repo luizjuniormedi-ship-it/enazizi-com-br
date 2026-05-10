@@ -255,7 +255,7 @@ const DailyPlan = () => {
   };
 
   const goToTutor = (topic: string, specialty: string, objective: "review" | "new_content", subtopico?: string | null) => {
-    navigateWithContext("/dashboard/chatgpt", {
+    navigateWithContext("/dashboard/mentor", {
       source: "daily-plan",
       specialty,
       topic,

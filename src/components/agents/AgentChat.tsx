@@ -27,6 +27,7 @@ import { useTutorCME } from "@/hooks/useTutorCME";
 import { useTutorAdaptiveSync } from "@/components/agents/hooks/useTutorAdaptiveSync";
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { cn } from "@/lib/utils";
 
 interface AgentChatProps {
@@ -71,6 +72,7 @@ const AgentChat = ({
     topic, subtopic, specialty, initialConversationId,
   });
 
+  const { isAdmin } = useAdminCheck();
   const { transformToVideo, state: cmeState, resetState: resetCmeState, showAgilePlayer, setShowAgilePlayer, triggerPedagogicalFallback, getLessonForMessage } = useTutorCME();
   const sync = useTutorAdaptiveSync();
 
@@ -480,7 +482,7 @@ const AgentChat = ({
             <Button type="button" variant="secondary" onClick={resetCmeState} className="text-xs h-8">
               Fechar
             </Button>
-            {['rendering', 'gpu_rendering', 'pending_hardware', 'ready'].includes(String(cmeState.status)) && (
+            {isAdmin && ['rendering', 'gpu_rendering', 'pending_hardware', 'ready'].includes(String(cmeState.status)) && (
               <Button
                 type="button"
                 className="bg-amber-600 hover:bg-amber-700 text-xs h-8 gap-2"

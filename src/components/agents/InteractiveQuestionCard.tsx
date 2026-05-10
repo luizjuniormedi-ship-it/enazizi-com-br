@@ -66,7 +66,7 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
   };
 
   const handleStudyWithTutor = () => {
-    navigate("/dashboard/chatgpt", {
+    navigate("/dashboard/mentor", {
       state: {
         initialMessage: `Errei uma questão sobre "${question.topic || "Medicina"}". O enunciado era: "${question.statement.slice(0, 200)}". A resposta correta era "${LETTERS[question.correctIndex]}: ${question.options[question.correctIndex]}". Me explique este tema seguindo o protocolo ENAZIZI.`,
         fromErrorBank: true,
