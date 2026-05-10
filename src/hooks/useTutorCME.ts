@@ -30,6 +30,7 @@ export interface CMEProjectState {
   message?: string;
   isStuck?: boolean;
   workerStatus?: 'online' | 'offline_or_unavailable';
+  workerId?: string;
   manualVideoUrl?: string;
 }
 
