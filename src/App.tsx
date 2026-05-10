@@ -157,6 +157,7 @@ const CMEGPUFleet = lazyWithRetry(() => import("./pages/admin/cme/GPUFleet"), "C
 const CMERenderQueues = lazyWithRetry(() => import("./pages/admin/cme/RenderQueues"), "CMERenderQueues");
 const CMEObservability = lazyWithRetry(() => import("./pages/admin/cme/Observability"), "CMEObservability");
 const DiagnosticTutor = lazyWithRetry(() => import("./pages/admin/DiagnosticTutor"), "DiagnosticTutor");
+const TutorObservability = lazyWithRetry(() => import("./pages/admin/TutorObservability"), "TutorObservability");
 
 const NOCDashboard = lazyWithRetry(() => import("./pages/admin/NOCDashboard"), "NOCDashboard");
 
