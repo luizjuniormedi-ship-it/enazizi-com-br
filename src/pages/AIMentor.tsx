@@ -268,19 +268,24 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   console.log("[AIMentor] Rendering with ref:", !!ref);
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTopic = searchParams.get("topic") || "";
+  const initialSessionId = searchParams.get("session") || searchParams.get("conversationId") || "";
   const autoStartProcessed = useRef(false);
   
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
   const [pendingPrompt, setPendingPrompt] = useState<string | null>(initialTopic || null);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(initialSessionId || null);
 
   useEffect(() => {
-    console.debug("[AIMentor] topic in URL updated:", initialTopic);
+    console.debug("[AIMentor] topic or session in URL updated:", { initialTopic, initialSessionId });
     if (initialTopic) {
       setPendingPrompt(initialTopic);
     }
-  }, [initialTopic]);
+    if (initialSessionId) {
+      setActiveConversationId(initialSessionId);
+    }
+  }, [initialTopic, initialSessionId]);
 
   useEffect(() => {
     if (initialTopic && !hasStarted && !autoStartProcessed.current) {
