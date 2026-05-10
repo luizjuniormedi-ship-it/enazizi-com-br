@@ -204,11 +204,11 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
   const transformFullSession = () => {
     if (!context.topic) return;
     const params = new URLSearchParams();
-    params.set("mode", "full_session");
     params.set("topic", context.topic);
     if (context.specialty) params.set("specialty", context.specialty);
-    // This will open the builder which will handle the aggregation
-    navigate(`/admin/cinematic-builder/new?${params.toString()}`);
+    params.set("mode", "transform");
+    // Redireciona para o Mentor Hub que agora lida com sessões persistidas e automação
+    navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
   return (
