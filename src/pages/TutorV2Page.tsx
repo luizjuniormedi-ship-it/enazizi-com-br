@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import TutorV2ChatPanel from "@/components/tutor-v2/TutorV2ChatPanel";
 import TutorV2Sidebar from "@/components/tutor-v2/TutorV2Sidebar";
-import { useTutorV2Session } from "./hooks/useTutorV2Session";
+import { useTutorV2Session } from "@/components/tutor-v2/hooks/useTutorV2Session";
 
 export default function TutorV2Page() {
   const { sessionId } = useParams();
