@@ -229,6 +229,7 @@ export const useTutorCME = () => {
       // Retry curto para cobrir race condition: a última mensagem pode ainda
       // estar sendo persistida quando o usuário clica "Gerar aula".
       const fetchAssistantMessages = async (): Promise<any[]> => {
+        // Option 1: fetch from tutor_messages if we have a sessionId
         if (resolvedSessionId) {
           const { data } = await supabaseClient
             .from("tutor_messages")
@@ -238,14 +239,18 @@ export const useTutorCME = () => {
             .order("created_at", { ascending: true });
           if (data && data.length > 0) return data;
         }
-        // Fallback: chat_messages (fonte primária do tutor legacy).
+        
+        // Option 2: fetch from chat_messages using conversationId
         const { data: chatData } = await supabaseClient
           .from("chat_messages")
           .select("id, content, role, created_at")
           .eq("conversation_id", conversationId)
           .eq("role", "assistant")
           .order("created_at", { ascending: true });
-        return chatData || [];
+        
+        if (chatData && chatData.length > 0) return chatData;
+
+        return [];
       };
 
       // Até 5 tentativas com backoff progressivo para esperar persistência (total ~6s).
