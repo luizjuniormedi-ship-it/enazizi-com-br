@@ -98,6 +98,7 @@ const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "Prac
 
 const MnemonicStudioPage = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
 const MnemonicHistoryPage = lazyWithRetry(() => import("./pages/MnemonicHistoryPage"), "MnemonicHistoryPage");
+const TutorV2Page = lazyWithRetry(() => import("./pages/TutorV2Page"), "TutorV2Page");
 const MindMaps = lazyWithRetry(() => import("./pages/MindMaps"), "MindMaps");
 const MindMapFullscreen = lazyWithRetry(() => import("./pages/MindMapFullscreen"), "MindMapFullscreen");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
