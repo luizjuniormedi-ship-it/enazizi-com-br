@@ -25,7 +25,7 @@ export default function MissionTutorHint({ task, adaptive }: Props) {
     if (adaptive?.mode?.phase) params.set("phase", adaptive.mode.phase);
     if (adaptive?.overdueCount) params.set("pendingReviews", String(adaptive.overdueCount));
     if (adaptive?.approvalScore) params.set("accuracy", String(Math.round(adaptive.approvalScore)));
-    navigate(`/dashboard/chatgpt?${params.toString()}`);
+    navigate(`/dashboard/mentor?${params.toString()}`);
   };
 
   return (
