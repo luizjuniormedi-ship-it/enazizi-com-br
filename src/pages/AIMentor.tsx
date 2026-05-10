@@ -266,32 +266,28 @@ const AIMentor = forwardRef<HTMLDivElement, any>((props, ref) => {
   const onSendRef = useRef<((prompt: string) => void) | null>(null);
   const [hasStarted, setHasStarted] = useState(false);
   const [isCinematicLoading, setIsCinematicLoading] = useState(false);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialTopic && !hasStarted && !autoStartProcessed.current) {
       console.log("[AIMentor] Auto-starting with topic:", initialTopic);
       autoStartProcessed.current = true;
-      handleSend(initialTopic);
       
       // Limpar o parâmetro da URL para evitar duplicidade no refresh
       const newParams = new URLSearchParams(searchParams);
       newParams.delete("topic");
       setSearchParams(newParams, { replace: true });
+
+      handleStart(initialTopic);
     }
   }, [initialTopic]);
 
-  const handleSend = (prompt: string) => {
+  const handleStart = (prompt: string) => {
+    setPendingPrompt(prompt);
     setIsCinematicLoading(true);
     setTimeout(() => {
       setHasStarted(true);
       setIsCinematicLoading(false);
-      setTimeout(() => {
-        if (onSendRef.current) {
-          onSendRef.current(prompt);
-        } else {
-          console.warn("[AIMentor] onSendRef.current is null when trying to send prompt");
-        }
-      }, 500);
     }, 1200);
   };
 
