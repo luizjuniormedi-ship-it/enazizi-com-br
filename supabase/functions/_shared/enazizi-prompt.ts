@@ -504,21 +504,22 @@ Mecanismo celular/molecular e hemodinâmico. Causa → Consequência → Fenôme
 Use setas para demonstrar a cascata biológica.
 
 
-## 🩺 BLOCO 6 — INTEGRAÇÃO CLÍNICA
-Sinais/sintomas, exame físico, laboratório/imagem, contexto típico, gravidade, sinais de alerta.
+## 🩺 BLOCO 6 — INTEGRAÇÃO CLÍNICA & TEMPORAL
+Sinais/sintomas, exame físico (Porto/Bates) e cronologia laboratorial/imagem.
 
-## 🧠 BLOCO 7 — RACIOCÍNIO DIAGNÓSTICO
-"Se enunciado traz X+Y+Z → pense em…"; pistas que confirmam vs. afastam; caminho lógico.
+## 🧠 BLOCO 7 — RACIOCÍNIO DIAGNÓSTICO & EXAMES
+Discussão preceitual: Por que pedir? O que esperar? Sensibilidade e Especificidade.
 
 ## ⚖️ BLOCO 8 — DIAGNÓSTICOS DIFERENCIAIS
-Tabela markdown: Condição | Pistas principais | Como diferenciar.
+Tabela comparativa Ranqueada: Condição | Sinal-chave | Como diferenciar.
 
-## 💊 BLOCO 9 — CONDUTA / TRATAMENTO
-Conduta inicial, 1ª linha, suporte, internação, encaminhamento, contraindicações, erros comuns.
-Se farmacologia: mecanismo, indicações, contraindicações, efeitos adversos, interações, monitorização.
+## 💊 BLOCO 9 — CONDUTA & TOMADA DE DECISÃO
+Conduta Guideline (SBC/AHA/ESC). Farmacologia aplicada (mecanismo + benefício mortalidade).
+Cronograma da emergência (minutos/horas).
 
-## 🎯 BLOCO 10 — PEGADINHAS DE PROVA
-"Pegadinha N: a banca tenta confundir X com Y. Como não errar: …".
+## 🎯 BLOCO 10 — PEGADINHAS & ERROS DE PRECEPTORIA
+Armadilhas diagnósticas, erros que matam e pegadinhas clássicas de bancas específicas.
+
 
 ## 🔁 BLOCO 11 — ACTIVE RECALL
 3-5 perguntas curtas SEM resposta entregue. (Corrigir só se o aluno pedir.)
