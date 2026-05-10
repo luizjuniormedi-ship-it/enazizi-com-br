@@ -23,6 +23,8 @@ import CockpitRadar from "./CockpitRadar";
 import CockpitNextSteps from "./CockpitNextSteps";
 import CockpitProfile from "./CockpitProfile";
 import CockpitVisualQuiz from "./CockpitVisualQuiz";
+import FsrsPremiumCard from "./FsrsPremiumCard";
+import TriPremiumCard from "./TriPremiumCard";
 
 export default function CognitiveCockpit() {
   const { user } = useAuth();
@@ -72,6 +74,12 @@ export default function CognitiveCockpit() {
 
       {/* ═══ BLOCO 3 — ALERTAS ACIONÁVEIS ═══ */}
       <CockpitAlerts alerts={cockpit.alerts} />
+
+      {/* ═══ BLOCO 3.5 — INTELIGÊNCIA REAL (FSRS + TRI proxy) ═══ */}
+      <div className="grid lg:grid-cols-2 gap-4">
+        <FsrsPremiumCard />
+        <TriPremiumCard />
+      </div>
 
       {/* ═══ BLOCO 6 — PRÓXIMOS PASSOS + QUIZ VISUAL (removido do Dashboard p/ evitar redundância) ═══ */}
       {/* 

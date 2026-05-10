@@ -14,10 +14,10 @@ interface RankInsight {
 }
 
 const categoryLabels: Record<string, { label: string; emoji: string }> = {
-  consistency: { label: "Constância", emoji: "🔥" },
-  evolution: { label: "Evolução", emoji: "📈" },
-  performance: { label: "Desempenho", emoji: "🏆" },
-  practical: { label: "Prática", emoji: "🩺" },
+  consistency: { label: "Consistência cognitiva", emoji: "🔥" },
+  evolution: { label: "Maior evolução", emoji: "📈" },
+  performance: { label: "Domínio sustentado", emoji: "🏆" },
+  practical: { label: "Recuperação exemplar", emoji: "🩺" },
 };
 
 const motivationalMessages = [

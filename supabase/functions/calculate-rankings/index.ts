@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const { data: profiles } = await admin
       .from("profiles")
       .select("user_id")
-      .eq("status", "approved");
+      .in("status", ["active", "approved"]);
 
     if (!profiles || profiles.length === 0) {
       return new Response(JSON.stringify({ ok: true, processed: 0 }), {

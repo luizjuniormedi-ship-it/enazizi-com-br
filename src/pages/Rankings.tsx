@@ -18,10 +18,10 @@ interface RankingEntry {
 type RankingCategory = "consistency" | "evolution" | "performance" | "practical";
 
 const categoryConfig: Record<RankingCategory, { label: string; icon: React.ElementType; color: string; description: string }> = {
-  consistency: { label: "Constância", icon: Flame, color: "text-orange-500", description: "Frequência de estudo e disciplina nas revisões" },
-  evolution: { label: "Evolução", icon: TrendingUp, color: "text-emerald-500", description: "Quanto você melhorou recentemente" },
-  performance: { label: "Desempenho", icon: Trophy, color: "text-amber-500", description: "Score de aprovação e acurácia" },
-  practical: { label: "Prática", icon: Activity, color: "text-blue-500", description: "Performance em Plantão e Anamnese" },
+  consistency: { label: "Consistência cognitiva", icon: Flame, color: "text-orange-500", description: "Disciplina sustentada em revisões e missões diárias" },
+  evolution: { label: "Maior evolução", icon: TrendingUp, color: "text-emerald-500", description: "Progresso real de score nos últimos dias" },
+  performance: { label: "Domínio sustentado", icon: Trophy, color: "text-amber-500", description: "Acurácia consistente e score de aprovação alto" },
+  practical: { label: "Recuperação exemplar", icon: Activity, color: "text-blue-500", description: "Performance em Plantão, Anamnese e prática clínica" },
 };
 
 const medals = ["🥇", "🥈", "🥉"];
@@ -173,10 +173,10 @@ const Rankings = () => {
               <div className="text-center py-10">
                 <Medal className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
                 <p className="text-sm text-muted-foreground">
-                  Rankings serão calculados em breve
+                  Sem dado suficiente para esta categoria ainda
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Continue estudando para aparecer aqui!
+                  Os rankings são recalculados diariamente — continue praticando para entrar.
                 </p>
               </div>
             ) : (
