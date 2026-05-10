@@ -28,6 +28,7 @@ import { useTutorAdaptiveSync } from "@/components/agents/hooks/useTutorAdaptive
 import { extractInlineTutorBlocks } from "@/lib/tutor/extractInlineBlocks";
 import { AgileLessonPlayer } from "@/components/cinematic/AgileLessonPlayer";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { TutorDiagnosticPanel } from "@/components/tutor/TutorDiagnosticPanel";
 import { cn } from "@/lib/utils";
 
 interface AgentChatProps {
