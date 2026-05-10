@@ -10,7 +10,20 @@ interface TutorV2InputProps {
 
 export default function TutorV2Input({ onSendMessage, disabled }: TutorV2InputProps) {
   const [text, setText] = useState("");
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
 
   const handleSend = () => {
     if (!text.trim() || disabled) return;
