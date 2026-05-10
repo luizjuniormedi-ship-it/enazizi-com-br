@@ -1,0 +1,118 @@
+Olá, doutor(a). Sente-se aqui na mesa do plantão. Você acabou de descrever um cenário clássico de "morte evitável" se não agirmos rápido. Vamos analisar por que sua escolha (B) é um erro perigoso na vida real e na prova, e como o preceptor pensa esse caso.
+
+---
+
+## 🎯 BLOCO 1 — MISSÃO CLÍNICA
+Sua missão é salvar o miocárdio. Em um IAM com supra de ST (conhecido como "Supra"), **tempo é músculo**. O objetivo não é apenas tirar a dor (sua opção B), mas abrir a artéria.
+
+---
+
+## 🧭 BLOCO 2 — ROADMAP COGNITIVO
+1.  **Reconhecimento:** Parede inferior (DII, DIII, aVF).
+2.  **Mecanismo:** Por que a dor acontece e por que o nitrato pode ser um veneno aqui?
+3.  **Prioridade:** Reperfusão vs. Sintomáticos.
+4.  **Decisão:** Escolha da conduta baseada em diretrizes.
+
+---
+
+## 🟢 BLOCO 3 — INTUIÇÃO & EXPLICAÇÃO LEIGA
+Imagine que o coração é uma casa sendo alimentada por canos de água. O cano da cozinha (artéria coronária) entupiu totalmente. 
+A opção B (Morfina/Nitrato) é como dar um calmante para o dono da casa não ouvir o barulho do cano estourando. 
+A opção A é chamar o bombeiro (reperfusão) e usar ferramentas (AAS/Clopidogrel) para tentar desentupir o cano imediatamente.
+
+---
+
+## 🔵 BLOCO 4 — DEFINIÇÃO TÉCNICA & CLASSIFICAÇÃO
+Estamos diante de um **IAMCSST (Infarto Agudo do Miocárdio com Supradesnivelamento do Segmento ST)** de parede **INFERIOR**.
+*   **Artéria provável:** Coronária Direita (CD) em 80% dos casos.
+*   **Delta T:** 2 horas (Janela de ouro para reperfusão).
+
+---
+
+## 🧬 BLOCO 5 — FISIOPATOLOGIA PROFUNDA
+1.  **Oclusão:** Placa de ateroma rompe → Exposição de colágeno → Ativação plaquetária → Trombo TOTAL.
+2.  **A Isquemia Transmural:** O supra de ST reflete que toda a espessura do músculo está sofrendo (daí as alterações em DII, DIII e aVF).
+3.  **O Perigo do Ventrículo Direito (VD):** O infarto inferior frequentemente associa-se ao infarto de VD. 
+    *   O VD é dependente de pré-carga.
+    *   **Nitrato e Morfina** reduzem a pré-carga.
+    *   **Resultado:** O paciente choca na sua frente se você usar MONA sem cautela.
+
+---
+
+## 🩺 BLOCO 6 — INTEGRAÇÃO CLÍNICA & TEMPORAL
+*   **Frequência Cardíaca:** Pode haver bradicardia (Nó SA e AV são irrigados pela CD).
+*   **Exame Físico:** Procure por turgência jugular e pulmões limpos (sugere infarto de VD).
+*   **O Tempo:** Você tem < 12h para reperfundir (idealmente < 90-120 min para Angioplastia).
+
+---
+
+## 🧠 BLOCO 7 — RACIOCÍNIO DIAGNÓSTICO & EXAMES
+*   **ECG:** Supra em DII, DIII, aVF. **Obrigatório:** Pedir V3R, V4R e V7, V8 para avaliar VD e parede posterior.
+*   **Marcadores (Troponina):** Não espere o resultado para decidir a conduta de reperfusão!
+
+---
+
+## ⚖️ BLOCO 8 — DIAGNÓSTICOS DIFERENCIAIS
+| Condição | Diferencial Chave | Conduta |
+| :--- | :--- | :--- |
+| **Pericardite** | Supra difuso (em "sela") + infra de PR | Anti-inflamatório |
+| **Dissecção Aorta** | Dor lancinante + assimetria de pulsos | Cirurgia / BBloq |
+| **TEP** | S1Q3T3 + dispneia súbita | Anticoagulação |
+
+---
+
+## 💊 BLOCO 9 — CONDUTA & TOMADA DE DECISÃO
+A resposta correta é a **A**.
+1.  **Antiagregação dupla:** AAS (300mg) + Clopidogrel (300-600mg).
+2.  **Anticoagulação:** Heparina.
+3.  **ESTRATÉGIA DE REPERFUSÃO:** 
+    *   Se hospital tem Hemodinâmica: **Angioplastia Primária** (Meta: Porta-balão < 90 min).
+    *   Se não tem e vai demorar > 120min para transferir: **Trombólise** (Meta: Porta-agulha < 30 min).
+
+---
+
+## 🎯 BLOCO 10 — PEGADINHAS & ERROS DE PRECEPTORIA
+*   **A pegadinha do MONA:** O acrônimo MONA (Morfina, Oxigênio, Nitrato, AAS) é antigo. Hoje o "O" só entra se SatO2 < 90%. Nitrato e Morfina NÃO reduzem mortalidade; o que salva é a reperfusão e o AAS.
+*   **O erro que mata:** Dar nitrato no infarto de parede inferior sem excluir acometimento de VD (causa hipotensão severa).
+
+---
+
+## 🔁 BLOCO 11 — ACTIVE RECALL
+1. Por que o nitrato é perigoso no infarto de parede inferior?
+2. Qual o tempo máximo para considerar a transferência para angioplastia em vez de trombolisar no local?
+3. Quais derivações adicionais devem ser feitas no supra de parede inferior?
+
+---
+
+## 📝 BLOCO 12 — QUESTÃO COMENTADA
+**Gabarito: A**
+*   **B - Incorreta:** Morfina e Nitrato são para controle de sintomas, não são a conduta prioritária e podem ser fatais se houver infarto de VD.
+*   **D - Incorreta:** Trombólise é uma opção, mas o tratamento padrão de escolha é a combinação da letra A (Antiagregantes + Reperfusão). A alternativa A é mais completa ao citar as drogas essenciais.
+
+---
+
+## 🧩 BLOCO 13 — RESUMO FEYNMAN
+O coração está sofrendo um "entupimento total". Você precisa dar "veneno de rato" para o sangue (AAS/Clopidogrel) e chamar o desentupidor (Angioplastia/Trombolítico). Dar morfina sem desentupir é só deixar o paciente morrer dormindo.
+
+---
+
+## 📌 BLOCO 14 — MAPA MENTAL TEXTUAL
+```
+IAM COM SUPRA ST
+├── Diagnóstico: ECG < 10min
+├── Parede Inferior (DII, DIII, aVF) -> Atenção ao VD!
+├── Conduta IEDIATA:
+│   ├── AAS + Clopidogrel
+│   └── Heparina
+└── Reperfusão (O ALVO):
+    ├── < 120min: CINE/Angioplastia
+    └── > 120min: Fibrinolítico (Tenecteplase/Alteplase)
+```
+
+---
+
+## 🚀 BLOCO 15 — PRÓXIMOS PASSOS
+*   Revise os critérios de contraindicação absoluta para trombólise (ex: sangramento intracraniano prévio).
+*   Estude a diferença hemodinâmica entre IAM de VE e IAM de VD.
+
+**Entendeu por que a B te tiraria da vaga da residência e colocaria o paciente em risco?** Se tiver dúvida na fisiopatologia do VD, me pergunte!

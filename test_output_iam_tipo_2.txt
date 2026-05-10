@@ -1,0 +1,100 @@
+Excelente tema para um round clínico. O **Infarto Agudo do Miocárdio (IAM) Tipo 2** é frequentemente negligenciado ou mal compreendido, mas é o que você mais encontrará em enfermarias de clínica médica e UTIs não cardiológicas.
+
+---
+
+## 🎯 BLOCO 1 — MISSÃO CLÍNICA
+Saber diferenciar o IAM Tipo 1 do Tipo 2 é a diferença entre indicar um cateterismo de emergência (cineangiocoronariografia) ou tratar uma pneumonia, uma anemia grave ou uma taquicardia. O erro aqui leva a procedimentos invasivos desnecessários e iatrogenias.
+
+## 🧭 BLOCO 2 — ROADMAP COGNITIVO
+1. Intuição (A balança desequilibrada)
+2. Definição pela 4ª Definição Universal de Infarto
+3. Fisiopatologia (Oferta vs. Demanda)
+4. Diagnóstico e Diferenciais
+5. Conduta Estratégica
+
+## 🟢 BLOCO 3 — INTUIÇÃO & EXPLICAÇÃO LEIGA
+Imagine o coração como o motor de um carro.
+No **IAM Tipo 1**, a mangueira de combustível entupiu de repente (coágulo). O motor para porque não chega nada.
+No **IAM Tipo 2**, a mangueira está normal (ou apenas um pouco estreita), mas você está tentando subir uma ladeira íngreme a 200km/h com o motor superaquecido, OU o combustível que chega é de péssima qualidade (pouco oxigênio).
+**O problema não é o entupimento, é o esforço excessivo para o que está disponível.**
+
+## 🔵 BLOCO 4 — DEFINIÇÃO TÉCNICA & CLASSIFICAÇÃO
+Segundo a **4ª Definição Universal de IAM (2018)**:
+É a necrose miocárdica (elevação e queda de Troponina) onde um desequilíbrio entre a oferta e a demanda de oxigênio **NÃO** é causado por uma interrupção coronariana aterotrombótica aguda.
+
+## 🧬 BLOCO 5 — FISIOPATOLOGIA PROFUNDA
+O mecanismo central é a **Isquemia por Desequilíbrio**.
+*   **↓ Oferta de O₂:**
+    *   Anemia grave (pouca hemoglobina para carregar O₂).
+    *   Hipoxemia (insuficiência respiratória).
+    *   Hipotensão/Choque (baixa pressão de perfusão coronariana).
+    *   Espasmo coronariano ou dissecção espontânea.
+*   **↑ Demanda de O₂:**
+    *   Taquiarritmias (coração bate tanto que não dá tempo de nutrir o músculo).
+    *   Hipertensão grave (o coração precisa de força excessiva para ejetar o sangue).
+
+## 🩺 BLOCO 6 — INTEGRAÇÃO CLÍNICA & TEMPORAL
+Diferente do Tipo 1, o paciente raramente chega com aquela dor retroesternal clássica em repouso.
+*   **Contexto:** Paciente com sepse, crise hipertensiva ou hemorragia digestiva.
+*   **Sintomas:** Dispneia, taquicardia ou dor torácica atípica provocada pelo esforço/estresse.
+*   **Exame físico:** Sinais da causa base (palidez, febre, estertores, arritmia).
+
+## 🧠 BLOCO 7 — RACIOCÍNIO DIAGNÓSTICO & EXAMES
+*   **Troponina:** Obrigatório curva (subida e/ou queda). Se estiver alta e estável, pense em Injúria Miocárdica Crônica (ex: insuficiência renal).
+*   **ECG:** Geralmente não apresenta Supra de ST (embora possa ocorrer). Mais comum: infradesnivelamento ou inversão de onda T.
+*   **Ecocardiograma:** Pode mostrar hipocinesia segmentar momentânea.
+
+## ⚖️ BLOCO 8 — DIAGNÓSTICOS DIFERENCIAIS
+| Condição | Diferencial Chave | Conduta |
+| :--- | :--- | :--- |
+| **IAM Tipo 1** | Ruptura de placa / Trombo | AAS, Clopidogrel, CAT |
+| **Injúria Miocárdica** | Troponina alta, mas estável (sem isquemia) | Tratar causa base (ex: IRC) |
+| **Miocardite** | Jovem, pós-viral, RM de coração | Suporte e anti-inflamatório |
+
+## 💊 BLOCO 9 — CONDUTA & TOMADA DE DECISÃO
+**A regra de ouro: TRATE A CAUSA BASE.**
+1. Se está sangrando → Transfunda.
+2. Se está com taquiarritmia → Controle a frequência (Beta-bloq ou Cardioversão).
+3. Se está em sepse → Antibiótico e estabilização hemodinâmica.
+*   **Aspirina/Heparina?** Geralmente NÃO, a menos que o paciente já tenha aterosclerose conhecida. No Tipo 2 puro, o problema não é trombo, então anticoagular só aumenta o risco de sangramento.
+
+## 🎯 BLOCO 10 — PEGADINHAS & ERROS DE PRECEPTORIA
+*   **Erro que mata:** Levar um paciente com IAM Tipo 2 por sangramento ativo para o CAT e iniciar heparina. Ele vai chocar por hemorragia.
+*   **Pegadinha de prova:** "Paciente com taquissistolia e troponina positiva". A resposta correta é IAM Tipo 2, e não Tipo 1.
+
+## 🔁 BLOCO 11 — ACTIVE RECALL
+1. Qual a diferença fundamental na coronária entre o IAM Tipo 1 e o Tipo 2?
+2. Um paciente com anemia severa (Hb 5.0) e troponina positiva é classificado como qual tipo de IAM?
+3. O uso de dupla antiagregação plaquetária (DAPT) é rotina no IAM Tipo 2?
+
+## 📝 BLOCO 12 — QUESTÃO COMENTADA
+**(ENARE)** Homem, 72 anos, admitido com pneumonia e sepse. Apresenta FC 125 bpm, PA 90/60 mmHg. ECG mostra infradesnivelamento de ST em parede lateral. Troponina I: 1.500 (Ref: 0.04). Qual a conduta inicial mais adequada?
+A) Cateterismo em < 24h.
+B) Iniciar AAS, Clopidogrel e Heparina.
+C) Estabilização hemodinâmica, oxigênio e tratamento da pneumonia.
+D) Trombólise química imediata.
+
+**Gabarito: C.**
+*Justificativa:* O paciente tem um gatilho claro (sepse/pneumonia/choque) que gera desequilibrio oferta/demanda. É um IAM Tipo 2. Tratar a pneumonia e a estabilidade hemodinâmica corrigirá a isquemia.
+
+## 🧩 BLOCO 13 — RESUMO FEYNMAN
+O IAM Tipo 2 é o "Coração Vítima". Ele sofre um infarto não porque as artérias entupiram, mas porque o resto do corpo está tão doente (falta de sangue, falta de oxigênio ou batendo rápido demais) que o músculo cardíaco não aguenta a sobrecarga.
+
+## 📌 BLOCO 14 — MAPA MENTAL TEXTUAL
+```
+IAM TIPO 2
+├── Causa Central: Desequilíbrio Oferta vs Demanda
+├── Gatilhos
+│   ├── ↓ Oferta: Anemia, Hipóxia, Hipotensão, Espasmo
+│   └── ↑ Demanda: Taquicardia, HAS grave
+├── Diagnóstico
+│   ├── Troponina (Curva de subida/queda)
+│   └── Evidência de Isquemia (ECG ou Sintoma)
+└── Tratamento
+    └── Corrigir o fator desencadeante (Causa Base)
+```
+
+## 🚀 BLOCO 15 — PRÓXIMOS PASSOS
+1. Estude a **4ª Definição Universal de Infarto** (Tipos 1 a 5).
+2. Pratique diferenciar **Injúria Miocárdica** (troponina alta s/ isquemia) de **Infarto** (troponina alta c/ isquemia).
+3. Na próxima vez no PS, ao ver uma troponina alta, pergunte-se: "Tem trombo ou tem gatilho?".
