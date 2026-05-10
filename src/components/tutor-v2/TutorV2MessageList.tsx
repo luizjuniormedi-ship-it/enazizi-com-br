@@ -36,6 +36,19 @@ export default function TutorV2MessageList({ messages, isTyping }: TutorV2Messag
             <ReactMarkdown>
               {msg.content}
             </ReactMarkdown>
+
+            {msg.metadata?.flashcard_suggestion && (
+              <div className="mt-4 p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">Sugestão FSRS</p>
+                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[8px] font-black uppercase tracking-tighter gap-1">
+                    <Plus className="h-2 w-2" /> Criar Card
+                  </Button>
+                </div>
+                <p className="text-[11px] font-bold text-white mb-1">P: {msg.metadata.flashcard_suggestion.front}</p>
+                <p className="text-[11px] text-slate-400 italic">R: {msg.metadata.flashcard_suggestion.back}</p>
+              </div>
+            )}
           </div>
         </motion.div>
       ))}
