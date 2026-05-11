@@ -86,7 +86,8 @@ export type TelemetryEventName =
   | 'mission_completed'
   | 'weak_topic_detected'
   | 'recovery_started'
-  | 'recovery_completed';
+  | 'recovery_completed'
+  | 'tutor_error_detected';
 
 interface TelemetryProperties {
   [key: string]: any;
