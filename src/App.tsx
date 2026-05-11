@@ -67,6 +67,7 @@ const Rankings = lazyWithRetry(() => import("./pages/Rankings"), "Rankings");
 const MedicalImageQuiz = lazyWithRetry(() => import("./pages/MedicalImageQuiz"), "MedicalImageQuiz");
 const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "PracticalExam");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
+const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixPage");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 
@@ -163,6 +164,11 @@ const App = () => (
               <Route path="/mission" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<MissionMode />} />
               </Route>
+              <Route path="/enaflix" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
+                <Route index element={<EnaflixPage />} />
+                <Route path="*" element={<EnaflixPage />} />
+              </Route>
+              <Route path="/study-hub" element={<Navigate to="/enaflix" replace />} />
               {/* Canonical redirects — /study/* → /dashboard/* */}
               <Route path="/study/tutor" element={<Navigate to="/dashboard/chatgpt" replace />} />
               <Route path="/study/flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
