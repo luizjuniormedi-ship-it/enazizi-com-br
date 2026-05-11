@@ -86,7 +86,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [editalText, setEditalText] = useState("");
   const [editalFileName, setEditalFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const [planId, setPlanId] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const reminders = useStudyReminders(schedule);
@@ -95,6 +95,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [detectedSpecialty, setDetectedSpecialty] = useState("");
   const [tips, setTips] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [processingEdital, setProcessingEdital] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
   const [editingTask, setEditingTask] = useState<{ day: number; task: number } | null>(null);
@@ -163,47 +164,95 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
     const file = e.target.files?.[0];
     if (!file) return;
     setEditalFileName(file.name);
+    setProcessingEdital(true);
+    
     if (file.type === "text/plain" || file.name.endsWith(".txt")) {
-      // Try UTF-8 first, fallback to Latin-1 for accented characters
-      const buffer = await file.arrayBuffer();
-      let text: string;
       try {
-        const utf8 = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-        text = utf8;
-      } catch {
-        text = new TextDecoder("latin1").decode(buffer);
+        const buffer = await file.arrayBuffer();
+        let text: string;
+        try {
+          const utf8 = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+          text = utf8;
+        } catch {
+          text = new TextDecoder("latin1").decode(buffer);
+        }
+        setEditalText(text);
+        toast({ title: "Edital carregado!", description: `${file.name} processado.` });
+      } catch (err) {
+        toast({ title: "Erro ao ler arquivo", variant: "destructive" });
+      } finally {
+        setProcessingEdital(false);
       }
-      setEditalText(text);
-      toast({ title: "Edital carregado!", description: `${file.name} processado.` });
-    } else if (file.type === "application/pdf") {
-      if (!user) return;
+    } else if (file.type === "application/pdf" || 
+               file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+               file.name.endsWith(".docx") || 
+               file.name.endsWith(".doc")) {
+      if (!user) {
+        setProcessingEdital(false);
+        return;
+      }
       try {
         const ext = file.name.split(".").pop();
         const storagePath = `${user.id}/edital-${Date.now()}.${ext}`;
         const { error: storageError } = await supabase.storage.from("user-uploads").upload(storagePath, file);
         if (storageError) throw storageError;
+        
         const { data: uploadRecord, error: dbError } = await supabase
           .from("uploads")
-          .insert({ user_id: user.id, filename: file.name, file_type: ext || "pdf", category: "edital", storage_path: storagePath, status: "uploaded" })
+          .insert({ 
+            user_id: user.id, 
+            filename: file.name, 
+            file_type: ext || "pdf", 
+            category: "edital", 
+            storage_path: storagePath, 
+            status: "uploaded" 
+          })
           .select()
           .single();
+          
         if (dbError) throw dbError;
+        
         const { data: session } = await supabase.auth.getSession();
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
           body: JSON.stringify({ uploadId: uploadRecord.id }),
         });
+        
         if (resp.ok) {
-          const { data: updated } = await supabase.from("uploads").select("extracted_text").eq("id", uploadRecord.id).single();
-          if (updated?.extracted_text) setEditalText(updated.extracted_text);
+          let attempts = 0;
+          const maxAttempts = 20;
+          const pollInterval = setInterval(async () => {
+            attempts++;
+            const { data: updated } = await supabase
+              .from("uploads")
+              .select("extracted_text, status, extracted_json")
+              .eq("id", uploadRecord.id)
+              .single();
+            
+            if (updated?.extracted_text) {
+              setEditalText(updated.extracted_text);
+              toast({ title: "Edital processado!", description: `Conteúdo extraído de ${file.name}.` });
+              setProcessingEdital(false);
+              clearInterval(pollInterval);
+            } else if (updated?.status === "error" || attempts >= maxAttempts) {
+              const errorMsg = (updated?.extracted_json as any)?.error || "Tempo limite excedido no processamento.";
+              toast({ title: "Erro no processamento", description: errorMsg, variant: "destructive" });
+              setProcessingEdital(false);
+              clearInterval(pollInterval);
+            }
+          }, 2000);
+        } else {
+          setProcessingEdital(false);
+          throw new Error("Falha ao iniciar processamento");
         }
-        toast({ title: "Edital processado!", description: "Texto extraído do PDF." });
       } catch (err: any) {
+        setProcessingEdital(false);
         toast({ title: "Erro ao processar edital", description: err.message, variant: "destructive" });
       }
     } else {
-      toast({ title: "Formato não suportado", description: "Envie PDF ou TXT.", variant: "destructive" });
+      setProcessingEdital(false);
+      toast({ title: "Formato não suportado", description: "Envie PDF, TXT ou DOCX.", variant: "destructive" });
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -486,9 +535,21 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
           </div>
           <div className="space-y-2">
             <Label>Edital do concurso (opcional)</Label>
-            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx" className="hidden" onChange={handleEditalUpload} />
-            <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              {editalFileName ? (
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" className="hidden" onChange={handleEditalUpload} />
+            <div 
+              className={cn(
+                "border-2 border-dashed border-primary/30 rounded-lg p-4 text-center transition-colors cursor-pointer",
+                processingEdital ? "bg-primary/5 cursor-wait" : "hover:border-primary/50"
+              )} 
+              onClick={() => !processingEdital && fileInputRef.current?.click()}
+            >
+              {processingEdital ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  <p className="text-sm font-medium">Extraindo texto do documento...</p>
+                  <p className="text-xs text-muted-foreground">Aguarde, isso pode levar alguns segundos.</p>
+                </div>
+              ) : editalFileName ? (
                 <div className="flex items-center justify-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
                   <span className="text-sm font-medium">{editalFileName}</span>
@@ -497,12 +558,12 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               ) : (
                 <>
                   <Upload className="h-8 w-8 text-primary/50 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Envie o edital (PDF ou TXT) para personalizar seu plano</p>
+                  <p className="text-sm text-muted-foreground">Envie o edital (PDF, DOCX ou TXT) para personalizar seu plano</p>
                 </>
               )}
             </div>
           </div>
-          <Button onClick={generatePlan} disabled={generating || !examDate} className="w-full">
+          <Button onClick={generatePlan} disabled={generating || processingEdital || !examDate} className="w-full">
             {generating ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{
                 generationStep === 1 ? "Analisando documento..." :
