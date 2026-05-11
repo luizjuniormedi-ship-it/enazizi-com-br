@@ -221,7 +221,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
         
         if (resp.ok) {
           let attempts = 0;
-          const maxAttempts = 20;
+          const maxAttempts = 60; // Increased from 20 to 60 (2 minutes)
           const pollInterval = setInterval(async () => {
             attempts++;
             const { data: updated } = await supabase
