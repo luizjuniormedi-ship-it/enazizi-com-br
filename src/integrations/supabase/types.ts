@@ -665,6 +665,13 @@ export type Database = {
             referencedRelation: "telemetry_events"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "admin_incidents_initial_event_id_fkey"
+            columns: ["initial_event_id"]
+            isOneToOne: false
+            referencedRelation: "v_ai_telemetry"
+            referencedColumns: ["id"]
+          },
         ]
       }
       admin_message_reads: {
@@ -21388,6 +21395,33 @@ export type Database = {
         }
         Relationships: []
       }
+      v_ai_telemetry: {
+        Row: {
+          event_name: string | null
+          id: string | null
+          properties: Json | null
+          route: string | null
+          timestamp: string | null
+          user_id: string | null
+        }
+        Insert: {
+          event_name?: string | null
+          id?: string | null
+          properties?: Json | null
+          route?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          event_name?: string | null
+          id?: string | null
+          properties?: Json | null
+          route?: string | null
+          timestamp?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       v_alias_coverage: {
         Row: {
           alias_key: string | null
@@ -21704,7 +21738,21 @@ export type Database = {
       check_function_exists: { Args: { func_name: string }; Returns: boolean }
       check_system_health: { Args: never; Returns: undefined }
       claim_cme_render_job: { Args: { worker_id: string }; Returns: string }
+      cleanup_stale_approval_scores: { Args: never; Returns: undefined }
       cleanup_tutor_cache: { Args: never; Returns: undefined }
+      complete_study_action_atomic: {
+        Args: {
+          p_card_id: string
+          p_elapsed_days?: number
+          p_event_properties?: Json
+          p_rating: number
+          p_scheduled_days?: number
+          p_task_id: string
+          p_tema: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -22066,6 +22114,8 @@ export type Database = {
         Args: { p_video_lesson_id: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       student_has_clinical_case_result: {
         Args: { _case_id: string; _user_id: string }
         Returns: boolean
