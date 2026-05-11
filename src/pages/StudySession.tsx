@@ -99,6 +99,7 @@ const SUGGESTED_TOPICS = [
 
 const StudySession = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
