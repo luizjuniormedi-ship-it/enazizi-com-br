@@ -288,7 +288,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
 
       const processChunk = async (chunk: string) => {
         const response = await aiFetch({
-          model: "gpt-4o-mini",
+          model: "openai/gpt-5-mini",
           messages: [
             {
               role: "system",
