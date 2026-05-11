@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "./useAuth";
 import { emitShadowEvent } from "@/lib/shadowAdaptive";
+import { dispatchPedagogicalEvent } from "@/lib/events";
 import {
   Rating,
   State,
@@ -111,6 +112,13 @@ export function useFsrs() {
         topic: cardType,
         durationMs: durationMs ?? null,
         extra: { rating, ref_id: cardRefId },
+      });
+
+      // Standardized pedagogical event
+      dispatchPedagogicalEvent('fsrs_reviewed', {
+        cardId: row.id,
+        rating,
+        interval: result.log.scheduled_days
       });
 
       return result.card;

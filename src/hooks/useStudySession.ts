@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { emitShadowEvent, logShadowOutcome } from "@/lib/shadowAdaptive";
+import { dispatchPedagogicalEvent } from "@/lib/events";
 
 export interface StudySessionMetrics {
   active: boolean;
@@ -123,6 +124,15 @@ export function useStudySession() {
       };
       if (theme) updated.themesTouched.add(theme);
       saveSession(updated);
+      
+      // Emit standardized pedagogical event
+      dispatchPedagogicalEvent('question_answered', {
+        questionId: 'session_task',
+        correct,
+        timeMs: 0, // Duration per question not tracked here yet
+        topic: theme
+      });
+      
       return updated;
     });
   }, []);
@@ -153,6 +163,13 @@ export function useStudySession() {
         durationMs: s.durationSeconds * 1000,
         extra: { tasks: s.tasksCompleted },
       });
+
+      // Emit standardized pedagogical event
+      dispatchPedagogicalEvent('mission_completed', {
+        missionId: s.source,
+        xpGained: s.xpGained
+      });
+
       return { ...prev, active: false };
     });
   }, []);

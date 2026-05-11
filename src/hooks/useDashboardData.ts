@@ -64,22 +64,22 @@ export const useDashboardData = () => {
   todayStart.setHours(0, 0, 0, 0);
   const todayIso = todayStart.toISOString();
 
+  // Load snapshot as placeholder data to allow "Instant Dashboard"
+  const { data: snapshot } = useQuery({
+    queryKey: ["dashboard-snapshot", user?.id],
+    queryFn: () => user ? loadDashboardSnapshot(user.id) : null,
+    enabled: !!user && snapshotEnabled,
+    staleTime: 1000 * 60 * 10, // 10 mins
+  });
+
   return useQuery({
     queryKey: ["dashboard-data", user?.id, !!coreData, resetAt],
+    placeholderData: snapshot || undefined,
     queryFn: async () => {
       const userId = user!.id;
       const cd = coreData!;
 
-      // Fast-path: try snapshot first (only if flag enabled)
-      if (snapshotEnabled) {
-        const snapshot = await loadDashboardSnapshot(userId);
-        if (snapshot) {
-          console.debug("[Dashboard] Using snapshot (fast-path)");
-          return snapshot;
-        }
-      }
-
-      console.debug("[Dashboard] Full query path");
+      console.debug("[Dashboard] Hydrating full query path in background...");
 
       try {
         // Only queries NOT covered by coreData

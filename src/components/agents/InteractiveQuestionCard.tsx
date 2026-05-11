@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { dispatchPedagogicalEvent } from "@/lib/events";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { CheckCircle2, XCircle, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,10 +43,13 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
     setSelected(optionIndex);
     const correct = optionIndex === question.correctIndex;
 
-    // Emit custom event for session stats & marathon mode
-    window.dispatchEvent(new CustomEvent("question-answered", {
-      detail: { correct, topic: question.topic },
-    }));
+    // Emit standardized pedagogical event
+    dispatchPedagogicalEvent('question_answered', {
+      questionId: `q_${index}`,
+      correct,
+      timeMs: 0, 
+      topic: question.topic
+    });
 
     if (!user) return;
 

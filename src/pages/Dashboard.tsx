@@ -278,13 +278,13 @@ const Dashboard = () => {
           <div className="space-y-6">
             <EnaflixSectionTitle kicker="ANÁLISE DE PERFORMANCE" title="Panorama do Aluno" />
             <Suspense fallback={<LocalSectionSkeleton />}>
-              {(dashLoading && !dashData && !cockpitTimedOut) ? <LocalSectionSkeleton /> : <ProgressOverview />}
+              <ProgressOverview />
             </Suspense>
           </div>
           <div className="space-y-6">
             <EnaflixSectionTitle kicker="MAESTRIA CLÍNICA" title="Domínio por Especialidade" />
             <Suspense fallback={<LocalSectionSkeleton />}>
-              {(dashLoading && !dashData && !cockpitTimedOut) ? <LocalSectionSkeleton /> : <MedicalMasteryDashboard />}
+              <MedicalMasteryDashboard />
             </Suspense>
           </div>
         </div>
