@@ -79,7 +79,14 @@ export type TelemetryEventName =
   | 'edge_function_latency'
   | 'supabase_timeout'
   | 'ia_pedagogical_score'
-  | 'ia_fallback_used';
+  | 'ia_fallback_used'
+  // Event Bus Pedagógico (Fase Pós-Go-Live)
+  | 'question_answered'
+  | 'fsrs_reviewed'
+  | 'mission_completed'
+  | 'weak_topic_detected'
+  | 'recovery_started'
+  | 'recovery_completed';
 
 interface TelemetryProperties {
   [key: string]: any;

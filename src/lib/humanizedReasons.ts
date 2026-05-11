@@ -31,7 +31,7 @@ export function humanizeFSRSReason(reason: string): string {
   
   // Bug A Fix: Technical FSRS data should never be shown to the user
   if (reason.includes("Estabilidade: 0.0") || reason.includes("lapsos: 0") || reason.includes("reps: 0")) {
-    return "Novo card — estabilidade será calculada após a primeira revisão";
+    return "Novo tema — pronto para começar seus estudos hoje.";
   }
 
   // Handle other FSRS technical patterns
