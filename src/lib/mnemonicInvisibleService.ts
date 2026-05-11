@@ -75,7 +75,7 @@ const BLOCKED_KEYWORDS = [
 // ══════════════════════════════════════════════════
 
 function logInvisibleEvent(evt: InvisibleMnemonicEvent) {
-  console.log(`[InvisibleMnemonic] ${evt.event}`, {
+  devLog(`[InvisibleMnemonic] ${evt.event}`, {
     topic: evt.topic,
     reason: evt.triggerReason,
     cls: evt.cls,
@@ -175,7 +175,7 @@ export function triggerInvisibleMnemonic(params: InvisibleTriggerParams) {
     // 2. Anti-spam
     const allowed = await passesAntiSpam(userId, topic);
     if (!allowed) {
-      console.log(`[InvisibleMnemonic] Anti-spam blocked for "${topic}"`);
+      devLog(`[InvisibleMnemonic] Anti-spam blocked for "${topic}"`);
       return;
     }
 
@@ -203,7 +203,7 @@ export function triggerInvisibleMnemonic(params: InvisibleTriggerParams) {
     );
 
     if (suggestError || !suggestData?.items || suggestData.items.length < 3) {
-      console.log(`[InvisibleMnemonic] Item suggestion failed or insufficient for "${topic}"`);
+      devLog(`[InvisibleMnemonic] Item suggestion failed or insufficient for "${topic}"`);
       return; // fail-closed
     }
 
