@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import type { AdaptiveMeta } from "@/hooks/useAdaptiveSimulado";
 import { useNavigate } from "react-router-dom";
 const ModalityAnalyticsPanel = lazy(() => import("@/components/simulados/ModalityAnalyticsPanel"));
@@ -8,6 +8,7 @@ import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { XP_REWARDS } from "@/hooks/useGamification";
 import { EXAM_PROFILES, estimatePercentile, estimateGrade } from "@/lib/realExamDistribution";
 import type { SimQuestion } from "./SimuladoExam";
@@ -28,7 +29,16 @@ interface SimuladoResultProps {
 const SimuladoResult = ({ questions, selectedAnswers, onNewSimulado, onRetryErrors, flaggedQuestions, mode, elapsedSeconds, realExamProfile, adaptiveMeta }: SimuladoResultProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [generatingGuide, setGeneratingGuide] = useState<string | null>(null);
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ["approval-score-latest"] });
+    queryClient.invalidateQueries({ queryKey: ["topic-evolution"] });
+    queryClient.invalidateQueries({ queryKey: ["specialty-progress"] });
+    queryClient.invalidateQueries({ queryKey: ["error-bank"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-data"] });
+  }, []); // eslint-disable-line
 
   const correctCount = questions.reduce((acc, q, i) => acc + (selectedAnswers[i] === q.correct ? 1 : 0), 0);
   const totalAnswered = Object.keys(selectedAnswers).length;

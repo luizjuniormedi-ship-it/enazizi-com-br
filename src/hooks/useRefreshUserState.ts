@@ -60,6 +60,12 @@ const CONTEXT_KEYS: Record<RefreshContext, string[]> = {
     "fsrs-cards",
     "error-bank",
     "daily-plan-tasks",
+    "approval-score-latest",
+    "topic-evolution",
+    "specialty-progress",
+    "domain-map-thermo",
+    "error-review-card",
+    "adaptive-progress",
   ],
 };
 

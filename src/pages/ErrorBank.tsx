@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { AlertTriangle, BookOpen, RefreshCw, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingUp, ChevronRight, Sparkles, Target } from "lucide-react";
+import { AlertTriangle, BookOpen, RefreshCw, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingUp, ChevronRight, Sparkles, Target, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -153,7 +154,9 @@ const ErrorBank = () => {
       state: { 
         fromErrorBank: true, 
         initialTopic: tema || "",
-        studyMode: targetMode
+        studyMode: targetMode,
+        prefillTopic: tema || "",
+        source: tema ? 'error_bank' : 'error_bank_full_review'
       } 
     });
   };
@@ -192,6 +195,18 @@ const ErrorBank = () => {
           subtitle="IA de estudos analisou seus pontos de fragilidade para recuperação ativa."
           action={
             <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-[#0a0a0e]/95 backdrop-blur-xl border-white/10">
+                  <DropdownMenuItem onClick={() => window.open("https://docs.enazizi.com", "_blank")}>
+                    <HelpCircle className="h-4 w-4 mr-2" /> Como usar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="outline"
                 className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl gap-2 h-11"

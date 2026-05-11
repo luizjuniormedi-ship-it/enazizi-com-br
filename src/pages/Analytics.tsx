@@ -269,9 +269,9 @@ const Analytics = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild><div><PerformanceReport /></div></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {}}>
-                  <HelpCircle className="h-4 w-4 mr-2" /> Como usar
-                </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => window.open("https://docs.enazizi.com", "_blank")}>
+                      <HelpCircle className="h-4 w-4 mr-2" /> Como usar
+                    </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
