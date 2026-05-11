@@ -35,6 +35,9 @@ interface AiFetchOptions {
 }
 
 // ── In-memory rate limiter (per edge function instance) ────────
+// TODO(post-freeze): este limiter é in-memory e não é compartilhado entre
+// instâncias Edge/serverless — cada cold start reinicia o estado.
+// Pós-freeze: migrar para rate limiting via tabela Supabase ou KV distribuído.
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 10;
 const rateLimitMap = new Map<string, number[]>();
