@@ -306,7 +306,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     scopes: ["devops", "super_admin"],
     items: [
       {
-        to: "/admin/cme-executive",
+        to: "/admin?tab=cinematic-engine",
         label: "CME / GPU",
         description: "Fábrica de vídeos cinematográficos e GPU fleet.",
         icon: Cpu,
@@ -314,7 +314,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["cme", "gpu", "render", "video"],
       },
       {
-        to: "/admin/gpu-fleet",
+        to: "/admin?tab=pipeline",
         label: "Workers",
         description: "Orquestração de workers GPU.",
         icon: Server,
@@ -322,7 +322,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["worker", "fleet", "gpu"],
       },
       {
-        to: "/admin/render-queues",
+        to: "/admin?tab=pipeline",
         label: "Render Queue",
         description: "Filas de renderização distribuída.",
         icon: Workflow,
@@ -330,7 +330,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["render", "queue", "fila"],
       },
       {
-        to: "/admin/cme-incidents",
+        to: "/admin?tab=pipeline",
         label: "Logs técnicos",
         description: "Incidentes, alertas e postmortems.",
         icon: Activity,
