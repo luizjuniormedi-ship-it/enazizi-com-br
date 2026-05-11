@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, lazy, Suspense } from "react";
-import { AlertTriangle, BookOpen, RefreshCw, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingUp, ChevronRight, Sparkles, Target } from "lucide-react";
+import { AlertTriangle, BookOpen, RefreshCw, Brain, HelpCircle, Stethoscope, ListChecks, FlipVertical, Loader2, CheckCircle2, TrendingUp, ChevronRight, Sparkles, Target, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
