@@ -369,7 +369,7 @@ function DailyTasksBlock({
             Nenhuma tarefa atribuída para hoje. Aproveite para revisar erros ou aguardar a próxima janela.
           </p>
         ) : (
-          tasks.map((t) => <TaskRow key={t.id} task={t} onComplete={onComplete} onSkip={onSkip} busy={busy} />)
+          tasks.map((t) => <TaskRow key={t.id} task={t} onComplete={onComplete} onSkip={onSkip} busy={busy} navigate={navigate} />)
         )}
       </CardContent>
     </Card>
