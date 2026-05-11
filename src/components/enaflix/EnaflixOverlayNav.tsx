@@ -98,7 +98,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
             </button>
           )}
 
-          <div className="flex items-center gap-2 min-w-0 group cursor-pointer" onClick={() => navigate("/dashboard")}>
+          <div className="flex items-center gap-2 min-w-0 group cursor-pointer" onClick={() => navigate("/enaflix")}>
             <span className="relative flex h-2 w-2 shrink-0">
               <span className="absolute inset-0 rounded-full bg-red-500/60 animate-ping" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.85)]" />
@@ -124,7 +124,7 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
 
           <nav className="hidden md:flex items-center gap-8 ml-4">
             {[
-              { label: "Início", path: "/study-hub" },
+              { label: "Início", path: "/enaflix" },
               { label: "Planner", path: "/dashboard/planner" },
               { label: "Simulados", path: "/dashboard/simulados" },
               { label: "Flashcards", path: "/dashboard/flashcards" },
