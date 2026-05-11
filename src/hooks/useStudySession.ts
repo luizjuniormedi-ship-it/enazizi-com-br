@@ -163,6 +163,13 @@ export function useStudySession() {
         durationMs: s.durationSeconds * 1000,
         extra: { tasks: s.tasksCompleted },
       });
+
+      // Emit standardized pedagogical event
+      dispatchPedagogicalEvent('mission_completed', {
+        missionId: s.source,
+        xpGained: s.xpGained
+      });
+
       return { ...prev, active: false };
     });
   }, []);
