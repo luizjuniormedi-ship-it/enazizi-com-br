@@ -182,8 +182,12 @@ const Admin = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {
-    const tab = searchParams.get("tab");
+    let tab = searchParams.get("tab");
     if (tab) {
+      // Aliases for better navigation compatibility
+      if (tab === "users") tab = "users-all";
+      if (tab === "audit-log") tab = "audit";
+      
       setActiveSection(tab);
     }
   }, [searchParams]);
