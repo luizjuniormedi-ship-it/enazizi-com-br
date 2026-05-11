@@ -136,7 +136,7 @@ Formato JSON:
             tasks: fallbackTopics.map((t, i) => ({ time: `${8+i}:00`, subject: t, duration: "1h", type: "estudo", details: "Estudo base" }))
           }
         ],
-        tips: "Cronograma gerado via fallback devido a instabilidade na IA. Você pode ajustá-lo manualmente."
+        tips: "Cronograma criado em modo seguro devido a instabilidade na IA. Você pode refinar o conteúdo depois."
       };
     }
 
