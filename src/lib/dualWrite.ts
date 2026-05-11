@@ -132,7 +132,8 @@ export function dualWriteUserTopicProfile(params: {
           .eq("tema", topic)
           .maybeSingle();
         if (temaRow) {
-          ensureFsrsCard(userId, "tema", temaRow.id);
+          // FSRS cards are now created with initial stability = 1 in ChatGPT/Tutor sessions
+          // ensureFsrsCard(userId, "tema", temaRow.id);
         }
       }
     } catch (e) {

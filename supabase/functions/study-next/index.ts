@@ -313,14 +313,38 @@ serve(async (req) => {
     }
 
     for (const card of fsrsCards.slice(0, 5)) {
+      // Build human-friendly title/description for FSRS cards (Bug A Fix)
+      const topic = card.card_type === "tema" ? "esse tema" : "esses flashcards";
+      
+      let fsrsTitle = "Retomar conhecimento";
+      let fsrsDescription = "Seu cérebro está prestes a esquecer este conteúdo. Vamos revisar agora?";
+
+      if (card.stability === 0 || (card.reps || 0) === 0) {
+        fsrsTitle = "Iniciar novo conteúdo";
+        fsrsDescription = "Você tem conteúdos novos para começar hoje. Bora iniciar!";
+      } else if (card.lapses > 2) {
+        fsrsTitle = "Revisão Crítica";
+        fsrsDescription = `Você está esquecendo "${topic}". O ACE priorizou esta revisão urgente.`;
+      } else if (fsrsCards.length > 5) {
+        fsrsTitle = "Sessão de Fixação";
+        fsrsDescription = `${fsrsCards.length} revisões pendentes hoje. Vamos garantir sua retenção!`;
+      }
+
       candidates.push({
         type: "review",
-        title: `FSRS: ${card.card_type} (lapsos: ${card.lapses})`,
-        description: `Card de repetição espaçada vencido. Estabilidade: ${card.stability?.toFixed(1)}.`,
+        title: fsrsTitle,
+        description: fsrsDescription,
         targetId: card.id,
         targetType: "fsrs_card",
         estimatedMinutes: 5,
         priorityScore: scoreFSRS(card, ctx),
+        // Preserve technical data in context but never show to user directly
+        contextPayload: {
+          original_card_type: card.card_type,
+          original_lapses: card.lapses,
+          original_stability: card.stability,
+          original_reps: card.reps
+        }
       });
     }
 
