@@ -78,14 +78,18 @@ export function calculateApprovalScore(input: ApprovalEngineInput): ApprovalEngi
   const fsrsHealth = clamp(input.fsrsHealth);
   const volume = normalizeVolume(input.questionsVolume);
 
+  // V2 Weights: more emphasis on accuracy and retention
+  // accuracy (30%) + coverage (20%) + consistency (10%) + fsrs (20%) + volume (20%)
   const base =
-    accuracy * 0.35 +
-    coverage * 0.25 +
-    consistency * 0.15 +
-    fsrsHealth * 0.10 +
-    volume * 0.15;
+    accuracy * 0.30 +
+    coverage * 0.20 +
+    consistency * 0.10 +
+    fsrsHealth * 0.20 +
+    volume * 0.20;
 
-  let score = base;
+  // Apply TRI/Difficulty factor (V2)
+  const triFactor = input.difficultyFactor ?? 1.0;
+  let score = base * triFactor;
   let penalty = 0;
 
   // Inatividade aguda
