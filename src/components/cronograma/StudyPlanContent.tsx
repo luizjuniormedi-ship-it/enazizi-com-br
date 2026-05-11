@@ -209,11 +209,27 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
         });
         
         if (resp.ok) {
-          const { data: updated } = await supabase.from("uploads").select("extracted_text").eq("id", uploadRecord.id).single();
-          if (updated?.extracted_text) {
-            setEditalText(updated.extracted_text);
-            toast({ title: "Edital processado!", description: `Conteúdo extraído de ${file.name}.` });
-          }
+          // Poll for extracted text since process-upload is backgrounded
+          let attempts = 0;
+          const maxAttempts = 15;
+          const pollInterval = setInterval(async () => {
+            attempts++;
+            const { data: updated } = await supabase
+              .from("uploads")
+              .select("extracted_text, status, extracted_json")
+              .eq("id", uploadRecord.id)
+              .single();
+            
+            if (updated?.extracted_text) {
+              setEditalText(updated.extracted_text);
+              toast({ title: "Edital processado!", description: `Conteúdo extraído de ${file.name}.` });
+              clearInterval(pollInterval);
+            } else if (updated?.status === "error" || attempts >= maxAttempts) {
+              const errorMsg = (updated?.extracted_json as any)?.error || "Tempo limite excedido no processamento.";
+              toast({ title: "Erro no processamento", description: errorMsg, variant: "destructive" });
+              clearInterval(pollInterval);
+            }
+          }, 2000);
         }
       } catch (err: any) {
         toast({ title: "Erro ao processar edital", description: err.message, variant: "destructive" });
