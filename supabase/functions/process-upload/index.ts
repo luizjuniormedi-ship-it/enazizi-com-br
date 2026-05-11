@@ -466,15 +466,16 @@ serve(async (req) => {
       extracted_json: { step: "starting", progress: 0, rag_doc_id: ragDoc?.id },
     }).eq("id", uploadId);
 
-    // 4. Process - we await to ensure completion in this context
-    await processInBackground(uploadId, upload, userId, supabaseAdmin, supabase);
+    // 4. Dispatch processing in background to avoid 150s edge timeout
+    // @ts-ignore - EdgeRuntime is provided by Supabase edge runtime
+    EdgeRuntime.waitUntil(processInBackground(uploadId, upload, userId, supabaseAdmin, supabase));
 
-    // Return immediately — frontend will poll for progress
+    // Return immediately — frontend polls `uploads.status`/`extracted_json.progress`
     return new Response(JSON.stringify({
       message: "Processamento iniciado em background",
       status: "processing",
       uploadId,
-    }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
   } catch (e) {
     console.error("process-upload error:", e);
