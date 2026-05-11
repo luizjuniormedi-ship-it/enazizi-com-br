@@ -113,10 +113,13 @@ async function processInBackground(
       return;
     }
 
-    await supabaseAdmin.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
+    await supabaseAdmin.from("uploads").update({ 
+      extracted_text: truncatedText,
+      extracted_json: { step: "text_extracted", progress: 20 }
+    }).eq("id", uploadId);
 
     // 3. Validation & Topics (PRIORITY: Must finish to return base plan)
-    await updateProgress(supabaseAdmin, uploadId, { step: "validating_content", progress: 25 });
+    await updateProgress(supabaseAdmin, uploadId, { step: "validating_content", progress: 30 });
     
     let detectedTopic = "Clínica Médica";
     let suggestedTopics: any[] = [];
