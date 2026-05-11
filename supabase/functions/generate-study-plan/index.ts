@@ -96,15 +96,22 @@ Formato JSON:
 
     console.log("[GENERATE_STUDY_PLAN] AI request starting...");
     const startMs = Date.now();
-    const aiResp = await aiFetch({
-      model: "google/gemini-2.5-flash",
-      messages: [{ role: "user", content: prompt }],
-      timeoutMs: 60000,
-    });
+    let aiResp: Response | null = null;
+    try {
+      aiResp = await aiFetch({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [{ role: "user", content: prompt }],
+        timeoutMs: 45000,
+        maxRetries: 0, // Single attempt - rely on fallback if it fails
+      });
+    } catch (aiErr) {
+      console.warn("[GENERATE_STUDY_PLAN] AI call failed, using fallback:", aiErr);
+    }
     const elapsed = Date.now() - startMs;
+    console.log(`[GENERATE_STUDY_PLAN] AI elapsed: ${elapsed}ms, ok: ${aiResp?.ok}`);
 
     let planJson;
-    if (aiResp.ok) {
+    if (aiResp?.ok) {
       const aiData = await aiResp.json();
       const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
       try {
