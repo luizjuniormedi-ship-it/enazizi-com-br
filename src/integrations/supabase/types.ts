@@ -18389,7 +18389,7 @@ export type Database = {
           route: string | null
           screen_size: string | null
           scroll_depth: number | null
-          session_id: string
+          session_id: string | null
           time_to_first_block: number | null
           timestamp: string | null
           user_id: string | null
@@ -18402,7 +18402,7 @@ export type Database = {
           route?: string | null
           screen_size?: string | null
           scroll_depth?: number | null
-          session_id: string
+          session_id?: string | null
           time_to_first_block?: number | null
           timestamp?: string | null
           user_id?: string | null
@@ -18415,7 +18415,7 @@ export type Database = {
           route?: string | null
           screen_size?: string | null
           scroll_depth?: number | null
-          session_id?: string
+          session_id?: string | null
           time_to_first_block?: number | null
           timestamp?: string | null
           user_id?: string | null
