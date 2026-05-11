@@ -208,7 +208,7 @@ export function EnaflixSidebar() {
                   to="/professor"
                   label="Professor"
                   icon={GraduationCap}
-                  active={location.pathname === "/professor"}
+                  active={location.pathname.startsWith("/professor")}
                 />
               )}
               {isAdmin && (
