@@ -321,10 +321,51 @@ const CronogramaInteligente = () => {
     let anexos: { name: string; path: string }[] = [];
     if (files && files.length > 0) {
       for (const file of files) {
-        const filePath = `${user.id}/cronograma/${Date.now()}-${file.name}`;
-        const { error: upErr } = await supabase.storage.from("user-uploads").upload(filePath, file);
-        if (!upErr) {
+        try {
+          const filePath = `${user.id}/cronograma/${Date.now()}-${file.name}`;
+          const { error: upErr } = await supabase.storage.from("user-uploads").upload(filePath, file);
+          
+          if (upErr) {
+            console.error("Storage upload error:", upErr);
+            toast({ 
+              title: "Erro no upload", 
+              description: `Falha ao subir ${file.name}: ${upErr.message}`, 
+              variant: "destructive" 
+            });
+            continue;
+          }
+          
           anexos.push({ name: file.name, path: filePath });
+
+          // Se for PDF, disparar processamento em background (Edge Function)
+          if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+            const { data: uploadRecord, error: dbError } = await supabase
+              .from("uploads")
+              .insert({
+                user_id: user.id,
+                filename: file.name,
+                file_type: "pdf",
+                category: "material",
+                storage_path: filePath,
+                status: "uploaded",
+              })
+              .select()
+              .single();
+
+            if (!dbError && uploadRecord) {
+              const { data: sessionData } = await supabase.auth.getSession();
+              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${sessionData?.session?.access_token}`,
+                },
+                body: JSON.stringify({ uploadId: uploadRecord.id }),
+              }).catch(err => console.error("Trigger process-upload error:", err));
+            }
+          }
+        } catch (err: any) {
+          console.error("File processing error:", err);
         }
       }
     }
