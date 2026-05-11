@@ -124,6 +124,15 @@ export function useStudySession() {
       };
       if (theme) updated.themesTouched.add(theme);
       saveSession(updated);
+      
+      // Emit standardized pedagogical event
+      dispatchPedagogicalEvent('question_answered', {
+        questionId: 'session_task',
+        correct,
+        timeMs: 0, // Duration per question not tracked here yet
+        topic: theme
+      });
+      
       return updated;
     });
   }, []);
