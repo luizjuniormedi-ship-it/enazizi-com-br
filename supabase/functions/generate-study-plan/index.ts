@@ -94,7 +94,7 @@ Formato JSON:
     let aiResp: Response | null = null;
     try {
       aiResp = await aiFetch({
-        model: "google/gemini-2.0-flash-lite-preview-02-05", // Use latest fast model
+        model: "google/gemini-2.0-flash-lite", // Use latest fast model
         messages: [{ role: "user", content: prompt }],
         timeoutMs: 60000, // 60s for AI
         maxRetries: 1,
