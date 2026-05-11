@@ -71,7 +71,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["mentor", "alunos", "risco", "engajamento"],
       },
       {
-        to: "/admin/ai-audit-mode",
+        to: "/admin?tab=audit",
         label: "Auditoria",
         description: "Log de todas as ações administrativas e mudanças sensíveis.",
         icon: ClipboardList,
@@ -79,7 +79,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["log", "audit", "histórico"],
       },
       {
-        to: "/admin/settings",
+        to: "/admin?tab=features",
         label: "Governança",
         description: "Configuração de thresholds e limites operacionais enterprise.",
         icon: Settings2,
