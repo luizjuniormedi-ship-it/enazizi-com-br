@@ -13,7 +13,16 @@ const MAX_PROCESS_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_PDF_PAGES_TO_PARSE = 120;
 
 async function extractPdfText(fileData: Blob): Promise<string> {
-  const data = new Uint8Array(await fileData.arrayBuffer());
+  const arrayBuffer = await fileData.arrayBuffer();
+  const data = new Uint8Array(arrayBuffer);
+  
+  // Basic validation
+  const header = new TextDecoder().decode(data.slice(0, 5));
+  if (header !== "%PDF-") {
+    console.error("[PROCESS_UPLOAD] Invalid PDF header:", header);
+    throw new Error("O arquivo não parece ser um PDF válido.");
+  }
+
   const document = await getDocument({ data, useSystemFonts: true }).promise;
   const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
   const pages: string[] = [];
