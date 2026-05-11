@@ -404,6 +404,16 @@ const SmartPlanner = () => {
     if (files && files.length > 0) {
       for (const file of files) {
         try {
+          const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+          if (file.size > MAX_FILE_SIZE) {
+            toast({
+              title: "Arquivo muito grande",
+              description: `O arquivo ${file.name} excede o limite de 20MB.`,
+              variant: "destructive"
+            });
+            continue;
+          }
+
           const timestamp = Date.now();
           const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
           const filePath = `${user.id}/cronograma/${timestamp}-${cleanName}`;
