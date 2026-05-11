@@ -416,7 +416,7 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: uploadId } = await req.json();
+    const { uploadId } = await req.json();
     if (!uploadId) throw new Error("uploadId is required");
 
     // Retry select to handle potential replication lag
