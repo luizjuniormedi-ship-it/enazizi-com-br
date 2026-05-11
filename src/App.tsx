@@ -164,6 +164,7 @@ const NOCDashboard = lazyWithRetry(() => import("./pages/admin/NOCDashboard"), "
 
 
 const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
+const CognitiveObservatory = lazyWithRetry(() => import("./pages/admin/CognitiveObservatory"), "CognitiveObservatory");
 const AdminBlueprints = lazyWithRetry(() => import("./pages/admin/AdminBlueprints"), "AdminBlueprints");
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
