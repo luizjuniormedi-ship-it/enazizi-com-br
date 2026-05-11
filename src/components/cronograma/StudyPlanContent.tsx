@@ -86,7 +86,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [editalText, setEditalText] = useState("");
   const [editalFileName, setEditalFileName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-
+  
   const [planId, setPlanId] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<DaySchedule[]>([]);
   const reminders = useStudyReminders(schedule);
@@ -95,6 +95,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [detectedSpecialty, setDetectedSpecialty] = useState("");
   const [tips, setTips] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [processingEdital, setProcessingEdital] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
   const [editingTask, setEditingTask] = useState<{ day: number; task: number } | null>(null);
