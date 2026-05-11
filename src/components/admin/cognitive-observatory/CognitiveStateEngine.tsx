@@ -78,7 +78,7 @@ export const CognitiveStateEngine: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-mono text-blue-400">
-            {state?.healthScore}%
+            {state?.healthScore.toFixed(0)}%
           </div>
           <p className="text-[10px] text-slate-500 mt-1">Overall cognitive stability</p>
         </CardContent>
@@ -88,12 +88,12 @@ export const CognitiveStateEngine: React.FC = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
             <Zap className="w-3 h-3 text-amber-500" />
-            LOAD INTENSITY
+            FATIGUE LEVEL
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-mono text-amber-400">
-            MODERATE
+            {((state?.fatigue || 0) * 100).toFixed(0)}%
           </div>
           <p className="text-[10px] text-slate-500 mt-1">Current system pressure</p>
         </CardContent>
@@ -103,14 +103,14 @@ export const CognitiveStateEngine: React.FC = () => {
         <CardHeader className="pb-2">
           <CardTitle className="text-xs font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
             <ShieldCheck className="w-3 h-3 text-purple-500" />
-            INTEGRITY
+            THETA ABILITY
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-mono text-purple-400">
-            99.9%
+            {state?.theta?.toFixed(2) || '0.00'}
           </div>
-          <p className="text-[10px] text-slate-500 mt-1">Race condition check</p>
+          <p className="text-[10px] text-slate-500 mt-1">Bayesian IRT estimation</p>
         </CardContent>
       </Card>
     </div>
