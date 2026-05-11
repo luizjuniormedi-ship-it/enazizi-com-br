@@ -264,7 +264,7 @@ const SmartPlanner = () => {
 
   const handleGenerateDaily = async () => {
     if (!user) return;
-    setRepprocessing(true);
+    setReprocessing(true);
     try {
       const { data: session } = await supabase.auth.getSession();
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
@@ -278,15 +278,10 @@ const SmartPlanner = () => {
       if (!resp.ok) throw new Error("Falha na Edge Function");
       toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta." });
       loadData();
-      // Invalidate dashboard
-      import("@/hooks/useDashboardInvalidation").then(m => {
-        // We can't use the hook here directly as we are inside the component
-        // but we can trigger a manual invalidation via queryClient if needed
-      });
     } catch (err) {
       toast({ title: "Erro", description: "Não foi possível gerar o cronograma.", variant: "destructive" });
     } finally {
-      setRepprocessing(false);
+      setReprocessing(false);
     }
   };
 
