@@ -19,6 +19,12 @@ interface CognitiveSummary {
   strongest_specialty: string | null;
   trend_7d: "up" | "down" | "stable" | null;
   trend_30d: "up" | "down" | "stable" | null;
+  samples?: {
+    retention_reviews: number;
+    stability_cards: number;
+    cognitive_events: number;
+    students_with_data: number;
+  };
 }
 
 interface AnalyticsLite {
@@ -31,6 +37,7 @@ interface AnalyticsLite {
     activity_completion_rate: number;
   };
   cognitive_summary?: CognitiveSummary | null;
+  timestamp?: string;
 }
 
 interface Props {
