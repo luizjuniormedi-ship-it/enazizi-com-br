@@ -242,10 +242,10 @@ export function EnaflixSidebar() {
                   </div>
 
                   <SidebarItem
-                    to="/admin/users"
+                    to="/admin?tab=users-all"
                     label="Usuários"
                     icon={Users}
-                    active={location.pathname === "/admin/users"}
+                    active={location.search === "?tab=users-all"}
                   />
                   <SidebarItem
                     to="/admin/monitoring"
