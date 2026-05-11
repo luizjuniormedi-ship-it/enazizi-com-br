@@ -83,12 +83,46 @@ const CognitiveObservatory: React.FC = () => {
         {/* Left Column: States & Pipeline & Performance */}
         <div className="xl:col-span-3 space-y-6">
           
-          <motion.div
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-          >
-            <CognitiveStateEngine />
-          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              className="md:col-span-3"
+            >
+              <CognitiveStateEngine />
+            </motion.div>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+              className="md:col-span-1"
+            >
+              <Card className="bg-emerald-500/5 border-emerald-500/20 backdrop-blur-sm h-full">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest flex items-center gap-2">
+                    <Fingerprint className="w-3 h-3" />
+                    Adaptive Score
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-black text-white italic tracking-tighter">
+                    94.<span className="text-emerald-500">8</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-mono mt-1">HIGHLY PERSONALIZED</p>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between text-[9px] uppercase font-mono">
+                      <span className="text-slate-600">Dynamic Decisions</span>
+                      <span className="text-slate-300">124</span>
+                    </div>
+                    <div className="flex justify-between text-[9px] uppercase font-mono">
+                      <span className="text-slate-600">Explainability</span>
+                      <span className="text-slate-300">8.9/10</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
 
           <motion.div
             initial={{ y: 20, opacity: 0 }}
@@ -111,7 +145,7 @@ const CognitiveObservatory: React.FC = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
-              <FSRSInspector />
+              <ModelIntelligence />
             </motion.div>
           </div>
 
@@ -120,13 +154,30 @@ const CognitiveObservatory: React.FC = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
-            <ErrorIntelligence />
+            <CognitiveReplay />
           </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <ErrorIntelligence />
+            </motion.div>
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <FSRSInspector />
+            </motion.div>
+          </div>
 
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.6 }}
           >
             <AIRuntimeMonitor />
           </motion.div>
