@@ -58,7 +58,7 @@ const NAV_SECTIONS = [
       { to: "/dashboard/image-quiz", label: "Questões com Imagem", icon: ImageIcon },
       { to: "/dashboard/feynman", label: "Método Feynman", icon: Brain },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
-      { to: "/dashboard/mnemonic-studio", label: "Mnemônicos", icon: BrainCircuit },
+      { to: "/dashboard/mnemonico", label: "Mnemônicos", icon: BrainCircuit },
       { to: "/dashboard/sessao-estudo", label: "Tutor IA", icon: Sparkles, badge: "Premium" },
     ]
   },
