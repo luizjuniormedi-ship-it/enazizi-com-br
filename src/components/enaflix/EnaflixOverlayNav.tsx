@@ -72,8 +72,16 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
           {isSpecialUser ? (
             <button
               type="button"
-              onClick={onClose}
-              aria-label="Sair do modo ENAFLIX"
+              onClick={() => {
+                if (isAdmin) {
+                  navigate("/admin");
+                } else if (isProfessor) {
+                  navigate("/professor");
+                } else {
+                  onClose();
+                }
+              }}
+              aria-label={isAdmin ? "Ir para Painel Admin" : "Sair do modo ENAFLIX"}
               className={cn(
                 "inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-widest",
                 "text-white/70 hover:text-white transition-all duration-300",
@@ -81,7 +89,9 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               )}
             >
               <LayoutDashboard className="h-3 w-3" />
-              <span className="hidden sm:inline">Painel Admin</span>
+              <span className="hidden sm:inline">
+                {isAdmin ? "Painel Admin" : "Painel Professor"}
+              </span>
             </button>
           ) : (
             <button
