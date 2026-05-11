@@ -128,11 +128,19 @@ async function processInBackground(
     const truncatedText = extractedText.slice(0, 40000);
 
     if (!truncatedText.trim()) {
-      await supabaseAdmin.from("uploads").update({ status: "error", extracted_text: "Sem texto extraído.", extracted_json: { error: "Sem texto extraído" } }).eq("id", uploadId);
+      console.error(`[PROCESS_UPLOAD] No text extracted for upload ${uploadId}`);
+      await supabaseAdmin.from("uploads").update({ 
+        status: "error", 
+        extracted_text: "Sem texto extraído.", 
+        extracted_json: { 
+          error: "Não foi possível extrair texto deste arquivo. Ele pode estar protegido ou ser uma imagem digitalizada sem OCR.", 
+          step: "extraction" 
+        } 
+      }).eq("id", uploadId);
       return;
     }
 
-    await supabaseAdmin.from("uploads").update({ extracted_text: truncatedText.slice(0, 50000) }).eq("id", uploadId);
+    await supabaseAdmin.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
 
     // Step 3: Validate medical content
     await updateProgress(supabaseAdmin, uploadId, { step: "validating", progress: 25 });
@@ -186,8 +194,39 @@ async function processInBackground(
 
     let flashcardsCount = 0;
     let questionsCount = 0;
+    let suggestedTopics: any[] = [];
 
-    // Step 4: Generate flashcards
+    // Step 4: Generate Suggested Topics (Planner Integration)
+    await updateProgress(supabaseAdmin, uploadId, { step: "analyzing_topics", progress: 35, main_topic: detectedTopic });
+    
+    try {
+      const topicResponse = await aiFetch({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `Analise o conteúdo médico e sugira uma lista de tópicos de estudo. 
+            Cada tópico deve ter: tema, especialidade, dificuldade (facil/medio/dificil), subtopico.
+            Gere entre 3 e 8 tópicos principais.
+            Responda APENAS com JSON: {"topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
+          },
+          { role: "user", content: `Sugira tópicos para o cronograma baseados neste texto (Tema Principal: ${detectedTopic}):\n\n${truncatedText.slice(0, 8000)}` }
+        ],
+      });
+
+      if (topicResponse.ok) {
+        const topicData = await topicResponse.json();
+        const content = sanitizeAiContent(topicData.choices?.[0]?.message?.content || "");
+        try {
+          const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
+          suggestedTopics = JSON.parse(cleaned).topics || [];
+        } catch {}
+      }
+    } catch (e) {
+      console.error("Topic suggestion error:", e);
+    }
+
+    // Step 5: Generate flashcards
     await updateProgress(supabaseAdmin, uploadId, { step: "generating_flashcards", progress: 40, main_topic: detectedTopic });
 
     try {
@@ -297,12 +336,13 @@ Se não encontrar questões válidas, retorne {"questions": []}`
       console.error("Question generation error:", e);
     }
 
-    // Step 6: Done
+    // Step 7: Done
     await supabaseAdmin.from("uploads").update({
       status: "processed",
       extracted_json: {
         flashcards_count: flashcardsCount,
         questions_count: questionsCount,
+        suggested_topics: suggestedTopics,
         topics: [detectedTopic],
         main_topic: detectedTopic,
         progress: 100,
@@ -310,7 +350,13 @@ Se não encontrar questões válidas, retorne {"questions": []}`
       }
     }).eq("id", uploadId);
 
-    console.log(`Background processing done for ${uploadId}: ${flashcardsCount} flashcards, ${questionsCount} questions`);
+    // 5. Atualizar rag_documents
+    await supabaseAdmin.from("rag_documents").update({
+      status: "completed",
+      updated_at: new Date().toISOString()
+    }).eq("id", (upload.extracted_json as any)?.rag_doc_id);
+
+    console.log(`Background processing done for ${uploadId}: ${flashcardsCount} flashcards, ${questionsCount} questions, ${suggestedTopics.length} suggested topics`);
 
   } catch (e) {
     console.error("Background processing error:", e);
