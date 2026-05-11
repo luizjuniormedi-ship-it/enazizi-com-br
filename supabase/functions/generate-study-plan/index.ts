@@ -111,7 +111,7 @@ Formato JSON:
     console.log(`[GENERATE_STUDY_PLAN] AI elapsed: ${elapsed}ms, ok: ${aiResp?.ok}`);
 
     let planJson;
-    if (aiResp.ok) {
+    if (aiResp?.ok) {
       const aiData = await aiResp.json();
       const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
       try {
