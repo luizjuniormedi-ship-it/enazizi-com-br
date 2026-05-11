@@ -49,7 +49,7 @@ export function useAutoReplenish(activeTopic: string | null) {
       generating.current.add(topic);
       lastGenerated.current.set(topic, Date.now());
 
-      console.log(`[AutoReplenish] ${topic}: ${remaining} restantes, gerando mais...`);
+      devLog(`[AutoReplenish] ${topic}: ${remaining} restantes, gerando mais...`);
 
       const { data: session } = await supabase.auth.getSession();
       const token = session?.session?.access_token;
