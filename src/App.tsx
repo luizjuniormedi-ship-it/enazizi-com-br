@@ -311,6 +311,7 @@ const App = () => (
                   <Route index element={<CentroComando />} />
                   <Route path="users" element={<Admin />} />
                   <Route path="monitoring" element={<AdminMonitoring />} />
+                  <Route path="cognitive-observatory" element={<CognitiveObservatory />} />
                   <Route path="ceo" element={<AdminCEO />} />
                   <Route path="metrics" element={<ProductMetricsPage />} />
                   <Route path="orchestrator-insights" element={<AdminOrchestratorInsights />} />
