@@ -9,28 +9,27 @@ const corsHeaders = {
 
 const NON_MEDICAL_CONTENT_REGEX = /(direito|jur[ií]d|penal|constitucional|processo penal|inquérito|inqu[eé]rito|stf|stj|delegad|advogad|pol[ií]cia federal|c[oó]digo penal|a[cç][aã]o penal|inform[aá]tica|tecnologia da informa[cç][aã]o|engenharia|contabilidade|economia|administra[cç][aã]o|programa[cç][aã]o|declara[cç][aã]o financeira|declara[cç][oõ]es de interesse|pagamento de qualquer esp[eé]cie|empresa farmac[eê]utica|ind[uú]stria farmac[eê]utica|honor[aá]rio|palestrante remunerado|v[ií]nculo empregat[ií]cio|conflito de interesse|relat[oó]rio de interesse|taxa de inscri|processo seletivo|per[ií]odo de inscri[cç][aã]o|edital de convoca|cronograma do processo|matr[ií]cula dos aprovados|homologa[cç][aã]o|classifica[cç][aã]o final|prazo de recurso|resultado preliminar|documenta[cç][aã]o exigida|valor da taxa|vagas reservadas|candidato inscrito|prova objetiva do processo)/i;
 const MAX_PROCESS_FILE_BYTES = 20 * 1024 * 1024;
-const MAX_PDF_PAGES_TO_PARSE = 50; // Reduced from 120 to save time/memory
+const MAX_PDF_PAGES_TO_PARSE = 100;
+const CHARS_PER_CHUNK = 10000;
 
-async function extractPdfText(fileData: Blob): Promise<string> {
+async function extractPdfTextChunks(fileData: Blob): Promise<{ text: string, pageStart: number, pageEnd: number }[]> {
   try {
     const arrayBuffer = await fileData.arrayBuffer();
     const data = new Uint8Array(arrayBuffer);
     
     if (data.length < 5) throw new Error("Arquivo PDF corrompido ou muito pequeno.");
     const header = new TextDecoder().decode(data.slice(0, 5));
-    if (header !== "%PDF-") {
-      throw new Error("O arquivo não parece ser um PDF válido.");
-    }
+    if (header !== "%PDF-") throw new Error("O arquivo não parece ser um PDF válido.");
 
     console.log(`[PROCESS_UPLOAD] Extraindo texto de PDF (${data.length} bytes)...`);
     const document = await getDocument({ data, useSystemFonts: true }).promise;
     const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
-    const pages: string[] = [];
-    let collectedChars = 0;
-    const maxCharsToCollect = 30000; // Reduced from 40k to speed up processing
+    
+    const chunks: { text: string, pageStart: number, pageEnd: number }[] = [];
+    let currentChunkText = "";
+    let chunkPageStart = 1;
 
     for (let i = 1; i <= totalPages; i++) {
-      if (collectedChars >= maxCharsToCollect) break;
       try {
         const page = await document.getPage(i);
         const textContent = await page.getTextContent();
@@ -41,15 +40,24 @@ async function extractPdfText(fileData: Blob): Promise<string> {
           .trim();
 
         if (text) {
-          pages.push(text);
-          collectedChars += text.length;
+          if (currentChunkText.length + text.length > CHARS_PER_CHUNK && currentChunkText.length > 0) {
+            chunks.push({ text: currentChunkText, pageStart: chunkPageStart, pageEnd: i - 1 });
+            currentChunkText = text;
+            chunkPageStart = i;
+          } else {
+            currentChunkText += (currentChunkText ? "\n\n" : "") + text;
+          }
         }
       } catch (e) {
         console.warn(`[PROCESS_UPLOAD] Failed to parse page ${i}, skipping.`);
       }
     }
 
-    return pages.join("\n\n").slice(0, maxCharsToCollect);
+    if (currentChunkText) {
+      chunks.push({ text: currentChunkText, pageStart: chunkPageStart, pageEnd: totalPages });
+    }
+
+    return chunks;
   } catch (err: any) {
     console.error("[PROCESS_UPLOAD] PDF Extraction error:", err);
     throw new Error(`Falha ao ler PDF: ${err.message}`);
@@ -97,116 +105,150 @@ async function processInBackground(
     // 2. Extract
     await updateProgress(supabaseAdmin, uploadId, { step: "extracting_text", progress: 15 });
     const fileType = (upload.file_type || "").toLowerCase();
-    let extractedText = "";
+    let textChunks: { text: string, pageStart: number, pageEnd: number }[] = [];
 
-    if (fileType === "txt") extractedText = await fileData.text();
-    else if (fileType === "pdf" || fileType.includes("pdf")) extractedText = await extractPdfText(fileData);
-    else if (fileType === "docx" || fileType.includes("wordprocessingml")) extractedText = await extractDocxText(fileData);
-    else throw new Error("Unsupported format");
+    if (fileType === "txt") {
+      const text = await fileData.text();
+      textChunks = [{ text, pageStart: 1, pageEnd: 1 }];
+    } else if (fileType === "pdf" || fileType.includes("pdf")) {
+      textChunks = await extractPdfTextChunks(fileData);
+    } else if (fileType === "docx" || fileType.includes("wordprocessingml")) {
+      const text = await extractDocxText(fileData);
+      textChunks = [{ text, pageStart: 1, pageEnd: 1 }];
+    } else {
+      throw new Error("Unsupported format");
+    }
 
-    const truncatedText = (extractedText || "").trim().slice(0, 30000);
-    if (!truncatedText) {
+    if (textChunks.length === 0) {
       await supabaseAdmin.from("uploads").update({ 
         status: "error", 
-        extracted_json: { error: "Sem texto extraível no PDF.", step: "extraction" } 
+        extracted_json: { error: "Sem texto extraível no arquivo.", step: "extraction" } 
       }).eq("id", uploadId);
       return;
     }
 
+    // Save chunks to DB
+    const chunkInserts = textChunks.map((chunk, idx) => ({
+      upload_id: uploadId,
+      user_id: userId,
+      chunk_index: idx,
+      page_start: chunk.pageStart,
+      page_end: chunk.pageEnd,
+      raw_text: chunk.text,
+      status: "pending"
+    }));
+    await supabaseAdmin.from("planner_pdf_chunks").insert(chunkInserts);
+
     await supabaseAdmin.from("uploads").update({ 
-      extracted_text: truncatedText,
-      extracted_json: { step: "text_extracted", progress: 20 }
+      extracted_text: textChunks.map(c => c.text).join("\n\n").slice(0, 50000),
+      extracted_json: { step: "text_extracted", progress: 20, total_chunks: textChunks.length }
     }).eq("id", uploadId);
 
-    // 3. Validation & Topics (PRIORITY: Must finish to return base plan)
-    await updateProgress(supabaseAdmin, uploadId, { step: "validating_content", progress: 30 });
+    // 3. Topic Extraction
+    await updateProgress(supabaseAdmin, uploadId, { step: "extracting_topics", progress: 30, current_chunk: 0, total_chunks: textChunks.length });
     
-    let detectedTopic = "Clínica Médica";
-    let suggestedTopics: any[] = [];
-    
-    const valResponse = await aiFetch({
-      model: "google/gemini-2.5-flash",
-      messages: [
-        {
-          role: "system",
-          content: `Analise o texto médico e sugira 3-8 tópicos de estudo. 
-          Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
-        },
-        { role: "user", content: `Analise:\n\n${truncatedText.slice(0, 8000)}` }
-      ],
-      timeoutMs: 55000,
-    });
+    const allExtractedTopics: any[] = [];
+    let mainTopic = "Clínica Médica";
 
-    if (valResponse.ok) {
-      const parsed = parseAiJson((await valResponse.json()).choices?.[0]?.message?.content || "");
-      if (!parsed.is_medicine) {
-        await supabaseAdmin.from("uploads").update({
-          status: "error",
-          extracted_json: { error: "Conteúdo não médico.", step: "validation" }
-        }).eq("id", uploadId);
-        return;
+    for (let i = 0; i < textChunks.length; i++) {
+      await updateProgress(supabaseAdmin, uploadId, { 
+        step: "extracting_topics", 
+        progress: Math.floor(30 + (i / textChunks.length) * 40), 
+        current_chunk: i + 1, 
+        total_chunks: textChunks.length 
+      });
+
+      try {
+        const chunkResponse = await aiFetch({
+          model: "google/gemini-2.5-flash-lite",
+          messages: [
+            {
+              role: "system",
+              content: `Extraia literalemente todos os tópicos de estudo, disciplinas e conteúdos médicos presentes neste trecho de edital.
+              REGRAS:
+              - Não resuma, não omita itens.
+              - Mantenha a hierarquia (tema -> subtopico).
+              - Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
+            },
+            { role: "user", content: `Analise este trecho (Parte ${i+1}/${textChunks.length}):\n\n${textChunks[i].text}` }
+          ],
+          timeoutMs: 45000,
+        });
+
+        if (chunkResponse.ok) {
+          const parsed = parseAiJson((await chunkResponse.json()).choices?.[0]?.message?.content || "");
+          if (parsed.is_medicine !== false) {
+            if (parsed.main_topic && i === 0) mainTopic = parsed.main_topic;
+            if (parsed.topics) allExtractedTopics.push(...parsed.topics);
+            
+            await supabaseAdmin.from("planner_pdf_chunks")
+              .update({ extracted_topics_json: parsed.topics, status: "completed" })
+              .eq("upload_id", uploadId)
+              .eq("chunk_index", i);
+          }
+        }
+      } catch (err) {
+        console.error(`[PROCESS_UPLOAD] Chunk ${i} extraction failed:`, err);
       }
-      detectedTopic = parsed.main_topic || detectedTopic;
-      suggestedTopics = parsed.topics || [];
     }
 
-    // UPDATE PROGRESS: BASE PLAN READY
+    // 4. Consolidation
+    await updateProgress(supabaseAdmin, uploadId, { step: "consolidating", progress: 75 });
+    const uniqueTopics = Array.from(new Map(allExtractedTopics.map(item => [JSON.stringify(item), item])).values());
+
+    await supabaseAdmin.from("planner_extracted_topics").insert({
+      upload_id: uploadId,
+      user_id: userId,
+      topics_json: uniqueTopics,
+      coverage_stats: { total_chunks: textChunks.length, completed_chunks: allExtractedTopics.length > 0 ? textChunks.length : 0 }
+    });
+
+    // 5. Update Status
     await supabaseAdmin.from("uploads").update({
-      status: "processed", // Marcar como "processed" para liberar os tópicos na UI imediatamente
+      status: "processed",
       extracted_json: {
-        suggested_topics: suggestedTopics,
-        main_topic: detectedTopic,
+        suggested_topics: uniqueTopics,
+        main_topic: mainTopic,
         progress: 100,
         step: "done",
-        enriching: true, // Flag para indicar que flashcards/questões virão depois
+        enriching: true,
+        total_topics: uniqueTopics.length,
+        total_chunks: textChunks.length
       }
     }).eq("id", uploadId);
 
-    // 4. Enrichment (Flashcards/Questions) - Sequential to avoid concurrent AI timeouts
-    await updateProgress(supabaseAdmin, uploadId, { 
-      step: "generating_flashcards", 
-      progress: 60, 
-      suggested_topics: suggestedTopics,
-      main_topic: detectedTopic 
-    });
-
+    // 6. Enrichment
+    await updateProgress(supabaseAdmin, uploadId, { step: "generating_flashcards", progress: 85, suggested_topics: uniqueTopics, main_topic: mainTopic });
     let flashcardsCount = 0;
     try {
       const fcRes = await aiFetch({
         model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: 'Gere 5-8 flashcards relevantes. JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 10000)}` }
+          { role: "user", content: `Gere flashcards baseados nestes tópicos principais:\n\n${JSON.stringify(uniqueTopics.slice(0, 15))}` }
         ],
         timeoutMs: 55000,
       });
       if (fcRes.ok) {
         const parsed = parseAiJson((await fcRes.json()).choices?.[0]?.message?.content || "");
         const flashcards = (parsed.flashcards || []).map((fc: any) => ({
-          user_id: userId, question: fc.question, answer: fc.answer, topic: fc.topic || detectedTopic, is_global: true
+          user_id: userId, question: fc.question, answer: fc.answer, topic: fc.topic || mainTopic, is_global: true
         })).filter((fc: any) => fc.question && fc.answer && !NON_MEDICAL_CONTENT_REGEX.test(fc.question));
         if (flashcards.length > 0) {
           const { error } = await supabaseAdmin.from("flashcards").insert(flashcards);
           if (!error) flashcardsCount = flashcards.length;
         }
       }
-    } catch (e) { console.warn("[PROCESS_UPLOAD] Flashcards enrichment failed."); }
+    } catch (e) { console.warn("[PROCESS_UPLOAD] Flashcards failed."); }
 
-    await updateProgress(supabaseAdmin, uploadId, { 
-      step: "generating_questions", 
-      progress: 80, 
-      flashcards_count: flashcardsCount,
-      suggested_topics: suggestedTopics,
-      main_topic: detectedTopic 
-    });
-
+    await updateProgress(supabaseAdmin, uploadId, { step: "generating_questions", progress: 95, flashcards_count: flashcardsCount, suggested_topics: uniqueTopics, main_topic: mainTopic });
     let questionsCount = 0;
     try {
       const qRes = await aiFetch({
         model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: 'Gere 5-8 questões. JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere questões:\n\n${truncatedText.slice(0, 10000)}` }
+          { role: "user", content: `Gere questões para estes tópicos:\n\n${JSON.stringify(uniqueTopics.slice(0, 15))}` }
         ],
         timeoutMs: 55000,
       });
@@ -214,7 +256,7 @@ async function processInBackground(
         const parsed = parseAiJson((await qRes.json()).choices?.[0]?.message?.content || "");
         const questions = (parsed.questions || []).map((q: any) => ({
           user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct_index,
-          explanation: q.explanation, topic: q.topic || detectedTopic, source: `upload:${upload.filename}`,
+          explanation: q.explanation, topic: q.topic || mainTopic, source: `upload:${upload.filename}`,
           is_global: true, review_status: "pending"
         })).filter((q: any) => q.statement && q.options?.length >= 4 && !NON_MEDICAL_CONTENT_REGEX.test(q.statement));
         if (questions.length > 0) {
@@ -222,18 +264,19 @@ async function processInBackground(
           if (!error) questionsCount = questions.length;
         }
       }
-    } catch (e) { console.warn("[PROCESS_UPLOAD] Questions enrichment failed."); }
+    } catch (e) { console.warn("[PROCESS_UPLOAD] Questions failed."); }
 
-    // Final Final Update
     await supabaseAdmin.from("uploads").update({
       extracted_json: {
         flashcards_count: flashcardsCount,
         questions_count: questionsCount,
-        suggested_topics: suggestedTopics,
-        main_topic: detectedTopic,
+        suggested_topics: uniqueTopics,
+        main_topic: mainTopic,
         progress: 100,
         step: "done",
-        enriching: false
+        enriching: false,
+        total_topics: uniqueTopics.length,
+        total_chunks: textChunks.length
       }
     }).eq("id", uploadId);
 

@@ -52,7 +52,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Campos obrigatórios ausentes: data da prova, horas ou dias." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const editalPreview = String(editalText || "").slice(0, 5000); // Reduced context for safer processing
+    const editalPreview = String(editalText || "").slice(0, 10000); // Increased slightly for better initial grasp, but real data comes from consolidated topics
     
     // Load target_exam if not provided
     let bancaKeys: string[] = targetExams || (targetExam ? [targetExam] : []);
@@ -71,13 +71,16 @@ Gere um cronograma semanal de estudos em JSON PURO.
 - Data da prova: ${examDate} (${daysUntilExam} dias)
 - Horas/dia: ${hoursPerDay}h
 - Dias/semana: ${daysPerWeek} dias
-Conteúdo Base: ${editalPreview || "Temas padrão de residência médica"}
+Conteúdo Base (Tópicos do Edital): 
+${editalText || "Temas padrão de residência médica"}
+
 ${bancaBlock}
 
 Regras:
-1. Extraia os temas principais e subtópicos.
-2. Cada tema deve ter: 1 estudo teórico, 1 bloco de questões e revisões D1, D7, D30.
-3. Respeite o limite de ${hoursPerDay}h/dia.
+1. Use TODOS os tópicos fornecidos no "Conteúdo Base" para montar o cronograma.
+2. Não ignore nenhum tema importante. Se houver muitos temas, distribua-os ao longo das semanas.
+3. Cada tema deve ter: 1 estudo teórico, 1 bloco de questões e revisões D1, D7, D30.
+4. Respeite o limite de ${hoursPerDay}h/dia.
 
 Formato JSON:
 {

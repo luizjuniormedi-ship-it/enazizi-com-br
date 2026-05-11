@@ -14402,6 +14402,97 @@ export type Database = {
         }
         Relationships: []
       }
+      planner_extracted_topics: {
+        Row: {
+          coverage_stats: Json | null
+          created_at: string | null
+          id: string
+          topics_json: Json
+          updated_at: string | null
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          coverage_stats?: Json | null
+          created_at?: string | null
+          id?: string
+          topics_json: Json
+          updated_at?: string | null
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          coverage_stats?: Json | null
+          created_at?: string | null
+          id?: string
+          topics_json?: Json
+          updated_at?: string | null
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_extracted_topics_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planner_pdf_chunks: {
+        Row: {
+          chunk_index: number
+          created_at: string | null
+          error_message: string | null
+          extracted_topics_json: Json | null
+          id: string
+          page_end: number | null
+          page_start: number | null
+          raw_text: string
+          status: string | null
+          updated_at: string | null
+          upload_id: string
+          user_id: string
+        }
+        Insert: {
+          chunk_index: number
+          created_at?: string | null
+          error_message?: string | null
+          extracted_topics_json?: Json | null
+          id?: string
+          page_end?: number | null
+          page_start?: number | null
+          raw_text: string
+          status?: string | null
+          updated_at?: string | null
+          upload_id: string
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          created_at?: string | null
+          error_message?: string | null
+          extracted_topics_json?: Json | null
+          id?: string
+          page_end?: number | null
+          page_start?: number | null
+          raw_text?: string
+          status?: string | null
+          updated_at?: string | null
+          upload_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planner_pdf_chunks_upload_id_fkey"
+            columns: ["upload_id"]
+            isOneToOne: false
+            referencedRelation: "uploads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plans: {
         Row: {
           created_at: string
