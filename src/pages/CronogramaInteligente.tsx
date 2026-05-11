@@ -19,6 +19,7 @@ import CronogramaGraficos from "@/components/cronograma/CronogramaGraficos";
 // Componente isolado em modo @deprecated-flow (escreve em study_plans/study_tasks legado).
 // import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
+import CronogramaSmartSuggestions from "@/components/cronograma/CronogramaSmartSuggestions";
 
 /* ======================== TYPES ======================== */
 
@@ -259,6 +260,8 @@ const CronogramaInteligente = () => {
   const [loading, setLoading] = useState(true);
   const [activeRevisao, setActiveRevisao] = useState<(Revisao & { tema: TemaEstudado }) | null>(null);
   const [tab, setTab] = useState<TabCronograma>("visao");
+  const [lastUpload, setLastUpload] = useState<any>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const loadData = useCallback(async () => {
     if (!user) return;
@@ -298,6 +301,61 @@ const CronogramaInteligente = () => {
   }, [user]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Monitorar uploads em tempo real para sugestões de cronograma
+  useEffect(() => {
+    if (!user) return;
+
+    // Buscar último upload processado recentemente (últimos 10 minutos)
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+
+    const fetchLastUpload = async () => {
+      const { data } = await supabase
+        .from("uploads")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "processed")
+        .gt("created_at", tenMinutesAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (data && (data.extracted_json as any)?.suggested_topics?.length > 0) {
+        // Verificar se esse upload já foi "ignorado" ou processado nesta sessão
+        const dismissed = sessionStorage.getItem(`dismissed_suggestion_${data.id}`);
+        if (!dismissed) {
+          setLastUpload(data);
+          setShowSuggestions(true);
+        }
+      }
+    };
+
+    fetchLastUpload();
+
+    // Inscrição em tempo real para novos uploads finalizados
+    const channel = supabase
+      .channel("upload-status")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "uploads",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          if (payload.new.status === "processed" && (payload.new.extracted_json as any)?.suggested_topics?.length > 0) {
+            setLastUpload(payload.new);
+            setShowSuggestions(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user]);
 
   // Recarregar dados ao trocar de tab para garantir dados frescos
   useEffect(() => {
@@ -512,6 +570,66 @@ const CronogramaInteligente = () => {
     loadData();
   };
 
+  const handleBulkAddTopics = async (suggestedTopics: any[]) => {
+    if (!user) return;
+    
+    const today = new Date().toISOString().split("T")[0];
+    const newTemas = suggestedTopics.map(t => ({
+      user_id: user.id,
+      tema: t.tema,
+      especialidade: t.especialidade,
+      subtopico: t.subtopico || null,
+      data_estudo: today,
+      fonte: "material",
+      dificuldade: t.dificuldade || "medio",
+      status: "ativo",
+    }));
+
+    const { data: insertedTemas, error } = await supabase
+      .from("temas_estudados")
+      .insert(newTemas)
+      .select();
+
+    if (error || !insertedTemas) {
+      toast({ title: "Erro ao adicionar temas", variant: "destructive" });
+      return;
+    }
+
+    // Gerar revisões para cada tema
+    const allReviews: any[] = [];
+    insertedTemas.forEach(tema => {
+      const reviews = generateReviewsByError(today, 0); // Padrão
+      reviews.forEach(r => {
+        allReviews.push({
+          user_id: user.id,
+          tema_id: tema.id,
+          tipo_revisao: r.tipo,
+          data_revisao: r.data,
+          status: "pendente",
+          prioridade: 50,
+          risco_esquecimento: "baixo",
+        });
+      });
+    });
+
+    await supabase.from("revisoes").insert(allReviews);
+    
+    toast({ title: "✅ Cronograma Atualizado!", description: `${insertedTemas.length} novos temas adicionados com sucesso.` });
+    setShowSuggestions(false);
+    if (lastUpload) {
+      sessionStorage.setItem(`dismissed_suggestion_${lastUpload.id}`, "true");
+    }
+    loadData();
+    refreshAll();
+  };
+
+  const handleDismissSuggestions = () => {
+    setShowSuggestions(false);
+    if (lastUpload) {
+      sessionStorage.setItem(`dismissed_suggestion_${lastUpload.id}`, "true");
+    }
+  };
+
   // Derived data
   const today = new Date().toISOString().split("T")[0];
   const revisoesHoje = revisoes.filter(r => r.data_revisao <= today && r.status === "pendente");
@@ -569,6 +687,16 @@ const CronogramaInteligente = () => {
         revisoesAtrasadas={revisoesAtrasadas.length}
         temasCriticos={temasComputados.filter(t => t.risco === "critico" || t.risco === "alto").length}
       />
+
+      {showSuggestions && lastUpload && (
+        <CronogramaSmartSuggestions 
+          uploadId={lastUpload.id}
+          filename={lastUpload.filename}
+          topics={(lastUpload.extracted_json as any)?.suggested_topics || []}
+          onAdd={handleBulkAddTopics}
+          onDismiss={handleDismissSuggestions}
+        />
+      )}
 
       {tab === "visao" && (
         <CronogramaVisaoGeral
