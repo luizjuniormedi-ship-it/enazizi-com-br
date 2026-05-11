@@ -230,7 +230,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
               .eq("id", uploadRecord.id)
               .single();
             
-            if (updated?.extracted_text) {
+            if (updated?.extracted_text || updated?.status === "processed") {
               setEditalText(updated.extracted_text);
               toast({ title: "Edital processado!", description: `Conteúdo completo extraído de ${file.name}.` });
               setProcessingEdital(false);
