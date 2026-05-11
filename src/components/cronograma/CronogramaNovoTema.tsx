@@ -65,6 +65,39 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleSimulateRealFile = () => {
+    // Creating a text file that looks like medical content
+    const content = `
+    ESTUDO DE CASO: CARDIOLOGIA
+    Tema: Insuficiência Cardíaca Congestiva (ICC)
+    
+    A insuficiência cardíaca é uma síndrome clínica complexa.
+    Tópicos importantes:
+    1. Fração de ejeção reduzida vs preservada
+    2. Uso de betabloqueadores e iECA
+    3. Critérios de Framingham para diagnóstico
+    4. Classificação NYHA (I a IV)
+    
+    O tratamento visa reduzir a mortalidade e melhorar a qualidade de vida.
+    `;
+    const blob = new Blob([content], { type: "text/plain" });
+    const file = new File([blob], `material_estudo_icc_${Date.now()}.txt`, { type: "text/plain" });
+    
+    // Injecting the file into the state as if selected by the user
+    setFiles(prev => [...prev, file]);
+    
+    if (!tema) setTema("Estudo ICC - Simulado");
+    if (!especialidade && specialties.length > 0) {
+      const cardio = specialties.find(s => s.toLowerCase().includes("cardio")) || specialties[0];
+      setEspecialidade(cardio);
+    }
+    
+    toast({
+      title: "Arquivo injetado",
+      description: "O arquivo de teste foi carregado com sucesso no estado do componente.",
+    });
+  };
+
   const handleSubmit = () => {
     if (!tema.trim() || !especialidade) return;
     onAdd(tema.trim(), especialidade, subtopico.trim(), dataEstudo, fonte, dificuldade, observacoes.trim(), feitas, erradas, files.length > 0 ? files : undefined);
