@@ -68,9 +68,9 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
   const handleSimulatePDF = () => {
     const text = "CONTEÚDO MÉDICO DE TESTE\n\nAssunto: Cardiologia - Insuficiência Cardíaca\n\nDefinição: Síndrome clínica complexa caracterizada pela incapacidade do coração em bombear sangue adequadamente.\n\nTópicos sugeridos:\n1. Fisiopatologia da IC\n2. Tratamento farmacológico (Beta-bloqueadores, IECA)\n3. Critérios de Framingham\n";
     const blob = new Blob([text], { type: "text/plain" });
-    const file = new File([blob], "material_estudo_cardio.txt", { type: "text/plain" });
+    const file = new File([blob], `material_estudo_${Date.now()}.txt`, { type: "text/plain" });
     setFiles(prev => [...prev, file]);
-    if (!tema) setTema("Teste de Upload Real (Cardio)");
+    if (!tema) setTema(`Teste Upload ${Date.now()}`);
     if (!especialidade && specialties.length > 0) setEspecialidade("Cardiologia");
   };
 
