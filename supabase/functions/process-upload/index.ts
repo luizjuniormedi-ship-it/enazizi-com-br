@@ -170,12 +170,12 @@ async function processInBackground(
     let flashcardsCount = 0;
     try {
       const fcRes = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: 'Gere 5-8 flashcards relevantes. JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 6000)}` }
+          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 10000)}` }
         ],
-        timeoutMs: 30000,
+        timeoutMs: 55000,
       });
       if (fcRes.ok) {
         const parsed = parseAiJson((await fcRes.json()).choices?.[0]?.message?.content || "");
