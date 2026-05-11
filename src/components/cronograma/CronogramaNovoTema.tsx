@@ -32,6 +32,7 @@ const DIFICULDADES = [
 ];
 
 const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
+  const { toast } = useToast();
   const [tema, setTema] = useState("");
   const [especialidade, setEspecialidade] = useState("");
   const [subtopico, setSubtopico] = useState("");
