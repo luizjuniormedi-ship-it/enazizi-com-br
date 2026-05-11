@@ -663,6 +663,8 @@ const SmartPlanner = () => {
             uploadId={lastUpload.id}
             filename={lastUpload.filename}
             topics={(lastUpload.extracted_json as any)?.suggested_topics || []}
+            isEnriching={(lastUpload.extracted_json as any)?.enriching}
+            enrichmentProgress={(lastUpload.extracted_json as any)?.progress}
             onAdd={handleBulkAddTopics}
             onDismiss={handleDismissSuggestions}
           />
@@ -713,6 +715,8 @@ const SmartPlanner = () => {
             uploadId={lastUpload.id}
             filename={lastUpload.filename}
             topics={(lastUpload.extracted_json as any)?.suggested_topics || []}
+            isEnriching={(lastUpload.extracted_json as any)?.enriching}
+            enrichmentProgress={(lastUpload.extracted_json as any)?.progress}
             onAdd={handleBulkAddTopics}
             onDismiss={handleDismissSuggestions}
           />

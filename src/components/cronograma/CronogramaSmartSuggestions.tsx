@@ -15,11 +15,13 @@ interface Props {
   uploadId: string;
   filename: string;
   topics: SuggestedTopic[];
+  isEnriching?: boolean;
+  enrichmentProgress?: number;
   onAdd: (topics: SuggestedTopic[]) => Promise<void>;
   onDismiss: () => void;
 }
 
-const CronogramaSmartSuggestions = ({ uploadId, filename, topics, onAdd, onDismiss }: Props) => {
+const CronogramaSmartSuggestions = ({ uploadId, filename, topics, isEnriching, enrichmentProgress, onAdd, onDismiss }: Props) => {
   const [adding, setAdding] = useState(false);
   const [selectedTopics, setSelectedTopics] = useState<number[]>(topics.map((_, i) => i));
 
@@ -57,6 +59,23 @@ const CronogramaSmartSuggestions = ({ uploadId, filename, topics, onAdd, onDismi
         <p className="text-xs text-muted-foreground">
           Identificamos {topics.length} temas relevantes neste documento. Adicione-os ao seu cronograma:
         </p>
+        {isEnriching && (
+          <div className="mt-2 space-y-1.5">
+            <div className="flex items-center justify-between text-[10px] text-primary/80 font-medium">
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="h-3 w-3 animate-spin" />
+                Gerando flashcards e questões em background...
+              </span>
+              <span>{enrichmentProgress}%</span>
+            </div>
+            <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-500 ease-out" 
+                style={{ width: `${enrichmentProgress}%` }}
+              />
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
