@@ -113,7 +113,7 @@ async function processInBackground(
     await updateProgress(supabaseAdmin, uploadId, { step: "validating", progress: 25 });
 
     const validationResponse = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
@@ -160,7 +160,7 @@ async function processInBackground(
 
     try {
       const aiResponse = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "gpt-4o-mini",
         messages: [
           {
             role: "system",
@@ -211,7 +211,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
 
       const processChunk = async (chunk: string) => {
         const response = await aiFetch({
-          model: "openai/gpt-5-mini",
+          model: "gpt-4o-mini",
           messages: [
             {
               role: "system",
