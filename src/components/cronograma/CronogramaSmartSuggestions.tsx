@@ -21,7 +21,7 @@ interface Props {
   onDismiss: () => void;
 }
 
-const CronogramaSmartSuggestions = ({ uploadId, filename, topics, onAdd, onDismiss }: Props) => {
+const CronogramaSmartSuggestions = ({ uploadId, filename, topics, isEnriching, enrichmentProgress, onAdd, onDismiss }: Props) => {
   const [adding, setAdding] = useState(false);
   const [selectedTopics, setSelectedTopics] = useState<number[]>(topics.map((_, i) => i));
 
