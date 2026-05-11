@@ -1592,6 +1592,7 @@ REGRAS INVIOLÁVEIS:
           cognitive_summary,
           cognitive_matrix,
           student_cognitive_risks: studentCognitiveRisks,
+          timestamp: new Date().toISOString(),
         });
       }
 
