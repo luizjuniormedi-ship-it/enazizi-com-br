@@ -122,16 +122,16 @@ async function processInBackground(
     let suggestedTopics: any[] = [];
     
     const valResponse = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: [
         {
           role: "system",
           content: `Analise o texto médico e sugira 3-8 tópicos de estudo. 
           Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
         },
-        { role: "user", content: `Analise:\n\n${truncatedText.slice(0, 4000)}` }
+        { role: "user", content: `Analise:\n\n${truncatedText.slice(0, 8000)}` }
       ],
-      timeoutMs: 40000,
+      timeoutMs: 55000,
     });
 
     if (valResponse.ok) {
