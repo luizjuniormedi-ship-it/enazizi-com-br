@@ -150,7 +150,7 @@ const boot = async () => {
   const storedRelease = localStorage.getItem(RELEASE_KEY);
 
   if (storedRelease && storedRelease !== APP_RELEASE) {
-    console.log(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
+    devLog(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
     await performHardAppReset({
       preserveSessionEntries: loginRefreshSignature
         ? [[LOGIN_REFRESH_SIGNATURE_KEY, loginRefreshSignature]]
@@ -163,7 +163,7 @@ const boot = async () => {
 
   localStorage.setItem(RELEASE_KEY, APP_RELEASE);
   removeReleaseQueryParam();
-  console.log(`[ENAZIZI] Release: ${APP_RELEASE}`);
+  devLog(`[ENAZIZI] Release: ${APP_RELEASE}`);
 
   if (isPreviewHost || isInIframe) {
     await unregisterServiceWorkers();
