@@ -18,6 +18,7 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Eager-load shell layout (always needed)
 import EnaflixDashboardLayout from "./components/layout/EnaflixDashboardLayout";
+import AdminLayout from "./components/layout/AdminLayout";
 
 // Lazy-load all pages
 const Index = lazyWithRetry(() => import("./pages/Index"), "Index");
