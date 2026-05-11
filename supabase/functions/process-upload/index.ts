@@ -74,7 +74,15 @@ async function processInBackground(
       .download(upload.storage_path);
 
     if (downloadError || !fileData) {
-      await supabaseAdmin.from("uploads").update({ status: "error", extracted_json: { error: "Failed to download" } }).eq("id", uploadId);
+      console.error(`[PROCESS_UPLOAD] Download failed for ${uploadId}:`, downloadError);
+      await supabaseAdmin.from("uploads").update({ 
+        status: "error", 
+        extracted_json: { 
+          error: "Falha ao baixar arquivo do storage", 
+          details: downloadError?.message,
+          step: "download" 
+        } 
+      }).eq("id", uploadId);
       return;
     }
 
