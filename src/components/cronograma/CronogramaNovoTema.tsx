@@ -66,11 +66,12 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
   };
 
   const handleSimulatePDF = () => {
-    const blob = new Blob(["%PDF-1.4\n1 0 obj\n<< /Title (Test PDF) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"], { type: "application/pdf" });
-    const file = new File([blob], "teste_simulado.pdf", { type: "application/pdf" });
+    const text = "CONTEÚDO MÉDICO DE TESTE\n\nAssunto: Cardiologia - Insuficiência Cardíaca\n\nDefinição: Síndrome clínica complexa caracterizada pela incapacidade do coração em bombear sangue adequadamente.\n\nTópicos sugeridos:\n1. Fisiopatologia da IC\n2. Tratamento farmacológico (Beta-bloqueadores, IECA)\n3. Critérios de Framingham\n";
+    const blob = new Blob([text], { type: "text/plain" });
+    const file = new File([blob], "material_estudo_cardio.txt", { type: "text/plain" });
     setFiles(prev => [...prev, file]);
-    if (!tema) setTema("Teste de Upload Real");
-    if (!especialidade && specialties.length > 0) setEspecialidade(specialties[0]);
+    if (!tema) setTema("Teste de Upload Real (Cardio)");
+    if (!especialidade && specialties.length > 0) setEspecialidade("Cardiologia");
   };
 
   const handleSubmit = () => {
