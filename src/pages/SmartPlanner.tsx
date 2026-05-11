@@ -175,7 +175,7 @@ const SmartPlanner = () => {
 
   const handleBulkAddTopics = async (suggestedTopics: any[]) => {
     if (!user) return;
-    const today = new Date().toISOString().split("T")[0];
+    const todayStr = new Date().toISOString().split("T")[0];
     const insertedTemas: { id: string; tema: string; especialidade: string }[] = [];
     
     for (const st of suggestedTopics) {
@@ -184,7 +184,7 @@ const SmartPlanner = () => {
         tema: st.tema,
         especialidade: st.especialidade,
         subtopico: st.subtopico || null,
-        data_estudo: today,
+        data_estudo: todayStr,
         fonte: "ia_suggestion",
         dificuldade: st.dificuldade || "medio",
         status: "ativo"
@@ -198,7 +198,7 @@ const SmartPlanner = () => {
     if (insertedTemas.length > 0) {
       const allReviews: any[] = [];
       insertedTemas.forEach(tema => {
-        const reviews = generateReviewsByError(today, 0);
+        const reviews = generateReviewsByError(todayStr, 0);
         reviews.forEach(r => {
           allReviews.push({
             user_id: user.id,
@@ -589,6 +589,19 @@ const SmartPlanner = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Suggestions */}
+      {showSuggestions && lastUpload && (
+        <div className="px-4 sm:px-8 lg:px-14 mb-8">
+          <CronogramaSmartSuggestions 
+            uploadId={lastUpload.id}
+            filename={lastUpload.filename}
+            topics={(lastUpload.extracted_json as any)?.suggested_topics || []}
+            onAdd={handleBulkAddTopics}
+            onDismiss={handleDismissSuggestions}
+          />
+        </div>
       )}
 
       {/* Tabs — 4 seções */}
