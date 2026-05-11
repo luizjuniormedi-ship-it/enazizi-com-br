@@ -1,7 +1,6 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getDocument } from "https://esm.sh/pdfjs-serverless";
-import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
+import { aiFetch, sanitizeAiContent, parseAiJson } from "../_shared/ai-fetch.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,7 +16,6 @@ async function extractPdfText(fileData: Blob): Promise<string> {
     const arrayBuffer = await fileData.arrayBuffer();
     const data = new Uint8Array(arrayBuffer);
     
-    // Basic validation
     if (data.length < 5) throw new Error("Arquivo PDF corrompido ou muito pequeno.");
     const header = new TextDecoder().decode(data.slice(0, 5));
     if (header !== "%PDF-") {
@@ -32,22 +30,25 @@ async function extractPdfText(fileData: Blob): Promise<string> {
     let collectedChars = 0;
     const maxCharsToCollect = 40000;
 
-  for (let i = 1; i <= totalPages; i++) {
-    if (collectedChars >= maxCharsToCollect) break;
+    for (let i = 1; i <= totalPages; i++) {
+      if (collectedChars >= maxCharsToCollect) break;
+      try {
+        const page = await document.getPage(i);
+        const textContent = await page.getTextContent();
+        const text = textContent.items
+          .map((item: any) => item.str || "")
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
 
-    const page = await document.getPage(i);
-    const textContent = await page.getTextContent();
-    const text = textContent.items
-      .map((item: unknown) => (typeof item === "object" && item !== null && "str" in item ? String((item as { str: string }).str) : ""))
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-
-    if (text) {
-      pages.push(text);
-      collectedChars += text.length;
+        if (text) {
+          pages.push(text);
+          collectedChars += text.length;
+        }
+      } catch (e) {
+        console.warn(`[PROCESS_UPLOAD] Failed to parse page ${i}, skipping:`, e);
+      }
     }
-  }
 
     return pages.join("\n\n").slice(0, maxCharsToCollect);
   } catch (err: any) {
@@ -57,15 +58,19 @@ async function extractPdfText(fileData: Blob): Promise<string> {
 }
 
 async function extractDocxText(fileData: Blob): Promise<string> {
-  const { ZipReader, BlobReader, TextWriter } = await import("https://esm.sh/@zip.js/zip.js@2.7.34");
-  const zipReader = new ZipReader(new BlobReader(fileData));
-  const entries = await zipReader.getEntries();
-  const docEntry = entries.find((e: any) => e.filename === "word/document.xml");
-  if (!docEntry) return "";
-  const xml = await docEntry.getData!(new TextWriter());
-  await zipReader.close();
-  // Extract text content from XML tags
-  return xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  try {
+    const { ZipReader, BlobReader, TextWriter } = await import("https://esm.sh/@zip.js/zip.js@2.7.34");
+    const zipReader = new ZipReader(new BlobReader(fileData));
+    const entries = await zipReader.getEntries();
+    const docEntry = entries.find((e: any) => e.filename === "word/document.xml");
+    if (!docEntry) return "";
+    const xml = await docEntry.getData!(new TextWriter());
+    await zipReader.close();
+    return xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  } catch (err) {
+    console.error("[PROCESS_UPLOAD] DOCX Extraction error:", err);
+    throw new Error("Falha ao ler documento DOCX.");
+  }
 }
 
 async function updateProgress(supabaseAdmin: any, uploadId: string, progress: Record<string, any>) {
@@ -81,6 +86,7 @@ async function processInBackground(
   supabaseAdmin: any,
   supabase: any,
 ) {
+  console.log(`[PROCESS_UPLOAD] Starting background processing for ${uploadId}...`);
   try {
     // Step 1: Download file
     await updateProgress(supabaseAdmin, uploadId, { step: "downloading", progress: 5 });
@@ -90,310 +96,207 @@ async function processInBackground(
       .download(upload.storage_path);
 
     if (downloadError || !fileData) {
-      console.error(`[PROCESS_UPLOAD] Download failed for ${uploadId}:`, downloadError);
-      await supabaseAdmin.from("uploads").update({ 
-        status: "error", 
-        extracted_json: { 
-          error: "Falha ao baixar arquivo do storage", 
-          details: downloadError?.message,
-          step: "download" 
-        } 
-      }).eq("id", uploadId);
-      return;
+      throw new Error(`Falha ao baixar arquivo: ${downloadError?.message || "Sem dados"}`);
     }
 
     const fileSize = fileData.size || (upload.extracted_json as any)?.file_size || 0;
     if (fileSize > MAX_PROCESS_FILE_BYTES) {
-      console.warn(`[PROCESS_UPLOAD] File too large: ${fileSize} bytes`);
-      await supabaseAdmin.from("uploads").update({ 
-        status: "error", 
-        extracted_json: { 
-          error: "Arquivo muito grande (máx 20MB)",
-          size: fileSize,
-          step: "validation"
-        } 
-      }).eq("id", uploadId);
-      return;
+      throw new Error("Arquivo muito grande (máx 20MB)");
     }
 
     // Step 2: Extract text
     await updateProgress(supabaseAdmin, uploadId, { step: "extracting_text", progress: 15 });
-
     const fileType = (upload.file_type || "").toLowerCase();
     let extractedText = "";
 
     if (fileType === "txt") {
       extractedText = await fileData.text();
-    } else if (fileType === "pdf" || fileType === "application/pdf") {
+    } else if (fileType === "pdf" || fileType.includes("pdf")) {
       extractedText = await extractPdfText(fileData);
-    } else if (fileType === "docx" || fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+    } else if (fileType === "docx" || fileType.includes("wordprocessingml")) {
       extractedText = await extractDocxText(fileData);
     } else {
-      console.error(`[PROCESS_UPLOAD] Unsupported file type: ${fileType} for upload ${uploadId}`);
+      throw new Error(`Formato não suportado: ${fileType}`);
+    }
+
+    const truncatedText = (extractedText || "").trim().slice(0, 40000);
+
+    if (!truncatedText) {
+      console.warn(`[PROCESS_UPLOAD] No text extracted for ${uploadId}`);
       await supabaseAdmin.from("uploads").update({ 
         status: "error", 
         extracted_json: { 
-          error: "Formato não suportado", 
-          type: fileType,
+          error: "O PDF não possui texto extraível (pode ser uma imagem escaneada).", 
+          details: "Tente enviar um PDF pesquisável ou documento de texto.",
           step: "extraction" 
         } 
       }).eq("id", uploadId);
       return;
     }
 
-    const truncatedText = extractedText.slice(0, 40000);
-
-    if (!truncatedText.trim()) {
-      console.error(`[PROCESS_UPLOAD] No text extracted for upload ${uploadId}`);
-      await supabaseAdmin.from("uploads").update({ 
-        status: "error", 
-        extracted_text: "Sem texto extraído.", 
-        extracted_json: { 
-          error: "Não foi possível extrair texto deste arquivo. Ele pode estar protegido ou ser uma imagem digitalizada sem OCR.", 
-          step: "extraction" 
-        } 
-      }).eq("id", uploadId);
-      return;
-    }
-
-    await supabaseAdmin.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
-
-    // Step 3: Validate medical content
-    await updateProgress(supabaseAdmin, uploadId, { step: "validating", progress: 25 });
-
-    let validationResponse;
+    // Step 3: Combined AI Validation & Topic Suggestion
+    await updateProgress(supabaseAdmin, uploadId, { step: "validating_content", progress: 25 });
+    
+    let detectedTopic = "Clínica Médica";
+    let suggestedTopics: any[] = [];
+    
     try {
-      validationResponse = await aiFetch({
+      const valResponse = await aiFetch({
         model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
-            content: `Analise o texto e determine se é relacionado a medicina/saúde CLÍNICA. Editais, regulamentos de processo seletivo, cronogramas, requisitos de inscrição e documentos administrativos NÃO são conteúdo médico. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
+            content: `Analise o texto e:
+            1. Verifique se é conteúdo MÉDICO CLÍNICO. (Editais/Inscrições = false).
+            2. Sugira 3 a 8 tópicos de estudo. Cada tópico: tema, especialidade, dificuldade (facil/medio/dificil), subtopico.
+            Responda APENAS JSON: {"is_medicine": true, "main_topic": "...", "topics": [...]}`
           },
-          { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
+          { role: "user", content: `Analise este texto:\n\n${truncatedText.slice(0, 5000)}` }
         ],
+        timeoutMs: 60000,
       });
-    } catch (aiErr) {
-      console.error("[PROCESS_UPLOAD] AI Validation fetch failed:", aiErr);
-      // Fallback: assume it's medical if extraction worked, to avoid blocking user
-      validationResponse = { ok: false }; 
-    }
 
-    let detectedTopic = "Clínica Médica";
-
-    if (validationResponse.ok) {
-      const valData = await validationResponse.json();
-      const valContent = sanitizeAiContent(valData.choices?.[0]?.message?.content || "");
-      try {
-        const cleaned = valContent.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-        const validation = JSON.parse(cleaned);
-        if (!validation.is_medicine) {
-          await supabaseAdmin.from("uploads").delete().eq("id", uploadId);
-          await supabaseAdmin.storage.from("user-uploads").remove([upload.storage_path]);
+      if (valResponse.ok) {
+        const valData = await valResponse.json();
+        const content = valData.choices?.[0]?.message?.content || "";
+        const parsed = parseAiJson(content);
+        
+        if (!parsed.is_medicine) {
+          console.warn(`[PROCESS_UPLOAD] Non-medical content detected for ${uploadId}`);
+          await supabaseAdmin.from("uploads").update({
+            status: "error",
+            extracted_json: { error: "Conteúdo não parece ser médico/clínico.", step: "validation" }
+          }).eq("id", uploadId);
           return;
         }
-        if (validation.main_topic) detectedTopic = validation.main_topic;
-      } catch {}
+        
+        detectedTopic = parsed.main_topic || detectedTopic;
+        suggestedTopics = parsed.topics || [];
+      }
+    } catch (e) {
+      console.error("[PROCESS_UPLOAD] AI Validation/Topic error:", e);
+      // Fallback is to continue with defaults if validation fails but extraction worked
     }
 
-    // Infer topic from filename
-    const fn = upload.filename.toLowerCase();
-    if (fn.includes("car") || fn.includes("cardio")) detectedTopic = "Cardiologia";
-    else if (fn.includes("ped")) detectedTopic = "Pediatria";
-    else if (fn.includes("cir")) detectedTopic = "Cirurgia";
-    else if (fn.includes("go") || fn.includes("ginec") || fn.includes("obst")) detectedTopic = "Ginecologia e Obstetrícia";
-    else if (fn.includes("prev") || fn.includes("mps")) detectedTopic = "Medicina Preventiva";
-    else if (fn.includes("neuro")) detectedTopic = "Neurologia";
-    else if (fn.includes("pneumo")) detectedTopic = "Pneumologia";
-    else if (fn.includes("nefro")) detectedTopic = "Nefrologia";
-    else if (fn.includes("infecto")) detectedTopic = "Infectologia";
+    // Step 4: Parallel generation of Flashcards and Questions
+    await updateProgress(supabaseAdmin, uploadId, { step: "generating_resources", progress: 50, main_topic: detectedTopic });
+
+    const [flashcardsRes, questionsRes] = await Promise.allSettled([
+      // Flashcards Task
+      aiFetch({
+        model: "openai/gpt-5-mini",
+        messages: [
+          { role: "system", content: 'Crie 5-12 flashcards relevantes para Residência Médica. Responda JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}' },
+          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 8000)}` }
+        ],
+        timeoutMs: 60000,
+      }),
+      // Questions Task
+      aiFetch({
+        model: "openai/gpt-5-mini",
+        messages: [
+          { role: "system", content: 'Gere 10-15 questões de múltipla escolha (A-E). Responda JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "..."}]}' },
+          { role: "user", content: `Gere questões para ${detectedTopic}:\n\n${truncatedText.slice(0, 8000)}` }
+        ],
+        timeoutMs: 60000,
+      })
+    ]);
 
     let flashcardsCount = 0;
     let questionsCount = 0;
-    let suggestedTopics: any[] = [];
 
-    // Step 4: Generate Suggested Topics (Planner Integration)
-    await updateProgress(supabaseAdmin, uploadId, { step: "analyzing_topics", progress: 35, main_topic: detectedTopic });
-    
-    try {
-      const topicResponse = await aiFetch({
-        model: "openai/gpt-5-mini",
-        messages: [
-          {
-            role: "system",
-            content: `Analise o conteúdo médico e sugira uma lista de tópicos de estudo. 
-            Cada tópico deve ter: tema, especialidade, dificuldade (facil/medio/dificil), subtopico.
-            Gere entre 3 e 8 tópicos principais.
-            Responda APENAS com JSON: {"topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
-          },
-          { role: "user", content: `Sugira tópicos para o cronograma baseados neste texto (Tema Principal: ${detectedTopic}):\n\n${truncatedText.slice(0, 8000)}` }
-        ],
-      });
-
-      if (topicResponse.ok) {
-        const topicData = await topicResponse.json();
-        const content = sanitizeAiContent(topicData.choices?.[0]?.message?.content || "");
-        console.log("[PROCESS_UPLOAD] AI Topic Raw Content:", content);
-        try {
-          const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-          suggestedTopics = JSON.parse(cleaned).topics || [];
-        } catch (e) {
-          console.error("[PROCESS_UPLOAD] AI Topic Parse Error:", e, "Content:", content);
+    // Process Flashcards
+    if (flashcardsRes.status === "fulfilled" && flashcardsRes.value.ok) {
+      try {
+        const data = await flashcardsRes.value.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        const parsed = parseAiJson(content);
+        const flashcards = (parsed.flashcards || [])
+          .map((fc: any) => ({
+            user_id: userId,
+            question: String(fc.question || "").trim(),
+            answer: String(fc.answer || "").trim(),
+            topic: String(fc.topic || detectedTopic).trim(),
+            is_global: true
+          }))
+          .filter((fc: any) => fc.question && fc.answer && !NON_MEDICAL_CONTENT_REGEX.test(`${fc.topic} ${fc.question}`));
+        
+        if (flashcards.length > 0) {
+          const { error } = await supabaseAdmin.from("flashcards").insert(flashcards);
+          if (!error) flashcardsCount = flashcards.length;
         }
-      } else {
-        const errText = await topicResponse.text();
-        console.error("[PROCESS_UPLOAD] AI Topic Fetch Failed:", topicResponse.status, errText);
-      }
-    } catch (e) {
-      console.error("Topic suggestion error:", e);
+      } catch (e) { console.error("[PROCESS_UPLOAD] Flashcards parse/insert error:", e); }
     }
 
-    // Step 5: Generate flashcards
-    await updateProgress(supabaseAdmin, uploadId, { step: "generating_flashcards", progress: 40, main_topic: detectedTopic });
-
-    try {
-      const aiResponse = await aiFetch({
-        model: "openai/gpt-5-mini",
-        messages: [
-          {
-            role: "system",
-            content: `Crie flashcards educativos para Residência Médica a partir do texto.
-Cada flashcard: question, answer, topic.
-Gere 5-15 flashcards relevantes.
-Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}`
-          },
-          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 10000)}` }
-        ],
-      });
-
-      if (aiResponse.ok) {
-        const aiData = await aiResponse.json();
-        let flashcards: Array<{ question: string; answer: string; topic: string }> = [];
-        const content = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");
-        try {
-          const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-          flashcards = JSON.parse(cleaned).flashcards || [];
-        } catch {}
-
-        const finalFlashcards = flashcards
-          .map((fc) => ({ question: String(fc.question || "").trim(), answer: String(fc.answer || "").trim(), topic: String(fc.topic || detectedTopic).trim() }))
-          .filter((fc) => fc.question && fc.answer)
-          .filter((fc) => !NON_MEDICAL_CONTENT_REGEX.test(`${fc.topic} ${fc.question} ${fc.answer}`));
-
-        if (finalFlashcards.length > 0) {
-          await supabaseAdmin.from("flashcards").insert(
-            finalFlashcards.map((fc) => ({ user_id: userId, question: fc.question, answer: fc.answer, topic: fc.topic, is_global: true }))
-          );
-          flashcardsCount = finalFlashcards.length;
+    // Process Questions
+    if (questionsRes.status === "fulfilled" && questionsRes.value.ok) {
+      try {
+        const data = await questionsRes.value.json();
+        const content = data.choices?.[0]?.message?.content || "";
+        const parsed = parseAiJson(content);
+        const questions = (parsed.questions || [])
+          .map((q: any) => ({
+            user_id: userId,
+            statement: String(q.statement || "").trim(),
+            options: Array.isArray(q.options) ? q.options.map(String) : [],
+            correct_index: Number(q.correct_index) || 0,
+            explanation: String(q.explanation || "").trim(),
+            topic: String(q.topic || detectedTopic).trim(),
+            source: `upload:${upload.filename}`,
+            is_global: true,
+            review_status: "pending"
+          }))
+          .filter((q: any) => q.statement && q.options.length >= 4 && !NON_MEDICAL_CONTENT_REGEX.test(q.statement));
+        
+        if (questions.length > 0) {
+          const { error } = await supabaseAdmin.from("questions_bank").insert(questions);
+          if (!error) questionsCount = questions.length;
         }
-      }
-    } catch (e) {
-      console.error("Flashcard generation error:", e);
+      } catch (e) { console.error("[PROCESS_UPLOAD] Questions parse/insert error:", e); }
     }
 
-    // Step 5: Generate questions (parallel)
-    await updateProgress(supabaseAdmin, uploadId, { step: "generating_questions", progress: 60, flashcards_count: flashcardsCount, main_topic: detectedTopic });
-
-    try {
-      const chunkSize = 12000;
-      const chunks: string[] = [];
-      for (let i = 0; i < truncatedText.length; i += chunkSize) {
-        chunks.push(truncatedText.slice(i, i + chunkSize));
-      }
-      const chunksToProcess = chunks.slice(0, 1);
-
-      const processChunk = async (chunk: string) => {
-        const response = await aiFetch({
-          model: "openai/gpt-5-mini",
-          messages: [
-            {
-              role: "system",
-              content: `Extraia questões de múltipla escolha do texto fornecido. Se o texto já contiver questões formatadas, converta-as para o formato JSON. Se for conteúdo teórico, gere questões baseadas no conteúdo.
-IMPORTANTE: Gere o MÁXIMO de questões possível (10-20 por chunk). EXATAMENTE 5 alternativas (A-E) por questão. NUNCA gere questões que referenciem imagens, figuras, fotos ou gráficos externos.
-Formato JSON PURO (sem markdown): 
-{"questions": [{"statement": "enunciado completo com caso clínico", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação detalhada", "topic": "especialidade médica"}]}
-Se não encontrar questões válidas, retorne {"questions": []}`
-            },
-            { role: "user", content: `Tema principal: ${detectedTopic}\n\nTexto:\n${chunk}` }
-          ],
-        });
-        if (!response.ok) return [];
-        const data = await response.json();
-        const content = sanitizeAiContent(data.choices?.[0]?.message?.content || "");
-        const results: Array<{ statement: string; options: string[]; correct_index: number; explanation: string; topic: string }> = [];
-        try {
-          const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
-          const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            for (const q of (parsed.questions || [])) {
-              if (q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 && typeof q.correct_index === "number" && String(q.statement).trim().length >= 120 && !NON_MEDICAL_CONTENT_REGEX.test(q.statement) && !/\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo)\b/i.test(q.statement)) {
-                results.push({ statement: String(q.statement).trim(), options: q.options.map(String), correct_index: q.correct_index, explanation: String(q.explanation || "").trim(), topic: String(q.topic || detectedTopic).trim() });
-              }
-            }
-          }
-        } catch {}
-        return results;
-      };
-
-      const chunkResults = await Promise.allSettled(chunksToProcess.map((c) => processChunk(c)));
-      const allQuestions: typeof chunksToProcess extends any[] ? ReturnType<typeof processChunk> extends Promise<infer T> ? T : never : never = [];
-      for (const r of chunkResults) {
-        if (r.status === "fulfilled") (allQuestions as any[]).push(...r.value);
-      }
-
-      if ((allQuestions as any[]).length > 0) {
-        const rows = (allQuestions as any[]).map((q: any) => ({
-          user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct_index,
-          explanation: q.explanation, topic: q.topic, source: `upload:${upload.filename}`, is_global: true, review_status: "pending",
-        }));
-        for (let i = 0; i < rows.length; i += 50) {
-          const batch = rows.slice(i, i + 50);
-          const { error } = await supabaseAdmin.from("questions_bank").insert(batch);
-          if (!error) questionsCount += batch.length;
-          else console.error("Question insert error:", error);
-        }
-      }
-    } catch (e) {
-      console.error("Question generation error:", e);
-    }
-
-    // Step 7: Done
+    // Final Step
     await supabaseAdmin.from("uploads").update({
       status: "processed",
+      extracted_text: truncatedText,
       extracted_json: {
         flashcards_count: flashcardsCount,
         questions_count: questionsCount,
         suggested_topics: suggestedTopics,
-        topics: [detectedTopic],
         main_topic: detectedTopic,
         progress: 100,
         step: "done",
       }
     }).eq("id", uploadId);
 
-    // 5. Atualizar rag_documents
-    await supabaseAdmin.from("rag_documents").update({
-      status: "completed",
-      updated_at: new Date().toISOString()
-    }).eq("id", (upload.extracted_json as any)?.rag_doc_id);
+    // Update RAG document status
+    const ragDocId = (upload.extracted_json as any)?.rag_doc_id;
+    if (ragDocId) {
+      await supabaseAdmin.from("rag_documents").update({
+        status: "completed",
+        updated_at: new Date().toISOString()
+      }).eq("id", ragDocId);
+    }
 
-    console.log(`Background processing done for ${uploadId}: ${flashcardsCount} flashcards, ${questionsCount} questions, ${suggestedTopics.length} suggested topics`);
+    console.log(`[PROCESS_UPLOAD] Done for ${uploadId}: ${flashcardsCount} FC, ${questionsCount} Q`);
 
-  } catch (e) {
-    console.error("Background processing error:", e);
+  } catch (err: any) {
+    console.error(`[PROCESS_UPLOAD] Background error for ${uploadId}:`, err);
     await supabaseAdmin.from("uploads").update({
       status: "error",
-      extracted_json: { error: e instanceof Error ? e.message : "Erro no processamento", step: "error" },
+      extracted_json: { 
+        error: err.message || "Erro inesperado no processamento.", 
+        step: "background_process" 
+      }
     }).eq("id", uploadId);
   }
 }
 
-serve(async (req) => {
-  console.log(`[PROCESS_UPLOAD] Request received: ${req.method}`);
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    console.log(`[PROCESS_UPLOAD] Request received: ${req.method}`);
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
@@ -409,7 +312,9 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
-    const userId = user.id;
+
+    const { uploadId } = await req.json();
+    if (!uploadId) throw new Error("uploadId is required");
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -417,40 +322,25 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { uploadId } = await req.json();
-    if (!uploadId) throw new Error("uploadId is required");
-
-    // Retry select to handle potential replication lag
+    // Fetch record with retry
     let upload = null;
     for (let i = 0; i < 3; i++) {
-      const { data } = await supabaseAdmin
-        .from("uploads")
-        .select("*")
-        .eq("id", uploadId)
-        .maybeSingle();
-      if (data) {
-        upload = data;
-        break;
-      }
+      const { data } = await supabaseAdmin.from("uploads").select("*").eq("id", uploadId).maybeSingle();
+      if (data) { upload = data; break; }
       await new Promise(r => setTimeout(r, 500));
     }
 
     if (!upload) {
-      console.error("[PROCESS_UPLOAD] Upload record not found after retries:", uploadId);
-      return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
+      return new Response(JSON.stringify({ error: "Upload record not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // 1. Vincular organization_id do perfil do usuário
-    const { data: profile } = await supabaseAdmin
-      .from("profiles")
-      .select("organization_id")
-      .eq("user_id", userId)
-      .maybeSingle();
+    const { data: profile } = await supabaseAdmin.from("profiles").select("organization_id").eq("user_id", user.id).maybeSingle();
+    const orgId = profile?.organization_id || "00000000-0000-0000-0000-000000000000";
 
-    // 2. Criar ou atualizar registro em rag_documents para rastreabilidade RAG
+    // Create RAG document tracking
     const { data: ragDoc } = await supabaseAdmin.from("rag_documents").upsert({
-      organization_id: profile?.organization_id || "00000000-0000-0000-0000-000000000000",
-      uploaded_by: userId,
+      organization_id: orgId,
+      uploaded_by: user.id,
       title: upload.filename,
       file_name: upload.filename,
       file_path: upload.storage_path,
@@ -459,28 +349,28 @@ serve(async (req) => {
       status: "processing"
     }).select().single();
 
-    // 3. Atualizar status na tabela uploads
     await supabaseAdmin.from("uploads").update({
       status: "processing",
-      organization_id: profile?.organization_id,
-      extracted_json: { step: "starting", progress: 0, rag_doc_id: ragDoc?.id },
+      organization_id: orgId,
+      extracted_json: { ...upload.extracted_json, step: "starting", progress: 0, rag_doc_id: ragDoc?.id },
     }).eq("id", uploadId);
 
-    // 4. Dispatch processing in background to avoid 150s edge timeout
-    // @ts-ignore - EdgeRuntime is provided by Supabase edge runtime
-    EdgeRuntime.waitUntil(processInBackground(uploadId, upload, userId, supabaseAdmin, supabase));
+    // Dispatch background process
+    // @ts-ignore
+    EdgeRuntime.waitUntil(processInBackground(uploadId, upload, user.id, supabaseAdmin, supabase));
 
-    // Return immediately — frontend polls `uploads.status`/`extracted_json.progress`
     return new Response(JSON.stringify({
-      message: "Processamento iniciado em background",
-      status: "processing",
-      uploadId,
+      success: true,
+      message: "Processamento iniciado",
+      uploadId
     }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
-  } catch (e) {
-    console.error("process-upload error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+  } catch (err: any) {
+    console.error("[PROCESS_UPLOAD] Global error:", err);
+    return new Response(JSON.stringify({
+      success: false,
+      error: err.message || "Internal server error",
+      step: "initialization"
+    }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
