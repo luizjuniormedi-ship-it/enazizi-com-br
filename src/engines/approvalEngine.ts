@@ -28,6 +28,10 @@ export interface ApprovalEngineInput {
   fsrsDue?: number;
   /** Dias até a prova (null se desconhecido) */
   daysToExam: number | null;
+  /** NOVO V2: Fator de Dificuldade/TRI (0.5 a 1.5, default 1.0) */
+  difficultyFactor?: number;
+  /** NOVO V2: Fator de Retenção (derivado de FSRS stability) */
+  retentionFactor?: number;
 }
 
 export interface ApprovalEngineResult {
