@@ -381,17 +381,25 @@ function TaskRow({
   onComplete,
   onSkip,
   busy,
+  navigate,
 }: {
   task: ProficiencyDailyTask;
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
   busy: boolean;
+  navigate: any;
 }) {
   const meta = taskMeta(task.task_type);
   const subtopicName = (task.task_payload?.subtopic_name as string | undefined) ?? "Subtema";
   const isDone = task.status === "completed";
   const isSkipped = task.status === "skipped";
   const isOverdue = task.status === "overdue";
+
+  const handleStart = () => {
+    const mode = task.task_type === "theory" ? "full" : task.task_type === "questions" ? "practice" : "review";
+    const topic = task.task_payload?.subtopic_name || "";
+    navigate(`/dashboard/sessao-estudo?topic=${encodeURIComponent(topic)}&origin=guided&auto=1&assignmentId=${task.id}&focus=${mode}`);
+  };
 
   return (
     <div
