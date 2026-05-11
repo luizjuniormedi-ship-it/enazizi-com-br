@@ -164,6 +164,10 @@ const App = () => (
               <Route path="/mission" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<MissionMode />} />
               </Route>
+              <Route path="/enaflix" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
+                <Route index element={<EnaflixPage />} />
+              </Route>
+              <Route path="/study-hub" element={<Navigate to="/enaflix" replace />} />
               {/* Canonical redirects — /study/* → /dashboard/* */}
               <Route path="/study/tutor" element={<Navigate to="/dashboard/chatgpt" replace />} />
               <Route path="/study/flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
