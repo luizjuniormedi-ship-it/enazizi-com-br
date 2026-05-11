@@ -75,10 +75,14 @@ const SmartPlanner = () => {
 
   // New data
   const [approvalScore, setApprovalScore] = useState(0);
-// ... keep existing code
+  const [chanceByExam, setChanceByExam] = useState<{ banca: string; chance_score: number }[]>([]);
+  const [fsrsCards, setFsrsCards] = useState<any[]>([]);
+  const [errorBank, setErrorBank] = useState<any[]>([]);
+  const [examDate, setExamDate] = useState<string | null>(null);
   const [targetExams, setTargetExams] = useState<string[]>([]);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
+
 
 
   const { data: engineRecs, adaptive } = useStudyEngine();
