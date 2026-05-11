@@ -530,6 +530,42 @@ export type Database = {
         }
         Relationships: []
       }
+      adaptive_testing_sessions: {
+        Row: {
+          created_at: string | null
+          final_theta: number | null
+          id: string
+          initial_theta: number | null
+          items_count: number | null
+          metadata: Json | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          final_theta?: number | null
+          id?: string
+          initial_theta?: number | null
+          items_count?: number | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          final_theta?: number | null
+          id?: string
+          initial_theta?: number | null
+          items_count?: number | null
+          metadata?: Json | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       admin_alert_schedules: {
         Row: {
           admin_id: string | null
@@ -730,6 +766,39 @@ export type Database = {
           recipient_id?: string | null
           sender_id?: string
           title?: string
+        }
+        Relationships: []
+      }
+      ai_agents_logs: {
+        Row: {
+          action: string
+          agent_name: string
+          confidence: number | null
+          created_at: string | null
+          decision_payload: Json | null
+          id: string
+          trace_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          agent_name: string
+          confidence?: number | null
+          created_at?: string | null
+          decision_payload?: Json | null
+          id?: string
+          trace_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          agent_name?: string
+          confidence?: number | null
+          created_at?: string | null
+          decision_payload?: Json | null
+          id?: string
+          trace_id?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -6003,6 +6072,51 @@ export type Database = {
           },
         ]
       }
+      cme_render_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          job_id: string
+          log_level: string | null
+          message: string | null
+          metadata: Json | null
+          worker_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          job_id: string
+          log_level?: string | null
+          message?: string | null
+          metadata?: Json | null
+          worker_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          job_id?: string
+          log_level?: string | null
+          message?: string | null
+          metadata?: Json | null
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cme_render_logs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_jobs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cme_render_logs_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "cme_render_workers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cme_render_outputs: {
         Row: {
           codec: string | null
@@ -6130,6 +6244,36 @@ export type Database = {
           render_job_id?: string
           start_time?: number | null
           status?: string | null
+        }
+        Relationships: []
+      }
+      cme_render_workers: {
+        Row: {
+          capabilities: Json | null
+          created_at: string | null
+          gpu_info: Json | null
+          id: string
+          last_heartbeat: string | null
+          status: string | null
+          worker_name: string
+        }
+        Insert: {
+          capabilities?: Json | null
+          created_at?: string | null
+          gpu_info?: Json | null
+          id?: string
+          last_heartbeat?: string | null
+          status?: string | null
+          worker_name: string
+        }
+        Update: {
+          capabilities?: Json | null
+          created_at?: string | null
+          gpu_info?: Json | null
+          id?: string
+          last_heartbeat?: string | null
+          status?: string | null
+          worker_name?: string
         }
         Relationships: []
       }
@@ -7657,6 +7801,51 @@ export type Database = {
           session_id?: string | null
           stress_index?: number
           user_id?: string
+        }
+        Relationships: []
+      }
+      cognitive_state_snapshots: {
+        Row: {
+          abandonment_risk: number | null
+          created_at: string | null
+          current_theta: number | null
+          dominant_error_clusters: Json | null
+          engagement_score: number | null
+          fatigue_score: number | null
+          fsrs_pressure: number | null
+          id: string
+          overload_score: number | null
+          retention_score: number | null
+          user_id: string
+          weak_specialties: Json | null
+        }
+        Insert: {
+          abandonment_risk?: number | null
+          created_at?: string | null
+          current_theta?: number | null
+          dominant_error_clusters?: Json | null
+          engagement_score?: number | null
+          fatigue_score?: number | null
+          fsrs_pressure?: number | null
+          id?: string
+          overload_score?: number | null
+          retention_score?: number | null
+          user_id: string
+          weak_specialties?: Json | null
+        }
+        Update: {
+          abandonment_risk?: number | null
+          created_at?: string | null
+          current_theta?: number | null
+          dominant_error_clusters?: Json | null
+          engagement_score?: number | null
+          fatigue_score?: number | null
+          fsrs_pressure?: number | null
+          id?: string
+          overload_score?: number | null
+          retention_score?: number | null
+          user_id?: string
+          weak_specialties?: Json | null
         }
         Relationships: []
       }
@@ -11146,6 +11335,68 @@ export type Database = {
         }
         Relationships: []
       }
+      item_calibration_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          items_processed: number | null
+          metrics: Json | null
+          started_at: string | null
+          status: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          items_processed?: number | null
+          metrics?: Json | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          items_processed?: number | null
+          metrics?: Json | null
+          started_at?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      item_exposure_control: {
+        Row: {
+          exposure_count: number | null
+          id: string
+          last_reset: string | null
+          question_id: string
+          target_exposure: number | null
+        }
+        Insert: {
+          exposure_count?: number | null
+          id?: string
+          last_reset?: string | null
+          question_id: string
+          target_exposure?: number | null
+        }
+        Update: {
+          exposure_count?: number | null
+          id?: string
+          last_reset?: string | null
+          question_id?: string
+          target_exposure?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_exposure_control_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: true
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_edges: {
         Row: {
           created_at: string | null
@@ -13619,6 +13870,45 @@ export type Database = {
           steps?: Json
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      orchestrator_decisions: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          decision_type: string
+          id: string
+          input_snapshot: Json | null
+          output_action: Json | null
+          priority: number | null
+          reasoning: string | null
+          source: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          decision_type: string
+          id?: string
+          input_snapshot?: Json | null
+          output_action?: Json | null
+          priority?: number | null
+          reasoning?: string | null
+          source: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          decision_type?: string
+          id?: string
+          input_snapshot?: Json | null
+          output_action?: Json | null
+          priority?: number | null
+          reasoning?: string | null
+          source?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -16341,6 +16631,36 @@ export type Database = {
           },
         ]
       }
+      recovery_actions: {
+        Row: {
+          action_type: string | null
+          created_at: string | null
+          generated_content: Json | null
+          id: string
+          success: boolean | null
+          trigger_reason: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type?: string | null
+          created_at?: string | null
+          generated_content?: Json | null
+          id?: string
+          success?: boolean | null
+          trigger_reason?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string | null
+          created_at?: string | null
+          generated_content?: Json | null
+          id?: string
+          success?: boolean | null
+          trigger_reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       recovery_events: {
         Row: {
           created_at: string
@@ -18531,6 +18851,36 @@ export type Database = {
             referencedColumns: ["topic_id"]
           },
         ]
+      }
+      theta_history: {
+        Row: {
+          context_id: string | null
+          context_type: string | null
+          created_at: string | null
+          id: string
+          standard_error: number | null
+          theta_value: number
+          user_id: string
+        }
+        Insert: {
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          standard_error?: number | null
+          theta_value: number
+          user_id: string
+        }
+        Update: {
+          context_id?: string | null
+          context_type?: string | null
+          created_at?: string | null
+          id?: string
+          standard_error?: number | null
+          theta_value?: number
+          user_id?: string
+        }
+        Relationships: []
       }
       trajectory_applied_actions: {
         Row: {

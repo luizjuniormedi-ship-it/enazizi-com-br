@@ -10,22 +10,15 @@ export const CognitiveTimeline: React.FC = () => {
   const { data: events } = useQuery({
     queryKey: ['cognitive-timeline-v2'],
     queryFn: async () => {
-      const { data: tutorEvents, error: tutorError } = await supabase
-        .from('tutor_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
-      
-      const { data: telemetryEvents, error: telemetryError } = await supabase
-        .from('telemetry_events')
-        .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(10);
-
-      if (tutorError || telemetryError) throw tutorError || telemetryError;
+      const [tutorRes, telemetryRes, orchestratorRes, agentRes] = await Promise.all([
+        supabase.from('tutor_events').select('*').order('created_at', { ascending: false }).limit(10),
+        supabase.from('telemetry_events').select('*').order('timestamp', { ascending: false }).limit(10),
+        supabase.from('orchestrator_decisions').select('*').order('created_at', { ascending: false }).limit(10),
+        supabase.from('ai_agents_logs').select('*').order('created_at', { ascending: false }).limit(10)
+      ]);
 
       const combined = [
-        ...(tutorEvents || []).map(e => ({ 
+        ...(tutorRes.data || []).map(e => ({ 
           id: e.id,
           created_at: e.created_at,
           event_type: e.event_type,
@@ -33,16 +26,32 @@ export const CognitiveTimeline: React.FC = () => {
           outcome: e.outcome,
           source: 'tutor' 
         })),
-        ...(telemetryEvents || []).map(e => ({ 
+        ...(telemetryRes.data || []).map(e => ({ 
           id: e.id,
           created_at: e.timestamp,
           event_type: e.event_name,
           topic: (e.properties as any)?.topic,
           outcome: null,
           source: 'telemetry' 
+        })),
+        ...(orchestratorRes.data || []).map(e => ({
+          id: e.id,
+          created_at: e.created_at,
+          event_type: e.decision_type,
+          topic: e.reasoning,
+          outcome: e.priority > 5 ? 'critical' : 'normal',
+          source: 'orchestrator'
+        })),
+        ...(agentRes.data || []).map(e => ({
+          id: e.id,
+          created_at: e.created_at,
+          event_type: e.agent_name,
+          topic: e.action,
+          outcome: e.confidence > 0.8 ? 'success' : 'uncertain',
+          source: 'agent'
         }))
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 15);
+      .slice(0, 20);
 
       return combined;
     }
