@@ -122,16 +122,16 @@ async function processInBackground(
     let suggestedTopics: any[] = [];
     
     const valResponse = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "google/gemini-2.5-flash",
       messages: [
         {
           role: "system",
           content: `Analise o texto médico e sugira 3-8 tópicos de estudo. 
           Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
         },
-        { role: "user", content: `Analise:\n\n${truncatedText.slice(0, 4000)}` }
+        { role: "user", content: `Analise:\n\n${truncatedText.slice(0, 8000)}` }
       ],
-      timeoutMs: 40000,
+      timeoutMs: 55000,
     });
 
     if (valResponse.ok) {
@@ -170,12 +170,12 @@ async function processInBackground(
     let flashcardsCount = 0;
     try {
       const fcRes = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: 'Gere 5-8 flashcards relevantes. JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 6000)}` }
+          { role: "user", content: `Gere flashcards:\n\n${truncatedText.slice(0, 10000)}` }
         ],
-        timeoutMs: 30000,
+        timeoutMs: 55000,
       });
       if (fcRes.ok) {
         const parsed = parseAiJson((await fcRes.json()).choices?.[0]?.message?.content || "");
@@ -200,12 +200,12 @@ async function processInBackground(
     let questionsCount = 0;
     try {
       const qRes = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: 'Gere 5-8 questões. JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere questões:\n\n${truncatedText.slice(0, 6000)}` }
+          { role: "user", content: `Gere questões:\n\n${truncatedText.slice(0, 10000)}` }
         ],
-        timeoutMs: 30000,
+        timeoutMs: 55000,
       });
       if (qRes.ok) {
         const parsed = parseAiJson((await qRes.json()).choices?.[0]?.message?.content || "");
