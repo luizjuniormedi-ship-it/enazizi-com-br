@@ -164,23 +164,33 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
     const file = e.target.files?.[0];
     if (!file) return;
     setEditalFileName(file.name);
+    setProcessingEdital(true);
+    
     if (file.type === "text/plain" || file.name.endsWith(".txt")) {
-      // Try UTF-8 first, fallback to Latin-1 for accented characters
-      const buffer = await file.arrayBuffer();
-      let text: string;
       try {
-        const utf8 = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
-        text = utf8;
-      } catch {
-        text = new TextDecoder("latin1").decode(buffer);
+        const buffer = await file.arrayBuffer();
+        let text: string;
+        try {
+          const utf8 = new TextDecoder("utf-8", { fatal: true }).decode(buffer);
+          text = utf8;
+        } catch {
+          text = new TextDecoder("latin1").decode(buffer);
+        }
+        setEditalText(text);
+        toast({ title: "Edital carregado!", description: `${file.name} processado.` });
+      } catch (err) {
+        toast({ title: "Erro ao ler arquivo", variant: "destructive" });
+      } finally {
+        setProcessingEdital(false);
       }
-      setEditalText(text);
-      toast({ title: "Edital carregado!", description: `${file.name} processado.` });
     } else if (file.type === "application/pdf" || 
                file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
                file.name.endsWith(".docx") || 
                file.name.endsWith(".doc")) {
-      if (!user) return;
+      if (!user) {
+        setProcessingEdital(false);
+        return;
+      }
       try {
         const ext = file.name.split(".").pop();
         const storagePath = `${user.id}/edital-${Date.now()}.${ext}`;
@@ -210,9 +220,8 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
         });
         
         if (resp.ok) {
-          // Poll for extracted text since process-upload is backgrounded
           let attempts = 0;
-          const maxAttempts = 15;
+          const maxAttempts = 20;
           const pollInterval = setInterval(async () => {
             attempts++;
             const { data: updated } = await supabase
@@ -224,18 +233,25 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
             if (updated?.extracted_text) {
               setEditalText(updated.extracted_text);
               toast({ title: "Edital processado!", description: `Conteúdo extraído de ${file.name}.` });
+              setProcessingEdital(false);
               clearInterval(pollInterval);
             } else if (updated?.status === "error" || attempts >= maxAttempts) {
               const errorMsg = (updated?.extracted_json as any)?.error || "Tempo limite excedido no processamento.";
               toast({ title: "Erro no processamento", description: errorMsg, variant: "destructive" });
+              setProcessingEdital(false);
               clearInterval(pollInterval);
             }
           }, 2000);
+        } else {
+          setProcessingEdital(false);
+          throw new Error("Falha ao iniciar processamento");
         }
       } catch (err: any) {
+        setProcessingEdital(false);
         toast({ title: "Erro ao processar edital", description: err.message, variant: "destructive" });
       }
     } else {
+      setProcessingEdital(false);
       toast({ title: "Formato não suportado", description: "Envie PDF, TXT ou DOCX.", variant: "destructive" });
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
