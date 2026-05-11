@@ -131,10 +131,27 @@ const ErrorBank = () => {
         .map((e) => e.subtema || e.categoria_erro || e.motivo_erro || e.tema)
         .filter((v, i, a) => v && a.indexOf(v) === i)
         .slice(0, 7);
-      navigate("/dashboard/mnemonic-studio-v2", { state: { prefillTopic: topTema, prefillItems: items, fromErrorBank: true } });
+      navigate("/dashboard/mnemonico", { state: { prefillTopic: topTema, prefillItems: items, fromErrorBank: true } });
       return;
     }
-    navigate("/dashboard/tutor-v2", { state: { fromErrorBank: true, initialTopic: tema } });
+    
+    // Mapeamento de modos do Error Bank para o StudySession
+    const modeMapping: Record<string, string> = {
+      "revisar": "review",
+      "questoes": "practice",
+      "casos": "practice", // Pode ser refinado para um modo clínico se disponível
+      "completa": "full",
+      "treinar": "correction"
+    };
+
+    const targetMode = modeMapping[mode] || "full";
+    navigate(`/dashboard/sessao-estudo?topic=${encodeURIComponent(tema || "")}&auto=true&focus=${targetMode}`, { 
+      state: { 
+        fromErrorBank: true, 
+        initialTopic: tema,
+        studyMode: targetMode
+      } 
+    });
   };
 
   const generateFlashcardsFromErrors = async () => {
