@@ -119,9 +119,9 @@ async function processInBackground(
       throw new Error(`Formato não suportado: ${fileType}`);
     }
 
-    await supabaseAdmin.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
-    console.log(`[PROCESS_UPLOAD] Text extracted (${truncatedText.length} chars) for ${uploadId}`);
+    const truncatedText = (extractedText || "").trim().slice(0, 40000);
 
+    if (!truncatedText) {
       console.warn(`[PROCESS_UPLOAD] No text extracted for ${uploadId}`);
       await supabaseAdmin.from("uploads").update({ 
         status: "error", 
@@ -133,6 +133,10 @@ async function processInBackground(
       }).eq("id", uploadId);
       return;
     }
+
+    // Update extracted_text as soon as available
+    await supabaseAdmin.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
+    console.log(`[PROCESS_UPLOAD] Text extracted (${truncatedText.length} chars) for ${uploadId}`);
 
     // Step 3: Combined AI Validation & Topic Suggestion
     await updateProgress(supabaseAdmin, uploadId, { step: "validating_content", progress: 25 });
@@ -175,14 +179,12 @@ async function processInBackground(
       }
     } catch (e) {
       console.error("[PROCESS_UPLOAD] AI Validation/Topic error:", e);
-      // Fallback is to continue with defaults if validation fails but extraction worked
     }
 
     // Step 4: Parallel generation of Flashcards and Questions
     await updateProgress(supabaseAdmin, uploadId, { step: "generating_resources", progress: 50, main_topic: detectedTopic });
 
     const [flashcardsRes, questionsRes] = await Promise.allSettled([
-      // Flashcards Task
       aiFetch({
         model: "openai/gpt-5-mini",
         messages: [
@@ -191,7 +193,6 @@ async function processInBackground(
         ],
         timeoutMs: 60000,
       }),
-      // Questions Task
       aiFetch({
         model: "openai/gpt-5-mini",
         messages: [
@@ -205,7 +206,6 @@ async function processInBackground(
     let flashcardsCount = 0;
     let questionsCount = 0;
 
-    // Process Flashcards
     if (flashcardsRes.status === "fulfilled" && flashcardsRes.value.ok) {
       try {
         const data = await flashcardsRes.value.json();
@@ -225,10 +225,9 @@ async function processInBackground(
           const { error } = await supabaseAdmin.from("flashcards").insert(flashcards);
           if (!error) flashcardsCount = flashcards.length;
         }
-      } catch (e) { console.error("[PROCESS_UPLOAD] Flashcards parse/insert error:", e); }
+      } catch (e) { console.error("[PROCESS_UPLOAD] Flashcards error:", e); }
     }
 
-    // Process Questions
     if (questionsRes.status === "fulfilled" && questionsRes.value.ok) {
       try {
         const data = await questionsRes.value.json();
@@ -252,13 +251,11 @@ async function processInBackground(
           const { error } = await supabaseAdmin.from("questions_bank").insert(questions);
           if (!error) questionsCount = questions.length;
         }
-      } catch (e) { console.error("[PROCESS_UPLOAD] Questions parse/insert error:", e); }
+      } catch (e) { console.error("[PROCESS_UPLOAD] Questions error:", e); }
     }
 
-    // Final Step
     await supabaseAdmin.from("uploads").update({
       status: "processed",
-      extracted_text: truncatedText,
       extracted_json: {
         flashcards_count: flashcardsCount,
         questions_count: questionsCount,
@@ -269,7 +266,6 @@ async function processInBackground(
       }
     }).eq("id", uploadId);
 
-    // Update RAG document status
     const ragDocId = (upload.extracted_json as any)?.rag_doc_id;
     if (ragDocId) {
       await supabaseAdmin.from("rag_documents").update({
@@ -277,17 +273,11 @@ async function processInBackground(
         updated_at: new Date().toISOString()
       }).eq("id", ragDocId);
     }
-
-    console.log(`[PROCESS_UPLOAD] Done for ${uploadId}: ${flashcardsCount} FC, ${questionsCount} Q`);
-
   } catch (err: any) {
     console.error(`[PROCESS_UPLOAD] Background error for ${uploadId}:`, err);
     await supabaseAdmin.from("uploads").update({
       status: "error",
-      extracted_json: { 
-        error: err.message || "Erro inesperado no processamento.", 
-        step: "background_process" 
-      }
+      extracted_json: { error: err.message || "Erro inesperado.", step: "background_process" }
     }).eq("id", uploadId);
   }
 }
@@ -296,33 +286,18 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    console.log(`[PROCESS_UPLOAD] Request received: ${req.method}`);
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    }
+    if (!authHeader?.startsWith("Bearer ")) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
+    const supabaseAdmin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    }
+    if (userError || !user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
 
     const { uploadId } = await req.json();
     if (!uploadId) throw new Error("uploadId is required");
 
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_ANON_KEY")!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
-
-    // Fetch record with retry
+    const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
     let upload = null;
     for (let i = 0; i < 3; i++) {
       const { data } = await supabaseAdmin.from("uploads").select("*").eq("id", uploadId).maybeSingle();
@@ -330,23 +305,14 @@ Deno.serve(async (req) => {
       await new Promise(r => setTimeout(r, 500));
     }
 
-    if (!upload) {
-      return new Response(JSON.stringify({ error: "Upload record not found" }), { status: 404, headers: corsHeaders });
-    }
+    if (!upload) return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
 
     const { data: profile } = await supabaseAdmin.from("profiles").select("organization_id").eq("user_id", user.id).maybeSingle();
     const orgId = profile?.organization_id || "00000000-0000-0000-0000-000000000000";
 
-    // Create RAG document tracking
     const { data: ragDoc } = await supabaseAdmin.from("rag_documents").upsert({
-      organization_id: orgId,
-      uploaded_by: user.id,
-      title: upload.filename,
-      file_name: upload.filename,
-      file_path: upload.storage_path,
-      file_type: upload.file_type || "unknown",
-      file_size: upload.file_size || 0,
-      status: "processing"
+      organization_id: orgId, uploaded_by: user.id, title: upload.filename, file_name: upload.filename,
+      file_path: upload.storage_path, file_type: upload.file_type || "unknown", file_size: upload.file_size || 0, status: "processing"
     }).select().single();
 
     await supabaseAdmin.from("uploads").update({
@@ -355,22 +321,12 @@ Deno.serve(async (req) => {
       extracted_json: { ...upload.extracted_json, step: "starting", progress: 0, rag_doc_id: ragDoc?.id },
     }).eq("id", uploadId);
 
-    // Dispatch background process
     // @ts-ignore
     EdgeRuntime.waitUntil(processInBackground(uploadId, upload, user.id, supabaseAdmin, supabase));
 
-    return new Response(JSON.stringify({
-      success: true,
-      message: "Processamento iniciado",
-      uploadId
-    }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-
+    return new Response(JSON.stringify({ success: true, message: "Processamento iniciado", uploadId }), { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (err: any) {
     console.error("[PROCESS_UPLOAD] Global error:", err);
-    return new Response(JSON.stringify({
-      success: false,
-      error: err.message || "Internal server error",
-      step: "initialization"
-    }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ success: false, error: err.message || "Internal server error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
