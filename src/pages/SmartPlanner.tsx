@@ -165,6 +165,13 @@ const SmartPlanner = () => {
           if (payload.new.status === "processed" && (payload.new.extracted_json as any)?.suggested_topics?.length > 0) {
             setLastUpload(payload.new);
             setShowSuggestions(true);
+          } else if (payload.new.status === "error") {
+            console.error("[PLANNER_UPLOAD] Processing error:", payload.new.extracted_json);
+            toast({
+              title: "Erro no processamento",
+              description: (payload.new.extracted_json as any)?.error || "Não foi possível processar o material.",
+              variant: "destructive"
+            });
           }
         }
       )
@@ -397,6 +404,16 @@ const SmartPlanner = () => {
     if (files && files.length > 0) {
       for (const file of files) {
         try {
+          const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+          if (file.size > MAX_FILE_SIZE) {
+            toast({
+              title: "Arquivo muito grande",
+              description: `O arquivo ${file.name} excede o limite de 20MB.`,
+              variant: "destructive"
+            });
+            continue;
+          }
+
           const timestamp = Date.now();
           const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
           const filePath = `${user.id}/cronograma/${timestamp}-${cleanName}`;
@@ -449,6 +466,10 @@ const SmartPlanner = () => {
               .single();
 
             if (!dbError && uploadRecord) {
+              toast({
+                title: "Processando material...",
+                description: `Estamos analisando "${file.name}" para sugerir tópicos de estudo.`,
+              });
               const { data: sessionData } = await supabase.auth.getSession();
               fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
                 method: "POST",
@@ -457,7 +478,24 @@ const SmartPlanner = () => {
                   Authorization: `Bearer ${sessionData?.session?.access_token}`,
                 },
                 body: JSON.stringify({ uploadId: uploadRecord.id }),
-              }).catch(err => console.error("Trigger process-upload error:", err));
+              }).then(async (resp) => {
+                if (!resp.ok) {
+                  const errorData = await resp.json().catch(() => ({}));
+                  console.error("[PLANNER_UPLOAD] Edge Function error:", errorData);
+                  toast({
+                    title: "Erro no processamento",
+                    description: errorData.error || "O servidor de IA não respondeu corretamente.",
+                    variant: "destructive"
+                  });
+                }
+              }).catch(err => {
+                console.error("[PLANNER_UPLOAD] Trigger process-upload error:", err);
+                toast({
+                  title: "Falha na conexão",
+                  description: "Não foi possível iniciar a análise do arquivo.",
+                  variant: "destructive"
+                });
+              });
             }
           }
         } catch (err: any) {

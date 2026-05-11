@@ -13,12 +13,24 @@ const MAX_PROCESS_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_PDF_PAGES_TO_PARSE = 120;
 
 async function extractPdfText(fileData: Blob): Promise<string> {
-  const data = new Uint8Array(await fileData.arrayBuffer());
-  const document = await getDocument({ data, useSystemFonts: true }).promise;
-  const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
-  const pages: string[] = [];
-  let collectedChars = 0;
-  const maxCharsToCollect = 40000;
+  try {
+    const arrayBuffer = await fileData.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    
+    // Basic validation
+    if (data.length < 5) throw new Error("Arquivo PDF corrompido ou muito pequeno.");
+    const header = new TextDecoder().decode(data.slice(0, 5));
+    if (header !== "%PDF-") {
+      console.error("[PROCESS_UPLOAD] Invalid PDF header:", header);
+      throw new Error("O arquivo não parece ser um PDF válido.");
+    }
+
+    console.log(`[PROCESS_UPLOAD] Extraindo texto de PDF (${data.length} bytes)...`);
+    const document = await getDocument({ data, useSystemFonts: true }).promise;
+    const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
+    const pages: string[] = [];
+    let collectedChars = 0;
+    const maxCharsToCollect = 40000;
 
   for (let i = 1; i <= totalPages; i++) {
     if (collectedChars >= maxCharsToCollect) break;
@@ -37,7 +49,11 @@ async function extractPdfText(fileData: Blob): Promise<string> {
     }
   }
 
-  return pages.join("\n\n").slice(0, maxCharsToCollect);
+    return pages.join("\n\n").slice(0, maxCharsToCollect);
+  } catch (err: any) {
+    console.error("[PROCESS_UPLOAD] PDF Extraction error:", err);
+    throw new Error(`Falha ao ler PDF: ${err.message}`);
+  }
 }
 
 async function extractDocxText(fileData: Blob): Promise<string> {
@@ -148,7 +164,7 @@ async function processInBackground(
     let validationResponse;
     try {
       validationResponse = await aiFetch({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -201,7 +217,7 @@ async function processInBackground(
     
     try {
       const topicResponse = await aiFetch({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -237,7 +253,7 @@ async function processInBackground(
 
     try {
       const aiResponse = await aiFetch({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
@@ -288,7 +304,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
 
       const processChunk = async (chunk: string) => {
         const response = await aiFetch({
-          model: "gpt-4o-mini",
+          model: "openai/gpt-5-mini",
           messages: [
             {
               role: "system",
@@ -374,6 +390,7 @@ Se não encontrar questões válidas, retorne {"questions": []}`
 }
 
 serve(async (req) => {
+  console.log(`[PROCESS_UPLOAD] Request received: ${req.method}`);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -403,14 +420,23 @@ serve(async (req) => {
     const { uploadId } = await req.json();
     if (!uploadId) throw new Error("uploadId is required");
 
-    const { data: upload, error: uploadError } = await supabase
-      .from("uploads")
-      .select("*")
-      .eq("id", uploadId)
-      .eq("user_id", userId)
-      .maybeSingle();
+    // Retry select to handle potential replication lag
+    let upload = null;
+    for (let i = 0; i < 3; i++) {
+      const { data } = await supabaseAdmin
+        .from("uploads")
+        .select("*")
+        .eq("id", uploadId)
+        .maybeSingle();
+      if (data) {
+        upload = data;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
 
-    if (uploadError || !upload) {
+    if (!upload) {
+      console.error("[PROCESS_UPLOAD] Upload record not found after retries:", uploadId);
       return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
     }
 
@@ -419,11 +445,11 @@ serve(async (req) => {
       .from("profiles")
       .select("organization_id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     // 2. Criar ou atualizar registro em rag_documents para rastreabilidade RAG
-    const { data: ragDoc, error: ragErr } = await supabaseAdmin.from("rag_documents").upsert({
-      organization_id: profile?.organization_id || "00000000-0000-0000-0000-000000000000", // Fallback seguro
+    const { data: ragDoc } = await supabaseAdmin.from("rag_documents").upsert({
+      organization_id: profile?.organization_id || "00000000-0000-0000-0000-000000000000",
       uploaded_by: userId,
       title: upload.filename,
       file_name: upload.filename,
@@ -433,17 +459,15 @@ serve(async (req) => {
       status: "processing"
     }).select().single();
 
-    // 3. Atualizar status na tabela legada uploads
+    // 3. Atualizar status na tabela uploads
     await supabaseAdmin.from("uploads").update({
       status: "processing",
       organization_id: profile?.organization_id,
       extracted_json: { step: "starting", progress: 0, rag_doc_id: ragDoc?.id },
     }).eq("id", uploadId);
 
-    // 4. Fire-and-forget: process in background
-    processInBackground(uploadId, upload, userId, supabaseAdmin, supabase).catch((e) => {
-      console.error("Background task failed:", e);
-    });
+    // 4. Process - we await to ensure completion in this context
+    await processInBackground(uploadId, upload, userId, supabaseAdmin, supabase);
 
     // Return immediately — frontend will poll for progress
     return new Response(JSON.stringify({
