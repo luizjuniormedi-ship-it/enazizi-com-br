@@ -87,7 +87,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["governança", "settings", "thresholds", "limites"],
       },
       {
-        to: "/admin/audit",
+        to: "/admin?tab=audit",
         label: "Integridade",
         description: "Auditoria técnica de pipeline de dados e gaps de telemetria.",
         icon: ShieldCheck,
