@@ -300,7 +300,7 @@ Responda APENAS com JSON: {"flashcards": [{"question": "...", "answer": "...", "
       for (let i = 0; i < truncatedText.length; i += chunkSize) {
         chunks.push(truncatedText.slice(i, i + chunkSize));
       }
-      const chunksToProcess = chunks.slice(0, 3);
+      const chunksToProcess = chunks.slice(0, 1);
 
       const processChunk = async (chunk: string) => {
         const response = await aiFetch({
