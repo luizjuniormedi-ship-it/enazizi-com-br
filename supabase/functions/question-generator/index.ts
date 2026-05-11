@@ -26,6 +26,12 @@ serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const clientPlatform = req.headers.get("x-client-info");
     
+    // Initialize Supabase client early for quality routing
+    const sb = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+    
     const rawBody = await req.text();
     let body: any = {};
     try {
