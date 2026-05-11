@@ -22,6 +22,7 @@ export type StudyActionType =
   | "flashcard"
   | "content"
   | "daily_plan"
+  | "professor_plan"
   | "tutor"
   | "question"
   | "simulado"
@@ -52,6 +53,8 @@ export interface StudyActionPayload {
   errorBankId?: string;
   /** Daily plan task ID for direct update */
   dailyPlanTaskId?: string;
+  /** Professor plan task ID for direct update */
+  professorPlanTaskId?: string;
 }
 
 export interface StudyActionResult {
@@ -282,6 +285,18 @@ async function syncDailyPlan(userId: string, topic: string, now: string, today: 
   return "daily_plan_tasks";
 }
 
+async function syncProfessorPlan(userId: string, topic: string, now: string, professorPlanTaskId?: string): Promise<string | null> {
+  if (professorPlanTaskId) {
+    const { error } = await supabase
+      .from("professor_plan_daily_tasks")
+      .update({ status: "completed" as any, completed_at: now })
+      .eq("id", professorPlanTaskId)
+      .eq("user_id", userId);
+    return error ? null : "professor_plan_daily_tasks";
+  }
+  return null;
+}
+
 async function logTelemetry(payload: StudyActionPayload, tablesUpdated: string[], errors: string[]) {
   try {
     const { logActivity } = await import("@/lib/activityLogger");
@@ -382,6 +397,9 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
       break;
     case "daily_plan":
       // Only sync daily plan below
+      break;
+    case "professor_plan":
+      await safe(() => syncProfessorPlan(userId, topic, now, payload.professorPlanTaskId), "professor_plan");
       break;
   }
 

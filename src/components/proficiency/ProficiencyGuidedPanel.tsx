@@ -114,7 +114,10 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
       <DailyTasksBlock
         loading={dailyQ.isLoading || (generate.isPending && dailyTasks.length === 0)}
         tasks={dailyTasks}
-        onComplete={(taskId) => updateStatus.mutate({ taskId, status: "completed" })}
+        onComplete={(taskId) => {
+          const task = dailyTasks.find(t => t.id === taskId);
+          updateStatus.mutate({ taskId, status: "completed", task });
+        }}
         onSkip={(taskId) => updateStatus.mutate({ taskId, status: "skipped" })}
         busy={updateStatus.isPending}
       />
