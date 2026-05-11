@@ -164,6 +164,7 @@ const NOCDashboard = lazyWithRetry(() => import("./pages/admin/NOCDashboard"), "
 
 
 const SpecialtyFrictionReport = lazyWithRetry(() => import("./pages/admin/SpecialtyFrictionReport"), "SpecialtyFrictionReport");
+const CognitiveObservatory = lazyWithRetry(() => import("./pages/admin/CognitiveObservatory"), "CognitiveObservatory");
 const AdminBlueprints = lazyWithRetry(() => import("./pages/admin/AdminBlueprints"), "AdminBlueprints");
 const PageSkeleton = lazyWithRetry(() => import("./components/layout/PageSkeleton"), "PageSkeleton");
 
@@ -310,6 +311,7 @@ const App = () => (
                   <Route index element={<CentroComando />} />
                   <Route path="users" element={<Admin />} />
                   <Route path="monitoring" element={<AdminMonitoring />} />
+                  <Route path="cognitive-observatory" element={<CognitiveObservatory />} />
                   <Route path="ceo" element={<AdminCEO />} />
                   <Route path="metrics" element={<ProductMetricsPage />} />
                   <Route path="orchestrator-insights" element={<AdminOrchestratorInsights />} />
