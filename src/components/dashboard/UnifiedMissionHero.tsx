@@ -14,6 +14,7 @@ import { Rocket, Clock, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
+import { humanizeFSRSReason } from "@/lib/humanizedReasons";
 
 interface UnifiedMissionHeroProps {
   firstName: string;
