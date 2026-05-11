@@ -85,36 +85,71 @@ export default function OperationalKpiBar({ analytics, loading }: Props) {
 
   const cognitive: Kpi[] = [];
   if (cog) {
-    if (cog.avg_retention !== null) cognitive.push({
-      icon: Brain,
-      label: "Retenção média",
-      value: `${cog.avg_retention}%`,
-      tone: cog.avg_retention >= 75 ? "good" : cog.avg_retention >= 60 ? "warning" : "critical",
-    });
-    if (cog.avg_lapses !== null) cognitive.push({
-      icon: TrendingDown,
-      label: "Lapses médio",
-      value: cog.avg_lapses,
-      tone: cog.avg_lapses <= 1 ? "good" : cog.avg_lapses <= 2 ? "warning" : "critical",
-    });
-    if (cog.avg_stability !== null) cognitive.push({
-      icon: Brain,
-      label: "Stability FSRS",
-      value: cog.avg_stability,
-      tone: cog.avg_stability >= 5 ? "good" : cog.avg_stability >= 2 ? "warning" : "critical",
-    });
-    if (cog.overload_students > 0) cognitive.push({
-      icon: Zap,
-      label: "Sobrecarga",
-      value: cog.overload_students,
-      tone: "warning",
-    });
-    if (cog.burnout_risk_students > 0) cognitive.push({
-      icon: Flame,
-      label: "Risco burnout",
-      value: cog.burnout_risk_students,
-      tone: "critical",
-    });
+    const samples = cog.samples || { retention_reviews: 0, cognitive_events: 0, stability_cards: 0, students_with_data: 0 };
+    
+    // Thresholds: Retention >= 20 reviews, Burnout/Events >= 10 events
+    const hasRetentionData = samples.retention_reviews >= 20;
+    const hasCognitiveData = samples.cognitive_events >= 10;
+
+    if (cog.avg_retention !== null) {
+      cognitive.push({
+        icon: Brain,
+        label: "Retenção média",
+        value: hasRetentionData ? `${cog.avg_retention}%` : "---",
+        tone: hasRetentionData ? (cog.avg_retention >= 75 ? "good" : cog.avg_retention >= 60 ? "warning" : "critical") : "insufficient",
+        insufficient: !hasRetentionData,
+        sampleSize: samples.retention_reviews,
+        threshold: 20
+      });
+    }
+
+    if (cog.avg_lapses !== null) {
+      cognitive.push({
+        icon: TrendingDown,
+        label: "Lapses médio",
+        value: hasCognitiveData ? cog.avg_lapses : "---",
+        tone: hasCognitiveData ? (cog.avg_lapses <= 1 ? "good" : cog.avg_lapses <= 2 ? "warning" : "critical") : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
+
+    if (cog.avg_stability !== null) {
+      cognitive.push({
+        icon: Brain,
+        label: "Stability FSRS",
+        value: hasCognitiveData ? cog.avg_stability : "---",
+        tone: hasCognitiveData ? (cog.avg_stability >= 5 ? "good" : cog.avg_stability >= 2 ? "warning" : "critical") : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
+
+    if (cog.overload_students > 0 || !hasCognitiveData) {
+      cognitive.push({
+        icon: Zap,
+        label: "Sobrecarga",
+        value: hasCognitiveData ? cog.overload_students : "---",
+        tone: hasCognitiveData ? "warning" : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
+
+    if (cog.burnout_risk_students > 0 || !hasCognitiveData) {
+      cognitive.push({
+        icon: Flame,
+        label: "Risco burnout",
+        value: hasCognitiveData ? cog.burnout_risk_students : "---",
+        tone: hasCognitiveData ? "critical" : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
   }
 
   return (
