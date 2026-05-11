@@ -29,6 +29,7 @@ import CronogramaTemas from "@/components/cronograma/CronogramaTemas";
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
+import CronogramaSmartSuggestions from "@/components/cronograma/CronogramaSmartSuggestions";
 
 // New strategic components
 import PlannerStrategicHeader from "@/components/planner/PlannerStrategicHeader";
@@ -69,6 +70,8 @@ const SmartPlanner = () => {
   const [showReprocess, setShowReprocess] = useState(false);
   const [newExamDate, setNewExamDate] = useState<Date>();
   const [reprocessing, setReprocessing] = useState(false);
+  const [lastUpload, setLastUpload] = useState<any>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // New data
   const [approvalScore, setApprovalScore] = useState(0);
@@ -79,6 +82,8 @@ const SmartPlanner = () => {
   const [targetExams, setTargetExams] = useState<string[]>([]);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
+
+
 
   const { data: engineRecs, adaptive } = useStudyEngine();
   const { getHint: getRadarHint } = useRadarPlannerOverlay();
@@ -123,6 +128,101 @@ const SmartPlanner = () => {
   }, [user, chanceByExamEnabled, recoveryFlagEnabled, resetAt]);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Monitor uploads for real-time suggestions
+  useEffect(() => {
+    if (!user) return;
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    
+    const fetchLastUpload = async () => {
+      const { data } = await supabase
+        .from("uploads")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "processed")
+        .gt("created_at", tenMinutesAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (data && (data.extracted_json as any)?.suggested_topics?.length > 0) {
+        const dismissed = sessionStorage.getItem(`dismissed_suggestion_${data.id}`);
+        if (!dismissed) {
+          setLastUpload(data);
+          setShowSuggestions(true);
+        }
+      }
+    };
+
+    fetchLastUpload();
+
+    const channel = supabase
+      .channel("planner-upload-status")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "uploads", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.new.status === "processed" && (payload.new.extracted_json as any)?.suggested_topics?.length > 0) {
+            setLastUpload(payload.new);
+            setShowSuggestions(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  const handleBulkAddTopics = async (suggestedTopics: any[]) => {
+    if (!user) return;
+    const todayStr = new Date().toISOString().split("T")[0];
+    const insertedTemas: { id: string; tema: string; especialidade: string }[] = [];
+    
+    for (const st of suggestedTopics) {
+      const { data, error } = await supabase.from("temas_estudados").insert({
+        user_id: user.id,
+        tema: st.tema,
+        especialidade: st.especialidade,
+        subtopico: st.subtopico || null,
+        data_estudo: todayStr,
+        fonte: "ia_suggestion",
+        dificuldade: st.dificuldade || "medio",
+        status: "ativo"
+      } as any).select().single();
+      
+      if (!error && data) {
+        insertedTemas.push({ id: data.id, tema: data.tema, especialidade: data.especialidade });
+      }
+    }
+
+    if (insertedTemas.length > 0) {
+      const allReviews: any[] = [];
+      insertedTemas.forEach(tema => {
+        const reviews = generateReviewsByError(todayStr, 0);
+        reviews.forEach(r => {
+          allReviews.push({
+            user_id: user.id,
+            tema_id: tema.id,
+            tipo_revisao: r.tipo,
+            data_revisao: r.data,
+            status: "pendente",
+            prioridade: 50,
+            risco_esquecimento: "baixo",
+          });
+        });
+      });
+      await supabase.from("revisoes").insert(allReviews);
+      toast({ title: "✅ Cronograma Atualizado!", description: `${insertedTemas.length} temas adicionados.` });
+      setShowSuggestions(false);
+      if (lastUpload) sessionStorage.setItem(`dismissed_suggestion_${lastUpload.id}`, "true");
+      loadData();
+    }
+  };
+
+  const handleDismissSuggestions = () => {
+    setShowSuggestions(false);
+    if (lastUpload) sessionStorage.setItem(`dismissed_suggestion_${lastUpload.id}`, "true");
+  };
 
   const pesos = config?.pesos_algoritmo || DEFAULT_PESOS;
   const temasComputados = temas.map(t => computeTema(t, revisoes, desempenhos, pesos as PesosAlgoritmo));
@@ -454,6 +554,19 @@ const SmartPlanner = () => {
         />
       </div>
 
+      {/* Suggestions */}
+      {showSuggestions && lastUpload && (
+        <div className="px-4 sm:px-8 lg:px-14">
+          <CronogramaSmartSuggestions 
+            uploadId={lastUpload.id}
+            filename={lastUpload.filename}
+            topics={(lastUpload.extracted_json as any)?.suggested_topics || []}
+            onAdd={handleBulkAddTopics}
+            onDismiss={handleDismissSuggestions}
+          />
+        </div>
+      )}
+
 
       {/* Reprocess Panel */}
       {showReprocess && (
@@ -489,6 +602,19 @@ const SmartPlanner = () => {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Suggestions */}
+      {showSuggestions && lastUpload && (
+        <div className="px-4 sm:px-8 lg:px-14 mb-8">
+          <CronogramaSmartSuggestions 
+            uploadId={lastUpload.id}
+            filename={lastUpload.filename}
+            topics={(lastUpload.extracted_json as any)?.suggested_topics || []}
+            onAdd={handleBulkAddTopics}
+            onDismiss={handleDismissSuggestions}
+          />
+        </div>
       )}
 
       {/* Tabs — 4 seções */}
