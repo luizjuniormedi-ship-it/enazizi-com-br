@@ -70,16 +70,16 @@ const SmartPlanner = () => {
   const [showReprocess, setShowReprocess] = useState(false);
   const [newExamDate, setNewExamDate] = useState<Date>();
   const [reprocessing, setReprocessing] = useState(false);
+  const [lastUpload, setLastUpload] = useState<any>(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   // New data
   const [approvalScore, setApprovalScore] = useState(0);
-  const [chanceByExam, setChanceByExam] = useState<{ banca: string; chance_score: number }[]>([]);
-  const [fsrsCards, setFsrsCards] = useState<any[]>([]);
-  const [errorBank, setErrorBank] = useState<any[]>([]);
-  const [examDate, setExamDate] = useState<string | null>(null);
+// ... keep existing code
   const [targetExams, setTargetExams] = useState<string[]>([]);
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [heavyRecoveryPhase, setHeavyRecoveryPhase] = useState<number | undefined>();
+
 
   const { data: engineRecs, adaptive } = useStudyEngine();
   const { getHint: getRadarHint } = useRadarPlannerOverlay();
