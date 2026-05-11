@@ -155,6 +155,15 @@ serve(async (req) => {
           .eq("user_id", userId)
           .maybeSingle(),
         "cognitive_state"),
+      safeQuery<any[]>(db, (c) =>
+        c.from("professor_plan_daily_tasks")
+          .select("id, task_type, task_payload, planned_date")
+          .eq("user_id", userId)
+          .eq("status", "pending")
+          .eq("planned_date", today)
+          .order("created_at", { ascending: true })
+          .limit(5),
+        "professor_tasks"),
     ]);
 
     const reviews = pendingReviews ?? [];
