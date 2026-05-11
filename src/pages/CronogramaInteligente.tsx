@@ -358,8 +358,11 @@ const CronogramaInteligente = () => {
                 category: "material",
                 storage_path: filePath,
                 status: "uploaded",
-                file_size: file.size,
-                mime_type: file.type
+                extracted_json: { 
+                  file_size: file.size, 
+                  mime_type: file.type,
+                  original_name: file.name 
+                }
               })
               .select()
               .single();
