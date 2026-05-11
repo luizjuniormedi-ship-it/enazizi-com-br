@@ -16,8 +16,8 @@ export const CognitiveReplay: React.FC = () => {
       const { data, error } = await supabase
         .from('telemetry_events')
         .select('*')
-        .eq('event_type', 'error')
-        .order('created_at', { ascending: false })
+        .eq('event_name', 'error')
+        .order('timestamp', { ascending: false })
         .limit(5);
       
       if (error) throw error;
