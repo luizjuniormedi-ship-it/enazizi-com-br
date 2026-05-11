@@ -49,7 +49,11 @@ async function extractPdfText(fileData: Blob): Promise<string> {
     }
   }
 
-  return pages.join("\n\n").slice(0, maxCharsToCollect);
+    return pages.join("\n\n").slice(0, maxCharsToCollect);
+  } catch (err: any) {
+    console.error("[PROCESS_UPLOAD] PDF Extraction error:", err);
+    throw new Error(`Falha ao ler PDF: ${err.message}`);
+  }
 }
 
 async function extractDocxText(fileData: Blob): Promise<string> {
