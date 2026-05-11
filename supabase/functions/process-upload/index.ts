@@ -416,17 +416,26 @@ serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { uploadId } = await req.json();
+    const { data: uploadId } = await req.json();
     if (!uploadId) throw new Error("uploadId is required");
 
-    const { data: upload, error: uploadError } = await supabase
-      .from("uploads")
-      .select("*")
-      .eq("id", uploadId)
-      .eq("user_id", userId)
-      .maybeSingle();
+    // Retry select to handle potential replication lag
+    let upload = null;
+    for (let i = 0; i < 3; i++) {
+      const { data } = await supabaseAdmin
+        .from("uploads")
+        .select("*")
+        .eq("id", uploadId)
+        .maybeSingle();
+      if (data) {
+        upload = data;
+        break;
+      }
+      await new Promise(r => setTimeout(r, 500));
+    }
 
-    if (uploadError || !upload) {
+    if (!upload) {
+      console.error("[PROCESS_UPLOAD] Upload record not found after retries:", uploadId);
       return new Response(JSON.stringify({ error: "Upload not found" }), { status: 404, headers: corsHeaders });
     }
 
@@ -435,11 +444,11 @@ serve(async (req) => {
       .from("profiles")
       .select("organization_id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     // 2. Criar ou atualizar registro em rag_documents para rastreabilidade RAG
-    const { data: ragDoc, error: ragErr } = await supabaseAdmin.from("rag_documents").upsert({
-      organization_id: profile?.organization_id || "00000000-0000-0000-0000-000000000000", // Fallback seguro
+    const { data: ragDoc } = await supabaseAdmin.from("rag_documents").upsert({
+      organization_id: profile?.organization_id || "00000000-0000-0000-0000-000000000000",
       uploaded_by: userId,
       title: upload.filename,
       file_name: upload.filename,
@@ -449,17 +458,15 @@ serve(async (req) => {
       status: "processing"
     }).select().single();
 
-    // 3. Atualizar status na tabela legada uploads
+    // 3. Atualizar status na tabela uploads
     await supabaseAdmin.from("uploads").update({
       status: "processing",
       organization_id: profile?.organization_id,
       extracted_json: { step: "starting", progress: 0, rag_doc_id: ragDoc?.id },
     }).eq("id", uploadId);
 
-    // 4. Fire-and-forget: process in background
-    processInBackground(uploadId, upload, userId, supabaseAdmin, supabase).catch((e) => {
-      console.error("Background task failed:", e);
-    });
+    // 4. Process - we await to ensure completion in this context
+    await processInBackground(uploadId, upload, userId, supabaseAdmin, supabase);
 
     // Return immediately — frontend will poll for progress
     return new Response(JSON.stringify({
