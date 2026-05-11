@@ -194,6 +194,18 @@ const ErrorBank = () => {
           subtitle="IA de estudos analisou seus pontos de fragilidade para recuperação ativa."
           action={
             <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl h-11 w-11">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48 bg-[#0a0a0e]/95 backdrop-blur-xl border-white/10">
+                  <DropdownMenuItem onClick={() => window.open("https://docs.enazizi.com", "_blank")}>
+                    <HelpCircle className="h-4 w-4 mr-2" /> Como usar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 variant="outline"
                 className="bg-white/5 border-white/5 text-white/60 hover:text-white rounded-xl gap-2 h-11"
