@@ -40,7 +40,8 @@ export function UnifiedMissionHero({
 }: UnifiedMissionHeroProps) {
   const navigate = useNavigate();
   const title = recommendationTitle?.trim() || FALLBACK_TITLE;
-  const desc = recommendationDescription?.trim() || FALLBACK_DESC;
+  const rawDesc = recommendationDescription?.trim() || FALLBACK_DESC;
+  const desc = humanizeFSRSReason(rawDesc);
 
   return (
     <div className="px-4 sm:px-8 lg:px-14">
