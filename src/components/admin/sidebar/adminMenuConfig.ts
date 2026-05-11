@@ -136,7 +136,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["rag", "base de conhecimento", "materiais", "pdf", "biblioteca"],
       },
       {
-        to: "/admin/users?tab=ingestion",
+        to: "/admin?tab=ingestion",
         label: "Gerar Questões",
         description: "Pipeline de IA para geração de questões a partir de PDF/Texto.",
         icon: Sparkles,
@@ -144,7 +144,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["gerar", "questões", "ai", "ingestion"],
       },
       {
-        to: "/admin/users?tab=question-review",
+        to: "/admin?tab=question-review",
         label: "Aprovar Questões",
         description: "Painel de curadoria para aprovação de questões geradas.",
         icon: BookOpenCheck,
@@ -152,7 +152,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["aprovar", "questões", "revisão"],
       },
       {
-        to: "/admin/users?tab=image-review",
+        to: "/admin?tab=image-review",
         label: "Aprovar Imagens",
         description: "Curadoria visual de questões com imagens.",
         icon: ImageIcon,
