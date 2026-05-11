@@ -110,7 +110,7 @@ export function useStudentActivePlan() {
         supabase
           .from("professor_plan_subtopics")
           .select(
-            "id, subtopic_id, sort_order, curriculum_subtopics(id, nome, topic_id, curriculum_topics(nome, specialty_id, curriculum_specialties(nome)))",
+            "id, subtopic_id, sort_order, curriculum_subtopics(id, nome, topic_id, curriculum_topics(nome, specialty_id, curriculum_specialties(id, nome)))",
           )
           .eq("plan_id", plan.id)
           .order("sort_order", { ascending: true, nullsFirst: false }),
