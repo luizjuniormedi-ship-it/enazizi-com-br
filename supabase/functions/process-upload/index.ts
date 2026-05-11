@@ -179,7 +179,10 @@ async function processInBackground(
           const parsed = parseAiJson((await chunkResponse.json()).choices?.[0]?.message?.content || "");
           if (parsed.is_medicine !== false) {
             if (parsed.main_topic && i === 0) mainTopic = parsed.main_topic;
-            if (parsed.topics) allExtractedTopics.push(...parsed.topics);
+            if (parsed.topics) {
+              const taggedTopics = parsed.topics.map((t: any) => ({ ...t, _chunk_index: i }));
+              allExtractedTopics.push(...taggedTopics);
+            }
             
             await supabaseAdmin.from("planner_pdf_chunks")
               .update({ extracted_topics_json: parsed.topics, status: "completed" })
@@ -196,11 +199,25 @@ async function processInBackground(
     await updateProgress(supabaseAdmin, uploadId, { step: "consolidating", progress: 75 });
     const uniqueTopics = Array.from(new Map(allExtractedTopics.map(item => [JSON.stringify(item), item])).values());
 
+    // Filter and count chunks for reporting
+    const completedChunks = allExtractedTopics.filter(t => t.chunk_index !== undefined).length; // This logic needs adjustment because allExtractedTopics is a flat array of topics
+    
+    // Better stats: count how many chunks actually returned topics
+    const chunkStats = textChunks.map((_, i) => ({
+      index: i,
+      status: allExtractedTopics.some(t => t._chunk_index === i) ? "completed" : "failed"
+    }));
+
     await supabaseAdmin.from("planner_extracted_topics").insert({
       upload_id: uploadId,
       user_id: userId,
       topics_json: uniqueTopics,
-      coverage_stats: { total_chunks: textChunks.length, completed_chunks: allExtractedTopics.length > 0 ? textChunks.length : 0 }
+      coverage_stats: { 
+        total_chunks: textChunks.length, 
+        completed_chunks: chunkStats.filter(s => s.status === "completed").length,
+        chunk_details: chunkStats,
+        total_topics: uniqueTopics.length
+      }
     });
 
     // 5. Update Status

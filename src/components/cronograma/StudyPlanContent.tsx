@@ -55,6 +55,14 @@ interface PlanJson {
   tips?: string;
   detectedSpecialty?: string;
   totalTopicsExtracted?: number;
+  totalChunks?: number;
+  completedChunks?: number;
+  coverageStats?: {
+    total_chunks: number;
+    completed_chunks: number;
+    total_topics: number;
+    chunk_details?: { index: number; status: string }[];
+  };
   config?: {
     examDate: string;
     hoursPerDay: number;
@@ -269,6 +277,15 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       const { data: session } = await supabase.auth.getSession();
       setGenerationStep(2);
       
+      // Get coverage stats from latest extraction
+      const { data: extraction } = await supabase
+        .from("planner_extracted_topics")
+        .select("coverage_stats, topics_json")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 160000); // 160s frontend timeout
       
@@ -281,6 +298,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           daysPerWeek: Number(daysPerWeek),
           editalText: editalText || null,
           currentPlanId: planId,
+          coverageStats: extraction?.coverage_stats || null
         }),
         signal: controller.signal
       });
