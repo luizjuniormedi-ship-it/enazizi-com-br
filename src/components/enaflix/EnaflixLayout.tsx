@@ -22,8 +22,8 @@ export function EnaflixLayout({ children }: Props) {
   const immersiveRoutes = ["/dashboard/mentor", "/dashboard/tutor", "/mentor", "/tutor", "/study/tutor", "/dashboard/sessao-estudo"];
   const isImmersive = immersiveRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
-  // Sidebar is only for Admin/Professor in this new AI-first era
-  const showSidebar = (isAdmin || isProfessor) && !isImmersive;
+  // Sidebar for everyone in desktop to ensure navigation is always available
+  const showSidebar = !isImmersive;
 
   // For students (no sidebar), we show the OverlayNav consistently if not on the main Enaflix page
   // (Since EnaflixPage already has its own OverlayNav with search logic, we avoid double rendering)
