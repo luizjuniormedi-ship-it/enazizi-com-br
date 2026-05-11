@@ -619,6 +619,7 @@ serve(async (req) => {
       recoveryActive,
       contentLocked,
       pendingReviews: reviews.length + fsrsCards.length,
+      professorTasksCount: professorTasks?.length || 0,
       weakTopicsCount: new Set(errors.map((e: any) => e.tema)).size,
       examProximityDays,
       visualWeaknesses: visualErrors.length,
