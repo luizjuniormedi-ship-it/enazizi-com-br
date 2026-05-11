@@ -148,6 +148,24 @@ export function useAdaptiveAudit() {
         });
       }
 
+      // 8. Real Learning Impact
+      // Check if study sessions lead to correct answers in practice
+      const { data: practice } = await supabase
+        .from("practice_attempts")
+        .select("topic, correct, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      
+      if (practice && practice.length > 0) {
+        const correctCount = practice.filter(p => p.correct).length;
+        results.push({
+          category: "Impacto no Aprendizado",
+          status: "success",
+          message: `Taxa de acerto global em prática: ${Math.round((correctCount / practice.length) * 100)}%.`,
+          details: { sampleSize: practice.length, correct: correctCount }
+        });
+      }
+
       return results;
     },
     staleTime: 30_000,
