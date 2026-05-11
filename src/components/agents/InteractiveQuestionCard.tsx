@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { dispatchPedagogicalEvent } from "@/lib/events";
 import MedicalTermHighlighter from "@/components/medical/MedicalTermHighlighter";
 import { CheckCircle2, XCircle, BookOpen, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
