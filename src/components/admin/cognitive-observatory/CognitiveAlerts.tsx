@@ -73,10 +73,10 @@ export const CognitiveAlerts: React.FC = () => {
                   <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
                     {alert.message}
                   </p>
-                  {alert.metadata?.context && (
+                  {(alert.metadata as any)?.context && (
                     <div className="mt-1 flex gap-1">
                       <Badge variant="outline" className="text-[8px] h-4 bg-slate-900/50 border-slate-800 text-slate-500">
-                        {alert.metadata.context}
+                        {(alert.metadata as any).context}
                       </Badge>
                     </div>
                   )}
