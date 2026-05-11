@@ -8,43 +8,46 @@ export const CognitiveStateEngine: React.FC = () => {
   const { data: state } = useQuery({
     queryKey: ['cognitive-state-inference'],
     queryFn: async () => {
-      // Aggregate data for inference
-      const { data: perf } = await supabase
-        .from('approval_scores')
-        .select('score, created_at')
+      const { data: snapshot } = await supabase
+        .from('cognitive_state_snapshots')
+        .select('*')
         .order('created_at', { ascending: false })
-        .limit(10);
-      
-      const { data: errors } = await supabase
-        .from('error_bank')
-        .select('created_at')
-        .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(1)
+        .maybeSingle();
 
-      // Heuristic: if errors are frequent in short time -> fatigue
-      // if performance is high and steady -> automation
-      const recentErrorsCount = errors?.length || 0;
-      const avgPerf = (perf?.reduce((acc, p) => acc + (Number(p.score) || 0), 0) || 0) / (perf?.length || 1);
+      if (!snapshot) {
+        return {
+          inferredState: 'INITIALIZING',
+          healthScore: 100,
+          avgPerf: 0,
+          fatigue: 0,
+          retention: 0
+        };
+      }
+
+      const fatigue = Number(snapshot.fatigue_score) || 0;
+      const retention = Number(snapshot.retention_score) || 0;
       
       let inferredState = 'NORMAL';
-      let healthScore = 85;
+      let healthScore = 100 - (fatigue * 50);
 
-      if (recentErrorsCount > 5 && avgPerf < 60) {
+      if (fatigue > 0.8) {
         inferredState = 'SOBRECARGA';
-        healthScore = 45;
-      } else if (avgPerf > 90 && recentErrorsCount < 2) {
-        inferredState = 'AUTOMATIZAÇÃO';
-        healthScore = 98;
-      } else if (recentErrorsCount > 3) {
+        healthScore = 30;
+      } else if (retention < 0.6) {
+        inferredState = 'QUEDA_RETENÇÃO';
+        healthScore = 60;
+      } else if (fatigue > 0.4) {
         inferredState = 'FADIGA';
-        healthScore = 65;
+        healthScore = 75;
       }
 
       return {
         inferredState,
         healthScore,
-        avgPerf,
-        recentErrorsCount
+        fatigue,
+        retention,
+        theta: snapshot.current_theta
       };
     }
   });
