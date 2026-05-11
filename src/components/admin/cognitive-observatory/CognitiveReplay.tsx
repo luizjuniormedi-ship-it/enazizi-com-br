@@ -53,14 +53,14 @@ export const CognitiveReplay: React.FC = () => {
                   <div className="flex justify-between items-start mb-1">
                     <Badge variant="destructive" className="text-[8px] h-4">ERROR DETECTED</Badge>
                     <span className="text-[9px] text-slate-500 font-mono">
-                      {new Date(event.created_at).toLocaleTimeString()}
+                      {new Date(event.timestamp).toLocaleTimeString()}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-300 font-medium truncate">
                     {event.event_name}
                   </p>
                   <p className="text-[9px] text-slate-500 font-mono mt-1">
-                    Layer: {String((event.metadata as any)?.layer || 'Unknown')}
+                    Layer: {String((event.properties as any)?.layer || 'Unknown')}
                   </p>
                 </button>
               ))}
