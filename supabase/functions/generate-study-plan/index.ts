@@ -156,11 +156,37 @@ Formato JSON:
 
     if (updateError) throw updateError;
 
+    // 5. Trigger Daily Plan generation so it shows up in dashboard mission
+    console.log("[GENERATE_STUDY_PLAN] Triggering daily-plan generation...");
+    try {
+      const { data: session } = await supabaseAdmin.auth.admin.generateLink({
+        type: 'magiclink',
+        email: (await supabaseAdmin.auth.admin.getUserById(userId)).data.user?.email || "",
+      });
+      // Actually, we don't need a session if we call it internally or just use the same logic.
+      // But simplest is to just let the frontend handle the final sync which calls generate-daily-plan if needed,
+      // OR we just use supabaseAdmin to call the edge function if we had the URL.
+      // Since we are in an Edge Function, we can just fetch it.
+      
+      const functionUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-daily-plan`;
+      await fetch(functionUrl, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}` 
+        },
+        body: JSON.stringify({ userId, force: true })
+      });
+    } catch (triggerErr) {
+      console.warn("[GENERATE_STUDY_PLAN] Failed to trigger daily plan:", triggerErr);
+    }
+
     console.log("[GENERATE_STUDY_PLAN] Completed successfully", { 
       planId, 
       tasks_count: planJson.weeklySchedule?.[0]?.tasks?.length || 0,
       ai_fallback: !aiResp?.ok
     });
+
 
   } catch (e: any) {
     console.error("[GENERATE_STUDY_PLAN] Background error:", e);
