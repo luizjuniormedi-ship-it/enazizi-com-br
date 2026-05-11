@@ -136,7 +136,7 @@ Formato JSON:
             tasks: fallbackTopics.map((t, i) => ({ time: `${8+i}:00`, subject: t, duration: "1h", type: "estudo", details: "Estudo base" }))
           }
         ],
-        tips: "Cronograma gerado via fallback devido a instabilidade na IA. Você pode ajustá-lo manualmente."
+        tips: "Cronograma criado em modo seguro devido a instabilidade na IA. Você pode refinar o conteúdo depois."
       };
     }
 
@@ -151,16 +151,22 @@ Formato JSON:
 
     let result;
     if (currentPlanId) {
+      console.log(`[GENERATE_STUDY_PLAN] Updating existing plan: ${currentPlanId}`);
       const { data, error } = await supabaseAdmin.from("study_plans").update({ plan_json: planData.plan_json }).eq("id", currentPlanId).eq("user_id", userId).select().single();
       if (error) throw error;
       result = data;
     } else {
+      console.log("[GENERATE_STUDY_PLAN] Creating new plan");
       const { data, error } = await supabaseAdmin.from("study_plans").insert(planData).select().single();
       if (error) throw error;
       result = data;
     }
 
-    console.log("[GENERATE_STUDY_PLAN] Completed successfully");
+    console.log("[GENERATE_STUDY_PLAN] Completed successfully", { 
+      plan_created: !!result, 
+      tasks_count: planJson.weeklySchedule?.[0]?.tasks?.length || 0,
+      ai_fallback: !aiResp?.ok
+    });
     return new Response(JSON.stringify({ success: true, plan: result }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
