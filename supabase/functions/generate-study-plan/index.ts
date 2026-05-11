@@ -149,6 +149,7 @@ Formato JSON:
         ...planJson,
         config: { examDate, hoursPerDay, daysPerWeek, hasEdital: !!editalText },
         generatedAt: new Date().toISOString(),
+        coverageStats: body.coverageStats || null,
       },
     };
 

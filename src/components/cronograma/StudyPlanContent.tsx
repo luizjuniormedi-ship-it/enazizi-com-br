@@ -55,6 +55,14 @@ interface PlanJson {
   tips?: string;
   detectedSpecialty?: string;
   totalTopicsExtracted?: number;
+  totalChunks?: number;
+  completedChunks?: number;
+  coverageStats?: {
+    total_chunks: number;
+    completed_chunks: number;
+    total_topics: number;
+    chunk_details?: { index: number; status: string }[];
+  };
   config?: {
     examDate: string;
     hoursPerDay: number;
@@ -106,6 +114,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [dragOver, setDragOver] = useState<{ day: number; task: number } | null>(null);
   const [completedKeys, setCompletedKeys] = useState<Set<string>>(new Set());
   const [completedTaskIds, setCompletedTaskIds] = useState<Record<string, string>>({});
+  const [planCoverage, setPlanCoverage] = useState<PlanJson['coverageStats'] | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -126,6 +135,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
         setTopicMap(plan.topicMap || []);
         setDetectedSpecialty(plan.detectedSpecialty || "");
         setTips(plan.tips || "");
+        setPlanCoverage(plan.coverageStats || null);
         if (plan.config) {
           if (plan.config.examDate) setExamDate(new Date(plan.config.examDate));
           setHoursPerDay(String(plan.config.hoursPerDay || 4));
@@ -269,6 +279,15 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       const { data: session } = await supabase.auth.getSession();
       setGenerationStep(2);
       
+      // Get coverage stats from latest extraction
+      const { data: extraction } = await supabase
+        .from("planner_extracted_topics")
+        .select("coverage_stats, topics_json")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 160000); // 160s frontend timeout
       
@@ -281,6 +300,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           daysPerWeek: Number(daysPerWeek),
           editalText: editalText || null,
           currentPlanId: planId,
+          coverageStats: extraction?.coverage_stats || null
         }),
         signal: controller.signal
       });
@@ -297,6 +317,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       setTopicMap(plan.topicMap || []);
       setDetectedSpecialty(plan.detectedSpecialty || "");
       setTips(plan.tips || "");
+      setPlanCoverage(plan.coverageStats || null);
       setShowConfig(false);
       if (onSubjectsGenerated && plan.subjects && plan.subjects.length > 0) {
         setGenerationStep(4);
@@ -644,6 +665,32 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
       {tips && (
         <div className="glass-card p-4 border-l-4 border-l-accent">
           <p className="text-sm text-muted-foreground">💡 {tips}</p>
+        </div>
+      )}
+
+      {/* Coverage Indicator */}
+      {planCoverage && (
+        <div className={cn("glass-card p-4 flex items-center gap-3 border-l-4", planCoverage.completed_chunks < planCoverage.total_chunks ? "border-l-amber-500 bg-amber-500/5" : "border-l-emerald-500 bg-emerald-500/5")}>
+          <div className={cn("p-2 rounded-full", planCoverage.completed_chunks < planCoverage.total_chunks ? "bg-amber-500/10" : "bg-emerald-500/10")}>
+            <Sparkles className={cn("h-5 w-5", planCoverage.completed_chunks < planCoverage.total_chunks ? "text-amber-600" : "text-emerald-600")} />
+          </div>
+          <div className="flex-1">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              Processamento do Edital: {planCoverage.completed_chunks === planCoverage.total_chunks ? "Completo" : "Parcial"}
+              <Badge variant={planCoverage.completed_chunks === planCoverage.total_chunks ? "secondary" : "outline"} className="ml-auto text-[10px]">
+                {planCoverage.completed_chunks}/{planCoverage.total_chunks} Chunks
+              </Badge>
+            </h4>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Identificamos <strong>{planCoverage.total_topics} tópicos</strong> em {planCoverage.total_chunks} partes do PDF. 
+              {planCoverage.completed_chunks < planCoverage.total_chunks && " Algumas partes podem ter falhado por timeout da IA."}
+            </p>
+          </div>
+          {planCoverage.completed_chunks < planCoverage.total_chunks && (
+            <Button variant="outline" size="sm" className="h-8 text-xs gap-1 border-amber-200 text-amber-700 hover:bg-amber-100" onClick={generatePlan}>
+              Tentar novamente
+            </Button>
+          )}
         </div>
       )}
 
