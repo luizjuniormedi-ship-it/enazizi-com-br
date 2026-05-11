@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { devLog } from "@/lib/devLog";
 import type { CoreDataResult } from "@/hooks/useCoreData";
 import { adjustPlanByApprovalScore, getAdaptiveMode, type PlanWeights, type AdaptiveMode } from "./approvalScoreWeights";
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
