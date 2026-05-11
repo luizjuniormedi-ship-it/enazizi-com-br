@@ -236,7 +236,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
               setProcessingEdital(false);
               clearInterval(pollInterval);
             } else if (updated?.status === "error" || attempts >= maxAttempts) {
-              const errorMsg = extractedJson?.error || "Tempo limite excedido no processamento.";
+              const errorMsg = (updated?.extracted_json as any)?.error || "Tempo limite excedido no processamento.";
               toast({ title: "Erro no processamento", description: errorMsg, variant: "destructive" });
               setProcessingEdital(false);
               clearInterval(pollInterval);
