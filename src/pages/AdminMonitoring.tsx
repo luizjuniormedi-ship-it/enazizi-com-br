@@ -20,6 +20,7 @@ import { SystemHealthTab } from "@/components/monitoring/SystemHealthTab";
 import { InterventionEfficacyMonitor } from "@/components/admin/InterventionEfficacyMonitor";
 import { AdaptivePathwaysLog } from "@/components/admin/AdaptivePathwaysLog";
 import { VideoRecommendationAuditTab } from "@/components/monitoring/VideoRecommendationAuditTab";
+import { AdaptiveAuditTab } from "@/components/monitoring/AdaptiveAuditTab";
 
 export default function AdminMonitoring() {
   const { session } = useAuth();
