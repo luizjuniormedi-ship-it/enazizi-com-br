@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Server, RefreshCw, Wifi, WifiOff, XCircle,
-  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity, GitMerge, Film,
+  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity, GitMerge, Film, Brain,
 } from "lucide-react";
 import { DashboardData, MentorSummary, StudentRow, RiskAlert } from "@/components/monitoring/MonitoringTypes";
 import { OverviewTab } from "@/components/monitoring/OverviewTab";
