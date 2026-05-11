@@ -17749,25 +17749,37 @@ export type Database = {
       study_plans: {
         Row: {
           created_at: string
+          current_step: string | null
+          error_message: string | null
           id: string
           organization_id: string | null
           plan_json: Json | null
+          progress: number | null
+          status: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          current_step?: string | null
+          error_message?: string | null
           id?: string
           organization_id?: string | null
           plan_json?: Json | null
+          progress?: number | null
+          status?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          current_step?: string | null
+          error_message?: string | null
           id?: string
           organization_id?: string | null
           plan_json?: Json | null
+          progress?: number | null
+          status?: string | null
           updated_at?: string
           user_id?: string
         }
