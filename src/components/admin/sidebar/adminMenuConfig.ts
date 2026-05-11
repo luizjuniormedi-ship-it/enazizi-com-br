@@ -160,7 +160,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["imagem", "fotos", "review"],
       },
       {
-        to: "/admin/medical-review-queue",
+        to: "/admin?tab=question-review",
         label: "Banco de Questões",
         description: "Fila de revisão pedagógica e governança médica.",
         icon: FileQuestion,
@@ -168,7 +168,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["questões", "review", "queue"],
       },
       {
-        to: "/admin/banca-readiness",
+        to: "/admin?tab=system-checklist",
         label: "Simulados",
         description: "Cobertura de bancas, prontidão e telemetria de simulados.",
         icon: FileText,
@@ -176,7 +176,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["simulado", "banca", "prova"],
       },
       {
-        to: "/admin/video-lessons",
+        to: "/admin?tab=uploads",
         label: "Biblioteca",
         description: "Vídeos publicados, materiais e ativos pedagógicos.",
         icon: ImageIcon,
