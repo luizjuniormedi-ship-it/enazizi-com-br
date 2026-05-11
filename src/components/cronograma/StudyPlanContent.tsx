@@ -175,35 +175,51 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
       }
       setEditalText(text);
       toast({ title: "Edital carregado!", description: `${file.name} processado.` });
-    } else if (file.type === "application/pdf") {
+    } else if (file.type === "application/pdf" || 
+               file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+               file.name.endsWith(".docx") || 
+               file.name.endsWith(".doc")) {
       if (!user) return;
       try {
         const ext = file.name.split(".").pop();
         const storagePath = `${user.id}/edital-${Date.now()}.${ext}`;
         const { error: storageError } = await supabase.storage.from("user-uploads").upload(storagePath, file);
         if (storageError) throw storageError;
+        
         const { data: uploadRecord, error: dbError } = await supabase
           .from("uploads")
-          .insert({ user_id: user.id, filename: file.name, file_type: ext || "pdf", category: "edital", storage_path: storagePath, status: "uploaded" })
+          .insert({ 
+            user_id: user.id, 
+            filename: file.name, 
+            file_type: ext || "pdf", 
+            category: "edital", 
+            storage_path: storagePath, 
+            status: "uploaded" 
+          })
           .select()
           .single();
+          
         if (dbError) throw dbError;
+        
         const { data: session } = await supabase.auth.getSession();
         const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
           method: "POST",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
           body: JSON.stringify({ uploadId: uploadRecord.id }),
         });
+        
         if (resp.ok) {
           const { data: updated } = await supabase.from("uploads").select("extracted_text").eq("id", uploadRecord.id).single();
-          if (updated?.extracted_text) setEditalText(updated.extracted_text);
+          if (updated?.extracted_text) {
+            setEditalText(updated.extracted_text);
+            toast({ title: "Edital processado!", description: `Conteúdo extraído de ${file.name}.` });
+          }
         }
-        toast({ title: "Edital processado!", description: "Texto extraído do PDF." });
       } catch (err: any) {
         toast({ title: "Erro ao processar edital", description: err.message, variant: "destructive" });
       }
     } else {
-      toast({ title: "Formato não suportado", description: "Envie PDF ou TXT.", variant: "destructive" });
+      toast({ title: "Formato não suportado", description: "Envie PDF, TXT ou DOCX.", variant: "destructive" });
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
