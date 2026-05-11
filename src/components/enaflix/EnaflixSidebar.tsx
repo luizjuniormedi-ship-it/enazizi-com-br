@@ -28,7 +28,9 @@ import {
   ImageIcon,
   Star,
   Upload,
-  Brain
+  Brain,
+  Stethoscope,
+  ScrollText
 } from "lucide-react";
 
 import { motion, AnimatePresence } from "framer-motion";
