@@ -53,6 +53,8 @@ export interface StudyActionPayload {
   errorBankId?: string;
   /** Daily plan task ID for direct update */
   dailyPlanTaskId?: string;
+  /** Professor plan task ID for direct update */
+  professorPlanTaskId?: string;
 }
 
 export interface StudyActionResult {
