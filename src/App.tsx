@@ -44,6 +44,7 @@ const ChatGPT = lazyWithRetry(() => import("./pages/ChatGPT"), "ChatGPT");
 const ErrorBank = lazyWithRetry(() => import("./pages/ErrorBank"), "ErrorBank");
 const MedicalDomainMap = lazyWithRetry(() => import("./pages/MedicalDomainMap"), "MedicalDomainMap");
 const ProfessorDashboard = lazyWithRetry(() => import("./pages/ProfessorDashboard"), "ProfessorDashboard");
+const NewProfessorSimuladoPage = lazyWithRetry(() => import("./pages/NewProfessorSimuladoPage"), "NewProfessorSimuladoPage");
 const StudentSimulados = lazyWithRetry(() => import("./pages/StudentSimulados"), "StudentSimulados");
 const DiscursiveQuestions = lazyWithRetry(() => import("./pages/DiscursiveQuestions"), "DiscursiveQuestions");
 const ClinicalSimulation = lazyWithRetry(() => import("./pages/ClinicalSimulation"), "ClinicalSimulation");
