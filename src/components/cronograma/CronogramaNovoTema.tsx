@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BookOpen, Save, AlertTriangle, Paperclip, X } from "lucide-react";
+import { BookOpen, Save, AlertTriangle, Paperclip, X, Zap } from "lucide-react";
 
 interface Props {
   specialties: string[];
@@ -63,6 +63,29 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSimulatePDF = () => {
+    const text = `
+    # INFARTO AGUDO DO MIOCÁRDIO (IAM)
+    
+    O infarto agudo do miocárdio é uma emergência médica. 
+    Principais sintomas: dor precordial opressiva, irradiação para braço esquerdo, sudorese.
+    
+    Tópicos para estudo:
+    1. Diagnóstico de IAM com supra de ST
+    2. Marcadores de necrose miocárdica (Troponina)
+    3. Tratamento inicial (MONA: Morfina, Oxigênio, Nitrato, AAS)
+    4. Reperfusão: Trombólise vs Angioplastia
+    5. Complicações pós-IAM (Arritmias, Choque Cardiogênico)
+    
+    O tratamento deve ser rápido ("Tempo é músculo").
+    `;
+    const blob = new Blob([text], { type: "text/plain" });
+    const file = new File([blob], `material_estudo_${Date.now()}.txt`, { type: "text/plain" });
+    setFiles(prev => [...prev, file]);
+    if (!tema) setTema(`Teste Upload ${Date.now()}`);
+    if (!especialidade && specialties.length > 0) setEspecialidade("Cardiologia");
   };
 
   const handleSubmit = () => {
@@ -178,9 +201,14 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
             onChange={handleFileAdd}
             className="hidden"
           />
-          <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
-            <Paperclip className="h-4 w-4 mr-2" /> Anexar arquivos
-          </Button>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+              <Paperclip className="h-4 w-4 mr-2" /> Anexar arquivos
+            </Button>
+            <Button type="button" variant="secondary" size="sm" onClick={handleSimulatePDF}>
+              <Zap className="h-4 w-4 mr-2" /> DEV: Simular PDF
+            </Button>
+          </div>
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
               {files.map((f, i) => (
