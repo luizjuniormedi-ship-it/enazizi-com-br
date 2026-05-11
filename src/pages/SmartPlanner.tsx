@@ -478,7 +478,24 @@ const SmartPlanner = () => {
                   Authorization: `Bearer ${sessionData?.session?.access_token}`,
                 },
                 body: JSON.stringify({ uploadId: uploadRecord.id }),
-              }).catch(err => console.error("Trigger process-upload error:", err));
+              }).then(async (resp) => {
+                if (!resp.ok) {
+                  const errorData = await resp.json().catch(() => ({}));
+                  console.error("[PLANNER_UPLOAD] Edge Function error:", errorData);
+                  toast({
+                    title: "Erro no processamento",
+                    description: errorData.error || "O servidor de IA não respondeu corretamente.",
+                    variant: "destructive"
+                  });
+                }
+              }).catch(err => {
+                console.error("[PLANNER_UPLOAD] Trigger process-upload error:", err);
+                toast({
+                  title: "Falha na conexão",
+                  description: "Não foi possível iniciar a análise do arquivo.",
+                  variant: "destructive"
+                });
+              });
             }
           }
         } catch (err: any) {
