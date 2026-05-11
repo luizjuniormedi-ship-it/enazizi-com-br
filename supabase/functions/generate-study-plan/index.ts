@@ -173,17 +173,19 @@ REGRAS OBRIGATÓRIAS:
 
     const startMs = Date.now();
     const aiResp = await aiFetch({
+      model: "google/gemini-2.5-flash", // Faster and handle more tokens
       messages: [{ role: "user", content: prompt }],
+      timeoutMs: 90000, // 90 seconds internal timeout
     });
     const elapsed = Date.now() - startMs;
 
     if (!aiResp.ok) {
       const errText = await aiResp.text();
       console.error("AI error:", aiResp.status, errText);
-      logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "openai/gpt-5-mini", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast", errorMessage: `status ${aiResp.status}` }).catch(() => {});
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), { status: aiResp.status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "google/gemini-2.5-flash", success: false, responseTimeMs: elapsed, cacheHit: false, modelTier: "balanced", errorMessage: `status ${aiResp.status}` }).catch(() => {});
+      return new Response(JSON.stringify({ error: "O serviço de IA demorou muito para responder. Tente novamente com um edital menor ou sem edital." }), { status: 504, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
-    logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "openai/gpt-5-mini", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "fast" }).catch(() => {});
+    logAiUsage({ userId, functionName: "generate-study-plan", modelUsed: "google/gemini-2.5-flash", success: true, responseTimeMs: elapsed, cacheHit: false, modelTier: "balanced" }).catch(() => {});
 
     const aiData = await aiResp.json();
     const raw = sanitizeAiContent(aiData.choices?.[0]?.message?.content || "");

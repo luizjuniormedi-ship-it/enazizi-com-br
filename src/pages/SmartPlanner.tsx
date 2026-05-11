@@ -183,24 +183,30 @@ const SmartPlanner = () => {
   const handleBulkAddTopics = async (suggestedTopics: any[]) => {
     if (!user) return;
     const todayStr = new Date().toISOString().split("T")[0];
-    const insertedTemas: { id: string; tema: string; especialidade: string }[] = [];
+    // const insertedTemas: { id: string; tema: string; especialidade: string }[] = [];
     
-    for (const st of suggestedTopics) {
-      const { data, error } = await supabase.from("temas_estudados").insert({
-        user_id: user.id,
-        tema: st.tema,
-        especialidade: st.especialidade,
-        subtopico: st.subtopico || null,
-        data_estudo: todayStr,
-        fonte: "ia_suggestion",
-        dificuldade: st.dificuldade || "medio",
-        status: "ativo"
-      } as any).select().single();
-      
-      if (!error && data) {
-        insertedTemas.push({ id: data.id, tema: data.tema, especialidade: data.especialidade });
-      }
+    const temasToInsert = suggestedTopics.map(st => ({
+      user_id: user.id,
+      tema: st.tema,
+      especialidade: st.especialidade,
+      subtopico: st.subtopico || null,
+      data_estudo: todayStr,
+      fonte: "ia_suggestion",
+      dificuldade: st.dificuldade || "medio",
+      status: "ativo"
+    }));
+
+    const { data: insertedData, error: temasError } = await supabase
+      .from("temas_estudados")
+      .insert(temasToInsert as any)
+      .select();
+
+    if (temasError) {
+      toast({ title: "Erro ao adicionar temas", variant: "destructive" });
+      return;
     }
+
+    const insertedTemas = (insertedData || []).map(t => ({ id: t.id, tema: t.tema, especialidade: t.especialidade }));
 
     if (insertedTemas.length > 0) {
       const allReviews: any[] = [];
