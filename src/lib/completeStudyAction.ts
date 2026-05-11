@@ -422,7 +422,7 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
       calculateRiskScore(userId, topic),
     ]).then(([decision, cls, rfs]) => {
       if (decision.action === "mnemonic") {
-        console.log(`[Orchestrator] ${decision.reason}`);
+        devLog(`[Orchestrator] ${decision.reason}`);
         triggerInvisibleMnemonic({
           userId,
           topic,
