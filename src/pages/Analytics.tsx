@@ -211,7 +211,6 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
   const simDiagRate = simHistory.length > 0 ? Math.round((simHistory.filter(h => h.student_got_diagnosis).length / simHistory.length) * 100) : 0;
 
   // Anamnesis
-  const anamnesisData = anamnesisRes.data || [];
   const anamTotal = anamnesisData.length;
   const anamAvgScore = anamTotal > 0 ? Math.round(anamnesisData.reduce((s, a) => s + (a.final_score || 0), 0) / anamTotal) : 0;
   const gradeOrder = ["A+", "A", "B", "C", "D", "F"];
@@ -220,7 +219,6 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
     : "-";
 
   // Discursive
-  const discursiveData = discursiveRes.data || [];
   const discTotal = discursiveData.length;
   const discAvgScore = discTotal > 0
     ? Math.round(discursiveData.reduce((s, d) => s + (Number(d.score) || 0), 0) / discTotal * 10) / 10
