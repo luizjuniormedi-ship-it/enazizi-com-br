@@ -2,13 +2,13 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, MessageSquare, Target, Zap, Brain } from 'lucide-react';
+import { Clock, MessageSquare, Target } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 export const CognitiveTimeline: React.FC = () => {
   const { data: events } = useQuery({
-    queryKey: ['cognitive-timeline'],
+    queryKey: ['cognitive-timeline-v2'],
     queryFn: async () => {
       const { data: tutorEvents, error: tutorError } = await supabase
         .from('tutor_events')
@@ -19,14 +19,28 @@ export const CognitiveTimeline: React.FC = () => {
       const { data: telemetryEvents, error: telemetryError } = await supabase
         .from('telemetry_events')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('timestamp', { ascending: false })
         .limit(10);
 
       if (tutorError || telemetryError) throw tutorError || telemetryError;
 
       const combined = [
-        ...(tutorEvents || []).map(e => ({ ...e, source: 'tutor' })),
-        ...(telemetryEvents || []).map(e => ({ ...e, source: 'telemetry' }))
+        ...(tutorEvents || []).map(e => ({ 
+          id: e.id,
+          created_at: e.created_at,
+          event_type: e.event_type,
+          topic: e.topic,
+          outcome: e.outcome,
+          source: 'tutor' 
+        })),
+        ...(telemetryEvents || []).map(e => ({ 
+          id: e.id,
+          created_at: e.timestamp,
+          event_type: e.event_name,
+          topic: (e.properties as any)?.topic,
+          outcome: null,
+          source: 'telemetry' 
+        }))
       ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 15);
 
@@ -43,8 +57,8 @@ export const CognitiveTimeline: React.FC = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 overflow-y-auto max-h-[600px] pr-2 scrollbar-thin scrollbar-thumb-slate-800">
-        {events?.map((event: any, idx) => (
-          <div key={event.id} className="relative pl-6 border-l border-slate-800 pb-6 last:pb-0">
+        {events?.map((event: any) => (
+          <div key={`${event.source}-${event.id}`} className="relative pl-6 border-l border-slate-800 pb-6 last:pb-0">
             <div className="absolute -left-[5px] top-1 w-2.5 h-2.5 rounded-full bg-slate-800 border border-slate-700" />
             
             <div className="flex justify-between items-start mb-1">
@@ -61,7 +75,7 @@ export const CognitiveTimeline: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-300 font-medium">
-              {event.event_type || event.event_name || 'System Event'}
+              {event.event_type || 'System Event'}
             </p>
             
             {event.topic && (
