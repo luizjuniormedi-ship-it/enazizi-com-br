@@ -22,6 +22,7 @@ export type StudyActionType =
   | "flashcard"
   | "content"
   | "daily_plan"
+  | "professor_plan"
   | "tutor"
   | "question"
   | "simulado"
