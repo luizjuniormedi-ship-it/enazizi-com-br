@@ -554,6 +554,19 @@ const SmartPlanner = () => {
         />
       </div>
 
+      {/* Suggestions */}
+      {showSuggestions && lastUpload && (
+        <div className="px-4 sm:px-8 lg:px-14">
+          <CronogramaSmartSuggestions 
+            uploadId={lastUpload.id}
+            filename={lastUpload.filename}
+            topics={(lastUpload.extracted_json as any)?.suggested_topics || []}
+            onAdd={handleBulkAddTopics}
+            onDismiss={handleDismissSuggestions}
+          />
+        </div>
+      )}
+
 
       {/* Reprocess Panel */}
       {showReprocess && (
