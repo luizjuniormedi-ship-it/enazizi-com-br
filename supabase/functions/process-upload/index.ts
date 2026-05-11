@@ -160,23 +160,29 @@ async function processInBackground(
 
       try {
         const chunkResponse = await aiFetch({
-          model: "google/gemini-2.5-flash-lite",
+          model: "google/gemini-2.0-flash-lite",
           messages: [
             {
               role: "system",
-              content: `Extraia literalemente todos os tópicos de estudo, disciplinas e conteúdos médicos presentes neste trecho de edital.
-              REGRAS:
-              - Não resuma, não omita itens.
-              - Mantenha a hierarquia (tema -> subtopico).
-              - Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
+              content: `Você é um extrator de tópicos médico rigoroso.
+              Extraia EXCLUSIVAMENTE os tópicos de estudo, disciplinas e conteúdos médicos presentes literalmente no texto fornecido.
+              
+              REGRAS CRÍTICAS:
+              1. MODO STRICT: NÃO invente, NÃO infira e NÃO adicione assuntos fora do texto.
+              2. NÃO use conhecimentos prévios para completar o edital.
+              3. Mantenha a hierarquia original se houver.
+              4. Se o texto não contiver tópicos médicos claros, retorne "topics": [].
+              
+              Retorne JSON: {"is_medicine": true, "main_topic": "...", "topics": [{"tema": "...", "especialidade": "...", "dificuldade": "...", "subtopico": "..."}]}`
             },
-            { role: "user", content: `Analise este trecho (Parte ${i+1}/${textChunks.length}):\n\n${textChunks[i].text}` }
+            { role: "user", content: `Extraia os tópicos deste trecho (Parte ${i+1}/${textChunks.length}):\n\n${textChunks[i].text}` }
           ],
           timeoutMs: 45000,
         });
 
         if (chunkResponse.ok) {
           const parsed = parseAiJson((await chunkResponse.json()).choices?.[0]?.message?.content || "");
+          // Filter out potential hallucinations at this stage if they look generic or unrelated
           if (parsed.is_medicine !== false) {
             if (parsed.main_topic && i === 0) mainTopic = parsed.main_topic;
             if (parsed.topics) {
@@ -234,54 +240,25 @@ async function processInBackground(
       }
     }).eq("id", uploadId);
 
-    // 6. Enrichment
-    await updateProgress(supabaseAdmin, uploadId, { step: "generating_flashcards", progress: 85, suggested_topics: uniqueTopics, main_topic: mainTopic });
+    // 6. Enrichment - Disabled in strict mode, but we keep it minimal for non-strict contexts if needed.
+    // However, per instructions, we should disable automatic enrichment that might cause drift.
+    console.log("[PROCESS_UPLOAD] Automatic enrichment (flashcards/questions) skipped for fidelity.");
     let flashcardsCount = 0;
-    try {
-      const fcRes = await aiFetch({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: 'Gere 5-8 flashcards relevantes. JSON: {"flashcards": [{"question": "...", "answer": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere flashcards baseados nestes tópicos principais:\n\n${JSON.stringify(uniqueTopics.slice(0, 15))}` }
-        ],
-        timeoutMs: 55000,
-      });
-      if (fcRes.ok) {
-        const parsed = parseAiJson((await fcRes.json()).choices?.[0]?.message?.content || "");
-        const flashcards = (parsed.flashcards || []).map((fc: any) => ({
-          user_id: userId, question: fc.question, answer: fc.answer, topic: fc.topic || mainTopic, is_global: true
-        })).filter((fc: any) => fc.question && fc.answer && !NON_MEDICAL_CONTENT_REGEX.test(fc.question));
-        if (flashcards.length > 0) {
-          const { error } = await supabaseAdmin.from("flashcards").insert(flashcards);
-          if (!error) flashcardsCount = flashcards.length;
-        }
-      }
-    } catch (e) { console.warn("[PROCESS_UPLOAD] Flashcards failed."); }
-
-    await updateProgress(supabaseAdmin, uploadId, { step: "generating_questions", progress: 95, flashcards_count: flashcardsCount, suggested_topics: uniqueTopics, main_topic: mainTopic });
     let questionsCount = 0;
-    try {
-      const qRes = await aiFetch({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: 'Gere 5-8 questões. JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere questões para estes tópicos:\n\n${JSON.stringify(uniqueTopics.slice(0, 15))}` }
-        ],
-        timeoutMs: 55000,
-      });
-      if (qRes.ok) {
-        const parsed = parseAiJson((await qRes.json()).choices?.[0]?.message?.content || "");
-        const questions = (parsed.questions || []).map((q: any) => ({
-          user_id: userId, statement: q.statement, options: q.options, correct_index: q.correct_index,
-          explanation: q.explanation, topic: q.topic || mainTopic, source: `upload:${upload.filename}`,
-          is_global: true, review_status: "pending"
-        })).filter((q: any) => q.statement && q.options?.length >= 4 && !NON_MEDICAL_CONTENT_REGEX.test(q.statement));
-        if (questions.length > 0) {
-          const { error } = await supabaseAdmin.from("questions_bank").insert(questions);
-          if (!error) questionsCount = questions.length;
-        }
+
+    await supabaseAdmin.from("uploads").update({
+      extracted_json: {
+        flashcards_count: flashcardsCount,
+        questions_count: questionsCount,
+        suggested_topics: uniqueTopics,
+        main_topic: mainTopic,
+        progress: 100,
+        step: "done",
+        enriching: false,
+        total_topics: uniqueTopics.length,
+        total_chunks: textChunks.length
       }
-    } catch (e) { console.warn("[PROCESS_UPLOAD] Questions failed."); }
+    }).eq("id", uploadId);
 
     await supabaseAdmin.from("uploads").update({
       extracted_json: {

@@ -102,6 +102,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [topicMap, setTopicMap] = useState<TopicMapItem[]>([]);
   const [detectedSpecialty, setDetectedSpecialty] = useState("");
   const [tips, setTips] = useState("");
+  const [strictMode, setStrictMode] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [processingEdital, setProcessingEdital] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -301,7 +302,8 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           daysPerWeek: Number(daysPerWeek),
           editalText: editalText || null,
           currentPlanId: planId,
-          coverageStats: extraction?.coverage_stats || null
+          coverageStats: extraction?.coverage_stats || null,
+          strictMode: strictMode
         })
       });
       
