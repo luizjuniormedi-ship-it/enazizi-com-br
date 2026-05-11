@@ -200,12 +200,12 @@ async function processInBackground(
     let questionsCount = 0;
     try {
       const qRes = await aiFetch({
-        model: "openai/gpt-5-mini",
+        model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: 'Gere 5-8 questões. JSON: {"questions": [{"statement": "...", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "...", "topic": "..."}]}' },
-          { role: "user", content: `Gere questões:\n\n${truncatedText.slice(0, 6000)}` }
+          { role: "user", content: `Gere questões:\n\n${truncatedText.slice(0, 10000)}` }
         ],
-        timeoutMs: 30000,
+        timeoutMs: 55000,
       });
       if (qRes.ok) {
         const parsed = parseAiJson((await qRes.json()).choices?.[0]?.message?.content || "");
