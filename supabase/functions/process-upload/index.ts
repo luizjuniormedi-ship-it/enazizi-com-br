@@ -201,7 +201,7 @@ async function processInBackground(
     
     try {
       const topicResponse = await aiFetch({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
