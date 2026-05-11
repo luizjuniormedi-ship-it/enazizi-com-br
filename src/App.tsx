@@ -171,6 +171,8 @@ const App = () => (
               </Route>
               <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
+                <Route path="simulados/novo" element={<NewProfessorSimuladoPage />} />
+                <Route path="simulados/editar/:id" element={<NewProfessorSimuladoPage />} />
               </Route>
               <Route path="/institucional" element={<InstitutionalRoute><EnaflixDashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
