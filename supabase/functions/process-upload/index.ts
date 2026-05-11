@@ -217,10 +217,16 @@ async function processInBackground(
       if (topicResponse.ok) {
         const topicData = await topicResponse.json();
         const content = sanitizeAiContent(topicData.choices?.[0]?.message?.content || "");
+        console.log("[PROCESS_UPLOAD] AI Topic Raw Content:", content);
         try {
           const cleaned = content.replace(/```json\n?/g, "").replace(/```/g, "").trim();
           suggestedTopics = JSON.parse(cleaned).topics || [];
-        } catch {}
+        } catch (e) {
+          console.error("[PROCESS_UPLOAD] AI Topic Parse Error:", e, "Content:", content);
+        }
+      } else {
+        const errText = await topicResponse.text();
+        console.error("[PROCESS_UPLOAD] AI Topic Fetch Failed:", topicResponse.status, errText);
       }
     } catch (e) {
       console.error("Topic suggestion error:", e);
