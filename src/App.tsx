@@ -105,7 +105,7 @@ const App = () => (
                <Route path="/login" element={<Login />} />
                <Route path="/demo-questoes-imagem" element={<DemoImageQuestions />} />
                <Route path="/register" element={<Register />} />
-              <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<Dashboard />} />
                 <Route path="cronograma" element={<Navigate to="/dashboard/planner" replace />} />
                 <Route path="flashcards" element={<Flashcards />} />
@@ -148,18 +148,18 @@ const App = () => (
                 <Route path="prova-pratica" element={<PracticalExam />} />
                 <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
               </Route>
-              <Route path="/admin" element={<AdminRoute><DashboardLayout /></AdminRoute>}>
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
               </Route>
-              <Route path="/professor" element={<ProfessorRoute><DashboardLayout /></ProfessorRoute>}>
+              <Route path="/professor" element={<ProfessorRoute><EnaflixDashboardLayout /></ProfessorRoute>}>
                 <Route index element={<ProfessorDashboard />} />
               </Route>
-              <Route path="/institucional" element={<InstitutionalRoute><DashboardLayout /></InstitutionalRoute>}>
+              <Route path="/institucional" element={<InstitutionalRoute><EnaflixDashboardLayout /></InstitutionalRoute>}>
                 <Route index element={<InstitutionalDashboard />} />
               </Route>
-              <Route path="/mission" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route path="/mission" element={<ProtectedRoute><EnaflixDashboardLayout /></ProtectedRoute>}>
                 <Route index element={<MissionMode />} />
               </Route>
               {/* Canonical redirects — /study/* → /dashboard/* */}
