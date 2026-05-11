@@ -232,7 +232,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
             
             if (updated?.extracted_text || updated?.status === "processed") {
               setEditalText(updated.extracted_text || "");
-              toast({ title: "Edital processado!", description: `Conteúdo completo extraído de ${file.name}.` });
+              toast({ title: "Edital processado!", description: `Conteúdo extraído de ${file.name}.` });
               setProcessingEdital(false);
               clearInterval(pollInterval);
             } else if (updated?.status === "error" || attempts >= maxAttempts) {
