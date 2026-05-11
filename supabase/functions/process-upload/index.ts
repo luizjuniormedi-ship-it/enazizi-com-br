@@ -148,7 +148,7 @@ async function processInBackground(
     let validationResponse;
     try {
       validationResponse = await aiFetch({
-        model: "gpt-4o-mini",
+        model: "openai/gpt-5-mini",
         messages: [
           {
             role: "system",
