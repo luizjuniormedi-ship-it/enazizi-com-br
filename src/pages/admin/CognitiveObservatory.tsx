@@ -190,6 +190,14 @@ const CognitiveObservatory: React.FC = () => {
             initial={{ x: 20, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
+          >
+            <CognitiveAlerts />
+          </motion.div>
+
+          <motion.div
+            initial={{ x: 20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.3 }}
             className="h-full"
           >
             <CognitiveTimeline />
@@ -206,9 +214,14 @@ const CognitiveObservatory: React.FC = () => {
               <p className="text-xs text-slate-400 italic mb-4">
                 "O sistema escolheu priorizar IAM devido à queda súbita na retenção (FSRS) e reincidência de erros em conduta diagnóstica (Error Bank)."
               </p>
-              <Button variant="outline" className="w-full text-[10px] h-8 border-slate-800 hover:bg-slate-900">
-                VIEW REASONING LOGS
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1 text-[10px] h-8 border-slate-800 hover:bg-slate-900">
+                  REASONING LOGS
+                </Button>
+                <Button variant="outline" className="flex-1 text-[10px] h-8 border-slate-800 hover:bg-slate-900">
+                  CALIBRATION
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
