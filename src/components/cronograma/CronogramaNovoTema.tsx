@@ -65,6 +65,14 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleSimulatePDF = () => {
+    const blob = new Blob(["%PDF-1.4\n1 0 obj\n<< /Title (Test PDF) >>\nendobj\ntrailer\n<< /Root 1 0 R >>\n%%EOF"], { type: "application/pdf" });
+    const file = new File([blob], "teste_simulado.pdf", { type: "application/pdf" });
+    setFiles(prev => [...prev, file]);
+    if (!tema) setTema("Teste de Upload Real");
+    if (!especialidade && specialties.length > 0) setEspecialidade(specialties[0]);
+  };
+
   const handleSubmit = () => {
     if (!tema.trim() || !especialidade) return;
     onAdd(tema.trim(), especialidade, subtopico.trim(), dataEstudo, fonte, dificuldade, observacoes.trim(), feitas, erradas, files.length > 0 ? files : undefined);
