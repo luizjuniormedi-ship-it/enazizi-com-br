@@ -606,7 +606,7 @@ serve(async (req) => {
     // ── Justification ──
     const counts = {
       reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length,
-      tasks: tasks.length,
+      tasks: tasks.length + (professorTasks?.length || 0),
       visualErrors: visualErrors.length,
       mnemonicCandidates: mnemonicErrors.length,
     };
