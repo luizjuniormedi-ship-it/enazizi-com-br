@@ -8,6 +8,7 @@
  * Fail-closed: any stage failure → silently abort, user sees nothing.
  */
 import { supabase } from "@/integrations/supabase/client";
+import { devLog } from "@/lib/devLog";
 import { generateOrReuseMnemonicForUser, type MnemonicResult } from "./mnemonicUnifiedService";
 import { type InterventionDecision, type CLSResult, type RFSResult } from "./mnemonicIntelligence";
 
