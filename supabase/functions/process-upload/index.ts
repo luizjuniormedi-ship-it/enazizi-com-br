@@ -390,6 +390,7 @@ Se não encontrar questões válidas, retorne {"questions": []}`
 }
 
 serve(async (req) => {
+  console.log(`[PROCESS_UPLOAD] Request received: ${req.method}`);
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
