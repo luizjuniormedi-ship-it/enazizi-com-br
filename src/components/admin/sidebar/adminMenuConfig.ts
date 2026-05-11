@@ -281,7 +281,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["role", "permission", "rbac"],
       },
       {
-        to: "/admin/intervention-policies",
+        to: "/admin?tab=features",
         label: "Feature Flags",
         description: "Políticas de intervenção e flags de funcionalidades.",
         icon: Flag,
@@ -289,7 +289,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["flag", "policy", "toggle"],
       },
       {
-        to: "/admin/notebooklm",
+        to: "/admin?tab=integrations",
         label: "Integrações",
         description: "Conectores externos (NotebookLM, Stripe, etc).",
         icon: Plug,
