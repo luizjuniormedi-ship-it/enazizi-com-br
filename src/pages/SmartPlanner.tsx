@@ -466,6 +466,10 @@ const SmartPlanner = () => {
               .single();
 
             if (!dbError && uploadRecord) {
+              toast({
+                title: "Processando material...",
+                description: `Estamos analisando "${file.name}" para sugerir tópicos de estudo.`,
+              });
               const { data: sessionData } = await supabase.auth.getSession();
               fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
                 method: "POST",
