@@ -289,7 +289,7 @@ export async function recordBaselineAccuracy(
 export function triggerAdaptiveMnemonicCheck(userId: string, topic: string) {
   checkMnemonicTrigger(userId, topic).then(async (result) => {
     if (!result.shouldTrigger) return;
-    console.log(`[MnemonicAdaptive] Triggering for "${topic}":`, result.reason);
+    devLog(`[MnemonicAdaptive] Triggering for "${topic}":`, result.reason);
 
     const { data: matrixRows } = await supabase
       .from("curriculum_matrix")
@@ -299,7 +299,7 @@ export function triggerAdaptiveMnemonicCheck(userId: string, topic: string) {
       .limit(1);
 
     if (!matrixRows || matrixRows.length === 0) {
-      console.log(`[MnemonicAdaptive] No canonical list found for "${topic}" — skipping generation`);
+      devLog(`[MnemonicAdaptive] No canonical list found for "${topic}" — skipping generation`);
       return;
     }
 
@@ -307,7 +307,7 @@ export function triggerAdaptiveMnemonicCheck(userId: string, topic: string) {
     const canonicalItems = Array.isArray(matrix.gatilhos_clinicos) ? matrix.gatilhos_clinicos : [];
 
     if (canonicalItems.length < 3 || canonicalItems.length > 7) {
-      console.log(`[MnemonicAdaptive] Canonical list has ${canonicalItems.length} items — not in valid range (3-7)`);
+      devLog(`[MnemonicAdaptive] Canonical list has ${canonicalItems.length} items — not in valid range (3-7)`);
       return;
     }
 
