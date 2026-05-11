@@ -119,9 +119,9 @@ async function processInBackground(
       throw new Error(`Formato não suportado: ${fileType}`);
     }
 
-    const truncatedText = (extractedText || "").trim().slice(0, 40000);
+    await supabaseAdmin.from("uploads").update({ extracted_text: truncatedText }).eq("id", uploadId);
+    console.log(`[PROCESS_UPLOAD] Text extracted (${truncatedText.length} chars) for ${uploadId}`);
 
-    if (!truncatedText) {
       console.warn(`[PROCESS_UPLOAD] No text extracted for ${uploadId}`);
       await supabaseAdmin.from("uploads").update({ 
         status: "error", 
