@@ -535,9 +535,21 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
           </div>
           <div className="space-y-2">
             <Label>Edital do concurso (opcional)</Label>
-            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx" className="hidden" onChange={handleEditalUpload} />
-            <div className="border-2 border-dashed border-primary/30 rounded-lg p-4 text-center hover:border-primary/50 transition-colors cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-              {editalFileName ? (
+            <input ref={fileInputRef} type="file" accept=".pdf,.txt,.docx,.doc" className="hidden" onChange={handleEditalUpload} />
+            <div 
+              className={cn(
+                "border-2 border-dashed border-primary/30 rounded-lg p-4 text-center transition-colors cursor-pointer",
+                processingEdital ? "bg-primary/5 cursor-wait" : "hover:border-primary/50"
+              )} 
+              onClick={() => !processingEdital && fileInputRef.current?.click()}
+            >
+              {processingEdital ? (
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                  <p className="text-sm font-medium">Extraindo texto do documento...</p>
+                  <p className="text-xs text-muted-foreground">Aguarde, isso pode levar alguns segundos.</p>
+                </div>
+              ) : editalFileName ? (
                 <div className="flex items-center justify-center gap-2">
                   <BookOpen className="h-5 w-5 text-primary" />
                   <span className="text-sm font-medium">{editalFileName}</span>
@@ -546,7 +558,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               ) : (
                 <>
                   <Upload className="h-8 w-8 text-primary/50 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Envie o edital (PDF ou TXT) para personalizar seu plano</p>
+                  <p className="text-sm text-muted-foreground">Envie o edital (PDF, DOCX ou TXT) para personalizar seu plano</p>
                 </>
               )}
             </div>
