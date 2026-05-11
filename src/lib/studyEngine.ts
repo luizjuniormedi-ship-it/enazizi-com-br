@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { devLog } from "@/lib/devLog";
 import type { CoreDataResult } from "@/hooks/useCoreData";
 import { adjustPlanByApprovalScore, getAdaptiveMode, type PlanWeights, type AdaptiveMode } from "./approvalScoreWeights";
 import { adjustNewTopicsByLock, type ContentLockStatus } from "@/hooks/useContentLock";
@@ -767,7 +768,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     const scoreBoost = approvalScore < 40 ? 10 : 0;
     const priority = cap(70 + Math.min(err.vezes_errado * 3, 15) - i * 2 + (weights.phase === "critico" ? 8 : 0) + errorBoost + scoreBoost);
     // Debug: log canonical ID injection for errors
-    console.log("[StudyEngine] Error rec:", { tema: err.tema, errorId: err.id });
+    devLog("[StudyEngine] Error rec:", { tema: err.tema, errorId: err.id });
 
     // Fase 1.6 — error_bank não tem IDs estruturais; tenta via índice de temas_estudados
     const errIds = temaIdIndex.get(String(err.tema || "").trim().toLowerCase()) || {};
@@ -1333,7 +1334,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
           }
         }
         if (touched > 0) {
-          console.log(
+          devLog(
             `[StudyEngine] coverage boost: ${touched} recs touched — by_subtopic_id=${matchStats.subtopic_id}, by_topic_id=${matchStats.topic_id}, by_name=${matchStats.name}, no_match=${matchStats.none}`,
           );
         }
@@ -1716,7 +1717,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   // Debug: log canonical IDs before applyWeights
   const recsWithIds = recs.filter(r => (r as any).sourceRecordId || (r as any).errorBankId);
   if (recsWithIds.length > 0) {
-    console.log("[StudyEngine] Recs with canonical IDs BEFORE applyWeights:", recsWithIds.length,
+    devLog("[StudyEngine] Recs with canonical IDs BEFORE applyWeights:", recsWithIds.length,
       recsWithIds.slice(0, 3).map(r => ({ id: r.id, type: r.type, sourceRecordId: (r as any).sourceRecordId, errorBankId: (r as any).errorBankId }))
     );
   } else {
@@ -1728,7 +1729,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
 
   // Debug: log canonical IDs after applyWeights
   const resultWithIds = result.filter(r => (r as any).sourceRecordId || (r as any).errorBankId);
-  console.log("[StudyEngine] Recs with canonical IDs AFTER applyWeights:", resultWithIds.length, "of", result.length);
+  devLog("[StudyEngine] Recs with canonical IDs AFTER applyWeights:", resultWithIds.length, "of", result.length);
 
   // ── FALLBACK: guarantee at least 1 task for any user ─────────
   if (result.length === 0) {
@@ -1769,7 +1770,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
   // Debug: final output verification
   if (result.length > 0) {
     const first = result[0] as any;
-    console.log("[StudyEngine] FINAL OUTPUT first rec:", JSON.stringify({
+    devLog("[StudyEngine] FINAL OUTPUT first rec:", JSON.stringify({
       id: first.id, type: first.type, topic: first.topic,
       sourceRecordId: first.sourceRecordId ?? "UNDEFINED",
       errorBankId: first.errorBankId ?? "UNDEFINED",

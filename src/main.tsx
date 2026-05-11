@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
+import { devLog } from "./lib/devLog";
 import {
   APP_RELEASE,
   LOGIN_REFRESH_QUERY_KEY,
@@ -85,12 +86,12 @@ const registerProductionServiceWorker = () => {
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      console.log("[PWA] Nova versão disponível, ativando agora…");
+      devLog("[PWA] Nova versão disponível, atualizando agora...");
       // Triggers SKIP_WAITING → controllerchange → reload above.
       updateSW(true);
     },
     onOfflineReady() {
-      console.log("[PWA] App pronto para uso offline.");
+      devLog("[PWA] App pronto para uso offline.");
     },
     onRegisteredSW(swUrl, registration) {
       if (!registration) return;
@@ -149,7 +150,7 @@ const boot = async () => {
   const storedRelease = localStorage.getItem(RELEASE_KEY);
 
   if (storedRelease && storedRelease !== APP_RELEASE) {
-    console.log(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
+    devLog(`[ENAZIZI] Release changed ${storedRelease} → ${APP_RELEASE}. Clearing caches…`);
     await performHardAppReset({
       preserveSessionEntries: loginRefreshSignature
         ? [[LOGIN_REFRESH_SIGNATURE_KEY, loginRefreshSignature]]
@@ -162,7 +163,7 @@ const boot = async () => {
 
   localStorage.setItem(RELEASE_KEY, APP_RELEASE);
   removeReleaseQueryParam();
-  console.log(`[ENAZIZI] Release: ${APP_RELEASE}`);
+  devLog(`[ENAZIZI] Release: ${APP_RELEASE}`);
 
   if (isPreviewHost || isInIframe) {
     await unregisterServiceWorkers();
