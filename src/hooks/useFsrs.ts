@@ -114,6 +114,13 @@ export function useFsrs() {
         extra: { rating, ref_id: cardRefId },
       });
 
+      // Standardized pedagogical event
+      dispatchPedagogicalEvent('fsrs_reviewed', {
+        cardId: row.id,
+        rating,
+        interval: result.log.scheduled_days
+      });
+
       return result.card;
     },
     [user, getOrCreateCard]
