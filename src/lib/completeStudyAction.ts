@@ -282,6 +282,18 @@ async function syncDailyPlan(userId: string, topic: string, now: string, today: 
   return "daily_plan_tasks";
 }
 
+async function syncProfessorPlan(userId: string, topic: string, now: string, professorPlanTaskId?: string): Promise<string | null> {
+  if (professorPlanTaskId) {
+    const { error } = await supabase
+      .from("professor_plan_daily_tasks")
+      .update({ status: "completed" as any, completed_at: now })
+      .eq("id", professorPlanTaskId)
+      .eq("user_id", userId);
+    return error ? null : "professor_plan_daily_tasks";
+  }
+  return null;
+}
+
 async function logTelemetry(payload: StudyActionPayload, tablesUpdated: string[], errors: string[]) {
   try {
     const { logActivity } = await import("@/lib/activityLogger");
