@@ -153,7 +153,9 @@ const ErrorBank = () => {
       state: { 
         fromErrorBank: true, 
         initialTopic: tema || "",
-        studyMode: targetMode
+        studyMode: targetMode,
+        prefillTopic: tema || "",
+        source: tema ? 'error_bank' : 'error_bank_full_review'
       } 
     });
   };
