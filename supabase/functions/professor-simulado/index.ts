@@ -1513,6 +1513,13 @@ REGRAS INVIOLÁVEIS:
           strongest_specialty: strongestSpec,
           trend_7d: null,
           trend_30d: trend30,
+          // Sample sizes for reliability
+          samples: {
+            retention_reviews: fsrsReviews30?.length || 0,
+            stability_cards: fsrsAll?.length || 0,
+            cognitive_events: (fsrsReviews30?.length || 0) + (pa30?.length || 0),
+            students_with_data: validRet.length
+          }
         };
 
         // cognitive_matrix: specialty x metric
@@ -1585,6 +1592,7 @@ REGRAS INVIOLÁVEIS:
           cognitive_summary,
           cognitive_matrix,
           student_cognitive_risks: studentCognitiveRisks,
+          timestamp: new Date().toISOString(),
         });
       }
 

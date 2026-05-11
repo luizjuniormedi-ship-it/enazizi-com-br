@@ -19,6 +19,12 @@ interface CognitiveSummary {
   strongest_specialty: string | null;
   trend_7d: "up" | "down" | "stable" | null;
   trend_30d: "up" | "down" | "stable" | null;
+  samples?: {
+    retention_reviews: number;
+    stability_cards: number;
+    cognitive_events: number;
+    students_with_data: number;
+  };
 }
 
 interface AnalyticsLite {
@@ -31,6 +37,7 @@ interface AnalyticsLite {
     activity_completion_rate: number;
   };
   cognitive_summary?: CognitiveSummary | null;
+  timestamp?: string;
 }
 
 interface Props {
@@ -38,12 +45,15 @@ interface Props {
   loading?: boolean;
 }
 
-type Tone = "neutral" | "good" | "warning" | "critical";
+type Tone = "neutral" | "good" | "warning" | "critical" | "insufficient";
 interface Kpi {
   icon: React.ElementType;
   label: string;
   value: number | string;
   tone: Tone;
+  insufficient?: boolean;
+  sampleSize?: number;
+  threshold?: number;
 }
 
 export default function OperationalKpiBar({ analytics, loading }: Props) {
@@ -75,36 +85,71 @@ export default function OperationalKpiBar({ analytics, loading }: Props) {
 
   const cognitive: Kpi[] = [];
   if (cog) {
-    if (cog.avg_retention !== null) cognitive.push({
-      icon: Brain,
-      label: "Retenção média",
-      value: `${cog.avg_retention}%`,
-      tone: cog.avg_retention >= 75 ? "good" : cog.avg_retention >= 60 ? "warning" : "critical",
-    });
-    if (cog.avg_lapses !== null) cognitive.push({
-      icon: TrendingDown,
-      label: "Lapses médio",
-      value: cog.avg_lapses,
-      tone: cog.avg_lapses <= 1 ? "good" : cog.avg_lapses <= 2 ? "warning" : "critical",
-    });
-    if (cog.avg_stability !== null) cognitive.push({
-      icon: Brain,
-      label: "Stability FSRS",
-      value: cog.avg_stability,
-      tone: cog.avg_stability >= 5 ? "good" : cog.avg_stability >= 2 ? "warning" : "critical",
-    });
-    if (cog.overload_students > 0) cognitive.push({
-      icon: Zap,
-      label: "Sobrecarga",
-      value: cog.overload_students,
-      tone: "warning",
-    });
-    if (cog.burnout_risk_students > 0) cognitive.push({
-      icon: Flame,
-      label: "Risco burnout",
-      value: cog.burnout_risk_students,
-      tone: "critical",
-    });
+    const samples = cog.samples || { retention_reviews: 0, cognitive_events: 0, stability_cards: 0, students_with_data: 0 };
+    
+    // Thresholds: Retention >= 20 reviews, Burnout/Events >= 10 events
+    const hasRetentionData = samples.retention_reviews >= 20;
+    const hasCognitiveData = samples.cognitive_events >= 10;
+
+    if (cog.avg_retention !== null) {
+      cognitive.push({
+        icon: Brain,
+        label: "Retenção média",
+        value: hasRetentionData ? `${cog.avg_retention}%` : "---",
+        tone: hasRetentionData ? (cog.avg_retention >= 75 ? "good" : cog.avg_retention >= 60 ? "warning" : "critical") : "insufficient",
+        insufficient: !hasRetentionData,
+        sampleSize: samples.retention_reviews,
+        threshold: 20
+      });
+    }
+
+    if (cog.avg_lapses !== null) {
+      cognitive.push({
+        icon: TrendingDown,
+        label: "Lapses médio",
+        value: hasCognitiveData ? cog.avg_lapses : "---",
+        tone: hasCognitiveData ? (cog.avg_lapses <= 1 ? "good" : cog.avg_lapses <= 2 ? "warning" : "critical") : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
+
+    if (cog.avg_stability !== null) {
+      cognitive.push({
+        icon: Brain,
+        label: "Stability FSRS",
+        value: hasCognitiveData ? cog.avg_stability : "---",
+        tone: hasCognitiveData ? (cog.avg_stability >= 5 ? "good" : cog.avg_stability >= 2 ? "warning" : "critical") : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
+
+    if (cog.overload_students > 0 || !hasCognitiveData) {
+      cognitive.push({
+        icon: Zap,
+        label: "Sobrecarga",
+        value: hasCognitiveData ? cog.overload_students : "---",
+        tone: hasCognitiveData ? "warning" : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
+
+    if (cog.burnout_risk_students > 0 || !hasCognitiveData) {
+      cognitive.push({
+        icon: Flame,
+        label: "Risco burnout",
+        value: hasCognitiveData ? cog.burnout_risk_students : "---",
+        tone: hasCognitiveData ? "critical" : "insufficient",
+        insufficient: !hasCognitiveData,
+        sampleSize: samples.cognitive_events,
+        threshold: 10
+      });
+    }
   }
 
   return (
@@ -133,31 +178,57 @@ export default function OperationalKpiBar({ analytics, loading }: Props) {
           {cog.strongest_specialty && <> · mais forte: <strong className="text-emerald-200">{cog.strongest_specialty}</strong></>}
         </div>
       )}
+
+      {analytics?.timestamp && (
+        <div className="flex justify-end pr-1">
+          <span className="text-[9px] text-white/20 uppercase font-black tracking-widest flex items-center gap-1">
+            <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+            Atualizado em {new Date(analytics.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-function KpiCard({ icon: Icon, label, value, tone }: Kpi) {
+function KpiCard({ icon: Icon, label, value, tone, insufficient, sampleSize, threshold }: Kpi) {
   const toneClass = {
     neutral: "border-white/10 bg-white/[0.03]",
     good: "border-emerald-500/25 bg-emerald-500/5",
     warning: "border-amber-500/25 bg-amber-500/5",
     critical: "border-rose-500/30 bg-rose-500/5",
+    insufficient: "border-white/5 bg-white/[0.01] opacity-60",
   }[tone];
+  
   const iconClass = {
     neutral: "text-white/50",
     good: "text-emerald-400",
     warning: "text-amber-400",
     critical: "text-rose-400",
+    insufficient: "text-white/20",
   }[tone];
 
   return (
-    <div className={cn("rounded-xl border px-3 py-2.5", toneClass)}>
+    <div className={cn("rounded-xl border px-3 py-2.5 relative overflow-hidden group transition-all duration-300", toneClass)}>
       <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-white/50">
         <Icon className={cn("h-3 w-3", iconClass)} />
         {label}
       </div>
-      <div className="text-xl font-black text-white mt-0.5">{value}</div>
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2 mt-0.5">
+          <div className="text-xl font-black text-white">{value}</div>
+          {insufficient && (
+             <div className="text-[7px] font-black text-amber-500 bg-amber-500/10 px-1 py-0.5 rounded uppercase tracking-tighter">
+               Baixa Amostra
+             </div>
+          )}
+        </div>
+        {insufficient && sampleSize !== undefined && (
+          <div className="text-[8px] font-bold text-white/20 uppercase tracking-tighter mt-1">
+            {sampleSize} / {threshold} eventos
+          </div>
+        )}
+      </div>
     </div>
   );
 }
