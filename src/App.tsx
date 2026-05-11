@@ -67,6 +67,7 @@ const Rankings = lazyWithRetry(() => import("./pages/Rankings"), "Rankings");
 const MedicalImageQuiz = lazyWithRetry(() => import("./pages/MedicalImageQuiz"), "MedicalImageQuiz");
 const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "PracticalExam");
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
+const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixPage");
 
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 
