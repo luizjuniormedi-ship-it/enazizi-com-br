@@ -152,7 +152,7 @@ export function useAdaptiveAudit() {
       // Check if study sessions lead to correct answers in practice
       const { data: practice } = await supabase
         .from("practice_attempts")
-        .select("topic, correct, created_at")
+        .select("correct, created_at")
         .order("created_at", { ascending: false })
         .limit(100);
       
