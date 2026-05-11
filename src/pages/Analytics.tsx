@@ -45,12 +45,11 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
   const [
     attemptsRes, flashcardsRes, uploadsRes, tasksRes, examsRes, perfRes,
     simHistoryRes, anamnesisRes, discursiveRes, chroniclesRes, imageQuizRes, chatConvRes,
-    teacherSimRes, teacherClinicalRes,
+    teacherSimRes, teacherClinicalRes, videoQuizRes, simSessionsRes,
   ] = await Promise.all([
     supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", userId).order("created_at", { ascending: false }).limit(500),
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    // [planner-unification] Fonte viva: daily_plan_tasks (substitui study_tasks legado)
     supabase.from("daily_plan_tasks").select("completed, created_at").eq("user_id", userId),
     supabase.from("exam_sessions").select("title, score, finished_at, total_questions").eq("user_id", userId).eq("status", "finished").order("finished_at", { ascending: false }).limit(10),
     supabase.from("study_performance").select("*").eq("user_id", userId).maybeSingle(),
@@ -60,9 +59,10 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
     supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("agent_type", "medical-chronicle"),
     supabase.from("medical_image_attempts").select("correct").eq("user_id", userId),
     supabase.from("chat_conversations").select("id", { count: "exact", head: true }).eq("user_id", userId),
-    // Additional sources to match Dashboard
     supabase.from("teacher_simulado_results").select("total_questions, score, finished_at").eq("student_id", userId),
     supabase.from("teacher_clinical_case_results").select("id", { count: "exact", head: true }).eq("student_id", userId),
+    supabase.from("video_lesson_quiz_attempts").select("score, total_questions").eq("user_id", userId),
+    supabase.from("simulation_sessions").select("final_score, status").eq("user_id", userId).eq("status", "finished"),
   ]);
 
   const attempts = attemptsRes.data || [];
@@ -71,7 +71,7 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
   const tasks = tasksRes.data || [];
   const completedTasks = tasks.filter(t => t.completed).length;
 
-  // Unified accuracy: practice_attempts + exam_sessions + teacher_simulado_results (same as Dashboard)
+  // Unified aggregation logic for "Total Questions" and "Total Correct"
   const examData = examsRes.data || [];
   const examQuestionsTotal = examData.reduce((sum, e: any) => sum + (e.total_questions || 0), 0);
   const examCorrectTotal = examData.reduce((sum, e: any) => {
@@ -86,8 +86,53 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
     return sum + Math.round(((e.score || 0) / 100) * total);
   }, 0);
 
-  const totalQuestions = practiceTotal + examQuestionsTotal + teacherQuestionsTotal;
-  const totalCorrect = practiceCorrect + examCorrectTotal + teacherCorrectTotal;
+  const imageQuizData = imageQuizRes.data || [];
+  const imageQuestionsTotal = imageQuizData.length;
+  const imageCorrectTotal = imageQuizData.filter(a => a.correct).length;
+
+  const videoQuizData = videoQuizRes.data || [];
+  const videoQuestionsTotal = videoQuizData.reduce((sum, v: any) => sum + (v.total_questions || 0), 0);
+  const videoCorrectTotal = videoQuizData.reduce((sum, v: any) => sum + Math.round(((v.score || 0) / 100) * (v.total_questions || 0)), 0);
+
+  const discursiveData = discursiveRes.data || [];
+  const discursiveQuestionsTotal = discursiveData.length;
+  const discursiveCorrectTotal = discursiveData.reduce((sum, d: any) => sum + (Number(d.score) >= (Number(d.max_score) * 0.7) ? 1 : 0), 0);
+
+  const anamnesisData = anamnesisRes.data || [];
+  const anamnesisQuestionsTotal = anamnesisData.length;
+  const anamnesisCorrectTotal = anamnesisData.reduce((sum, a: any) => sum + (Number(a.final_score) >= 70 ? 1 : 0), 0);
+
+  const clinicalHistoryData = simHistoryRes.data || [];
+  const clinicalQuestionsTotal = clinicalHistoryData.length;
+  const clinicalCorrectTotal = clinicalHistoryData.reduce((sum, h: any) => sum + (h.student_got_diagnosis ? 1 : 0), 0);
+
+  const simSessionsData = simSessionsRes.data || [];
+  const simSessionsTotal = simSessionsData.length;
+  const simSessionsCorrect = simSessionsData.reduce((sum, s: any) => sum + (Number(s.final_score) >= 70 ? 1 : 0), 0);
+
+  // Final Summation
+  const totalQuestions = 
+    practiceTotal + 
+    examQuestionsTotal + 
+    teacherQuestionsTotal + 
+    imageQuestionsTotal + 
+    videoQuestionsTotal + 
+    discursiveQuestionsTotal + 
+    anamnesisQuestionsTotal + 
+    clinicalQuestionsTotal + 
+    simSessionsTotal;
+
+  const totalCorrect = 
+    practiceCorrect + 
+    examCorrectTotal + 
+    teacherCorrectTotal + 
+    imageCorrectTotal + 
+    videoCorrectTotal + 
+    discursiveCorrectTotal + 
+    anamnesisCorrectTotal + 
+    clinicalCorrectTotal + 
+    simSessionsCorrect;
+
   const accuracy = totalQuestions > 0 ? Math.min(Math.round((totalCorrect / totalQuestions) * 100), 100) : 0;
 
   // Topic breakdown (practice_attempts only — has topic detail)
