@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { devLog } from "@/lib/devLog";
 import { generateOrReuseMnemonicForUser } from "./mnemonicUnifiedService";
 
 // ══════════════════════════════════════════════════
