@@ -122,6 +122,7 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
         }}
         onSkip={(taskId) => updateStatus.mutate({ taskId, status: "skipped" })}
         busy={updateStatus.isPending}
+        navigate={navigate}
       />
 
       <TimelineBlock
