@@ -164,6 +164,7 @@ const App = () => (
               </Route>
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
+                <Route path="users" element={<Navigate to="/admin?tab=users-all" replace />} />
                 <Route path="monitoring" element={<AdminMonitoring />} />
                 <Route path="ceo" element={<AdminCEO />} />
               </Route>
