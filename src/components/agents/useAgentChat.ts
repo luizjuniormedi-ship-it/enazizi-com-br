@@ -344,6 +344,16 @@ export function useAgentChat(opts: UseAgentChatOptions) {
           onError: ({ status, message }) => {
             console.error(`[TUTOR] SEND_FAILED id=${requestId}`, { status, message });
             clearTimeout(watchdogTimeout);
+            
+            telemetry.track("tutor_error_detected", {
+              requestId,
+              status,
+              reason: message,
+              elapsed_ms: Date.now() - startTime,
+              provider: "edge_function",
+              phase: loadingStage
+            });
+
             toast({ 
               title: "Tutor IA Indisponível", 
               description: message || "Erro ao conectar com o agente IA", 
