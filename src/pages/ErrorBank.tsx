@@ -135,13 +135,13 @@ const ErrorBank = () => {
       return;
     }
     
-    // Mapeamento de modos do Error Bank para o StudySession
+    // Mapeamento de modos do Error Bank para o StudySession (Cognitive OS V6)
     const modeMapping: Record<string, string> = {
-      "revisar": "review",
-      "questoes": "practice",
-      "casos": "practice", // Pode ser refinado para um modo clínico se disponível
-      "completa": "full",
-      "treinar": "correction"
+      "revisar": "full",      // Aula completa
+      "questoes": "practice",  // Questão direta
+      "casos": "practice",     // Casos clínicos (via modo practice)
+      "completa": "full",      // Revisão completa
+      "treinar": "correction"  // Corrigir erros
     };
 
     const targetMode = modeMapping[mode] || "full";
