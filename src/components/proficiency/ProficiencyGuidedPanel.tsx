@@ -14,6 +14,7 @@ import {
   Brain,
   Repeat,
   History,
+  Play,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
