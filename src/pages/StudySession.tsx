@@ -5,7 +5,7 @@ console.error("🔥 BUILD_FORENSE", {
 });
 import { useState, useRef, useEffect, useCallback, memo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useSessionPersistence } from "@/hooks/useSessionPersistence";
 import ResumeSessionBanner from "@/components/layout/ResumeSessionBanner";
@@ -99,6 +99,7 @@ const SUGGESTED_TOPICS = [
 
 const StudySession = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -186,18 +187,36 @@ const StudySession = () => {
     const paramAuto = searchParams.get("auto");
     const paramOrigin = searchParams.get("origin");
     const paramFocus = searchParams.get("focus");
+    const stateMode = location.state?.studyMode;
+    
     const shouldAuto =
       paramTopic &&
       phase === "start" &&
-      (paramAuto === "1" || paramAuto === "true" || paramOrigin === "cockpit" || paramOrigin === "guided");
+      (paramAuto === "1" || paramAuto === "true" || paramOrigin === "cockpit" || paramOrigin === "guided" || location.state?.fromErrorBank);
 
     if (shouldAuto) {
       autoStartedRef.current = true;
       setTopic(paramTopic);
       setTopicInput(paramTopic);
-      // If focused on review/errors, jump straight to a "review" or "correction" mode
-      const mode: StudyMode = paramFocus === "reviews" ? "review" : paramFocus === "errors" ? "correction" : "full";
-      // Tiny delay so state settles before triggering
+      
+      // Determinar o modo de estudo baseado no estado ou parâmetros
+      let mode: StudyMode = "full";
+      if (stateMode && ["compact", "full", "review", "correction", "practice"].includes(stateMode)) {
+        mode = stateMode as StudyMode;
+      } else if (paramFocus) {
+        const focusMap: Record<string, StudyMode> = {
+          "reviews": "review",
+          "review": "review",
+          "errors": "correction",
+          "correction": "correction",
+          "practice": "practice",
+          "questoes": "practice",
+          "compact": "compact",
+          "full": "full"
+        };
+        mode = focusMap[paramFocus] || "full";
+      }
+
       trackAction('study_session_started', { topic: paramTopic, mode });
       const t = setTimeout(() => {
         handleStyleSelect(mode, paramTopic);
