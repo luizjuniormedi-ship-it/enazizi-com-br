@@ -69,6 +69,10 @@ const PracticalExam = lazyWithRetry(() => import("./pages/PracticalExam"), "Prac
 const InstitutionalDashboard = lazyWithRetry(() => import("./pages/InstitutionalDashboard"), "InstitutionalDashboard");
 const EnaflixPage = lazyWithRetry(() => import("./pages/EnaflixPage"), "EnaflixPage");
 
+const VideoLessonsExplore = lazyWithRetry(() => import("./pages/VideoLessonsExplore"), "VideoLessonsExplore");
+const VideoLessonPlayer = lazyWithRetry(() => import("./pages/VideoLessonPlayer"), "VideoLessonPlayer");
+const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibrary"), "VideoLessonsLibrary");
+
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 
 const PageLoader = () => (
@@ -149,6 +153,11 @@ const App = () => (
                 <Route path="rankings" element={<Rankings />} />
                 <Route path="prova-pratica" element={<PracticalExam />} />
                 <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
+                <Route path="videoaulas" element={<VideoLessonsLibrary />} />
+                <Route path="videoaulas/explorar" element={<VideoLessonsExplore />} />
+                <Route path="videoaulas/:id" element={<VideoLessonPlayer />} />
+                <Route path="favoritos" element={<Navigate to="/dashboard" replace />} />
+                <Route path="historico" element={<Navigate to="/dashboard" replace />} />
                 <Route path="tutor-v2" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="tutor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />

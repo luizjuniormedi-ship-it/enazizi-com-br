@@ -46,6 +46,7 @@ const REVIEW_MODES = [
   { id: "casos", label: "Casos clínicos", icon: Stethoscope, description: "Mini casos para treinar raciocínio", color: "text-emerald-400" },
   { id: "completa", label: "Revisão completa", icon: ListChecks, description: "Revisa todos os temas fracos sequencialmente", color: "text-accent" },
   { id: "mnemonico", label: "Gerar Mnemônico", icon: Sparkles, description: "Mnemônico visual para fixar os pontos fracos", color: "text-violet-400" },
+  { id: "tutor", label: "Tutor IA Especialista", icon: Brain, description: "Conversar com o tutor sobre seus erros", color: "text-primary" },
 ];
 
 const ErrorBank = () => {
@@ -65,13 +66,19 @@ const ErrorBank = () => {
   const loadErrors = async () => {
     if (!user) return;
     setLoading(true);
-    const [activeRes, masteredRes] = await Promise.all([
-      supabase.from("error_bank").select("*").eq("user_id", user.id).or("dominado.is.null,dominado.eq.false").order("vezes_errado", { ascending: false }),
-      supabase.from("error_bank").select("*").eq("user_id", user.id).eq("dominado", true).order("dominado_em", { ascending: false }),
-    ]);
-    setErrors((activeRes.data as ErrorEntry[]) || []);
-    setMasteredErrors((masteredRes.data as ErrorEntry[]) || []);
-    setLoading(false);
+    try {
+      const [activeRes, masteredRes] = await Promise.all([
+        supabase.from("error_bank").select("*").eq("user_id", user.id).or("dominado.is.null,dominado.eq.false").order("vezes_errado", { ascending: false }),
+        supabase.from("error_bank").select("*").eq("user_id", user.id).eq("dominado", true).order("dominado_em", { ascending: false }),
+      ]);
+      setErrors((activeRes.data as ErrorEntry[]) || []);
+      setMasteredErrors((masteredRes.data as ErrorEntry[]) || []);
+    } catch (err) {
+      console.error("Error loading errors:", err);
+      toast({ title: "Erro ao carregar dados", description: "Não foi possível carregar seu banco de erros.", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const weeklyData = useMemo(() => {
@@ -125,40 +132,48 @@ const ErrorBank = () => {
   }, [errors]);
 
   const startReviewMode = (mode: string, tema?: string) => {
-    const topTema = tema || errors[0]?.tema || "";
+    try {
+      const topTema = tema || errors[0]?.tema || "";
+      
+      // Fallback para quando não há erros e tenta-se iniciar modo geral
+      if (!tema && errors.length === 0 && mode !== "mnemonico") {
+        toast({ title: "Sem erros ativos", description: "Você não possui erros registrados para este modo de revisão." });
+        return;
+      }
 
-    if (mode === "mnemonico") {
-      const items = errors
-        .filter((e) => e.tema === topTema)
-        .map((e) => e.subtema || e.categoria_erro || e.motivo_erro || e.tema)
-        .filter((v, i, a) => v && a.indexOf(v) === i)
-        .slice(0, 7);
-      navigate("/dashboard/mnemonico", { state: { prefillTopic: topTema, fromErrorBank: true } });
-      return;
+      if (mode === "mnemonico") {
+        navigate("/dashboard/mnemonico", { state: { prefillTopic: topTema || "Geral", fromErrorBank: true } });
+        return;
+      }
+      
+      // Mapeamento de modos do Error Bank para o StudySession (Cognitive OS V6)
+      const modeMapping: Record<string, string> = {
+        "revisar": "aula_completa",
+        "questoes": "questao_direta",
+        "casos": "revisao_prova",
+        "completa": "revisao_prova",
+        "treinar": "aula_completa",
+        "tutor": "full"
+      };
+
+      const targetMode = modeMapping[mode as keyof typeof modeMapping] || "aula_completa";
+      const topicParam = topTema ? `&topic=${encodeURIComponent(topTema)}` : "";
+      
+      // Navegação absoluta para evitar 404s
+      const targetUrl = `/dashboard/sessao-estudo?auto=true&focus=${targetMode}${topicParam}`;
+      
+      navigate(targetUrl, { 
+        state: { 
+          prefillTopic: topTema,
+          source: tema ? 'error_bank_theme' : 'error_bank_full_review',
+          studyMode: targetMode,
+          fromErrorBank: true
+        } 
+      });
+    } catch (err) {
+      console.error("Navigation error in ErrorBank:", err);
+      toast({ title: "Erro de navegação", description: "Não foi possível abrir a sessão de estudo.", variant: "destructive" });
     }
-    
-    // Mapeamento de modos do Error Bank para o StudySession (Cognitive OS V6)
-    // Conforme especificado no prompt-fix-error-bank-navigation.md
-    const modeMapping: Record<string, string> = {
-      "revisar": "aula_completa",
-      "questoes": "questao_direta",
-      "casos": "revisao_prova",
-      "completa": "revisao_prova",
-      "treinar": "aula_completa"
-    };
-
-    const targetMode = modeMapping[mode as keyof typeof modeMapping] || "aula_completa";
-    const topicParam = tema ? `&topic=${encodeURIComponent(tema)}` : "";
-    
-    // Navega para sessao-estudo com os parâmetros necessários para auto-start
-    navigate(`/dashboard/sessao-estudo?auto=true&focus=${targetMode}${topicParam}`, { 
-      state: { 
-        prefillTopic: tema || topTema,
-        source: tema ? 'error_bank' : 'error_bank_full_review',
-        studyMode: targetMode,
-        fromErrorBank: true
-      } 
-    });
   };
 
   const generateFlashcardsFromErrors = async () => {
