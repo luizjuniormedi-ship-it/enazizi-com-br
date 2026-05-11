@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CalendarDays,
   GraduationCap,
@@ -13,6 +14,7 @@ import {
   Brain,
   Repeat,
   History,
+  Play,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +60,7 @@ export default function ProficiencyGuidedPanel() {
 }
 
 function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
+  const navigate = useNavigate();
   const dailyQ = useProficiencyDailyTasks(plan.id);
   const weekQ = useProficiencyWeekTasks(plan.id, undefined, 14);
   const generate = useGenerateProficiencyPlan();
@@ -120,6 +123,7 @@ function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
         }}
         onSkip={(taskId) => updateStatus.mutate({ taskId, status: "skipped" })}
         busy={updateStatus.isPending}
+        navigate={navigate}
       />
 
       <TimelineBlock
@@ -340,12 +344,14 @@ function DailyTasksBlock({
   onComplete,
   onSkip,
   busy,
+  navigate,
 }: {
   loading: boolean;
   tasks: ProficiencyDailyTask[];
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
   busy: boolean;
+  navigate: any;
 }) {
   return (
     <Card className="border-primary/30">
@@ -364,7 +370,7 @@ function DailyTasksBlock({
             Nenhuma tarefa atribuída para hoje. Aproveite para revisar erros ou aguardar a próxima janela.
           </p>
         ) : (
-          tasks.map((t) => <TaskRow key={t.id} task={t} onComplete={onComplete} onSkip={onSkip} busy={busy} />)
+          tasks.map((t) => <TaskRow key={t.id} task={t} onComplete={onComplete} onSkip={onSkip} busy={busy} navigate={navigate} />)
         )}
       </CardContent>
     </Card>
@@ -376,17 +382,25 @@ function TaskRow({
   onComplete,
   onSkip,
   busy,
+  navigate,
 }: {
   task: ProficiencyDailyTask;
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
   busy: boolean;
+  navigate: any;
 }) {
   const meta = taskMeta(task.task_type);
   const subtopicName = (task.task_payload?.subtopic_name as string | undefined) ?? "Subtema";
   const isDone = task.status === "completed";
   const isSkipped = task.status === "skipped";
   const isOverdue = task.status === "overdue";
+
+  const handleStart = () => {
+    const mode = task.task_type === "theory" ? "full" : task.task_type === "questions" ? "practice" : "review";
+    const topic = task.task_payload?.subtopic_name || "";
+    navigate(`/dashboard/sessao-estudo?topic=${encodeURIComponent(topic)}&origin=guided&auto=1&assignmentId=${task.id}&focus=${mode}`);
+  };
 
   return (
     <div
@@ -427,6 +441,15 @@ function TaskRow({
               className="text-xs h-7"
             >
               Pular
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleStart}
+              disabled={busy}
+              className="gap-1 h-7 text-xs"
+            >
+              <Play className="h-3.5 w-3.5" /> Iniciar
             </Button>
             <Button
               size="sm"

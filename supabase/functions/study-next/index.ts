@@ -52,7 +52,8 @@ serve(async (req) => {
       fsrsDue, approvalData, profile, gamification,
       imageQuizCount, visualAttempts,
       mnemonicFeedbackAgg, mnemonicResultsForUser,
-      active_experiments, user_assignments, cognitive_state
+      active_experiments, user_assignments, cognitive_state,
+      professorTasks
     ] = await Promise.all([
       safeQuery<any[]>(db, (c) => {
         let q = c.from("revisoes")
@@ -154,6 +155,15 @@ serve(async (req) => {
           .eq("user_id", userId)
           .maybeSingle(),
         "cognitive_state"),
+      safeQuery<any[]>(db, (c) =>
+        c.from("professor_plan_daily_tasks")
+          .select("id, task_type, task_payload, planned_date")
+          .eq("user_id", userId)
+          .eq("status", "pending")
+          .eq("planned_date", today)
+          .order("created_at", { ascending: true })
+          .limit(5),
+        "professor_tasks"),
     ]);
 
     const reviews = pendingReviews ?? [];
@@ -372,6 +382,28 @@ serve(async (req) => {
       });
     }
 
+    for (const profTask of (professorTasks || [])) {
+      const payload = profTask.task_payload as any;
+      const tema = payload?.subtopic_name || "Tema do Professor";
+      const taskLabel = profTask.task_type === "theory" ? "Estudar" : profTask.task_type === "questions" ? "Praticar" : "Revisar";
+      
+      candidates.push({
+        type: "daily_task", // Mirror type for hero compatibility
+        title: `${taskLabel}: ${tema}`,
+        description: `Missão prioritária atribuída pelo seu professor.`,
+        targetId: profTask.id,
+        targetType: "professor_plan_task",
+        estimatedMinutes: profTask.task_type === "theory" ? 20 : 15,
+        priorityScore: 120, // Higher than regular tasks
+        contextPayload: {
+          professor_plan_id: profTask.plan_id,
+          subtopic_id: payload?.subtopic_id,
+          topic: tema,
+          mode: profTask.task_type === "theory" ? "full" : profTask.task_type === "questions" ? "practice" : "review"
+        }
+      });
+    }
+
     // ── Image Quiz candidate ──
     const visualSnapshots = await safeQuery<any[]>(db, (c) =>
       c.from("visual_skill_snapshots")
@@ -574,7 +606,7 @@ serve(async (req) => {
     // ── Justification ──
     const counts = {
       reviews: reviews.length, fsrs: fsrsCards.length, errors: errors.length,
-      tasks: tasks.length,
+      tasks: tasks.length + (professorTasks?.length || 0),
       visualErrors: visualErrors.length,
       mnemonicCandidates: mnemonicErrors.length,
     };
@@ -587,6 +619,7 @@ serve(async (req) => {
       recoveryActive,
       contentLocked,
       pendingReviews: reviews.length + fsrsCards.length,
+      professorTasksCount: professorTasks?.length || 0,
       weakTopicsCount: new Set(errors.map((e: any) => e.tema)).size,
       examProximityDays,
       visualWeaknesses: visualErrors.length,
