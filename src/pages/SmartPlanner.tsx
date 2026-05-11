@@ -183,7 +183,7 @@ const SmartPlanner = () => {
   const handleBulkAddTopics = async (suggestedTopics: any[]) => {
     if (!user) return;
     const todayStr = new Date().toISOString().split("T")[0];
-    const insertedTemas: { id: string; tema: string; especialidade: string }[] = [];
+    // const insertedTemas: { id: string; tema: string; especialidade: string }[] = [];
     
     const temasToInsert = suggestedTopics.map(st => ({
       user_id: user.id,
