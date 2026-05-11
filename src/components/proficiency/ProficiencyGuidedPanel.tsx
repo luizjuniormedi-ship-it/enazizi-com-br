@@ -343,12 +343,14 @@ function DailyTasksBlock({
   onComplete,
   onSkip,
   busy,
+  navigate,
 }: {
   loading: boolean;
   tasks: ProficiencyDailyTask[];
   onComplete: (id: string) => void;
   onSkip: (id: string) => void;
   busy: boolean;
+  navigate: any;
 }) {
   return (
     <Card className="border-primary/30">
