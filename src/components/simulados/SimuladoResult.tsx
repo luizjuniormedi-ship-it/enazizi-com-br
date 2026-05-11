@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import type { AdaptiveMeta } from "@/hooks/useAdaptiveSimulado";
 import { useNavigate } from "react-router-dom";
 const ModalityAnalyticsPanel = lazy(() => import("@/components/simulados/ModalityAnalyticsPanel"));
@@ -8,6 +8,7 @@ import TaskCompletionCard from "@/components/study/TaskCompletionCard";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { XP_REWARDS } from "@/hooks/useGamification";
 import { EXAM_PROFILES, estimatePercentile, estimateGrade } from "@/lib/realExamDistribution";
 import type { SimQuestion } from "./SimuladoExam";
