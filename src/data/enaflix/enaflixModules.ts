@@ -187,7 +187,7 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     id: "mnemonico",
     title: "Mnemônicos",
     description: "Memorização visual cinematográfica",
-    route: "/dashboard/mnemonic-studio",
+    route: "/dashboard/mnemonico",
     category: "treino",
     icon: Brain,
     badge: "premium",

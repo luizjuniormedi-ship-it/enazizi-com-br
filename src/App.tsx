@@ -150,6 +150,7 @@ const App = () => (
                 <Route path="prova-pratica" element={<PracticalExam />} />
                 <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
                 <Route path="tutor-v2" element={<StudySession />} />
+                <Route path="tutor" element={<Navigate to="/dashboard/tutor-v2" replace />} />
               </Route>
               <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                 <Route index element={<Admin />} />
@@ -171,7 +172,7 @@ const App = () => (
               </Route>
               <Route path="/study-hub" element={<Navigate to="/enaflix" replace />} />
               {/* Canonical redirects — /study/* → /dashboard/* */}
-              <Route path="/study/tutor" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/study/tutor" element={<Navigate to="/dashboard/tutor-v2" replace />} />
               <Route path="/study/flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
               <Route path="/study/simulado" element={<Navigate to="/dashboard/simulados" replace />} />
               <Route path="/study/clinical" element={<Navigate to="/dashboard/simulacao-clinica" replace />} />

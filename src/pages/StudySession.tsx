@@ -190,14 +190,14 @@ const StudySession = () => {
     const stateMode = location.state?.studyMode;
     
     const shouldAuto =
-      paramTopic &&
       phase === "start" &&
       (paramAuto === "1" || paramAuto === "true" || paramOrigin === "cockpit" || paramOrigin === "guided" || location.state?.fromErrorBank);
 
     if (shouldAuto) {
       autoStartedRef.current = true;
-      setTopic(paramTopic);
-      setTopicInput(paramTopic);
+      const finalTopic = paramTopic || "";
+      setTopic(finalTopic);
+      setTopicInput(finalTopic);
       
       // Determinar o modo de estudo baseado no estado ou parâmetros
       let mode: StudyMode = "full";

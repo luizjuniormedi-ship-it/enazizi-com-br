@@ -11,6 +11,7 @@ import { ErrorThemeCard } from "@/components/enaflix/ErrorThemeCard";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { cn } from "@/lib/utils";
+import { type StudyMode } from "@/components/tutor/StudyStyleSelector";
 
 
 const ErrorBankWeeklyChart = lazy(() => import("@/components/error-bank/ErrorBankWeeklyChart"));
@@ -136,19 +137,22 @@ const ErrorBank = () => {
     }
     
     // Mapeamento de modos do Error Bank para o StudySession (Cognitive OS V6)
-    const modeMapping: Record<string, string> = {
-      "revisar": "full",      // Aula completa
+    const modeMapping: Record<string, StudyMode> = {
+      "revisar": "full",       // Aula completa
       "questoes": "practice",  // Questão direta
       "casos": "practice",     // Casos clínicos (via modo practice)
-      "completa": "full",      // Revisão completa
+      "completa": "review",    // Revisão completa (Modo para prova)
       "treinar": "correction"  // Corrigir erros
     };
 
-    const targetMode = modeMapping[mode] || "full";
-    navigate(`/dashboard/sessao-estudo?topic=${encodeURIComponent(tema || "")}&auto=true&focus=${targetMode}`, { 
+    const targetMode = (modeMapping[mode as keyof typeof modeMapping] || "full") as StudyMode;
+    const topicParam = tema ? `&topic=${encodeURIComponent(tema)}` : "";
+    
+    // Navega para sessao-estudo com os parâmetros necessários para auto-start
+    navigate(`/dashboard/sessao-estudo?auto=true&focus=${targetMode}${topicParam}`, { 
       state: { 
         fromErrorBank: true, 
-        initialTopic: tema,
+        initialTopic: tema || "",
         studyMode: targetMode
       } 
     });
