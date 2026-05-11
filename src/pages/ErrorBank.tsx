@@ -11,6 +11,7 @@ import { ErrorThemeCard } from "@/components/enaflix/ErrorThemeCard";
 import { EnaflixBackgroundFX } from "@/components/enaflix/EnaflixBackgroundFX";
 import { EnaflixSectionTitle } from "@/components/enaflix/EnaflixSectionTitle";
 import { cn } from "@/lib/utils";
+import { type StudyMode } from "@/components/tutor/StudyStyleSelector";
 
 
 const ErrorBankWeeklyChart = lazy(() => import("@/components/error-bank/ErrorBankWeeklyChart"));
