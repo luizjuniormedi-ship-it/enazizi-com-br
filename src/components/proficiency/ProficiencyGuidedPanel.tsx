@@ -443,6 +443,15 @@ function TaskRow({
             </Button>
             <Button
               size="sm"
+              variant="secondary"
+              onClick={handleStart}
+              disabled={busy}
+              className="gap-1 h-7 text-xs"
+            >
+              <Play className="h-3.5 w-3.5" /> Iniciar
+            </Button>
+            <Button
+              size="sm"
               onClick={() => onComplete(task.id)}
               disabled={busy}
               className="gap-1 h-7 text-xs"
