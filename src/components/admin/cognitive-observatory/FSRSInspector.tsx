@@ -2,29 +2,31 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Brain, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { TrendingUp, AlertCircle } from 'lucide-react';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const FSRSInspector: React.FC = () => {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats } = useQuery({
     queryKey: ['fsrs-stats'],
     queryFn: async () => {
       const { data: cards, error: cardsError } = await supabase
         .from('fsrs_cards')
-        .select('stability, difficulty, retrievability, last_review');
+        .select('stability, difficulty, scheduled_days, last_review');
       
       if (cardsError) throw cardsError;
 
       const stabilityAvg = cards.reduce((acc, c) => acc + (Number(c.stability) || 0), 0) / (cards.length || 1);
       const difficultyAvg = cards.reduce((acc, c) => acc + (Number(c.difficulty) || 0), 0) / (cards.length || 1);
-      const retrievabilityAvg = cards.reduce((acc, c) => acc + (Number(c.retrievability) || 0), 0) / (cards.length || 1);
 
       return {
         count: cards.length,
         stabilityAvg,
         difficultyAvg,
-        retrievabilityAvg,
-        cards: cards.slice(0, 50) // For simple chart
+        cards: cards.slice(0, 50).map(c => ({
+          ...c,
+          // Calculate a simple proxy for retrievability: exp(-0.1 * scheduled_days / stability)
+          retrievability: Math.exp(-0.1 * (Number(c.scheduled_days) || 1) / (Number(c.stability) || 1))
+        }))
       };
     }
   });
@@ -35,7 +37,7 @@ export const FSRSInspector: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-sm font-medium text-slate-400 flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-500" />
-            FORGETTING CURVE & RETENTION
+            FORGETTING CURVE & ESTIMATED RETENTION
           </CardTitle>
         </CardHeader>
         <CardContent className="h-[300px]">
@@ -92,7 +94,7 @@ export const FSRSInspector: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-mono text-amber-400">
               {stats?.difficultyAvg.toFixed(2)}
-              <span className="text-xs text-slate-500 ml-2">/ 10</span>
+              <span className="text-xs text-slate-500 ml-2">/ 1.0</span>
             </div>
             <p className="text-[10px] text-slate-500 mt-1">Cognitive load indicator</p>
           </CardContent>
