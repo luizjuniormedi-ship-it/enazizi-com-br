@@ -45,12 +45,15 @@ interface Props {
   loading?: boolean;
 }
 
-type Tone = "neutral" | "good" | "warning" | "critical";
+type Tone = "neutral" | "good" | "warning" | "critical" | "insufficient";
 interface Kpi {
   icon: React.ElementType;
   label: string;
   value: number | string;
   tone: Tone;
+  insufficient?: boolean;
+  sampleSize?: number;
+  threshold?: number;
 }
 
 export default function OperationalKpiBar({ analytics, loading }: Props) {
