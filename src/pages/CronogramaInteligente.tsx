@@ -351,7 +351,7 @@ const CronogramaInteligente = () => {
           if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
             const { data: uploadRecord, error: dbError } = await supabase
               .from("uploads")
-              .insert({
+              .insert(({
                 user_id: user.id,
                 filename: file.name,
                 file_type: "pdf",
@@ -363,7 +363,7 @@ const CronogramaInteligente = () => {
                   mime_type: file.type,
                   original_name: file.name 
                 }
-              })
+              } as any))
               .select()
               .single();
 
