@@ -1073,15 +1073,26 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
     if (flashcardDue.length > 0) {
       flashcardDue.sort((a: any, b: any) => a.stability - b.stability);
       const urgency = flashcardDue.length > 10 ? "alta" : flashcardDue.length > 3 ? "moderada" : "normal";
+      
+      // Determine if there are "Lapses" (cards with mistakes) or just routine reviews
+      const highLapses = flashcardDue.filter((c: any) => (c.lapses || 0) > 2).length;
+      let fsrsReason = flashcardDue.length > 5
+          ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
+          : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`;
+          
+      if (highLapses > 0) {
+        fsrsReason = `Você tem flashcards com muitos erros acumulados. Revisão urgente!`;
+      } else if (flashcardDue.length > 15) {
+        fsrsReason = `${flashcardDue.length} revisões pendentes hoje. O ACE priorizou os mais urgentes.`;
+      }
+
       addRec({
         id: "fsrs-flashcards",
         type: "review",
         topic: `${flashcardDue.length} Flashcards`,
         specialty: "Revisão Espaçada",
         priority: cap(85 + Math.min(flashcardDue.length, 10)),
-        reason: flashcardDue.length > 5
-          ? `${flashcardDue.length} flashcards pendentes — prioridade ${urgency}!`
-          : `${flashcardDue.length} flashcard(s) pronto(s) para revisão.`,
+        reason: fsrsReason,
         targetModule: "flashcards",
         targetPath: "/dashboard/flashcards",
         estimatedMinutes: Math.max(5, flashcardDue.length * 2),
