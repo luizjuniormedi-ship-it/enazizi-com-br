@@ -102,6 +102,7 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [topicMap, setTopicMap] = useState<TopicMapItem[]>([]);
   const [detectedSpecialty, setDetectedSpecialty] = useState("");
   const [tips, setTips] = useState("");
+  const [strictMode, setStrictMode] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [processingEdital, setProcessingEdital] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -301,7 +302,8 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           daysPerWeek: Number(daysPerWeek),
           editalText: editalText || null,
           currentPlanId: planId,
-          coverageStats: extraction?.coverage_stats || null
+          coverageStats: extraction?.coverage_stats || null,
+          strictMode: strictMode
         })
       });
       
@@ -628,6 +630,21 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               )}
             </div>
           </div>
+
+          <div className="flex items-center space-x-2 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+            <input 
+              type="checkbox" 
+              id="strictMode" 
+              checked={strictMode} 
+              onChange={(e) => setStrictMode(e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+            />
+            <Label htmlFor="strictMode" className="text-sm font-medium text-blue-900 cursor-pointer flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Gerar cronograma estritamente fiel ao PDF (Modo Strict)
+            </Label>
+          </div>
+
           <Button onClick={generatePlan} disabled={generating || processingEdital || !examDate} className="w-full">
             {generating ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{generationStatusText}</>

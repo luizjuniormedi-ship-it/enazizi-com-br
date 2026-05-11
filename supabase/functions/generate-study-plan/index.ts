@@ -34,7 +34,7 @@ async function processInBackground(
 ) {
   console.log(`[GENERATE_STUDY_PLAN] Background processing for ${planId}...`);
 
-  const { examDate, hoursPerDay, daysPerWeek, editalText, targetExams, targetExam, coverageStats } = payload;
+  const { examDate, hoursPerDay, daysPerWeek, editalText, targetExams, targetExam, coverageStats, strictMode = true } = payload;
   
   try {
     // 1. Initial Step
@@ -57,21 +57,28 @@ async function processInBackground(
     // 2. AI Prompt Construction
     await updateStatus(supabaseAdmin, planId, "processing", 30, "Construindo cronograma personalizado...");
 
-    const prompt = `Você é um especialista em planejamento de estudos médicos.
+    const strictInstructions = strictMode ? `
+REGRAS DE FIDELIDADE (MODO STRICT):
+1. Utilize EXCLUSIVAMENTE os tópicos presentes no "Conteúdo Base".
+2. É PROIBIDO criar, inferir, complementar ou adicionar assuntos não presentes.
+3. Se um tópico não estiver explicitamente listado, ele não deve aparecer no cronograma.
+4. Não use conhecimento externo. Não adicione temas "relacionados". Não expanda o edital.
+5. Não use conteúdos de bancos de dados internos ou temas populares da especialidade que não estejam no PDF.` : "";
+
+    const prompt = `Você é um organizador de cronogramas médicos rigoroso.
 Gere um cronograma semanal de estudos em JSON PURO.
 - Data da prova: ${examDate} (${daysUntilExam} dias)
 - Horas/dia: ${hoursPerDay}h
 - Dias/semana: ${daysPerWeek} dias
-Conteúdo Base (Tópicos do Edital): 
-${editalText || "Temas padrão de residência médica"}
+Conteúdo Base (Tópicos Extraídos do PDF): 
+${editalText || "AVISO: Nenhum conteúdo base fornecido."}
 
 ${bancaBlock}
 
-Regras:
-1. Use TODOS os tópicos fornecidos no "Conteúdo Base" para montar o cronograma.
-2. Não ignore nenhum tema importante. Se houver muitos temas, distribua-os ao longo das semanas.
-3. Cada tema deve ter: 1 estudo teórico, 1 bloco de questões e revisões D1, D7, D30.
-4. Respeite o limite de ${hoursPerDay}h/dia.
+Regras Gerais:
+1. Respeite o limite de ${hoursPerDay}h/dia.
+2. Cada tema deve ter: 1 estudo teórico, 1 bloco de questões e revisões D1, D7, D30.
+${strictInstructions}
 
 Formato JSON:
 {
@@ -117,21 +124,54 @@ Formato JSON:
       }
     }
 
+    // Validation & Hallucination Guard
+    if (planJson && strictMode && editalText) {
+      console.log("[GENERATE_STUDY_PLAN] Running hallucination guard...");
+      const editalLower = editalText.toLowerCase();
+      const normalizedEdital = editalLower.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+      
+      const filteredSubjects = (planJson.subjects || []).filter((s: string) => {
+        const normSubject = s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const isPresent = normalizedEdital.includes(normSubject) || normSubject.split(" ").some(word => word.length > 4 && normalizedEdital.includes(word));
+        if (!isPresent) {
+          console.warn(`[GENERATE_STUDY_PLAN] Hallucinated subject detected and removed: ${s}`);
+        }
+        return isPresent;
+      });
+
+      if (filteredSubjects.length < (planJson.subjects || []).length) {
+        planJson.subjects = filteredSubjects;
+        // Also filter weeklySchedule
+        if (planJson.weeklySchedule) {
+          planJson.weeklySchedule = planJson.weeklySchedule.map((day: any) => ({
+            ...day,
+            tasks: (day.tasks || []).filter((t: any) => {
+              const normTaskSubject = t.subject.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+              return normalizedEdital.includes(normTaskSubject) || normTaskSubject.split(" ").some(word => word.length > 4 && normalizedEdital.includes(word));
+            })
+          }));
+        }
+      }
+    }
+
     // Fallback if AI fails or returns invalid JSON
     if (!planJson) {
       console.warn("[GENERATE_STUDY_PLAN] AI failed or returned invalid JSON. Using fallback.");
-      const fallbackTopics = editalPreview ? editalPreview.split('\n').slice(0, 5).filter(t => t.trim().length > 3) : ["Clínica Médica", "Pediatria", "Cirurgia", "Ginecologia", "Preventiva"];
+      const fallbackTopics = editalText 
+        ? editalText.split('\n').map(t => t.trim()).filter(t => t.length > 5).slice(0, 10) 
+        : ["Clínica Médica", "Pediatria", "Cirurgia", "Ginecologia", "Preventiva"];
+      
       planJson = {
         detectedSpecialty: "Medicina Geral",
         subjects: fallbackTopics,
-        topicMap: fallbackTopics.map(t => ({ topic: t, subtopics: ["Revisão geral"] })),
+        topicMap: fallbackTopics.map(t => ({ topic: t, subtopics: ["Estudo do edital"] })),
         weeklySchedule: [
           {
             day: "Seg", week: 1,
-            tasks: fallbackTopics.map((t, i) => ({ time: `${8+i}:00`, subject: t, duration: "1h", type: "estudo", details: "Estudo base" }))
+            tasks: fallbackTopics.slice(0, 3).map((t, i) => ({ time: `${8+i}:00`, subject: t, duration: "2h", type: "estudo", details: "Fidelidade total ao PDF" }))
           }
         ],
-        tips: "Cronograma criado em modo seguro devido a instabilidade na IA. Você pode refinar o conteúdo depois."
+        tips: "Cronograma criado em modo de fidelidade total ao PDF. Alguns tópicos podem ter sido simplificados para garantir segurança."
       };
     }
 
