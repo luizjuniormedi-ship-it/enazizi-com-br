@@ -47,7 +47,7 @@ async function fetchAnalyticsData(userId: string): Promise<AnalyticsData> {
     simHistoryRes, anamnesisRes, discursiveRes, chroniclesRes, imageQuizRes, chatConvRes,
     teacherSimRes, teacherClinicalRes,
   ] = await Promise.all([
-    supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", userId),
+    supabase.from("practice_attempts").select("correct, created_at, question_id, questions_bank(topic)").eq("user_id", userId).order("created_at", { ascending: false }).limit(500),
     supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
     supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
     // [planner-unification] Fonte viva: daily_plan_tasks (substitui study_tasks legado)
@@ -218,20 +218,38 @@ const Analytics = () => {
     queryKey: ["analytics-data", user?.id],
     queryFn: () => fetchAnalyticsData(user!.id),
     enabled: !!user,
-    staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 15 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="space-y-6 animate-fade-in p-4">
+        <div className="h-8 w-48 rounded-lg bg-muted animate-pulse" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="rounded-xl bg-muted animate-pulse h-24" />
+          ))}
+        </div>
+        <div className="rounded-xl bg-muted animate-pulse h-48" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="rounded-xl bg-muted animate-pulse h-56" />
+          <div className="rounded-xl bg-muted animate-pulse h-56" />
+        </div>
       </div>
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-4 text-muted-foreground">
+        <BarChart3 className="h-12 w-12 opacity-30" />
+        <p className="text-sm">Nenhum dado de analytics disponível ainda.</p>
+        <p className="text-xs">Complete algumas sessões de estudo para ver seu progresso aqui.</p>
+      </div>
+    );
+  }
 
   const maxTasks = Math.max(...data.weeklyActivity.map(d => d.tasks), 1);
 
