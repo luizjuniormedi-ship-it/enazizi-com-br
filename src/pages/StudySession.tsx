@@ -201,18 +201,29 @@ const StudySession = () => {
       
       // Determinar o modo de estudo baseado no estado ou parâmetros
       let mode: StudyMode = "full";
-      if (stateMode && ["compact", "full", "review", "correction", "practice"].includes(stateMode)) {
+      const validModes = ["compact", "full", "review", "correction", "practice"];
+      
+      if (stateMode && validModes.includes(stateMode)) {
         mode = stateMode as StudyMode;
+      } else if (stateMode === "aula_completa") {
+        mode = "full";
+      } else if (stateMode === "questao_direta") {
+        mode = "practice";
+      } else if (stateMode === "revisao_prova") {
+        mode = "review";
       } else if (paramFocus) {
         const focusMap: Record<string, StudyMode> = {
           "reviews": "review",
           "review": "review",
+          "revisao_prova": "review",
           "errors": "correction",
           "correction": "correction",
           "practice": "practice",
           "questoes": "practice",
+          "questao_direta": "practice",
           "compact": "compact",
-          "full": "full"
+          "full": "full",
+          "aula_completa": "full"
         };
         mode = focusMap[paramFocus] || "full";
       }
