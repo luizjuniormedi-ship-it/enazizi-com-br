@@ -28,8 +28,15 @@ const OBJECTIVE_REASONS: Record<string, string> = {
  * Never exposes internal scores, weights, or technical details.
  */
 export function getHumanReadableReason(task: StudyRecommendation): string {
+  // 0. Process raw technical FSRS reason strings (Safety layer)
+  if (task.reason?.startsWith("FSRS:") || task.reason?.includes("lapsos:") || task.reason?.includes("Estabilidade:")) {
+    if (task.priority >= 90) return "Revisão crítica — revisar agora evita que você esqueça o conteúdo.";
+    if (task.priority >= 70) return "Seu cérebro está prestes a esquecer esse tema. Vamos revisar?";
+    return "Hora de fortalecer sua base com uma revisão rápida.";
+  }
+
   // 1. Check for overdue review signals in the raw reason
-  if (task.type === "review" && task.priority >= 90) {
+  if (task.type === "review" && (task.priority >= 90 || task.reason?.includes("atrasada"))) {
     return "Revisão atrasada — revisar agora evita que você esqueça o conteúdo.";
   }
 
