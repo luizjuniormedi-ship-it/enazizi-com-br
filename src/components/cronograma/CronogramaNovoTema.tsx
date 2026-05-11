@@ -205,9 +205,6 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
               <Paperclip className="h-4 w-4 mr-2" /> Anexar arquivos
             </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={handleSimulatePDF}>
-              <Zap className="h-4 w-4 mr-2" /> DEV: Simular PDF
-            </Button>
           </div>
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
