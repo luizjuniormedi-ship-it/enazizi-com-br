@@ -396,9 +396,67 @@ const SmartPlanner = () => {
     let anexos: { name: string; path: string }[] = [];
     if (files && files.length > 0) {
       for (const file of files) {
-        const filePath = `${user.id}/cronograma/${Date.now()}-${file.name}`;
-        const { error: upErr } = await supabase.storage.from("user-uploads").upload(filePath, file);
-        if (!upErr) anexos.push({ name: file.name, path: filePath });
+        try {
+          const timestamp = Date.now();
+          const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          const filePath = `${user.id}/cronograma/${timestamp}-${cleanName}`;
+          
+          if (import.meta.env.DEV) console.log("[PLANNER_UPLOAD] Starting upload:", { fileName: file.name, size: file.size, type: file.type, storagePath: filePath });
+
+          const { error: upErr } = await supabase.storage.from("user-uploads").upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+          
+          if (upErr) {
+            console.error("[PLANNER_UPLOAD] Storage upload error:", upErr);
+            toast({ 
+              title: "Erro no upload", 
+              description: `Falha ao subir ${file.name}: ${upErr.message}`, 
+              variant: "destructive" 
+            });
+            continue;
+          }
+          
+          if (import.meta.env.DEV) console.log("[PLANNER_UPLOAD] Upload successful:", filePath);
+          
+          anexos.push({ name: file.name, path: filePath });
+
+          // Se for PDF, disparar processamento em background (Edge Function)
+          if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+            const { data: uploadRecord, error: dbError } = await supabase
+              .from("uploads")
+              .insert(({
+                user_id: user.id,
+                filename: file.name,
+                file_type: "pdf",
+                category: "material",
+                storage_path: filePath,
+                status: "uploaded",
+                extracted_json: { 
+                  file_size: file.size, 
+                  mime_type: file.type,
+                  original_name: file.name 
+                }
+              } as any))
+              .select()
+              .single();
+
+            if (!dbError && uploadRecord) {
+              const { data: sessionData } = await supabase.auth.getSession();
+              fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-upload`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${sessionData?.session?.access_token}`,
+                },
+                body: JSON.stringify({ uploadId: uploadRecord.id }),
+              }).catch(err => console.error("Trigger process-upload error:", err));
+            }
+          }
+        } catch (err: any) {
+          console.error("File processing error:", err);
+        }
       }
     }
     const { data, error } = await supabase.from("temas_estudados").insert({
