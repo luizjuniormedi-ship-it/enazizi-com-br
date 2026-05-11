@@ -173,6 +173,11 @@ const ProfessorDashboard = () => {
     }
   }, [navigate]);
 
+  const handleOpenProficiencyPlanner = useCallback(() => {
+    setActiveTab("mentoria");
+    setActiveSub("proficiencia");
+  }, []);
+
   const totals = useMemo(() => {
     const safeSimulados = Array.isArray(simulados) ? simulados : [];
     const totalStudentsAssigned = safeSimulados.reduce((s, sim) => s + (sim?.results_summary?.total || 0), 0);
