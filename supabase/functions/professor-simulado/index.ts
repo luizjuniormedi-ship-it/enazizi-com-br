@@ -1255,7 +1255,7 @@ REGRAS INVIOLÁVEIS:
 
           // Days since last activity
           const lastActivity = sGam?.last_activity_date ? new Date(sGam.last_activity_date) : null;
-          const daysSinceActivity = lastActivity ? Math.floor((now.getTime() - lastActivity.getTime()) / 86400000) : 999;
+          const daysSinceActivity = lastActivity ? Math.floor((now.getTime() - lastActivity.getTime()) / 86400000) : null;
 
           return {
             user_id: s.user_id,
@@ -1270,7 +1270,7 @@ REGRAS INVIOLÁVEIS:
             xp: sGam?.xp || 0,
             level: sGam?.level || 1,
             streak: sGam?.current_streak || 0,
-            days_inactive: daysSinceActivity,
+            days_inactive: daysSinceActivity ?? 0,
             activities_total: totalActivities,
             activities_completed: completedActivities,
             simulados_completed: sSims.filter((r: any) => r.status === "completed").length,
@@ -1289,16 +1289,16 @@ REGRAS INVIOLÁVEIS:
         const topPerformers = [...studentStats].sort((a, b) => b.avg_domain_score - a.avg_domain_score).slice(0, 5);
 
         // At-risk students
-        const atRiskStudents = studentStats.filter(s => s.avg_domain_score < 50 || s.days_inactive > 7).map(s => ({
+        const atRiskStudents = studentStats.filter(s => s.avg_domain_score < 50 || (s.days_inactive !== null && s.days_inactive > 7)).map(s => ({
           ...s,
-          risk_reason: s.days_inactive > 7 ? `Inativo há ${s.days_inactive} dias` : `Score baixo: ${s.avg_domain_score}%`,
-          risk_level: (s.days_inactive > 7 && s.avg_domain_score < 30) ? "critical" : "warning",
+          risk_reason: (s.days_inactive !== null && s.days_inactive > 7) ? `Inativo há ${s.days_inactive} dias` : `Score baixo: ${s.avg_domain_score}%`,
+          risk_level: (s.days_inactive !== null && s.days_inactive > 7 && s.avg_domain_score < 30) ? "critical" : "warning",
         }));
 
         // Engagement aggregates
         const avgStreak = studentStats.length > 0 ? Math.round(studentStats.reduce((s, st) => s + st.streak, 0) / studentStats.length) : 0;
         const avgXp = studentStats.length > 0 ? Math.round(studentStats.reduce((s, st) => s + st.xp, 0) / studentStats.length) : 0;
-        const inactiveCount = studentStats.filter(s => s.days_inactive > 7).length;
+        const inactiveCount = studentStats.filter(s => s.days_inactive !== null && s.days_inactive > 7).length;
         const totalActs = studentStats.reduce((s, st) => s + st.activities_total, 0);
         const completedActs = studentStats.reduce((s, st) => s + st.activities_completed, 0);
         const activityCompletionRate = totalActs > 0 ? Math.round((completedActs / totalActs) * 100) : 0;
@@ -1381,7 +1381,7 @@ REGRAS INVIOLÁVEIS:
           const overdue = cards.filter((c: any) => c.due && new Date(c.due).getTime() < now.getTime()).length;
           const againCount = reviews.filter((r: any) => r.rating === 1).length;
           const againRate = reviews.length > 0 ? againCount / reviews.length : null;
-          const retentionScore = againRate === null ? null : Math.max(0, Math.round((1 - againRate) * 100));
+          const retentionScore = againRate === null ? 100 : Math.max(0, Math.round((1 - againRate) * 100));
           // accuracy proxy splits last 7d vs prior 23d
           const a7 = attempts30.filter((a: any) => new Date(a.created_at).toISOString() >= sevenDaysAgo);
           const aPrev = attempts30.filter((a: any) => new Date(a.created_at).toISOString() < sevenDaysAgo);
@@ -1431,7 +1431,7 @@ REGRAS INVIOLÁVEIS:
           if (lapses >= 2) risk += 25;
           if (ret < 70) risk += 25;
           if (stab > 0 && stab < 1) risk += 15;
-          if (inactive >= 7) risk += 25;
+          if (inactive !== null && inactive >= 7) risk += 25;
           if (c.overload_score > 30) risk += 10;
           risk = Math.min(100, risk);
           const risk_level: "low" | "warning" | "critical" = risk >= 60 ? "critical" : risk >= 30 ? "warning" : "low";
@@ -1503,7 +1503,7 @@ REGRAS INVIOLÁVEIS:
         const cognitive_summary = {
           avg_theta: avgOf(validTheta),
           avg_stability: avgOf(validStab),
-          avg_retention: avgOf(validRet),
+          avg_retention: validRet.length > 0 ? avgOf(validRet) : 100,
           avg_lapses: avgOf(validLapses),
           avg_recovery_load: avgOf(validOverload),
           burnout_risk_students: studentCognitiveRisks.filter(r => r.burnout_risk !== "low").length,
