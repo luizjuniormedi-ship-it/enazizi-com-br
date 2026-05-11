@@ -232,7 +232,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Tutor IA, motor adaptativo e custos.",
     items: [
       {
-        to: "/admin/tutor-memory",
+        to: "/admin?tab=tutor-lessons",
         label: "Tutor IA",
         description: "Memória semântica e cenários do Tutor.",
         icon: Bot,
@@ -240,7 +240,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["tutor", "memory", "rag", "embeddings"],
       },
       {
-        to: "/admin/tutor-video-recommendations",
+        to: "/admin?tab=tutor-video-audit",
         label: "Recomendações Tutor",
         description: "Auditoria de recomendações de videoaulas automáticas.",
         icon: Activity,
@@ -248,7 +248,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["tutor", "video", "recomendações", "cliques", "analytics"],
       },
       {
-        to: "/admin/ai-studio",
+        to: "/admin?tab=ai-studio",
         label: "Prompts",
         description: "Central de produção de conteúdo IA e prompts.",
         icon: Settings2,
@@ -256,7 +256,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["prompt", "studio", "ia", "geração"],
       },
       {
-        to: "/admin/medical-governance",
+        to: "/admin?tab=bi",
         label: "Custos IA",
         description: "Métricas de custo, qualidade e BI multimodal.",
         icon: DollarSign,
