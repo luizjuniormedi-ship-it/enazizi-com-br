@@ -86,12 +86,12 @@ const registerProductionServiceWorker = () => {
   const updateSW = registerSW({
     immediate: true,
     onNeedRefresh() {
-      console.log("[PWA] Nova versão disponível, ativando agora…");
+      devLog("[PWA] Nova versão disponível, atualizando agora...");
       // Triggers SKIP_WAITING → controllerchange → reload above.
       updateSW(true);
     },
     onOfflineReady() {
-      console.log("[PWA] App pronto para uso offline.");
+      devLog("[PWA] App pronto para uso offline.");
     },
     onRegisteredSW(swUrl, registration) {
       if (!registration) return;
