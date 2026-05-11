@@ -162,6 +162,11 @@ const ErrorBank = () => {
       // Navegação absoluta para evitar 404s
       const targetUrl = `/dashboard/sessao-estudo?auto=true&focus=${targetMode}${topicParam}`;
       
+      // Emitir evento de recuperação iniciada
+      import("@/lib/pedagogicalTelemetry").then(({ telemetry }) => {
+        telemetry.track('recovery_started', { mode, tema: topTema });
+      });
+      
       navigate(targetUrl, { 
         state: { 
           prefillTopic: topTema,
