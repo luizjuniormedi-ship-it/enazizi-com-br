@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Brain, ShieldAlert, Activity, LayoutDashboard, Database, Zap, Cpu } from 'lucide-react';
+import { Brain, ShieldAlert, Activity, LayoutDashboard, Database, Zap, Cpu, AlertCircle, BarChart3, Fingerprint } from 'lucide-react';
 import { CognitivePipeline } from '@/components/admin/cognitive-observatory/CognitivePipeline';
 import { FSRSInspector } from '@/components/admin/cognitive-observatory/FSRSInspector';
 import { ErrorIntelligence } from '@/components/admin/cognitive-observatory/ErrorIntelligence';
@@ -8,6 +8,9 @@ import { AIRuntimeMonitor } from '@/components/admin/cognitive-observatory/AIRun
 import { CognitiveTimeline } from '@/components/admin/cognitive-observatory/CognitiveTimeline';
 import { CognitiveStateEngine } from '@/components/admin/cognitive-observatory/CognitiveStateEngine';
 import { PerformanceAnalytics } from '@/components/admin/cognitive-observatory/PerformanceAnalytics';
+import { CognitiveAlerts } from '@/components/admin/cognitive-observatory/CognitiveAlerts';
+import { CognitiveReplay } from '@/components/admin/cognitive-observatory/CognitiveReplay';
+import { ModelIntelligence } from '@/components/admin/cognitive-observatory/ModelIntelligence';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
