@@ -106,7 +106,7 @@ const NewProfessorSimuladoPage = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate("/dashboard/professor")}
+            onClick={() => navigate("/professor")}
             className="text-white/60 hover:text-white"
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> VOLTAR
