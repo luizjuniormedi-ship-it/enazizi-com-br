@@ -24,15 +24,35 @@ const OBJECTIVE_REASONS: Record<string, string> = {
 };
 
 /**
+ * Returns a student-friendly version of a technical FSRS reason string.
+ */
+export function humanizeFSRSReason(reason: string): string {
+  if (!reason) return "";
+  
+  // Bug A Fix: Technical FSRS data should never be shown to the user
+  if (reason.includes("Estabilidade: 0.0") || reason.includes("lapsos: 0") || reason.includes("reps: 0")) {
+    return "Novo card — estabilidade será calculada após a primeira revisão";
+  }
+
+  // Handle other FSRS technical patterns
+  if (reason.startsWith("FSRS:") || reason.includes("lapsos:") || reason.includes("Estabilidade:")) {
+    // If it's already technical but has some info, we extract the essence or fallback
+    if (reason.includes("vencido")) return "Revisão programada para fixar o conteúdo na memória.";
+    return "Hora de fortalecer sua base com uma revisão rápida.";
+  }
+
+  return reason;
+}
+
+/**
  * Returns a short, student-friendly explanation of why this task was chosen.
  * Never exposes internal scores, weights, or technical details.
  */
 export function getHumanReadableReason(task: StudyRecommendation): string {
   // 0. Process raw technical FSRS reason strings (Safety layer)
-  if (task.reason?.startsWith("FSRS:") || task.reason?.includes("lapsos:") || task.reason?.includes("Estabilidade:")) {
-    if (task.priority >= 90) return "Revisão crítica — revisar agora evita que você esqueça o conteúdo.";
-    if (task.priority >= 70) return "Seu cérebro está prestes a esquecer esse tema. Vamos revisar?";
-    return "Hora de fortalecer sua base com uma revisão rápida.";
+  const technicalReason = task.reason || "";
+  if (technicalReason.startsWith("FSRS:") || technicalReason.includes("lapsos:") || technicalReason.includes("Estabilidade:")) {
+    return humanizeFSRSReason(technicalReason);
   }
 
   // 1. Check for overdue review signals in the raw reason

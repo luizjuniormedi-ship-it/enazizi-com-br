@@ -14,6 +14,7 @@ import { Rocket, Clock, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
+import { humanizeFSRSReason } from "@/lib/humanizedReasons";
 
 interface UnifiedMissionHeroProps {
   firstName: string;
@@ -39,7 +40,8 @@ export function UnifiedMissionHero({
 }: UnifiedMissionHeroProps) {
   const navigate = useNavigate();
   const title = recommendationTitle?.trim() || FALLBACK_TITLE;
-  const desc = recommendationDescription?.trim() || FALLBACK_DESC;
+  const rawDesc = recommendationDescription?.trim() || FALLBACK_DESC;
+  const desc = humanizeFSRSReason(rawDesc);
 
   return (
     <div className="px-4 sm:px-8 lg:px-14">
@@ -102,7 +104,7 @@ export function UnifiedMissionHero({
               <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
                 <Brain className="h-4 w-4 text-primary" />
                 <span className="text-xs font-bold text-white/70 italic">
-                  {adaptiveJustification}
+                  {humanizeFSRSReason(adaptiveJustification)}
                 </span>
               </div>
             )}

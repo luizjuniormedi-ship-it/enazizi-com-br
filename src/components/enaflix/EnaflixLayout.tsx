@@ -19,7 +19,7 @@ export function EnaflixLayout({ children }: Props) {
   const { isProfessor } = useProfessorCheck();
   
   // Immersive routes: Tutor IA must occupy full screen, no sidebar/topnav overlap
-  const immersiveRoutes = ["/dashboard/mentor", "/dashboard/tutor", "/mentor", "/tutor", "/study/tutor", "/dashboard/tutor-v2"];
+  const immersiveRoutes = ["/dashboard/mentor", "/dashboard/tutor", "/mentor", "/tutor", "/study/tutor", "/dashboard/sessao-estudo"];
   const isImmersive = immersiveRoutes.some((r) => location.pathname === r || location.pathname.startsWith(r + "/"));
 
   // Sidebar is only for Admin/Professor in this new AI-first era

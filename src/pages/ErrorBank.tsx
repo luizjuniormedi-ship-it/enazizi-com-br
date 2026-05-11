@@ -125,38 +125,38 @@ const ErrorBank = () => {
   }, [errors]);
 
   const startReviewMode = (mode: string, tema?: string) => {
+    const topTema = tema || errors[0]?.tema || "";
+
     if (mode === "mnemonico") {
-      const relevantErrors = tema ? errors.filter((e) => e.tema === tema) : errors.slice(0, 5);
-      const topTema = tema || relevantErrors[0]?.tema || "";
-      const items = relevantErrors
+      const items = errors
         .filter((e) => e.tema === topTema)
         .map((e) => e.subtema || e.categoria_erro || e.motivo_erro || e.tema)
         .filter((v, i, a) => v && a.indexOf(v) === i)
         .slice(0, 7);
-      navigate("/dashboard/mnemonico", { state: { prefillTopic: topTema, prefillItems: items, fromErrorBank: true } });
+      navigate("/dashboard/mnemonico", { state: { prefillTopic: topTema, fromErrorBank: true } });
       return;
     }
     
     // Mapeamento de modos do Error Bank para o StudySession (Cognitive OS V6)
-    const modeMapping: Record<string, StudyMode> = {
-      "revisar": "full",       // Aula completa
-      "questoes": "practice",  // Questão direta
-      "casos": "practice",     // Casos clínicos (via modo practice)
-      "completa": "review",    // Revisão completa (Modo para prova)
-      "treinar": "correction"  // Corrigir erros
+    // Conforme especificado no prompt-fix-error-bank-navigation.md
+    const modeMapping: Record<string, string> = {
+      "revisar": "aula_completa",
+      "questoes": "questao_direta",
+      "casos": "revisao_prova",
+      "completa": "revisao_prova",
+      "treinar": "aula_completa"
     };
 
-    const targetMode = (modeMapping[mode as keyof typeof modeMapping] || "full") as StudyMode;
+    const targetMode = modeMapping[mode as keyof typeof modeMapping] || "aula_completa";
     const topicParam = tema ? `&topic=${encodeURIComponent(tema)}` : "";
     
     // Navega para sessao-estudo com os parâmetros necessários para auto-start
     navigate(`/dashboard/sessao-estudo?auto=true&focus=${targetMode}${topicParam}`, { 
       state: { 
-        fromErrorBank: true, 
-        initialTopic: tema || "",
+        prefillTopic: tema || topTema,
+        source: tema ? 'error_bank' : 'error_bank_full_review',
         studyMode: targetMode,
-        prefillTopic: tema || "",
-        source: tema ? 'error_bank' : 'error_bank_full_review'
+        fromErrorBank: true
       } 
     });
   };

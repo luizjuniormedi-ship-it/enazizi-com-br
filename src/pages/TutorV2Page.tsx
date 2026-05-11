@@ -49,7 +49,7 @@ export default function TutorV2Page() {
       // Artificial delay for cinematic effect if it's too fast
       await new Promise(resolve => setTimeout(resolve, 800));
       
-      navigate(`/dashboard/tutor-v2/${data.id}`);
+      navigate(`/dashboard/sessao-estudo/${data.id}`);
     } catch (err) {
       console.error("Error creating session:", err);
       setIsCreating(false);
