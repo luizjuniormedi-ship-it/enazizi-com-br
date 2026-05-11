@@ -89,7 +89,9 @@ export function EnaflixOverlayNav({ onClose, onSearchClick, searchActive }: Prop
               )}
             >
               <LayoutDashboard className="h-3 w-3" />
-              <span className="hidden sm:inline">Painel Admin</span>
+              <span className="hidden sm:inline">
+                {isAdmin ? "Painel Admin" : "Painel Professor"}
+              </span>
             </button>
           ) : (
             <button
