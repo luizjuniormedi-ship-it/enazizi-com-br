@@ -209,6 +209,9 @@ export default function AdminMonitoring() {
           <TabsContent value="video-audit">
             <VideoRecommendationAuditTab />
           </TabsContent>
+          <TabsContent value="cognitive-audit">
+            <AdaptiveAuditTab />
+          </TabsContent>
         </Tabs>
       ) : (
         <Card>
