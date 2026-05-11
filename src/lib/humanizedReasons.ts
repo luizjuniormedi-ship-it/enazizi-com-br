@@ -12,6 +12,7 @@ const TYPE_REASONS: Record<string, string> = {
   clinical: "Hora de treinar na prática — casos clínicos consolidam o conhecimento.",
   new: "Novo conteúdo recomendado pelo sistema para expandir sua base.",
   simulado: "Simulados ajudam a medir seu preparo real para a prova.",
+  chronicle: "Aprofunde com uma crônica médica imersiva.",
 };
 
 const OBJECTIVE_REASONS: Record<string, string> = {
