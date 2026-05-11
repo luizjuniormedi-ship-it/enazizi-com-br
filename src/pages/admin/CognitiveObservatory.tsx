@@ -19,8 +19,10 @@ const CognitiveObservatory: React.FC = () => {
     const tutorChannel = supabase
       .channel('cognitive-tutor-events')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_events' }, (payload) => {
-        toast.info(`Cognitive Event: ${payload.new.event_type || 'Update'}`, {
-          description: payload.new.topic ? `Topic: ${payload.new.topic}` : undefined,
+        const newData = payload.new as any;
+        if (!newData) return;
+        toast.info(`Cognitive Event: ${newData.event_type || 'Update'}`, {
+          description: newData.topic ? `Topic: ${newData.topic}` : undefined,
           icon: <Brain className="w-4 h-4 text-purple-500" />
         });
       })
