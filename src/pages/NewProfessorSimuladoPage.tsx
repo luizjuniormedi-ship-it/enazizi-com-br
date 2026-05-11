@@ -81,7 +81,7 @@ const NewProfessorSimuladoPage = () => {
     onOpenChange: () => {},
     onCreated: () => {
       toast({ title: "Simulado salvo com sucesso!" });
-      navigate("/dashboard/professor");
+      navigate("/professor");
     },
     callAPI,
     initialData: editingSimulado
