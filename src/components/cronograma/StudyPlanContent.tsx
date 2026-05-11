@@ -563,7 +563,7 @@ ${subjects.length > 0 ? `<div class="subjects"><strong>Matérias:</strong> ${sub
               )}
             </div>
           </div>
-          <Button onClick={generatePlan} disabled={generating || !examDate} className="w-full">
+          <Button onClick={generatePlan} disabled={generating || processingEdital || !examDate} className="w-full">
             {generating ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />{
                 generationStep === 1 ? "Analisando documento..." :
