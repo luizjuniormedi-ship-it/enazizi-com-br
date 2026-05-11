@@ -150,9 +150,8 @@ const Dashboard = () => {
     navigate(`/dashboard/sessao-estudo?source=dashboard_autostart`);
   }, [missionLoading, studyNext, searchParams, navigate]);
 
-  const isDataMissing = !studyNext || !snapshot || !dashData;
-  // Solo bloqueamos el render si falta data crítica Y no hemos llegado al timeout
-  const initialLoading = isDataMissing && !cockpitTimedOut && (missionLoading || snapLoading || dashLoading);
+  const isDataMissing = !studyNext; // Only studyNext (CTA) is strictly critical for the layout
+  const initialLoading = isDataMissing && !cockpitTimedOut && missionLoading;
 
   const firstName = dashData?.displayName?.trim()?.split(" ")[0] || user?.email?.split("@")[0] || "Doutor";
 
