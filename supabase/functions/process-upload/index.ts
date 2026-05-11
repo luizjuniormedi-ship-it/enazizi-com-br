@@ -13,21 +13,24 @@ const MAX_PROCESS_FILE_BYTES = 20 * 1024 * 1024;
 const MAX_PDF_PAGES_TO_PARSE = 120;
 
 async function extractPdfText(fileData: Blob): Promise<string> {
-  const arrayBuffer = await fileData.arrayBuffer();
-  const data = new Uint8Array(arrayBuffer);
-  
-  // Basic validation
-  const header = new TextDecoder().decode(data.slice(0, 5));
-  if (header !== "%PDF-") {
-    console.error("[PROCESS_UPLOAD] Invalid PDF header:", header);
-    throw new Error("O arquivo não parece ser um PDF válido.");
-  }
+  try {
+    const arrayBuffer = await fileData.arrayBuffer();
+    const data = new Uint8Array(arrayBuffer);
+    
+    // Basic validation
+    if (data.length < 5) throw new Error("Arquivo PDF corrompido ou muito pequeno.");
+    const header = new TextDecoder().decode(data.slice(0, 5));
+    if (header !== "%PDF-") {
+      console.error("[PROCESS_UPLOAD] Invalid PDF header:", header);
+      throw new Error("O arquivo não parece ser um PDF válido.");
+    }
 
-  const document = await getDocument({ data, useSystemFonts: true }).promise;
-  const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
-  const pages: string[] = [];
-  let collectedChars = 0;
-  const maxCharsToCollect = 40000;
+    console.log(`[PROCESS_UPLOAD] Extraindo texto de PDF (${data.length} bytes)...`);
+    const document = await getDocument({ data, useSystemFonts: true }).promise;
+    const totalPages = Math.min(document.numPages, MAX_PDF_PAGES_TO_PARSE);
+    const pages: string[] = [];
+    let collectedChars = 0;
+    const maxCharsToCollect = 40000;
 
   for (let i = 1; i <= totalPages; i++) {
     if (collectedChars >= maxCharsToCollect) break;
