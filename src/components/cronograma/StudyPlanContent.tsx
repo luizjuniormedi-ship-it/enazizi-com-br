@@ -268,6 +268,10 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
     try {
       const { data: session } = await supabase.auth.getSession();
       setGenerationStep(2);
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 160000); // 160s frontend timeout
+      
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
@@ -278,9 +282,13 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           editalText: editalText || null,
           currentPlanId: planId,
         }),
+        signal: controller.signal
       });
+      
+      clearTimeout(timeoutId);
+      
       const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error);
+      if (!resp.ok) throw new Error(result.error || "A IA não conseguiu gerar seu cronograma. Tente novamente ou use um edital mais curto.");
       setGenerationStep(3);
       const plan = result.plan.plan_json as PlanJson;
       setPlanId(result.plan.id);
