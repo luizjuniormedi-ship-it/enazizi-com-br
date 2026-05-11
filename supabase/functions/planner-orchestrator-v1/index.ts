@@ -8,7 +8,7 @@
  *
  * Regras de admissão (todas precisam passar):
  *   1. Dedupe por (user_id, plan_date, action_type, topic ou recommendation_id).
- *   2. Cooldown: não cria nova tarefa do mesmo recommendation_id em < 6h.
+ *   2. Cooldown: não cria nova tarefa do mesmo recommendation_id em < 6h. (Opcional)
  *   3. Carga diária: respeita teto de 12 tarefas por daily_plan.
  *   4. Não sobrescreve: nunca remove/edita tarefas existentes; só adiciona.
  *   5. content_lock = true → recusa (planner congelado).
@@ -39,6 +39,7 @@ type StandardActionType = "review" | "questions" | "theory" | "simulado";
 interface StandardizedAction {
   actionType: StandardActionType;
   topic: string | null;
+  specialty: string | null;
   estimatedMinutes: number;
   priority: number;
   origin: "radar_trajetoria" | string;
@@ -105,7 +106,7 @@ serve(async (req) => {
   }
 
   // Validação mínima
-  if (!body?.userId || !body?.action?.actionType || !body?.action?.recommendationId) {
+  if (!body?.userId || !body?.action?.actionType) {
     return errorResponse("Payload incompleto", 400);
   }
 
@@ -169,21 +170,21 @@ serve(async (req) => {
     return await rejectAndLog(db, userId, body, "daily_load_exceeded", `total=${currentTotal}`);
   }
 
-  // 4. Cooldown — última tarefa do mesmo recommendation_id em < 6h
-  const cooldownSince = new Date(Date.now() - COOLDOWN_HOURS * 3600 * 1000).toISOString();
-  const { data: recentSame } = await db
-    .from("trajectory_applied_actions")
-    .select("id, applied_at")
-    .eq("user_id", userId)
-    .eq("recommendation_id", action.recommendationId)
-    .gte("applied_at", cooldownSince)
-    .order("applied_at", { ascending: false })
-    .limit(1);
+  // 4. Cooldown — opcional
+  if (action.recommendationId) {
+    const cooldownSince = new Date(Date.now() - COOLDOWN_HOURS * 3600 * 1000).toISOString();
+    const { data: recentSame } = await db
+      .from("trajectory_applied_actions")
+      .select("id, applied_at")
+      .eq("user_id", userId)
+      .eq("recommendation_id", action.recommendationId)
+      .gte("applied_at", cooldownSince)
+      .order("applied_at", { ascending: false })
+      .limit(1);
 
-  // Aceita se for a 1ª tentativa (a própria que disparou este orchestrator).
-  // Rejeita se já houver outra applied/pending em janela curta.
-  if ((recentSame?.length ?? 0) > 1) {
-    return await rejectAndLog(db, userId, body, "cooldown_active", `since=${cooldownSince}`);
+    if ((recentSame?.length ?? 0) > 1) {
+      return await rejectAndLog(db, userId, body, "cooldown_active", `since=${cooldownSince}`);
+    }
   }
 
   // 5. Dedupe — mesma combinação tópico+action_type já existe no plano de hoje?
@@ -225,7 +226,7 @@ serve(async (req) => {
       task_type,
       action_type,
       topic: action.topic,
-      specialty: (action.raw?.specialty as string | undefined) ?? null,
+      specialty: action.specialty || (action.raw?.specialty as string | undefined) || "Geral",
       subtopic: (action.raw?.subtopic as string | undefined) ?? null,
       title,
       description,
@@ -256,7 +257,7 @@ serve(async (req) => {
       source: body.source,
       decisionId: body.decisionId ?? null,
       snapshotId: body.snapshotId ?? null,
-      recommendationId: action.recommendationId,
+      recommendationId: action.recommendationId || null,
       action,
     },
     decision_output: {

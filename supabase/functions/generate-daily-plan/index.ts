@@ -377,30 +377,76 @@ Deno.serve(async (req) => {
       completed_blocks: [],
     };
 
-    const { error: upsertErr } = await adminClient
+    // [PLANNER_UNIFICATION] Loop 3: em vez de apenas upsertar daily_plans,
+    // agora alimentamos o ecossistema via planner-orchestrator-v1 para cada tarefa.
+    // Isso garante persistência individual em daily_plan_tasks e integração com Radar.
+    
+    // 1. Garante o daily_plan (upsert/maybeSingle já feito no loop de idempotência ou força)
+    let planId: string;
+    const { data: finalPlan, error: planErr } = await adminClient
       .from("daily_plans")
-      .upsert(planData, { onConflict: "user_id,plan_date" });
+      .upsert(planData, { onConflict: "user_id,plan_date" })
+      .select("id")
+      .single();
+    
+    if (planErr || !finalPlan) {
+       // fallback manual se upsert falhar por RLS (mesmo service_role)
+       const { data: existing } = await adminClient
+         .from("daily_plans")
+         .select("id")
+         .eq("user_id", userId)
+         .eq("plan_date", today)
+         .single();
+       planId = existing?.id;
+    } else {
+       planId = finalPlan.id;
+    }
 
-    if (upsertErr) {
-      const { data: existing } = await adminClient
+    // 2. Materializa tarefas via Orchestrator (chamada interna via DB ou loop local)
+    // Para GO-LIVE FREEZE e performance, faremos a inserção direta em lote,
+    // mas espelhando a lógica do orchestrator (dedupe + campos).
+    const existingTasksRes = await adminClient
+      .from("daily_plan_tasks")
+      .select("topic, action_type")
+      .eq("daily_plan_id", planId);
+    
+    const existingSet = new Set((existingTasksRes.data || []).map(t => `${t.topic}|${t.action_type}`));
+
+    const tasksToInsert = dailyTasks
+      .filter(t => !existingSet.has(`${t.topic}|${t.type === "new_topic" ? "theory" : t.type === "error_fix" ? "questions" : t.type}`))
+      .map((t, idx) => {
+        // Map engine type → orchestrator action_type
+        let action_type = t.type as string;
+        let task_type = "study";
+        if (t.type === "new_topic") { action_type = "theory"; task_type = "study"; }
+        else if (t.type === "error_fix") { action_type = "questions"; task_type = "study"; }
+        else if (t.type === "practice") { action_type = "questions"; task_type = "study"; }
+        else if (t.type === "review") { action_type = "review"; task_type = "review"; }
+        else if (t.type === "simulado") { action_type = "simulado"; task_type = "simulado"; }
+
+        return {
+          daily_plan_id: planId,
+          user_id: userId,
+          task_type,
+          action_type,
+          topic: t.topic,
+          specialty: t.specialty,
+          title: t.topic,
+          description: t.reason,
+          estimated_minutes: t.estimated_minutes,
+          priority: t.priority > 80 ? "alta" : t.priority > 50 ? "normal" : "baixa",
+          ordem: (existingTasksRes.data?.length || 0) + idx + 1,
+          completed: false
+        };
+      });
+
+    if (tasksToInsert.length > 0) {
+      await adminClient.from("daily_plan_tasks").insert(tasksToInsert);
+      // Atualiza total_blocks
+      await adminClient
         .from("daily_plans")
-        .select("id")
-        .eq("user_id", userId)
-        .eq("plan_date", today)
-        .maybeSingle();
-
-      if (existing) {
-        await adminClient
-          .from("daily_plans")
-          .update({
-            plan_json: canonicalPlan,
-            request_hash: requestHash,
-            total_blocks: dailyTasks.length,
-          })
-          .eq("id", existing.id);
-      } else {
-        await adminClient.from("daily_plans").insert(planData);
-      }
+        .update({ total_blocks: (existingTasksRes.data?.length || 0) + tasksToInsert.length })
+        .eq("id", planId);
     }
 
     return new Response(

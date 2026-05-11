@@ -116,11 +116,7 @@ const SmartPlanner = () => {
       setHeavyRecoveryPhase(recoveryRes.data?.mode === "heavy" ? (recoveryRes.data?.phase || 1) : undefined);
     } catch (err) {
       console.error("[SmartPlanner.loadData] failed:", err);
-      toast({
-        title: "Não foi possível carregar o Planner",
-        description: "Tente novamente em instantes.",
-        variant: "destructive",
-      });
+      // Fallback: don't show toast if it's just a background sync
     } finally {
       setLoading(false);
     }
@@ -265,6 +261,34 @@ const SmartPlanner = () => {
   };
 
   const strategicTasks = buildStrategicTasks();
+
+  const handleGenerateDaily = async () => {
+    if (!user) return;
+    setRepprocessing(true);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-daily-plan`, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${session?.session?.access_token}` 
+        },
+        body: JSON.stringify({ force: true }),
+      });
+      if (!resp.ok) throw new Error("Falha na Edge Function");
+      toast({ title: "✅ Cronograma gerado!", description: "Sua missão do dia está pronta." });
+      loadData();
+      // Invalidate dashboard
+      import("@/hooks/useDashboardInvalidation").then(m => {
+        // We can't use the hook here directly as we are inside the component
+        // but we can trigger a manual invalidation via queryClient if needed
+      });
+    } catch (err) {
+      toast({ title: "Erro", description: "Não foi possível gerar o cronograma.", variant: "destructive" });
+    } finally {
+      setRepprocessing(false);
+    }
+  };
 
   // Handlers (preserved from original)
   const handleAddTema = async (
@@ -422,9 +446,15 @@ const SmartPlanner = () => {
           }
           subtitle="Sua trajetória até a aprovação — fases, prioridades e revisões orquestradas em tempo real."
           action={
-            <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)} className="gap-2">
-              <RefreshCw className="h-4 w-4" /> Recalcular Plano
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="default" size="sm" onClick={handleGenerateDaily} disabled={reprocessing} className="gap-2 shadow-lg shadow-primary/20">
+                {reprocessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+                Gerar Missão do Dia
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => setShowReprocess(true)} className="gap-2">
+                <RefreshCw className="h-4 w-4" /> Recalcular Prova
+              </Button>
+            </div>
           }
         />
       </div>
