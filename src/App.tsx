@@ -17,7 +17,7 @@ import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Eager-load shell layout (always needed)
-import DashboardLayout from "./components/layout/DashboardLayout";
+import EnaflixDashboardLayout from "./components/layout/EnaflixDashboardLayout";
 
 // Lazy-load all pages
 const Index = lazyWithRetry(() => import("./pages/Index"), "Index");
@@ -27,7 +27,7 @@ const Register = lazyWithRetry(() => import("./pages/Register"), "Register");
 const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"), "Dashboard");
 const Flashcards = lazyWithRetry(() => import("./pages/Flashcards"), "Flashcards");
 const FlashcardGenerator = lazyWithRetry(() => import("./pages/FlashcardGenerator"), "FlashcardGenerator");
-const MnemonicGenerator = lazyWithRetry(() => import("./pages/MnemonicGenerator"), "MnemonicGenerator");
+const MnemonicGenerator = lazyWithRetry(() => import("./pages/MnemonicStudioPage"), "MnemonicStudioPage");
 const Simulados = lazyWithRetry(() => import("./pages/Simulados"), "Simulados");
 const Uploads = lazyWithRetry(() => import("./pages/Uploads"), "Uploads");
 const QuestionGenerator = lazyWithRetry(() => import("./pages/QuestionGenerator"), "QuestionGenerator");
@@ -54,7 +54,7 @@ const AnamnesisTrainer = lazyWithRetry(() => import("./pages/AnamnesisTrainer"),
 const Install = lazyWithRetry(() => import("./pages/Install"), "Install");
 const StudyGuides = lazyWithRetry(() => import("./pages/StudyGuides"), "StudyGuides");
 const MedicalChronicles = lazyWithRetry(() => import("./pages/MedicalChronicles"), "MedicalChronicles");
-const FeynmanTrainer = lazyWithRetry(() => import("./pages/FeynmanTrainer"), "FeynmanTrainer");
+const FeynmanTrainer = lazyWithRetry(() => import("./pages/ContentSummarizer"), "ContentSummarizer");
 
 const AIMentor = lazyWithRetry(() => import("./pages/AIMentor"), "AIMentor");
 const SmartPlanner = lazyWithRetry(() => import("./pages/SmartPlanner"), "SmartPlanner");
