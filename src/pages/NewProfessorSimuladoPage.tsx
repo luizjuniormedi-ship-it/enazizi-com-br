@@ -67,7 +67,7 @@ const NewProfessorSimuladoPage = () => {
             description: "Não foi possível encontrar o simulado para edição.",
             variant: "destructive"
           });
-          navigate("/dashboard/professor");
+          navigate("/professor");
         } finally {
           setLoadingInitial(false);
         }
