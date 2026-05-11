@@ -45,9 +45,9 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
 
     // Emit standardized pedagogical event
     dispatchPedagogicalEvent('question_answered', {
-      questionId: question.id || `q_${index}`,
+      questionId: `q_${index}`,
       correct,
-      timeMs: 0, // Individual timing not yet implemented here
+      timeMs: 0, 
       topic: question.topic
     });
 
