@@ -398,6 +398,9 @@ export async function completeStudyAction(payload: StudyActionPayload): Promise<
     case "daily_plan":
       // Only sync daily plan below
       break;
+    case "professor_plan":
+      await safe(() => syncProfessorPlan(userId, topic, now, payload.professorPlanTaskId), "professor_plan");
+      break;
   }
 
   // 2. Sempre registrar tema estudado
