@@ -192,7 +192,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Usuários, mensagens e feedbacks.",
     items: [
       {
-        to: "/admin/users",
+        to: "/admin?tab=users-all",
         label: "Usuários",
         description: "Gestão de contas, planos, bloqueios e aprovações.",
         icon: Users,
@@ -200,7 +200,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["users", "contas", "alunos", "plano"],
       },
       {
-        to: "/admin/telemetry",
+        to: "/admin?tab=intelligence-overview",
         label: "Telemetria",
         description: "Dashboards de engajamento, funil e comportamento real.",
         icon: Activity,
@@ -208,7 +208,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["telemetria", "funil", "comportamento", "analytics"],
       },
       {
-        to: "/admin/users?tab=broadcast",
+        to: "/admin?tab=broadcast",
         label: "Mensagens",
         description: "Sistema de notificações e alertas em massa.",
         icon: Bell,
