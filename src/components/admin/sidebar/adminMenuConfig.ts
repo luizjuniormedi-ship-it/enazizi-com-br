@@ -103,7 +103,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Curadoria de aulas, banco de questões e biblioteca.",
     items: [
       {
-        to: "/admin/users?tab=uploads",
+        to: "/admin?tab=uploads",
         label: "Upload de Arquivos",
         description: "Upload de materiais brutos, PDFs e provas para o sistema.",
         icon: FileText,
@@ -111,7 +111,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["upload", "arquivo", "pdf", "bruto"],
       },
       {
-        to: "/admin/lessons-memory",
+        to: "/admin?tab=tutor-lessons",
         label: "Curadoria de Aulas",
         description: "Memória de aulas do Tutor IA — estruturação, vídeo e publicação.",
         icon: BookOpenCheck,
@@ -119,7 +119,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["aulas", "tutor", "memória", "lessons", "ingestion"],
       },
       {
-        to: "/admin/users?tab=lesson-ratings",
+        to: "/admin?tab=lesson-ratings",
         label: "Avaliações",
         description: "Analytics de satisfação cinematográfica das videoaulas.",
         icon: Sparkles,
