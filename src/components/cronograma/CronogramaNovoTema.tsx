@@ -65,29 +65,6 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSimulatePDF = () => {
-    const text = `
-    # INFARTO AGUDO DO MIOCÁRDIO (IAM)
-    
-    O infarto agudo do miocárdio é uma emergência médica. 
-    Principais sintomas: dor precordial opressiva, irradiação para braço esquerdo, sudorese.
-    
-    Tópicos para estudo:
-    1. Diagnóstico de IAM com supra de ST
-    2. Marcadores de necrose miocárdica (Troponina)
-    3. Tratamento inicial (MONA: Morfina, Oxigênio, Nitrato, AAS)
-    4. Reperfusão: Trombólise vs Angioplastia
-    5. Complicações pós-IAM (Arritmias, Choque Cardiogênico)
-    
-    O tratamento deve ser rápido ("Tempo é músculo").
-    `;
-    const blob = new Blob([text], { type: "text/plain" });
-    const file = new File([blob], `material_estudo_${Date.now()}.txt`, { type: "text/plain" });
-    setFiles(prev => [...prev, file]);
-    if (!tema) setTema(`Teste Upload ${Date.now()}`);
-    if (!especialidade && specialties.length > 0) setEspecialidade("Cardiologia");
-  };
-
   const handleSubmit = () => {
     if (!tema.trim() || !especialidade) return;
     onAdd(tema.trim(), especialidade, subtopico.trim(), dataEstudo, fonte, dificuldade, observacoes.trim(), feitas, erradas, files.length > 0 ? files : undefined);
