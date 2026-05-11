@@ -484,7 +484,7 @@ export const ENAFLIX_MODULES: EnaflixModule[] = [
     id: "admin-users",
     title: "Usuários",
     description: "Gestão de alunos e permissões",
-    route: "/admin/users",
+    route: "/admin?tab=users-all",
     category: "admin",
     icon: Users,
     requires: "admin",
