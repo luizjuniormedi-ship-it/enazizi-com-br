@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import { registerSW } from "virtual:pwa-register";
 import App from "./App.tsx";
+import { devLog } from "./lib/devLog";
 import {
   APP_RELEASE,
   LOGIN_REFRESH_QUERY_KEY,
