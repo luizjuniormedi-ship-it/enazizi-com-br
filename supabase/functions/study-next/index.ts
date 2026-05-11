@@ -382,6 +382,28 @@ serve(async (req) => {
       });
     }
 
+    for (const profTask of (professorTasks || [])) {
+      const payload = profTask.task_payload as any;
+      const tema = payload?.subtopic_name || "Tema do Professor";
+      const taskLabel = profTask.task_type === "theory" ? "Estudar" : profTask.task_type === "questions" ? "Praticar" : "Revisar";
+      
+      candidates.push({
+        type: "daily_task", // Mirror type for hero compatibility
+        title: `${taskLabel}: ${tema}`,
+        description: `Missão prioritária atribuída pelo seu professor.`,
+        targetId: profTask.id,
+        targetType: "professor_plan_task",
+        estimatedMinutes: profTask.task_type === "theory" ? 20 : 15,
+        priorityScore: 120, // Higher than regular tasks
+        contextPayload: {
+          professor_plan_id: profTask.plan_id,
+          subtopic_id: payload?.subtopic_id,
+          topic: tema,
+          mode: profTask.task_type === "theory" ? "full" : profTask.task_type === "questions" ? "practice" : "review"
+        }
+      });
+    }
+
     // ── Image Quiz candidate ──
     const visualSnapshots = await safeQuery<any[]>(db, (c) =>
       c.from("visual_skill_snapshots")
