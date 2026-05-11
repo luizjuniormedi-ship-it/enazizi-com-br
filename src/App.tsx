@@ -149,7 +149,7 @@ const App = () => (
                 <Route path="rankings" element={<Rankings />} />
                 <Route path="prova-pratica" element={<PracticalExam />} />
                 <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
-                <Route path="tutor-v2" element={<StudySession />} />
+                <Route path="tutor-v2" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="tutor" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="tutor-ai" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               </Route>
