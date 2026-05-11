@@ -214,14 +214,18 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
             className="hidden"
           />
           <div className="flex gap-2">
-          <div className="flex gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
               <Paperclip className="h-4 w-4 mr-2" /> Anexar arquivos
             </Button>
-            <Button type="button" variant="secondary" size="sm" onClick={handleSimulateRealFile}>
-              <Zap className="h-4 w-4 mr-2" /> DEV: Carregar arquivo de teste
+            <Button 
+              type="button" 
+              variant="secondary" 
+              size="sm" 
+              className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
+              onClick={handleSimulateRealFile}
+            >
+              <Zap className="h-4 w-4 mr-2" /> DEV: Injetar Arquivo Real
             </Button>
-          </div>
           </div>
           {files.length > 0 && (
             <div className="flex flex-wrap gap-2 mt-2">
