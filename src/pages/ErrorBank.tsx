@@ -229,7 +229,7 @@ const ErrorBank = () => {
                   key={stat.tema}
                   {...stat}
                   onClick={() => {}}
-                  onTrain={() => startReviewMode("revisar", stat.tema)}
+                  onTrain={() => startReviewMode("treinar", stat.tema)}
                 />
               ))}
             </div>
