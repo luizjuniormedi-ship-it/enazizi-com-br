@@ -104,7 +104,7 @@ export function UnifiedMissionHero({
               <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
                 <Brain className="h-4 w-4 text-primary" />
                 <span className="text-xs font-bold text-white/70 italic">
-                  {adaptiveJustification}
+                  {humanizeFSRSReason(adaptiveJustification)}
                 </span>
               </div>
             )}
