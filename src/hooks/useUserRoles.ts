@@ -28,7 +28,7 @@ export const useUserRoles = () => {
       };
     },
     enabled: !!user,
-    staleTime: 1000 * 30, // Reduzido para 30 segundos para maior reatividade
+    staleTime: 1000 * 60 * 1, // 1 minuto (role revogada persiste < 1min)
     gcTime: 1000 * 60 * 5,
   });
 
