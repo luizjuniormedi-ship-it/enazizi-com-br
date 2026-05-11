@@ -167,9 +167,9 @@ const ProfessorDashboard = () => {
 
   const handleOpenCreate = useCallback((simulado?: any) => {
     if (simulado?.id) {
-      navigate(`/dashboard/professor/simulados/editar/${simulado.id}`);
+      navigate(`/professor/simulados/editar/${simulado.id}`);
     } else {
-      navigate("/dashboard/professor/simulados/novo");
+      navigate("/professor/simulados/novo");
     }
   }, [navigate]);
 

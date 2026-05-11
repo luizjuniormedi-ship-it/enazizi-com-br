@@ -67,7 +67,7 @@ const NewProfessorSimuladoPage = () => {
             description: "Não foi possível encontrar o simulado para edição.",
             variant: "destructive"
           });
-          navigate("/dashboard/professor");
+          navigate("/professor");
         } finally {
           setLoadingInitial(false);
         }
@@ -81,7 +81,7 @@ const NewProfessorSimuladoPage = () => {
     onOpenChange: () => {},
     onCreated: () => {
       toast({ title: "Simulado salvo com sucesso!" });
-      navigate("/dashboard/professor");
+      navigate("/professor");
     },
     callAPI,
     initialData: editingSimulado
@@ -106,7 +106,7 @@ const NewProfessorSimuladoPage = () => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={() => navigate("/dashboard/professor")}
+            onClick={() => navigate("/professor")}
             className="text-white/60 hover:text-white"
           >
             <ChevronLeft className="h-4 w-4 mr-1" /> VOLTAR
@@ -308,7 +308,7 @@ const NewProfessorSimuladoPage = () => {
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <Button
                 variant="outline"
-                onClick={() => navigate("/dashboard/professor")}
+                onClick={() => navigate("/professor")}
                 className="flex-1 sm:flex-none border-white/10 hover:bg-white/5 text-white/60 font-bold uppercase tracking-widest text-[10px]"
               >
                 CANCELAR
