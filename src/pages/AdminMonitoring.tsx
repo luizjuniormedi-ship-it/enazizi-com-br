@@ -173,6 +173,10 @@ export default function AdminMonitoring() {
               <Film className="h-3.5 w-3.5" />
               Auditoria Vídeo
             </TabsTrigger>
+            <TabsTrigger value="cognitive-audit" className="text-xs gap-1.5">
+              <Brain className="h-3.5 w-3.5 text-primary" />
+              Auditoria Cognitiva
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
