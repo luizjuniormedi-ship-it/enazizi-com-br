@@ -29,6 +29,7 @@ import CronogramaTemas from "@/components/cronograma/CronogramaTemas";
 import CronogramaHistorico from "@/components/cronograma/CronogramaHistorico";
 import StudyPlanContent from "@/components/cronograma/StudyPlanContent";
 import { syncTemasToModules, updateStudyPerformanceContext } from "@/lib/cronogramaSync";
+import CronogramaSmartSuggestions from "@/components/cronograma/CronogramaSmartSuggestions";
 
 // New strategic components
 import PlannerStrategicHeader from "@/components/planner/PlannerStrategicHeader";
