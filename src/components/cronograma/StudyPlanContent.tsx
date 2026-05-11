@@ -277,10 +277,11 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
     }
     setGenerating(true);
     setGenerationStep(1);
+    setGenerationProgress(10);
+    setGenerationStatusText("Iniciando geração...");
     setSyncSummary(null);
     try {
       const { data: session } = await supabase.auth.getSession();
-      setGenerationStep(2);
       
       // Get coverage stats from latest extraction
       const { data: extraction } = await supabase
@@ -291,9 +292,6 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
         .limit(1)
         .maybeSingle();
 
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 160000); // 160s frontend timeout
-      
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/generate-study-plan`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.session?.access_token}` },
@@ -304,37 +302,72 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
           editalText: editalText || null,
           currentPlanId: planId,
           coverageStats: extraction?.coverage_stats || null
-        }),
-        signal: controller.signal
+        })
       });
       
-      clearTimeout(timeoutId);
-      
       const result = await resp.json();
-      if (!resp.ok) throw new Error(result.error || "A IA não conseguiu gerar seu cronograma. Tente novamente ou use um edital mais curto.");
-      setGenerationStep(3);
-      const plan = result.plan.plan_json as PlanJson;
-      setPlanId(result.plan.id);
-      setSchedule(plan.weeklySchedule || []);
-      setSubjects(plan.subjects || []);
-      setTopicMap(plan.topicMap || []);
-      setDetectedSpecialty(plan.detectedSpecialty || "");
-      setTips(plan.tips || "");
-      setPlanCoverage(plan.coverageStats || null);
-      setShowConfig(false);
-      if (onSubjectsGenerated && plan.subjects && plan.subjects.length > 0) {
-        setGenerationStep(4);
-        const syncResult = await onSubjectsGenerated(plan.subjects);
-        if (syncResult) {
-          setSyncSummary(syncResult);
+      if (!resp.ok) throw new Error(result.error || "A IA não conseguiu iniciar a geração.");
+
+      const newPlanId = result.planId;
+      setPlanId(newPlanId);
+
+      // Start Polling
+      let attempts = 0;
+      const maxAttempts = 150; // Up to 5 minutes
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        const { data: planData, error: pollError } = await supabase
+          .from("study_plans")
+          .select("*")
+          .eq("id", newPlanId)
+          .single();
+
+        if (pollError || !planData) {
+          console.error("Polling error:", pollError);
+          return;
         }
-      }
-      toast({ title: "Cronograma gerado!", description: "Plano de estudos criado e módulos sincronizados." });
+
+        if (planData.status === "completed" && planData.plan_json) {
+          clearInterval(pollInterval);
+          const plan = planData.plan_json as PlanJson;
+          setSchedule(plan.weeklySchedule || []);
+          setSubjects(plan.subjects || []);
+          setTopicMap(plan.topicMap || []);
+          setDetectedSpecialty(plan.detectedSpecialty || "");
+          setTips(plan.tips || "");
+          setPlanCoverage(plan.coverageStats || null);
+          setShowConfig(false);
+          setGenerating(false);
+          setGenerationStep(0);
+          
+          if (onSubjectsGenerated && plan.subjects && plan.subjects.length > 0) {
+            setGenerationStatusText("Sincronizando módulos...");
+            const syncResult = await onSubjectsGenerated(plan.subjects);
+            if (syncResult) {
+              setSyncSummary(syncResult);
+            }
+          }
+          toast({ title: "Cronograma gerado!", description: "Plano de estudos criado e módulos sincronizados." });
+        } else if (planData.status === "error") {
+          clearInterval(pollInterval);
+          setGenerating(false);
+          toast({ title: "Erro na geração", description: planData.error_message || "Erro desconhecido", variant: "destructive" });
+        } else {
+          // Update local progress
+          setGenerationProgress(planData.progress || 10);
+          setGenerationStatusText(planData.current_step || "Processando...");
+        }
+
+        if (attempts >= maxAttempts) {
+          clearInterval(pollInterval);
+          setGenerating(false);
+          toast({ title: "Tempo limite excedido", description: "O processamento está demorando mais que o esperado. Verifique novamente em alguns instantes.", variant: "destructive" });
+        }
+      }, 3000); // Poll every 3 seconds
+
     } catch (err: any) {
-      toast({ title: "Erro ao gerar cronograma", description: err.message, variant: "destructive" });
-    } finally {
       setGenerating(false);
-      setGenerationStep(0);
+      toast({ title: "Erro ao gerar cronograma", description: err.message, variant: "destructive" });
     }
   };
 
