@@ -172,7 +172,7 @@ const App = () => (
               </Route>
               <Route path="/study-hub" element={<Navigate to="/enaflix" replace />} />
               {/* Canonical redirects — /study/* → /dashboard/* */}
-              <Route path="/study/tutor" element={<Navigate to="/dashboard/chatgpt" replace />} />
+              <Route path="/study/tutor" element={<Navigate to="/dashboard/tutor-v2" replace />} />
               <Route path="/study/flashcards" element={<Navigate to="/dashboard/flashcards" replace />} />
               <Route path="/study/simulado" element={<Navigate to="/dashboard/simulados" replace />} />
               <Route path="/study/clinical" element={<Navigate to="/dashboard/simulacao-clinica" replace />} />
