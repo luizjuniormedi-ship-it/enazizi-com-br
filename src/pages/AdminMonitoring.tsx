@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Server, RefreshCw, Wifi, WifiOff, XCircle,
-  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity, GitMerge, Film,
+  LayoutDashboard, Users, BarChart3, ShieldAlert, Zap, Activity, GitMerge, Film, Brain,
 } from "lucide-react";
 import { DashboardData, MentorSummary, StudentRow, RiskAlert } from "@/components/monitoring/MonitoringTypes";
 import { OverviewTab } from "@/components/monitoring/OverviewTab";
@@ -20,6 +20,7 @@ import { SystemHealthTab } from "@/components/monitoring/SystemHealthTab";
 import { InterventionEfficacyMonitor } from "@/components/admin/InterventionEfficacyMonitor";
 import { AdaptivePathwaysLog } from "@/components/admin/AdaptivePathwaysLog";
 import { VideoRecommendationAuditTab } from "@/components/monitoring/VideoRecommendationAuditTab";
+import { AdaptiveAuditTab } from "@/components/monitoring/AdaptiveAuditTab";
 
 export default function AdminMonitoring() {
   const { session } = useAuth();
@@ -172,6 +173,10 @@ export default function AdminMonitoring() {
               <Film className="h-3.5 w-3.5" />
               Auditoria Vídeo
             </TabsTrigger>
+            <TabsTrigger value="cognitive-audit" className="text-xs gap-1.5">
+              <Brain className="h-3.5 w-3.5 text-primary" />
+              Auditoria Cognitiva
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview">
@@ -203,6 +208,9 @@ export default function AdminMonitoring() {
           </TabsContent>
           <TabsContent value="video-audit">
             <VideoRecommendationAuditTab />
+          </TabsContent>
+          <TabsContent value="cognitive-audit">
+            <AdaptiveAuditTab />
           </TabsContent>
         </Tabs>
       ) : (
