@@ -29,9 +29,11 @@ async function processInBackground(
   planId: string,
   userId: string,
   payload: any,
-  supabaseAdmin: any
+  supabaseAdmin: any,
+  userToken: string
 ) {
   console.log(`[GENERATE_STUDY_PLAN] Background processing for ${planId}...`);
+
   const { examDate, hoursPerDay, daysPerWeek, editalText, targetExams, targetExam, coverageStats } = payload;
   
   try {
