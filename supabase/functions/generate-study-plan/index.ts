@@ -237,7 +237,8 @@ serve(async (req) => {
 
     // 2. Start Background Process
     // @ts-ignore
-    EdgeRuntime.waitUntil(processInBackground(planId, userId, body, supabaseAdmin));
+    EdgeRuntime.waitUntil(processInBackground(planId, userId, body, supabaseAdmin, auth.token));
+
 
     return new Response(JSON.stringify({ 
       success: true, 
