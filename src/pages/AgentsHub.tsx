@@ -17,7 +17,7 @@ interface AgentDef {
 
 const AGENTS: AgentDef[] = [
   {
-    to: "/dashboard/tutor-v2",
+    to: "/dashboard/sessao-estudo",
     icon: Sparkles,
     title: "Tutor IA V2 — Nova Geração",
     description:
@@ -28,7 +28,7 @@ const AGENTS: AgentDef[] = [
     category: "ensino",
   },
   {
-    to: "/dashboard/tutor-v2",
+    to: "/dashboard/sessao-estudo",
     icon: Sparkles,
     title: "Tutor IA — Mentor Principal",
     description:
@@ -138,7 +138,7 @@ const CATEGORY_META = {
 
 const SPOTLIGHT: SpotlightAgent[] = [
   {
-    to: "/dashboard/tutor-v2",
+    to: "/dashboard/sessao-estudo",
     icon: Sparkles,
     title: "Aprenda qualquer tema com seu Tutor IA",
     description:

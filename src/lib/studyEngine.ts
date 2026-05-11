@@ -736,7 +736,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
           : `Revisão atrasada de "${tema}"${countLabel} — risco de esquecer!`
         : `Revisão programada de "${tema}"${countLabel} para hoje.`,
       targetModule: "tutor-v2",
-      targetPath: `/dashboard/tutor-v2?topic=${encodeURIComponent(tema)}&source=engine_review`,
+      targetPath: `/dashboard/sessao-estudo?topic=${encodeURIComponent(tema)}&source=engine_review`,
       estimatedMinutes: 15,
       objective: "review",
       _groupKey: `review:${tema}`,
@@ -784,7 +784,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
         ? `⚠️ "${err.tema}" errado ${err.vezes_errado}x — bloqueio ativo até domínio.`
         : `Você errou "${err.tema}" ${err.vezes_errado}x. Revise para fixar.`,
       targetModule: "tutor-v2",
-      targetPath: `/dashboard/tutor-v2?topic=${encodeURIComponent(err.tema)}&source=engine_error&errorId=${err.id}`,
+      targetPath: `/dashboard/sessao-estudo?topic=${encodeURIComponent(err.tema)}&source=engine_error&errorId=${err.id}`,
       estimatedMinutes: 10,
       objective: "correction",
       difficulty: err.vezes_errado >= 5 ? "facil" : "intermediario",
@@ -1662,7 +1662,7 @@ export async function generateRecommendations({ userId, coreData, recoveryEnable
         priority: cap(60 + proximityBoost - i * 3),
         reason: `📋 Tema da mentoria: "${mt}". ${urgencyLabel} Estude com o Tutor IA.`,
         targetModule: "tutor-v2",
-        targetPath: `/dashboard/tutor-v2?topic=${encodeURIComponent(mt)}&source=engine_mentorship`,
+        targetPath: `/dashboard/sessao-estudo?topic=${encodeURIComponent(mt)}&source=engine_mentorship`,
         estimatedMinutes: 25,
         objective: "new_content",
         _groupKey: `mentor:${mt}`,

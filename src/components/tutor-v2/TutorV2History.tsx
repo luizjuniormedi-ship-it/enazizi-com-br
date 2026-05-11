@@ -35,7 +35,7 @@ export default function TutorV2History() {
       {sessions.map((session) => (
         <button
           key={session.id}
-          onClick={() => navigate(`/dashboard/tutor-v2/${session.id}`)}
+          onClick={() => navigate(`/dashboard/sessao-estudo/${session.id}`)}
           className="w-full p-3 rounded-xl bg-white/[0.02] border border-white/5 hover:bg-white/[0.05] hover:border-indigo-500/20 transition-all text-left group"
         >
           <div className="flex items-center justify-between mb-1">
