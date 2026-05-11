@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, Suspense, lazy } from "react";
 import { useNavigate } from "react-router-dom";
-import { GraduationCap, Plus, Loader2, Video } from "lucide-react";
+import { GraduationCap, Plus, Loader2, Video, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -172,6 +172,11 @@ const ProfessorDashboard = () => {
       navigate("/professor/simulados/novo");
     }
   }, [navigate]);
+
+  const handleOpenProficiencyPlanner = useCallback(() => {
+    setActiveTab("mentoria");
+    setActiveSub("proficiencia");
+  }, []);
 
   const totals = useMemo(() => {
     const safeSimulados = Array.isArray(simulados) ? simulados : [];
