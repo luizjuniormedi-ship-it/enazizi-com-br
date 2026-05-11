@@ -53,9 +53,18 @@ const NAV_SECTIONS = [
       { to: "/dashboard/videoaulas/explorar", label: "Videoaulas", icon: MonitorPlay },
       { to: "/dashboard/flashcards", label: "Revisões", icon: Clock },
       { to: "/dashboard/simulados", label: "Simulados", icon: LayoutGrid },
+      { to: "/dashboard/image-quiz", label: "Questões com Imagem", icon: ImageIcon },
+      { to: "/dashboard/feynman", label: "Método Feynman", icon: Brain },
       { to: "/dashboard/banco-erros", label: "Banco de Erros", icon: AlertTriangle },
       { to: "/dashboard/mnemonic-studio", label: "Mnemônicos", icon: BrainCircuit },
-      { to: "/dashboard/tutor-v2", label: "Tutor IA", icon: Brain, badge: "Premium" },
+      { to: "/dashboard/sessao-estudo", label: "Tutor IA", icon: Sparkles, badge: "Premium" },
+    ]
+  },
+  {
+    title: "PRÁTICA",
+    items: [
+      { to: "/dashboard/simulacao-clinica", label: "Simulação Clínica", icon: Stethoscope },
+      { to: "/dashboard/cronicas", label: "Crônicas Médicas", icon: ScrollText },
     ]
   },
   {
