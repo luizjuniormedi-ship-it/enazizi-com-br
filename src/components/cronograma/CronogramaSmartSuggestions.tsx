@@ -15,6 +15,8 @@ interface Props {
   uploadId: string;
   filename: string;
   topics: SuggestedTopic[];
+  isEnriching?: boolean;
+  enrichmentProgress?: number;
   onAdd: (topics: SuggestedTopic[]) => Promise<void>;
   onDismiss: () => void;
 }
