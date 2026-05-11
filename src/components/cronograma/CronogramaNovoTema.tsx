@@ -66,7 +66,21 @@ const CronogramaNovoTema = ({ specialties, onAdd }: Props) => {
   };
 
   const handleSimulatePDF = () => {
-    const text = "CONTEÚDO MÉDICO DE TESTE\n\nAssunto: Cardiologia - Insuficiência Cardíaca\n\nDefinição: Síndrome clínica complexa caracterizada pela incapacidade do coração em bombear sangue adequadamente.\n\nTópicos sugeridos:\n1. Fisiopatologia da IC\n2. Tratamento farmacológico (Beta-bloqueadores, IECA)\n3. Critérios de Framingham\n";
+    const text = `
+    # INFARTO AGUDO DO MIOCÁRDIO (IAM)
+    
+    O infarto agudo do miocárdio é uma emergência médica. 
+    Principais sintomas: dor precordial opressiva, irradiação para braço esquerdo, sudorese.
+    
+    Tópicos para estudo:
+    1. Diagnóstico de IAM com supra de ST
+    2. Marcadores de necrose miocárdica (Troponina)
+    3. Tratamento inicial (MONA: Morfina, Oxigênio, Nitrato, AAS)
+    4. Reperfusão: Trombólise vs Angioplastia
+    5. Complicações pós-IAM (Arritmias, Choque Cardiogênico)
+    
+    O tratamento deve ser rápido ("Tempo é músculo").
+    `;
     const blob = new Blob([text], { type: "text/plain" });
     const file = new File([blob], `material_estudo_${Date.now()}.txt`, { type: "text/plain" });
     setFiles(prev => [...prev, file]);
