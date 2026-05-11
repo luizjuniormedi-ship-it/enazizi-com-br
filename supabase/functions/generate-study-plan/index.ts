@@ -174,14 +174,12 @@ Formato JSON:
       console.warn("[GENERATE_STUDY_PLAN] Failed to trigger daily plan:", triggerErr);
     }
 
-      console.warn("[GENERATE_STUDY_PLAN] Failed to trigger daily plan:", triggerErr);
-    }
-
     console.log("[GENERATE_STUDY_PLAN] Completed successfully", { 
       planId, 
       tasks_count: planJson.weeklySchedule?.[0]?.tasks?.length || 0,
       ai_fallback: !aiResp?.ok
     });
+
 
 
   } catch (e: any) {
