@@ -422,14 +422,20 @@ const SmartPlanner = () => {
           
           anexos.push({ name: file.name, path: filePath });
 
-          // Se for PDF, disparar processamento em background (Edge Function)
-          if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+          // Se for PDF ou TXT, disparar processamento em background (Edge Function)
+          const isProcessable = file.type === "application/pdf" || 
+                               file.name.toLowerCase().endsWith(".pdf") ||
+                               file.type === "text/plain" ||
+                               file.name.toLowerCase().endsWith(".txt");
+
+          if (isProcessable) {
+            const fileExt = file.name.split('.').pop()?.toLowerCase() || 'pdf';
             const { data: uploadRecord, error: dbError } = await supabase
               .from("uploads")
               .insert(({
                 user_id: user.id,
                 filename: file.name,
-                file_type: "pdf",
+                file_type: fileExt,
                 category: "material",
                 storage_path: filePath,
                 status: "uploaded",
