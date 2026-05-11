@@ -3,18 +3,12 @@
  * @deprecated-flow — APOSENTADA na sprint final do Planner.
  *
  * Esta edge function escreve em study_plans (shape semanal weeklySchedule).
- * Não é mais chamada pelo onboarding nem por nenhum fluxo principal do ENAZIZI.
- *
- * Fonte viva oficial do Planner: daily_plans + daily_plan_tasks (diário, gerado por planner-orchestrator-v1).
- * Mantida apenas para retrocompatibilidade da UX semanal de StudyPlan/StudyPlanContent (ambos isolados).
- *
- * NÃO REATIVAR sem redesign completo do gerador para o shape diário.
+ * Refatorada para ser ASSÍNCRONA para evitar timeouts de 150s.
  */
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { aiFetch, sanitizeAiContent } from "../_shared/ai-fetch.ts";
 import { getBancaProfile, buildBancaBlock } from "../_shared/banca-profiles.ts";
-import { logAiUsage } from "../_shared/ai-cache.ts";
 import { requireAuth } from "../_shared/require-auth.ts";
 
 const corsHeaders = {
@@ -24,35 +18,27 @@ const corsHeaders = {
 
 const NON_MEDICAL_CONTENT_REGEX = /(direito\s+(penal|civil|constitucional|tributário)|jur[ií]dic|processo\s+penal|stf|stj|delegad[oa]|advogad[oa]|pol[ií]cia\s+federal|c[oó]digo\s+penal|a[cç][aã]o\s+penal|engenharia\s+(civil|elétrica|mecânica)|contabilidade|ciências\s+contábeis)/i;
 
-// For edital/cronograma: only reject clearly non-medical content, accept everything else
-// Medical subjects often have generic names (e.g., "Atenção Básica", "Saúde da Família", "Urgência")
-const isNonMedicalContent = (text: string) => NON_MEDICAL_CONTENT_REGEX.test(text);
+async function updateStatus(supabaseAdmin: any, planId: string, status: string, progress: number, step?: string, errorMsg?: string) {
+  const update: any = { status, progress, updated_at: new Date().toISOString() };
+  if (step) update.current_step = step;
+  if (errorMsg) update.error_message = errorMsg;
+  await supabaseAdmin.from("study_plans").update(update).eq("id", planId);
+}
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
-
+async function processInBackground(
+  planId: string,
+  userId: string,
+  payload: any,
+  supabaseAdmin: any
+) {
+  console.log(`[GENERATE_STUDY_PLAN] Background processing for ${planId}...`);
+  const { examDate, hoursPerDay, daysPerWeek, editalText, targetExams, targetExam, coverageStats } = payload;
+  
   try {
-    console.log("[GENERATE_STUDY_PLAN] Request received");
-    
-    const auth = await requireAuth(req);
-    if (!auth.ok) return auth.response;
-    const userId = auth.userId;
-    const authHeader = req.headers.get("Authorization")!;
+    // 1. Initial Step
+    await updateStatus(supabaseAdmin, planId, "processing", 10, "Analisando edital e preparando IA...");
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-    );
-
-    const body = await req.json();
-    const { examDate, hoursPerDay, daysPerWeek, editalText, currentPlanId, targetExams, targetExam } = body;
-    console.log("[GENERATE_STUDY_PLAN] Payload validated:", { userId, hasEdital: !!editalText });
-
-    if (!examDate || !hoursPerDay || !daysPerWeek) {
-      return new Response(JSON.stringify({ error: "Campos obrigatórios ausentes: data da prova, horas ou dias." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    const editalPreview = String(editalText || "").slice(0, 10000); // Increased slightly for better initial grasp, but real data comes from consolidated topics
+    const editalPreview = String(editalText || "").slice(0, 10000);
     
     // Load target_exam if not provided
     let bancaKeys: string[] = targetExams || (targetExam ? [targetExam] : []);
@@ -65,6 +51,9 @@ serve(async (req) => {
     const bancaBlock = buildBancaBlock(bancaProfile);
 
     const daysUntilExam = Math.ceil((new Date(examDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+    // 2. AI Prompt Construction
+    await updateStatus(supabaseAdmin, planId, "processing", 30, "Construindo cronograma personalizado...");
 
     const prompt = `Você é um especialista em planejamento de estudos médicos.
 Gere um cronograma semanal de estudos em JSON PURO.
@@ -97,18 +86,19 @@ Formato JSON:
   "tips": "..."
 }`;
 
+    // 3. AI Execution
     console.log("[GENERATE_STUDY_PLAN] AI request starting...");
     const startMs = Date.now();
     let aiResp: Response | null = null;
     try {
       aiResp = await aiFetch({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.0-flash-lite-preview-02-05", // Use latest fast model
         messages: [{ role: "user", content: prompt }],
-        timeoutMs: 45000,
-        maxRetries: 0, // Single attempt - rely on fallback if it fails
+        timeoutMs: 60000, // 60s for AI
+        maxRetries: 1,
       });
     } catch (aiErr) {
-      console.warn("[GENERATE_STUDY_PLAN] AI call failed, using fallback:", aiErr);
+      console.warn("[GENERATE_STUDY_PLAN] AI call failed:", aiErr);
     }
     const elapsed = Date.now() - startMs;
     console.log(`[GENERATE_STUDY_PLAN] AI elapsed: ${elapsed}ms, ok: ${aiResp?.ok}`);
@@ -143,44 +133,104 @@ Formato JSON:
       };
     }
 
-    const planData = {
-      user_id: userId,
-      plan_json: {
-        ...planJson,
-        config: { examDate, hoursPerDay, daysPerWeek, hasEdital: !!editalText },
-        generatedAt: new Date().toISOString(),
-        coverageStats: body.coverageStats || null,
-      },
+    // 4. Saving Result
+    await updateStatus(supabaseAdmin, planId, "processing", 80, "Salvando tarefas e finalizando...");
+
+    const updatedPlanJson = {
+      ...planJson,
+      config: { examDate, hoursPerDay, daysPerWeek, hasEdital: !!editalText },
+      generatedAt: new Date().toISOString(),
+      coverageStats: coverageStats || null,
     };
 
-    let result;
-    if (currentPlanId) {
-      console.log(`[GENERATE_STUDY_PLAN] Updating existing plan: ${currentPlanId}`);
-      const { data, error } = await supabaseAdmin.from("study_plans").update({ plan_json: planData.plan_json }).eq("id", currentPlanId).eq("user_id", userId).select().single();
-      if (error) throw error;
-      result = data;
-    } else {
-      console.log("[GENERATE_STUDY_PLAN] Creating new plan");
-      const { data, error } = await supabaseAdmin.from("study_plans").insert(planData).select().single();
-      if (error) throw error;
-      result = data;
-    }
+    const { error: updateError } = await supabaseAdmin
+      .from("study_plans")
+      .update({ 
+        plan_json: updatedPlanJson,
+        status: "completed",
+        progress: 100,
+        current_step: "Finalizado",
+        error_message: null
+      })
+      .eq("id", planId);
+
+    if (updateError) throw updateError;
 
     console.log("[GENERATE_STUDY_PLAN] Completed successfully", { 
-      plan_created: !!result, 
+      planId, 
       tasks_count: planJson.weeklySchedule?.[0]?.tasks?.length || 0,
       ai_fallback: !aiResp?.ok
     });
-    return new Response(JSON.stringify({ success: true, plan: result }), {
+
+  } catch (e: any) {
+    console.error("[GENERATE_STUDY_PLAN] Background error:", e);
+    await updateStatus(supabaseAdmin, planId, "error", 0, "Erro fatal", e.message || "Erro desconhecido");
+  }
+}
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  try {
+    console.log("[GENERATE_STUDY_PLAN] Request received");
+    
+    const auth = await requireAuth(req);
+    if (!auth.ok) return auth.response;
+    const userId = auth.userId;
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    );
+
+    const body = await req.json();
+    const { examDate, hoursPerDay, daysPerWeek, currentPlanId } = body;
+
+    if (!examDate || !hoursPerDay || !daysPerWeek) {
+      return new Response(JSON.stringify({ error: "Campos obrigatórios ausentes: data da prova, horas ou dias." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    let planId = currentPlanId;
+    
+    // 1. Get or Create the Plan Record
+    if (planId) {
+      const { error } = await supabaseAdmin.from("study_plans").update({
+        status: "processing",
+        progress: 0,
+        current_step: "Iniciando...",
+        error_message: null
+      }).eq("id", planId).eq("user_id", userId);
+      if (error) throw error;
+    } else {
+      const { data, error } = await supabaseAdmin.from("study_plans").insert({
+        user_id: userId,
+        status: "processing",
+        progress: 0,
+        current_step: "Iniciando...",
+        plan_json: { status: "initializing" }
+      }).select("id").single();
+      if (error) throw error;
+      planId = data.id;
+    }
+
+    // 2. Start Background Process
+    // @ts-ignore
+    EdgeRuntime.waitUntil(processInBackground(planId, userId, body, supabaseAdmin));
+
+    return new Response(JSON.stringify({ 
+      success: true, 
+      message: "Geração iniciada em segundo plano", 
+      planId 
+    }), {
+      status: 202,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
   } catch (e) {
-    console.error("[GENERATE_STUDY_PLAN] Global error:", e);
+    console.error("[GENERATE_STUDY_PLAN] Sync error:", e);
     return new Response(JSON.stringify({ 
       success: false, 
-      error: e instanceof Error ? e.message : "Erro interno na geração do plano",
-      step: "global_catch"
+      error: e instanceof Error ? e.message : "Erro interno",
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
