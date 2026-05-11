@@ -127,16 +127,47 @@ export function useUpdateProficiencyTaskStatus() {
   const qc = useQueryClient();
   const { toast } = useToast();
   return useMutation({
-    mutationFn: async ({ taskId, status }: { taskId: string; status: ProficiencyTaskStatus }) => {
+    mutationFn: async ({ 
+      taskId, 
+      status, 
+      task // Optional task object for telemetry/FSRS
+    }: { 
+      taskId: string; 
+      status: ProficiencyTaskStatus;
+      task?: ProficiencyDailyTask;
+    }) => {
       const update = {
         status,
         ...(status === "completed" ? { completed_at: new Date().toISOString() } : {}),
       };
+      
+      // 1. Database Update
       const { error } = await supabase
         .from("professor_plan_daily_tasks")
         .update(update)
         .eq("id", taskId);
       if (error) throw error;
+
+      // 2. Telemetry/FSRS signal (only if completing)
+      if (status === "completed" && task) {
+        try {
+          await completeStudyAction({
+            userId: task.user_id,
+            professorPlanTaskId: taskId,
+            taskType: "professor_plan",
+            topic: task.task_payload?.subtopic_name || "Subtema",
+            subtopic: task.task_payload?.subtopic_name,
+            source: "manual",
+            originModule: "proficiency-guided-panel",
+            metadata: {
+              planId: task.plan_id,
+              proficiencyTaskType: task.task_type
+            }
+          });
+        } catch (e) {
+          console.warn("[useUpdateProficiencyTaskStatus] completeStudyAction failed:", e);
+        }
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["proficiency_daily_tasks"] });
