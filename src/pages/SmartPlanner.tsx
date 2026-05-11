@@ -165,6 +165,13 @@ const SmartPlanner = () => {
           if (payload.new.status === "processed" && (payload.new.extracted_json as any)?.suggested_topics?.length > 0) {
             setLastUpload(payload.new);
             setShowSuggestions(true);
+          } else if (payload.new.status === "error") {
+            console.error("[PLANNER_UPLOAD] Processing error:", payload.new.extracted_json);
+            toast({
+              title: "Erro no processamento",
+              description: (payload.new.extracted_json as any)?.error || "Não foi possível processar o material.",
+              variant: "destructive"
+            });
           }
         }
       )
