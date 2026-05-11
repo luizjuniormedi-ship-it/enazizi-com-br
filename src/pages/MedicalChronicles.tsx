@@ -472,7 +472,7 @@ const MedicalChronicles = () => {
               <DropdownMenuItem onClick={startNewSession}><Plus className="h-4 w-4 mr-2" /> Nova crônica</DropdownMenuItem>
               <DropdownMenuItem onClick={() => setShowHistory(!showHistory)}><History className="h-4 w-4 mr-2" /> Histórico</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {}}>
+              <DropdownMenuItem onClick={() => window.open("https://docs.enazizi.com", "_blank")}>
                 <HelpCircle className="h-4 w-4 mr-2" /> Como usar
               </DropdownMenuItem>
             </DropdownMenuContent>
