@@ -178,31 +178,57 @@ export default function OperationalKpiBar({ analytics, loading }: Props) {
           {cog.strongest_specialty && <> · mais forte: <strong className="text-emerald-200">{cog.strongest_specialty}</strong></>}
         </div>
       )}
+
+      {analytics?.timestamp && (
+        <div className="flex justify-end pr-1">
+          <span className="text-[9px] text-white/20 uppercase font-black tracking-widest flex items-center gap-1">
+            <span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />
+            Atualizado em {new Date(analytics.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-function KpiCard({ icon: Icon, label, value, tone }: Kpi) {
+function KpiCard({ icon: Icon, label, value, tone, insufficient, sampleSize, threshold }: Kpi) {
   const toneClass = {
     neutral: "border-white/10 bg-white/[0.03]",
     good: "border-emerald-500/25 bg-emerald-500/5",
     warning: "border-amber-500/25 bg-amber-500/5",
     critical: "border-rose-500/30 bg-rose-500/5",
+    insufficient: "border-white/5 bg-white/[0.01] opacity-60",
   }[tone];
+  
   const iconClass = {
     neutral: "text-white/50",
     good: "text-emerald-400",
     warning: "text-amber-400",
     critical: "text-rose-400",
+    insufficient: "text-white/20",
   }[tone];
 
   return (
-    <div className={cn("rounded-xl border px-3 py-2.5", toneClass)}>
+    <div className={cn("rounded-xl border px-3 py-2.5 relative overflow-hidden group transition-all duration-300", toneClass)}>
       <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-white/50">
         <Icon className={cn("h-3 w-3", iconClass)} />
         {label}
       </div>
-      <div className="text-xl font-black text-white mt-0.5">{value}</div>
+      <div className="flex flex-col">
+        <div className="flex items-center gap-2 mt-0.5">
+          <div className="text-xl font-black text-white">{value}</div>
+          {insufficient && (
+             <div className="text-[7px] font-black text-amber-500 bg-amber-500/10 px-1 py-0.5 rounded uppercase tracking-tighter">
+               Baixa Amostra
+             </div>
+          )}
+        </div>
+        {insufficient && sampleSize !== undefined && (
+          <div className="text-[8px] font-bold text-white/20 uppercase tracking-tighter mt-1">
+            {sampleSize} / {threshold} eventos
+          </div>
+        )}
+      </div>
     </div>
   );
 }
