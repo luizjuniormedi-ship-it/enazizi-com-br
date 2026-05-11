@@ -216,7 +216,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["notificação", "alerta", "broadcast"],
       },
       {
-        to: "/admin/specialty-friction",
+        to: "/admin?tab=specialty-friction",
         label: "Feedbacks",
         description: "Atrito por especialidade e relatórios qualitativos.",
         icon: MessageCircleHeart,
