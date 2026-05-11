@@ -59,6 +59,7 @@ export default function ProficiencyGuidedPanel() {
 }
 
 function GuidedPanelContent({ plan }: { plan: ActiveProfessorPlan }) {
+  const navigate = useNavigate();
   const dailyQ = useProficiencyDailyTasks(plan.id);
   const weekQ = useProficiencyWeekTasks(plan.id, undefined, 14);
   const generate = useGenerateProficiencyPlan();
