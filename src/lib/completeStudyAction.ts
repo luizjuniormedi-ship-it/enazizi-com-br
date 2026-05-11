@@ -10,6 +10,7 @@
  *  5. Disparar refreshAll (via callback)
  */
 import { supabase } from "@/integrations/supabase/client";
+import { devLog } from "@/lib/devLog";
 import { updateMnemonicEfficacy } from "@/lib/mnemonicAdaptiveService";
 import { decideIntervention, calculateCLS, calculateRiskScore } from "@/lib/mnemonicIntelligence";
 import { triggerInvisibleMnemonic } from "@/lib/mnemonicInvisibleService";
