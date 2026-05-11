@@ -26,7 +26,7 @@ export interface ActivePlanSubtopic {
     curriculum_topics?: {
       nome: string;
       specialty_id: string;
-      curriculum_specialties?: { nome: string };
+      curriculum_specialties?: { nome?: string; titulo?: string; title?: string; name?: string };
     };
   } | null;
 }
