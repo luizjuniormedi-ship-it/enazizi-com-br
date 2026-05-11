@@ -135,11 +135,11 @@ export function useAdaptiveAudit() {
       // 7. Cost Audit
       const { data: aiLogs } = await supabase
         .from("ai_usage_logs")
-        .select("total_tokens, model")
+        .select("tokens_used, model")
         .limit(100);
       
       if (aiLogs) {
-        const totalTokens = aiLogs.reduce((s, l) => s + (l.total_tokens || 0), 0);
+        const totalTokens = (aiLogs as any[]).reduce((s, l) => s + (l.tokens_used || 0), 0);
         results.push({
           category: "Custo IA",
           status: "success",
