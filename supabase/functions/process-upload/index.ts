@@ -86,8 +86,17 @@ async function processInBackground(
       return;
     }
 
-    if (fileData.size > MAX_PROCESS_FILE_BYTES) {
-      await supabaseAdmin.from("uploads").update({ status: "error", extracted_json: { error: "Arquivo muito grande (máx 20MB)" } }).eq("id", uploadId);
+    const fileSize = fileData.size || (upload.extracted_json as any)?.file_size || 0;
+    if (fileSize > MAX_PROCESS_FILE_BYTES) {
+      console.warn(`[PROCESS_UPLOAD] File too large: ${fileSize} bytes`);
+      await supabaseAdmin.from("uploads").update({ 
+        status: "error", 
+        extracted_json: { 
+          error: "Arquivo muito grande (máx 20MB)",
+          size: fileSize,
+          step: "validation"
+        } 
+      }).eq("id", uploadId);
       return;
     }
 
@@ -104,7 +113,15 @@ async function processInBackground(
     } else if (fileType === "docx" || fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
       extractedText = await extractDocxText(fileData);
     } else {
-      await supabaseAdmin.from("uploads").update({ status: "error", extracted_json: { error: "Formato não suportado" } }).eq("id", uploadId);
+      console.error(`[PROCESS_UPLOAD] Unsupported file type: ${fileType} for upload ${uploadId}`);
+      await supabaseAdmin.from("uploads").update({ 
+        status: "error", 
+        extracted_json: { 
+          error: "Formato não suportado", 
+          type: fileType,
+          step: "extraction" 
+        } 
+      }).eq("id", uploadId);
       return;
     }
 
@@ -120,16 +137,23 @@ async function processInBackground(
     // Step 3: Validate medical content
     await updateProgress(supabaseAdmin, uploadId, { step: "validating", progress: 25 });
 
-    const validationResponse = await aiFetch({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `Analise o texto e determine se é relacionado a medicina/saúde CLÍNICA. Editais, regulamentos de processo seletivo, cronogramas, requisitos de inscrição e documentos administrativos NÃO são conteúdo médico. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
-        },
-        { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
-      ],
-    });
+    let validationResponse;
+    try {
+      validationResponse = await aiFetch({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: `Analise o texto e determine se é relacionado a medicina/saúde CLÍNICA. Editais, regulamentos de processo seletivo, cronogramas, requisitos de inscrição e documentos administrativos NÃO são conteúdo médico. Responda APENAS com JSON: {"is_medicine": true/false, "reason": "breve explicação", "main_topic": "especialidade médica principal"}`
+          },
+          { role: "user", content: `Classifique:\n\n${truncatedText.slice(0, 3000)}` }
+        ],
+      });
+    } catch (aiErr) {
+      console.error("[PROCESS_UPLOAD] AI Validation fetch failed:", aiErr);
+      // Fallback: assume it's medical if extraction worked, to avoid blocking user
+      validationResponse = { ok: false }; 
+    }
 
     let detectedTopic = "Clínica Médica";
 
