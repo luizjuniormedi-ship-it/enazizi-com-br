@@ -71,7 +71,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["mentor", "alunos", "risco", "engajamento"],
       },
       {
-        to: "/admin/ai-audit-mode",
+        to: "/admin?tab=audit",
         label: "Auditoria",
         description: "Log de todas as ações administrativas e mudanças sensíveis.",
         icon: ClipboardList,
@@ -79,7 +79,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["log", "audit", "histórico"],
       },
       {
-        to: "/admin/settings",
+        to: "/admin?tab=features",
         label: "Governança",
         description: "Configuração de thresholds e limites operacionais enterprise.",
         icon: Settings2,
@@ -87,7 +87,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["governança", "settings", "thresholds", "limites"],
       },
       {
-        to: "/admin/audit",
+        to: "/admin?tab=audit",
         label: "Integridade",
         description: "Auditoria técnica de pipeline de dados e gaps de telemetria.",
         icon: ShieldCheck,
@@ -103,7 +103,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Curadoria de aulas, banco de questões e biblioteca.",
     items: [
       {
-        to: "/admin/users?tab=uploads",
+        to: "/admin?tab=uploads",
         label: "Upload de Arquivos",
         description: "Upload de materiais brutos, PDFs e provas para o sistema.",
         icon: FileText,
@@ -111,7 +111,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["upload", "arquivo", "pdf", "bruto"],
       },
       {
-        to: "/admin/lessons-memory",
+        to: "/admin?tab=tutor-lessons",
         label: "Curadoria de Aulas",
         description: "Memória de aulas do Tutor IA — estruturação, vídeo e publicação.",
         icon: BookOpenCheck,
@@ -119,7 +119,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["aulas", "tutor", "memória", "lessons", "ingestion"],
       },
       {
-        to: "/admin/users?tab=lesson-ratings",
+        to: "/admin?tab=lesson-ratings",
         label: "Avaliações",
         description: "Analytics de satisfação cinematográfica das videoaulas.",
         icon: Sparkles,
@@ -136,7 +136,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["rag", "base de conhecimento", "materiais", "pdf", "biblioteca"],
       },
       {
-        to: "/admin/users?tab=ingestion",
+        to: "/admin?tab=ingestion",
         label: "Gerar Questões",
         description: "Pipeline de IA para geração de questões a partir de PDF/Texto.",
         icon: Sparkles,
@@ -144,7 +144,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["gerar", "questões", "ai", "ingestion"],
       },
       {
-        to: "/admin/users?tab=question-review",
+        to: "/admin?tab=question-review",
         label: "Aprovar Questões",
         description: "Painel de curadoria para aprovação de questões geradas.",
         icon: BookOpenCheck,
@@ -152,7 +152,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["aprovar", "questões", "revisão"],
       },
       {
-        to: "/admin/users?tab=image-review",
+        to: "/admin?tab=image-review",
         label: "Aprovar Imagens",
         description: "Curadoria visual de questões com imagens.",
         icon: ImageIcon,
@@ -160,7 +160,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["imagem", "fotos", "review"],
       },
       {
-        to: "/admin/medical-review-queue",
+        to: "/admin?tab=question-review",
         label: "Banco de Questões",
         description: "Fila de revisão pedagógica e governança médica.",
         icon: FileQuestion,
@@ -168,7 +168,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["questões", "review", "queue"],
       },
       {
-        to: "/admin/banca-readiness",
+        to: "/admin?tab=system-checklist",
         label: "Simulados",
         description: "Cobertura de bancas, prontidão e telemetria de simulados.",
         icon: FileText,
@@ -176,7 +176,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["simulado", "banca", "prova"],
       },
       {
-        to: "/admin/video-lessons",
+        to: "/admin?tab=uploads",
         label: "Biblioteca",
         description: "Vídeos publicados, materiais e ativos pedagógicos.",
         icon: ImageIcon,
@@ -192,7 +192,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Usuários, mensagens e feedbacks.",
     items: [
       {
-        to: "/admin/users",
+        to: "/admin?tab=users-all",
         label: "Usuários",
         description: "Gestão de contas, planos, bloqueios e aprovações.",
         icon: Users,
@@ -200,7 +200,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["users", "contas", "alunos", "plano"],
       },
       {
-        to: "/admin/telemetry",
+        to: "/admin?tab=intelligence-overview",
         label: "Telemetria",
         description: "Dashboards de engajamento, funil e comportamento real.",
         icon: Activity,
@@ -208,7 +208,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["telemetria", "funil", "comportamento", "analytics"],
       },
       {
-        to: "/admin/users?tab=broadcast",
+        to: "/admin?tab=broadcast",
         label: "Mensagens",
         description: "Sistema de notificações e alertas em massa.",
         icon: Bell,
@@ -216,7 +216,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["notificação", "alerta", "broadcast"],
       },
       {
-        to: "/admin/specialty-friction",
+        to: "/admin?tab=specialty-friction",
         label: "Feedbacks",
         description: "Atrito por especialidade e relatórios qualitativos.",
         icon: MessageCircleHeart,
@@ -232,7 +232,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     description: "Tutor IA, motor adaptativo e custos.",
     items: [
       {
-        to: "/admin/tutor-memory",
+        to: "/admin?tab=tutor-lessons",
         label: "Tutor IA",
         description: "Memória semântica e cenários do Tutor.",
         icon: Bot,
@@ -240,7 +240,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["tutor", "memory", "rag", "embeddings"],
       },
       {
-        to: "/admin/tutor-video-recommendations",
+        to: "/admin?tab=tutor-video-audit",
         label: "Recomendações Tutor",
         description: "Auditoria de recomendações de videoaulas automáticas.",
         icon: Activity,
@@ -248,7 +248,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["tutor", "video", "recomendações", "cliques", "analytics"],
       },
       {
-        to: "/admin/ai-studio",
+        to: "/admin?tab=ai-studio",
         label: "Prompts",
         description: "Central de produção de conteúdo IA e prompts.",
         icon: Settings2,
@@ -256,7 +256,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["prompt", "studio", "ia", "geração"],
       },
       {
-        to: "/admin/medical-governance",
+        to: "/admin?tab=bi",
         label: "Custos IA",
         description: "Métricas de custo, qualidade e BI multimodal.",
         icon: DollarSign,
@@ -281,7 +281,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["role", "permission", "rbac"],
       },
       {
-        to: "/admin/intervention-policies",
+        to: "/admin?tab=features",
         label: "Feature Flags",
         description: "Políticas de intervenção e flags de funcionalidades.",
         icon: Flag,
@@ -289,7 +289,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["flag", "policy", "toggle"],
       },
       {
-        to: "/admin/notebooklm",
+        to: "/admin?tab=integrations",
         label: "Integrações",
         description: "Conectores externos (NotebookLM, Stripe, etc).",
         icon: Plug,
@@ -306,7 +306,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
     scopes: ["devops", "super_admin"],
     items: [
       {
-        to: "/admin/cme-executive",
+        to: "/admin?tab=cinematic-engine",
         label: "CME / GPU",
         description: "Fábrica de vídeos cinematográficos e GPU fleet.",
         icon: Cpu,
@@ -314,7 +314,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["cme", "gpu", "render", "video"],
       },
       {
-        to: "/admin/gpu-fleet",
+        to: "/admin?tab=pipeline",
         label: "Workers",
         description: "Orquestração de workers GPU.",
         icon: Server,
@@ -322,7 +322,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["worker", "fleet", "gpu"],
       },
       {
-        to: "/admin/render-queues",
+        to: "/admin?tab=pipeline",
         label: "Render Queue",
         description: "Filas de renderização distribuída.",
         icon: Workflow,
@@ -330,7 +330,7 @@ export const ADMIN_MENU: AdminMenuCategory[] = [
         keywords: ["render", "queue", "fila"],
       },
       {
-        to: "/admin/cme-incidents",
+        to: "/admin?tab=pipeline",
         label: "Logs técnicos",
         description: "Incidentes, alertas e postmortems.",
         icon: Activity,
