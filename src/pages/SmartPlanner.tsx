@@ -129,6 +129,101 @@ const SmartPlanner = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
+  // Monitor uploads for real-time suggestions
+  useEffect(() => {
+    if (!user) return;
+    const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    
+    const fetchLastUpload = async () => {
+      const { data } = await supabase
+        .from("uploads")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "processed")
+        .gt("created_at", tenMinutesAgo)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      
+      if (data && (data.extracted_json as any)?.suggested_topics?.length > 0) {
+        const dismissed = sessionStorage.getItem(`dismissed_suggestion_${data.id}`);
+        if (!dismissed) {
+          setLastUpload(data);
+          setShowSuggestions(true);
+        }
+      }
+    };
+
+    fetchLastUpload();
+
+    const channel = supabase
+      .channel("planner-upload-status")
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "uploads", filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          if (payload.new.status === "processed" && (payload.new.extracted_json as any)?.suggested_topics?.length > 0) {
+            setLastUpload(payload.new);
+            setShowSuggestions(true);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [user]);
+
+  const handleBulkAddTopics = async (suggestedTopics: any[]) => {
+    if (!user) return;
+    const today = new Date().toISOString().split("T")[0];
+    const insertedTemas: { id: string; tema: string; especialidade: string }[] = [];
+    
+    for (const st of suggestedTopics) {
+      const { data, error } = await supabase.from("temas_estudados").insert({
+        user_id: user.id,
+        tema: st.tema,
+        especialidade: st.especialidade,
+        subtopico: st.subtopico || null,
+        data_estudo: today,
+        fonte: "ia_suggestion",
+        dificuldade: st.dificuldade || "medio",
+        status: "ativo"
+      } as any).select().single();
+      
+      if (!error && data) {
+        insertedTemas.push({ id: data.id, tema: data.tema, especialidade: data.especialidade });
+      }
+    }
+
+    if (insertedTemas.length > 0) {
+      const allReviews: any[] = [];
+      insertedTemas.forEach(tema => {
+        const reviews = generateReviewsByError(today, 0);
+        reviews.forEach(r => {
+          allReviews.push({
+            user_id: user.id,
+            tema_id: tema.id,
+            tipo_revisao: r.tipo,
+            data_revisao: r.data,
+            status: "pendente",
+            prioridade: 50,
+            risco_esquecimento: "baixo",
+          });
+        });
+      });
+      await supabase.from("revisoes").insert(allReviews);
+      toast({ title: "✅ Cronograma Atualizado!", description: `${insertedTemas.length} temas adicionados.` });
+      setShowSuggestions(false);
+      if (lastUpload) sessionStorage.setItem(`dismissed_suggestion_${lastUpload.id}`, "true");
+      loadData();
+    }
+  };
+
+  const handleDismissSuggestions = () => {
+    setShowSuggestions(false);
+    if (lastUpload) sessionStorage.setItem(`dismissed_suggestion_${lastUpload.id}`, "true");
+  };
+
   const pesos = config?.pesos_algoritmo || DEFAULT_PESOS;
   const temasComputados = temas.map(t => computeTema(t, revisoes, desempenhos, pesos as PesosAlgoritmo));
 
