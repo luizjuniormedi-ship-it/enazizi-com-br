@@ -109,6 +109,9 @@ const StudyPlanContent = ({ onSubjectsGenerated, onSyncComplete }: StudyPlanCont
   const [editingTask, setEditingTask] = useState<{ day: number; task: number } | null>(null);
   const [editValues, setEditValues] = useState<Task>({ time: "", subject: "", duration: "" });
   const [generationStep, setGenerationStep] = useState(0);
+  const [generationProgress, setGenerationProgress] = useState(0);
+  const [generationStatusText, setGenerationStatusText] = useState("");
+
   const [syncSummary, setSyncSummary] = useState<SyncSummary | null>(null);
   const [dragSource, setDragSource] = useState<{ day: number; task: number } | null>(null);
   const [dragOver, setDragOver] = useState<{ day: number; task: number } | null>(null);
