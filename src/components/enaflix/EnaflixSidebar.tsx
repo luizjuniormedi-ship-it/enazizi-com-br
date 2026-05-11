@@ -160,7 +160,7 @@ export function EnaflixSidebar() {
     <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#050508]/60 backdrop-blur-[80px] border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_60px_-20px_rgba(0,0,0,1)]">
       {/* Brand Header */}
       <div className="p-8 pb-4">
-        <Link to="/" className="flex items-center gap-4 group">
+        <Link to="/enaflix" className="flex items-center gap-4 group">
           <div className="relative">
             <div className="absolute inset-0 bg-primary/30 blur-2xl rounded-full group-hover:bg-primary/50 transition-all duration-700 group-hover:scale-125" />
             <div className="relative h-14 w-14 rounded-2xl p-1 bg-gradient-to-br from-white/10 to-transparent border border-white/10 shadow-2xl transition-transform duration-700 group-hover:rotate-6 group-hover:scale-110">
