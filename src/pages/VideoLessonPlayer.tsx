@@ -947,7 +947,7 @@ const VideoLessonPlayer = () => {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-white/50">
-                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {Math.floor(lesson.duration_seconds / 60)}:{(lesson.duration_seconds % 60).toString().padStart(2, '0')}</span>
+                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {lesson.duration_seconds ? `${Math.floor(lesson.duration_seconds / 60)}:${(lesson.duration_seconds % 60).toString().padStart(2, '0')}` : '00:00'}</span>
                   <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> {lesson.specialty}</span>
                   <span className="flex items-center gap-1.5"><BrainCircuit className="h-4 w-4" /> IA Multimodal</span>
                 </div>

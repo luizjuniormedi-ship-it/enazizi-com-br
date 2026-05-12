@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 // ═══ CONFIG ═══
-const AI_MODEL = "openai/gpt-5-mini";
+const AI_MODEL = "gpt-4o-mini";
 const IMAGE_MODEL = "google/gemini-2.5-flash-image";
 const GLOBAL_TIMEOUT_MS = 110_000;
 const AGENT_TIMEOUT_MS = 45_000;

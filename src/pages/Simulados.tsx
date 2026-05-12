@@ -59,7 +59,7 @@ async function computeRealPerformance(userId: string) {
   const diffStats: Record<string, { correct: number; total: number }> = {};
 
   for (const row of analytics) {
-    const mod = row.image_type || "text";
+    const mod = row.image_type || "ecg"; // Use a real modality as default for adaptive weighting
     if (!modalityStats[mod]) modalityStats[mod] = { correct: 0, total: 0 };
     modalityStats[mod].total++;
     if (row.is_correct) modalityStats[mod].correct++;

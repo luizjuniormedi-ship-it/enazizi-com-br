@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { 
   Home, 
@@ -38,6 +39,7 @@ import enazizi from "@/assets/enazizi-mascot.png";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useProfessorCheck } from "@/hooks/useProfessorCheck";
 import { ForceUpdateButton } from "@/components/layout/ForceUpdateButton";
+import { NotificationsPanel } from "@/components/dashboard/NotificationsPanel";
 
 const NAV_SECTIONS = [
   {
@@ -155,6 +157,7 @@ export function EnaflixSidebar() {
   const location = useLocation();
   const { isAdmin } = useAdminCheck();
   const { isProfessor } = useProfessorCheck();
+  const [showNotifications, setShowNotifications] = useState(false);
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[#050508]/60 backdrop-blur-[80px] border-r border-white/5 flex flex-col z-50 hidden lg:flex shadow-[20px_0_60px_-20px_rgba(0,0,0,1)]">
@@ -273,13 +276,23 @@ export function EnaflixSidebar() {
           <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
             <Search className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
           </button>
-          <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all relative group/btn">
+          <button 
+            onClick={() => setShowNotifications(!showNotifications)}
+            className={cn(
+              "p-2.5 rounded-xl transition-all relative group/btn",
+              showNotifications ? "bg-primary/20 text-primary ring-1 ring-primary/30" : "text-white/40 hover:text-white hover:bg-white/10"
+            )}
+          >
             <Bell className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-[#0a0a0e] shadow-[0_0_8px_hsl(var(--primary))]" />
           </button>
-          <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
+          
+          {showNotifications && (
+            <NotificationsPanel onClose={() => setShowNotifications(false)} />
+          )}
+          <Link to="/dashboard/perfil" className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
             <Settings className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
-          </button>
+          </Link>
         </div>
       </div>
     </aside>

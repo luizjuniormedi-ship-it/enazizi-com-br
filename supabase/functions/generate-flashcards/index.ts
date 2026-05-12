@@ -14,11 +14,16 @@ serve(async (req) => {
   try {
     const userId = await getUserIdFromRequest(req);
     const body = await req.json();
-    const messages = body?.messages;
+    let messages = body?.messages;
     const userContext = body?.userContext;
+    const topic = body?.topic;
 
     if (!Array.isArray(messages)) {
-      return errorResponse("Campo 'messages' é obrigatório e deve ser um array.", 400);
+      if (topic) {
+        messages = [{ role: "user", content: `Gere flashcards sobre: ${topic}` }];
+      } else {
+        return errorResponse("Campo 'messages' ou 'topic' é obrigatório.", 400);
+      }
     }
 
     const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
@@ -169,7 +174,7 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
 
     const startMs = Date.now();
     const response = await aiFetch({
-      model: "openai/gpt-5-mini",
+      model: "gpt-4o-mini",
       messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
       stream: true,
       maxTokens: 8192,
@@ -179,7 +184,7 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
     logAiUsage({
       userId,
       functionName: "generate-flashcards",
-      modelUsed: "openai/gpt-5-mini",
+      modelUsed: "gpt-4o-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",

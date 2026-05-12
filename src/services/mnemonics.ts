@@ -143,6 +143,7 @@ export async function generateMnemonic(input: MnemonicRequest): Promise<Mnemonic
   try {
     const { data, error } = await supabase.functions.invoke("generate-mnemonic", {
       body: input,
+      headers: { "x-timeout-ms": "115000" }, // Signal to backend
     });
 
     if (error) {
