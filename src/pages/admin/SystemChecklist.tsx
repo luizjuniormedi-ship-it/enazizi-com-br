@@ -126,10 +126,7 @@ const SystemChecklist = () => {
 
       // 2. Check System Health (Dashboard mode)
       setProgress(40);
-      const { data: sysHealth, error: sysError } = await supabase.functions.invoke("system-health-check", {
-        method: "GET",
-        query_params: { mode: "dashboard" }
-      });
+      const { data: sysHealth, error: sysError } = await supabase.functions.invoke("system-health-check?mode=dashboard");
       
       const metrics = sysHealth?.system || {};
       newChecklist.push({
@@ -166,13 +163,15 @@ const SystemChecklist = () => {
       setProgress(100);
 
       // Save real run to DB
-      await supabase.from("system_checklist_runs").insert({
+      await supabase.from("system_checklist_runs").insert([{
         run_type: 'smoke',
         status: 'completed',
-        results: newChecklist,
+        results: newChecklist as any,
         summary: `${newChecklist.filter(c => c.status === 'success').length} de ${newChecklist.length} testes reais passaram.`,
-        created_by: user?.id
-      });
+        created_by: user?.id,
+        started_at: new Date().toISOString(),
+        finished_at: new Date().toISOString()
+      }]);
 
       toast({ title: "Sucesso", description: "Smoke tests concluídos com dados REAIS." });
     } catch (err: any) {
