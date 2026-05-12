@@ -52,6 +52,8 @@ function normalize(s: string) {
 export default function EnaflixPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
   const [searchOpen, setSearchOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const { user } = useAuth();
