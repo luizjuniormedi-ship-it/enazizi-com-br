@@ -253,7 +253,7 @@ export default function OperationalHub({ topicInput, onTopicChange, onStartStudy
               icon={ListChecks}
               title="Plano do dia"
               description="Tarefas guiadas"
-              onClick={() => navigate("/dashboard/daily-plan")}
+              onClick={() => navigate("/dashboard/sessao-estudo", { state: { source: "daily_plan", mode: "guided_tasks" } })}
             />
             <ActionCard
               icon={Target}

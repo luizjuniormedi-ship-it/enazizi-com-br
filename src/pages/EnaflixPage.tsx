@@ -280,7 +280,8 @@ export default function EnaflixPage() {
       const targetModuleId = rec.type === 'review' ? 'sessao-estudo' : 
                            rec.type === 'mnemonic' ? 'mnemonico' :
                            rec.type === 'error_review' ? 'banco-erros' :
-                           rec.type === 'image_quiz' ? 'image-quiz' : 'sessao-estudo';
+                           rec.type === 'image_quiz' ? 'image-quiz' : 
+                           rec.type === 'daily_task' ? 'sessao-estudo' : 'sessao-estudo';
       
       const targetModule = ENAFLIX_MODULES.find(m => m.id === targetModuleId);
       if (targetModule) {

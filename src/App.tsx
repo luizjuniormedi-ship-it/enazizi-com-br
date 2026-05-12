@@ -138,7 +138,8 @@ const App = () => (
                 
                 <Route path="coach" element={<MotivationalCoach />} />
                 <Route path="chatgpt" element={<ChatGPT />} />
-                <Route path="plano-dia" element={<Navigate to="/dashboard" replace />} />
+                <Route path="plano-dia" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                <Route path="daily-plan" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="predictor" element={<PerformancePredictor />} />
                 <Route path="diagnostico" element={<Diagnostic />} />
                 
