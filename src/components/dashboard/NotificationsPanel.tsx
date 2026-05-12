@@ -17,25 +17,33 @@ export function NotificationsPanel({ onClose }: Props) {
   const { structuralAlerts, contextualAlerts } = useAlertOrchestrator();
   const { notifications, isLoading, markAsRead, markAllAsRead, unreadCount } = useNotifications();
   
-  // Combina alertas em memória com notificações persistentes do Supabase
-  // Notificações reais (DB) têm prioridade visual
-  const allNotifs = [
-    ...notifications.map(n => ({
-      id: n.id,
-      message: n.message,
-      title: n.title,
-      source: n.source,
-      type: n.type,
-      actionHref: n.action_href,
-      actionLabel: n.action_label,
-      read: n.read,
-      isReal: true,
-      created_at: n.created_at
-    })),
-    ...structuralAlerts.map(a => ({ ...a, isReal: false, read: false })),
-    ...contextualAlerts.map(a => ({ ...a, isReal: false, read: false }))
-  ].sort((a, b) => {
-    // Ordena por não lidas primeiro, depois por data (se disponível)
+  const dbNotifs = notifications.map(n => ({
+    id: n.id,
+    message: n.message,
+    title: n.title,
+    source: n.source,
+    type: n.type,
+    actionHref: n.action_href,
+    actionLabel: n.action_label,
+    read: n.read,
+    isReal: true,
+    created_at: n.created_at
+  }));
+
+  const memAlerts = [...structuralAlerts, ...contextualAlerts].map(a => ({
+    id: a.id,
+    message: a.message,
+    title: a.title,
+    source: a.source,
+    type: a.priority === 'high' ? 'error' : 'info',
+    actionHref: a.actionHref,
+    actionLabel: a.actionLabel,
+    read: false,
+    isReal: false,
+    created_at: undefined as string | undefined
+  }));
+
+  const allNotifs = [...dbNotifs, ...memAlerts].sort((a, b) => {
     if (a.read !== b.read) return a.read ? 1 : -1;
     if (a.created_at && b.created_at) {
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -49,6 +57,7 @@ export function NotificationsPanel({ onClose }: Props) {
       return <Flame className="h-4 w-4 text-amber-500" />;
     return <Info className="h-4 w-4 text-primary" />;
   };
+
 
   return (
     <div className="absolute bottom-16 left-6 w-85 bg-[#0a0a0e]/95 backdrop-blur-2xl border border-white/10 rounded-2xl shadow-2xl z-[60] overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
