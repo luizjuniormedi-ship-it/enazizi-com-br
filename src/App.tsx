@@ -16,9 +16,10 @@ import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
-// Eager-load shell layout (always needed)
-import EnaflixDashboardLayout from "./components/layout/EnaflixDashboardLayout";
-import AdminLayout from "./components/layout/AdminLayout";
+// Lazy-load layout shells
+const EnaflixDashboardLayout = lazyWithRetry(() => import("./components/layout/EnaflixDashboardLayout"), "EnaflixDashboardLayout");
+const AdminLayout = lazyWithRetry(() => import("./components/layout/AdminLayout"), "AdminLayout");
+
 
 // Lazy-load all pages
 const Index = lazyWithRetry(() => import("./pages/Index"), "Index");
