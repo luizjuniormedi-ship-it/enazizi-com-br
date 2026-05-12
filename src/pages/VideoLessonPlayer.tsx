@@ -825,14 +825,8 @@ const VideoLessonPlayer = () => {
               {(!isRendering && !isPlaceholder && playbackUrl) && (
                 <div className="relative w-full h-full">
                   {(playbackUrl.endsWith('.m3u8') || !!hlsManifest || playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage')) ? (
-                    <video 
-                      id="video-player"
+                    <VideoHLSPlayer 
                       src={playbackUrl}
-                      className="w-full h-full"
-                      controls
-                      autoPlay
-                      playsInline
-                      crossOrigin="anonymous"
                       onPlay={() => {
                         setIsPlaying(true);
                         if (id) logEvent({
@@ -842,7 +836,10 @@ const VideoLessonPlayer = () => {
                           timestampSeconds: watchedSeconds,
                         });
                       }}
+                      onTimeUpdate={(currentTime) => setWatchedSeconds(currentTime)}
+                      initialTime={watchedSeconds}
                     />
+
                   ) : (
                     <iframe 
                       src={playbackUrl} 
