@@ -325,7 +325,7 @@ serve(async (req) => {
           .limit(Math.min(deficit, 10));
 
         if (assets && assets.length > 0) {
-          const questionsPerAsset = Math.min(3, Math.ceil(deficit / assets.length));
+          const questionsPerAsset = Math.min(5, Math.ceil(deficit / assets.length));
 
           for (const asset of assets) {
             if (questions.length >= targetCount) break;
