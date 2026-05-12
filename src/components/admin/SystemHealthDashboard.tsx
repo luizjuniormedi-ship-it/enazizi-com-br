@@ -37,12 +37,24 @@ export const SystemHealthDashboard = () => {
         ms: h.ms
       })) || [];
 
+      // Phase V: Enterprise Telemetry Summary
+      const { data: telemetrySummary } = await (supabase as any)
+        .from('v_enterprise_telemetry_summary')
+        .select('*');
+
+      const runtimeErrors = telemetrySummary?.find((s: any) => s.event_name === 'runtime_error')?.event_count || 0;
+      const hydrationIssues = telemetrySummary?.find((s: any) => s.event_name === 'hydration_mismatch')?.event_count || 0;
+      const offlineEvents = telemetrySummary?.find((s: any) => s.event_name === 'offline_transition')?.event_count || 0;
+
       return {
         onlineUsers: onlineUsers || 0,
         errorsLastHour,
         recentErrors: recentErrors || [],
         avgLatency,
-        latencyHistory
+        latencyHistory,
+        runtimeErrors,
+        hydrationIssues,
+        offlineEvents
       };
     },
     refetchInterval: 30000 // Refresh every 30s
@@ -102,6 +114,45 @@ export const SystemHealthDashboard = () => {
           <CardContent>
             <div className="text-2xl font-bold">99.98%</div>
             <p className="text-xs text-muted-foreground">Últimos 30 dias</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card className="bg-card text-card-foreground border-destructive/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-destructive" />
+              Runtime Errors (7d)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.runtimeErrors}</div>
+            <p className="text-xs text-muted-foreground">Exceções capturadas no frontend</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card text-card-foreground border-yellow-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Zap className="h-4 w-4 text-yellow-500" />
+              Hydration Mismatches
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.hydrationIssues}</div>
+            <p className="text-xs text-muted-foreground">Alertas de dessincronização SSR</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-card text-card-foreground border-blue-500/20">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Activity className="h-4 w-4 text-blue-500" />
+              Offline Transitions
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats?.offlineEvents}</div>
+            <p className="text-xs text-muted-foreground">Eventos de perda de conexão</p>
           </CardContent>
         </Card>
       </div>

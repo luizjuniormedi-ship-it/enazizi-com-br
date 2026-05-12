@@ -1,31 +1,25 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Playwright configuration for E2E tests.
- */
 export default defineConfig({
-  testDir: './tests/e2e',
-  timeout: 120 * 1000, // 2 minutes timeout for IA flows
-  expect: {
-    timeout: 10000,
-  },
+  testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: 1,
+  retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:5173',
+    baseURL: 'http://localhost:8080',
     trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-    viewport: { width: 1280, height: 720 },
+    video: 'on-first-retry',
   },
-
   projects: [
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 5'] },
     },
   ],
 });

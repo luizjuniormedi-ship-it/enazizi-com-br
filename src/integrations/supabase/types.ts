@@ -22005,6 +22005,16 @@ export type Database = {
         }
         Relationships: []
       }
+      v_enterprise_telemetry_summary: {
+        Row: {
+          event_count: number | null
+          event_name: string | null
+          first_seen: string | null
+          last_seen: string | null
+          unique_users: number | null
+        }
+        Relationships: []
+      }
       v_generator_telemetry_summary: {
         Row: {
           ab_bucket: string | null
