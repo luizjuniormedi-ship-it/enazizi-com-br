@@ -265,9 +265,31 @@ const StudySession = () => {
 
   useEffect(() => {
     mountedRef.current = true;
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast({
+        title: "Conexão restaurada",
+        description: "Seu progresso será sincronizado automaticamente.",
+      });
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: "Sem conexão",
+        description: "Você está offline. Seu progresso está sendo salvo localmente.",
+        variant: "destructive",
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
     return () => {
       mountedRef.current = false;
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
       streamAbortRef.current?.abort();
+
       reinforcementAbortRef.current?.abort();
       if (firstQuestionTrackedRef.current && !sessionCompleteTrackedRef.current) {
         const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);
