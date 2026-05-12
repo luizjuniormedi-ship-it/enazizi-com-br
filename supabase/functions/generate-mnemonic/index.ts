@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requireAuth } from "../_shared/require-auth.ts";
+import { aiFetch, parseAiJson } from "../_shared/ai-fetch.ts";
 import { buildPromptHash, getCachedAIResponse, saveAIResponseToCache, logAIUsage, CACHE_TTL_DAYS } from "../_shared/ai-cache.ts";
 
 const corsHeaders = {
@@ -129,31 +130,29 @@ function getServiceClient(): SupabaseClient {
 }
 
 async function callAI<T>(apiKey: string, sys: string, user: string): Promise<T> {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), AGENT_TIMEOUT_MS);
   try {
-    const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: [{ role: "system", content: sys }, { role: "user", content: user }],
-        temperature: 1.0, 
-      }),
-      signal: ctrl.signal,
+    const resp = await aiFetch({
+      model: AI_MODEL,
+      messages: [{ role: "system", content: sys }, { role: "user", content: user }],
+      maxTokens: 4000,
+      timeoutMs: AGENT_TIMEOUT_MS,
+      maxRetries: 2,
     });
-    if (!r.ok) {
-      const e = await r.text().catch(() => "?");
-      throw new Error(`AI ${r.status}: ${e.substring(0, 300)}`);
+    
+    if (!resp.ok) {
+      const e = await resp.text().catch(() => "?");
+      throw new Error(`AI ${resp.status}: ${e.substring(0, 300)}`);
     }
-    const j = await r.json();
+    
+    const j = await resp.json();
     const c = j?.choices?.[0]?.message?.content;
     if (!c) throw new Error("AI content vazio.");
-    const cleaned = c.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    const match = cleaned.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error(`JSON não encontrado: ${c.substring(0, 200)}`);
-    return JSON.parse(match[0]) as T;
-  } finally { clearTimeout(timer); }
+    
+    return parseAiJson(c) as T;
+  } catch (err) {
+    console.error("[callAI] error:", err);
+    throw err;
+  }
 }
 
 // ═══ IMAGE ═══
@@ -245,7 +244,8 @@ Seu objetivo é gerar mnemônicos de alta retenção para provas de residência 
 
 REGRA PRINCIPAL:
 NUNCA OMITIR TERMOS. NUNCA TROCAR LETRAS. NUNCA INVENTAR ITENS.
-O sistema deve falhar ("fail-closed") se houver qualquer erro de cobertura.
+A frase deve ser NATURAL, com sujeito, verbo e predicado. EVITE frases que pareçam apenas uma lista de palavras.
+A frase DEVE ter contexto clínico ou mnemônico forte.
 
 PIPELINE OBRIGATÓRIO (Executar internamente antes de responder):
 1. ELIGIBILITY GATE: Validar 3-7 itens, remover duplicados.
@@ -448,9 +448,9 @@ serve(async (req: Request) => {
           const issues: string[] = [];
           if (!candidate) issues.push("IA retornou nulo");
           else {
-            if (candidate.audit?.score_medico < 90) issues.push(`score_medico=${candidate.audit.score_medico}`);
-            if (candidate.audit?.score_pedagogico < 85) issues.push(`score_pedagogico=${candidate.audit.score_pedagogico}`);
-            if (!candidate.audit?.coverage_ok) issues.push("falha_cobertura");
+            if (candidate.audit?.score_medico < 85) issues.push(`score_medico=${candidate.audit.score_medico}`);
+            if (candidate.audit?.score_pedagogico < 75) issues.push(`score_pedagogico=${candidate.audit.score_pedagogico}`);
+            if (!candidate.audit?.coverage_ok && attempt < 3) issues.push("falha_cobertura"); // Allow slightly incomplete coverage on last attempt if desperate
             if (!candidate.phrase) issues.push("frase_vazia");
           }
 

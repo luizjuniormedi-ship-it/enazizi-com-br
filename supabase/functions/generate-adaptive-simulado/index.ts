@@ -270,12 +270,12 @@ serve(async (req) => {
         .eq("medical_image_assets.is_active", true)
         .eq("medical_image_assets.review_status", "published")
         .order("senior_audit_score", { ascending: false }, { nullsFirst: false })
-        .limit(alloc.count * 2);
+        .limit(Math.max(alloc.count * 2, 10));
 
       if (existing && existing.length > 0) {
         // Prioritize excellent over good
         const excellent = existing.filter((q: any) => q.editorial_grade === "excellent");
-        const good = existing.filter((q: any) => q.editorial_grade === "good");
+        const good = existing.filter((q: any) => q.editorial_grade === "good" || !q.editorial_grade); // Include null/undefined as good
         const prioritized = [...excellent, ...good].slice(0, alloc.count);
 
         for (const q of prioritized) {
@@ -322,10 +322,10 @@ serve(async (req) => {
           .eq("is_active", true)
           .eq("review_status", "published")
           .in("image_type", priorityModalities)
-          .limit(Math.min(deficit, 10));
+          .limit(Math.max(deficit * 2, 30)); // Increase limit to have more candidates
 
         if (assets && assets.length > 0) {
-          const questionsPerAsset = Math.min(5, Math.ceil(deficit / assets.length));
+          const questionsPerAsset = Math.min(10, Math.ceil(deficit / assets.length) + 1); // Request slightly more to ensure quota
 
           for (const asset of assets) {
             if (questions.length >= targetCount) break;
@@ -343,7 +343,8 @@ serve(async (req) => {
                 messages: [{ role: "user", content: prompt }],
                 model: "gpt-4o-mini",
                 maxTokens: 12000,
-                timeoutMs: 60000,
+                timeoutMs: 80000, // Increase timeout
+                maxRetries: 2, // Ensure retries
               });
 
               if (!response.ok) continue;

@@ -678,6 +678,10 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
               profileInstruction = 'PROFUNDIDADE CLÍNICA: Exija raciocínio de exclusão e diagnósticos sindrômicos complexos.';
             }
 
+            const imageInstruction = imagePercent && imagePercent > 0 
+              ? "ESTA QUESTÃO DEVE REFERENCIAR UMA IMAGEM. Use termos como 'Observe a imagem', 'A radiografia mostra', 'O ECG evidencia'. A questão DEVE ser impossível de responder sem a imagem."
+              : "NUNCA referencie imagens, figuras, gráficos ou radiografias (ex: 'observe a imagem abaixo'). Todas as informações devem estar no texto.";
+
             return `Gere exatamente ${needed} questões de múltipla escolha (A-E) para residência médica.
 IDIOMA OBRIGATÓRIO: TUDO em PORTUGUÊS BRASILEIRO (pt-BR).
 
@@ -689,11 +693,12 @@ ${slotTarget ? `FOCO TEMÁTICO OBRIGATÓRIO: Esta questão DEVE obrigatoriamente
 ${depthInstruction}
 ${profileInstruction}
 ${needsRef}
+${imageInstruction}
 
 Retorne APENAS um array JSON puro:
 [{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
-REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, NUNCA imagens/figuras, NUNCA inglês.
+REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, ${imagePercent && imagePercent > 0 ? "REFERENCIE A IMAGEM" : "NUNCA imagens/figuras"}, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
           };
 
@@ -748,7 +753,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                   return false;
                 }
                 if (ENGLISH_PATTERN.test(stmt)) return false;
-                if (IMAGE_REF_PATTERN.test(stmt)) return false;
+                if (IMAGE_REF_PATTERN.test(stmt) && (!imagePercent || imagePercent === 0)) return false;
                 if (!Array.isArray(options) || options.length < 4) return false;
                 return true;
               });
@@ -783,6 +788,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                     options: Array.isArray(q.options || q.alternatives) ? (q.options || q.alternatives).map((o: string) => cleanQuestionText(o)) : [],
                     explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
                     difficulty_level: level,
+                    image_url: q.image_url || null,
                     medical_audit: { 
                       accuracy: medical_accuracy, 
                       distractor: distractor_quality,
