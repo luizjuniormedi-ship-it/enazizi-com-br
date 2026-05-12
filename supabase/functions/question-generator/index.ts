@@ -631,6 +631,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           topic: q.topic || matchedTopics[0] || "Clínica Médica",
           explanation: cleanQuestionText(q.explanation || ""),
           difficulty_level: level,
+          image_url: q.image_url || null,
         }));
 
         let slotQuestions = [...fromCache];
