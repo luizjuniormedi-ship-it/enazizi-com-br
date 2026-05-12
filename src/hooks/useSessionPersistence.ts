@@ -26,6 +26,11 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
   // Check for existing active session
   const checkForSession = useCallback(async () => {
     if (!user || !enabled) { setChecked(true); return null; }
+    
+    // Check localStorage backup first
+    const backupKey = `enazizi_session_backup_${moduleKey}_${user.id}`;
+    const backup = localStorage.getItem(backupKey);
+    
     try {
       const { data } = await supabase
         .from("module_sessions")
@@ -35,22 +40,65 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
         .eq("status", "active")
         .maybeSingle();
 
-      if (data) {
-        setPendingSession(data as SessionData);
-        sessionIdRef.current = data.id;
+      let finalData = data;
+      if (backup) {
+        const parsed = JSON.parse(backup);
+        // Use backup if it's newer than DB data
+        if (!data || new Date(parsed.ts).getTime() > new Date(data.updated_at).getTime()) {
+          console.info("[SessionPersistence] Using local backup as it is newer than DB data.");
+          finalData = {
+            id: data?.id || "temp_" + Date.now(),
+            session_data: parsed.data,
+            updated_at: new Date(parsed.ts).toISOString(),
+            status: "active"
+          };
+        }
+      }
+
+      if (finalData) {
+        setPendingSession(finalData as SessionData);
+        if (finalData.id && !finalData.id.startsWith("temp_")) {
+          sessionIdRef.current = finalData.id;
+        }
       }
       setChecked(true);
-      return data as SessionData | null;
+      return finalData as SessionData | null;
     } catch (e) {
       console.warn("[SessionPersistence] checkForSession error:", e);
+      if (backup) {
+        const parsed = JSON.parse(backup);
+        const data = {
+          id: "temp_" + Date.now(),
+          session_data: parsed.data,
+          updated_at: new Date(parsed.ts).toISOString(),
+          status: "active"
+        };
+        setPendingSession(data as SessionData);
+        setChecked(true);
+        return data as SessionData;
+      }
       setChecked(true);
       return null;
     }
   }, [user, moduleKey, enabled]);
 
+
   // Save session
   const saveSession = useCallback(async (sessionData: Record<string, any>) => {
     if (!user || !enabled) return;
+    
+    // Save to localStorage as backup (offline-safe)
+    const backupKey = `enazizi_session_backup_${moduleKey}_${user.id}`;
+    localStorage.setItem(backupKey, JSON.stringify({
+      data: sessionData,
+      ts: Date.now()
+    }));
+
+    if (!navigator.onLine) {
+      console.info("[SessionPersistence] Device offline, using local backup only.");
+      return;
+    }
+
     try {
       if (sessionIdRef.current) {
         await supabase
@@ -70,10 +118,14 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
           .single();
         if (data) sessionIdRef.current = data.id;
       }
+      
+      // Clear backup on successful server sync
+      localStorage.removeItem(backupKey);
     } catch (e) {
       console.warn("[SessionPersistence] saveSession error:", e);
     }
   }, [user, moduleKey, enabled]);
+
 
   // Save NOW (immediate, returns promise)
   const saveNow = useCallback(async () => {

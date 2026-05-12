@@ -16,9 +16,10 @@ import { Loader2 } from "lucide-react";
 import ErrorBoundary from "@/components/layout/ErrorBoundary";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
-// Eager-load shell layout (always needed)
-import EnaflixDashboardLayout from "./components/layout/EnaflixDashboardLayout";
-import AdminLayout from "./components/layout/AdminLayout";
+// Lazy-load layout shells
+const EnaflixDashboardLayout = lazyWithRetry(() => import("./components/layout/EnaflixDashboardLayout"), "EnaflixDashboardLayout");
+const AdminLayout = lazyWithRetry(() => import("./components/layout/AdminLayout"), "AdminLayout");
+
 
 // Lazy-load all pages
 const Index = lazyWithRetry(() => import("./pages/Index"), "Index");
@@ -77,14 +78,23 @@ const VideoLessonsLibrary = lazyWithRetry(() => import("./pages/VideoLessonsLibr
 const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"), "ResetPassword");
 
 const PageLoader = () => (
-  <div className="p-3 sm:p-4 md:p-6 lg:p-8 space-y-6 animate-fade-in">
-    <div className="h-8 w-48 rounded-md bg-muted animate-pulse" />
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      {[1,2,3,4].map(i => <div key={i} className="h-24 rounded-xl bg-muted animate-pulse" />)}
+  <div className="min-h-screen bg-[#050508] flex flex-col items-center justify-center p-6 space-y-6 animate-in fade-in duration-500">
+    <div className="relative">
+      <div className="h-16 w-16 rounded-full border-t-2 border-primary animate-spin" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 text-primary animate-pulse" />
+      </div>
     </div>
-    <div className="h-64 rounded-xl bg-muted animate-pulse" />
+    <div className="text-center space-y-2">
+      <h2 className="text-lg font-black uppercase tracking-widest text-white/80 animate-pulse">ENAZIZI</h2>
+      <p className="text-[10px] text-white/30 font-bold uppercase tracking-tighter">Sincronizando Ecossistema Cognitivo</p>
+    </div>
+    <div className="w-48 h-1 bg-white/5 rounded-full overflow-hidden">
+      <div className="h-full bg-primary/40 animate-progress-loading" />
+    </div>
   </div>
 );
+
 
 const queryClient = new QueryClient({
   defaultOptions: {

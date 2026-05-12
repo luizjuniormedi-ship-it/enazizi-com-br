@@ -113,13 +113,13 @@ const StudySession = () => {
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
-  // Painel de Desempenho fechado por padrão — abre como drawer sob demanda.
-  // Reduz a poluição visual e dá foco total ao conteúdo da sessão.
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
   const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const [targetExam, setTargetExam] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
   const mountedRef = useRef(true);
   const streamAbortRef = useRef<AbortController | null>(null);
   const reinforcementAbortRef = useRef<AbortController | null>(null);
@@ -265,9 +265,31 @@ const StudySession = () => {
 
   useEffect(() => {
     mountedRef.current = true;
+    const handleOnline = () => {
+      setIsOnline(true);
+      toast({
+        title: "Conexão restaurada",
+        description: "Seu progresso será sincronizado automaticamente.",
+      });
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast({
+        title: "Sem conexão",
+        description: "Você está offline. Seu progresso está sendo salvo localmente.",
+        variant: "destructive",
+      });
+    };
+
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
+
     return () => {
       mountedRef.current = false;
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
       streamAbortRef.current?.abort();
+
       reinforcementAbortRef.current?.abort();
       if (firstQuestionTrackedRef.current && !sessionCompleteTrackedRef.current) {
         const duration = Math.round((Date.now() - sessionStartTimeRef.current) / 1000);

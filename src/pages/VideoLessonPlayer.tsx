@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, lazy, Suspense } from "react";
+import Hls from "hls.js";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
@@ -338,7 +339,8 @@ const VideoLessonPlayer = () => {
   }, [progress]);
 
   const duration = (lesson as any)?.duration_seconds || (lesson as any)?.duration || 0;
-  const completionRate = duration ? Math.min((watchedSeconds / duration) * 100, 100) : 0;
+  const completionRate = (duration > 0 && !isNaN(duration)) ? Math.min((watchedSeconds / duration) * 100, 100) : 0;
+
 
 
   // Check for rating trigger (70% or completion)
@@ -824,14 +826,8 @@ const VideoLessonPlayer = () => {
               {(!isRendering && !isPlaceholder && playbackUrl) && (
                 <div className="relative w-full h-full">
                   {(playbackUrl.endsWith('.m3u8') || !!hlsManifest || playbackUrl.includes('.mp4') || playbackUrl.includes('supabase.co/storage')) ? (
-                    <video 
-                      id="video-player"
+                    <VideoHLSPlayer 
                       src={playbackUrl}
-                      className="w-full h-full"
-                      controls
-                      autoPlay
-                      playsInline
-                      crossOrigin="anonymous"
                       onPlay={() => {
                         setIsPlaying(true);
                         if (id) logEvent({
@@ -841,7 +837,10 @@ const VideoLessonPlayer = () => {
                           timestampSeconds: watchedSeconds,
                         });
                       }}
+                      onTimeUpdate={(currentTime) => setWatchedSeconds(currentTime)}
+                      initialTime={watchedSeconds}
                     />
+
                   ) : (
                     <iframe 
                       src={playbackUrl} 
@@ -947,7 +946,8 @@ const VideoLessonPlayer = () => {
                   </Badge>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-white/50">
-                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {lesson.duration_seconds ? `${Math.floor(lesson.duration_seconds / 60)}:${(lesson.duration_seconds % 60).toString().padStart(2, '0')}` : '00:00'}</span>
+                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {(lesson.duration_seconds && !isNaN(lesson.duration_seconds)) ? `${Math.floor(lesson.duration_seconds / 60)}:${(lesson.duration_seconds % 60).toString().padStart(2, '0')}` : '00:00'}</span>
+
                   <span className="flex items-center gap-1.5"><BookOpen className="h-4 w-4" /> {lesson.specialty}</span>
                   <span className="flex items-center gap-1.5"><BrainCircuit className="h-4 w-4" /> IA Multimodal</span>
                 </div>
@@ -1362,5 +1362,87 @@ const VideoLessonPlayer = () => {
   );
 };
 
+const VideoHLSPlayer = ({ 
+  src, 
+  onPlay, 
+  onTimeUpdate, 
+  initialTime 
+}: { 
+  src: string; 
+  onPlay?: () => void; 
+  onTimeUpdate?: (time: number) => void; 
+  initialTime?: number;
+}) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (Hls.isSupported() && (src.includes('.m3u8') || src.includes('manifest'))) {
+      if (hlsRef.current) hlsRef.current.destroy();
+      
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (initialTime && !isNaN(initialTime)) {
+          video.currentTime = initialTime;
+        }
+        video.play().catch(e => console.log("Auto-play prevented", e));
+      });
+
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls.recoverMediaError();
+              break;
+            default:
+              hls.destroy();
+              break;
+          }
+        }
+      });
+    } else {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+      video.src = src;
+      if (initialTime && !isNaN(initialTime)) {
+        video.currentTime = initialTime;
+      }
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+      }
+    };
+  }, [src]);
+
+  return (
+    <video
+      ref={videoRef}
+      className="w-full h-full"
+      controls
+      autoPlay
+      playsInline
+      crossOrigin="anonymous"
+      onPlay={onPlay}
+      onTimeUpdate={(e) => onTimeUpdate?.(e.currentTarget.currentTime)}
+    />
+  );
+};
 
 export default VideoLessonPlayer;
