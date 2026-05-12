@@ -113,13 +113,13 @@ const StudySession = () => {
   const [topic, setTopic] = useState("");
   const [topicInput, setTopicInput] = useState("");
   const [performance, setPerformance] = useState<PerformanceData>(INITIAL_PERFORMANCE);
-  // Painel de Desempenho fechado por padrão — abre como drawer sob demanda.
-  // Reduz a poluição visual e dá foco total ao conteúdo da sessão.
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [professorContext, setProfessorContext] = useState<{ topics: string; materialUrl?: string; assignmentId?: string } | null>(null);
   const [reinforcementCycles, setReinforcementCycles] = useState<Record<string, number>>({});
   const [preReinforcementPhase, setPreReinforcementPhase] = useState<Phase>("questions");
   const [targetExam, setTargetExam] = useState<string | null>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
   const mountedRef = useRef(true);
   const streamAbortRef = useRef<AbortController | null>(null);
   const reinforcementAbortRef = useRef<AbortController | null>(null);
