@@ -322,7 +322,7 @@ serve(async (req) => {
           .eq("is_active", true)
           .eq("review_status", "published")
           .in("image_type", priorityModalities)
-          .limit(Math.min(deficit, 5));
+          .limit(Math.min(deficit, 10));
 
         if (assets && assets.length > 0) {
           const questionsPerAsset = Math.min(3, Math.ceil(deficit / assets.length));
