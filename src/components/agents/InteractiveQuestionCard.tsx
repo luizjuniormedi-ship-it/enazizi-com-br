@@ -87,14 +87,31 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
 
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-      {/* Topic badge */}
-      {question.topic && (
-        <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
-          {question.topic}
-        </span>
-      )}
+      <div className="flex items-center justify-between">
+        {question.topic && (
+          <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+            {question.topic}
+          </span>
+        )}
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6 text-muted-foreground hover:text-destructive transition-colors"
+          onClick={() => setReportOpen(true)}
+          title="Reportar erro editorial"
+        >
+          <Flag className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+
+      <QuestionReportDialog 
+        open={reportOpen} 
+        onOpenChange={setReportOpen} 
+        questionId={question.id || `session_q_${index}`} 
+      />
 
       {/* Question number + statement */}
+
       <p className="text-sm font-medium leading-relaxed">
         <span className="text-primary font-bold mr-1.5">Questão {index + 1}.</span>
         <MedicalTermHighlighter text={cleanedStatement} />
