@@ -355,7 +355,7 @@ serve(async (req: Request) => {
         const cacheCheckStart = Date.now();
         let cacheSemanticHash = "";
         let cacheEligible = false;
-        if (!payload.regenerate_image_only && !payload.auto_extract_terms && payload.termos.length > 0) {
+        if (!payload.regenerate_image_only && !payload.auto_extract_terms && payload.termos.length > 0 && false) { // Cache bypass for testing
           cacheEligible = true;
           cacheSemanticHash = await buildPromptHash({
             v: 1,
