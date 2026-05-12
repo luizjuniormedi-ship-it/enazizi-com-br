@@ -232,6 +232,8 @@ const Dashboard = () => {
         firstName={firstName}
         recommendationTitle={activeRec?.title}
         recommendationDescription={activeRec?.description}
+        recommendationType={activeRec?.type}
+        recommendationTopic={activeRec?.targetId} // Using targetId as topic context if available
         adaptiveJustification={adaptiveState?.justification}
       />
 
