@@ -34,8 +34,8 @@ export function NotificationsPanel({ onClose }: Props) {
     id: a.id,
     message: a.message,
     title: a.title,
-    source: a.source,
-    type: a.priority === 'high' ? 'error' : 'info',
+    source: a.source as string,
+    type: a.priority === 'critical' ? 'error' : 'info',
     actionHref: a.actionHref,
     actionLabel: a.actionLabel,
     read: false,
@@ -50,6 +50,7 @@ export function NotificationsPanel({ onClose }: Props) {
     }
     return 0;
   });
+
 
   const iconFor = (source: string, type?: string) => {
     if (type === 'error' || source === "approval-risk") return <AlertTriangle className="h-4 w-4 text-destructive" />;
