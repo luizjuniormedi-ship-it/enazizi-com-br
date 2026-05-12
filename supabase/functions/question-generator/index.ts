@@ -56,7 +56,8 @@ serve(async (req) => {
       batchNumber,
       count,
       topicWeights,
-      specialty // Add specialty to body destructuring
+      specialty,
+      imagePercent
     } = body;
 
     // Safety: Protect messages
@@ -542,11 +543,50 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
       if (!hasSubtopicFilter && matchedTopics.length > 0) {
         const topicFilters = matchedTopics.map(t => `topic.ilike.%${t}%`).join(",");
         try {
-          const [{ data: cachedBank }, { data: cachedReal }] = await Promise.all([
+          const queries: any[] = [
             sb.from("questions_bank").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_global", true).eq("review_status", "approved").limit(50),
             sb.from("real_exam_questions").select("statement, options, correct_index, explanation, topic, difficulty").or(topicFilters).eq("is_active", true).limit(30),
-          ]);
-          allCached = [...(cachedBank || []), ...(cachedReal || [])];
+          ];
+
+          if (imagePercent && imagePercent > 0) {
+            queries.push(
+              sb.from("medical_image_questions")
+                .select(`
+                  statement, option_a, option_b, option_c, option_d, option_e,
+                  correct_index, explanation, difficulty,
+                  medical_image_assets!inner(image_url, image_type, specialty)
+                `)
+                .eq("status", "published")
+                .or(topicFilters)
+                .limit(50)
+            );
+          }
+
+          const results = await Promise.all(queries);
+          const cachedBank = results[0]?.data || [];
+          const cachedReal = results[1]?.data || [];
+          const cachedImages = results[2]?.data || [];
+
+          const normalizedImages = cachedImages.map((q: any) => ({
+            statement: q.statement,
+            options: [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e],
+            correct_index: q.correct_index,
+            explanation: q.explanation,
+            topic: q.medical_image_assets?.specialty || "Geral",
+            difficulty: q.difficulty,
+            image_url: q.medical_image_assets?.image_url
+          }));
+
+          // If imagePercent is 100, prioritize image questions
+          if (imagePercent >= 100 && normalizedImages.length > 0) {
+            allCached = [...normalizedImages];
+            // Only add others if we don't have enough images
+            if (allCached.length < requestedCount) {
+               allCached = [...allCached, ...cachedBank, ...cachedReal];
+            }
+          } else {
+            allCached = [...cachedBank, ...cachedReal, ...normalizedImages];
+          }
         } catch (cacheErr) {
           console.error("[CACHE_ERROR] Failed to fetch from cache tables:", cacheErr);
         }
@@ -591,6 +631,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           topic: q.topic || matchedTopics[0] || "Clínica Médica",
           explanation: cleanQuestionText(q.explanation || ""),
           difficulty_level: level,
+          image_url: q.image_url || null,
         }));
 
         let slotQuestions = [...fromCache];

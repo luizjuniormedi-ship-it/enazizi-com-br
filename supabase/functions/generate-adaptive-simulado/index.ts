@@ -68,17 +68,21 @@ function buildAllocations(
   const moderate = analysis.filter(a => a.level === "FRAQUEZA_MODERADA");
   const stable = analysis.filter(a => a.level === "ESTAVEL" || a.level === "FORTE");
 
-  // 60% critical, 30% moderate, 10% maintenance
-  const criticalSlots = Math.round(targetCount * 0.6);
-  const moderateSlots = Math.round(targetCount * 0.3);
-  const maintenanceSlots = targetCount - criticalSlots - moderateSlots;
+  let remainingSlots = targetCount;
 
-  const distribute = (group: ModalityAnalysis[], slots: number, diffProfile: string) => {
-    if (group.length === 0 || slots === 0) return;
-    const perMod = Math.max(1, Math.floor(slots / group.length));
-    let remaining = slots;
+  const distribute = (group: ModalityAnalysis[], weight: number, diffProfile: string) => {
+    if (group.length === 0 || remainingSlots <= 0) return;
+    
+    // Calculate slots for this group based on weight, but don't exceed remaining
+    let slotsForGroup = Math.min(remainingSlots, Math.round(targetCount * weight));
+    if (slotsForGroup <= 0 && remainingSlots > 0 && group.length > 0) {
+      slotsForGroup = remainingSlots; // Take what's left if this is the only group
+    }
+
+    const perMod = Math.max(1, Math.ceil(slotsForGroup / group.length));
+    
     for (const mod of group) {
-      const count = Math.min(perMod, remaining, 3); // max 3 per asset
+      const count = Math.min(perMod, remainingSlots);
       if (count <= 0) break;
 
       let difficulty = "medium";
@@ -95,13 +99,18 @@ function buildAllocations(
       }
 
       allocations.push({ modality: mod.modality, count, difficulty, exam_style: examStyle });
-      remaining -= count;
+      remainingSlots -= count;
     }
   };
 
-  distribute(critical, criticalSlots, "critical");
-  distribute(moderate, moderateSlots, "moderate");
-  distribute(stable, maintenanceSlots, "maintenance");
+  // 1st pass: Critical
+  distribute(critical, 0.6, "critical");
+  // 2nd pass: Moderate
+  distribute(moderate, 0.3, "moderate");
+  // 3rd pass: Stable (takes everything else)
+  if (remainingSlots > 0) {
+    distribute(stable, 1.0, "maintenance");
+  }
 
   return allocations;
 }
@@ -313,10 +322,10 @@ serve(async (req) => {
           .eq("is_active", true)
           .eq("review_status", "published")
           .in("image_type", priorityModalities)
-          .limit(Math.min(deficit, 5));
+          .limit(Math.min(deficit, 10));
 
         if (assets && assets.length > 0) {
-          const questionsPerAsset = Math.min(3, Math.ceil(deficit / assets.length));
+          const questionsPerAsset = Math.min(5, Math.ceil(deficit / assets.length));
 
           for (const asset of assets) {
             if (questions.length >= targetCount) break;
