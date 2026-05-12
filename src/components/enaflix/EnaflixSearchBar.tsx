@@ -14,8 +14,7 @@ export function EnaflixSearchBar({ value, onChange, placeholder, autoFocus, onEn
 
   useEffect(() => {
     if (autoFocus) {
-      const t = setTimeout(() => ref.current?.focus(), 250);
-      return () => clearTimeout(t);
+      ref.current?.focus();
     }
   }, [autoFocus]);
 

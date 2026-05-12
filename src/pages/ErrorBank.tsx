@@ -186,7 +186,10 @@ const ErrorBank = () => {
     setGeneratingFlashcards(true);
     try {
       const { error } = await supabase.functions.invoke("generate-flashcards", {
-        body: { topic: "Revisão dos Erros Mais Frequentes", count: 10 },
+        body: { 
+          topic: "Revisão dos Erros Mais Frequentes", 
+          messages: [{ role: "user", content: `Gere 10 flashcards sobre meus temas de erro: ${errors.slice(0, 3).map(e => e.tema).join(", ")}` }]
+        },
       });
       if (error) throw error;
       toast({ title: "Flashcards gerados!", description: "Cards criados a partir dos seus erros." });
