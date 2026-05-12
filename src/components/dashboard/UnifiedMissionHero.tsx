@@ -36,6 +36,8 @@ export function UnifiedMissionHero({
   firstName,
   recommendationTitle,
   recommendationDescription,
+  recommendationType,
+  recommendationTopic,
   adaptiveJustification,
   primaryHref = "/dashboard/sessao-estudo?source=dashboard_hero",
   secondaryHref = "/dashboard/flashcards",
