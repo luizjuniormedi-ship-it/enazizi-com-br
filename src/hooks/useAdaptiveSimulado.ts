@@ -74,7 +74,7 @@ async function computeRealPerformance(userId: string): Promise<ModalityPerforman
   const errorTopics: Record<string, number> = {};
 
   for (const row of analytics) {
-    const mod = row.image_type || "text";
+    const mod = row.image_type || "ecg";
     if (!modalityStats[mod]) modalityStats[mod] = { correct: 0, total: 0 };
     modalityStats[mod].total++;
     if (row.is_correct) modalityStats[mod].correct++;
