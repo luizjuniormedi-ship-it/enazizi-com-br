@@ -35,7 +35,9 @@ const InteractiveQuestionCard = ({ question, index }: Props) => {
   const [selected, setSelected] = useState<number | null>(null);
   const { user } = useAuth();
   const { addXp } = useGamification();
+  const [reportOpen, setReportOpen] = useState(false);
   const navigate = useNavigate();
+
   const answered = selected !== null;
   const isCorrect = selected === question.correctIndex;
 
