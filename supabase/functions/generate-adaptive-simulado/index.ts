@@ -75,10 +75,10 @@ function buildAllocations(
 
   const distribute = (group: ModalityAnalysis[], slots: number, diffProfile: string) => {
     if (group.length === 0 || slots === 0) return;
-    const perMod = Math.max(1, Math.floor(slots / group.length));
+    const perMod = Math.max(1, Math.ceil(slots / group.length));
     let remaining = slots;
     for (const mod of group) {
-      const count = Math.min(perMod, remaining, 3); // max 3 per asset
+      const count = Math.min(perMod, remaining); 
       if (count <= 0) break;
 
       let difficulty = "medium";
