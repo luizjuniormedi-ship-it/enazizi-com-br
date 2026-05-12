@@ -85,6 +85,15 @@ export function UnifiedMissionHero({
             <p className="text-base sm:text-xl text-white/80 font-medium max-w-xl leading-tight">
               {title} — {desc}
             </p>
+            
+            {recommendationType && (
+              <div className="pt-2">
+                <MissionQuickActions 
+                  type={recommendationType} 
+                  topic={recommendationTopic || recommendationTitle || undefined} 
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
