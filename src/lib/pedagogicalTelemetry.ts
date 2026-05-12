@@ -87,7 +87,17 @@ export type TelemetryEventName =
   | 'weak_topic_detected'
   | 'recovery_started'
   | 'recovery_completed'
-  | 'tutor_error_detected';
+  | 'tutor_error_detected'
+  // Enterprise Operations (Fase V)
+  | 'runtime_error'
+  | 'unhandled_promise'
+  | 'chunk_load_failed'
+  | 'navigation_error'
+  | 'performance_vitals'
+  | 'offline_transition'
+  | 'online_transition'
+  | 'hydration_mismatch'
+  | 'memory_pressure';
 
 interface TelemetryProperties {
   [key: string]: any;
