@@ -37,12 +37,24 @@ export const SystemHealthDashboard = () => {
         ms: h.ms
       })) || [];
 
+      // Phase V: Enterprise Telemetry Summary
+      const { data: telemetrySummary } = await (supabase as any)
+        .from('v_enterprise_telemetry_summary')
+        .select('*');
+
+      const runtimeErrors = telemetrySummary?.find((s: any) => s.event_name === 'runtime_error')?.event_count || 0;
+      const hydrationIssues = telemetrySummary?.find((s: any) => s.event_name === 'hydration_mismatch')?.event_count || 0;
+      const offlineEvents = telemetrySummary?.find((s: any) => s.event_name === 'offline_transition')?.event_count || 0;
+
       return {
         onlineUsers: onlineUsers || 0,
         errorsLastHour,
         recentErrors: recentErrors || [],
         avgLatency,
-        latencyHistory
+        latencyHistory,
+        runtimeErrors,
+        hydrationIssues,
+        offlineEvents
       };
     },
     refetchInterval: 30000 // Refresh every 30s
