@@ -229,6 +229,11 @@ serve(async (req) => {
       error_patterns: [],
     };
 
+    // Robustness: ensure we have at least some modalities if empty
+    if (!performance.by_modality || Object.keys(performance.by_modality).length === 0 || (Object.keys(performance.by_modality).length === 1 && performance.by_modality["text"])) {
+      performance.by_modality = { ecg: 50, xray: 50, dermatology: 50, ct: 50, us: 50, pathology: 50, ophthalmology: 50 };
+    }
+
     const analysis = analyzePerformance(performance);
     const allocations = buildAllocations(analysis, targetCount, performance.error_patterns || []);
 
