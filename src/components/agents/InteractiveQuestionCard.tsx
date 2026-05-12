@@ -8,8 +8,10 @@ import { logErrorToBank } from "@/lib/errorBankLogger";
 import { useGamification, XP_REWARDS } from "@/hooks/useGamification";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { cleanLatex } from "@/lib/cleanLatex";
 import { QuestionReportDialog } from "@/components/study/QuestionReportDialog";
 import { Flag } from "lucide-react";
+
 
 export interface InteractiveQuestion {
   id?: string;
