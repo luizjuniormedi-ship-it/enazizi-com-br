@@ -35,14 +35,38 @@ const ACTIONS_MAP: Record<string, { label: string; icon: React.ReactNode; endpoi
 
 interface Props {
   type: string;
+  topic?: string;
 }
 
-export default function MissionQuickActions({ type }: Props) {
+export default function MissionQuickActions({ type, topic }: Props) {
+  const navigate = useNavigate();
   const actions = ACTIONS_MAP[type] || ACTIONS_MAP.free_study;
 
-  // TODO: Wire each button to call the respective edge function with context
   const handleAction = (endpoint: string) => {
-    console.log("[MissionControl] Quick action:", endpoint);
+    console.log("[MissionControl] Quick action:", endpoint, "Topic:", topic);
+    
+    // Mapping endpoints to app routes and parameters
+    const topicParam = topic ? `&topic=${encodeURIComponent(topic)}` : "";
+    
+    switch (endpoint) {
+      case "summarize-topic":
+        navigate(`/dashboard/sessao-estudo?auto=1&focus=review${topicParam}`);
+        break;
+      case "explain-deep":
+        navigate(`/dashboard/sessao-estudo?auto=1&focus=full${topicParam}`);
+        break;
+      case "explain-simple":
+        navigate(`/dashboard/sessao-estudo?auto=1&focus=compact${topicParam}`);
+        break;
+      case "reinforce-error":
+        navigate(`/dashboard/sessao-estudo?auto=1&focus=correction${topicParam}`);
+        break;
+      case "generate-adaptive-question":
+        navigate(`/dashboard/sessao-estudo?auto=1&focus=practice${topicParam}`);
+        break;
+      default:
+        navigate(`/dashboard/sessao-estudo?auto=1${topicParam}`);
+    }
   };
 
   return (
