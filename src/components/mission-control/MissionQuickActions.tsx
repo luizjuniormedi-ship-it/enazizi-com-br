@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookOpen, Brain, FileQuestion, Search, Sparkles } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 /**
  * Maps study-next recommendation type → contextual quick actions.
