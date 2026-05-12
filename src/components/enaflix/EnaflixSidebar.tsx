@@ -277,9 +277,9 @@ export function EnaflixSidebar() {
             <Bell className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
             <span className="absolute top-2 right-2 w-2 h-2 bg-primary rounded-full border-2 border-[#0a0a0e] shadow-[0_0_8px_hsl(var(--primary))]" />
           </button>
-          <button className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
+          <Link to="/dashboard/perfil" className="p-2.5 rounded-xl text-white/40 hover:text-white hover:bg-white/10 transition-all group/btn">
             <Settings className="h-5 w-5 transition-transform group-hover/btn:scale-110" />
-          </button>
+          </Link>
         </div>
       </div>
     </aside>

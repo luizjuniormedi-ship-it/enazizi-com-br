@@ -151,6 +151,10 @@ const App = () => (
                 <Route path="perfil" element={<Profile />} />
                 <Route path="sessao-estudo" element={<StudySession />} />
                 <Route path="image-quiz" element={<MedicalImageQuiz />} />
+                <Route path="questoes-imagem" element={<Navigate to="/dashboard/image-quiz" replace />} />
+                <Route path="mapa-mental" element={<Navigate to="/dashboard/mentor" replace />} />
+                <Route path="admin" element={<Navigate to="/admin" replace />} />
+                <Route path="professor" element={<Navigate to="/professor" replace />} />
                 <Route path="rankings" element={<Rankings />} />
                 <Route path="prova-pratica" element={<PracticalExam />} />
                 <Route path="mnemonico" element={<ModuleGuard moduleKey="mnemonico"><MnemonicGenerator /></ModuleGuard>} />
