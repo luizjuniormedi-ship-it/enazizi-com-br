@@ -216,16 +216,23 @@ export default function EnaflixPage() {
     return items;
   }, [isAdmin, isProfessor, adminLoading]);
 
-  const filteredModules = useMemo(() => {
-    const q = normalize(query.trim());
-    if (!q) return visibleModules;
-    return visibleModules.filter((m) => {
-      const haystack = [m.title, m.description, m.category, ...(m.keywords ?? [])]
+  const normalizedModules = useMemo(() => {
+    return visibleModules.map(m => ({
+      ...m,
+      _searchHaystack: [m.title, m.description, m.category, ...(m.keywords ?? [])]
         .map(normalize)
-        .join(" ");
-      return haystack.includes(q);
-    });
-  }, [visibleModules, query]);
+        .join(" ")
+    }));
+  }, [visibleModules]);
+
+  const filteredModules = useMemo(() => {
+    const q = normalize(debouncedQuery.trim());
+    if (!q) return visibleModules;
+    return normalizedModules
+      .filter((m) => m._searchHaystack.includes(q))
+      .map(({ _searchHaystack, ...m }) => m);
+  }, [normalizedModules, debouncedQuery]);
+
 
   const isSearching = query.trim().length > 0 || showAll;
 
