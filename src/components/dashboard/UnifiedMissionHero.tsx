@@ -21,6 +21,8 @@ interface UnifiedMissionHeroProps {
   firstName: string;
   recommendationTitle?: string | null;
   recommendationDescription?: string | null;
+  recommendationType?: string | null;
+  recommendationTopic?: string | null;
   adaptiveJustification?: string | null;
   primaryHref?: string;
   secondaryHref?: string;
