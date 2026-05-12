@@ -259,16 +259,20 @@ const Dashboard = () => {
             nas próximas fases. Não exibimos placeholders fake. */}
 
         <EnaflixRow title="Tutor IA & Co-Pilot">
-           <EnaflixCinematicCard variant="tutor" className="col-span-full h-48 flex items-center p-8 gap-8">
+           <EnaflixCinematicCard 
+             variant="tutor" 
+             className="col-span-full h-48 flex items-center p-8 gap-8"
+             onClick={() => navigate("/dashboard/sessao-estudo?mode=tutor")}
+           >
               <div className="shrink-0 group-hover:scale-110 transition-transform duration-500">
                 <MascotAvatar state="teaching" size="xl" />
               </div>
               <div className="space-y-4 flex-1">
                 <div>
                   <h3 className="text-3xl font-black text-white">Tutor Médico IA</h3>
-                  <p className="text-white/60">Deep learning applied aos seus casos clínicos e dúvidas de prova.</p>
+                  <p className="text-white/60">Deep learning aplicado aos seus casos clínicos e dúvidas de prova.</p>
                 </div>
-                <Enaflix3DButton variant="violet" onClick={() => navigate("/dashboard/sessao-estudo")}>
+                <Enaflix3DButton variant="violet">
                   Iniciar Conversa
                 </Enaflix3DButton>
               </div>
