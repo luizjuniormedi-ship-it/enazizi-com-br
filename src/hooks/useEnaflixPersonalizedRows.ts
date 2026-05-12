@@ -39,7 +39,7 @@ export function useEnaflixPersonalizedRows() {
   return useQuery({
     queryKey: ["enaflix-personalized-rows-v3", user?.id],
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const results: {
