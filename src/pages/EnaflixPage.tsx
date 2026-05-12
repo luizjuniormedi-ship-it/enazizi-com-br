@@ -134,6 +134,14 @@ export default function EnaflixPage() {
   const isLoading = (isLoadingLessons || (isLoadingUsage && !!user) || adminLoading) && !forceReady;
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(query);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+
     if (!isLoading && aiLessons) {
       triggerInteraction({
         state: 'idle',
