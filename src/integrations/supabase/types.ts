@@ -13692,6 +13692,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          action_href: string | null
+          action_label: string | null
+          created_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          source: string | null
+          title: string
+          type: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          action_href?: string | null
+          action_label?: string | null
+          created_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          source?: string | null
+          title: string
+          type?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          action_href?: string | null
+          action_label?: string | null
+          created_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          source?: string | null
+          title?: string
+          type?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       official_exam_files: {
         Row: {
           checksum_sha256: string | null
@@ -15833,6 +15875,39 @@ export type Database = {
           question_id?: string
           resolved_at?: string | null
           status?: string
+        }
+        Relationships: []
+      }
+      question_reports: {
+        Row: {
+          comment: string | null
+          created_at: string | null
+          id: string
+          question_id: string
+          reason: string
+          status: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          question_id: string
+          reason: string
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string | null
+          id?: string
+          question_id?: string
+          reason?: string
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
