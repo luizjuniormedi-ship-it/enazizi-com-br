@@ -341,7 +341,7 @@ serve(async (req) => {
 
               const response = await aiFetch({
                 messages: [{ role: "user", content: prompt }],
-                model: "gpt-4o-mini",
+                model: "openai/gpt-5-mini",
                 maxTokens: 12000,
                 timeoutMs: 80000, // Increase timeout
                 maxRetries: 2, // Ensure retries
