@@ -51,6 +51,19 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
   // Save session
   const saveSession = useCallback(async (sessionData: Record<string, any>) => {
     if (!user || !enabled) return;
+    
+    // Save to localStorage as backup (offline-safe)
+    const backupKey = `enazizi_session_backup_${moduleKey}_${user.id}`;
+    localStorage.setItem(backupKey, JSON.stringify({
+      data: sessionData,
+      ts: Date.now()
+    }));
+
+    if (!navigator.onLine) {
+      console.info("[SessionPersistence] Device offline, using local backup only.");
+      return;
+    }
+
     try {
       if (sessionIdRef.current) {
         await supabase
@@ -70,10 +83,14 @@ export const useSessionPersistence = ({ moduleKey, enabled = true, intervalMs = 
           .single();
         if (data) sessionIdRef.current = data.id;
       }
+      
+      // Clear backup on successful server sync
+      localStorage.removeItem(backupKey);
     } catch (e) {
       console.warn("[SessionPersistence] saveSession error:", e);
     }
   }, [user, moduleKey, enabled]);
+
 
   // Save NOW (immediate, returns promise)
   const saveNow = useCallback(async () => {
