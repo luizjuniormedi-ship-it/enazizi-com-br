@@ -56,7 +56,8 @@ serve(async (req) => {
       batchNumber,
       count,
       topicWeights,
-      specialty // Add specialty to body destructuring
+      specialty,
+      imagePercent
     } = body;
 
     // Safety: Protect messages
