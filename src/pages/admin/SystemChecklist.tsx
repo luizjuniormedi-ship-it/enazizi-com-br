@@ -112,46 +112,73 @@ const SystemChecklist = () => {
     setProgress(0);
     const newChecklist: ChecklistItem[] = [];
     
-    // Simulate testing each module
-    const tasks = [
-      { module: "Tutor IA", task: "Memória Contextual" },
-      { module: "Tutor IA", task: "Tutor Temporal" },
-      { module: "NotebookLM", task: "Exportação & Sync" },
-      { module: "Biblioteca", task: "Player & Quiz" },
-      { module: "Smart Replay", task: "Detection Engine" },
-      { module: "Curadoria", task: "Parsing & NotebookLM" },
-      { module: "RLS", task: "Security Policies" },
-      { module: "Database", task: "Latency Check" }
-    ];
-
-    for (let i = 0; i < tasks.length; i++) {
-      const task = tasks[i];
-      setProgress(((i + 1) / tasks.length) * 100);
-      
-      // Simulate real checks
-      await new Promise(r => setTimeout(r, 600));
-      
+    try {
+      // 1. Check AI Provider Health
+      setProgress(10);
+      const { data: aiHealth, error: aiError } = await supabase.functions.invoke("ai-provider-health");
       newChecklist.push({
-        id: Math.random().toString(36),
-        module: task.module,
-        task: task.task,
-        status: Math.random() > 0.05 ? 'success' : 'fail',
-        details: Math.random() > 0.9 ? "Timeout detectado na resposta da API" : undefined
+        id: "ai-health",
+        module: "AI Infrastructure",
+        task: "Provider Connectivity",
+        status: !aiError && aiHealth?.healthy ? 'success' : 'fail',
+        details: aiError?.message || aiHealth?.error
       });
-      
-      setChecklist([...newChecklist]);
-    }
 
-    setRunningTests(false);
-    
-    // Save to DB
-    await (supabase.from("system_checklist_runs") as any).insert({
-      run_type: 'smoke',
-      status: 'completed',
-      results: newChecklist,
-      summary: `${newChecklist.filter(c => c.status === 'success').length} de ${newChecklist.length} testes passaram.`,
-      created_by: user?.id
-    });
+      // 2. Check System Health (Dashboard mode)
+      setProgress(40);
+      const { data: sysHealth, error: sysError } = await supabase.functions.invoke("system-health-check?mode=dashboard");
+      
+      const metrics = sysHealth?.system || {};
+      newChecklist.push({
+        id: "api-health",
+        module: "API Layer",
+        task: "Latency & Throughput",
+        status: !sysError && metrics.status === 'online' ? 'success' : 'fail',
+        details: sysError?.message || `Latency: ${metrics.apiResponseTime}ms, Error Rate: ${metrics.errorRate}%`
+      });
+
+      // 3. Check RLS & Database
+      setProgress(70);
+      const { data: rlsCheck, error: rlsError } = await supabase.from("profiles").select("id").limit(1);
+      newChecklist.push({
+        id: "rls-db",
+        module: "Security",
+        task: "RLS Policies & DB Connectivity",
+        status: !rlsError ? 'success' : 'fail',
+        details: rlsError?.message
+      });
+
+      // 4. Check Cognitive Engines
+      setProgress(90);
+      const { data: cognitiveCheck, error: cognitiveError } = await supabase.from("fsrs_review_log").select("id").limit(1);
+      newChecklist.push({
+        id: "cognitive-engine",
+        module: "Cognitive",
+        task: "FSRS Persistence",
+        status: !cognitiveError ? 'success' : 'fail',
+        details: cognitiveError?.message
+      });
+
+      setChecklist(newChecklist);
+      setProgress(100);
+
+      // Save real run to DB
+      await supabase.from("system_checklist_runs").insert([{
+        run_type: 'smoke',
+        status: 'completed',
+        results: newChecklist as any,
+        summary: `${newChecklist.filter(c => c.status === 'success').length} de ${newChecklist.length} testes reais passaram.`,
+        created_by: user?.id,
+        started_at: new Date().toISOString(),
+        finished_at: new Date().toISOString()
+      }]);
+
+      toast({ title: "Sucesso", description: "Smoke tests concluídos com dados REAIS." });
+    } catch (err: any) {
+      toast({ title: "Erro", description: "Falha ao executar testes reais: " + err.message, variant: "destructive" });
+    } finally {
+      setRunningTests(false);
+    }
   };
 
   const getStatusIcon = (status: string) => {

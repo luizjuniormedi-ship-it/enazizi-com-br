@@ -15,11 +15,14 @@ import { useNavigate } from "react-router-dom";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import { humanizeFSRSReason } from "@/lib/humanizedReasons";
+import MissionQuickActions from "@/components/mission-control/MissionQuickActions";
 
 interface UnifiedMissionHeroProps {
   firstName: string;
   recommendationTitle?: string | null;
   recommendationDescription?: string | null;
+  recommendationType?: string | null;
+  recommendationTopic?: string | null;
   adaptiveJustification?: string | null;
   primaryHref?: string;
   secondaryHref?: string;
@@ -33,6 +36,8 @@ export function UnifiedMissionHero({
   firstName,
   recommendationTitle,
   recommendationDescription,
+  recommendationType,
+  recommendationTopic,
   adaptiveJustification,
   primaryHref = "/dashboard/sessao-estudo?source=dashboard_hero",
   secondaryHref = "/dashboard/flashcards",
@@ -80,6 +85,15 @@ export function UnifiedMissionHero({
             <p className="text-base sm:text-xl text-white/80 font-medium max-w-xl leading-tight">
               {title} — {desc}
             </p>
+            
+            {recommendationType && (
+              <div className="pt-2">
+                <MissionQuickActions 
+                  type={recommendationType} 
+                  topic={recommendationTopic || recommendationTitle || undefined} 
+                />
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap gap-3 pt-2">
