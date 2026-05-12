@@ -339,7 +339,8 @@ const VideoLessonPlayer = () => {
   }, [progress]);
 
   const duration = (lesson as any)?.duration_seconds || (lesson as any)?.duration || 0;
-  const completionRate = duration ? Math.min((watchedSeconds / duration) * 100, 100) : 0;
+  const completionRate = (duration > 0 && !isNaN(duration)) ? Math.min((watchedSeconds / duration) * 100, 100) : 0;
+
 
 
   // Check for rating trigger (70% or completion)
