@@ -176,6 +176,59 @@ class TelemetryService {
   private setupListeners() {
     if (typeof window === 'undefined') return;
 
+    // Phase V: Enterprise Runtime Error Tracking
+    window.addEventListener('error', (event) => {
+      this.track('runtime_error', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        stack: event.error?.stack
+      });
+    });
+
+    window.addEventListener('unhandledrejection', (event) => {
+      this.track('unhandled_promise', {
+        reason: event.reason?.message || String(event.reason),
+        stack: event.reason?.stack
+      });
+    });
+
+    // Network Status
+    window.addEventListener('online', () => this.track('online_transition'));
+    window.addEventListener('offline', () => this.track('offline_transition'));
+
+    // Performance Vitals (FCP, LCP, CLS, FID)
+    if ('PerformanceObserver' in window) {
+      try {
+        const paintObserver = new PerformanceObserver((list) => {
+          list.getEntries().forEach((entry) => {
+            if (entry.name === 'first-contentful-paint') {
+              this.track('performance_vitals', { type: 'FCP', value: Math.round(entry.startTime) });
+            }
+          });
+        });
+        paintObserver.observe({ type: 'paint', buffered: true });
+
+        const navigationObserver = new PerformanceObserver((list) => {
+          const nav = list.getEntries()[0] as PerformanceNavigationTiming;
+          if (nav) {
+            this.track('performance_vitals', {
+              type: 'navigation',
+              dom_ready: Math.round(nav.domContentLoadedEventEnd),
+              load_complete: Math.round(nav.loadEventEnd),
+              ttfb: Math.round(nav.responseStart)
+            });
+          }
+        });
+        navigationObserver.observe({ type: 'navigation', buffered: true });
+      } catch (err) {
+        console.warn('[telemetry] PerformanceObserver failed', err);
+      }
+    }
+
+    // Existing listeners...
+
     let clickCount = 0;
     let lastClickTime = 0;
     window.addEventListener('click', () => {
