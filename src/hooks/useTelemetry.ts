@@ -12,10 +12,22 @@ export const useTelemetry = () => {
     const navigationEntry = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
     const loadTime = navigationEntry ? Math.round(navigationEntry.duration) : 0;
 
+    // Check for hydration mismatch (heuristic: if the first render is delayed significantly)
+    const isFirstRender = !recentRoutesRef.current.length;
+    if (isFirstRender && loadTime > 0) {
+      const hydrationTime = performance.now() - navigationEntry.domContentLoadedEventEnd;
+      if (hydrationTime > 2000) { // arbitrary threshold for slow hydration
+        telemetry.track('hydration_mismatch' as any, { 
+          hydration_time_ms: Math.round(hydrationTime),
+          route: location.pathname
+        });
+      }
+    }
+
     telemetry.track('page_view' as any, { 
       route: location.pathname, 
       load_time_ms: loadTime,
-      is_initial_load: loadTime > 0 
+      is_initial_load: isFirstRender && loadTime > 0 
     });
 
     if (location.pathname === '/dashboard') {
