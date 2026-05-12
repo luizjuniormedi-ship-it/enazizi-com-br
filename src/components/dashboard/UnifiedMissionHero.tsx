@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { Enaflix3DButton } from "@/components/enaflix/Enaflix3DButton";
 import { EnaflixBadge } from "@/components/enaflix/EnaflixBadge";
 import { humanizeFSRSReason } from "@/lib/humanizedReasons";
+import MissionQuickActions from "@/components/mission-control/MissionQuickActions";
 
 interface UnifiedMissionHeroProps {
   firstName: string;
