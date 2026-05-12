@@ -157,7 +157,8 @@ const App = () => (
                 <Route path="feynman" element={<FeynmanTrainer />} />
                 <Route path="mentor" element={<AIMentor />} />
                 <Route path="planner" element={<SmartPlanner />} />
-                <Route path="missao" element={<Navigate to="/mission" replace />} />
+                <Route path="missao" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+                <Route path="mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
                 <Route path="analytics" element={<Analytics />} />
                 <Route path="perfil" element={<Profile />} />
                 <Route path="sessao-estudo" element={<StudySession />} />
@@ -208,6 +209,8 @@ const App = () => (
               <Route path="/study/anamnese" element={<Navigate to="/dashboard/anamnese" replace />} />
               <Route path="/study/banco-erros" element={<Navigate to="/dashboard/banco-erros" replace />} />
               <Route path="/study/erros" element={<Navigate to="/dashboard/banco-erros" replace />} />
+              <Route path="/mission" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
+              <Route path="/daily-plan" element={<Navigate to="/dashboard/sessao-estudo" replace />} />
               <Route path="/install" element={<Install />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="*" element={<NotFound />} />
