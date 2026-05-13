@@ -544,7 +544,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
             queries.push(
               sb.from("medical_image_questions")
                 .select(`
-                  statement, option_a, option_b, option_c, option_d, option_e,
+                  statement, option_a, option_b, option_c, option_d,
                   correct_index, explanation, difficulty,
                   medical_image_assets!inner(image_url, image_type, specialty)
                 `)
@@ -559,9 +559,9 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
           const cachedReal = results[1]?.data || [];
           const cachedImages = results[2]?.data || [];
 
-          const normalizedImages = cachedImages.map((q: any) => ({
+          const normalizedImages = cachedImages.filter((q: any) => q.correct_index < 4).map((q: any) => ({
             statement: q.statement,
-            options: [q.option_a, q.option_b, q.option_c, q.option_d, q.option_e],
+            options: [q.option_a, q.option_b, q.option_c, q.option_d],
             correct_index: q.correct_index,
             explanation: q.explanation,
             topic: q.medical_image_assets?.specialty || "Geral",
@@ -617,7 +617,7 @@ REGRAS DE ESCOPO (INVIOLÁVEIS):
         const cached = (cacheByLevel[level] || []).sort(() => Math.random() - 0.5).slice(0, target);
         const fromCache = cached.map((q: any) => ({
           statement: cleanQuestionText(q.statement || ""),
-          options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
+          options: Array.isArray(q.options) ? q.options.slice(0, 4).map((o: string) => cleanQuestionText(o)) : [],
           correct_index: q.correct_index ?? 0,
           specialty: q.specialty || q.topic?.split(" - ")[0] || "Clínica Médica",
           topic: q.topic || matchedTopics[0] || "Clínica Médica",

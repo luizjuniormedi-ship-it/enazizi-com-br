@@ -447,14 +447,14 @@ REGRAS INVIOLÁVEIS:
             if (IMAGE_REF_PATTERN.test(stmt)) { console.warn(`[Filter] Rejeitada: ref imagem`); return false; }
             // Reject invalid structure
             if (!Array.isArray(q.options) || q.options.length < 4) { console.warn(`[Filter] Rejeitada: opções inválidas`); return false; }
-            // Check options for English too
+            if (q.correct_index >= 4) { console.warn(`[Filter] Rejeitada: gabarito E em banco A-D`); return false; }
             const optText = q.options.join(" ");
             if (ENGLISH_PATTERN.test(optText)) { console.warn(`[Filter] Rejeitada: opções em inglês`); return false; }
             return true;
           }).map((q: any) => ({
             ...q,
             statement: sanitizeStatement(q.statement || ""),
-            options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : q.options,
+            options: Array.isArray(q.options) ? q.options.slice(0, 4).map((o: string) => cleanQuestionText(o)) : q.options,
             explanation: q.explanation ? cleanQuestionText(q.explanation) : q.explanation,
             block: q.block || baseTopics[0] || topics[0],
             difficulty_level: level, // Force the slot's level
@@ -515,7 +515,7 @@ REGRAS INVIOLÁVEIS:
           const cachedForSlot = shuffleArray(cacheByLevel[level]);
           const fromCache = cachedForSlot.slice(0, target).map((q: any) => ({
             statement: sanitizeStatement(q.statement || ""),
-            options: Array.isArray(q.options) ? q.options.map((o: string) => cleanQuestionText(o)) : [],
+            options: Array.isArray(q.options) ? q.options.slice(0, 4).map((o: string) => cleanQuestionText(o)) : [],
             correct_index: q.correct_index ?? 0,
             explanation: cleanQuestionText(q.explanation || ""),
             topic: q.topic || topics[0],
@@ -605,6 +605,7 @@ REGRAS INVIOLÁVEIS:
         }
 
         // ── Fix consecutive repeated correct_index ──
+        allQuestions = allQuestions.filter(q => Array.isArray(q.options) && q.options.length === 4 && q.correct_index < 4);
         for (let i = 1; i < allQuestions.length; i++) {
           const prev = allQuestions[i - 1];
           const curr = allQuestions[i];
