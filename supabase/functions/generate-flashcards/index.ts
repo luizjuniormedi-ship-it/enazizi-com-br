@@ -2,6 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { aiFetch } from "../_shared/ai-fetch.ts";
 import { logAiUsage } from "../_shared/ai-cache.ts";
 import { jsonResponse, errorResponse, getUserIdFromRequest } from "../_shared/assistant-helpers.ts";
+import { GenerateFlashcardsSchema } from "./schema.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,17 +15,21 @@ serve(async (req) => {
   try {
     const userId = await getUserIdFromRequest(req);
     const body = await req.json();
-    let messages = body?.messages;
-    const userContext = body?.userContext;
-    const topic = body?.topic;
+    
+    // Hardening: Zod validation
+    const validation = GenerateFlashcardsSchema.safeParse({ ...body, userId });
+    if (!validation.success) {
+      console.error("[generate-flashcards] Validation failed:", validation.error.format());
+      return errorResponse(`Requisição inválida: ${JSON.stringify(validation.error.format())}`, 400);
+    }
+
+    const { topic, messages: bodyMessages, userContext, decisionId } = validation.data;
+    let messages = bodyMessages;
 
     if (!Array.isArray(messages)) {
-      if (topic) {
-        messages = [{ role: "user", content: `Gere flashcards sobre: ${topic}` }];
-      } else {
-        return errorResponse("Campo 'messages' ou 'topic' é obrigatório.", 400);
-      }
+      messages = [{ role: "user", content: `Gere flashcards sobre: ${topic}` }];
     }
+
 
     const systemPrompt = `Você é o GERADOR OFICIAL DE FLASHCARDS CLÍNICOS do sistema ENAZIZI.
 
