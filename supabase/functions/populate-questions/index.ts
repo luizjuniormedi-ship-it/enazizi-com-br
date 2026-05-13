@@ -79,9 +79,10 @@ GERE O MÁXIMO POSSÍVEL (10-30 por bloco).
 
 IMPORTANTE: Para questões que já existem no texto com gabarito/comentário, use o correct_index correto baseado no gabarito fornecido. Se não houver gabarito, use seu conhecimento médico para determinar a resposta correta.
 
-OBRIGATÓRIO: Exatamente 5 alternativas (A-E) por questão. NUNCA gere questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos.
+OBRIGATÓRIO: Exatamente 4 alternativas (A-D) por questão. NUNCA gere questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos.
+Mínimo 450 caracteres por enunciado clínico.
 
-Formato JSON PURO: {"questions": [{"statement": "enunciado completo", "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."], "correct_index": 0, "explanation": "explicação detalhada do raciocínio clínico", "topic": "especialidade médica"}]}
+Formato JSON PURO: {"questions": [{"statement": "enunciado clínico completo (450+ chars)", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "correct_index": 0, "explanation": "explicação detalhada do raciocínio clínico", "topic": "especialidade médica"}]}
 Se não encontrar questões, retorne {"questions": []}`
         },
         { role: "user", content: `Tema: ${topic}\n\n${chunk}` }
