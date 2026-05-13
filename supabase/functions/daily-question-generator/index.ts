@@ -173,7 +173,7 @@ FORMATO JSON OBRIGATÓRIO (sem markdown):
   "questions": [
     {
       "statement": "Caso clínico completo com ≥400 caracteres (padrão ENAMED)...",
-      "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+      "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
       "correct_index": 0,
       "explanation": "Raciocínio clínico passo a passo...",
       "topic": "${specialty}",

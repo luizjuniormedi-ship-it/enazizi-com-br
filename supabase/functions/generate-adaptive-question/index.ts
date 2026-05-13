@@ -59,7 +59,7 @@ serve(async (req) => {
     };
 
     const system = `Você é um professor de medicina criando questões para prova de residência médica.
-Responda APENAS em JSON com: "question" (enunciado clínico com caso, mín 200 caracteres), "options" (array de 5 alternativas A-E), "correctAnswer" (letra correta), "explanation" (explicação detalhada, mín 150 caracteres), "difficulty" (easy/medium/hard).
+Responda APENAS em JSON com: "question" (enunciado clínico com caso, mín 200 caracteres), "options" (array de 4 alternativas A-D), "correctAnswer" (letra correta), "explanation" (explicação detalhada, mín 150 caracteres), "difficulty" (easy/medium/hard).
 Português do Brasil. Estilo de prova real.${context?.examProfile ? ` Banca: ${context.examProfile}` : ""}`;
 
     const prompt = `Tema: ${theme}${subtopic ? `\nSubtema: ${subtopic}` : ""}\nDificuldade: ${diffMap[diff] || diffMap.medium}${errorContext}${approvalContext}${context?.fromError ? "\nFOCO: explorar exatamente os pontos onde o aluno erra." : ""}`;

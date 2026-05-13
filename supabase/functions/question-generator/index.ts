@@ -108,7 +108,7 @@ REGRAS CRÍTICAS DE QUALIDADE (PADRÃO OURO):
    - EXAME FÍSICO DETALHADO: PA, FC, FR, Temp, SpO2 (sempre com valores numéricos).
    - EXAMES COMPLEMENTARES: Apresentar resultados com valores de referência quando necessário.
    - Mínimo 450 caracteres. Termine sempre com a pergunta direta.
-4. ALTERNATIVAS: 5 opções (A-E) plausíveis. Evite "todas corretas" ou "nenhuma correta".
+4. ALTERNATIVAS: 4 opções (A-D) plausíveis. Evite "todas corretas" ou "nenhuma correta".
 5. EXPLICAÇÃO (explanation): Analise individualmente cada alternativa (por que correta/errada).
    - Inclua "🧑‍⚕️ Explicação Simplificada" al final.
    - 📚 Mini-revisão do tema (3-5 linhas).
@@ -128,7 +128,7 @@ FORMATO JSON (Array puro):
 [
   {
     "statement": "...",
-    "options": ["A", "B", "C", "D", "E"],
+    "options": ["A", "B", "C", "D"],
     "correct_index": 0,
     "topic": "Especialidade - Subtema",
     "explanation": "..."
@@ -160,7 +160,7 @@ REGRAS INVIOLÁVEIS:
 2. A mini-revisão do tema deve aparecer SOMENTE APÓS o aluno responder, dentro da explicação.
 
 ESTRUTURA OBRIGATÓRIA AO GERAR QUESTÕES:
-- 📝 Questões com casos clínicos (A-E) — SEM revisão prévia
+- 📝 Questões com casos clínicos (A-D) — SEM revisão prévia
 - Cada questão deve ter gabarito, explicação detalhada e 📚 Mini-revisão do tema (3-5 linhas com pontos-chave) DENTRO da explicação
 
 QUANDO O ALUNO ERRAR:
@@ -245,7 +245,6 @@ a) [alternativa A]
 b) [alternativa B]
 c) [alternativa C]
 d) [alternativa D]
-e) [alternativa E]
 
 **Gabarito:** [letra correta]
 
@@ -275,7 +274,7 @@ Regras:
 
 === REGRA DE INTERCALAÇÃO DE GABARITO ===
 - NUNCA repita a mesma letra de resposta correta em questões consecutivas
-- Distribua equilibradamente entre A, B, C, D e E`;
+- Distribua equilibradamente entre A, B, C e D`;
 
     let systemPrompt = isJsonMode ? jsonSystemPrompt : fullSystemPrompt;
 

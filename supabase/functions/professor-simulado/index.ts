@@ -397,7 +397,7 @@ serve(async (req) => {
           : "";
         const buildSlotPrompt = (batchSize: number, level: DifficultyLevel, prevStatements: string[]) => {
           const perTopic = Math.max(1, Math.floor(batchSize / topics.length));
-          let prompt = `Gere exatamente ${batchSize} questões objetivas de múltipla escolha (A-E) para residência médica sobre: ${topicList}.${priorityBlock}${examBoardContext}
+          let prompt = `Gere exatamente ${batchSize} questões objetivas de múltipla escolha (A-D) para residência médica sobre: ${topicList}.${priorityBlock}${examBoardContext}
 
 IDIOMA OBRIGATÓRIO: TUDO deve ser escrito em PORTUGUÊS BRASILEIRO (pt-BR). Enunciados, alternativas, explicações — absolutamente TUDO em português. NUNCA use inglês em nenhum campo.
 
@@ -412,7 +412,7 @@ Retorne APENAS um array JSON válido:
   {
     "block": "Nome do bloco",
     "statement": "Caso clínico completo em português (mín 400 caracteres)",
-    "options": ["A) ...", "B) ...", "C) ...", "D) ...", "E) ..."],
+    "options": ["A) ...", "B) ...", "C) ...", "D) ..."],
     "correct_index": 0,
     "explanation": "Explicação detalhada em português",
     "topic": "Tema/subtema",
@@ -422,7 +422,7 @@ Retorne APENAS um array JSON válido:
 
 REGRAS INVIOLÁVEIS:
 - Mínimo 400 caracteres no enunciado (caso clínico completo com identificação, HDA, exame físico, exames)
-- 5 alternativas plausíveis (A-E)
+- 4 alternativas plausíveis (A-D)
 - NUNCA use LaTeX ($x$, \\times). Use texto puro: 148×90 mmHg, 38%
 - NUNCA referencie imagens, figuras ou gráficos
 - NUNCA repita a mesma letra de gabarito consecutivamente
@@ -608,10 +608,10 @@ REGRAS INVIOLÁVEIS:
         for (let i = 1; i < allQuestions.length; i++) {
           const prev = allQuestions[i - 1];
           const curr = allQuestions[i];
-          if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
+          if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 4) {
             const avoid = new Set([prev.correct_index]);
             if (i >= 2) avoid.add(allQuestions[i - 2].correct_index);
-            const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
+            const candidates = [0, 1, 2, 3].filter(x => !avoid.has(x));
             const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
             const oldIdx = curr.correct_index;
             const temp = curr.options[newIdx];
