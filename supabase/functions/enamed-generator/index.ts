@@ -138,7 +138,7 @@ CADA QUESTÃO DEVE OBRIGATORIAMENTE:
     - 50% intermediário (padrão REVALIDA), 50% difícil/expert (padrão ENAMED/ENARE)
     - DIFICULDADE MÍNIMA: 3/5 — PROIBIDO nível fácil (1-2)
      - PROIBIDO: questões que referenciem imagens, figuras, fotos, radiografias ou gráficos externos
-     - PROIBIDO: questões de definição pura ("O que é X?") ou enunciados < 200 caracteres sem caso clínico
+     - PROIBIDO: questões de definição pura ("O que é X?") ou enunciados < 450 caracteres (Padrão Ouro) sem caso clínico robusto
 
 5. **ANAMNESE ÚNICA POR QUESTÃO (REGRA ABSOLUTA)**:
    - NUNCA repita nome, idade, sexo ou perfil de paciente entre questões
@@ -210,9 +210,9 @@ FORMATO JSON PURO (sem markdown):
     const ENGLISH_PATTERN = /\b(the patient|which of the following|a \d+-year-old|presents with|physical examination|most likely|treatment of choice|year-old male|year-old female)\b/i;
     const IMAGE_REF_PATTERN = /\b(imagem abaixo|figura abaixo|observe a imagem|na imagem|na figura|texto abaixo|radiografia abaixo|fotografia|ECG abaixo|tomografia abaixo|observe o gráfico|observe a figura|observe a foto|imagem a seguir|figura a seguir)\b/i;
     const questions = (parsed.questions || []).filter((q: any) =>
-      q.statement && Array.isArray(q.options) && q.options.length >= 4 && q.options.length <= 5 &&
+      q.statement && Array.isArray(q.options) && q.options.length === 4 &&
       typeof q.correct_index === "number" &&
-      String(q.statement).trim().length >= 400 && (q.difficulty || 3) >= 3 &&
+      String(q.statement).trim().length >= 450 && (q.difficulty || 3) >= 3 &&
       !ENGLISH_PATTERN.test(q.statement) && !IMAGE_REF_PATTERN.test(q.statement)
     );
     let qCount = 0;
