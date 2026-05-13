@@ -688,7 +688,7 @@ ${needsRef}
 ${imageInstruction}
 
 Retorne APENAS um array JSON puro:
-[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)...","E)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
+[{"statement":"caso clínico em português (mín 400 chars)","options":["A)...","B)...","C)...","D)..."],"correct_index":0,"specialty":"${slotTarget?.specialty || "especialidade"}","topic":"${slotTarget?.topic || "tema"}","explanation":"explicação detalhada em português","difficulty_level":"${level}"}]
 
 REGRAS: mínimo 400 chars no enunciado, 5 alternativas, caso clínico completo, NUNCA LaTeX, ${imagePercent && imagePercent > 0 ? "REFERENCIE A IMAGEM" : "NUNCA imagens/figuras"}, NUNCA inglês.
 ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s, i) => `${i + 1}. ${String(s).slice(0, 100)}`).join("\n")}` : ""}`;
@@ -758,7 +758,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                 const isDeep = (q.explanation?.length || 0) > 600;
                 
                 // Base metrics
-                const medical_accuracy = (q.correct_index === undefined || q.options?.length < 5 || q.explanation?.length < 100) ? 0.4 : 0.98;
+                const medical_accuracy = (q.correct_index === undefined || q.options?.length < 4 || q.explanation?.length < 100) ? 0.4 : 0.98;
                 const distractor_quality = (q.options?.some((o: string) => o.length < 5)) ? 0.5 : 0.92;
                 const explanation_quality = hasRef ? 0.95 : 0.70;
                 const exam_style = 0.90;
@@ -847,13 +847,14 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
       }
 
       // Fix consecutive repeated correct_index
+      allQuestions = allQuestions.filter(q => Array.isArray(q.options) && q.options.length === 4 && q.correct_index < 4);
       for (let i = 1; i < allQuestions.length; i++) {
         const prev = allQuestions[i - 1];
         const curr = allQuestions[i];
-        if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 5) {
+        if (curr.correct_index === prev.correct_index && Array.isArray(curr.options) && curr.options.length === 4) {
           const avoid = new Set([prev.correct_index]);
           if (i >= 2) avoid.add(allQuestions[i - 2].correct_index);
-          const candidates = [0, 1, 2, 3, 4].filter(x => !avoid.has(x));
+          const candidates = [0, 1, 2, 3].filter(x => !avoid.has(x));
           const newIdx = candidates[Math.floor(Math.random() * candidates.length)];
           const oldIdx = curr.correct_index;
           const temp = curr.options[newIdx];
