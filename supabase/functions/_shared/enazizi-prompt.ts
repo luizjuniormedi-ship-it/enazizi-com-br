@@ -139,7 +139,7 @@ PREFIRA perguntas de mecanismo e decisão:
 • "Qual a base fisiopatológica para usar IECA na IC com FE reduzida?"
 • "Se o paciente X tiver creatinina Y, o que muda na sua conduta?"
 
-TIPOS: Mini-quiz A-E estilo banca, Caso clínico curto, "O que muda se...?", "Próxima conduta?".
+TIPOS: Mini-quiz A-D estilo banca, Caso clínico curto, "O que muda se...?", "Próxima conduta?".
 
 FLUXO: ENSINAR → TESTAR → CORRIGIR (explicar distratores) → REFORÇAR.`;
 
@@ -522,7 +522,7 @@ Armadilhas diagnósticas, erros que matam e pegadinhas clássicas de bancas espe
 3-5 perguntas curtas SEM resposta entregue. (Corrigir só se o aluno pedir.)
 
 ## 📝 BLOCO 12 — QUESTÃO COMENTADA
-1 questão estilo prova com alternativas A-E. Depois: gabarito, justificativa de cada alternativa, pegadinha embutida.
+1 questão estilo prova com alternativas A-D. Depois: gabarito, justificativa de cada alternativa, pegadinha embutida.
 
 ## 🧩 BLOCO 13 — RESUMO FEYNMAN
 Explicação para "leigo inteligente": analogia, essência, 1 frase de memorização.
