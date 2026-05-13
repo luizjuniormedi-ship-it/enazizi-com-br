@@ -10284,6 +10284,7 @@ export type Database = {
           answer: string
           content_version: number
           created_at: string
+          decision_id: string | null
           difficulty: number | null
           explanation: string | null
           generation_method: string | null
@@ -10294,6 +10295,7 @@ export type Database = {
           organization_id: string | null
           question: string
           reviewed_by_human: boolean
+          session_id: string | null
           source: string | null
           source_map_id: string | null
           specialty_id: string | null
@@ -10305,6 +10307,7 @@ export type Database = {
           answer: string
           content_version?: number
           created_at?: string
+          decision_id?: string | null
           difficulty?: number | null
           explanation?: string | null
           generation_method?: string | null
@@ -10315,6 +10318,7 @@ export type Database = {
           organization_id?: string | null
           question: string
           reviewed_by_human?: boolean
+          session_id?: string | null
           source?: string | null
           source_map_id?: string | null
           specialty_id?: string | null
@@ -10326,6 +10330,7 @@ export type Database = {
           answer?: string
           content_version?: number
           created_at?: string
+          decision_id?: string | null
           difficulty?: number | null
           explanation?: string | null
           generation_method?: string | null
@@ -10336,6 +10341,7 @@ export type Database = {
           organization_id?: string | null
           question?: string
           reviewed_by_human?: boolean
+          session_id?: string | null
           source?: string | null
           source_map_id?: string | null
           specialty_id?: string | null
@@ -10344,6 +10350,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "flashcards_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "assistant_decisions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "flashcards_microtopic_id_fkey"
             columns: ["microtopic_id"]
@@ -22498,6 +22511,10 @@ export type Database = {
         Returns: Json
       }
       compute_content_gaps: { Args: { p_image_type: string }; Returns: Json }
+      create_adaptive_decision: {
+        Args: { p_context?: Json; p_module_source: string; p_user_id: string }
+        Returns: string
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -22654,6 +22671,10 @@ export type Database = {
           top_fallback_reasons: Json
           total_runs: number
         }[]
+      }
+      get_unified_dashboard_data: {
+        Args: { p_reset_at: string; p_today_iso: string; p_user_id: string }
+        Returns: Json
       }
       granular_classification_readiness: {
         Args: never
