@@ -17,10 +17,11 @@ export const getOrchestratorDecision = async (
 
   if (error) {
     console.error("[Orchestrator] Falha ao criar decisão adaptativa:", error);
-    // Fallback: Gerar um UUID local para não quebrar o fluxo, 
-    // mas logar como falha de persistência na telemetria
     return crypto.randomUUID();
   }
 
+  // Persistir globalmente para acesso fácil em componentes profundos sem prop-drilling excessivo
+  (window as any)._lastDecisionId = data;
+  
   return data;
 };
