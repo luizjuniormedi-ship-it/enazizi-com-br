@@ -797,7 +797,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                       final_score,
                       adaptive_routing: {
                         specialty: currentSpecialty,
-                        model_used: qualityProfile?.preferred_model || 'gpt-4o-mini',
+                        model_used: qualityProfile?.preferred_model || 'gpt-5-mini',
                         depth_applied: qualityProfile?.explanation_depth || 'medium'
                       }
                     }
