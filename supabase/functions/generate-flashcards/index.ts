@@ -173,30 +173,47 @@ Usar emojis nos títulos de seção para facilitar identificação visual.`;
     }
 
     const startMs = Date.now();
-    const response = await aiFetch({
-      model: "gpt-4o-mini",
-      messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
-      stream: true,
-      maxTokens: 8192,
-    });
+    let response;
+    
+    try {
+      response = await aiFetch({
+        model: "gpt-4o-mini",
+        messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
+        stream: true,
+        maxTokens: 8192,
+      });
+    } catch (fetchError) {
+      console.error("[generate-flashcards] aiFetch failed:", fetchError);
+      
+      await logAiUsage({
+        userId,
+        functionName: "generate-flashcards",
+        modelUsed: "gpt-4o-mini",
+        success: false,
+        responseTimeMs: Date.now() - startMs,
+        modelTier: "standard",
+        errorMessage: fetchError instanceof Error ? fetchError.message : "Network/AI Fetch error",
+      }).catch(e => console.error("[generate-flashcards] logAiUsage failed:", e));
+
+      return errorResponse(`Erro de conexão com o motor de IA: ${fetchError instanceof Error ? fetchError.message : "Timeout"}`, 502);
+    }
+
     const elapsed = Date.now() - startMs;
 
-    logAiUsage({
+    await logAiUsage({
       userId,
       functionName: "generate-flashcards",
       modelUsed: "gpt-4o-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",
-      errorMessage: response.ok ? undefined : `status ${response.status}`,
-    }).catch(() => {});
+      errorMessage: response.ok ? undefined : `Status ${response.status}`,
+    }).catch(e => console.error("[generate-flashcards] logAiUsage background fail:", e));
 
     if (!response.ok) {
-      const t = await response.text();
-      console.error("AI error:", response.status, t);
-      return new Response(JSON.stringify({ error: "Erro no serviço de IA" }), {
-        status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      const errorText = await response.text().catch(() => "Unknown AI error");
+      console.error("[generate-flashcards] AI Service Error:", response.status, errorText);
+      return errorResponse(`Serviço de IA indisponível (${response.status})`, 503);
     }
 
     return new Response(response.body, {

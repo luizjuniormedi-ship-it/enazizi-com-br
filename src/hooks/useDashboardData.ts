@@ -79,7 +79,9 @@ export const useDashboardData = () => {
       const userId = user!.id;
       const cd = coreData!;
 
-      console.debug("[Dashboard] Hydrating full query path in background...");
+      console.debug("[Dashboard] Initiating Enterprise Hydration...");
+      const traceId = crypto.randomUUID();
+      const startTime = Date.now();
 
       try {
         // Only queries NOT covered by coreData
@@ -272,6 +274,7 @@ export const useDashboardData = () => {
 
         // Write-through: persist snapshot for next fast-path
         saveDashboardSnapshot(userId, result);
+        console.debug(`[Dashboard] Hydration complete in ${Date.now() - startTime}ms`, { traceId });
 
         return result;
       } catch (err: any) {
