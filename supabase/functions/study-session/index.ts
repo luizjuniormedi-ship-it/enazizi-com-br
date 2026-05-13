@@ -75,7 +75,7 @@ const STRUCTURED_SIGNAL_BLOCK = `
 ==================================================
 SINAL ESTRUTURADO OBRIGATÓRIO (NÃO REMOVER)
 ==================================================
-SEMPRE QUE você corrigir uma resposta objetiva do aluno (letra A–E) ou
+SEMPRE QUE você corrigir uma resposta objetiva do aluno (letra A–D) ou
 avaliar acerto/erro de uma questão de verificação, ANEXE no FINAL da
 mensagem (após todo o feedback humano) o seguinte bloco — exatamente neste
 formato, em UMA ÚNICA linha de JSON, entre os marcadores HTML comments:
@@ -86,8 +86,8 @@ formato, em UMA ÚNICA linha de JSON, entre os marcadores HTML comments:
 
 REGRAS DO BLOCO:
 - "wasCorrect" boolean (obrigatório)
-- "correctLetter" letra A–E da alternativa correta
-- "detectedAnswer" letra A–E que o aluno respondeu
+- "correctLetter" letra A–D da alternativa correta
+- "detectedAnswer" letra A–D que o aluno respondeu
 - "errorCategory" um de: conceitual | memorizacao | interpretacao | atencao | desconhecido
 - "subtopic" subtema clínico específico (ex: "tratamento da pneumonia comunitária")
 - "topic" tema geral
