@@ -1,7 +1,6 @@
 
-import { readTextFileSync } from "https://deno.land/std@0.168.0/fs/mod.ts";
-
-const data = JSON.parse(readTextFileSync("validation_batch.json"));
+// readTextFileSync is a global in Deno
+const data = JSON.parse(Deno.readTextFileSync("validation_batch.json"));
 
 function escapeSql(str) {
   if (typeof str !== 'string') return str;
