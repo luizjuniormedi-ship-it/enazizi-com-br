@@ -79,33 +79,28 @@ export const useDashboardData = () => {
       const userId = user!.id;
       const cd = coreData!;
 
-      console.debug("[Dashboard] Initiating Enterprise Hydration...");
+      console.debug("[Dashboard] Initiating Enterprise Unified Hydration...");
       const traceId = crypto.randomUUID();
       const startTime = Date.now();
 
       try {
-        // Only queries NOT covered by coreData
-        // [planner-unification-final] study_plans removido das leituras críticas do Dashboard.
+        // [PHASE 4] Unified Snapshot via RPC
+        const { data: unified, error: unifiedError } = await supabase.rpc('get_unified_dashboard_data', {
+          p_user_id: userId,
+          p_reset_at: resetAt || "1900-01-01T00:00:00Z",
+          p_today_iso: todayIso
+        });
+
+        if (unifiedError) throw unifiedError;
+
+        // Legacy compatibility / fallbacks for specific queries not yet in RPC
         const [
-          flashcardsRes, uploadsRes, tasksRes, dailyPlansRes, reviewsRes,
+          reviewsRes,
           discursivasRes, globalFlashRes, globalQuestRes,
           questionsCreatedRes, summariesRes, chroniclesRes,
           imageQuizRes, diagnosticRes,
           adaptiveProfileRes,
         ] = await Promise.all([
-          supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          supabase.from("uploads").select("id", { count: "exact", head: true }).eq("user_id", userId),
-          // [planner-unification] Fonte viva: daily_plan_tasks. specialty/topic + estimated_minutes alimentam subjects/subjectHours.
-          // Permite ver tarefas de hoje mesmo se o plano foi resetado hoje.
-          supabase.from("daily_plan_tasks").select("completed, created_at, completed_at, estimated_minutes, specialty, topic, daily_plan_id")
-            .eq("user_id", userId)
-            .or(`created_at.gt.${resetAt || "1900-01-01T00:00:00Z"},created_at.gte.${todayIso}`),
-          // [planner-unification-final] Fonte viva: daily_plans. Detecta presença de plano ativo nos últimos 7 dias.
-          supabase.from("daily_plans").select("id, plan_date, total_blocks, created_at, updated_at")
-            .eq("user_id", userId)
-            .gte("plan_date", new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0])
-            .or(`updated_at.gt.${resetAt || "1900-01-01T00:00:00Z"},updated_at.gte.${todayIso}`)
-            .order("plan_date", { ascending: false }).limit(1).maybeSingle(),
           supabase.from("reviews").select("next_review, flashcard_id, flashcards(topic)").eq("user_id", userId).gte("next_review", new Date().toISOString()).order("next_review", { ascending: true }).limit(5),
           supabase.from("discursive_attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null),
           supabase.from("flashcards").select("id", { count: "exact", head: true }).eq("is_global", true),
@@ -117,6 +112,12 @@ export const useDashboardData = () => {
           supabase.from("diagnostic_results").select("id", { count: "exact", head: true }).eq("user_id", userId),
           supabase.from("cme_adaptive_profiles").select("*").eq("user_id", userId).maybeSingle(),
         ]);
+
+        const flashcardsRes = { count: (unified as any).flashcards_count };
+        const uploadsRes = { count: (unified as any).uploads_count };
+        const tasksRes = { data: (unified as any).daily_plan?.tasks || [] };
+        const dailyPlansRes = { data: (unified as any).daily_plan?.plan };
+
 
         const [teacherSimuladoRes, teacherClinicalRes] = await Promise.all([
           supabase.from("teacher_simulado_results").select("total_questions, score").eq("student_id", userId),

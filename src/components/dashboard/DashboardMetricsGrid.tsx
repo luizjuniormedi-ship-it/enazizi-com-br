@@ -21,14 +21,32 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
     <>
       {/* Primary KPIs - Top 4 with visual emphasis */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Link to="/dashboard/simulados" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
+        <Link 
+          to="/dashboard/simulados" 
+          className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden"
+          onClick={async () => {
+            const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) await getOrchestratorDecision(user.id, "dashboard-metric-questions", { source: "metric-answered" });
+          }}
+        >
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <Target className="h-6 w-6 text-primary mb-3" />
           <div className="text-3xl font-bold">{metrics.questionsAnswered}</div>
           <div className="text-sm text-muted-foreground mt-1">Questões respondidas</div>
         </Link>
 
-        <Link to="/dashboard/simulados" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
+        <Link 
+          to="/dashboard/simulados" 
+          className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden"
+          onClick={async () => {
+            const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) await getOrchestratorDecision(user.id, "dashboard-metric-accuracy", { source: "metric-accuracy", value: metrics.accuracy });
+          }}
+        >
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <CheckCircle2 className={cn("h-6 w-6 mb-3", metrics.accuracy >= 70 ? "text-green-500" : metrics.accuracy >= 50 ? "text-yellow-500" : "text-red-500")} />
           <div className="text-3xl font-bold">{metrics.accuracy}%</div>
@@ -42,12 +60,22 @@ const DashboardMetricsGrid = ({ stats, metrics }: Props) => {
           <div className="text-sm text-muted-foreground mt-1">Dias de streak</div>
         </Link>
 
-        <Link to="/dashboard/sessao-estudo?focus=reviews" className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden">
+        <Link 
+          to="/dashboard/sessao-estudo?focus=reviews" 
+          className="glass-card p-5 hover:border-primary/30 transition-all group relative overflow-hidden"
+          onClick={async () => {
+            const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+            const { supabase } = await import("@/integrations/supabase/client");
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) await getOrchestratorDecision(user.id, "dashboard-metric-reviews", { source: "metric-pending-reviews", count: metrics.pendingRevisoes });
+          }}
+        >
           <div className="absolute top-0 right-0 w-20 h-20 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2" />
           <CalendarDays className={cn("h-6 w-6 mb-3", metrics.pendingRevisoes > 0 ? "text-yellow-500" : "text-green-500")} />
           <div className="text-3xl font-bold">{metrics.pendingRevisoes}</div>
           <div className="text-sm text-muted-foreground mt-1">Revisões pendentes</div>
         </Link>
+
       </div>
 
       {/* Collapsible secondary stats */}

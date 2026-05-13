@@ -97,7 +97,9 @@ export type TelemetryEventName =
   | 'offline_transition'
   | 'online_transition'
   | 'hydration_mismatch'
-  | 'memory_pressure';
+  | 'memory_pressure'
+  | 'cognitive_decision_created';
+
 
 interface TelemetryProperties {
   [key: string]: any;

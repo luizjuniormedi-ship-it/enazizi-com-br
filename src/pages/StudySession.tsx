@@ -127,7 +127,25 @@ const StudySession = () => {
   const firstQuestionTrackedRef = useRef(false);
   const sessionCompleteTrackedRef = useRef(false);
   const sessionStartTimeRef = useRef<number>(Date.now());
+  const decisionIdRef = useRef<string | null>(null);
+
+  // Hardening Fase 1: Garantir decisionId
+  useEffect(() => {
+    if (!user || decisionIdRef.current) return;
+    const initDecision = async () => {
+      const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+      const decisionId = await getOrchestratorDecision(user.id, "study-session", {
+        topic: searchParams.get("topic"),
+        mode: searchParams.get("focus") || "full"
+      });
+      decisionIdRef.current = decisionId;
+      console.debug("[StudySession] Decision Orquestrada:", decisionId);
+    };
+    initDecision();
+  }, [user, searchParams]);
+
   const getStudySessionHeaders = useCallback(async () => {
+
     const {
       data: { session },
     } = await supabase.auth.getSession();

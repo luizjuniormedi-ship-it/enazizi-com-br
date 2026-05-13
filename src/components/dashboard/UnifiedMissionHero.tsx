@@ -101,7 +101,19 @@ export function UnifiedMissionHero({
               size="lg"
               glow
               iconLeft={<Rocket className="h-5 w-5" />}
-              onClick={() => navigate(primaryHref)}
+              onClick={async () => {
+                const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+                const { supabase } = await import("@/integrations/supabase/client");
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  await getOrchestratorDecision(user.id, "dashboard-hero-primary", {
+                    topic: recommendationTopic,
+                    type: recommendationType,
+                    source: "unified-hero-continue"
+                  });
+                }
+                navigate(primaryHref);
+              }}
             >
               Continuar missão
             </Enaflix3DButton>
@@ -109,10 +121,22 @@ export function UnifiedMissionHero({
               variant="outline"
               size="lg"
               iconLeft={<Clock className="h-5 w-5" />}
-              onClick={() => navigate(secondaryHref)}
+              onClick={async () => {
+                const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+                const { supabase } = await import("@/integrations/supabase/client");
+                const { data: { user } } = await supabase.auth.getUser();
+                if (user) {
+                  await getOrchestratorDecision(user.id, "dashboard-hero-secondary", {
+                    topic: recommendationTopic,
+                    source: "unified-hero-reviews"
+                  });
+                }
+                navigate(secondaryHref);
+              }}
             >
               Ver revisões
             </Enaflix3DButton>
+
 
             {adaptiveJustification && (
               <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">

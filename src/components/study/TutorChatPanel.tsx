@@ -140,11 +140,22 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
     async (text: string) => {
       if (!text.trim() || isLoading) return;
 
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Garantir decisionId para o loop da IA (Fase 1)
+      const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+      const decisionId = await getOrchestratorDecision(user.id, "tutor-chat-panel", {
+        topic: context.topic,
+        mode: context.mode,
+        origin: context.origin || "study-session-panel"
+      });
+
       // Telemetry
       if (messages.length === 0) {
-        trackAction('first_question_loaded', { topic: context.topic, mode: context.mode });
+        trackAction('first_question_loaded', { topic: context.topic, mode: context.mode, decisionId });
       } else {
-        trackAction('first_answer_submitted', { topic: context.topic, mode: context.mode });
+        trackAction('first_answer_submitted', { topic: context.topic, mode: context.mode, decisionId });
       }
 
       const userMsg: Msg = { role: "user", content: text };
@@ -152,6 +163,7 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
       setMessages([...all, { role: "assistant", content: "" }]);
       setInput("");
       setIsLoading(true);
+
 
       const missionContext =
         context.mode === "mission" || context.topic
@@ -170,7 +182,9 @@ export default function TutorChatPanel({ context, showStudySessionCTA = false, c
         body: {
           messages: all.map((m) => ({ role: m.role, content: m.content })),
           mission_context: missionContext || undefined,
+          decisionId: (window as any)._lastDecisionId || undefined, // Fallback safe
         },
+
         onChunk: (fullText) => {
           setMessages((prev) => {
             const last = prev[prev.length - 1];
