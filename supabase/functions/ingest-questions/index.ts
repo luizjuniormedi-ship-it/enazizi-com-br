@@ -384,8 +384,10 @@ Deno.serve(async (req) => {
       offset += PAGE;
     }
 
-    const { data: firstUser } = await supabase.from("profiles").select("id").limit(1).single();
-    const adminUserId = userId || firstUser?.id || "00000000-0000-0000-0000-000000000000";
+    // Usar um ID de usuário válido do auth.users (necessário devido à constraint FK)
+    const { data: firstUser } = await supabase.from("profiles").select("id").limit(1).maybeSingle();
+    // fallback para um dos IDs conhecidos do auth.users se profiles estiver inconsistente
+    const adminUserId = userId || firstUser?.id || "d342be08-4a6a-4183-94a0-fce42255cec1";
 
     for (const q of questions) {
       if (!isValidQuestion(q)) {
