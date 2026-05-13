@@ -266,7 +266,15 @@ const Dashboard = () => {
            <EnaflixCinematicCard 
              variant="tutor" 
              className="col-span-full h-48 flex items-center p-8 gap-8"
-             onClick={() => navigate("/dashboard/sessao-estudo?mode=tutor")}
+             onClick={async () => {
+               const { getOrchestratorDecision } = await import("@/lib/cognitiveOrchestrator");
+               if (user) {
+                 await getOrchestratorDecision(user.id, "dashboard-tutor-banner", {
+                   source: "tutor-card"
+                 });
+               }
+               navigate("/dashboard/sessao-estudo?mode=tutor")
+             }}
            >
               <div className="shrink-0 group-hover:scale-110 transition-transform duration-500">
                 <MascotAvatar state="teaching" size="xl" />
@@ -280,6 +288,7 @@ const Dashboard = () => {
                   Iniciar Conversa
                 </Enaflix3DButton>
               </div>
+
            </EnaflixCinematicCard>
         </EnaflixRow>
 
