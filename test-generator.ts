@@ -1,7 +1,12 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "@supabase/supabase-js";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+
+if (!supabaseUrl || !serviceRoleKey) {
+  console.error("Missing SUPABASE environment variables");
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -26,6 +31,7 @@ async function testGenerator() {
   };
 
   try {
+    // Note: invoke uses headers for service role
     const { data, error } = await supabase.functions.invoke("question-generator", {
       body: payload
     });
@@ -36,10 +42,10 @@ async function testGenerator() {
     }
 
     console.log("Response success:", data.success);
-    if (data.questions) {
+    if (data && data.questions) {
       console.log(`Generated ${data.questions.length} questions`);
       data.questions.forEach((q: any, i: number) => {
-        console.log(`\nQ${i+1}: ${q.statement.slice(0, 100)}...`);
+        console.log(`\nQ${i+1}: ${q.statement?.slice(0, 100)}...`);
         console.log(`Options: ${q.options?.length}`);
         console.log(`Correct: ${q.correct_index}`);
       });
