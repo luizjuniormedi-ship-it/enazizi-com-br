@@ -15704,6 +15704,53 @@ export type Database = {
         }
         Relationships: []
       }
+      question_audit_logs: {
+        Row: {
+          action: string
+          ai_metadata: Json | null
+          created_at: string
+          created_by: string | null
+          error_message: string | null
+          hallucination_score: number | null
+          id: string
+          quality_score: number | null
+          question_id: string | null
+          status: string
+        }
+        Insert: {
+          action: string
+          ai_metadata?: Json | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          hallucination_score?: number | null
+          id?: string
+          quality_score?: number | null
+          question_id?: string | null
+          status: string
+        }
+        Update: {
+          action?: string
+          ai_metadata?: Json | null
+          created_at?: string
+          created_by?: string | null
+          error_message?: string | null
+          hallucination_score?: number | null
+          id?: string
+          quality_score?: number | null
+          question_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "question_audit_logs_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions_bank"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       question_classification_queue: {
         Row: {
           classification_method: string
@@ -16255,7 +16302,7 @@ export type Database = {
           classified_at: string | null
           correct_index: number
           created_at: string
-          difficulty: number | null
+          difficulty: number
           exam_bank_id: string | null
           explanation: string
           id: string
@@ -16289,7 +16336,7 @@ export type Database = {
           classified_at?: string | null
           correct_index?: number
           created_at?: string
-          difficulty?: number | null
+          difficulty?: number
           exam_bank_id?: string | null
           explanation: string
           id?: string
@@ -16323,7 +16370,7 @@ export type Database = {
           classified_at?: string | null
           correct_index?: number
           created_at?: string
-          difficulty?: number | null
+          difficulty?: number
           exam_bank_id?: string | null
           explanation?: string
           id?: string
