@@ -707,7 +707,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
             if (needed <= 0) return [] as any[];
             try {
               const resp = await aiFetch({
-                model: qualityProfile?.preferred_model || "openai/gpt-4o-mini",
+                model: qualityProfile?.preferred_model || "openai/gpt-5-mini",
                 messages: [
                   { role: "system", content: systemPrompt }, 
                   { role: "user", content: buildSlotPrompt(needed, [...globalPrev], slotTarget) }
@@ -797,7 +797,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
                       final_score,
                       adaptive_routing: {
                         specialty: currentSpecialty,
-                        model_used: qualityProfile?.preferred_model || 'gpt-4o-mini',
+                        model_used: qualityProfile?.preferred_model || 'gpt-5-mini',
                         depth_applied: qualityProfile?.explanation_depth || 'medium'
                       }
                     }
@@ -1009,7 +1009,7 @@ ${prevSnapshot.length > 0 ? `\nNÃO REPITA:\n${prevSnapshot.slice(0, 40).map((s,
     logAiUsage({
       userId: "system-question-gen",
       functionName: "question-generator",
-      modelUsed: "openai/gpt-4o-mini",
+      modelUsed: "openai/gpt-5-mini",
       success: response.ok,
       responseTimeMs: elapsed,
       modelTier: "standard",
