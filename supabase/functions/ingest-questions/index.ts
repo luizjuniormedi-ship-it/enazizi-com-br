@@ -384,7 +384,8 @@ Deno.serve(async (req) => {
       offset += PAGE;
     }
 
-    const adminUserId = userId || "00000000-0000-0000-0000-000000000000";
+    const { data: firstUser } = await supabase.from("profiles").select("id").limit(1).single();
+    const adminUserId = userId || firstUser?.id || "00000000-0000-0000-0000-000000000000";
 
     for (const q of questions) {
       if (!isValidQuestion(q)) {
